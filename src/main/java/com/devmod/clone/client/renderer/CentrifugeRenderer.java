@@ -38,10 +38,10 @@ public class CentrifugeRenderer extends GeoBlockRenderer<CentrifugeBlockEntity> 
 
     /**
      * Height of drum center in block units.
-     * Drum spans Y=13-30 in model, center at Y=21.5 → 21.5/16 = 1.34 blocks.
-     * But render origin is at block center (Y=0.5), so offset = 1.34 - 0.5 = 0.84
+     * Drum spans Y=7-13 in model (6 units), center at Y=10.
+     * Position = 10 / 16 = 0.625 blocks
      */
-    private static final float DRUM_CENTER_HEIGHT = 0.84f;
+    private static final float DRUM_CENTER_HEIGHT = 0.625f;
 
     /** Scale for item being processed */
     private static final float PROCESSING_SCALE = 0.3f;

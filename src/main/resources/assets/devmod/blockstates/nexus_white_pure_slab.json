@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_white_pure_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_white_pure"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_white_pure_slab_top"
+    }
+  }
+}

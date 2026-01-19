@@ -12,6 +12,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
+import com.devmod.zone.ZoneItems;
 
 /**
  * Creative mode tab for Area Builder items.
@@ -36,6 +37,9 @@ public final class AreaCreativeTab {
 
                 // Nexus Editor Central - not normally obtainable but available for admins
                 output.accept(Objects.requireNonNull(AreaItems.NEXUS_EDITOR_CENTRAL.get()));
+
+                // Zone Marker - for zone definition and management
+                output.accept(Objects.requireNonNull(ZoneItems.ZONE_MARKER.get()));
             })
             .build()
     );

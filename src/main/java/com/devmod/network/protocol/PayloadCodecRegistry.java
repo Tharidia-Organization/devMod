@@ -1,11 +1,13 @@
 package com.devmod.network.protocol;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -82,12 +84,13 @@ public final class PayloadCodecRegistry {
             BiConsumer<FriendlyByteBuf, T> encoder) {
         StreamCodec<FriendlyByteBuf, T> codec = new StreamCodec<>() {
             @Override
-            public T decode(FriendlyByteBuf buf) {
-                return decoder.apply(buf);
+            @Nonnull
+            public T decode(@Nonnull FriendlyByteBuf buf) {
+                return Objects.requireNonNull(decoder.apply(buf));
             }
 
             @Override
-            public void encode(FriendlyByteBuf buf, T value) {
+            public void encode(@Nonnull FriendlyByteBuf buf, @Nonnull T value) {
                 encoder.accept(buf, value);
             }
         };
@@ -127,7 +130,7 @@ public final class PayloadCodecRegistry {
      * @throws IllegalStateException if no codec is registered
      */
     @SuppressWarnings("unchecked")
-    public static <T> void encode(FriendlyByteBuf buf, MessageType type, T payload) {
+    public static <T> void encode(@Nonnull FriendlyByteBuf buf, @Nonnull MessageType type, @Nonnull T payload) {
         CodecEntry<?> entry = codecs.get(type);
         if (entry == null) {
             throw new IllegalStateException("No codec registered for " + type);
@@ -146,7 +149,7 @@ public final class PayloadCodecRegistry {
      *
      * @throws IllegalStateException if no codec is registered
      */
-    public static <T> T decode(FriendlyByteBuf buf, MessageType type, Class<T> expectedType) {
+    public static <T> T decode(@Nonnull FriendlyByteBuf buf, @Nonnull MessageType type, @Nonnull Class<T> expectedType) {
         CodecEntry<?> entry = codecs.get(type);
         if (entry == null) {
             throw new IllegalStateException("No codec registered for " + type);
@@ -172,7 +175,7 @@ public final class PayloadCodecRegistry {
      * @return The decoded payload, or null if decoding failed
      */
     @Nullable
-    public static <T> T tryDecode(FriendlyByteBuf buf, MessageType type, Class<T> expectedType) {
+    public static <T> T tryDecode(@Nonnull FriendlyByteBuf buf, @Nonnull MessageType type, @Nonnull Class<T> expectedType) {
         CodecEntry<?> entry = codecs.get(type);
         if (entry == null) {
             LOGGER.warn("[PayloadCodecRegistry] No codec registered for {}", type);

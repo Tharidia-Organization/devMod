@@ -2,6 +2,7 @@ package com.devmod.clone.util;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 
@@ -43,7 +44,7 @@ public final class NeurolinkConnector {
 
         // Start with adjacent positions
         for (Direction dir : Direction.values()) {
-            queue.add(startPos.relative(dir));
+            queue.add(startPos.relative(Objects.requireNonNull(dir)));
         }
         visited.add(startPos);
 
@@ -54,7 +55,7 @@ public final class NeurolinkConnector {
             if (visited.contains(current)) {
                 continue;
             }
-            if (current.distManhattan(startPos) > MAX_SEARCH_DISTANCE) {
+            if (current.distManhattan(Objects.requireNonNull(startPos)) > MAX_SEARCH_DISTANCE) {
                 continue;
             }
 
@@ -71,7 +72,7 @@ public final class NeurolinkConnector {
             // If it's a NEUROLINK, continue searching through it
             if (block == CloneBlocks.NEUROLINK.get()) {
                 for (Direction dir : Direction.values()) {
-                    BlockPos nextPos = current.relative(dir);
+                    BlockPos nextPos = current.relative(Objects.requireNonNull(dir));
                     if (!visited.contains(nextPos)) {
                         queue.add(nextPos);
                     }
@@ -104,7 +105,7 @@ public final class NeurolinkConnector {
 
         // Start with adjacent positions
         for (Direction dir : Direction.values()) {
-            queue.add(startPos.relative(dir));
+            queue.add(startPos.relative(Objects.requireNonNull(dir)));
         }
         visited.add(startPos);
 
@@ -115,7 +116,7 @@ public final class NeurolinkConnector {
             if (visited.contains(current)) {
                 continue;
             }
-            if (current.distManhattan(startPos) > MAX_SEARCH_DISTANCE) {
+            if (current.distManhattan(Objects.requireNonNull(startPos)) > MAX_SEARCH_DISTANCE) {
                 continue;
             }
 
@@ -132,7 +133,7 @@ public final class NeurolinkConnector {
             // If it's a NEUROLINK, continue searching through it
             if (block == CloneBlocks.NEUROLINK.get()) {
                 for (Direction dir : Direction.values()) {
-                    BlockPos nextPos = current.relative(dir);
+                    BlockPos nextPos = current.relative(Objects.requireNonNull(dir));
                     if (!visited.contains(nextPos)) {
                         queue.add(nextPos);
                     }
@@ -147,22 +148,22 @@ public final class NeurolinkConnector {
     private static NeurocellAccess resolveNeurocellAccess(Level level, BlockPos pos, BlockState state) {
         Block block = state.getBlock();
         if (block == CloneBlocks.NEUROCELL.get()) {
-            if (state.hasProperty(NeurocellBlock.HALF)
-                && state.getValue(NeurocellBlock.HALF) == DoubleBlockHalf.UPPER) {
+            if (state.hasProperty(Objects.requireNonNull(NeurocellBlock.HALF))
+                && state.getValue(Objects.requireNonNull(NeurocellBlock.HALF)) == DoubleBlockHalf.UPPER) {
                 pos = pos.below();
             }
-            BlockEntity be = level.getBlockEntity(pos);
+            BlockEntity be = level.getBlockEntity(Objects.requireNonNull(pos));
             return be instanceof NeurocellAccess access ? access : null;
         }
 
         if (block == CloneBlocks.NEUROCELL_L.get()) {
             BlockPos centerPos = pos;
-            if (state.hasProperty(NeurocellLBlock.PART) && state.hasProperty(NeurocellLBlock.FACING)) {
-                NeurocellLBlock.MultiBlockPart part = state.getValue(NeurocellLBlock.PART);
-                Direction facing = state.getValue(NeurocellLBlock.FACING);
+            if (state.hasProperty(Objects.requireNonNull(NeurocellLBlock.PART)) && state.hasProperty(Objects.requireNonNull(NeurocellLBlock.FACING))) {
+                NeurocellLBlock.MultiBlockPart part = state.getValue(Objects.requireNonNull(NeurocellLBlock.PART));
+                Direction facing = state.getValue(Objects.requireNonNull(NeurocellLBlock.FACING));
                 centerPos = part.getCenterFromThis(pos, facing);
             }
-            BlockEntity be = level.getBlockEntity(centerPos);
+            BlockEntity be = level.getBlockEntity(Objects.requireNonNull(centerPos));
             return be instanceof NeurocellAccess access ? access : null;
         }
 

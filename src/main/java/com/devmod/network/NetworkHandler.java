@@ -20,6 +20,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.devmod.DevMod;
 import com.devmod.abilities.StaminaSyncPayload;
 import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.clone.network.MannequinRotationPayload;
+import com.devmod.clone.network.MannequinSkinPayload;
 import com.devmod.clone.network.TelepadConfigPayload;
 import com.devmod.clone.network.TelepadOpenScreenPayload;
 import com.devmod.endurance.ArenaSuggestionsPayload;
@@ -163,6 +165,8 @@ import static com.devmod.network.ChannelId.START_QUEST;
 import static com.devmod.network.ChannelId.TASK_ACTION;
 import static com.devmod.network.ChannelId.TASK_SYNC;
 import static com.devmod.network.ChannelId.TELEMETRY_BATCH;
+import static com.devmod.network.ChannelId.MANNEQUIN_ROTATION;
+import static com.devmod.network.ChannelId.MANNEQUIN_SKIN;
 import static com.devmod.network.ChannelId.TELEPAD_CONFIG;
 import static com.devmod.network.ChannelId.TELEPAD_OPEN_SCREEN;
 import static com.devmod.network.ChannelId.TENSION_UPDATE;
@@ -1058,6 +1062,28 @@ public class NetworkHandler {
                 }, PayloadLimits.SMALL)
         );
 
+        // Mannequin rotation (client -> server)
+        event.registrar(MANNEQUIN_ROTATION.asString()).playToServer(
+                nn(MannequinRotationPayload.TYPE),
+                nn(MannequinRotationPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleMannequinRotation(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
+        // Mannequin skin (client -> server)
+        event.registrar(MANNEQUIN_SKIN.asString()).playToServer(
+                nn(MannequinSkinPayload.TYPE),
+                nn(MannequinSkinPayload.STREAM_CODEC),
+                validated((payload, context) -> {
+                    if (context.player() instanceof ServerPlayer player) {
+                        handleMannequinSkin(player, payload);
+                    }
+                }, PayloadLimits.SMALL)
+        );
+
         // ===================================================================
         // NPC SYSTEM CHANNELS (180-189) - Delegated to domain registrar
         // ===================================================================
@@ -1082,6 +1108,11 @@ public class NetworkHandler {
         // ADMIN INSTANCE CHANNELS (230-239) - Delegated to domain registrar
         // ===================================================================
         com.devmod.runtime.network.AdminInstanceNetworkHandler.INSTANCE.registerPayloads(event);
+
+        // ===================================================================
+        // NEXUS HUB CHANNELS (240-249) - Delegated to domain registrar
+        // ===================================================================
+        com.devmod.nexus.network.NexusNetworkHandler.INSTANCE.registerPayloads(event);
     }
 
     // ===================================================================
@@ -1545,6 +1576,88 @@ public class NetworkHandler {
         var blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof com.devmod.clone.block.entity.TelepadBlockEntity telepad) {
             telepad.setTelepadName(payload.telepadName());
+        }
+    }
+
+    /*
+     * Handle neurocell rotation from client.
+     * Updates the rotation angle when player scrolls while looking at a Neurocell in MANUAL mode.
+     * Supports all Neurocell types: Mannequin, Standard, Large, and Item.
+     */
+    private static void handleMannequinRotation(ServerPlayer player, MannequinRotationPayload payload) {
+        var level = player.serverLevel();
+        var pos = Objects.requireNonNull(payload.pos(), "pos");
+
+        // Validate distance (max 8 blocks)
+        if (player.blockPosition().distManhattan(pos) > 8) {
+            return;
+        }
+
+        var blockEntity = level.getBlockEntity(pos);
+
+        // Handle NeurocellMannequin
+        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellMannequinBlockEntity mannequin) {
+            if (mannequin.getRotationMode() == com.devmod.clone.block.entity.NeurocellMannequinBlockEntity.RotationMode.MANUAL) {
+                float newAngle = normalizeAngle(mannequin.getRotationAngle() + payload.rotationDelta());
+                mannequin.setRotationAngle(newAngle);
+            }
+            return;
+        }
+
+        // Handle standard Neurocell
+        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellBlockEntity neurocell) {
+            if (neurocell.getRotationMode() == com.devmod.clone.block.entity.NeurocellBlockEntity.RotationMode.MANUAL) {
+                float newAngle = normalizeAngle(neurocell.getRotationAngle() + payload.rotationDelta());
+                neurocell.setRotationAngle(newAngle);
+            }
+            return;
+        }
+
+        // Handle large Neurocell (NeurocellL)
+        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellLBlockEntity neurocellL) {
+            if (neurocellL.getRotationMode() == com.devmod.clone.block.entity.NeurocellLBlockEntity.RotationMode.MANUAL) {
+                float newAngle = normalizeAngle(neurocellL.getRotationAngle() + payload.rotationDelta());
+                neurocellL.setRotationAngle(newAngle);
+            }
+            return;
+        }
+
+        // Handle NeurocellItem
+        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellItemBlockEntity neurocellItem) {
+            if (neurocellItem.getRotationMode() == com.devmod.clone.block.entity.NeurocellItemBlockEntity.RotationMode.MANUAL) {
+                float newAngle = normalizeAngle(neurocellItem.getRotationAngle() + payload.rotationDelta());
+                neurocellItem.setRotationAngle(newAngle);
+            }
+        }
+    }
+
+    /**
+     * Normalize angle to 0-360 range.
+     */
+    private static float normalizeAngle(float angle) {
+        angle = angle % 360.0f;
+        if (angle < 0) {
+            angle += 360.0f;
+        }
+        return angle;
+    }
+
+    /*
+     * Handle mannequin skin update from client.
+     * Updates the skin UUID for the mannequin.
+     */
+    private static void handleMannequinSkin(ServerPlayer player, MannequinSkinPayload payload) {
+        var level = player.serverLevel();
+        var pos = Objects.requireNonNull(payload.pos(), "pos");
+
+        // Validate distance (max 8 blocks)
+        if (player.blockPosition().distManhattan(pos) > 8) {
+            return;
+        }
+
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellMannequinBlockEntity mannequin) {
+            mannequin.setSkinUUID(payload.skinUUID());
         }
     }
 

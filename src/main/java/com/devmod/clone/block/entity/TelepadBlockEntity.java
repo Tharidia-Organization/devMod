@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.block.TelepadBlock;
 import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalData;
 import com.devmod.portal.PortalRegistry;
@@ -154,7 +155,14 @@ public class TelepadBlockEntity extends BlockEntity {
             }
         }
 
+        boolean wasActive = !toRemove.isEmpty() || !chargingPlayers.isEmpty();
         toRemove.forEach(chargingPlayers::remove);
+        boolean isActive = !chargingPlayers.isEmpty();
+
+        // Update block state if active state changed
+        if (level != null && wasActive != isActive) {
+            TelepadBlock.setActive(level, worldPosition, getBlockState(), isActive);
+        }
     }
 
     private boolean isPlayerOnTelepad(Player player) {

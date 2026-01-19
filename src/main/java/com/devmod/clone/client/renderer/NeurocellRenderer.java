@@ -157,9 +157,23 @@ public class NeurocellRenderer implements BlockEntityRenderer<NeurocellBlockEnti
                 float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
                 poseStack.translate(0.5, 0.5625 + bobOffset, 0.5);
 
-                // Slow gentle rotation for suspended-in-void effect
-                float slowRotation = animTime * 8.0f;
-                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + slowRotation)));
+                // Calculate rotation based on mode
+                NeurocellBlockEntity.RotationMode rotationMode = blockEntity.getRotationMode();
+                float rotation;
+                switch (rotationMode) {
+                    case AUTO:
+                        // Slow gentle rotation for suspended-in-void effect
+                        rotation = animTime * 8.0f;
+                        break;
+                    case FIXED:
+                    case MANUAL:
+                        // Fixed or manual angle - use stored rotation angle
+                        rotation = blockEntity.getRotationAngle();
+                        break;
+                    default:
+                        rotation = 0.0f;
+                }
+                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + rotation)));
 
                 float entityWidth = entity.getBbWidth();
                 float entityHeight = entity.getBbHeight();

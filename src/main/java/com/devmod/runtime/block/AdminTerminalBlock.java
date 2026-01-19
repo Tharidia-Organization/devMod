@@ -14,10 +14,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
+import com.devmod.clone.block.CloneMachineBlock;
 import com.devmod.config.Config;
 import com.devmod.runtime.network.AdminInstanceNetworkHandler;
 
@@ -26,25 +29,33 @@ import com.devmod.runtime.network.AdminInstanceNetworkHandler;
  * Right-click to open the Admin Instance Panel.
  * Requires configured permission level to interact.
  */
-public class AdminTerminalBlock extends Block {
+public class AdminTerminalBlock extends CloneMachineBlock {
     public static final MapCodec<AdminTerminalBlock> CODEC = simpleCodec(AdminTerminalBlock::new);
 
     public AdminTerminalBlock() {
-        super(BlockBehaviour.Properties.of()
+        this(createAdminProperties(), Block.box(0, 0, 0, 16, 16, 16));
+    }
+
+    public AdminTerminalBlock(Properties properties) {
+        this(properties, Block.box(0, 0, 0, 16, 16, 16));
+    }
+
+    public AdminTerminalBlock(Properties properties, VoxelShape shape) {
+        super(properties, shape);
+    }
+
+    private static Properties createAdminProperties() {
+        return BlockBehaviour.Properties.of()
             .strength(5.0F, 1200.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(state -> 8)
             .noOcclusion()
-            .requiresCorrectToolForDrops());
-    }
-
-    public AdminTerminalBlock(Properties properties) {
-        super(properties);
+            .requiresCorrectToolForDrops();
     }
 
     @Override
     @Nonnull
-    protected MapCodec<? extends Block> codec() {
+    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
         return Objects.requireNonNull(CODEC);
     }
 

@@ -1,5 +1,7 @@
 package com.devmod.transport;
 
+import java.util.Objects;
+
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -36,7 +38,7 @@ public final class TransportBlocks {
         "warp_core",
         () -> new TransportCoreBlock(BlockBehaviour.Properties.of()
             .strength(3.0F, 8.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportCoreBlock::getLightEmission)
             .noOcclusion())
     );
@@ -50,7 +52,7 @@ public final class TransportBlocks {
         "chromatic_lens",
         () -> new ChromaticTransportModuleBlock(BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.GLASS)
+            .sound(Objects.requireNonNull(SoundType.GLASS))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -62,7 +64,7 @@ public final class TransportBlocks {
         "range_amplifier",
         () -> new TransportModuleBlock(TransportEnhancement.RANGE_AMPLIFIER, BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -74,7 +76,7 @@ public final class TransportBlocks {
         "dimensional_gate",
         () -> new TransportModuleBlock(TransportEnhancement.GATE, BlockBehaviour.Properties.of()
             .strength(3.0F, 8.0F)
-            .sound(SoundType.AMETHYST)
+            .sound(Objects.requireNonNull(SoundType.AMETHYST))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -86,7 +88,7 @@ public final class TransportBlocks {
         "flux_capacitor",
         () -> new TransportModuleBlock(TransportEnhancement.FLUX_CAPACITOR, BlockBehaviour.Properties.of()
             .strength(2.5F, 7.0F)
-            .sound(SoundType.COPPER)
+            .sound(Objects.requireNonNull(SoundType.COPPER))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -98,7 +100,7 @@ public final class TransportBlocks {
         "network_relay",
         () -> new TransportModuleBlock(TransportEnhancement.NETWORK_RELAY, BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -110,7 +112,7 @@ public final class TransportBlocks {
         "memory_core",
         () -> new TransportModuleBlock(TransportEnhancement.MEMORY_CORE, BlockBehaviour.Properties.of()
             .strength(2.5F, 7.0F)
-            .sound(SoundType.SCULK)
+            .sound(Objects.requireNonNull(SoundType.SCULK))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -122,7 +124,7 @@ public final class TransportBlocks {
         "party_beacon",
         () -> new TransportModuleBlock(TransportEnhancement.PARTY_BEACON, BlockBehaviour.Properties.of()
             .strength(2.5F, 7.0F)
-            .sound(SoundType.AMETHYST_CLUSTER)
+            .sound(Objects.requireNonNull(SoundType.AMETHYST_CLUSTER))
             .lightLevel(TransportModuleBlock::getLightEmission)
             .noOcclusion())
     );
@@ -137,7 +139,7 @@ public final class TransportBlocks {
         "frame_segment",
         () -> new TransportFrameBlock(BlockBehaviour.Properties.of()
             .strength(2.0F, 6.0F)
-            .sound(SoundType.METAL)
+            .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportFrameBlock::getLightEmission)
             .noOcclusion())
     );

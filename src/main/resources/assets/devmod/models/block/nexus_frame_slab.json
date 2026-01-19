@@ -1,1 +1,1 @@
-{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_frame", "top": "devmod:block/nexus/nexus_frame", "side": "devmod:block/nexus/nexus_frame" } }
+{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_frame_gray", "top": "devmod:block/nexus/nexus_frame_gray", "side": "devmod:block/nexus/nexus_frame_gray" } }

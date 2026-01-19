@@ -1,5 +1,7 @@
 package com.devmod.clone.network;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.core.BlockPos;
@@ -23,14 +25,14 @@ public record TelepadConfigPayload(
 ) implements CustomPacketPayload {
 
     public static final Type<TelepadConfigPayload> TYPE =
-        new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_config"));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_config")));
 
     public static final StreamCodec<FriendlyByteBuf, TelepadConfigPayload> STREAM_CODEC =
         StreamCodec.of(TelepadConfigPayload::encode, TelepadConfigPayload::decode);
 
     private static void encode(FriendlyByteBuf buf, TelepadConfigPayload payload) {
-        buf.writeBlockPos(payload.pos);
-        buf.writeUtf(payload.telepadName);
+        buf.writeBlockPos(Objects.requireNonNull(payload.pos));
+        buf.writeUtf(Objects.requireNonNull(payload.telepadName));
     }
 
     private static TelepadConfigPayload decode(FriendlyByteBuf buf) {
@@ -43,6 +45,6 @@ public record TelepadConfigPayload(
     @Override
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+        return Objects.requireNonNull(TYPE);
     }
 }

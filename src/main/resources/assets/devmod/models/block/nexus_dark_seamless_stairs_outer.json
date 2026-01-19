@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_dark_seamless",
+    "top": "devmod:block/nexus/nexus_dark_seamless",
+    "side": "devmod:block/nexus/nexus_dark_seamless"
+  }
+}

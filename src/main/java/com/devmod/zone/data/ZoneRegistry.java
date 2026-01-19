@@ -512,7 +512,6 @@ public class ZoneRegistry extends SavedData {
     public boolean isInitialized() {
         return initialized;
     }
-
     /**
      * Initializes the registry with legacy zones from ZonePresets.
      * Only runs once; subsequent calls are ignored.
@@ -543,12 +542,24 @@ public class ZoneRegistry extends SavedData {
             registerAlias(Objects.requireNonNull(entry.getKey()), Objects.requireNonNull(entry.getValue()));
         }
 
-        initialized = true;
-        modificationVersion.incrementAndGet();
-        setDirty();
+        markInitialized();
 
         LOGGER.info("[Zone] Initialized {} legacy zones and {} aliases",
             legacyZones.size(), defaultAliases.size());
+    }
+
+    /**
+     * Marks the registry as initialized.
+     * Used when zones are created programmatically (e.g., from slot sync)
+     * rather than from legacy presets.
+     */
+    public void markInitialized() {
+        if (!initialized) {
+            initialized = true;
+            modificationVersion.incrementAndGet();
+            setDirty();
+            LOGGER.debug("[Zone] Registry marked as initialized");
+        }
     }
 
     // ========================================================================

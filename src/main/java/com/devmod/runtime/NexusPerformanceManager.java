@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.config.Config;
 import com.devmod.hologram.runtime.HologramManager;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.runtime.ZoneResolver;
 
@@ -71,8 +72,15 @@ public final class NexusPerformanceManager {
 
         LOGGER.info("[NexusPerf] Initializing performance optimizations");
 
+        var server = level.getServer();
+        if (server == null) {
+            LOGGER.warn("[NexusPerf] Cannot initialize performance manager: server not available");
+            return;
+        }
+        NexusHubManager.INSTANCE.initialize(server);
+
         // Pre-calculate chunk positions for each zone from the registry
-        var registry = com.devmod.zone.data.ZoneRegistry.get(level.getServer());
+        var registry = com.devmod.zone.data.ZoneRegistry.get(server);
         for (ZoneDefinition zone : registry.getAllZones()) {
             BlockPos zoneCenter = zone.bounds().center();
             Set<ChunkPos> chunks = calculateZoneChunks(zoneCenter);

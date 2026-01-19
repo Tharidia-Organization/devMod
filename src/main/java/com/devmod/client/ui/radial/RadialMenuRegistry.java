@@ -744,19 +744,34 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_RETURN)
         );
 
-        RadialCategory nexusZones = nexus.addSubcategory("nexus_zones", "Zones", DesignTokens.Radial.TOOLS_COMMANDS,
-            stack(Items.COMPASS));
-        nexusZones.addItems(
+        RadialCategory nexusCore = nexus.addSubcategory("nexus_core", "Core", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.END_PORTAL_FRAME));
+        nexusCore.addItems(
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_HUB),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_OVERVIEW),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COMBAT),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ARENA),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_UI),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TELEMETRY),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SHOWCASE),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_INTEGRATION),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SANDBOX),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_MECHANICS)
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TUTORIAL),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_GATE_PROGRESSION),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_CLASSES)
+        );
+
+        RadialCategory nexusRing1 = nexus.addSubcategory("nexus_ring1", "Ring 1", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.COMPASS));
+        nexusRing1.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_BUILDING_WEST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHEAST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHWEST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_EAST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_WEST)
+        );
+
+        RadialCategory nexusRing2 = nexus.addSubcategory("nexus_ring2", "Ring 2", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.MAP));
+        nexusRing2.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_BUILDING_EAST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_EAST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_WEST),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TOWN_MANAGEMENT),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_EVENTI),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_DM_MOD)
         );
 
         RadialCategory nexusAdmin = nexus.addSubcategory("nexus_admin", "Admin", DesignTokens.Radial.TOOLS_COMMANDS,

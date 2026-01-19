@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -48,11 +49,14 @@ import com.devmod.network.NetworkHandler;
 public final class TelepadBlock extends HorizontalDirectionalBlock implements EntityBlock {
 
     public static final MapCodec<TelepadBlock> CODEC = simpleCodec(TelepadBlock::new);
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 8, 16);
 
     public TelepadBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any()
+            .setValue(FACING, Direction.NORTH)
+            .setValue(ACTIVE, false));
     }
 
     @Override
@@ -63,7 +67,7 @@ public final class TelepadBlock extends HorizontalDirectionalBlock implements En
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, ACTIVE);
     }
 
     @Override
@@ -161,5 +165,14 @@ public final class TelepadBlock extends HorizontalDirectionalBlock implements En
             };
         }
         return null;
+    }
+
+    /**
+     * Sets the active state of the telepad block.
+     */
+    public static void setActive(Level level, BlockPos pos, BlockState state, boolean active) {
+        if (state.getValue(ACTIVE) != active) {
+            level.setBlock(pos, state.setValue(ACTIVE, active), Block.UPDATE_ALL);
+        }
     }
 }

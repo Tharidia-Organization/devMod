@@ -1,0 +1,8 @@
+{
+  "type": "devmod:foundry_casting_table",
+  "cast": { "item": "devmod:foundry_ingot_cast" },
+  "fluid": { "fluid": "devmod:molten_gold", "amount": 1000 },
+  "result": { "item": "minecraft:gold_ingot" },
+  "cooling_time": 100,
+  "consume_cast": false
+}

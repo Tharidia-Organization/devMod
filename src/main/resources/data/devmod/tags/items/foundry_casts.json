@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:foundry_ingot_cast",
+    "devmod:foundry_nugget_cast"
+  ]
+}

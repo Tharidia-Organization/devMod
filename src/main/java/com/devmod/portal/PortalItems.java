@@ -52,7 +52,7 @@ public final class PortalItems {
      */
     @Nonnull
     public static Map<PortalColor, DeferredHolder<Item, PortalIgniterItem>> getIgniters() {
-        return IGNITERS;
+        return Objects.requireNonNull(IGNITERS);
     }
 
     // Convenience accessors for common colors
@@ -87,8 +87,8 @@ public final class PortalItems {
             String name = "rune_" + rune.getSerializedName();
             RUNE_ITEMS.put(rune, DevMod.ITEMS.register(name,
                 () -> new BlockItem(
-                    Objects.requireNonNull(PortalBlocks.getRuneBlock(rune)).get(),
-                    new Item.Properties().stacksTo(64))));
+                    Objects.requireNonNull(Objects.requireNonNull(PortalBlocks.getRuneBlock(rune)).get()),
+                    Objects.requireNonNull(new Item.Properties().stacksTo(64)))));
         }
     }
 
@@ -105,7 +105,7 @@ public final class PortalItems {
      */
     @Nonnull
     public static Map<RuneType, DeferredHolder<Item, BlockItem>> getRuneItems() {
-        return RUNE_ITEMS;
+        return Objects.requireNonNull(RUNE_ITEMS);
     }
 
     // Convenience accessors

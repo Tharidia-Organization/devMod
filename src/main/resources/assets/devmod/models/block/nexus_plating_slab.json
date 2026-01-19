@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/slab",
   "textures": {
-    "bottom": "devmod:block/nexus/nexus_plating",
-    "top": "devmod:block/nexus/nexus_plating",
-    "side": "devmod:block/nexus/nexus_plating"
+    "bottom": "devmod:block/nexus/nexus_panel_plated",
+    "top": "devmod:block/nexus/nexus_panel_plated",
+    "side": "devmod:block/nexus/nexus_panel_plated"
   }
 }

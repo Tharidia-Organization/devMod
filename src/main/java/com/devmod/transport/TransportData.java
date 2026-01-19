@@ -272,7 +272,7 @@ public record TransportData(
     // ============================================================================
 
     public TransportData withMode(TransportMode newMode) {
-        return new TransportData(id, nodeType, newMode, color, customModel, frameCount,
+        return new TransportData(id, nodeType, Objects.requireNonNull(newMode), color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
             fixedDestDim, fixedDestPos, waypointTargets, enhancements,
             createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
@@ -280,7 +280,7 @@ public record TransportData(
     }
 
     public TransportData withColor(TransportColor newColor) {
-        return new TransportData(id, nodeType, mode, newColor, customModel, frameCount,
+        return new TransportData(id, nodeType, mode, Objects.requireNonNull(newColor), customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
             fixedDestDim, fixedDestPos, waypointTargets, enhancements,
             createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
@@ -326,7 +326,7 @@ public record TransportData(
     public TransportData withEnhancements(Set<TransportEnhancement> newEnhancements) {
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
-            fixedDestDim, fixedDestPos, waypointTargets, EnumSet.copyOf(newEnhancements),
+            fixedDestDim, fixedDestPos, waypointTargets, Objects.requireNonNull(EnumSet.copyOf(newEnhancements)),
             createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
             chargeTime, cooldownTime, creatorId, displayName, description);
     }
@@ -448,9 +448,9 @@ public record TransportData(
      */
     public static TransportData createPortal(@Nonnull TransportColor color, @Nullable ResourceLocation dim, @Nullable BlockPos pos) {
         return new TransportData(
-            UUID.randomUUID(), TransportNodeType.PORTAL, TransportMode.LINKED,
+            Objects.requireNonNull(UUID.randomUUID()), TransportNodeType.PORTAL, TransportMode.LINKED,
             color, null, 0, dim, pos, null, null, null, null, null, null, null,
-            EnumSet.of(TransportEnhancement.CHARGED),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.CHARGED)),
             null, null, null, null, null,
             80, 100, null, null, null  // Portal uses 80 tick charge, 100 cooldown
         );
@@ -461,11 +461,11 @@ public record TransportData(
      */
     public static TransportData createTelepad(@Nonnull String networkName, @Nonnull ResourceLocation dim, @Nonnull BlockPos pos) {
         return new TransportData(
-            UUID.randomUUID(), TransportNodeType.TELEPAD, TransportMode.NETWORK,
+            Objects.requireNonNull(UUID.randomUUID()), TransportNodeType.TELEPAD, TransportMode.NETWORK,
             TransportColor.CYAN, null, 0, dim, pos, null, null,
             networkName, NetworkSelectionMode.RANDOM,
             null, null, null,
-            EnumSet.of(TransportEnhancement.CHARGED),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.CHARGED)),
             null, null, null, null, null,
             DEFAULT_CHARGE_TIME, DEFAULT_COOLDOWN_TIME, null, null, null
         );
@@ -487,7 +487,7 @@ public record TransportData(
             color, null, 0, dim, pos, null, null,
             networkName, selectionMode,
             null, null, null,
-            EnumSet.of(TransportEnhancement.CHARGED),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.CHARGED)),
             null, null, null, null, null,
             DEFAULT_CHARGE_TIME, DEFAULT_COOLDOWN_TIME, null, null, null
         );
@@ -506,8 +506,8 @@ public record TransportData(
             nodeId, TransportNodeType.RIFT_GATE, TransportMode.FIXED,
             TransportColor.PURPLE, null, 0, dim, pos, null, null, null, null,
             destDim, destPos, null,
-            EnumSet.of(TransportEnhancement.TEMPORAL, TransportEnhancement.SNAPSHOT,
-                       TransportEnhancement.HASTE, TransportEnhancement.PROTECTED, TransportEnhancement.BOSSBAR),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.TEMPORAL, TransportEnhancement.SNAPSHOT,
+                       TransportEnhancement.HASTE, TransportEnhancement.PROTECTED, TransportEnhancement.BOSSBAR)),
             createdTick, createdTick + durationTicks, TemporalPhase.CALIBRATING,
             null, null,
             0, 100, null, null, null
@@ -522,7 +522,7 @@ public record TransportData(
         @Nonnull ResourceLocation destDim, @Nonnull BlockPos destPos,
         long createdTick, long durationTicks
     ) {
-        return createRiftGate(UUID.randomUUID(), dim, pos, destDim, destPos, createdTick, durationTicks);
+        return createRiftGate(Objects.requireNonNull(UUID.randomUUID()), dim, pos, destDim, destPos, createdTick, durationTicks);
     }
 
     /**
@@ -530,10 +530,10 @@ public record TransportData(
      */
     public static TransportData createWaypoint(@Nonnull String name, @Nonnull ResourceLocation dim, @Nonnull BlockPos pos) {
         return new TransportData(
-            UUID.randomUUID(), TransportNodeType.WAYPOINT, TransportMode.WAYPOINT,
+            Objects.requireNonNull(UUID.randomUUID()), TransportNodeType.WAYPOINT, TransportMode.WAYPOINT,
             TransportColor.WHITE, null, 0, dim, pos, null, null, null, null,
             null, null, new HashSet<>(),
-            EnumSet.noneOf(TransportEnhancement.class),
+            Objects.requireNonNull(EnumSet.noneOf(TransportEnhancement.class)),
             null, null, null, null, null,
             0, 20, null, name, null
         );
@@ -549,10 +549,10 @@ public record TransportData(
         @Nullable String zoneName
     ) {
         return new TransportData(
-            UUID.randomUUID(), TransportNodeType.ZONE, TransportMode.FIXED,
+            Objects.requireNonNull(UUID.randomUUID()), TransportNodeType.ZONE, TransportMode.FIXED,
             color, null, 8, sourceDim, sourcePos, null, null, null, null,
             destDim, destPos, null,
-            EnumSet.of(TransportEnhancement.HASTE, TransportEnhancement.PROTECTED),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.HASTE, TransportEnhancement.PROTECTED)),
             null, null, null, null, null,
             0, 60, null, zoneName, null
         );
@@ -563,10 +563,10 @@ public record TransportData(
      */
     public static TransportData createRecoveryPoint(@Nonnull UUID playerId, @Nonnull ResourceLocation dim, @Nonnull BlockPos pos) {
         return new TransportData(
-            UUID.randomUUID(), TransportNodeType.RECOVERY_POINT, TransportMode.RETURN,
+            Objects.requireNonNull(UUID.randomUUID()), TransportNodeType.RECOVERY_POINT, TransportMode.RETURN,
             TransportColor.WHITE, null, 0, dim, pos, null, null, null, null,
             null, null, null,
-            EnumSet.of(TransportEnhancement.RECOVERY),
+            Objects.requireNonNull(EnumSet.of(TransportEnhancement.RECOVERY)),
             null, null, null, null, null,
             0, 0, playerId, null, null
         );
@@ -636,21 +636,22 @@ public record TransportData(
         // Visual
         tag.putInt(TAG_COLOR, color.getIndex());
         if (customModel != null) {
-            tag.putString(TAG_CUSTOM_MODEL, customModel.toString());
+            tag.putString(TAG_CUSTOM_MODEL, Objects.requireNonNull(customModel.toString()));
         }
         tag.putInt(TAG_FRAME_COUNT, frameCount);
 
         // Location
         if (dimension != null) {
-            tag.putString(TAG_DIMENSION, dimension.toString());
+            tag.putString(TAG_DIMENSION, Objects.requireNonNull(dimension.toString()));
         }
         if (position != null) {
-            tag.putInt(TAG_POS_X, position.getX());
-            tag.putInt(TAG_POS_Y, position.getY());
-            tag.putInt(TAG_POS_Z, position.getZ());
+            BlockPos pos = Objects.requireNonNull(position);
+            tag.putInt(TAG_POS_X, pos.getX());
+            tag.putInt(TAG_POS_Y, pos.getY());
+            tag.putInt(TAG_POS_Z, pos.getZ());
         }
         if (axis != null) {
-            tag.putString(TAG_AXIS, axis.getName());
+            tag.putString(TAG_AXIS, Objects.requireNonNull(axis.getName()));
         }
 
         // Linking
@@ -668,19 +669,20 @@ public record TransportData(
 
         // Fixed destination
         if (fixedDestDim != null) {
-            tag.putString(TAG_FIXED_DEST_DIM, fixedDestDim.toString());
+            tag.putString(TAG_FIXED_DEST_DIM, Objects.requireNonNull(fixedDestDim.toString()));
         }
         if (fixedDestPos != null) {
-            tag.putInt(TAG_FIXED_DEST_X, fixedDestPos.getX());
-            tag.putInt(TAG_FIXED_DEST_Y, fixedDestPos.getY());
-            tag.putInt(TAG_FIXED_DEST_Z, fixedDestPos.getZ());
+            BlockPos destPos = Objects.requireNonNull(fixedDestPos);
+            tag.putInt(TAG_FIXED_DEST_X, destPos.getX());
+            tag.putInt(TAG_FIXED_DEST_Y, destPos.getY());
+            tag.putInt(TAG_FIXED_DEST_Z, destPos.getZ());
         }
 
         // Waypoint targets
         if (waypointTargets != null && !waypointTargets.isEmpty()) {
             ListTag targetList = new ListTag();
-            for (UUID target : waypointTargets) {
-                targetList.add(StringTag.valueOf(target.toString()));
+            for (UUID target : Objects.requireNonNull(waypointTargets)) {
+                targetList.add(StringTag.valueOf(Objects.requireNonNull(target.toString())));
             }
             tag.put(TAG_WAYPOINT_TARGETS, targetList);
         }
@@ -705,13 +707,14 @@ public record TransportData(
 
         // Snapshot
         if (snapshotBounds != null) {
+            BoundingBox bounds = Objects.requireNonNull(snapshotBounds);
             CompoundTag boundsTag = new CompoundTag();
-            boundsTag.putInt("minX", snapshotBounds.minX());
-            boundsTag.putInt("minY", snapshotBounds.minY());
-            boundsTag.putInt("minZ", snapshotBounds.minZ());
-            boundsTag.putInt("maxX", snapshotBounds.maxX());
-            boundsTag.putInt("maxY", snapshotBounds.maxY());
-            boundsTag.putInt("maxZ", snapshotBounds.maxZ());
+            boundsTag.putInt("minX", bounds.minX());
+            boundsTag.putInt("minY", bounds.minY());
+            boundsTag.putInt("minZ", bounds.minZ());
+            boundsTag.putInt("maxX", bounds.maxX());
+            boundsTag.putInt("maxY", bounds.maxY());
+            boundsTag.putInt("maxZ", bounds.maxZ());
             tag.put(TAG_SNAPSHOT_BOUNDS, boundsTag);
         }
         if (snapshotNBT != null) {
@@ -751,16 +754,16 @@ public record TransportData(
         // Visual
         TransportColor color = TransportColor.byIndex(tag.getInt(TAG_COLOR));
         ResourceLocation customModel = tag.contains(TAG_CUSTOM_MODEL)
-            ? ResourceLocation.parse(tag.getString(TAG_CUSTOM_MODEL)) : null;
+            ? ResourceLocation.parse(Objects.requireNonNull(tag.getString(TAG_CUSTOM_MODEL))) : null;
         int frameCount = tag.getInt(TAG_FRAME_COUNT);
 
         // Location
         ResourceLocation dimension = tag.contains(TAG_DIMENSION)
-            ? ResourceLocation.parse(tag.getString(TAG_DIMENSION)) : null;
+            ? ResourceLocation.parse(Objects.requireNonNull(tag.getString(TAG_DIMENSION))) : null;
         BlockPos position = tag.contains(TAG_POS_X)
             ? new BlockPos(tag.getInt(TAG_POS_X), tag.getInt(TAG_POS_Y), tag.getInt(TAG_POS_Z)) : null;
         Direction.Axis axis = tag.contains(TAG_AXIS)
-            ? Direction.Axis.byName(tag.getString(TAG_AXIS)) : null;
+            ? Direction.Axis.byName(Objects.requireNonNull(tag.getString(TAG_AXIS))) : null;
 
         // Linking
         UUID linkedNodeId = tag.contains(TAG_LINKED_ID) ? tag.getUUID(TAG_LINKED_ID) : null;
@@ -772,7 +775,7 @@ public record TransportData(
 
         // Fixed destination
         ResourceLocation fixedDestDim = tag.contains(TAG_FIXED_DEST_DIM)
-            ? ResourceLocation.parse(tag.getString(TAG_FIXED_DEST_DIM)) : null;
+            ? ResourceLocation.parse(Objects.requireNonNull(tag.getString(TAG_FIXED_DEST_DIM))) : null;
         BlockPos fixedDestPos = tag.contains(TAG_FIXED_DEST_X)
             ? new BlockPos(tag.getInt(TAG_FIXED_DEST_X), tag.getInt(TAG_FIXED_DEST_Y), tag.getInt(TAG_FIXED_DEST_Z)) : null;
 
@@ -824,9 +827,10 @@ public record TransportData(
         String description = tag.contains(TAG_DESCRIPTION) ? tag.getString(TAG_DESCRIPTION) : null;
 
         return new TransportData(
-            id, nodeType, mode, color, customModel, frameCount,
+            Objects.requireNonNull(id), Objects.requireNonNull(nodeType), Objects.requireNonNull(mode),
+            Objects.requireNonNull(color), customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
-            fixedDestDim, fixedDestPos, waypointTargets, enhancements,
+            fixedDestDim, fixedDestPos, waypointTargets, Objects.requireNonNull(enhancements),
             createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
             chargeTime, cooldownTime, creatorId, displayName, description
         );

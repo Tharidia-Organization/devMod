@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -47,6 +48,7 @@ public final class ImprinterBlock extends HorizontalDirectionalBlock implements 
 
     public static final MapCodec<ImprinterBlock> CODEC = simpleCodec(p -> new ImprinterBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
 
     private static final VoxelShape SHAPE = Block.box(1, 0, 1, 15, 14, 15);
 
@@ -61,13 +63,15 @@ public final class ImprinterBlock extends HorizontalDirectionalBlock implements 
             .strength(3.5f)
             .requiresCorrectToolForDrops()
             .noOcclusion()
-            .lightLevel(state -> 7));
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+            .lightLevel(state -> state.getValue(ACTIVE) ? 12 : 3));
+        registerDefaultState(stateDefinition.any()
+            .setValue(FACING, Direction.NORTH)
+            .setValue(ACTIVE, false));
     }
 
     @Override
     protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, ACTIVE);
     }
 
     @Override
@@ -151,6 +155,15 @@ public final class ImprinterBlock extends HorizontalDirectionalBlock implements 
         }
 
         return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Sets the active state of the imprinter block.
+     */
+    public static void setActive(Level level, BlockPos pos, BlockState state, boolean active) {
+        if (state.getValue(ACTIVE) != active) {
+            level.setBlock(pos, state.setValue(ACTIVE, active), Block.UPDATE_ALL);
+        }
     }
 
     @Override

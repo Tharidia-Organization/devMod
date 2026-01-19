@@ -1,1 +1,1 @@
-{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_vent", "top": "devmod:block/nexus/nexus_vent", "side": "devmod:block/nexus/nexus_vent" } }
+{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_vent_gray", "top": "devmod:block/nexus/nexus_vent_gray", "side": "devmod:block/nexus/nexus_vent_gray" } }

@@ -23,10 +23,14 @@ import com.devmod.clone.client.renderer.CentrifugeRenderer;
 import com.devmod.clone.client.renderer.CloneMachineRenderer;
 import com.devmod.clone.client.renderer.ClonePulverizerRenderer;
 import com.devmod.clone.client.renderer.EntityBillboardAtlas;
+import com.devmod.clone.client.renderer.NeurocellItemRenderer;
 import com.devmod.clone.client.renderer.NeurocellLRenderer;
+import com.devmod.clone.client.renderer.NeurocellMannequinRenderer;
 import com.devmod.clone.client.renderer.NeurocellRenderer;
 import com.devmod.clone.client.screen.CentrifugeScreen;
+import com.devmod.clone.client.screen.NeurocellItemScreen;
 import com.devmod.clone.client.screen.NeurocellLScreen;
+import com.devmod.clone.client.screen.NeurocellMannequinScreen;
 import com.devmod.clone.client.screen.NeurocellScreen;
 
 /**
@@ -52,6 +56,14 @@ public final class CloneClientSetup {
         event.registerBlockEntityRenderer(
             Objects.requireNonNull(CloneBlockEntities.NEUROCELL_L.get()),
             NeurocellLRenderer::new
+        );
+        event.registerBlockEntityRenderer(
+            Objects.requireNonNull(CloneBlockEntities.NEUROCELL_MANNEQUIN.get()),
+            NeurocellMannequinRenderer::new
+        );
+        event.registerBlockEntityRenderer(
+            Objects.requireNonNull(CloneBlockEntities.NEUROCELL_ITEM.get()),
+            NeurocellItemRenderer::new
         );
         DevMod.LOGGER.info("[Clone] Registered neurocell renderers");
 
@@ -94,6 +106,8 @@ public final class CloneClientSetup {
         event.register(Objects.requireNonNull(CloneMenus.NEUROCELL.get()), NeurocellScreen::new);
         event.register(Objects.requireNonNull(CloneMenus.NEUROCELL_L.get()), NeurocellLScreen::new);
         event.register(Objects.requireNonNull(CloneMenus.CENTRIFUGE.get()), CentrifugeScreen::new);
+        event.register(Objects.requireNonNull(CloneMenus.NEUROCELL_MANNEQUIN.get()), NeurocellMannequinScreen::new);
+        event.register(Objects.requireNonNull(CloneMenus.NEUROCELL_ITEM.get()), NeurocellItemScreen::new);
         DevMod.LOGGER.info("[Clone] Menu screens registered");
     }
 
@@ -116,7 +130,7 @@ public final class CloneClientSetup {
         if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
             Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
             PoseStack poseStack = event.getPoseStack();
-            BillboardBatcher.getInstance().renderBatch(poseStack, camera);
+            BillboardBatcher.getInstance().renderBatch(Objects.requireNonNull(poseStack), Objects.requireNonNull(camera));
         }
     }
 }

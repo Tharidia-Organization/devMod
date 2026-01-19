@@ -991,6 +991,16 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             return;
         }
 
+        if (!payload.success()) {
+            awaitingSaveAck = false;
+            pendingSaveRequestId = null;
+            saveRequestTimestamp = 0;
+            pendingBuildAfterSave = false;
+            showError(Component.translatable("area.builder.error.save_failed").getString());
+            LOGGER.warn("[AreaBuilder] Save failed for requestId={}", payload.requestId());
+            return;
+        }
+
         areaId = payload.areaId();
         currentRevision = payload.revision();
         hasServerArea = true;

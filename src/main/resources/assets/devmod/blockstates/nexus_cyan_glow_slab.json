@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_cyan_glow_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_cyan_glow"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_cyan_glow_slab_top"
+    }
+  }
+}

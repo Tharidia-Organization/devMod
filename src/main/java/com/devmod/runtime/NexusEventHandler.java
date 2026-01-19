@@ -30,6 +30,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.config.Config;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.runtime.network.NexusUiPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID)
@@ -137,6 +138,20 @@ public class NexusEventHandler {
         if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
+        var server = player.getServer();
+        if (server != null) {
+            NexusHubManager.INSTANCE.initialize(server);
+            Optional<com.devmod.nexus.data.ZoneSlot> slotOpt =
+                NexusHubManager.INSTANCE.getSlotAt(server, Objects.requireNonNull(event.getPos()));
+            if (slotOpt.isPresent()) {
+                if (slotOpt.get().permissions().canPlayerBreak(player)) {
+                    return;
+                }
+                event.setCanceled(true);
+                warnBuildBlocked(player);
+                return;
+            }
+        }
         // Use data-driven zone system for build permission check
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), Objects.requireNonNull(event.getPos()));
@@ -170,6 +185,20 @@ public class NexusEventHandler {
         if (!Config.NEXUS_RESTRICT_BUILDING.get()) {
             return;
         }
+        var server = player.getServer();
+        if (server != null) {
+            NexusHubManager.INSTANCE.initialize(server);
+            Optional<com.devmod.nexus.data.ZoneSlot> slotOpt =
+                NexusHubManager.INSTANCE.getSlotAt(server, Objects.requireNonNull(event.getPos()));
+            if (slotOpt.isPresent()) {
+                if (slotOpt.get().permissions().canPlayerPlace(player)) {
+                    return;
+                }
+                event.setCanceled(true);
+                warnBuildBlocked(player);
+                return;
+            }
+        }
         // Use data-driven zone system for build permission check
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), Objects.requireNonNull(event.getPos()));
@@ -198,6 +227,11 @@ public class NexusEventHandler {
             return;
         }
 
+        var server = player.getServer();
+        if (server != null) {
+            NexusHubManager.INSTANCE.initialize(server);
+        }
+
         BlockPos pos = Objects.requireNonNull(event.getPos(), "pos");
         BlockState state = Objects.requireNonNull(event.getLevel().getBlockState(pos), "state");
         var lectern = Objects.requireNonNull(Blocks.LECTERN, "Blocks.LECTERN");
@@ -207,8 +241,10 @@ public class NexusEventHandler {
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), pos);
         String zoneId = zoneOpt.map(com.devmod.zone.data.ZoneDefinition::zoneId).orElse("");
+        boolean uiZone = "ui".equals(zoneId) || "dm_mod".equals(zoneId);
+        boolean telemetryZone = "telemetry".equals(zoneId) || "dm_mod".equals(zoneId);
 
-        if ("ui".equals(zoneId) && isUiScreenBlock(state)) {
+        if (uiZone && isUiScreenBlock(state)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
@@ -218,7 +254,7 @@ public class NexusEventHandler {
             return;
         }
 
-        if ("telemetry".equals(zoneId) && state.is(lectern)) {
+        if (telemetryZone && state.is(lectern)) {
             if (!consumeUiCooldown(player)) {
                 return;
             }
@@ -252,7 +288,7 @@ public class NexusEventHandler {
         }
         if (Config.NEXUS_ENTRY_MESSAGE.get()) {
             player.displayClientMessage(Objects.requireNonNull(Component.literal(
-                "NEXUS online. /devmod nexus help | tp <zone> | return | bug <msg> | pads: Red=Combat, Orange=Arena, Blue=UI, Green=Telemetry, Yellow=Showcase, Purple=Integration, Cyan=Sandbox, Iron=Mechanics | overview: /devmod nexus tp overview"
+                "NEXUS online. /devmod nexus help | tp <zone> | return | bug <msg> | zones | pads: LightBlue=Tutorial, Purple=Gate, Cyan=Classes, Green=Building, Yellow=Quest, Red=War, Orange=Economia, Magenta=Eventi, Gray=DM Mod"
             ), "entryMessage"), true);
         }
     }
@@ -265,7 +301,7 @@ public class NexusEventHandler {
         }
         BUILD_WARNINGS.put(player.getUUID(), now);
         player.displayClientMessage(Objects.requireNonNull(Component.literal(
-            "Sandbox only: use /devmod nexus tp sandbox to build."
+            "Building is not allowed here."
         ), "buildWarning"), true);
     }
 

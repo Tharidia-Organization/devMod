@@ -15,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.config.Config;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.runtime.NexusDimensionManager;
 import com.devmod.runtime.NexusReturnSavedData;
 import com.devmod.transport.TransportColor;
@@ -162,14 +163,14 @@ public final class NexusTransportBridge {
         // Use data-driven zone registry
         com.devmod.zone.data.ZoneRegistry zoneRegistry = com.devmod.zone.data.ZoneRegistry.get(server);
         if (!zoneRegistry.isInitialized()) {
-            zoneRegistry.initializeWithLegacyZones(Objects.requireNonNull(hubOrigin));
+            NexusHubManager.INSTANCE.initialize(server);
+            return;
         }
         for (com.devmod.zone.data.ZoneDefinition zone : zoneRegistry.getTeleportableZones()) {
-            BlockPos spawnOffset = zone.spawnOffset();
-            if (spawnOffset == null) {
-                spawnOffset = zone.bounds().center();
+            BlockPos spawnPos = zone.getAbsoluteSpawn(Objects.requireNonNull(hubOrigin));
+            if (spawnPos == null) {
+                spawnPos = zone.bounds().floorCenter();
             }
-            BlockPos spawnPos = hubOrigin.offset(Objects.requireNonNull(spawnOffset));
 
             TransportData nodeData = TransportData.createZone(
                 getZoneColorFromDefinition(zone),
@@ -236,6 +237,7 @@ public final class NexusTransportBridge {
             return Objects.requireNonNull(Optional.empty());
         }
 
+        NexusHubManager.INSTANCE.initialize(server);
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolveByNameOrAlias(server, zoneId);
         if (zoneOpt.isEmpty()) {
@@ -244,10 +246,10 @@ public final class NexusTransportBridge {
 
         com.devmod.zone.data.ZoneDefinition zone = zoneOpt.get();
         BlockPos hubOrigin = NexusDimensionManager.getHubOrigin();
-        BlockPos spawnOffset = zone.spawnOffset();
-        BlockPos zonePos = spawnOffset != null
-            ? hubOrigin.offset(Objects.requireNonNull(spawnOffset))
-            : Objects.requireNonNull(zone.bounds().center());
+        BlockPos zonePos = zone.getAbsoluteSpawn(Objects.requireNonNull(hubOrigin));
+        if (zonePos == null) {
+            zonePos = zone.bounds().floorCenter();
+        }
         ResourceLocation nexusDim = getNexusDimension();
 
         TransportData nodeData = TransportData.createRecoveryPoint(
@@ -270,6 +272,7 @@ public final class NexusTransportBridge {
     @Nonnull
     public BlockPos getZoneSpawn(String zoneId, MinecraftServer server) {
         BlockPos hubOrigin = NexusDimensionManager.getHubOrigin();
+        NexusHubManager.INSTANCE.initialize(server);
 
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolveByNameOrAlias(server, zoneId);
@@ -278,9 +281,7 @@ public final class NexusTransportBridge {
         }
 
         com.devmod.zone.data.ZoneDefinition zone = zoneOpt.get();
-        BlockPos spawnOffset = zone.spawnOffset();
-        return Objects.requireNonNull(spawnOffset != null
-            ? hubOrigin.offset(spawnOffset)
-            : zone.bounds().center());
+        BlockPos spawn = zone.getAbsoluteSpawn(Objects.requireNonNull(hubOrigin));
+        return Objects.requireNonNull(spawn != null ? spawn : zone.bounds().floorCenter());
     }
 }

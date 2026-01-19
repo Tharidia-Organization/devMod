@@ -59,10 +59,10 @@ class AreaNetworkHandlerTest {
         MinecraftServer server = mock(MinecraftServer.class);
         ServerLevel level = mock(ServerLevel.class);
         ServerPlayer player = mock(ServerPlayer.class);
-        ResourceKey<Level> levelKey = ResourceKey.create(Registries.DIMENSION, dimensionId);
+        ResourceKey<Level> levelKey = Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), dimensionId));
 
         when(player.getServer()).thenReturn(server);
-        when(server.getLevel(levelKey)).thenReturn(level);
+        when(server.getLevel(Objects.requireNonNull(levelKey))).thenReturn(level);
         when(player.level()).thenReturn(level);
         when(level.dimension()).thenReturn(levelKey);
         when(level.getMinBuildHeight()).thenReturn(0);

@@ -1,0 +1,6 @@
+{
+  "type": "devmod:foundry_fuel",
+  "fluid": { "fluid": "minecraft:lava", "amount": 1000 },
+  "temperature": 1000,
+  "burn_time": 200
+}

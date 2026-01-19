@@ -45,6 +45,8 @@ public final class CloneCreativeTab {
                 output.accept(Objects.requireNonNull(CloneItems.IMPRINTER.get()));
                 output.accept(Objects.requireNonNull(CloneItems.NEUROCELL.get()));
                 output.accept(Objects.requireNonNull(CloneItems.NEUROCELL_L.get()));
+                output.accept(Objects.requireNonNull(CloneItems.NEUROCELL_MANNEQUIN.get()));
+                output.accept(Objects.requireNonNull(CloneItems.NEUROCELL_ITEM.get()));
                 output.accept(Objects.requireNonNull(CloneItems.NEUROLINK.get()));
                 output.accept(Objects.requireNonNull(CloneItems.REFORMER.get()));
 
@@ -56,6 +58,7 @@ public final class CloneCreativeTab {
 
                 // Hologram
                 output.accept(Objects.requireNonNull(HologramItems.HOLOGRAM_PROJECTOR.get()));
+                output.accept(Objects.requireNonNull(HologramItems.HOLOGRAM_PLACER.get()));
 
                 // Clone Machines (Oritech-style)
                 output.accept(Objects.requireNonNull(CloneItems.CLONE_PULVERIZER.get()));

@@ -14,7 +14,9 @@ import com.devmod.clone.block.CloneMachineBlock;
 import com.devmod.clone.block.ClonePulverizerBlock;
 import com.devmod.clone.block.ImprinterBlock;
 import com.devmod.clone.block.NeurocellBlock;
+import com.devmod.clone.block.NeurocellItemBlock;
 import com.devmod.clone.block.NeurocellLBlock;
+import com.devmod.clone.block.NeurocellMannequinBlock;
 import com.devmod.clone.block.NeurolinkBlock;
 import com.devmod.clone.block.ReformerBlock;
 import com.devmod.clone.block.TelepadBlock;
@@ -83,6 +85,24 @@ public final class CloneBlocks {
     public static final DeferredHolder<Block, NeurocellLBlock> NEUROCELL_L = DevMod.BLOCKS.register(
         "neurocell_l",
         NeurocellLBlock::new
+    );
+
+    /**
+     * The neurocell mannequin block.
+     * Displays armor and equipment on a humanoid model.
+     */
+    public static final DeferredHolder<Block, NeurocellMannequinBlock> NEUROCELL_MANNEQUIN = DevMod.BLOCKS.register(
+        "neurocell_mannequin",
+        NeurocellMannequinBlock::new
+    );
+
+    /**
+     * The neurocell item display block.
+     * Displays a single item floating and rotating.
+     */
+    public static final DeferredHolder<Block, NeurocellItemBlock> NEUROCELL_ITEM = DevMod.BLOCKS.register(
+        "neurocell_item",
+        NeurocellItemBlock::new
     );
 
     /**

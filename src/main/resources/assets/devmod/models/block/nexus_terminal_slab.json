@@ -1,1 +1,1 @@
-{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_terminal", "top": "devmod:block/nexus/nexus_terminal", "side": "devmod:block/nexus/nexus_terminal" } }
+{ "parent": "minecraft:block/slab", "textures": { "bottom": "devmod:block/nexus/nexus_terminal_cyan", "top": "devmod:block/nexus/nexus_terminal_cyan", "side": "devmod:block/nexus/nexus_terminal_cyan" } }

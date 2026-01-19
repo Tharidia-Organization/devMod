@@ -183,9 +183,23 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
                 float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
                 poseStack.translate(entityCenterX, 0.5625 + bobOffset, entityCenterZ);
 
-                // Slow gentle rotation for suspended-in-void effect
-                float slowRotation = animTime * 8.0f;
-                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + slowRotation)));
+                // Calculate rotation based on mode
+                NeurocellLBlockEntity.RotationMode rotationMode = blockEntity.getRotationMode();
+                float rotation;
+                switch (rotationMode) {
+                    case AUTO:
+                        // Slow gentle rotation for suspended-in-void effect
+                        rotation = animTime * 8.0f;
+                        break;
+                    case FIXED:
+                    case MANUAL:
+                        // Fixed or manual angle - use stored rotation angle
+                        rotation = blockEntity.getRotationAngle();
+                        break;
+                    default:
+                        rotation = 0.0f;
+                }
+                poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + rotation)));
 
                 // Scale to fit in glass chamber (22 pixels wide = 1.375 blocks)
                 // Quadrupeds (cow, pig, horse) have body length >> getBbWidth()
@@ -244,6 +258,7 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
     /**
      * Render energy effects using pre-computed VBO geometry.
      * Uses a larger scale (1.3x) compared to regular Neurocell.
+     * Uses RED color variant for visual distinction.
      */
     private void renderEnergyEffectsVBO(PoseStack poseStack, float animTime,
                                          float centerX, float centerZ) {
@@ -255,7 +270,9 @@ public class NeurocellLRenderer implements BlockEntityRenderer<NeurocellLBlockEn
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         // Render effects using VBO singleton with larger scale for 2x2x2 chamber
-        NeurocellEffectsVBO.getInstance().renderEffects(poseStack, animTime, 1.3f);
+        // Uses RED color for NeurocellL distinction
+        NeurocellEffectsVBO.getInstance().renderEffects(poseStack, animTime, 1.3f,
+            NeurocellEffectsMesh.EffectColor.RED);
 
         poseStack.popPose();
     }

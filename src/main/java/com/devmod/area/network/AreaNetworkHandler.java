@@ -809,6 +809,15 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         });
     }
 
+    private static void sendSaveFailure(@Nonnull ServerPlayer player, @Nullable UUID requestId,
+                                        @Nullable UUID areaId, boolean isNewArea) {
+        if (requestId == null) {
+            return;
+        }
+        UUID safeAreaId = areaId != null ? areaId : requestId;
+        sendPacket(player, new SaveAreaResultPayload(requestId, safeAreaId, -1, isNewArea, false));
+    }
+
     // ========================================================================
     // Server Handlers (called on server thread)
     // ========================================================================
@@ -818,31 +827,35 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
             ServerPlayer player = (ServerPlayer) ctx.player();
             if (player == null) return;
 
+            AreaDefinition input = payload.definition();
+            UUID requestId = input != null ? input.id() : null;
+
             // Validate permissions (OP level 2 required for creating/editing areas)
             if (!player.hasPermissions(2)) {
                 player.displayClientMessage(
                     Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
                 DevMod.LOGGER.warn("Player {} tried to save area without permissions",
                     player.getName().getString());
+                sendSaveFailure(player, requestId, payload.existingAreaId(), payload.isNewArea());
                 return;
             }
 
             AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
 
             // H-11 fix: Better null validation with user-friendly error message
-            AreaDefinition input = payload.definition();
             if (input == null) {
                 player.displayClientMessage(
                     Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
                 DevMod.LOGGER.warn("Player {} sent save area request with null definition",
                     player.getName().getString());
+                sendSaveFailure(player, requestId, payload.existingAreaId(), payload.isNewArea());
                 return;
             }
-            UUID requestId = input.id();
 
             if (payload.isNewArea()) {
                 AreaDefinition definition = sanitizeDefinition(input, null, player, true);
                 if (definition == null) {
+                    sendSaveFailure(player, requestId, null, true);
                     return;
                 }
 
@@ -855,6 +868,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                             Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_zone_not_found", linkedZoneId)), true);
                         DevMod.LOGGER.warn("Player {} tried to link area {} to non-existent zone {}",
                             player.getName().getString(), definition.name(), linkedZoneId);
+                        sendSaveFailure(player, requestId, null, true);
                         return;
                     }
                 }
@@ -870,6 +884,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_name_exists", areaName)), true);
                     DevMod.LOGGER.warn("Player {} tried to create area with duplicate name: {}",
                         player.getName().getString(), areaName);
+                    sendSaveFailure(player, requestId, null, true);
                     return;
                 }
 
@@ -887,6 +902,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                         player,
                         "FAILED: overlap"
                     );
+                    sendSaveFailure(player, requestId, null, true);
                     return;
                 }
 
@@ -922,13 +938,14 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                     }
                 }
 
-                sendPacket(player, new SaveAreaResultPayload(requestId, areaId, definition.revision(), true));
+                sendPacket(player, new SaveAreaResultPayload(requestId, areaId, definition.revision(), true, true));
             } else {
                 // Updating existing area
                 UUID existingId = payload.existingAreaId();
                 if (existingId == null) {
                     player.displayClientMessage(
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_area_id")), true);
+                    sendSaveFailure(player, requestId, null, false);
                     return;
                 }
 
@@ -939,6 +956,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
                     DevMod.LOGGER.warn("Player {} tried to update non-existent area {}",
                         player.getName().getString(), existingId);
+                    sendSaveFailure(player, requestId, existingId, false);
                     return;
                 }
 
@@ -946,6 +964,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                 if (!Objects.requireNonNull(existingDef.id()).equals(requestId)) {
                     player.displayClientMessage(
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_area_id")), true);
+                    sendSaveFailure(player, requestId, existingId, false);
                     return;
                 }
 
@@ -958,11 +977,13 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_ownership")), true);
                     DevMod.LOGGER.warn("Player {} tried to update area {} without ownership",
                         player.getName().getString(), existingId);
+                    sendSaveFailure(player, requestId, existingId, false);
                     return;
                 }
 
                 AreaDefinition definition = sanitizeDefinition(input, existingDef, player, false);
                 if (definition == null) {
+                    sendSaveFailure(player, requestId, existingId, false);
                     return;
                 }
 
@@ -975,6 +996,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                             Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_zone_not_found", linkedZoneId)), true);
                         DevMod.LOGGER.warn("Player {} tried to link area {} to non-existent zone {}",
                             player.getName().getString(), definition.name(), linkedZoneId);
+                        sendSaveFailure(player, requestId, existingId, false);
                         return;
                     }
                 }
@@ -993,6 +1015,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                         player,
                         "FAILED: overlap"
                     );
+                    sendSaveFailure(player, requestId, existingId, false);
                     return;
                 }
 
@@ -1026,11 +1049,12 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                                 existingId, e.getMessage());
                         }
                     }
-                    sendPacket(player, new SaveAreaResultPayload(requestId, existingId, definition.revision(), false));
+                    sendPacket(player, new SaveAreaResultPayload(requestId, existingId, definition.revision(), false, true));
                 } else {
                     player.displayClientMessage(
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_revision_mismatch")), true);
                     DevMod.LOGGER.warn("Failed to update area {} - revision mismatch", existingId);
+                    sendSaveFailure(player, requestId, existingId, false);
                 }
             }
         });

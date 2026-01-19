@@ -1,0 +1,7 @@
+{
+  "type": "devmod:foundry_casting_basin",
+  "fluid": { "fluid": "devmod:molten_iron", "amount": 9000 },
+  "result": { "item": "minecraft:iron_block" },
+  "cooling_time": 200,
+  "consume_cast": false
+}

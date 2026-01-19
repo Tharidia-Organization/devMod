@@ -56,6 +56,20 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
     private static final String TAG_CLONING_TIME = "CloningTime";
     private static final String TAG_HAS_RAGDOLL = "HasRagdoll";
     private static final String TAG_BIOSCANNER = "Bioscanner";
+    private static final String TAG_ROTATION_ANGLE = "RotationAngle";
+    private static final String TAG_ROTATION_MODE = "RotationMode";
+
+    /**
+     * Rotation mode for the entity display.
+     */
+    public enum RotationMode {
+        /** Automatic slow rotation (default) */
+        AUTO,
+        /** Fixed angle, no rotation */
+        FIXED,
+        /** Manual rotation controlled by player */
+        MANUAL
+    }
 
     @Nonnull
     private ItemStack storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
@@ -67,6 +81,13 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
     private UUID playerUUID = null;
     private int cloningTime = 0;
     private boolean hasRagdoll = false;
+
+    /** Manual rotation angle (degrees) */
+    private float rotationAngle = 0f;
+
+    /** Current rotation mode */
+    @Nonnull
+    private RotationMode rotationMode = RotationMode.AUTO;
 
     public NeurocellLBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.NEUROCELL_L.get(), pos, state);
@@ -173,7 +194,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
         boolean linked = false;
         for (BlockPos partPos : selfParts) {
             for (Direction dir : Direction.values()) {
-                BlockPos neighborPos = partPos.relative(dir);
+                BlockPos neighborPos = Objects.requireNonNull(partPos.relative(Objects.requireNonNull(dir)));
                 BlockState neighborState = lvl.getBlockState(neighborPos);
                 if (neighborState.getBlock() != CloneBlocks.NEUROLINK.get()) {
                     continue;
@@ -202,7 +223,7 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
 
     private boolean hasExternalConnection(Level lvl, BlockPos cablePos, Set<BlockPos> selfParts) {
         for (Direction dir : Direction.values()) {
-            BlockPos neighborPos = cablePos.relative(dir);
+            BlockPos neighborPos = Objects.requireNonNull(cablePos.relative(Objects.requireNonNull(dir)));
             if (selfParts.contains(neighborPos)) {
                 continue;
             }
@@ -280,6 +301,50 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
 
     public boolean hasRagdoll() {
         return hasRagdoll;
+    }
+
+    // === Rotation Mode Support ===
+
+    /**
+     * Get rotation angle for display.
+     */
+    public float getRotationAngle() {
+        return rotationAngle;
+    }
+
+    /**
+     * Set manual rotation angle.
+     */
+    public void setRotationAngle(float angle) {
+        this.rotationAngle = angle;
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Get current rotation mode.
+     */
+    @Nonnull
+    public RotationMode getRotationMode() {
+        return rotationMode;
+    }
+
+    /**
+     * Set rotation mode.
+     */
+    public void setRotationMode(@Nonnull RotationMode mode) {
+        this.rotationMode = Objects.requireNonNull(mode);
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Cycle to next rotation mode.
+     */
+    public void cycleRotationMode() {
+        RotationMode[] modes = RotationMode.values();
+        int next = (rotationMode.ordinal() + 1) % modes.length;
+        setRotationMode(Objects.requireNonNull(modes[next]));
     }
 
     public boolean isCloning() {
@@ -382,6 +447,8 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
         if (!storedBioscanner.isEmpty()) {
             tag.put(TAG_BIOSCANNER, Objects.requireNonNull(storedBioscanner.save(registries)));
         }
+        tag.putFloat(TAG_ROTATION_ANGLE, rotationAngle);
+        tag.putString(TAG_ROTATION_MODE, Objects.requireNonNull(rotationMode.name()));
     }
 
     @Override
@@ -397,6 +464,18 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
         } else {
             storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
         }
+
+        // Load rotation data
+        rotationAngle = tag.getFloat(TAG_ROTATION_ANGLE);
+        if (tag.contains(TAG_ROTATION_MODE)) {
+            try {
+                rotationMode = RotationMode.valueOf(tag.getString(TAG_ROTATION_MODE));
+            } catch (IllegalArgumentException e) {
+                rotationMode = RotationMode.AUTO;
+            }
+        } else {
+            rotationMode = RotationMode.AUTO;
+        }
     }
 
     @Override
@@ -410,6 +489,8 @@ public class NeurocellLBlockEntity extends BlockEntity implements MenuProvider, 
         }
         tag.putInt(TAG_CLONING_TIME, cloningTime);
         tag.putBoolean(TAG_HAS_RAGDOLL, hasRagdoll);
+        tag.putFloat(TAG_ROTATION_ANGLE, rotationAngle);
+        tag.putString(TAG_ROTATION_MODE, Objects.requireNonNull(rotationMode.name()));
         return tag;
     }
 

@@ -80,7 +80,7 @@ public final class ZonePresets {
                 layout.minX, layout.maxX,
                 layout.originY - 4, layout.originY + WALL_HEIGHT + 16,
                 layout.minZ, layout.maxZ))
-            .spawnOffset(new BlockPos(0, 0, 34))
+            .spawnOffset(new BlockPos(0, 0, 0))
             .color(COLOR_HUB)
             .cueSound(Objects.requireNonNull(SoundEvents.NOTE_BLOCK_CHIME.value()))
             .hintMessage("Hub: workflow nodes, tools, /devmod nexus hub.")

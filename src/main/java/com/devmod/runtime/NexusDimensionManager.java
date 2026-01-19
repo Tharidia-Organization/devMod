@@ -36,15 +36,22 @@ import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.storage.DerivedLevelData;
 
+import net.neoforged.neoforge.network.PacketDistributor;
+
 import com.devmod.DevMod;
 import com.devmod.arena.zone.ArenaZone;
 import com.devmod.config.Config;
 import com.devmod.mixin.MinecraftServerAccessor;
+import com.devmod.nexus.builder.NexusEntitySpawner;
+import com.devmod.nexus.builder.NexusFoundationBuilder;
+import com.devmod.nexus.builder.NexusOverlayManager;
+import com.devmod.nexus.data.ZoneSlotPresets;
+import com.devmod.nexus.network.NexusBuildProgressPayload;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.runtime.biome.ZoneBiomeSource;
 import com.devmod.runtime.generator.ArenaChunkGenerator;
 import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
 import com.devmod.zone.data.ZoneDefinition;
-import com.devmod.zone.data.ZoneRegistry;
 import com.devmod.zone.runtime.ZoneResolver;
 
 public class NexusDimensionManager {
@@ -56,8 +63,7 @@ public class NexusDimensionManager {
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus"), "ResourceLocation")
     );
 
-    private static final BlockPos HUB_ORIGIN = new BlockPos(0, 64, 0);
-    private static final int HUB_HALF_SIZE = 96;
+    private static final BlockPos HUB_ORIGIN_BASE = new BlockPos(0, 0, 0);
 
     // Thread-safe: accessed from server thread and potentially config reload callbacks
     private final Set<ChunkPos> forcedChunks = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -67,12 +73,18 @@ public class NexusDimensionManager {
     private volatile boolean forcedEnabled = false;
     private volatile NexusBuildTask buildTask;
     private volatile int pendingBuildVersion = NexusHubSavedData.CURRENT_VERSION;
+    private volatile int lastSentBuildStep = -1;
     private long tickCounter;
 
     private NexusDimensionManager() {}
 
     public static BlockPos getHubOrigin() {
-        return HUB_ORIGIN;
+        return new BlockPos(HUB_ORIGIN_BASE.getX(), ZoneSlotPresets.getFloorY(), HUB_ORIGIN_BASE.getZ());
+    }
+
+    private static int getHubHalfSize() {
+        int hubSize = ZoneSlotPresets.getHubSize();
+        return Math.max(1, hubSize / 2);
     }
 
     public void ensureNexusDimension(MinecraftServer server) {
@@ -113,9 +125,20 @@ public class NexusDimensionManager {
 
         tickCounter++;
 
-        if (buildTask != null && buildTask.tick()) {
-            finalizeBuild(level, NexusHubSavedData.get(server), pendingBuildVersion);
-            buildTask = null;
+        if (buildTask != null) {
+            NexusBuildTask task = buildTask;
+            boolean done = task.tick();
+
+            // Send progress if step changed or build completed
+            if (done) {
+                sendBuildProgress(level, nn(task, "buildTask"), true);
+                finalizeBuild(level, NexusHubSavedData.get(server), pendingBuildVersion);
+                buildTask = null;
+                lastSentBuildStep = -1;
+            } else if (task.getCurrentStep() != lastSentBuildStep) {
+                sendBuildProgress(level, nn(task, "buildTask"), false);
+                lastSentBuildStep = task.getCurrentStep();
+            }
         }
 
         boolean hasPlayers = !level.players().isEmpty();
@@ -147,13 +170,13 @@ public class NexusDimensionManager {
         }
 
         // Tick portal particles
-        NexusPortalManager.INSTANCE.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPortalManager.INSTANCE.tick(level, nn(getHubOrigin(), "hubOrigin"));
 
         // Tick hologram updates
         com.devmod.hologram.runtime.HologramManager.INSTANCE.tick(level);
 
         // Tick performance optimizations
-        NexusPerformanceManager.INSTANCE.tick(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPerformanceManager.INSTANCE.tick(level, nn(getHubOrigin(), "hubOrigin"));
     }
 
     @Nullable
@@ -192,8 +215,9 @@ public class NexusDimensionManager {
         flatSettings.updateLayers();
 
         ZoneBiomeSource biomeSource = ZoneBiomeSource.singleBiome(biomeHolder);
+        int hubHalf = getHubHalfSize();
         ArenaChunkGenerator.ArenaBounds bounds = ArenaChunkGenerator.ArenaBounds.rectangular(
-            -HUB_HALF_SIZE, -HUB_HALF_SIZE, HUB_HALF_SIZE - 1, HUB_HALF_SIZE - 1
+            -hubHalf, -hubHalf, hubHalf - 1, hubHalf - 1
         );
         ChunkGenerator generator = new ArenaFlatChunkGenerator(
             biomeSource,
@@ -291,9 +315,12 @@ public class NexusDimensionManager {
     }
 
     private void applyWorldBorder(ServerLevel level) {
+        BlockPos hubOrigin = getHubOrigin();
+        int hubSize = ZoneSlotPresets.getHubSize();
+        int borderSize = Math.max(Config.NEXUS_WORLD_BORDER_SIZE.get(), hubSize);
         WorldBorder border = level.getWorldBorder();
-        border.setCenter(HUB_ORIGIN.getX() + 0.5, HUB_ORIGIN.getZ() + 0.5);
-        border.setSize(Config.NEXUS_WORLD_BORDER_SIZE.get());
+        border.setCenter(hubOrigin.getX() + 0.5, hubOrigin.getZ() + 0.5);
+        border.setSize(borderSize);
         border.setWarningBlocks(2);
         border.setWarningTime(5);
         border.setDamageSafeZone(1.0);
@@ -310,7 +337,7 @@ public class NexusDimensionManager {
             return;
         }
 
-        ChunkPos center = new ChunkPos(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        ChunkPos center = new ChunkPos(nn(getHubOrigin(), "hubOrigin"));
         boolean needsRefresh = !forcedEnabled || forcedRadius != radius || forcedTickDistance != tickDistance
             || (forcedCenter != null && !forcedCenter.equals(center));
 
@@ -404,7 +431,8 @@ public class NexusDimensionManager {
         LOGGER.debug("[Nexus] Initializing hub entities for existing hub");
 
         // Initialize portal pedestals (entity markers for teleportation)
-        NexusPortalManager.INSTANCE.initialize(nn(level, "level"), nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        BlockPos hubOrigin = getHubOrigin();
+        NexusPortalManager.INSTANCE.initialize(nn(level, "level"), nn(hubOrigin, "hubOrigin"));
 
         // Migrate legacy holograms to new Hologram Builder system
         com.devmod.hologram.runtime.HologramMigration.migrateFromLegacy(level.getServer());
@@ -413,10 +441,13 @@ public class NexusDimensionManager {
         com.devmod.hologram.runtime.HologramManager.INSTANCE.initializeLevel(level);
 
         // Initialize performance manager
-        NexusPerformanceManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPerformanceManager.INSTANCE.initialize(level, nn(hubOrigin, "hubOrigin"));
 
         // Spawn avatar and other entities
-        NexusHubBuilder.postBuildEntities(level, HUB_ORIGIN);
+        NexusEntitySpawner.INSTANCE.postBuildEntities(nn(level, "level"), nn(hubOrigin, "hubOrigin"));
+
+        // Ensure slots/zones are initialized for existing hubs
+        NexusHubManager.INSTANCE.initialize(Objects.requireNonNull(level.getServer()));
     }
 
     private void startBuild(ServerLevel level, NexusHubSavedData data) {
@@ -424,45 +455,50 @@ public class NexusDimensionManager {
 
         if (Config.NEXUS_BUILD_MODE.get() == Config.NexusBuildMode.STAGGERED) {
             LOGGER.info("[Nexus] Scheduling staged hub build (version={})", pendingBuildVersion);
-            buildTask = new NexusBuildTask(
-                NexusHubBuilder.buildSteps(level, HUB_ORIGIN),
-                Config.NEXUS_BUILD_STEP_INTERVAL.get()
-            );
+            List<NexusBuildStep> steps = NexusFoundationBuilder.createBuildSteps(nn(level, "level"), nn(getHubOrigin(), "hubOrigin"));
+            buildTask = new NexusBuildTask(steps, Config.NEXUS_BUILD_STEP_INTERVAL.get());
+            lastSentBuildStep = 0;
+            // Send initial progress (0%) to all players
+            sendBuildProgress(nn(level, "level"), nn(buildTask, "buildTask"), false);
             return;
         }
 
         LOGGER.info("[Nexus] Building hub layout (version={})", pendingBuildVersion);
         long start = System.nanoTime();
-        NexusHubBuilder.build(level, HUB_ORIGIN);
+        new NexusFoundationBuilder().build(nn(level, "level"), nn(getHubOrigin(), "hubOrigin"));
         long durationMs = (System.nanoTime() - start) / 1_000_000L;
         LOGGER.info("[Nexus] Hub build completed in {} ms", durationMs);
         finalizeBuild(level, data, pendingBuildVersion);
     }
 
     private void finalizeBuild(ServerLevel level, NexusHubSavedData data, int version) {
+        BlockPos hubOrigin = getHubOrigin();
         BlockPos defaultSpawn = resolveHubSpawn(level.getServer());
         level.setDefaultSpawnPos(nn(defaultSpawn, "defaultSpawn"), 180.0f);
         data.markBuilt(version);
         level.save(null, true, false);
         applyRuntimeConfig(level);
-        NexusHubBuilder.applyOptionalOverlay(level, HUB_ORIGIN);
-        NexusHubBuilder.postBuildEntities(level, HUB_ORIGIN);
+        NexusOverlayManager.INSTANCE.applyOptionalOverlay(nn(level, "level"), nn(hubOrigin, "hubOrigin"));
+        NexusEntitySpawner.INSTANCE.postBuildEntities(nn(level, "level"), nn(hubOrigin, "hubOrigin"));
 
         // Initialize portal pedestals
-        NexusPortalManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPortalManager.INSTANCE.initialize(level, nn(hubOrigin, "hubOrigin"));
 
-        // Initialize Hologram Builder system
+        // Initialize Hologram Builder system (no auto-spawn - user places from chest)
         com.devmod.hologram.runtime.HologramManager.INSTANCE.initializeLevel(level);
 
-        // Create preset holograms for new hub
-        com.devmod.hologram.runtime.HologramMigration.createPresetHolograms(
-            level.getServer(), nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        // Place starter chest with hologram items near spawn
+        placeStarterChest(level, hubOrigin);
 
         // Initialize performance manager
-        NexusPerformanceManager.INSTANCE.initialize(level, nn(HUB_ORIGIN, "HUB_ORIGIN"));
+        NexusPerformanceManager.INSTANCE.initialize(level, nn(hubOrigin, "hubOrigin"));
 
         // Initialize area registry with main hub
         initializeAreaRegistry(level);
+
+        // Initialize Nexus 2.0 hub manager and slot system
+        NexusHubManager.INSTANCE.initialize(level.getServer());
+        NexusHubManager.INSTANCE.applySlotTemplates(level);
     }
 
     /**
@@ -472,6 +508,7 @@ public class NexusDimensionManager {
     private void initializeAreaRegistry(ServerLevel level) {
         try {
             var registry = com.devmod.area.data.AreaRegistry.get(level.getServer());
+            BlockPos hubOrigin = getHubOrigin();
 
             // Check if main hub already exists
             if (registry.hasMainHub()) {
@@ -481,7 +518,7 @@ public class NexusDimensionManager {
 
             // Place Editor Central block at a visible location near spawn
             // Position: center of hub, on the main platform
-            BlockPos editorCentralPos = Objects.requireNonNull(HUB_ORIGIN.offset(0, 1, 5));
+            BlockPos editorCentralPos = Objects.requireNonNull(hubOrigin.offset(0, 1, 5));
 
             // Check if position is suitable (air or replaceable)
             var currentState = level.getBlockState(editorCentralPos);
@@ -492,7 +529,9 @@ public class NexusDimensionManager {
             }
 
             // Create main hub AreaDefinition
-            var dimensions = new com.devmod.area.data.AreaDimensions(80, 80, 32, HUB_ORIGIN.getY());
+            int centerSize = ZoneSlotPresets.getCenterSize();
+            int zoneHeight = ZoneSlotPresets.getZoneHeight();
+            var dimensions = new com.devmod.area.data.AreaDimensions(centerSize, centerSize, zoneHeight, hubOrigin.getY());
             var palette = com.devmod.area.builder.AreaPalettePresets.fromPreset("default");
             var options = com.devmod.area.data.AreaOptions.DEFAULT;
 
@@ -501,7 +540,7 @@ public class NexusDimensionManager {
                 .generationType(com.devmod.area.data.AreaGenerationType.CUSTOM)
                 .shape(com.devmod.area.data.AreaShape.RECTANGULAR)
                 .dimensions(dimensions)
-                .center(Objects.requireNonNull(HUB_ORIGIN))
+                .center(Objects.requireNonNull(hubOrigin))
                 .dimension(Objects.requireNonNull(NEXUS_DIMENSION.location()))
                 .palette(palette)
                 .options(Objects.requireNonNull(options))
@@ -585,10 +624,10 @@ public class NexusDimensionManager {
             return;
         }
 
-        ensureLegacyZonesInitialized(server);
+        ensureZonesInitialized(server);
         Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.selectSpawnZone(server, player);
         BlockPos spawn = zoneOpt.map(this::resolveZoneSpawn)
-            .orElse(nn(HUB_ORIGIN, "HUB_ORIGIN"));
+            .orElse(nn(getHubOrigin(), "getHubOrigin()"));
         teleportPlayerTo(level, player, spawn);
     }
 
@@ -613,7 +652,7 @@ public class NexusDimensionManager {
             return false;
         }
 
-        ensureLegacyZonesInitialized(server);
+        ensureZonesInitialized(server);
         java.util.Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolveByNameOrAlias(server, zoneId);
         if (zoneOpt.isEmpty()) {
@@ -621,7 +660,7 @@ public class NexusDimensionManager {
         }
 
         com.devmod.zone.data.ZoneDefinition zone = zoneOpt.get();
-        BlockPos spawn = resolveZoneSpawn(zone);
+        BlockPos spawn = resolveZoneSpawn(Objects.requireNonNull(zone));
 
         if (!player.level().dimension().equals(NEXUS_DIMENSION)) {
             NexusReturnSavedData.get(server).recordReturn(player);
@@ -683,28 +722,25 @@ public class NexusDimensionManager {
         );
     }
 
-    private void ensureLegacyZonesInitialized(@Nonnull MinecraftServer server) {
-        ZoneRegistry registry = ZoneRegistry.get(server);
-        if (!registry.isInitialized()) {
-            registry.initializeWithLegacyZones(nn(HUB_ORIGIN, "HUB_ORIGIN"));
-        }
+    private void ensureZonesInitialized(@Nonnull MinecraftServer server) {
+        NexusHubManager.INSTANCE.initialize(server);
     }
 
     @Nonnull
     private BlockPos resolveZoneSpawn(@Nonnull ZoneDefinition zone) {
-        BlockPos spawn = zone.getAbsoluteSpawn(nn(HUB_ORIGIN, "HUB_ORIGIN"));
-        return spawn != null ? spawn : zone.bounds().center();
+        BlockPos spawn = zone.getAbsoluteSpawn(nn(getHubOrigin(), "getHubOrigin()"));
+        return spawn != null ? spawn : zone.bounds().floorCenter();
     }
 
     @Nonnull
     private BlockPos resolveHubSpawn(@Nullable MinecraftServer server) {
         if (server == null) {
-            return nn(HUB_ORIGIN, "HUB_ORIGIN");
+            return nn(getHubOrigin(), "getHubOrigin()");
         }
-        ensureLegacyZonesInitialized(server);
-        Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveById(server, "hub");
+        ensureZonesInitialized(server);
+        Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveByNameOrAlias(server, "spawn");
         return Objects.requireNonNull(zoneOpt.map(this::resolveZoneSpawn)
-            .orElse(nn(HUB_ORIGIN, "HUB_ORIGIN")));
+            .orElse(nn(getHubOrigin(), "getHubOrigin()")));
     }
 
     public void shutdown(MinecraftServer server) {
@@ -726,11 +762,66 @@ public class NexusDimensionManager {
     }
 
     private void spawnAmbientParticles(ServerLevel level) {
-        double x = HUB_ORIGIN.getX() + 0.5;
-        double y = HUB_ORIGIN.getY() + 4.2;
-        double z = HUB_ORIGIN.getZ() + 0.5;
+        double x = getHubOrigin().getX() + 0.5;
+        double y = getHubOrigin().getY() + 4.2;
+        double z = getHubOrigin().getZ() + 0.5;
         level.sendParticles(nn(ParticleTypes.ELECTRIC_SPARK, "ParticleTypes.ELECTRIC_SPARK"), x, y, z, 6, 0.8, 0.6, 0.8, 0.0);
         level.sendParticles(nn(ParticleTypes.END_ROD, "ParticleTypes.END_ROD"), x, y + 2.0, z, 4, 0.6, 0.8, 0.6, 0.0);
+    }
+
+    /**
+     * Places a starter chest near the hub spawn with hologram items.
+     * The user can manually place holograms from these items.
+     */
+    private void placeStarterChest(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
+        // Place chest 3 blocks from center
+        BlockPos chestPos = hubOrigin.offset(3, 1, 0);
+
+        level.setBlock(chestPos, net.minecraft.world.level.block.Blocks.CHEST.defaultBlockState(), 3);
+
+        // Fill chest with hologram items
+        if (level.getBlockEntity(chestPos) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity chest) {
+            // Add hologram placer tool
+            chest.setItem(0, new net.minecraft.world.item.ItemStack(
+                com.devmod.hologram.HologramItems.HOLOGRAM_PLACER.get(), 1));
+
+            // Add hologram projector blocks
+            chest.setItem(1, new net.minecraft.world.item.ItemStack(
+                com.devmod.hologram.HologramItems.HOLOGRAM_PROJECTOR.get(), 4));
+
+            LOGGER.info("[Nexus] Placed starter chest with hologram items at {}", chestPos);
+        }
+    }
+
+    /**
+     * Sends build progress to all connected players.
+     * We send to all players (not just those in Nexus) because players
+     * may be loading into the dimension and need to see progress.
+     *
+     * @param level the Nexus level
+     * @param task the build task
+     * @param complete whether the build is complete
+     */
+    private void sendBuildProgress(@Nonnull ServerLevel level, @Nonnull NexusBuildTask task, boolean complete) {
+        NexusBuildProgressPayload payload;
+        if (complete) {
+            payload = NexusBuildProgressPayload.completed(task.getTotalSteps());
+        } else {
+            payload = NexusBuildProgressPayload.progress(
+                task.getCurrentStep(),
+                task.getTotalSteps(),
+                task.getCurrentStepName()
+            );
+        }
+
+        // Send to ALL players on the server, not just those in Nexus
+        // This ensures players loading into Nexus see the progress
+        MinecraftServer server = level.getServer();
+        if (server != null) {
+            for (var player : server.getPlayerList().getPlayers()) {
+                PacketDistributor.sendToPlayer(nn(player, "player"), nn(payload, "payload"));
+            }
+        }
     }
 
     private static class NoOpChunkProgressListener implements ChunkProgressListener {

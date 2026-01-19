@@ -288,7 +288,7 @@ public final class AreaSnapshotManager {
         }
 
         // SEC-08 fix: Block restore if a build is queued for this area
-        if (AreaBuildTaskManager.INSTANCE.isAreaQueued(areaId)) {
+        if (AreaBuildTaskManager.INSTANCE.isAreaQueued(Objects.requireNonNull(areaId))) {
             LOGGER.warn("[Snapshot] Cannot restore snapshot {} - build queued for area {}",
                 snapshotId, areaId);
             if (player != null) {

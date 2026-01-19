@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +51,7 @@ public final class ZoneClientCache {
      */
     @Nonnull
     public Collection<ZoneSyncPayload.ZoneSummary> getAllZones() {
-        return Collections.unmodifiableCollection(zones.values());
+        return Objects.requireNonNull(Collections.unmodifiableCollection(zones.values()));
     }
 
     /**
@@ -58,7 +59,7 @@ public final class ZoneClientCache {
      */
     @Nonnull
     public Optional<ZoneSyncPayload.ZoneSummary> getZone(@Nonnull UUID id) {
-        return Optional.ofNullable(zones.get(id));
+        return Objects.requireNonNull(Optional.ofNullable(zones.get(id)));
     }
 
     /**
@@ -66,9 +67,9 @@ public final class ZoneClientCache {
      */
     @Nonnull
     public Optional<ZoneSyncPayload.ZoneSummary> getZone(@Nonnull String zoneId) {
-        return zones.values().stream()
+        return Objects.requireNonNull(zones.values().stream()
             .filter(z -> z.zoneId().equals(zoneId))
-            .findFirst();
+            .findFirst());
     }
 
     /**
@@ -76,9 +77,9 @@ public final class ZoneClientCache {
      */
     @Nonnull
     public Optional<ZoneSyncPayload.ZoneSummary> getZoneAt(@Nonnull BlockPos pos) {
-        return zones.values().stream()
+        return Objects.requireNonNull(zones.values().stream()
             .filter(z -> z.bounds().contains(pos))
-            .max((a, b) -> Integer.compare(a.priority(), b.priority()));
+            .max((a, b) -> Integer.compare(a.priority(), b.priority())));
     }
 
     /**

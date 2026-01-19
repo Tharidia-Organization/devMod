@@ -76,6 +76,12 @@ public class CentrifugingRecipe implements Recipe<SingleRecipeInput> {
         return CloneRecipeTypes.CENTRIFUGING.get();
     }
 
+    @Override
+    public boolean isSpecial() {
+        // Machine-only recipe; keep it out of the recipe book.
+        return true;
+    }
+
     // Getters for the block entity
     public Ingredient getIngredient() {
         return ingredient;

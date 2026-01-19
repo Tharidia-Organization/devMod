@@ -19,13 +19,16 @@ import com.devmod.clone.block.entity.CloneMachineBlockEntity;
 import com.devmod.clone.block.entity.ClonePulverizerBlockEntity;
 import com.devmod.clone.block.entity.ImprinterBlockEntity;
 import com.devmod.clone.block.entity.NeurocellBlockEntity;
+import com.devmod.clone.block.entity.NeurocellItemBlockEntity;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
+import com.devmod.clone.block.entity.NeurocellMannequinBlockEntity;
 import com.devmod.clone.block.entity.ReformerBlockEntity;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
 
 /**
  * Block entity type registrations for the Clone module.
  */
+@SuppressWarnings("null") // NeoForge build() accepts null for no data fixer
 public final class CloneBlockEntities {
     private CloneBlockEntities() {}
 
@@ -101,6 +104,30 @@ public final class CloneBlockEntities {
         );
 
     /**
+     * The neurocell mannequin block entity.
+     * Displays armor and equipment on a humanoid model.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NeurocellMannequinBlockEntity>> NEUROCELL_MANNEQUIN =
+        BLOCK_ENTITY_TYPES.register("neurocell_mannequin", () ->
+            BlockEntityType.Builder.of(
+                NeurocellMannequinBlockEntity::new,
+                CloneBlocks.NEUROCELL_MANNEQUIN.get()
+            ).build(noDataFixer())
+        );
+
+    /**
+     * The neurocell item display block entity.
+     * Displays a single item floating and rotating.
+     */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<NeurocellItemBlockEntity>> NEUROCELL_ITEM =
+        BLOCK_ENTITY_TYPES.register("neurocell_item", () ->
+            BlockEntityType.Builder.of(
+                NeurocellItemBlockEntity::new,
+                CloneBlocks.NEUROCELL_ITEM.get()
+            ).build(noDataFixer())
+        );
+
+    /**
      * The centrifuge block entity.
      * Handles automatic crafting processing.
      */
@@ -159,7 +186,8 @@ public final class CloneBlockEntities {
                 CloneBlocks.CLONE_CONVEYOR.get(),
                 CloneBlocks.CLONE_REACTOR.get(),
                 CloneBlocks.CLONE_PROCESSOR.get(),
-                CloneBlocks.CLONE_CHARGER.get()
+                CloneBlocks.CLONE_CHARGER.get(),
+                CloneBlocks.ADMIN_TERMINAL.get()
             ).build(noDataFixer())
         );
 

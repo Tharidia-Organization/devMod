@@ -704,7 +704,7 @@ class AreaBlockMapGeneratorTest {
             AreaDimensions dims = new AreaDimensions(20, 20, 6, 64);
             int corridorHalfWidth = 1;
             List<BlockPos> waypoints = List.of(center, center.offset(40, 0, 0));
-            CompoundTag pathNbt = AreaShapeGenerator.createPathNbt(center, waypoints, corridorHalfWidth);
+            CompoundTag pathNbt = AreaShapeGenerator.createPathNbt(center, Objects.requireNonNull(waypoints), corridorHalfWidth);
 
             AreaDefinition area = AreaDefinition.builder()
                 .id(Objects.requireNonNull(UUID.randomUUID()))

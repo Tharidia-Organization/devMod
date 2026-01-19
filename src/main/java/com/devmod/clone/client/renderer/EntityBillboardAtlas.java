@@ -2,6 +2,7 @@ package com.devmod.clone.client.renderer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,7 +63,7 @@ public final class EntityBillboardAtlas {
         if (instance == null) {
             instance = new EntityBillboardAtlas();
         }
-        return instance;
+        return Objects.requireNonNull(instance);
     }
 
     /**
@@ -81,11 +82,11 @@ public final class EntityBillboardAtlas {
         atlasImage.fillRect(0, 0, ATLAS_SIZE, ATLAS_SIZE, DesignTokens.TextureAtlas.TRANSPARENT);
 
         // Create dynamic texture
-        atlasTexture = new DynamicTexture(atlasImage);
+        atlasTexture = new DynamicTexture(Objects.requireNonNull(atlasImage));
 
         // Register texture with Minecraft's texture manager
         atlasLocation = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "dynamic/entity_billboard_atlas");
-        Minecraft.getInstance().getTextureManager().register(atlasLocation, atlasTexture);
+        Minecraft.getInstance().getTextureManager().register(Objects.requireNonNull(atlasLocation), Objects.requireNonNull(atlasTexture));
 
         initialized = true;
         DevMod.LOGGER.debug("[Clone] Entity billboard atlas initialized ({}x{})", ATLAS_SIZE, ATLAS_SIZE);
@@ -161,7 +162,8 @@ public final class EntityBillboardAtlas {
      * Render a placeholder sprite for failed entity renders.
      */
     private void renderPlaceholder(int x, int y) {
-        if (atlasImage == null) return;
+        var image = atlasImage;
+        if (image == null) return;
 
         // Draw a checkerboard pattern as placeholder
         for (int px = 0; px < SPRITE_SIZE; px++) {
@@ -170,7 +172,7 @@ public final class EntityBillboardAtlas {
                 int color = isLight
                     ? DesignTokens.TextureAtlas.PLACEHOLDER_LIGHT
                     : DesignTokens.TextureAtlas.PLACEHOLDER_DARK;
-                atlasImage.setPixelRGBA(x + px, y + py, color);
+                image.setPixelRGBA(x + px, y + py, color);
             }
         }
     }
@@ -224,8 +226,9 @@ public final class EntityBillboardAtlas {
             atlasImage.close();
             atlasImage = null;
         }
-        if (atlasLocation != null) {
-            Minecraft.getInstance().getTextureManager().release(atlasLocation);
+        var location = atlasLocation;
+        if (location != null) {
+            Minecraft.getInstance().getTextureManager().release(location);
             atlasLocation = null;
         }
         uvMap.clear();

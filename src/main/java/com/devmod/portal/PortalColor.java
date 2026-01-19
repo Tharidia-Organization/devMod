@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 
 import com.mojang.serialization.Codec;
 
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
 
 /**
@@ -31,6 +33,14 @@ public enum PortalColor implements StringRepresentable {
     BLACK("black", 0x1D1D21);
 
     public static final Codec<PortalColor> CODEC = StringRepresentable.fromEnum(PortalColor::values);
+
+    /**
+     * StreamCodec for network serialization using ordinal index.
+     */
+    public static final StreamCodec<FriendlyByteBuf, PortalColor> STREAM_CODEC = StreamCodec.of(
+        (buf, color) -> buf.writeVarInt(color.getIndex()),
+        buf -> byIndex(buf.readVarInt())
+    );
 
     private final String id;
     private final int color;

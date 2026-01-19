@@ -12,7 +12,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import com.devmod.DevMod;
 import com.devmod.clone.menu.CentrifugeMenu;
+import com.devmod.clone.menu.NeurocellItemMenu;
 import com.devmod.clone.menu.NeurocellLMenu;
+import com.devmod.clone.menu.NeurocellMannequinMenu;
 import com.devmod.clone.menu.NeurocellMenu;
 
 /**
@@ -45,6 +47,20 @@ public final class CloneMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<CentrifugeMenu>> CENTRIFUGE =
         MENUS.register("centrifuge", () ->
             IMenuTypeExtension.create(CentrifugeMenu::new));
+
+    /**
+     * Neurocell mannequin menu for equipment display.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<NeurocellMannequinMenu>> NEUROCELL_MANNEQUIN =
+        MENUS.register("neurocell_mannequin", () ->
+            IMenuTypeExtension.create(NeurocellMannequinMenu::new));
+
+    /**
+     * Neurocell item menu for single item display.
+     */
+    public static final DeferredHolder<MenuType<?>, MenuType<NeurocellItemMenu>> NEUROCELL_ITEM =
+        MENUS.register("neurocell_item", () ->
+            IMenuTypeExtension.create(NeurocellItemMenu::new));
 
     /**
      * Register all menus with the mod event bus.

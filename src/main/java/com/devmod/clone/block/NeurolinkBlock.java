@@ -1,5 +1,7 @@
 package com.devmod.clone.block;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -32,26 +34,26 @@ public final class NeurolinkBlock extends Block {
 
     public static final MapCodec<NeurolinkBlock> CODEC = simpleCodec(p -> new NeurolinkBlock());
 
-    public static final BooleanProperty NORTH = PipeBlock.NORTH;
-    public static final BooleanProperty EAST = PipeBlock.EAST;
-    public static final BooleanProperty SOUTH = PipeBlock.SOUTH;
-    public static final BooleanProperty WEST = PipeBlock.WEST;
-    public static final BooleanProperty UP = PipeBlock.UP;
-    public static final BooleanProperty DOWN = PipeBlock.DOWN;
+    public static final BooleanProperty NORTH = Objects.requireNonNull(PipeBlock.NORTH);
+    public static final BooleanProperty EAST = Objects.requireNonNull(PipeBlock.EAST);
+    public static final BooleanProperty SOUTH = Objects.requireNonNull(PipeBlock.SOUTH);
+    public static final BooleanProperty WEST = Objects.requireNonNull(PipeBlock.WEST);
+    public static final BooleanProperty UP = Objects.requireNonNull(PipeBlock.UP);
+    public static final BooleanProperty DOWN = Objects.requireNonNull(PipeBlock.DOWN);
 
     // VoxelShapes aligned with JSON models (Y=0-6 for horizontal, connectors at ends)
-    private static final VoxelShape CORE = Block.box(6, 0, 6, 10, 6, 10);
-    private static final VoxelShape NORTH_SHAPE = Block.box(5, 0, 0, 11, 6, 6);
-    private static final VoxelShape SOUTH_SHAPE = Block.box(5, 0, 10, 11, 6, 16);
-    private static final VoxelShape EAST_SHAPE = Block.box(10, 0, 5, 16, 6, 11);
-    private static final VoxelShape WEST_SHAPE = Block.box(0, 0, 5, 6, 6, 11);
-    private static final VoxelShape UP_SHAPE = Block.box(5, 5, 5, 11, 16, 11);
-    private static final VoxelShape DOWN_SHAPE = Block.box(6, 0, 6, 10, 1, 10);
+    private static final VoxelShape CORE = Objects.requireNonNull(Block.box(6, 0, 6, 10, 6, 10));
+    private static final VoxelShape NORTH_SHAPE = Objects.requireNonNull(Block.box(5, 0, 0, 11, 6, 6));
+    private static final VoxelShape SOUTH_SHAPE = Objects.requireNonNull(Block.box(5, 0, 10, 11, 6, 16));
+    private static final VoxelShape EAST_SHAPE = Objects.requireNonNull(Block.box(10, 0, 5, 16, 6, 11));
+    private static final VoxelShape WEST_SHAPE = Objects.requireNonNull(Block.box(0, 0, 5, 6, 6, 11));
+    private static final VoxelShape UP_SHAPE = Objects.requireNonNull(Block.box(5, 5, 5, 11, 16, 11));
+    private static final VoxelShape DOWN_SHAPE = Objects.requireNonNull(Block.box(6, 0, 6, 10, 1, 10));
 
     @Override
     @Nonnull
     protected MapCodec<? extends Block> codec() {
-        return CODEC;
+        return Objects.requireNonNull(CODEC);
     }
 
     public NeurolinkBlock() {
@@ -59,13 +61,20 @@ public final class NeurolinkBlock extends Block {
             .strength(1.5f)
             .noOcclusion()
             .lightLevel(state -> 3));
-        registerDefaultState(stateDefinition.any()
-            .setValue(NORTH, false)
-            .setValue(EAST, false)
-            .setValue(SOUTH, false)
-            .setValue(WEST, false)
-            .setValue(UP, false)
-            .setValue(DOWN, false));
+        registerDefaultState(Objects.requireNonNull(
+            Objects.requireNonNull(
+                Objects.requireNonNull(
+                    Objects.requireNonNull(
+                        Objects.requireNonNull(
+                            Objects.requireNonNull(
+                                Objects.requireNonNull(stateDefinition.any())
+                                    .setValue(Objects.requireNonNull(NORTH), false)
+                            ).setValue(Objects.requireNonNull(EAST), false)
+                        ).setValue(Objects.requireNonNull(SOUTH), false)
+                    ).setValue(Objects.requireNonNull(WEST), false)
+                ).setValue(Objects.requireNonNull(UP), false)
+            ).setValue(Objects.requireNonNull(DOWN), false)
+        ));
     }
 
     @Override
@@ -89,21 +98,28 @@ public final class NeurolinkBlock extends Block {
         @Nonnull BlockPos pos,
         @Nonnull BlockPos neighborPos
     ) {
-        return getConnectionState(level, pos);
+        return Objects.requireNonNull(getConnectionState(level, pos));
     }
 
     private BlockState getConnectionState(LevelAccessor level, BlockPos pos) {
-        return defaultBlockState()
-            .setValue(NORTH, canConnect(level, pos, Direction.NORTH))
-            .setValue(EAST, canConnect(level, pos, Direction.EAST))
-            .setValue(SOUTH, canConnect(level, pos, Direction.SOUTH))
-            .setValue(WEST, canConnect(level, pos, Direction.WEST))
-            .setValue(UP, canConnect(level, pos, Direction.UP))
-            .setValue(DOWN, canConnect(level, pos, Direction.DOWN));
+        return Objects.requireNonNull(
+            Objects.requireNonNull(
+                Objects.requireNonNull(
+                    Objects.requireNonNull(
+                        Objects.requireNonNull(
+                            Objects.requireNonNull(
+                                Objects.requireNonNull(defaultBlockState())
+                                    .setValue(Objects.requireNonNull(NORTH), canConnect(level, pos, Objects.requireNonNull(Direction.NORTH)))
+                            ).setValue(Objects.requireNonNull(EAST), canConnect(level, pos, Objects.requireNonNull(Direction.EAST)))
+                        ).setValue(Objects.requireNonNull(SOUTH), canConnect(level, pos, Objects.requireNonNull(Direction.SOUTH)))
+                    ).setValue(Objects.requireNonNull(WEST), canConnect(level, pos, Objects.requireNonNull(Direction.WEST)))
+                ).setValue(Objects.requireNonNull(UP), canConnect(level, pos, Objects.requireNonNull(Direction.UP)))
+            ).setValue(Objects.requireNonNull(DOWN), canConnect(level, pos, Objects.requireNonNull(Direction.DOWN)))
+        );
     }
 
     private boolean canConnect(LevelAccessor level, BlockPos pos, Direction dir) {
-        BlockPos neighborPos = pos.relative(dir);
+        BlockPos neighborPos = Objects.requireNonNull(pos.relative(Objects.requireNonNull(dir)));
         BlockState neighborState = level.getBlockState(neighborPos);
         Block neighbor = neighborState.getBlock();
 
@@ -126,13 +142,25 @@ public final class NeurolinkBlock extends Block {
         @Nonnull BlockPos pos,
         @Nonnull CollisionContext context
     ) {
-        VoxelShape shape = CORE;
-        if (state.getValue(NORTH)) shape = Shapes.or(shape, NORTH_SHAPE);
-        if (state.getValue(SOUTH)) shape = Shapes.or(shape, SOUTH_SHAPE);
-        if (state.getValue(EAST)) shape = Shapes.or(shape, EAST_SHAPE);
-        if (state.getValue(WEST)) shape = Shapes.or(shape, WEST_SHAPE);
-        if (state.getValue(UP)) shape = Shapes.or(shape, UP_SHAPE);
-        if (state.getValue(DOWN)) shape = Shapes.or(shape, DOWN_SHAPE);
+        VoxelShape shape = Objects.requireNonNull(CORE);
+        if (state.getValue(Objects.requireNonNull(NORTH))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(NORTH_SHAPE)));
+        }
+        if (state.getValue(Objects.requireNonNull(SOUTH))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(SOUTH_SHAPE)));
+        }
+        if (state.getValue(Objects.requireNonNull(EAST))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(EAST_SHAPE)));
+        }
+        if (state.getValue(Objects.requireNonNull(WEST))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(WEST_SHAPE)));
+        }
+        if (state.getValue(Objects.requireNonNull(UP))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(UP_SHAPE)));
+        }
+        if (state.getValue(Objects.requireNonNull(DOWN))) {
+            shape = Objects.requireNonNull(Shapes.or(Objects.requireNonNull(shape), Objects.requireNonNull(DOWN_SHAPE)));
+        }
         return shape;
     }
 }

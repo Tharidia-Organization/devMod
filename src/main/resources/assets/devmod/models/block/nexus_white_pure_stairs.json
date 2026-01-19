@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "devmod:block/nexus/nexus_white_pure",
+    "top": "devmod:block/nexus/nexus_white_pure",
+    "side": "devmod:block/nexus/nexus_white_pure"
+  }
+}

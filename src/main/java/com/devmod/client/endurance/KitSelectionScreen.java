@@ -616,9 +616,10 @@ public class KitSelectionScreen extends Screen {
     }
 
     private void renderInputBackgrounds(GuiGraphics graphics) {
-        if (searchBox != null) {
-            AxiomRenderer.drawInputBackground(graphics, searchBox.getX(), searchBox.getY(), searchBox.getWidth(),
-                searchBox.getHeight(), searchBox.isFocused());
+        var box = searchBox;
+        if (box != null) {
+            AxiomRenderer.drawInputBackground(graphics, box.getX(), box.getY(), box.getWidth(),
+                box.getHeight(), box.isFocused());
         }
     }
 

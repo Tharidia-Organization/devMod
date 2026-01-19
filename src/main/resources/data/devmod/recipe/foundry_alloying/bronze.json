@@ -1,0 +1,9 @@
+{
+  "type": "devmod:foundry_alloying",
+  "inputs": [
+    { "fluid": "devmod:molten_copper", "amount": 3000 },
+    { "fluid": "devmod:molten_tin", "amount": 1000 }
+  ],
+  "result": { "fluid": "devmod:molten_bronze", "amount": 4000 },
+  "temperature": 650
+}

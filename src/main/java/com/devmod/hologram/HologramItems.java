@@ -1,5 +1,7 @@
 package com.devmod.hologram;
 
+import java.util.Objects;
+
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 
@@ -20,7 +22,7 @@ public final class HologramItems {
      */
     public static final DeferredHolder<Item, BlockItem> HOLOGRAM_PROJECTOR = DevMod.ITEMS.register(
         "hologram_projector",
-        () -> new BlockItem(HologramBlocks.HOLOGRAM_PROJECTOR.get(), new Item.Properties())
+        () -> new BlockItem(Objects.requireNonNull(HologramBlocks.HOLOGRAM_PROJECTOR.get()), new Item.Properties())
     );
 
     /**

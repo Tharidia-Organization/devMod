@@ -2,6 +2,7 @@ package com.devmod.clone.client.renderer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,6 +21,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Batches billboard rendering for efficient draw calls.
@@ -54,7 +56,7 @@ public final class BillboardBatcher {
         if (instance == null) {
             instance = new BillboardBatcher();
         }
-        return instance;
+        return Objects.requireNonNull(instance);
     }
 
     /**
@@ -128,17 +130,29 @@ public final class BillboardBatcher {
         // Calculate billboard orientation (always face camera)
         float cameraYaw = camera.getYRot();
 
+        // FIX: Get camera position for world-to-camera coordinate conversion
+        // The PoseStack at AFTER_BLOCK_ENTITIES stage contains camera transformations,
+        // so we need to convert world coordinates to camera-relative coordinates
+        Vec3 cameraPos = camera.getPosition();
+        float camX = (float) cameraPos.x();
+        float camY = (float) cameraPos.y();
+        float camZ = (float) cameraPos.z();
+
         // Build vertex buffer
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.begin(
             VertexFormat.Mode.QUADS,
-            DefaultVertexFormat.POSITION_TEX_COLOR
+            Objects.requireNonNull(DefaultVertexFormat.POSITION_TEX_COLOR)
         );
 
-        Matrix4f pose = poseStack.last().pose();
+        Matrix4f pose = Objects.requireNonNull(poseStack.last().pose());
 
         for (BillboardInstance billboard : instances) {
-            renderBillboard(builder, pose, billboard, cameraYaw);
+            // FIX: Convert world coordinates to camera-relative before rendering
+            float relX = billboard.x - camX;
+            float relY = billboard.y - camY;
+            float relZ = billboard.z - camZ;
+            renderBillboard(Objects.requireNonNull(builder), pose, Objects.requireNonNull(billboard), cameraYaw, relX, relY, relZ);
         }
 
         // Upload and draw
@@ -155,14 +169,24 @@ public final class BillboardBatcher {
 
     /**
      * Render a single billboard quad.
+     *
+     * @param builder The vertex buffer builder
+     * @param pose The pose matrix
+     * @param billboard The billboard instance (for UV and alpha)
+     * @param cameraYaw Camera yaw for billboard orientation
+     * @param relX Camera-relative X position
+     * @param relY Camera-relative Y position
+     * @param relZ Camera-relative Z position
      */
     private void renderBillboard(@Nonnull BufferBuilder builder,
                                   @Nonnull Matrix4f pose,
                                   @Nonnull BillboardInstance billboard,
-                                  float cameraYaw) {
-        float x = billboard.x;
-        float y = billboard.y;
-        float z = billboard.z;
+                                  float cameraYaw,
+                                  float relX, float relY, float relZ) {
+        // Use camera-relative coordinates instead of world coordinates
+        float x = relX;
+        float y = relY;
+        float z = relZ;
         float scale = billboard.scale;
         float alpha = billboard.alpha;
         EntityBillboardAtlas.UVRegion uv = billboard.uv;
@@ -222,9 +246,10 @@ public final class BillboardBatcher {
      * Reset the singleton instance.
      */
     public static void reset() {
-        if (instance != null) {
-            instance.instances.clear();
-            instance.batchActive = false;
+        var inst = instance;
+        if (inst != null) {
+            inst.instances.clear();
+            inst.batchActive = false;
             instance = null;
         }
     }

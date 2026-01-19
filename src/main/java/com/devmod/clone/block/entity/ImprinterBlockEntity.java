@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.clone.CloneBlockEntities;
+import com.devmod.clone.block.ImprinterBlock;
 import com.devmod.clone.data.BioscanData;
 import com.devmod.clone.util.NeurolinkConnector;
 
@@ -147,6 +148,11 @@ public class ImprinterBlockEntity extends BlockEntity {
         imprintProgress = 0;
         targetName = Objects.requireNonNull(entity.getDisplayName().getString());
         setChanged();
+
+        // Update block state to active
+        if (level != null) {
+            ImprinterBlock.setActive(level, worldPosition, getBlockState(), true);
+        }
 
         // Start sound
         var lvl = level;
@@ -358,6 +364,11 @@ public class ImprinterBlockEntity extends BlockEntity {
             currentTarget = null;
             connectedNeurocell = null;
             setChanged();
+
+            // Update block state to inactive
+            if (level != null) {
+                ImprinterBlock.setActive(level, worldPosition, getBlockState(), false);
+            }
         }
     }
 

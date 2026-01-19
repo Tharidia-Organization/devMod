@@ -1,6 +1,8 @@
 package com.devmod.clone.client.renderer;
 
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -8,6 +10,7 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -15,6 +18,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -32,6 +36,12 @@ import com.devmod.DevMod;
  */
 public final class EntityBillboardCache {
 
+    /** Fixed UUID for the generic Steve player profile */
+    private static final UUID STEVE_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    /** Generic Steve profile for player billboard rendering */
+    private static final GameProfile STEVE_PROFILE = new GameProfile(STEVE_UUID, "Steve");
+
     @Nullable
     private static EntityBillboardCache instance;
 
@@ -48,7 +58,7 @@ public final class EntityBillboardCache {
         if (instance == null) {
             instance = new EntityBillboardCache();
         }
-        return instance;
+        return Objects.requireNonNull(instance);
     }
 
     /**
@@ -66,6 +76,21 @@ public final class EntityBillboardCache {
                                         int x, int y, int size) {
         RenderSystem.assertOnRenderThread();
 
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return false;
+        }
+
+        // Special handling for player type - EntityType.PLAYER.create() doesn't work
+        if (entityTypeString.equals("minecraft:player")) {
+            return renderPlayerToAtlas(atlasImage, x, y, size);
+        }
+
+        // Special handling for mannequin with equipment
+        if (MannequinBillboardRegistry.isMannequinKey(entityTypeString)) {
+            return renderMannequinToAtlas(entityTypeString, atlasImage, x, y, size);
+        }
+
         // Parse entity type
         Optional<EntityType<?>> optType = EntityType.byString(entityTypeString);
         if (optType.isEmpty()) {
@@ -73,16 +98,11 @@ public final class EntityBillboardCache {
             return false;
         }
 
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) {
-            return false;
-        }
-
         // Create temporary entity for rendering
         EntityType<?> type = optType.get();
         Entity entity;
         try {
-            entity = type.create(mc.level);
+            entity = type.create(Objects.requireNonNull(mc.level));
             if (entity == null) {
                 DevMod.LOGGER.warn("[Clone] Failed to create entity for billboard: {}", entityTypeString);
                 return false;
@@ -127,6 +147,137 @@ public final class EntityBillboardCache {
     }
 
     /**
+     * Render a player entity to the atlas using RemotePlayer with Steve skin.
+     * This is needed because EntityType.PLAYER.create() doesn't work for players.
+     *
+     * @param atlasImage The atlas image to render into
+     * @param x X position in the atlas
+     * @param y Y position in the atlas
+     * @param size Size of the sprite
+     * @return true if rendering succeeded
+     */
+    private boolean renderPlayerToAtlas(@Nonnull NativeImage atlasImage, int x, int y, int size) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return false;
+        }
+
+        // Create RemotePlayer with Steve profile
+        RemotePlayer player;
+        try {
+            player = new RemotePlayer(Objects.requireNonNull(mc.level), Objects.requireNonNull(STEVE_PROFILE));
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[Clone] Failed to create RemotePlayer for billboard: {}", e.getMessage());
+            return false;
+        }
+
+        // Configure player for static rendering (same as other entities)
+        player.noPhysics = true;
+        player.setNoGravity(true);
+        player.setSilent(true);
+        player.setInvulnerable(true);
+        player.setPos(0, -1000, 0);
+
+        // Reset animations
+        player.yBodyRot = 0;
+        player.yBodyRotO = 0;
+        player.yHeadRot = 0;
+        player.yHeadRotO = 0;
+        player.hurtTime = 0;
+        player.deathTime = 0;
+
+        try {
+            // Render player to off-screen buffer
+            NativeImage snapshot = renderEntityToImage(player, size);
+            if (snapshot == null) {
+                return false;
+            }
+
+            // Copy snapshot to atlas
+            copyToAtlas(snapshot, atlasImage, x, y, size);
+            snapshot.close();
+
+            DevMod.LOGGER.debug("[Clone] Successfully rendered player to billboard atlas");
+            return true;
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[Clone] Exception rendering player billboard: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Render a mannequin with equipment to the atlas.
+     * Retrieves equipment data from MannequinBillboardRegistry and applies it to the player model.
+     *
+     * @param key The mannequin billboard key (from MannequinBillboardRegistry)
+     * @param atlasImage The atlas image to render into
+     * @param x X position in the atlas
+     * @param y Y position in the atlas
+     * @param size Size of the sprite
+     * @return true if rendering succeeded
+     */
+    private boolean renderMannequinToAtlas(@Nonnull String key, @Nonnull NativeImage atlasImage,
+                                            int x, int y, int size) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return false;
+        }
+
+        // Get equipment data from registry
+        MannequinBillboardRegistry.EquipmentData equipment = MannequinBillboardRegistry.getInstance().getEquipment(key);
+        if (equipment == null) {
+            DevMod.LOGGER.warn("[Clone] No equipment data found for mannequin key: {}", key);
+            // Fall back to generic player
+            return renderPlayerToAtlas(atlasImage, x, y, size);
+        }
+
+        // Create RemotePlayer with Steve profile
+        RemotePlayer player;
+        try {
+            player = new RemotePlayer(Objects.requireNonNull(mc.level), Objects.requireNonNull(STEVE_PROFILE));
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[Clone] Failed to create RemotePlayer for mannequin billboard: {}", e.getMessage());
+            return false;
+        }
+
+        // Configure player for static rendering
+        player.noPhysics = true;
+        player.setNoGravity(true);
+        player.setSilent(true);
+        player.setInvulnerable(true);
+        player.setPos(0, -1000, 0);
+
+        // Reset animations
+        player.yBodyRot = 0;
+        player.yBodyRotO = 0;
+        player.yHeadRot = 0;
+        player.yHeadRotO = 0;
+        player.hurtTime = 0;
+        player.deathTime = 0;
+
+        // Apply equipment from registry
+        equipment.applyTo(player);
+
+        try {
+            // Render player with equipment to off-screen buffer
+            NativeImage snapshot = renderEntityToImage(player, size);
+            if (snapshot == null) {
+                return false;
+            }
+
+            // Copy snapshot to atlas
+            copyToAtlas(snapshot, atlasImage, x, y, size);
+            snapshot.close();
+
+            DevMod.LOGGER.debug("[Clone] Successfully rendered mannequin with equipment to billboard atlas: {}", key);
+            return true;
+        } catch (Exception e) {
+            DevMod.LOGGER.warn("[Clone] Exception rendering mannequin billboard: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Render an entity to an off-screen image.
      */
     @Nullable
@@ -134,17 +285,19 @@ public final class EntityBillboardCache {
         Minecraft mc = Minecraft.getInstance();
 
         // Create or resize render target
-        if (renderTarget == null || renderTarget.width != size || renderTarget.height != size) {
-            if (renderTarget != null) {
-                renderTarget.destroyBuffers();
+        var target = renderTarget;
+        if (target == null || target.width != size || target.height != size) {
+            if (target != null) {
+                target.destroyBuffers();
             }
-            renderTarget = new TextureTarget(size, size, true, Minecraft.ON_OSX);
+            target = new TextureTarget(size, size, true, Minecraft.ON_OSX);
+            renderTarget = target;
         }
 
         // Setup render target
-        renderTarget.setClearColor(0, 0, 0, 0);
-        renderTarget.clear(Minecraft.ON_OSX);
-        renderTarget.bindWrite(true);
+        target.setClearColor(0, 0, 0, 0);
+        target.clear(Minecraft.ON_OSX);
+        target.bindWrite(true);
 
         // Setup orthographic projection
         Matrix4f projectionMatrix = new Matrix4f().ortho(
@@ -166,7 +319,7 @@ public final class EntityBillboardCache {
         poseStack.scale(scale, scale, scale);
 
         // Rotate to face camera (front view with slight angle)
-        poseStack.mulPose(new Quaternionf().rotationY((float) Math.toRadians(200)));
+        poseStack.mulPose(Objects.requireNonNull(new Quaternionf().rotationY((float) Math.toRadians(200))));
 
         // Setup model-view matrix
         Matrix4f modelViewMatrix = new Matrix4f();
@@ -174,7 +327,7 @@ public final class EntityBillboardCache {
 
         // Push to RenderSystem
         RenderSystem.backupProjectionMatrix();
-        RenderSystem.setProjectionMatrix(projectionMatrix, com.mojang.blaze3d.vertex.VertexSorting.ORTHOGRAPHIC_Z);
+        RenderSystem.setProjectionMatrix(Objects.requireNonNull(projectionMatrix), Objects.requireNonNull(com.mojang.blaze3d.vertex.VertexSorting.ORTHOGRAPHIC_Z));
 
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().identity();
@@ -192,7 +345,7 @@ public final class EntityBillboardCache {
                 0, 0, 0,
                 0, 0,
                 poseStack,
-                bufferSource,
+                Objects.requireNonNull(bufferSource),
                 LightTexture.FULL_BRIGHT
             );
             dispatcher.setRenderShadow(true);
@@ -208,12 +361,12 @@ public final class EntityBillboardCache {
         }
 
         // Unbind render target
-        renderTarget.unbindWrite();
+        target.unbindWrite();
         mc.getMainRenderTarget().bindWrite(true);
 
         // Read pixels from render target
         NativeImage image = new NativeImage(NativeImage.Format.RGBA, size, size, false);
-        RenderSystem.bindTexture(renderTarget.getColorTextureId());
+        RenderSystem.bindTexture(target.getColorTextureId());
         image.downloadTexture(0, false);
 
         // Flip image vertically (OpenGL renders upside down)

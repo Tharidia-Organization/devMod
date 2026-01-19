@@ -107,7 +107,7 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
         }
 
         // Spawn the entity from bioscan data
-        Entity entity = entityType.create(level);
+        Entity entity = entityType.create(Objects.requireNonNull(level));
         if (entity == null) {
             LOGGER.warn("Failed to create entity from bioscan: {}", bioscanData.entityTypeId());
             return null;
@@ -140,7 +140,7 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
 
         // Tag as clone
         entity.getPersistentData().putBoolean("devmod_clone", true);
-        entity.getPersistentData().putString("devmod_clone_source", bioscanData.entityTypeId().toString());
+        entity.getPersistentData().putString("devmod_clone_source", Objects.requireNonNull(bioscanData.entityTypeId().toString()));
         entity.getPersistentData().putLong("devmod_clone_scan_time", bioscanData.scanTime());
 
         // Add to world
@@ -163,7 +163,7 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
     public UUID spawnPlayerClone(int x, int y, int z,
                                   @Nullable UUID originalUUID,
                                   @Nullable String skinName) {
-        PlayerCloneEntity clone = ModEntities.PLAYER_CLONE.get().create(level);
+        PlayerCloneEntity clone = ModEntities.PLAYER_CLONE.get().create(Objects.requireNonNull(level));
         if (clone == null) {
             LOGGER.warn("Failed to create PlayerCloneEntity");
             return null;
@@ -227,7 +227,7 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
 
         EntityType<?> type = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.get(loc);
         BlockPos pos = new BlockPos(x, y, z);
-        Entity entity = type.create(level, null, pos, MobSpawnType.COMMAND, false, false);
+        Entity entity = type.create(Objects.requireNonNull(level), null, pos, MobSpawnType.COMMAND, false, false);
         if (entity == null) {
             return null;
         }
@@ -245,8 +245,8 @@ public class CloneEntitySpawner implements ArenaBuilder.EntitySpawner {
 
     @SuppressWarnings("deprecation")
     private void finalizeMobSpawn(Mob mob, BlockPos pos) {
-        mob.finalizeSpawn(level,
-            Objects.requireNonNull(level.getCurrentDifficultyAt(pos)),
+        mob.finalizeSpawn(Objects.requireNonNull(level),
+            Objects.requireNonNull(level.getCurrentDifficultyAt(Objects.requireNonNull(pos))),
             MobSpawnType.MOB_SUMMONED, null);
     }
 

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "devmod:block/neurocell_base",
+    "particle": "devmod:block/neurocell_base"
+  }
+}

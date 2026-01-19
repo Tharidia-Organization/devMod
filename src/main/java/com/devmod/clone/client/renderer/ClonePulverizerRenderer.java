@@ -1,6 +1,6 @@
 package com.devmod.clone.client.renderer;
 
-import javax.annotation.Nonnull;
+import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -65,9 +65,9 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
 
     @Override
     public void preRender(
-            @Nonnull PoseStack poseStack,
-            @Nonnull ClonePulverizerBlockEntity entity,
-            @Nonnull BakedGeoModel model,
+            PoseStack poseStack,
+            ClonePulverizerBlockEntity entity,
+            BakedGeoModel model,
             @Nullable MultiBufferSource bufferSource,
             @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
             boolean isReRender,
@@ -92,9 +92,9 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
 
     @Override
     public void postRender(
-            @Nonnull PoseStack poseStack,
-            @Nonnull ClonePulverizerBlockEntity entity,
-            @Nonnull BakedGeoModel model,
+            PoseStack poseStack,
+            ClonePulverizerBlockEntity entity,
+            BakedGeoModel model,
             @Nullable MultiBufferSource bufferSource,
             @Nullable com.mojang.blaze3d.vertex.VertexConsumer buffer,
             boolean isReRender,
@@ -125,8 +125,8 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
      * Get the facing direction from block state, defaulting to NORTH.
      */
     private Direction getFacing(BlockState state) {
-        if (state.hasProperty(HorizontalDirectionalBlock.FACING)) {
-            return state.getValue(HorizontalDirectionalBlock.FACING);
+        if (state.hasProperty(Objects.requireNonNull(HorizontalDirectionalBlock.FACING))) {
+            return state.getValue(Objects.requireNonNull(HorizontalDirectionalBlock.FACING));
         }
         return Direction.NORTH;
     }
@@ -173,11 +173,11 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
         poseStack.translate(0, ROLLER_HEIGHT, 0);
 
         // Rotate based on block facing
-        poseStack.mulPose(Axis.YP.rotationDegrees(getFacingRotation(facing)));
+        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(getFacingRotation(facing))));
 
         // Spin the item based on game time for visual effect
         float spin = (level.getGameTime() + partialTick) * SPIN_RATE;
-        poseStack.mulPose(Axis.YP.rotationDegrees(spin));
+        poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(spin)));
 
         // Squeeze the item based on processing progress
         float progress = entity.getProgressPercent();
@@ -191,7 +191,7 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
                 packedLight,
                 packedOverlay,
                 poseStack,
-                bufferSource,
+                Objects.requireNonNull(bufferSource),
                 level,
                 0
         );
@@ -251,7 +251,7 @@ public class ClonePulverizerRenderer extends GeoBlockRenderer<ClonePulverizerBlo
                 packedLight,
                 packedOverlay,
                 poseStack,
-                bufferSource,
+                Objects.requireNonNull(bufferSource),
                 level,
                 0
         );

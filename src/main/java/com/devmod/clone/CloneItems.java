@@ -24,7 +24,7 @@ public final class CloneItems {
      */
     public static final DeferredHolder<Item, BlockItem> ADMIN_TERMINAL = DevMod.ITEMS.register(
         "admin_terminal",
-        () -> new BlockItem(Objects.requireNonNull(CloneBlocks.ADMIN_TERMINAL.get()), new Item.Properties())
+        () -> new CloneMachineBlockItem(Objects.requireNonNull(CloneBlocks.ADMIN_TERMINAL.get()), new Item.Properties())
     );
 
     /**
@@ -84,11 +84,28 @@ public final class CloneItems {
     );
 
     /**
+     * The neurocell mannequin block item - displays armor on a humanoid model.
+     */
+    public static final DeferredHolder<Item, BlockItem> NEUROCELL_MANNEQUIN = DevMod.ITEMS.register(
+        "neurocell_mannequin",
+        () -> new BlockItem(Objects.requireNonNull(CloneBlocks.NEUROCELL_MANNEQUIN.get()), new Item.Properties())
+    );
+
+    /**
+     * The neurocell item display block item - displays a single item.
+     */
+    public static final DeferredHolder<Item, BlockItem> NEUROCELL_ITEM = DevMod.ITEMS.register(
+        "neurocell_item",
+        () -> new BlockItem(Objects.requireNonNull(CloneBlocks.NEUROCELL_ITEM.get()), new Item.Properties())
+    );
+
+    /**
      * The centrifuge block item.
+     * Uses CloneMachineBlockItem for GeckoLib item rendering.
      */
     public static final DeferredHolder<Item, BlockItem> CENTRIFUGE = DevMod.ITEMS.register(
         "centrifuge",
-        () -> new BlockItem(java.util.Objects.requireNonNull(CloneBlocks.CENTRIFUGE.get()), new Item.Properties())
+        () -> new CloneMachineBlockItem(Objects.requireNonNull(CloneBlocks.CENTRIFUGE.get()), new Item.Properties())
     );
 
     // ==================== CLONE MACHINE ITEMS (Oritech-style) ====================

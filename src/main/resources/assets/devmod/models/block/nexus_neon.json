@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "devmod:block/nexus/nexus_neon"
+    "all": "devmod:block/nexus/nexus_neon_magenta"
   }
 }

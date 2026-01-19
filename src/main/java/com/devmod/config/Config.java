@@ -236,6 +236,18 @@ public class Config {
     public static final ModConfigSpec.BooleanValue NEXUS_ENTITY_CULLING_ENABLED;
     public static final ModConfigSpec.IntValue NEXUS_CULL_DISTANCE;
 
+    // Nexus 2.0 Slot System settings
+    public static final ModConfigSpec.IntValue NEXUS_HUB_SIZE;
+    public static final ModConfigSpec.IntValue NEXUS_CENTER_SIZE;
+    public static final ModConfigSpec.IntValue NEXUS_ZONE_SIZE;
+    public static final ModConfigSpec.IntValue NEXUS_CORRIDOR_WIDTH;
+    public static final ModConfigSpec.IntValue NEXUS_FLOOR_Y;
+    public static final ModConfigSpec.IntValue NEXUS_ZONE_HEIGHT;
+    public static final ModConfigSpec.ConfigValue<String> NEXUS_SLOTS_CONFIG_PATH;
+    public static final ModConfigSpec.BooleanValue NEXUS_AUTO_CREATE_ZONES;
+    public static final ModConfigSpec.BooleanValue NEXUS_AUTO_CREATE_PORTALS;
+    public static final ModConfigSpec.BooleanValue NEXUS_CLEAR_ON_UNLINK;
+
     static {
         BUILDER.push("telemetry");
 
@@ -626,10 +638,10 @@ public class Config {
                 .comment("Rotation speed in degrees per tick")
                 .defineInRange("avatarRotateSpeed", 0.5, 0.0, 5.0);
 
-        // Portal Network
+        // Portal Network (disabled by default - use telepads instead)
         NEXUS_PORTALS_ENABLED = BUILDER
-                .comment("Enable portal pedestals for zone navigation")
-                .define("portalsEnabled", true);
+                .comment("Enable portal pedestals for zone navigation (legacy system, use telepads instead)")
+                .define("portalsEnabled", false);
 
         NEXUS_PORTAL_PARTICLE_INTERVAL = BUILDER
                 .comment("Ticks between portal particle effects")
@@ -665,7 +677,53 @@ public class Config {
                 .comment("Distance in blocks beyond which entities are culled")
                 .defineInRange("cullDistance", 64, 16, 256);
 
-        BUILDER.pop();
+        // Nexus 2.0 Slot System
+        BUILDER.comment("Nexus 2.0 Slot System - Hub layout and slot configuration").push("slots");
+
+        NEXUS_HUB_SIZE = BUILDER
+                .comment("Total hub size in blocks (default: 384 = 24 chunks)")
+                .defineInRange("hubSize", 384, 128, 4096);
+
+        NEXUS_CENTER_SIZE = BUILDER
+                .comment("Center spawn area size in blocks (default: 64)")
+                .defineInRange("centerSize", 64, 32, 512);
+
+        NEXUS_ZONE_SIZE = BUILDER
+                .comment("Standard zone size in blocks (default: 96)")
+                .defineInRange("zoneSize", 96, 48, 512);
+
+        NEXUS_CORRIDOR_WIDTH = BUILDER
+                .comment("Corridor width between zones in blocks (default: 16)")
+                .defineInRange("corridorWidth", 16, 4, 64);
+
+        NEXUS_FLOOR_Y = BUILDER
+                .comment("Floor Y level for the hub (default: 64)")
+                .defineInRange("floorY", 64, 4, 256);
+
+        NEXUS_ZONE_HEIGHT = BUILDER
+                .comment("Default zone height in blocks (default: 64)")
+                .defineInRange("zoneHeight", 64, 16, 128);
+
+        NEXUS_SLOTS_CONFIG_PATH = BUILDER
+                .comment("External JSON path for custom slot configuration (empty = use defaults)",
+                        "Path relative to config/devmod/ folder")
+                .define("slotsConfigPath", "");
+
+        NEXUS_AUTO_CREATE_ZONES = BUILDER
+                .comment("Automatically create ZoneDefinition when linking area to slot")
+                .define("autoCreateZones", true);
+
+        NEXUS_AUTO_CREATE_PORTALS = BUILDER
+                .comment("Automatically create portals when linking area to slot")
+                .define("autoCreatePortals", true);
+
+        NEXUS_CLEAR_ON_UNLINK = BUILDER
+                .comment("Clear slot content (fill with air) when unlinking an area")
+                .define("clearOnUnlink", false);
+
+        BUILDER.pop(); // slots
+
+        BUILDER.pop(); // nexus
 
         // ============================================
         // CLONE PULVERIZER SETTINGS
@@ -682,6 +740,34 @@ public class Config {
                 .comment("Number of items processed before applying 1 point of damage to grinders",
                         "Higher = grinders last longer, Lower = grinders wear faster")
                 .defineInRange("operationsPerDamage", 8, 1, 64);
+
+        BUILDER.pop();
+
+        // ============================================
+        // FOUNDRY SETTINGS
+        // ============================================
+
+        BUILDER.push("foundry");
+
+        FOUNDRY_MIN_INNER_SIZE = BUILDER
+                .comment("Minimum inner width/length of the foundry multiblock (inner cavity size)")
+                .defineInRange("minInnerSize", 1, 1, 64);
+
+        FOUNDRY_MAX_INNER_SIZE = BUILDER
+                .comment("Maximum inner width/length of the foundry multiblock")
+                .defineInRange("maxInnerSize", 14, 1, 64);
+
+        FOUNDRY_MAX_HEIGHT = BUILDER
+                .comment("Maximum wall height of the foundry multiblock")
+                .defineInRange("maxHeight", 64, 3, 128);
+
+        FOUNDRY_CAPACITY_PER_BLOCK = BUILDER
+                .comment("Molten fluid capacity per inner block (mB)")
+                .defineInRange("capacityPerBlock", 1000, 100, 10000);
+
+        FOUNDRY_FUEL_CAPACITY = BUILDER
+                .comment("Fuel tank capacity (mB) for the controller")
+                .defineInRange("fuelCapacity", 8000, 1000, 64000);
 
         BUILDER.pop();
 
@@ -705,6 +791,16 @@ public class Config {
 
     public static final ModConfigSpec.IntValue GRINDER_DURABILITY;
     public static final ModConfigSpec.IntValue GRINDER_OPERATIONS_PER_DAMAGE;
+
+    // ============================================
+    // FOUNDRY CONFIG VALUES
+    // ============================================
+
+    public static final ModConfigSpec.IntValue FOUNDRY_MIN_INNER_SIZE;
+    public static final ModConfigSpec.IntValue FOUNDRY_MAX_INNER_SIZE;
+    public static final ModConfigSpec.IntValue FOUNDRY_MAX_HEIGHT;
+    public static final ModConfigSpec.IntValue FOUNDRY_CAPACITY_PER_BLOCK;
+    public static final ModConfigSpec.IntValue FOUNDRY_FUEL_CAPACITY;
 
     // ============================================
     // ADMIN PANEL CONFIG VALUES

@@ -82,6 +82,12 @@ public class PulverizingRecipe implements Recipe<SingleRecipeInput> {
         return CloneRecipeTypes.PULVERIZING.get();
     }
 
+    @Override
+    public boolean isSpecial() {
+        // Machine-only recipe; keep it out of the recipe book.
+        return true;
+    }
+
     // Getters for the block entity
     public Ingredient getIngredient() {
         return ingredient;

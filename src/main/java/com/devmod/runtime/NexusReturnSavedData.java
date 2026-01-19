@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
@@ -41,12 +42,12 @@ public final class NexusReturnSavedData extends SavedData {
                 continue;
             }
             UUID id = entry.getUUID("id");
-            String dimId = entry.getString("dim");
+            String dimId = Objects.requireNonNull(entry.getString("dim"));
             ResourceLocation dimLoc = ResourceLocation.tryParse(dimId);
             if (dimLoc == null) {
                 continue;
             }
-            ResourceKey<Level> dimKey = ResourceKey.create(Registries.DIMENSION, dimLoc);
+            ResourceKey<Level> dimKey = ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), dimLoc);
             int x = entry.getInt("x");
             int y = entry.getInt("y");
             int z = entry.getInt("z");
@@ -58,13 +59,13 @@ public final class NexusReturnSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         ListTag list = new ListTag();
         for (Map.Entry<UUID, ReturnPoint> entry : returns.entrySet()) {
             CompoundTag data = new CompoundTag();
-            data.putUUID("id", entry.getKey());
+            data.putUUID("id", Objects.requireNonNull(entry.getKey()));
             ReturnPoint point = entry.getValue();
-            data.putString("dim", point.dimension().location().toString());
+            data.putString("dim", Objects.requireNonNull(point.dimension().location().toString()));
             data.putInt("x", point.pos().getX());
             data.putInt("y", point.pos().getY());
             data.putInt("z", point.pos().getZ());

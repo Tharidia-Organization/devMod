@@ -1,5 +1,6 @@
 package com.devmod.clone.client.renderer;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -38,9 +39,9 @@ public class PlayerCloneEntityRenderer extends MobRenderer<PlayerCloneEntity, Hu
     private final HumanoidModel<PlayerCloneEntity> alexModel;
 
     public PlayerCloneEntityRenderer(EntityRendererProvider.Context context) {
-        super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER)), 0.5f);
-        this.steveModel = new HumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER));
-        this.alexModel = new HumanoidModel<>(context.bakeLayer(ModelLayers.PLAYER_SLIM));
+        super(context, new HumanoidModel<>(Objects.requireNonNull(context.bakeLayer(Objects.requireNonNull(ModelLayers.PLAYER)))), 0.5f);
+        this.steveModel = new HumanoidModel<>(Objects.requireNonNull(context.bakeLayer(Objects.requireNonNull(ModelLayers.PLAYER))));
+        this.alexModel = new HumanoidModel<>(Objects.requireNonNull(context.bakeLayer(Objects.requireNonNull(ModelLayers.PLAYER_SLIM))));
     }
 
     @Override
@@ -56,14 +57,14 @@ public class PlayerCloneEntityRenderer extends MobRenderer<PlayerCloneEntity, Hu
                     PlayerSkin skin = playerInfo.getSkin();
                     // Update model based on skin type
                     this.model = skin.model() == PlayerSkin.Model.SLIM ? this.alexModel : this.steveModel;
-                    return skin.texture();
+                    return Objects.requireNonNull(skin.texture());
                 }
             }
         }
 
         // Fallback to Steve skin
         this.model = this.steveModel;
-        return STEVE_SKIN;
+        return Objects.requireNonNull(STEVE_SKIN);
     }
 
     @Override

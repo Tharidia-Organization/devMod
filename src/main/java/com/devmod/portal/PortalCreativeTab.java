@@ -30,14 +30,14 @@ public final class PortalCreativeTab {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PORTAL_TAB = TABS.register(
         "portals",
         () -> CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.devmod.portals"))
+            .title(Objects.requireNonNull(Component.translatable("itemGroup.devmod.portals")))
             .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
             .icon(() -> Objects.requireNonNull(
                 PortalItems.IGNITER_BLUE.get().getDefaultInstance()))
             .displayItems((parameters, output) -> {
                 // Add all igniters (sorted by color order)
                 for (PortalColor color : PortalColor.values()) {
-                    DeferredHolder<Item, PortalIgniterItem> igniter = PortalItems.getIgniter(color);
+                    DeferredHolder<Item, PortalIgniterItem> igniter = PortalItems.getIgniter(Objects.requireNonNull(color));
                     if (igniter != null) {
                         output.accept(Objects.requireNonNull(igniter.get()));
                     }
@@ -48,7 +48,7 @@ public final class PortalCreativeTab {
 
                 // Add all rune blocks
                 for (RuneType rune : RuneType.values()) {
-                    DeferredHolder<Item, BlockItem> runeItem = PortalItems.getRuneItem(rune);
+                    DeferredHolder<Item, BlockItem> runeItem = PortalItems.getRuneItem(Objects.requireNonNull(rune));
                     if (runeItem != null) {
                         output.accept(Objects.requireNonNull(runeItem.get()));
                     }
@@ -61,7 +61,7 @@ public final class PortalCreativeTab {
      * Called during mod initialization to ensure creative tab is registered.
      */
     public static void init(net.neoforged.bus.api.IEventBus modEventBus) {
-        TABS.register(modEventBus);
+        TABS.register(Objects.requireNonNull(modEventBus));
         DevMod.LOGGER.debug("[Portal] Portal creative tab initialized");
     }
 }

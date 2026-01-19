@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "devmod:block/nexus_steel_seamless_slab"
+    },
+    "type=double": {
+      "model": "devmod:block/nexus_steel_seamless"
+    },
+    "type=top": {
+      "model": "devmod:block/nexus_steel_seamless_slab_top"
+    }
+  }
+}

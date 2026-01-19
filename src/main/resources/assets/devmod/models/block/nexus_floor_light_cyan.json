@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "devmod:block/nexus/nexus_floor_light_cyan"
+  }
+}

@@ -185,6 +185,8 @@ public enum ChannelId {
     // ============================================================================
     TELEPAD_CONFIG(170, Direction.CLIENT_TO_SERVER, "TelepadConfigPayload"),
     TELEPAD_OPEN_SCREEN(171, Direction.SERVER_TO_CLIENT, "TelepadOpenScreenPayload"),
+    MANNEQUIN_ROTATION(172, Direction.CLIENT_TO_SERVER, "MannequinRotationPayload"),
+    MANNEQUIN_SKIN(173, Direction.CLIENT_TO_SERVER, "MannequinSkinPayload"),
 
     // ============================================================================
     // NPC SYSTEM CHANNELS (180-189)
@@ -249,6 +251,14 @@ public enum ChannelId {
     // ============================================================================
     ADMIN_INSTANCE_SYNC(230, Direction.SERVER_TO_CLIENT, "AdminInstanceSyncPayload"),
     ADMIN_INSTANCE_ACTION(231, Direction.CLIENT_TO_SERVER, "AdminInstanceActionPayload"),
+
+    // ============================================================================
+    // NEXUS HUB CHANNELS (240-249)
+    // ============================================================================
+    NEXUS_SLOT_LIST_REQUEST(240, Direction.CLIENT_TO_SERVER, "RequestSlotListPayload"),
+    NEXUS_SLOT_LIST(241, Direction.SERVER_TO_CLIENT, "SlotListPayload"),
+    NEXUS_HUB_STATUS(242, Direction.SERVER_TO_CLIENT, "HubStatusPayload"),
+    NEXUS_BUILD_PROGRESS(243, Direction.SERVER_TO_CLIENT, "NexusBuildProgressPayload"),
     ;
 
     // ============================================================================

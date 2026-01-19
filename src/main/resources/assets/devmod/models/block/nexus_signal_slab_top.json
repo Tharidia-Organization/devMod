@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/slab_top",
   "textures": {
-    "bottom": "devmod:block/nexus/nexus_signal",
-    "top": "devmod:block/nexus/nexus_signal",
-    "side": "devmod:block/nexus/nexus_signal"
+    "bottom": "devmod:block/nexus/nexus_panel_cyan",
+    "top": "devmod:block/nexus/nexus_panel_cyan",
+    "side": "devmod:block/nexus/nexus_panel_cyan"
   }
 }

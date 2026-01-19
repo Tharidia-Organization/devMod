@@ -1,5 +1,6 @@
 package com.devmod.clone.client.renderer;
 
+import java.util.EnumMap;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -20,10 +21,19 @@ import com.mojang.math.Axis;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.util.Mth;
 
+import com.devmod.clone.client.renderer.NeurocellEffectsMesh.EffectColor;
+
 /**
  * Singleton VBO manager for Neurocell energy effects.
  *
- * <p>This class manages two VBOs:
+ * <p>This class manages VBOs for each color variant:
+ * <ul>
+ *   <li>CYAN - Default Neurocell</li>
+ *   <li>RED - NeurocellL (large)</li>
+ *   <li>GREEN - NeurocellMannequin</li>
+ * </ul>
+ *
+ * <p>Each color has:
  * <ul>
  *   <li>Ring VBO - scanning ring geometry</li>
  *   <li>Helix VBO - energy helix particles</li>
@@ -43,16 +53,40 @@ public final class NeurocellEffectsVBO {
     private static final float HALF_PI = (float) (Math.PI / 2.0);
     private static final float RAD_TO_DEG = (float) (180.0 / Math.PI);
 
-    @Nullable
-    private VertexBuffer ringVBO;
-    @Nullable
-    private VertexBuffer helixVBO;
+    /** VBO data for a single color variant */
+    private static class ColorVBOData {
+        @Nullable VertexBuffer ringVBO;
+        @Nullable VertexBuffer helixVBO;
+        int ringVertexCount;
+        int helixVertexCount;
+        boolean initialized = false;
 
-    private int ringVertexCount;
-    private int helixVertexCount;
-    private boolean initialized = false;
+        void close() {
+            if (ringVBO != null) {
+                VertexBuffer vbo = ringVBO;
+                ringVBO = null;
+                RenderSystem.recordRenderCall(vbo::close);
+            }
+            if (helixVBO != null) {
+                VertexBuffer vbo = helixVBO;
+                helixVBO = null;
+                RenderSystem.recordRenderCall(vbo::close);
+            }
+            ringVertexCount = 0;
+            helixVertexCount = 0;
+            initialized = false;
+        }
+    }
 
-    private NeurocellEffectsVBO() {}
+    /** VBO data per color */
+    private final EnumMap<EffectColor, ColorVBOData> colorData = new EnumMap<>(EffectColor.class);
+
+    private NeurocellEffectsVBO() {
+        // Initialize color data map
+        for (EffectColor color : EffectColor.values()) {
+            colorData.put(color, new ColorVBOData());
+        }
+    }
 
     /**
      * Get the singleton instance, initializing if necessary.
@@ -62,44 +96,58 @@ public final class NeurocellEffectsVBO {
         if (instance == null) {
             instance = new NeurocellEffectsVBO();
         }
-        return instance;
+        return Objects.requireNonNull(instance);
     }
 
     /**
-     * Initialize VBOs with pre-computed mesh geometry.
-     * Call this during client setup or on first render.
+     * Initialize VBOs for the specified color variant.
+     *
+     * @param color The color to initialize
      */
-    public void initialize() {
-        if (initialized) {
+    private void initializeColor(EffectColor color) {
+        ColorVBOData data = colorData.get(color);
+        if (data == null || data.initialized) {
             return;
         }
 
         RenderSystem.assertOnRenderThread();
 
-        NeurocellEffectsMesh mesh = NeurocellEffectsMesh.build();
-        uploadRingVBO(mesh);
-        uploadHelixVBO(mesh);
+        NeurocellEffectsMesh mesh = NeurocellEffectsMesh.build(color);
+        uploadRingVBO(mesh, data);
+        uploadHelixVBO(mesh, data);
 
-        initialized = true;
+        data.initialized = true;
+    }
+
+    /**
+     * Initialize VBOs with pre-computed mesh geometry (default CYAN).
+     * Call this during client setup or on first render.
+     */
+    public void initialize() {
+        initializeColor(EffectColor.CYAN);
     }
 
     /**
      * Upload ring geometry to VBO.
+     * VBO is stored in ColorVBOData and closed via close() method.
      */
-    private void uploadRingVBO(NeurocellEffectsMesh mesh) {
+    @SuppressWarnings("resource") // VBO stored in data.ringVBO, closed via ColorVBOData.close()
+    private void uploadRingVBO(NeurocellEffectsMesh mesh, ColorVBOData data) {
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.begin(
             VertexFormat.Mode.QUADS,
-            DefaultVertexFormat.POSITION_COLOR_NORMAL
+            Objects.requireNonNull(DefaultVertexFormat.POSITION_COLOR_NORMAL)
         );
 
         PoseStack poseStack = new PoseStack();
-        mesh.renderRing(builder, poseStack, 0, 1.0f);
+        mesh.renderRing(Objects.requireNonNull(builder), poseStack, 0, 1.0f);
 
         MeshData meshData = builder.buildOrThrow();
-        ringVertexCount = meshData.drawState().vertexCount();
+        data.ringVertexCount = meshData.drawState().vertexCount();
 
-        ringVBO = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        // VBO is stored in data.ringVBO and closed via ColorVBOData.close()
+        VertexBuffer ringVBO = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        data.ringVBO = ringVBO;
         ringVBO.bind();
         ringVBO.upload(meshData);
         VertexBuffer.unbind();
@@ -109,21 +157,25 @@ public final class NeurocellEffectsVBO {
 
     /**
      * Upload helix geometry to VBO.
+     * VBO is stored in ColorVBOData and closed via close() method.
      */
-    private void uploadHelixVBO(NeurocellEffectsMesh mesh) {
+    @SuppressWarnings("resource") // VBO stored in data.helixVBO, closed via ColorVBOData.close()
+    private void uploadHelixVBO(NeurocellEffectsMesh mesh, ColorVBOData data) {
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.begin(
             VertexFormat.Mode.QUADS,
-            DefaultVertexFormat.POSITION_COLOR_NORMAL
+            Objects.requireNonNull(DefaultVertexFormat.POSITION_COLOR_NORMAL)
         );
 
         PoseStack poseStack = new PoseStack();
-        mesh.renderHelix(builder, poseStack, 1.0f);
+        mesh.renderHelix(Objects.requireNonNull(builder), poseStack, 1.0f);
 
         MeshData meshData = builder.buildOrThrow();
-        helixVertexCount = meshData.drawState().vertexCount();
+        data.helixVertexCount = meshData.drawState().vertexCount();
 
-        helixVBO = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        // VBO is stored in data.helixVBO and closed via ColorVBOData.close()
+        VertexBuffer helixVBO = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        data.helixVBO = helixVBO;
         helixVBO.bind();
         helixVBO.upload(meshData);
         VertexBuffer.unbind();
@@ -132,28 +184,45 @@ public final class NeurocellEffectsVBO {
     }
 
     /**
-     * Render the complete energy effects (rings + helix).
+     * Render the complete energy effects (rings + helix) with default CYAN color.
      *
      * @param poseStack Current pose stack (positioned at block center)
      * @param animTime Animation time for transformations
      */
     public void renderEffects(@Nonnull PoseStack poseStack, float animTime) {
-        renderEffects(poseStack, animTime, 1.0f);
+        renderEffects(poseStack, animTime, 1.0f, EffectColor.CYAN);
     }
 
     /**
-     * Render the complete energy effects with custom scale.
+     * Render the complete energy effects with custom scale (default CYAN color).
      *
      * @param poseStack Current pose stack (positioned at block center)
      * @param animTime Animation time for transformations
      * @param scale Scale factor for effect size (1.0 = normal, 1.3 = NeurocellL)
      */
     public void renderEffects(@Nonnull PoseStack poseStack, float animTime, float scale) {
-        if (!initialized) {
-            initialize();
+        renderEffects(poseStack, animTime, scale, EffectColor.CYAN);
+    }
+
+    /**
+     * Render the complete energy effects with custom scale and color.
+     *
+     * @param poseStack Current pose stack (positioned at block center)
+     * @param animTime Animation time for transformations
+     * @param scale Scale factor for effect size (1.0 = normal, 1.3 = NeurocellL)
+     * @param color The color variant to render
+     */
+    public void renderEffects(@Nonnull PoseStack poseStack, float animTime, float scale, EffectColor color) {
+        ColorVBOData data = colorData.get(color);
+        if (data == null) {
+            return;
         }
 
-        if (ringVBO == null || helixVBO == null) {
+        if (!data.initialized) {
+            initializeColor(color);
+        }
+
+        if (data.ringVBO == null || data.helixVBO == null) {
             return;
         }
 
@@ -167,20 +236,20 @@ public final class NeurocellEffectsVBO {
         RenderSystem.blendFunc(770, 771); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
 
         // Get projection matrix
-        Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+        Matrix4f projectionMatrix = Objects.requireNonNull(RenderSystem.getProjectionMatrix());
 
         // Render first ring (moving up) - scale affects radius
         float scanY1 = 0.3f + 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
-        renderRing(poseStack, projectionMatrix, scanY1, 0.42f * scale, animTime * 50.0f, 1.0f);
+        renderRing(poseStack, projectionMatrix, scanY1, 0.42f * scale, animTime * 50.0f, 1.0f, data);
 
         // Render second ring (moving down)
         float scanY2 = 1.3f - 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
-        renderRing(poseStack, projectionMatrix, scanY2, 0.38f * scale, -animTime * 50.0f, 1.0f);
+        renderRing(poseStack, projectionMatrix, scanY2, 0.38f * scale, -animTime * 50.0f, 1.0f, data);
 
         // Render helix with pulsing alpha - scale affects helix size
         float cycleTime = animTime % 5.0f;
         float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * TWO_PI - HALF_PI);
-        renderHelix(poseStack, projectionMatrix, animTime * 2.0f, fadeMultiplier, scale);
+        renderHelix(poseStack, projectionMatrix, animTime * 2.0f, fadeMultiplier, scale, data);
 
         // Restore render state
         RenderSystem.depthMask(true);
@@ -191,8 +260,8 @@ public final class NeurocellEffectsVBO {
      * Render a scanning ring at the specified position.
      */
     private void renderRing(@Nonnull PoseStack poseStack, @Nonnull Matrix4f projectionMatrix,
-                            float y, float radius, float rotation, float alpha) {
-        if (ringVBO == null || ringVertexCount == 0) {
+                            float y, float radius, float rotation, float alpha, ColorVBOData data) {
+        if (data.ringVBO == null || data.ringVertexCount == 0) {
             return;
         }
 
@@ -202,18 +271,30 @@ public final class NeurocellEffectsVBO {
         poseStack.scale(radius, 1.0f, radius);
 
         Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
-        modelViewMatrix.mul(poseStack.last().pose());
+        modelViewMatrix.mul(Objects.requireNonNull(poseStack.last().pose()));
 
         ShaderInstance shader = RenderSystem.getShader();
         if (shader != null) {
-            shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
-            shader.PROJECTION_MATRIX.set(projectionMatrix);
-            shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, alpha);
+            var modelViewUniform = shader.MODEL_VIEW_MATRIX;
+            var projectionUniform = shader.PROJECTION_MATRIX;
+            var colorUniform = shader.COLOR_MODULATOR;
+            if (modelViewUniform != null) {
+                modelViewUniform.set(modelViewMatrix);
+            }
+            if (projectionUniform != null) {
+                projectionUniform.set(projectionMatrix);
+            }
+            if (colorUniform != null) {
+                colorUniform.set(1.0f, 1.0f, 1.0f, alpha);
+            }
 
-            ringVBO.bind();
-            shader.apply();
-            ringVBO.draw();
-            VertexBuffer.unbind();
+            var vbo = data.ringVBO;
+            if (vbo != null) {
+                vbo.bind();
+                shader.apply();
+                vbo.draw();
+                VertexBuffer.unbind();
+            }
             shader.clear();
         }
 
@@ -224,8 +305,8 @@ public final class NeurocellEffectsVBO {
      * Render the energy helix with rotation, alpha, and scale.
      */
     private void renderHelix(@Nonnull PoseStack poseStack, @Nonnull Matrix4f projectionMatrix,
-                             float rotation, float alpha, float scale) {
-        if (helixVBO == null || helixVertexCount == 0) {
+                             float rotation, float alpha, float scale, ColorVBOData data) {
+        if (data.helixVBO == null || data.helixVertexCount == 0) {
             return;
         }
 
@@ -234,18 +315,30 @@ public final class NeurocellEffectsVBO {
         poseStack.scale(scale, 1.0f, scale); // Scale helix in XZ plane
 
         Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
-        modelViewMatrix.mul(poseStack.last().pose());
+        modelViewMatrix.mul(Objects.requireNonNull(poseStack.last().pose()));
 
         ShaderInstance shader = RenderSystem.getShader();
         if (shader != null) {
-            shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
-            shader.PROJECTION_MATRIX.set(projectionMatrix);
-            shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, alpha);
+            var modelViewUniform = shader.MODEL_VIEW_MATRIX;
+            var projectionUniform = shader.PROJECTION_MATRIX;
+            var colorUniform = shader.COLOR_MODULATOR;
+            if (modelViewUniform != null) {
+                modelViewUniform.set(modelViewMatrix);
+            }
+            if (projectionUniform != null) {
+                projectionUniform.set(projectionMatrix);
+            }
+            if (colorUniform != null) {
+                colorUniform.set(1.0f, 1.0f, 1.0f, alpha);
+            }
 
-            helixVBO.bind();
-            shader.apply();
-            helixVBO.draw();
-            VertexBuffer.unbind();
+            var vbo = data.helixVBO;
+            if (vbo != null) {
+                vbo.bind();
+                shader.apply();
+                vbo.draw();
+                VertexBuffer.unbind();
+            }
             shader.clear();
         }
 
@@ -253,29 +346,20 @@ public final class NeurocellEffectsVBO {
     }
 
     /**
-     * Check if VBOs are initialized and ready.
+     * Check if VBOs are initialized and ready (for default CYAN color).
      */
     public boolean isReady() {
-        return initialized && ringVBO != null && helixVBO != null;
+        ColorVBOData data = colorData.get(EffectColor.CYAN);
+        return data != null && data.initialized && data.ringVBO != null && data.helixVBO != null;
     }
 
     /**
-     * Release GPU resources.
+     * Release GPU resources for all colors.
      */
     public void close() {
-        if (ringVBO != null) {
-            VertexBuffer vbo = ringVBO;
-            ringVBO = null;
-            RenderSystem.recordRenderCall(vbo::close);
+        for (ColorVBOData data : colorData.values()) {
+            data.close();
         }
-        if (helixVBO != null) {
-            VertexBuffer vbo = helixVBO;
-            helixVBO = null;
-            RenderSystem.recordRenderCall(vbo::close);
-        }
-        ringVertexCount = 0;
-        helixVertexCount = 0;
-        initialized = false;
     }
 
     /**

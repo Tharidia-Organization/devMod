@@ -1,5 +1,7 @@
 package com.devmod.clone.client.model;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import net.minecraft.resources.ResourceLocation;
@@ -24,21 +26,19 @@ public class ClonePulverizerModel extends GeoModel<ClonePulverizerBlockEntity> {
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
-    public ResourceLocation getModelResource(@Nonnull ClonePulverizerBlockEntity entity) {
-        return MODEL;
+    public ResourceLocation getModelResource(ClonePulverizerBlockEntity entity) {
+        return Objects.requireNonNull(MODEL);
     }
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
-    public ResourceLocation getTextureResource(@Nonnull ClonePulverizerBlockEntity entity) {
-        return TEXTURE;
+    public ResourceLocation getTextureResource(ClonePulverizerBlockEntity entity) {
+        return Objects.requireNonNull(TEXTURE);
     }
 
     @Override
     @Nonnull
-    public ResourceLocation getAnimationResource(@Nonnull ClonePulverizerBlockEntity entity) {
-        return ANIMATION;
+    public ResourceLocation getAnimationResource(ClonePulverizerBlockEntity entity) {
+        return Objects.requireNonNull(ANIMATION);
     }
 }

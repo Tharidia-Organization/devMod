@@ -1,5 +1,6 @@
 package com.devmod.hologram.client.renderer;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
@@ -45,7 +46,7 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             return;
         }
 
-        Level level = blockEntity.getLevel();
+        Level level = Objects.requireNonNull(blockEntity.getLevel());
         int minX = blockEntity.getScanMinX();
         int maxX = blockEntity.getScanMaxX();
         int minZ = blockEntity.getScanMinZ();
@@ -60,7 +61,7 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         if (blockEntity.isRotationEnabled()) {
             long time = level.getGameTime();
             float rotation = (time + partialTick) * 0.5f;
-            poseStack.mulPose(new Quaternionf().rotationY((float) Math.toRadians(rotation)));
+            poseStack.mulPose(Objects.requireNonNull(new Quaternionf().rotationY((float) Math.toRadians(rotation))));
         }
 
         // Scale to fit within blockSize
@@ -154,11 +155,11 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         // Build matrices
         Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
         modelViewMatrix.mul(poseStack.last().pose());
-        Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+        Matrix4f projectionMatrix = Objects.requireNonNull(RenderSystem.getProjectionMatrix());
 
         // Render with transparency if enabled
         float alpha = blockEntity.isTransparentMode() ? 0.7f : 1.0f;
-        vbo.render(modelViewMatrix, projectionMatrix, alpha);
+        vbo.render(modelViewMatrix, Objects.requireNonNull(projectionMatrix), alpha);
     }
 
     @Override

@@ -1,1 +1,1 @@
-{ "parent": "minecraft:block/cube_all", "textures": { "all": "devmod:block/nexus/nexus_vent" } }
+{ "parent": "minecraft:block/cube_all", "textures": { "all": "devmod:block/nexus/nexus_vent_gray" } }

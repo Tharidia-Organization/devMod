@@ -1,26 +1,38 @@
 package com.devmod.runtime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.devmod.area.data.AreaDefinition;
+import com.devmod.area.data.AreaRegistry;
 import com.devmod.config.Config;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketManager;
+import com.devmod.nexus.data.ZoneSlot;
+import com.devmod.nexus.data.ZoneSlotRegistry;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
 import com.devmod.zone.runtime.ZoneResolver;
@@ -29,6 +41,8 @@ import com.devmod.zone.runtime.ZoneResolver;
  * Admin commands for Nexus hub control.
  */
 public final class NexusCommand {
+    private static final int ITEMS_PER_PAGE = 10;
+
     private NexusCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -40,6 +54,36 @@ public final class NexusCommand {
                         .executes(NexusCommand::help))
                     .then(Commands.literal("zones")
                         .executes(NexusCommand::zones))
+                    .then(Commands.literal("slot")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("list")
+                            .executes(ctx -> listSlots(ctx, 1))
+                            .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                                .executes(ctx -> listSlots(ctx, IntegerArgumentType.getInteger(ctx, "page")))))
+                        .then(Commands.literal("info")
+                            .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                                .suggests(NexusCommand::suggestSlotIds)
+                                .executes(ctx -> showSlotInfo(ctx, StringArgumentType.getString(ctx, "slotId")))))
+                        .then(Commands.literal("link")
+                            .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                                .suggests(NexusCommand::suggestSlotIds)
+                                .then(Commands.argument("areaName", Objects.requireNonNull(StringArgumentType.greedyString(), "StringArgumentType.greedyString"))
+                                    .suggests(NexusCommand::suggestAreaNames)
+                                    .executes(ctx -> linkSlot(ctx,
+                                        StringArgumentType.getString(ctx, "slotId"),
+                                        StringArgumentType.getString(ctx, "areaName"))))))
+                        .then(Commands.literal("unlink")
+                            .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                                .suggests(NexusCommand::suggestLinkedSlotIds)
+                                .executes(ctx -> unlinkSlot(ctx, StringArgumentType.getString(ctx, "slotId")))))
+                        .then(Commands.literal("tp")
+                            .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                                .suggests(NexusCommand::suggestSlotIds)
+                                .executes(ctx -> teleportToSlot(ctx, StringArgumentType.getString(ctx, "slotId")))))
+                        .then(Commands.literal("teleport")
+                            .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                                .suggests(NexusCommand::suggestSlotIds)
+                                .executes(ctx -> teleportToSlot(ctx, StringArgumentType.getString(ctx, "slotId"))))))
                     .then(Commands.literal("tp")
                         .executes(ctx -> teleport(ctx, "hub"))
                         .then(Commands.argument("zone", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
@@ -92,6 +136,11 @@ public final class NexusCommand {
                         .then(Commands.literal("instances")
                             .requires(source -> source.hasPermission(Config.ADMIN_PANEL_PERMISSION_LEVEL.get()))
                             .executes(NexusCommand::openAdminInstancePanel)))
+                    .then(Commands.literal("teleport")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
+                            .suggests(NexusCommand::suggestSlotIds)
+                            .executes(ctx -> teleportToSlot(ctx, StringArgumentType.getString(ctx, "slotId")))))
                 )
         );
     }
@@ -114,6 +163,18 @@ public final class NexusCommand {
             Component.literal("§7/§fdevmod nexus riftstamp §7- spawn a RiftStamp portal (admin)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7/§fdevmod nexus zones §7- list zone ids")), false);
+        if (source.hasPermission(2)) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7/§fdevmod nexus slot list §7- list hub slots")), false);
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7/§fdevmod nexus slot info <id> §7- show slot details")), false);
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7/§fdevmod nexus slot link <id> <area> §7- link area to slot")), false);
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7/§fdevmod nexus slot unlink <id> §7- unlink slot")), false);
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7/§fdevmod nexus teleport <slotId> §7- teleport to slot")), false);
+        }
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7/§fdevmod nexus status §7- show Nexus state")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
@@ -131,6 +192,180 @@ public final class NexusCommand {
         }
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§eZones: §f" + String.join(", ", zoneIds))), false);
+        return 1;
+    }
+
+    private static int listSlots(CommandContext<CommandSourceStack> ctx, int page) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
+        Collection<ZoneSlot> allSlots = registry.getAllSlots();
+
+        if (allSlots.isEmpty()) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§eNo slots defined. Run /devmod nexus rebuild.")), false);
+            return 0;
+        }
+
+        int totalSlots = allSlots.size();
+        int totalPages = (totalSlots + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE;
+        int safePage = Math.max(1, Math.min(page, totalPages));
+        int skip = (safePage - 1) * ITEMS_PER_PAGE;
+
+        List<ZoneSlot> pageSlots = allSlots.stream()
+            .sorted((a, b) -> a.slotId().compareTo(b.slotId()))
+            .skip(skip)
+            .limit(ITEMS_PER_PAGE)
+            .toList();
+
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§e=== Nexus Slots (Page " + safePage + "/" + totalPages + ") ===")), false);
+
+        for (ZoneSlot slot : pageSlots) {
+            String status = slot.hasLinkedArea() ? "§a[LINKED]" : "§7[EMPTY]";
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§f  " + slot.slotId() + " §7(" + slot.type().name() + ") " + status)), false);
+        }
+
+        return 1;
+    }
+
+    private static int showSlotInfo(CommandContext<CommandSourceStack> ctx, String slotId) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
+        Optional<ZoneSlot> slotOpt = registry.getSlot(Objects.requireNonNull(slotId));
+
+        if (slotOpt.isEmpty()) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cSlot not found: " + slotId)));
+            return 0;
+        }
+
+        ZoneSlot slot = slotOpt.get();
+
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§e=== Slot: " + slot.slotId() + " ===")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§7Display Name: §f" + slot.displayName())), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§7Type: §f" + slot.type().name())), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§7Bounds: §f" + formatBounds(slot))), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§7Portal Color: §f" + slot.portalColor().name())), false);
+
+        if (slot.hasLinkedArea()) {
+            AreaRegistry areaRegistry = AreaRegistry.get(server);
+            Optional<AreaDefinition> areaOpt = areaRegistry.getArea(Objects.requireNonNull(slot.linkedAreaId()));
+            String areaName = areaOpt.map(AreaDefinition::name).orElse("Unknown");
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7Linked Area: §a" + areaName)), false);
+        } else {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§7Linked Area: §eNone")), false);
+        }
+
+        return 1;
+    }
+
+    private static int linkSlot(CommandContext<CommandSourceStack> ctx, String slotId, String areaName) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        AreaRegistry areaRegistry = AreaRegistry.get(server);
+        Optional<AreaDefinition> areaOpt = areaRegistry.getAllAreas().stream()
+            .filter(area -> area.name().equalsIgnoreCase(areaName))
+            .findFirst();
+
+        if (areaOpt.isEmpty()) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cArea not found: " + areaName)));
+            return 0;
+        }
+
+        UUID areaId = Objects.requireNonNull(areaOpt.get().id());
+        boolean success = NexusHubManager.INSTANCE.linkAreaToSlot(server, Objects.requireNonNull(slotId), areaId);
+
+        if (success) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§aLinked area '" + areaName + "' to slot '" + slotId + "'")), true);
+            return 1;
+        }
+
+        source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to link area to slot.")));
+        return 0;
+    }
+
+    private static int unlinkSlot(CommandContext<CommandSourceStack> ctx, String slotId) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        boolean success = NexusHubManager.INSTANCE.unlinkAreaFromSlot(server, Objects.requireNonNull(slotId));
+
+        if (success) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("§aUnlinked area from slot '" + slotId + "'")), true);
+            return 1;
+        }
+
+        source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to unlink slot.")));
+        return 0;
+    }
+
+    private static int teleportToSlot(CommandContext<CommandSourceStack> ctx, String slotId) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required")));
+            return 0;
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
+        Optional<ZoneSlot> slotOpt = registry.getSlot(Objects.requireNonNull(slotId));
+        if (slotOpt.isEmpty()) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cSlot not found: " + slotId)));
+            return 0;
+        }
+
+        ServerLevel nexusLevel = server.getLevel(Objects.requireNonNull(NexusDimensionManager.NEXUS_DIMENSION));
+        if (nexusLevel == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("§cNexus dimension not available.")));
+            return 0;
+        }
+
+        BlockPos center = slotOpt.get().bounds().floorCenter();
+        player.teleportTo(nexusLevel,
+            center.getX() + 0.5,
+            center.getY() + 1,
+            center.getZ() + 0.5,
+            player.getYRot(),
+            player.getXRot());
+
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§aTeleported to slot '" + slotId + "'")), false);
         return 1;
     }
 
@@ -165,11 +400,8 @@ public final class NexusCommand {
 
     @Nonnull
     private static ZoneRegistry getZoneRegistry(@Nonnull MinecraftServer server) {
-        ZoneRegistry registry = ZoneRegistry.get(server);
-        if (!registry.isInitialized()) {
-            registry.initializeWithLegacyZones(Objects.requireNonNull(NexusDimensionManager.getHubOrigin()));
-        }
-        return registry;
+        NexusHubManager.INSTANCE.initialize(server);
+        return ZoneRegistry.get(server);
     }
 
     @Nonnull
@@ -255,6 +487,8 @@ public final class NexusCommand {
         MinecraftServer server = source.getServer();
         NexusHubSavedData data = NexusHubSavedData.get(server);
         ServerLevel level = server.getLevel(Objects.requireNonNull(NexusDimensionManager.NEXUS_DIMENSION, "NEXUS_DIMENSION"));
+        NexusHubManager.INSTANCE.initialize(server);
+        NexusHubManager.HubStatus hubStatus = NexusHubManager.INSTANCE.getStatus(server);
 
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§e=== Nexus Status ===")), false);
@@ -272,8 +506,60 @@ public final class NexusCommand {
             Component.literal("§7Rebuild Policy: §f" + Config.NEXUS_REBUILD_POLICY.get())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§7Palette: §f" + Config.NEXUS_PALETTE_PROFILE.get())), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("§7Slots: §f" + hubStatus.totalSlots()
+                + " §7Linked: §f" + hubStatus.linkedSlots()
+                + " §7Empty: §f" + hubStatus.emptySlots())), false);
 
         return 1;
+    }
+
+    private static CompletableFuture<Suggestions> suggestSlotIds(CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+        MinecraftServer server = ctx.getSource().getServer();
+        if (server == null) {
+            return builder.buildFuture();
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
+        for (ZoneSlot slot : registry.getAllSlots()) {
+            if (slot.slotId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(slot.slotId());
+            }
+        }
+        return builder.buildFuture();
+    }
+
+    private static CompletableFuture<Suggestions> suggestLinkedSlotIds(CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+        MinecraftServer server = ctx.getSource().getServer();
+        if (server == null) {
+            return builder.buildFuture();
+        }
+
+        NexusHubManager.INSTANCE.initialize(server);
+        ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
+        for (ZoneSlot slot : registry.getLinkedSlots()) {
+            if (slot.slotId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+                builder.suggest(slot.slotId());
+            }
+        }
+        return builder.buildFuture();
+    }
+
+    private static CompletableFuture<Suggestions> suggestAreaNames(CommandContext<CommandSourceStack> ctx, SuggestionsBuilder builder) {
+        MinecraftServer server = ctx.getSource().getServer();
+        if (server == null) {
+            return builder.buildFuture();
+        }
+
+        AreaRegistry registry = AreaRegistry.get(server);
+        String remaining = builder.getRemainingLowerCase();
+        for (AreaDefinition area : registry.getAllAreas()) {
+            if (area.name().toLowerCase().startsWith(remaining)) {
+                builder.suggest(area.name());
+            }
+        }
+        return builder.buildFuture();
     }
 
     private static int rebuild(CommandContext<CommandSourceStack> ctx) {
@@ -313,5 +599,13 @@ public final class NexusCommand {
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("§aOpening Instance Control Panel...")), false);
         return 1;
+    }
+
+    private static String formatBounds(ZoneSlot slot) {
+        var b = slot.bounds();
+        return String.format("(%d,%d,%d) to (%d,%d,%d) [%dx%dx%d]",
+            b.minX(), b.minY(), b.minZ(),
+            b.maxX(), b.maxY(), b.maxZ(),
+            b.width(), b.height(), b.length());
     }
 }

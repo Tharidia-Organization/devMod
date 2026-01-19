@@ -104,7 +104,7 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
             @Nonnull BlockPos pos,
             @Nonnull CollisionContext context
     ) {
-        return SHAPE;
+        return Objects.requireNonNull(SHAPE);
     }
 
     @Override
@@ -161,7 +161,7 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
             // Try grinder interaction first (shift+click to extract)
             InteractionResult grinderResult = pulverizer.handleGrinderInteraction(player, ItemStack.EMPTY);
             if (grinderResult != InteractionResult.PASS) {
-                return grinderResult;
+                return Objects.requireNonNull(grinderResult);
             }
 
             // Otherwise, collect output items

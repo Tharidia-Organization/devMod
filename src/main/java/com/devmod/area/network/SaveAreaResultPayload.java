@@ -22,12 +22,14 @@ import com.devmod.network.PayloadValidation;
  * @param areaId    The authoritative area ID assigned by the server
  * @param revision  The new revision after save
  * @param isNewArea Whether the save created a new area
+ * @param success   Whether the save completed successfully
  */
 public record SaveAreaResultPayload(
     UUID requestId,
     UUID areaId,
     int revision,
-    boolean isNewArea
+    boolean isNewArea,
+    boolean success
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
@@ -44,6 +46,7 @@ public record SaveAreaResultPayload(
         UUIDUtil.STREAM_CODEC.encode(b, Objects.requireNonNull(payload.areaId));
         ByteBufCodecs.VAR_INT.encode(b, payload.revision);
         ByteBufCodecs.BOOL.encode(b, payload.isNewArea);
+        ByteBufCodecs.BOOL.encode(b, payload.success);
     }
 
     private static SaveAreaResultPayload decode(FriendlyByteBuf buf) {
@@ -52,6 +55,7 @@ public record SaveAreaResultPayload(
             UUIDUtil.STREAM_CODEC.decode(b),
             UUIDUtil.STREAM_CODEC.decode(b),
             ByteBufCodecs.VAR_INT.decode(b),
+            ByteBufCodecs.BOOL.decode(b),
             ByteBufCodecs.BOOL.decode(b)
         );
     }
@@ -64,6 +68,6 @@ public record SaveAreaResultPayload(
 
     @Override
     public int estimatedSize() {
-        return 16 + 16 + 5 + 1; // 2 UUIDs + VarInt + boolean
+        return 16 + 16 + 5 + 2; // 2 UUIDs + VarInt + 2 booleans
     }
 }

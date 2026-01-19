@@ -1,5 +1,12 @@
 {
   "variants": {
-    "": { "model": "devmod:block/admin_terminal" }
+    "active=false,facing=north": {"model": "devmod:block/admin_terminal"},
+    "active=false,facing=south": {"model": "devmod:block/admin_terminal", "y": 180},
+    "active=false,facing=west": {"model": "devmod:block/admin_terminal", "y": 270},
+    "active=false,facing=east": {"model": "devmod:block/admin_terminal", "y": 90},
+    "active=true,facing=north": {"model": "devmod:block/admin_terminal"},
+    "active=true,facing=south": {"model": "devmod:block/admin_terminal", "y": 180},
+    "active=true,facing=west": {"model": "devmod:block/admin_terminal", "y": 270},
+    "active=true,facing=east": {"model": "devmod:block/admin_terminal", "y": 90}
   }
 }

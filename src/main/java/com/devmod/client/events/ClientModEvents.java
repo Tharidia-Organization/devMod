@@ -75,6 +75,7 @@ public class ClientModEvents {
         event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ContractHudOverlay.INSTANCE));
         event.registerAboveAll(Objects.requireNonNull(TRANSPORT_HUD_ID), Objects.requireNonNull(TransportClientPayloadHooks.getOverlay()));
         com.devmod.client.overlay.CombatFlowHudOverlay.registerGuiLayers(event);
+        com.devmod.client.nexus.NexusBuildProgressOverlay.register(event);
 
         // Register profile listener for notifications (once)
         if (!profileListenerRegistered) {
@@ -325,6 +326,9 @@ public class ClientModEvents {
 
         // Clear Epic Fight client cache
         com.devmod.client.compat.mods.epicfight.ClientEpicFightCache.INSTANCE.clear();
+
+        // Clear Nexus client cache (hub status, build progress)
+        com.devmod.nexus.client.NexusClientCache.INSTANCE.clear();
 
         LOGGER.debug("Caches cleared successfully");
     }

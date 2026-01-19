@@ -3940,7 +3940,35 @@ public final class DesignTokens {
         /** Status text when ready (green). */
         public static final int STATUS_READY = 0x00AA00;
 
+        // --- Mannequin Screen Colors ---
+        /** Default status text (white). */
+        public static final int STATUS_DEFAULT = 0xFFFFFF;
+        /** Success status text (bright green). */
+        public static final int STATUS_SUCCESS = 0x55FF55;
+        /** Error status text (bright red). */
+        public static final int STATUS_ERROR = 0xFF5555;
+        /** Loading status text (yellow). */
+        public static final int STATUS_LOADING = 0xFFFF55;
+        /** Control area background (semi-transparent black). */
+        public static final int CONTROL_BG = 0x40000000;
+        /** Slot label text (medium gray). */
+        public static final int SLOT_LABEL = 0x666666;
+
         private Neurocell() {}
+    }
+
+    /**
+     * Colors for the Nexus Build Progress overlay.
+     */
+    public static final class NexusBuild {
+        /** Panel background (semi-transparent black 80%). */
+        public static final int PANEL_BG = 0xCC000000;
+        /** Progress bar background (dark surface). */
+        public static final int BAR_BG = Palette.SURFACE_ALT;
+        /** RGB mask for color manipulation (strip alpha). */
+        public static final int RGB_MASK = 0x00FFFFFF;
+
+        private NexusBuild() {}
     }
 
     /**

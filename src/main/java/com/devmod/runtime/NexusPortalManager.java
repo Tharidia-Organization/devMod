@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.config.Config;
+import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.portal.PortalBlocks;
 import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalData;
@@ -70,10 +72,10 @@ public final class NexusPortalManager {
         cleanup(level);
 
         // Use data-driven zone registry
-        ZoneRegistry zoneRegistry = getZoneRegistry(level.getServer(), hubOrigin);
+        ZoneRegistry zoneRegistry = getZoneRegistry(level.getServer());
 
         for (com.devmod.zone.data.ZoneDefinition zone : zoneRegistry.getTeleportableZones()) {
-            createZonePortalDataDriven(level, hubOrigin, zone);
+            createZonePortalDataDriven(level, hubOrigin, Objects.requireNonNull(zone));
         }
 
         LOGGER.info("[NexusPortals] Created {} zone portals", portalIds.size());
@@ -97,32 +99,126 @@ public final class NexusPortalManager {
         }
 
         // Build portal frame
-        buildPortalFrame(level, portalCenter);
+        buildPortalFrame(level, Objects.requireNonNull(portalCenter));
 
         // Get destination (zone spawn point)
-        BlockPos spawnOffset = zone.spawnOffset();
-        BlockPos destination = spawnOffset != null ? hubOrigin.offset(spawnOffset) : zone.bounds().center();
+        BlockPos destination = zone.getAbsoluteSpawn(hubOrigin);
+        if (destination == null) {
+            destination = zone.bounds().floorCenter();
+        }
         ResourceLocation nexusDim = NexusDimensionManager.NEXUS_DIMENSION.location();
 
         // Create portal data with fixed destination
         PortalData portalData = PortalData.createWithFixedDestination(
             color,
-            nexusDim,
-            portalCenter,
-            nexusDim,  // Same dimension (Nexus)
-            destination
+            Objects.requireNonNull(nexusDim),
+            Objects.requireNonNull(portalCenter),
+            Objects.requireNonNull(nexusDim),  // Same dimension (Nexus)
+            Objects.requireNonNull(destination)
         );
 
         // Register portal in registry
         PortalRegistry registry = PortalRegistry.get(level);
-        registry.register(portalData);
+        registry.register(Objects.requireNonNull(portalData));
         portalIds.put(zone.zoneId(), portalData.id());
 
         // Fill interior with portal blocks
-        fillPortalInterior(level, portalCenter, color);
+        fillPortalInterior(level, Objects.requireNonNull(portalCenter), color);
 
         LOGGER.debug("[NexusPortals] Created {} portal at {} -> destination {}",
             zone.zoneId(), portalCenter, destination);
+    }
+
+    /**
+     * Create a portal for a Nexus zone slot.
+     * Used by NexusHubManager when linking areas to slots.
+     *
+     * @param level the Nexus dimension
+     * @param portalPosition the portal position (absolute world coordinates)
+     * @param color the portal color
+     * @param destination the teleport destination
+     * @param slotId the slot ID for tracking
+     * @return the portal UUID, or null if creation failed
+     */
+    @Nullable
+    public UUID createSlotPortal(
+            @Nonnull ServerLevel level,
+            @Nonnull BlockPos portalPosition,
+            @Nonnull PortalColor color,
+            @Nonnull BlockPos destination,
+            @Nonnull String slotId
+    ) {
+        Objects.requireNonNull(level);
+        Objects.requireNonNull(portalPosition);
+        Objects.requireNonNull(color);
+        Objects.requireNonNull(destination);
+        Objects.requireNonNull(slotId);
+
+        if (!Config.NEXUS_PORTALS_ENABLED.get()) {
+            LOGGER.debug("[NexusPortals] Portals disabled, skipping slot portal creation");
+            return null;
+        }
+
+        UUID existingId = portalIds.get(slotId);
+        if (existingId != null) {
+            LOGGER.debug("[NexusPortals] Slot portal '{}' already exists", slotId);
+            return existingId;
+        }
+
+        PortalRegistry registry = PortalRegistry.get(level);
+        Optional<PortalData> existingPortal = registry.getByPosition(portalPosition);
+        if (existingPortal.isPresent()) {
+            UUID portalId = existingPortal.get().id();
+            portalIds.put(slotId, portalId);
+            LOGGER.debug("[NexusPortals] Slot portal '{}' already registered at {}", slotId, portalPosition);
+            return portalId;
+        }
+
+        // Build portal frame
+        buildPortalFrame(level, portalPosition);
+
+        // Create portal data with fixed destination
+        ResourceLocation nexusDim = NexusDimensionManager.NEXUS_DIMENSION.location();
+        PortalData portalData = PortalData.createWithFixedDestination(
+            color,
+            Objects.requireNonNull(nexusDim),
+            portalPosition,
+            nexusDim,
+            destination
+        );
+
+        // Register portal
+        registry.register(Objects.requireNonNull(portalData));
+        portalIds.put(slotId, portalData.id());
+
+        // Fill interior with portal blocks
+        fillPortalInterior(level, portalPosition, color);
+
+        LOGGER.debug("[NexusPortals] Created slot portal '{}' at {} -> {}",
+            slotId, portalPosition, destination);
+        return portalData.id();
+    }
+
+    /**
+     * Remove a portal for a Nexus zone slot.
+     *
+     * @param level the Nexus dimension
+     * @param slotId the slot ID
+     * @return true if removed
+     */
+    public boolean removeSlotPortal(@Nonnull ServerLevel level, @Nonnull String slotId) {
+        Objects.requireNonNull(level);
+        Objects.requireNonNull(slotId);
+
+        UUID portalId = portalIds.remove(slotId);
+        if (portalId == null) {
+            return false;
+        }
+
+        PortalRegistry registry = PortalRegistry.get(level);
+        registry.unregister(portalId);
+        LOGGER.debug("[NexusPortals] Removed slot portal '{}'", slotId);
+        return true;
     }
 
     /**
@@ -171,9 +267,9 @@ public final class NexusPortalManager {
                                      @Nonnull PortalColor color) {
         BlockState portalState = Objects.requireNonNull(
             Objects.requireNonNull(PortalBlocks.CUSTOM_PORTAL.get(), "PortalBlocks.CUSTOM_PORTAL").defaultBlockState()
-                .setValue(CustomPortalBlock.AXIS, Direction.Axis.Z)
-                .setValue(CustomPortalBlock.COLOR, color)
-                .setValue(CustomPortalBlock.LINKED, true),
+                .setValue(Objects.requireNonNull(CustomPortalBlock.AXIS), Direction.Axis.Z)
+                .setValue(Objects.requireNonNull(CustomPortalBlock.COLOR), color)
+                .setValue(Objects.requireNonNull(CustomPortalBlock.LINKED), true),
             "portalState"
         );
 
@@ -196,18 +292,18 @@ public final class NexusPortalManager {
         }
 
         // Verify portals still exist (rebuild if destroyed)
-        ZoneRegistry zoneRegistry = getZoneRegistry(level.getServer(), hubOrigin);
+        ZoneRegistry zoneRegistry = getZoneRegistry(level.getServer());
 
         for (Map.Entry<String, UUID> entry : portalIds.entrySet()) {
             String zoneId = entry.getKey();
             UUID portalId = entry.getValue();
 
             PortalRegistry registry = PortalRegistry.get(level);
-            if (registry.get(portalId).isEmpty()) {
+            if (registry.get(Objects.requireNonNull(portalId)).isEmpty()) {
                 // Portal was destroyed, recreate it using data-driven zone
                 LOGGER.debug("[NexusPortals] Recreating destroyed portal for {}", zoneId);
-                zoneRegistry.getZoneById(zoneId).ifPresent(zone ->
-                    createZonePortalDataDriven(level, hubOrigin, zone));
+                zoneRegistry.getZoneById(Objects.requireNonNull(zoneId)).ifPresent(zone ->
+                    createZonePortalDataDriven(level, hubOrigin, Objects.requireNonNull(zone)));
             }
         }
     }
@@ -220,7 +316,7 @@ public final class NexusPortalManager {
 
         // Unregister all tracked portals
         for (UUID portalId : portalIds.values()) {
-            registry.unregister(portalId);
+            registry.unregister(Objects.requireNonNull(portalId));
         }
         portalIds.clear();
 
@@ -242,7 +338,7 @@ public final class NexusPortalManager {
     @Nonnull
     public List<PortalInfo> getPortalInfoList(@Nonnull MinecraftServer server, @Nonnull BlockPos hubOrigin) {
         List<PortalInfo> list = new ArrayList<>();
-        ZoneRegistry registry = getZoneRegistry(server, hubOrigin);
+        ZoneRegistry registry = getZoneRegistry(server);
         for (ZoneDefinition zone : registry.getTeleportableZones()) {
             BlockPos portalOffset = zone.portalOffset();
             if (portalOffset == null) {
@@ -262,14 +358,14 @@ public final class NexusPortalManager {
     public ZoneDefinition getZoneAtPosition(@Nonnull MinecraftServer server,
                                             @Nonnull BlockPos hubOrigin,
                                             @Nonnull BlockPos pos) {
-        ZoneRegistry registry = getZoneRegistry(server, hubOrigin);
+        ZoneRegistry registry = getZoneRegistry(server);
         for (ZoneDefinition zone : registry.getTeleportableZones()) {
             BlockPos portalOffset = zone.portalOffset();
             if (portalOffset == null) {
                 continue;
             }
             BlockPos portalPos = hubOrigin.offset(portalOffset);
-            if (isWithinPortalBounds(portalPos, pos)) {
+            if (isWithinPortalBounds(Objects.requireNonNull(portalPos), pos)) {
                 return zone;
             }
         }
@@ -303,11 +399,8 @@ public final class NexusPortalManager {
         }
     }
 
-    private ZoneRegistry getZoneRegistry(@Nonnull MinecraftServer server, @Nonnull BlockPos hubOrigin) {
-        ZoneRegistry registry = ZoneRegistry.get(server);
-        if (!registry.isInitialized()) {
-            registry.initializeWithLegacyZones(hubOrigin);
-        }
-        return registry;
+    private ZoneRegistry getZoneRegistry(@Nonnull MinecraftServer server) {
+        NexusHubManager.INSTANCE.initialize(server);
+        return ZoneRegistry.get(server);
     }
 }

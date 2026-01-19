@@ -20,6 +20,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.nexus.runtime.NexusHubManager;
+import com.devmod.runtime.NexusDimensionManager;
+import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.runtime.ZoneResolver;
+
 /**
  * Resolves placeholders in hologram content (Regola 8 - Bibbia Estetica).
  *
@@ -240,11 +245,21 @@ public final class HologramPlaceholderResolver {
      */
     @Nonnull
     private static String resolveZone(@Nullable Level level, @Nullable BlockPos pos) {
-        if (level == null || pos == null) {
+        if (!(level instanceof ServerLevel serverLevel) || pos == null) {
             return "Hub";
         }
-        // TODO: Integrate with NexusZoneManager when available
-        return "Hub";
+        if (!serverLevel.dimension().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
+            return "Hub";
+        }
+
+        MinecraftServer server = serverLevel.getServer();
+        if (server != null) {
+            NexusHubManager.INSTANCE.initialize(server);
+        }
+
+        return ZoneResolver.INSTANCE.resolve(serverLevel, pos)
+            .map(ZoneDefinition::displayName)
+            .orElse("Hub");
     }
 
     /**

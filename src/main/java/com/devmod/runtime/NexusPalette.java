@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.config.Config;
+import com.devmod.nexus.NexusDecorBlocks;
 import com.devmod.util.ConfigPaths;
 
 /**
@@ -132,51 +133,51 @@ public final class NexusPalette {
 
     public static NexusPalette defaultPalette() {
         EnumMap<Key, BlockState> map = new EnumMap<>(Key.class);
-        map.put(Key.FLOOR, Blocks.SMOOTH_STONE.defaultBlockState());
-        map.put(Key.FLOOR_ALT, Blocks.POLISHED_ANDESITE.defaultBlockState());
-        map.put(Key.FLOOR_HUB, Blocks.CALCITE.defaultBlockState());
-        // H-13 fix: Dedicated ceiling material (defaults to same as floor for backward compat)
-        map.put(Key.CEILING, Blocks.SMOOTH_STONE.defaultBlockState());
-        map.put(Key.GRID, Blocks.POLISHED_ANDESITE.defaultBlockState());
-        map.put(Key.ACCENT, Blocks.WAXED_EXPOSED_COPPER.defaultBlockState());
-        map.put(Key.WALL, Blocks.SMOOTH_SANDSTONE.defaultBlockState());
-        map.put(Key.WALL_FRAME, Blocks.TUFF_BRICKS.defaultBlockState());
-        map.put(Key.BORDER, Blocks.SMOOTH_QUARTZ.defaultBlockState());
-        map.put(Key.TRIM, Blocks.QUARTZ_PILLAR.defaultBlockState());
-        map.put(Key.RING, Blocks.POLISHED_TUFF.defaultBlockState());
-        map.put(Key.CORE, Blocks.CALCITE.defaultBlockState());
-        map.put(Key.CORE_GLASS, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.LIGHT, Blocks.SEA_LANTERN.defaultBlockState());
-        map.put(Key.LIGHT_WARM, Blocks.OCHRE_FROGLIGHT.defaultBlockState());
-        map.put(Key.SCREEN, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.SCREEN_ALT, Blocks.WHITE_STAINED_GLASS.defaultBlockState());
-        map.put(Key.SCREEN_FRAME, Blocks.POLISHED_ANDESITE.defaultBlockState());
-        map.put(Key.WINDOW, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.WINDOW_DARK, Blocks.GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.RAIL, Blocks.IRON_BARS.defaultBlockState());
+        // Use NexusDecorBlocks for futuristic look
+        map.put(Key.FLOOR, NexusDecorBlocks.NEXUS_AZURE_DARK.get().defaultBlockState());
+        map.put(Key.FLOOR_ALT, NexusDecorBlocks.NEXUS_PANEL_DARK.get().defaultBlockState());
+        map.put(Key.FLOOR_HUB, NexusDecorBlocks.NEXUS_TILE.get().defaultBlockState());
+        map.put(Key.CEILING, NexusDecorBlocks.NEXUS_PANEL.get().defaultBlockState());
+        map.put(Key.GRID, NexusDecorBlocks.NEXUS_GRID.get().defaultBlockState());
+        map.put(Key.ACCENT, NexusDecorBlocks.NEXUS_CIRCUIT.get().defaultBlockState());
+        map.put(Key.WALL, NexusDecorBlocks.NEXUS_PLATING.get().defaultBlockState());
+        map.put(Key.WALL_FRAME, NexusDecorBlocks.NEXUS_FRAME.get().defaultBlockState());
+        map.put(Key.BORDER, NexusDecorBlocks.NEXUS_ONYX.get().defaultBlockState());
+        map.put(Key.TRIM, NexusDecorBlocks.NEXUS_STEEL.get().defaultBlockState());
+        map.put(Key.RING, NexusDecorBlocks.NEXUS_CONDUIT.get().defaultBlockState());
+        map.put(Key.CORE, NexusDecorBlocks.NEXUS_CORE.get().defaultBlockState());
+        map.put(Key.CORE_GLASS, NexusDecorBlocks.NEXUS_HOLO.get().defaultBlockState());
+        map.put(Key.LIGHT, NexusDecorBlocks.NEXUS_LIGHT.get().defaultBlockState());
+        map.put(Key.LIGHT_WARM, NexusDecorBlocks.NEXUS_AZURE_LIGHT.get().defaultBlockState());
+        map.put(Key.SCREEN, NexusDecorBlocks.NEXUS_DISPLAY.get().defaultBlockState());
+        map.put(Key.SCREEN_ALT, NexusDecorBlocks.NEXUS_TERMINAL.get().defaultBlockState());
+        map.put(Key.SCREEN_FRAME, NexusDecorBlocks.NEXUS_CARBON.get().defaultBlockState());
+        map.put(Key.WINDOW, NexusDecorBlocks.NEXUS_DATA.get().defaultBlockState());
+        map.put(Key.WINDOW_DARK, NexusDecorBlocks.NEXUS_VOID.get().defaultBlockState());
+        map.put(Key.RAIL, Blocks.IRON_BARS.defaultBlockState()); // Keep vanilla for rails
         map.put(Key.TRUSS, Blocks.IRON_BARS.defaultBlockState());
-        map.put(Key.METAL, Blocks.IRON_BLOCK.defaultBlockState());
-        map.put(Key.DATA_LINE, Blocks.WAXED_EXPOSED_CUT_COPPER.defaultBlockState());
-        map.put(Key.CONSOLE, Blocks.SMOOTH_STONE.defaultBlockState());
-        map.put(Key.CONSOLE_TOP, Blocks.CALCITE.defaultBlockState());
-        map.put(Key.COMBAT_RING, Blocks.TUFF_BRICKS.defaultBlockState());
-        map.put(Key.COMBAT_RING_INNER, Blocks.POLISHED_TUFF.defaultBlockState());
-        map.put(Key.COMBAT_POST, Blocks.POLISHED_BASALT.defaultBlockState());
-        map.put(Key.COMBAT_TARGET, Blocks.TARGET.defaultBlockState());
-        map.put(Key.UI_ACCENT, Blocks.SMOOTH_QUARTZ.defaultBlockState());
-        map.put(Key.TELEMETRY_ACCENT, Blocks.WAXED_EXPOSED_CUT_COPPER.defaultBlockState());
-        map.put(Key.TELEMETRY_GLASS, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.ARENA_RING, Blocks.POLISHED_TUFF.defaultBlockState());
-        map.put(Key.ARENA_RING_INNER, Blocks.TUFF_BRICKS.defaultBlockState());
-        map.put(Key.ARENA_BARRIER, Blocks.BLACKSTONE_WALL.defaultBlockState());
-        map.put(Key.PORTAL_FRAME, Blocks.OBSIDIAN.defaultBlockState());
-        map.put(Key.PORTAL_GLASS, Blocks.LIGHT_GRAY_STAINED_GLASS.defaultBlockState());
-        map.put(Key.PAD_BLUE, Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState());
-        map.put(Key.PAD_GREEN, Blocks.LIME_CONCRETE.defaultBlockState());
-        map.put(Key.PAD_ORANGE, Blocks.ORANGE_CONCRETE.defaultBlockState());
-        map.put(Key.PAD_RED, Blocks.RED_CONCRETE.defaultBlockState());
-        map.put(Key.PAD_YELLOW, Blocks.YELLOW_CONCRETE.defaultBlockState());
-        map.put(Key.PAD_PURPLE, Blocks.PURPLE_CONCRETE.defaultBlockState());
+        map.put(Key.METAL, NexusDecorBlocks.NEXUS_STEEL.get().defaultBlockState());
+        map.put(Key.DATA_LINE, NexusDecorBlocks.NEXUS_NEON_BLUE.get().defaultBlockState());
+        map.put(Key.CONSOLE, NexusDecorBlocks.NEXUS_TERMINAL.get().defaultBlockState());
+        map.put(Key.CONSOLE_TOP, NexusDecorBlocks.NEXUS_PANEL.get().defaultBlockState());
+        map.put(Key.COMBAT_RING, NexusDecorBlocks.NEXUS_REACTOR.get().defaultBlockState());
+        map.put(Key.COMBAT_RING_INNER, NexusDecorBlocks.NEXUS_REACTOR_LIGHT.get().defaultBlockState());
+        map.put(Key.COMBAT_POST, NexusDecorBlocks.NEXUS_ONYX.get().defaultBlockState());
+        map.put(Key.COMBAT_TARGET, Blocks.TARGET.defaultBlockState()); // Keep vanilla target
+        map.put(Key.UI_ACCENT, NexusDecorBlocks.NEXUS_AZURE.get().defaultBlockState());
+        map.put(Key.TELEMETRY_ACCENT, NexusDecorBlocks.NEXUS_MATRIX.get().defaultBlockState());
+        map.put(Key.TELEMETRY_GLASS, NexusDecorBlocks.NEXUS_MATRIX_LIGHT.get().defaultBlockState());
+        map.put(Key.ARENA_RING, NexusDecorBlocks.NEXUS_ENERGY.get().defaultBlockState());
+        map.put(Key.ARENA_RING_INNER, NexusDecorBlocks.NEXUS_ENERGY_LIGHT.get().defaultBlockState());
+        map.put(Key.ARENA_BARRIER, NexusDecorBlocks.NEXUS_HAZARD.get().defaultBlockState());
+        map.put(Key.PORTAL_FRAME, NexusDecorBlocks.NEXUS_ONYX.get().defaultBlockState());
+        map.put(Key.PORTAL_GLASS, NexusDecorBlocks.NEXUS_HOLO.get().defaultBlockState());
+        map.put(Key.PAD_BLUE, NexusDecorBlocks.NEXUS_AZURE.get().defaultBlockState());
+        map.put(Key.PAD_GREEN, NexusDecorBlocks.NEXUS_MATRIX.get().defaultBlockState());
+        map.put(Key.PAD_ORANGE, NexusDecorBlocks.NEXUS_ENERGY.get().defaultBlockState());
+        map.put(Key.PAD_RED, NexusDecorBlocks.NEXUS_REACTOR.get().defaultBlockState());
+        map.put(Key.PAD_YELLOW, NexusDecorBlocks.NEXUS_SIGNAL.get().defaultBlockState());
+        map.put(Key.PAD_PURPLE, NexusDecorBlocks.NEXUS_CRYSTAL.get().defaultBlockState());
         map.put(Key.AIR, Blocks.AIR.defaultBlockState());
         return new NexusPalette(map);
     }

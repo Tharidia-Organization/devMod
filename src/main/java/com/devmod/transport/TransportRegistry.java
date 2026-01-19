@@ -85,11 +85,11 @@ public class TransportRegistry extends SavedData {
      */
     @Nonnull
     public static TransportRegistry get(@Nonnull ServerLevel level) {
-        return level.getServer().overworld().getDataStorage()
+        return Objects.requireNonNull(level.getServer().overworld().getDataStorage()
             .computeIfAbsent(
                 new Factory<>(TransportRegistry::new, TransportRegistry::load),
                 DATA_NAME
-            );
+            ));
     }
 
     // ============================================================================
@@ -193,7 +193,7 @@ public class TransportRegistry extends SavedData {
      */
     @Nonnull
     public Optional<TransportData> get(@Nonnull UUID nodeId) {
-        return Optional.ofNullable(nodes.get(nodeId));
+        return Objects.requireNonNull(Optional.ofNullable(nodes.get(nodeId)));
     }
 
     /**
@@ -202,7 +202,7 @@ public class TransportRegistry extends SavedData {
     @Nonnull
     public Optional<TransportData> getByPosition(@Nonnull BlockPos pos) {
         UUID id = positionIndex.get(pos);
-        return id != null ? get(id) : Optional.empty();
+        return id != null ? get(id) : Objects.requireNonNull(Optional.empty());
     }
 
     /**
@@ -210,7 +210,7 @@ public class TransportRegistry extends SavedData {
      */
     @Nonnull
     public java.util.Collection<TransportData> getAll() {
-        return java.util.Collections.unmodifiableCollection(nodes.values());
+        return Objects.requireNonNull(java.util.Collections.unmodifiableCollection(nodes.values()));
     }
 
     /**
@@ -245,11 +245,11 @@ public class TransportRegistry extends SavedData {
             int dz = Math.abs(pos.getZ() - center.getZ());
 
             if (dx <= 12 && dy <= 12 && dz <= 12) {
-                return Optional.of(node);
+                return Objects.requireNonNull(Optional.of(node));
             }
         }
 
-        return Optional.empty();
+        return Objects.requireNonNull(Optional.empty());
     }
 
     // ============================================================================
@@ -359,24 +359,24 @@ public class TransportRegistry extends SavedData {
         }
 
         ResourceLocation dimension = node.getDimension().get();
-        ResourceKey<Level> levelKey = ResourceKey.create(Registries.DIMENSION, dimension);
-        ServerLevel level = server.getLevel(levelKey);
+        ResourceKey<Level> levelKey = Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), Objects.requireNonNull(dimension)));
+        ServerLevel level = server.getLevel(Objects.requireNonNull(levelKey));
         if (level == null) {
             return;
         }
 
-        BlockPos pos = node.getPosition().get();
+        BlockPos pos = Objects.requireNonNull(node.getPosition().get());
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof TransportCoreBlockEntity coreBe) {
             coreBe.setLinkedNodeId(linked ? node.getLinkedNodeId().orElse(null) : null);
             coreBe.setChanged();
         }
 
-        BlockState state = level.getBlockState(pos);
-        if (state.getBlock() instanceof TransportCoreBlock && state.hasProperty(TransportCoreBlock.ACTIVE)) {
-            BlockState updated = state.setValue(TransportCoreBlock.ACTIVE, linked);
+        BlockState state = Objects.requireNonNull(level.getBlockState(Objects.requireNonNull(pos)));
+        if (state.getBlock() instanceof TransportCoreBlock && state.hasProperty(Objects.requireNonNull(TransportCoreBlock.ACTIVE))) {
+            BlockState updated = state.setValue(Objects.requireNonNull(TransportCoreBlock.ACTIVE), linked);
             if (!state.equals(updated)) {
-                level.setBlock(pos, updated, Block.UPDATE_ALL);
+                level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(updated), Block.UPDATE_ALL);
             }
         }
     }
@@ -422,7 +422,7 @@ public class TransportRegistry extends SavedData {
         Set<UUID> networkNodes = networkIndex.get(networkName);
 
         if (networkNodes == null || networkNodes.isEmpty()) {
-            return Optional.empty();
+            return Objects.requireNonNull(Optional.empty());
         }
 
         for (UUID id : networkNodes) {
@@ -436,12 +436,12 @@ public class TransportRegistry extends SavedData {
         }
 
         if (candidates.isEmpty()) {
-            return Optional.empty();
+            return Objects.requireNonNull(Optional.empty());
         }
 
         NetworkSelectionMode selectionMode = mode != null ? mode : NetworkSelectionMode.RANDOM;
 
-        return switch (selectionMode) {
+        return Objects.requireNonNull(switch (selectionMode) {
             case RANDOM -> {
                 int index = ThreadLocalRandom.current().nextInt(candidates.size());
                 yield Optional.of(candidates.get(index));
@@ -452,7 +452,7 @@ public class TransportRegistry extends SavedData {
             }
             case NEAREST -> Optional.of(candidates.get(0)); // Would need source position for actual nearest
             case MANUAL -> Optional.empty(); // Requires GUI selection
-        };
+        });
     }
 
     /**
@@ -611,7 +611,8 @@ public class TransportRegistry extends SavedData {
     public List<TransportData> getExpiredNodes(long currentTick) {
         List<TransportData> result = new ArrayList<>();
         for (TransportData node : nodes.values()) {
-            if (node.isTemporary() && node.expirationTick() != null && currentTick >= node.expirationTick()) {
+            Long expTick = node.expirationTick();
+            if (node.isTemporary() && expTick != null && currentTick >= expTick) {
                 result.add(node);
             }
         }
@@ -640,13 +641,14 @@ public class TransportRegistry extends SavedData {
                 continue;
             }
 
-            if (currentTick >= node.expirationTick()) {
+            Long expiration = node.expirationTick();
+            if (expiration != null && currentTick >= expiration) {
                 toRemove.add(node.id());
             }
         }
 
         for (UUID id : toRemove) {
-            unregister(id);
+            unregister(Objects.requireNonNull(id));
         }
     }
 
@@ -676,7 +678,7 @@ public class TransportRegistry extends SavedData {
     @Nonnull
     public Optional<TransportData> getReturnPoint(@Nonnull UUID playerId) {
         UUID returnId = playerReturnPoints.get(playerId);
-        return returnId != null ? get(returnId) : Optional.empty();
+        return returnId != null ? get(returnId) : Objects.requireNonNull(Optional.empty());
     }
 
     /**
@@ -724,67 +726,67 @@ public class TransportRegistry extends SavedData {
 
         int migrated = 0;
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.WHITE)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.ORANGE)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.MAGENTA)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIGHT_BLUE)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.YELLOW)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIME)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.PINK)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.GRAY)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIGHT_GRAY)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.CYAN)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.PURPLE)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BLUE)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BROWN)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.GREEN)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.RED)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
         for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BLACK)) {
-            register(TransportData.fromPortalData(portal));
+            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
             migrated++;
         }
 
@@ -810,7 +812,7 @@ public class TransportRegistry extends SavedData {
         // Save return points
         CompoundTag returnPointsTag = new CompoundTag();
         for (Map.Entry<UUID, UUID> entry : playerReturnPoints.entrySet()) {
-            returnPointsTag.putUUID(entry.getKey().toString(), entry.getValue());
+            returnPointsTag.putUUID(Objects.requireNonNull(entry.getKey().toString()), Objects.requireNonNull(entry.getValue()));
         }
         tag.put(TAG_RETURN_POINTS, returnPointsTag);
 
@@ -828,7 +830,7 @@ public class TransportRegistry extends SavedData {
         if (tag.contains(TAG_NODES, Tag.TAG_LIST)) {
             ListTag nodeList = tag.getList(TAG_NODES, Tag.TAG_COMPOUND);
             for (int i = 0; i < nodeList.size(); i++) {
-                TransportData node = TransportData.load(nodeList.getCompound(i));
+                TransportData node = TransportData.load(Objects.requireNonNull(nodeList.getCompound(i)));
 
                 registry.nodes.put(node.id(), node);
 
@@ -845,7 +847,7 @@ public class TransportRegistry extends SavedData {
         if (tag.contains(TAG_RETURN_POINTS, Tag.TAG_COMPOUND)) {
             CompoundTag returnPointsTag = tag.getCompound(TAG_RETURN_POINTS);
             for (String key : returnPointsTag.getAllKeys()) {
-                UUID playerId = UUID.fromString(key);
+                UUID playerId = UUID.fromString(Objects.requireNonNull(key));
                 UUID returnId = returnPointsTag.getUUID(key);
                 registry.playerReturnPoints.put(playerId, returnId);
             }

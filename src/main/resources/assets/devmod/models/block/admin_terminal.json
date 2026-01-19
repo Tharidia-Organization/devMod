@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "devmod:block/admin_terminal"
+    "all": "devmod:block/clone/admin_terminal"
   }
 }

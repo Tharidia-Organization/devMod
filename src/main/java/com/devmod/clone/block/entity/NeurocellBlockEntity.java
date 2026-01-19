@@ -54,6 +54,20 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     private static final String TAG_CLONING_TIME = "CloningTime";
     private static final String TAG_HAS_RAGDOLL = "HasRagdoll";
     private static final String TAG_BIOSCANNER = "Bioscanner";
+    private static final String TAG_ROTATION_ANGLE = "RotationAngle";
+    private static final String TAG_ROTATION_MODE = "RotationMode";
+
+    /**
+     * Rotation mode for the entity display.
+     */
+    public enum RotationMode {
+        /** Automatic slow rotation (default) */
+        AUTO,
+        /** Fixed angle, no rotation */
+        FIXED,
+        /** Manual rotation controlled by player */
+        MANUAL
+    }
 
     // Stored state - mirrors Hologenica's approach
     @Nonnull
@@ -66,6 +80,13 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     private UUID playerUUID = null;
     private int cloningTime = 0;
     private boolean hasRagdoll = false;
+
+    /** Manual rotation angle (degrees) */
+    private float rotationAngle = 0f;
+
+    /** Current rotation mode */
+    @Nonnull
+    private RotationMode rotationMode = RotationMode.AUTO;
 
     public NeurocellBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.NEUROCELL.get(), pos, state);
@@ -224,6 +245,50 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         return hasRagdoll;
     }
 
+    // === Rotation Mode Support ===
+
+    /**
+     * Get rotation angle for display.
+     */
+    public float getRotationAngle() {
+        return rotationAngle;
+    }
+
+    /**
+     * Set manual rotation angle.
+     */
+    public void setRotationAngle(float angle) {
+        this.rotationAngle = angle;
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Get current rotation mode.
+     */
+    @Nonnull
+    public RotationMode getRotationMode() {
+        return rotationMode;
+    }
+
+    /**
+     * Set rotation mode.
+     */
+    public void setRotationMode(@Nonnull RotationMode mode) {
+        this.rotationMode = Objects.requireNonNull(mode);
+        setChanged();
+        syncToClient();
+    }
+
+    /**
+     * Cycle to next rotation mode.
+     */
+    public void cycleRotationMode() {
+        RotationMode[] modes = RotationMode.values();
+        int next = (rotationMode.ordinal() + 1) % modes.length;
+        setRotationMode(Objects.requireNonNull(modes[next]));
+    }
+
     /**
      * Check if actively cloning (not used in Neurocell, but needed for renderer compatibility).
      * In Hologenica, actual cloning happens in Reformer. Neurocell just holds/displays.
@@ -338,6 +403,8 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         if (!storedBioscanner.isEmpty()) {
             tag.put(TAG_BIOSCANNER, Objects.requireNonNull(storedBioscanner.save(registries)));
         }
+        tag.putFloat(TAG_ROTATION_ANGLE, rotationAngle);
+        tag.putString(TAG_ROTATION_MODE, Objects.requireNonNull(rotationMode.name()));
     }
 
     @Override
@@ -353,6 +420,18 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         } else {
             storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
         }
+
+        // Load rotation data
+        rotationAngle = tag.getFloat(TAG_ROTATION_ANGLE);
+        if (tag.contains(TAG_ROTATION_MODE)) {
+            try {
+                rotationMode = RotationMode.valueOf(tag.getString(TAG_ROTATION_MODE));
+            } catch (IllegalArgumentException e) {
+                rotationMode = RotationMode.AUTO;
+            }
+        } else {
+            rotationMode = RotationMode.AUTO;
+        }
     }
 
     @Override
@@ -366,6 +445,8 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         }
         tag.putInt(TAG_CLONING_TIME, cloningTime);
         tag.putBoolean(TAG_HAS_RAGDOLL, hasRagdoll);
+        tag.putFloat(TAG_ROTATION_ANGLE, rotationAngle);
+        tag.putString(TAG_ROTATION_MODE, Objects.requireNonNull(rotationMode.name()));
         return tag;
     }
 
