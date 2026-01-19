@@ -49,9 +49,12 @@ public final class FoundryCreativeTab {
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_PART_BUILDER_ITEM.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_TOOL_STATION_ITEM.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_TOOL_ANVIL_ITEM.get()));
+                output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_STENCIL_TABLE_ITEM.get()));
+                output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_BLANK_STENCIL.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_INGOT_CAST.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_NUGGET_CAST.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_GUIDE.get()));
+                output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_GUIDE_NPC.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_SPECIALIZATION_WEAPONSMITH.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_SPECIALIZATION_TOOLSMITH.get()));
                 output.accept(Objects.requireNonNull(FoundryItems.FOUNDRY_SPECIALIZATION_ALLOYIST.get()));

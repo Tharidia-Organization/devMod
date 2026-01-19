@@ -15,6 +15,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import com.devmod.DevMod;
 import com.devmod.foundry.recipe.FoundryAlloyingRecipe;
 import com.devmod.foundry.recipe.FoundryCastingRecipe;
+import com.devmod.foundry.recipe.FoundryEntityMeltingRecipe;
 import com.devmod.foundry.recipe.FoundryFuelRecipe;
 import com.devmod.foundry.recipe.FoundryMeltingRecipe;
 
@@ -84,6 +85,17 @@ public final class FoundryRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<FoundryCastingRecipe>> CASTING_BASIN_SERIALIZER =
         RECIPE_SERIALIZERS.register("foundry_casting_basin", () -> new FoundryCastingRecipe.Serializer(() -> CASTING_BASIN.get()));
+
+    public static final DeferredHolder<RecipeType<?>, RecipeType<FoundryEntityMeltingRecipe>> ENTITY_MELTING =
+        RECIPE_TYPES.register("foundry_entity_melting", () -> new RecipeType<FoundryEntityMeltingRecipe>() {
+            @Override
+            public String toString() {
+                return "devmod:foundry_entity_melting";
+            }
+        });
+
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<FoundryEntityMeltingRecipe>> ENTITY_MELTING_SERIALIZER =
+        RECIPE_SERIALIZERS.register("foundry_entity_melting", FoundryEntityMeltingRecipe.Serializer::new);
 
     public static void register(@Nonnull IEventBus modEventBus) {
         RECIPE_TYPES.register(Objects.requireNonNull(modEventBus));

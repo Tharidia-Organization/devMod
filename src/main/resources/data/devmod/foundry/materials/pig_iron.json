@@ -6,8 +6,11 @@
   "tier": 2,
   "melting": {
     "temperature": 1100,
-    "optimal_range": [1050, 1150],
-    "impurity_base": 0.20
+    "optimal_range": [
+      1050,
+      1150
+    ],
+    "impurity_base": 0.2
   },
   "stats": {
     "head": {
@@ -22,6 +25,9 @@
       "durability_multiplier": 1.0
     },
     "binding": {
+      "durability": 25
+    },
+    "extra": {
       "durability": 25
     },
     "plate": {
@@ -39,5 +45,7 @@
       "durability": 25
     }
   },
-  "traits": ["devmod:trait_sanguine"]
+  "traits": [
+    "devmod:trait_sanguine"
+  ]
 }

@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "minecraft:netherite_block"
+    "id": "minecraft:netherite_block"
   },
   "cooling_time": 540,
   "consume_cast": false

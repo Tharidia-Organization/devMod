@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:manyullyn_block"
+    "id": "devmod:manyullyn_block"
   },
   "cooling_time": 450,
   "consume_cast": false

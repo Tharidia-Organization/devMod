@@ -19,6 +19,9 @@
     "binding": {
       "durability": 26
     },
+    "extra": {
+      "durability": 26
+    },
     "plate": {
       "durability": 115,
       "mining_speed": 6.5,
@@ -34,5 +37,7 @@
       "durability": 26
     }
   },
-  "traits": ["devmod:trait_glacial"]
+  "traits": [
+    "devmod:trait_glacial"
+  ]
 }

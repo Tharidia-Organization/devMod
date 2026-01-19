@@ -8,7 +8,7 @@
     "amount": 144
   },
   "result": {
-    "item": "minecraft:netherite_ingot"
+    "id": "minecraft:netherite_ingot"
   },
   "cooling_time": 180,
   "consume_cast": false

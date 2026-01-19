@@ -19,6 +19,9 @@
     "binding": {
       "durability": 10
     },
+    "extra": {
+      "durability": 10
+    },
     "plate": {
       "durability": 40,
       "mining_speed": 2.0,
@@ -34,5 +37,7 @@
       "durability": 10
     }
   },
-  "traits": ["devmod:trait_volatile"]
+  "traits": [
+    "devmod:trait_volatile"
+  ]
 }

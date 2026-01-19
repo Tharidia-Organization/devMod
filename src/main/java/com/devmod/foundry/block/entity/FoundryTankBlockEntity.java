@@ -10,10 +10,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
+import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.FoundryBlocks;
+import com.devmod.foundry.client.model.FoundryTankModelLoader;
 
 /**
  * Tank block entity for foundry (visual, links to controller).
@@ -74,6 +76,7 @@ public class FoundryTankBlockEntity extends FoundryComponentBlockEntity {
         displayAmount = amount;
         displayCapacity = capacity;
         sync();
+        requestModelDataUpdate();
     }
 
     private void sync() {
@@ -83,6 +86,20 @@ public class FoundryTankBlockEntity extends FoundryComponentBlockEntity {
             BlockState state = getBlockState();
             level.sendBlockUpdated(worldPosition, state, state, 3);
         }
+    }
+
+    @Override
+    @Nonnull
+    public ModelData getModelData() {
+        if (displayFluid.isEmpty() || displayCapacity <= 0) {
+            return ModelData.EMPTY;
+        }
+        // Create fluid stack with display amount for rendering
+        FluidStack renderFluid = displayFluid.copyWithAmount(displayAmount);
+        return ModelData.builder()
+            .with(FoundryTankModelLoader.FLUID_STACK, renderFluid)
+            .with(FoundryTankModelLoader.TANK_CAPACITY, displayCapacity)
+            .build();
     }
 
     @Override

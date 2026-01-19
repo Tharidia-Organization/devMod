@@ -8,7 +8,7 @@
     "amount": 144
   },
   "result": {
-    "item": "devmod:cobalt_ingot"
+    "id": "devmod:cobalt_ingot"
   },
   "cooling_time": 120,
   "consume_cast": false

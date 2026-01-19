@@ -3,6 +3,8 @@
     "facing=north": { "model": "devmod:block/foundry_faucet", "y": 180 },
     "facing=south": { "model": "devmod:block/foundry_faucet" },
     "facing=west": { "model": "devmod:block/foundry_faucet", "y": 90 },
-    "facing=east": { "model": "devmod:block/foundry_faucet", "y": 270 }
+    "facing=east": { "model": "devmod:block/foundry_faucet", "y": 270 },
+    "facing=down": { "model": "devmod:block/foundry_faucet_down" },
+    "facing=up": { "model": "devmod:block/foundry_faucet_down", "x": 180 }
   }
 }

@@ -19,6 +19,9 @@
     "binding": {
       "durability": 5
     },
+    "extra": {
+      "durability": 5
+    },
     "plate": {
       "durability": 15,
       "mining_speed": 1.2,
@@ -34,5 +37,7 @@
       "durability": 5
     }
   },
-  "traits": ["devmod:trait_tidal"]
+  "traits": [
+    "devmod:trait_tidal"
+  ]
 }

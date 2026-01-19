@@ -10,14 +10,23 @@
       "mining_speed": 3.9,
       "attack_damage": 2.1,
       "attack_speed": 0.0,
-      "mining_level": 4
+      "mining_level": 4,
+      "hardness": 9,
+      "crit_chance": 0.08,
+      "crit_damage": 1.65
     },
     "handle": {
       "durability": 68,
-      "durability_multiplier": 1.12
+      "durability_multiplier": 1.12,
+      "flexibility": 0.3
     },
     "binding": {
-      "durability": 55
+      "durability": 55,
+      "connection_strength": 1.1
+    },
+    "extra": {
+      "durability": 55,
+      "connection_strength": 1.1
     },
     "plate": {
       "durability": 200,

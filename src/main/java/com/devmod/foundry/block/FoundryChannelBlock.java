@@ -109,11 +109,15 @@ public class FoundryChannelBlock extends Block implements EntityBlock {
         }
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof FoundryChannelBlockEntity channel) {
-            boolean open = channel.toggleValve(hit.getDirection());
+            // Cycle valve state: NONE -> IN -> OUT -> NONE
+            ChannelConnectionState newState = channel.cycleValve(hit.getDirection());
+            String directionName = hit.getDirection().getName();
             player.displayClientMessage(
-                Component.translatable(open
-                    ? "devmod.foundry.channel.valve_open"
-                    : "devmod.foundry.channel.valve_closed"),
+                Component.translatable(
+                    "devmod.foundry.channel.valve_state",
+                    directionName,
+                    Component.translatable("devmod.foundry.channel.state." + newState.getSerializedName())
+                ),
                 true
             );
             return InteractionResult.CONSUME;

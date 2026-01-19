@@ -1,6 +1,9 @@
 {
   "parent": "minecraft:item/shield_blocking",
   "textures": {
-    "particle": "devmod:item/foundry_shield"
+    "layer0": "devmod:item/tconstruct/tool/battlesign/head",
+    "layer1": "devmod:item/tconstruct/tool/battlesign/handle",
+    "layer2": "devmod:item/tconstruct/tool/battlesign/binding",
+    "particle": "devmod:item/tconstruct/tool/battlesign/head"
   }
 }

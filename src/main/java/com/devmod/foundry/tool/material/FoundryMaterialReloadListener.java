@@ -71,6 +71,16 @@ public class FoundryMaterialReloadListener extends SimpleJsonResourceReloadListe
                 }
             }
 
+            FoundryMaterialAlloying alloying = FoundryMaterialAlloying.NONE;
+            if (root.has("alloying") && root.get("alloying").isJsonObject()) {
+                JsonObject alloyObj = root.getAsJsonObject("alloying");
+                float ratioTolerance = GsonHelper.getAsFloat(alloyObj, "ratio_tolerance", 0f);
+                float purityBonus = GsonHelper.getAsFloat(alloyObj, "purity_bonus", 0f);
+                float efficiency = GsonHelper.getAsFloat(alloyObj, "efficiency", 1f);
+                float speedMultiplier = GsonHelper.getAsFloat(alloyObj, "speed_multiplier", 1f);
+                alloying = new FoundryMaterialAlloying(ratioTolerance, purityBonus, efficiency, speedMultiplier);
+            }
+
             List<ResourceLocation> traits = new ArrayList<>();
             JsonArray traitArray = GsonHelper.getAsJsonArray(root, "traits", new JsonArray());
             for (JsonElement traitElement : traitArray) {
@@ -86,6 +96,7 @@ public class FoundryMaterialReloadListener extends SimpleJsonResourceReloadListe
                 color,
                 tier,
                 melting,
+                alloying,
                 stats,
                 List.copyOf(traits)
             );

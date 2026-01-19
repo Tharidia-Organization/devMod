@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_armor_plate"
+    "layer0": "devmod:item/tconstruct/tool/parts/maille"
   }
 }

@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "minecraft:iron_block"
+    "id": "minecraft:iron_block"
   },
   "cooling_time": 300,
   "consume_cast": false

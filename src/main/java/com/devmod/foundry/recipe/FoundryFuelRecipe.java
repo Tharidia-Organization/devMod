@@ -40,7 +40,13 @@ public class FoundryFuelRecipe implements Recipe<FoundryFuelRecipe.FuelInput> {
 
     @Override
     public boolean matches(@Nonnull FuelInput input, @Nonnull Level level) {
-        return input.fluid.getFluid() == fluid.getFluid();
+        boolean match = input.fluid.getFluid() == fluid.getFluid();
+        // Debug logging
+        if (!match) {
+            com.devmod.DevMod.LOGGER.warn("[Foundry] Fuel recipe match failed: input={} vs recipe={}",
+                input.fluid.getFluid(), fluid.getFluid());
+        }
+        return match;
     }
 
     @Override

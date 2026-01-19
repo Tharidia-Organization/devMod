@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:ardite_block"
+    "id": "devmod:ardite_block"
   },
   "cooling_time": 380,
   "consume_cast": false

@@ -7,7 +7,7 @@ import net.minecraft.network.chat.MutableComponent;
  * Foundry progression tiers that unlock features and materials.
  */
 public enum FoundryTier {
-    PRIMITIVE(0, "primitive", 0, 0, 0),
+    PRIMITIVE(0, "primitive", 1200, 3, 3),
     BASIC(1, "basic", 1200, 3, 3),
     IRON_AGE(2, "iron_age", 1600, 5, 5),
     ADVANCED(3, "advanced", 2000, 7, 7),

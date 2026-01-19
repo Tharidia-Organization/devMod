@@ -1,6 +1,9 @@
 {
-  "parent": "devmod:item/foundry_bow",
+  "parent": "minecraft:item/bow",
   "textures": {
-    "layer0": "devmod:item/foundry_bow_pulling_1"
+    "layer0": "devmod:item/tconstruct/tool/longbow/limb_bottom_2",
+    "layer1": "devmod:item/tconstruct/tool/longbow/limb_top_2",
+    "layer2": "devmod:item/tconstruct/tool/longbow/grip",
+    "layer3": "devmod:item/tconstruct/tool/longbow/bowstring_2"
   }
 }

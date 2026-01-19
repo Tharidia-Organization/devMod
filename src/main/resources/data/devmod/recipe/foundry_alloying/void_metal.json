@@ -7,7 +7,7 @@
     },
     {
       "fluid": "devmod:molten_manyullyn",
-      "amount": 144
+      "amount": 288
     }
   ],
   "specialization": "devmod:alloyist",
@@ -15,6 +15,6 @@
     "fluid": "devmod:molten_void_metal",
     "amount": 144
   },
-  "time": 600,
-  "temperature": 3500
+  "time": 800,
+  "temperature": 4000
 }

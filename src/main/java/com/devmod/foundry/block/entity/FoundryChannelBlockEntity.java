@@ -20,6 +20,8 @@ import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.FoundryBlocks;
+import com.devmod.foundry.block.ChannelConnectionState;
+import com.devmod.foundry.block.FoundryDuctBlock;
 import com.devmod.foundry.quality.FoundryFluidQuality;
 import com.devmod.foundry.quality.MaterialQuality;
 
@@ -35,16 +37,36 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
     private static final int MAX_BUFFER = 250;
     private static final int TRANSFER_AMOUNT = 50;
     private static final int TRANSFER_COOLDOWN_TICKS = 2;
-    private static final int VALVE_ALL_OPEN = 0x3F;
+    /** Default: all directions set to OUT (bits: 10 10 10 10 10 10 = 0xAAA for 6 directions) */
+    private static final int VALVE_ALL_OUT = 0xAAA;
 
     private FluidStack buffer = FluidStack.EMPTY;
     private int cooldown = 0;
     @Nullable
     private ResourceLocation filterFluidId = null;
-    private int valveMask = VALVE_ALL_OPEN;
+    /** 2 bits per direction: 00=NONE, 01=IN, 10=OUT. Stored as direction.get3DDataValue() * 2 */
+    private int valveMask = VALVE_ALL_OUT;
 
     public FoundryChannelBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_CHANNEL.get()), pos, state);
+    }
+
+    @Override
+    public void setControllerPos(@Nullable BlockPos pos) {
+        super.setControllerPos(pos);
+        updateInStructureState(pos != null);
+    }
+
+    private void updateInStructureState(boolean inStructure) {
+        Level level = getLevel();
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState state = getBlockState();
+        // Only update if this is a duct block (channels don't have IN_STRUCTURE property)
+        if (state.hasProperty(FoundryDuctBlock.IN_STRUCTURE) && state.getValue(FoundryDuctBlock.IN_STRUCTURE) != inStructure) {
+            level.setBlock(worldPosition, state.setValue(FoundryDuctBlock.IN_STRUCTURE, inStructure), 3);
+        }
     }
 
     public void tickServer() {
@@ -94,7 +116,8 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
         if (incoming.isEmpty()) {
             return 0;
         }
-        if (from != null && !isValveOpen(from)) {
+        // Check if this direction allows input (IN state)
+        if (from != null && !allowsInput(from)) {
             return 0;
         }
         if (!matchesFilter(incoming)) {
@@ -184,7 +207,8 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
         if (buffer.isEmpty()) {
             return 0;
         }
-        if (!isValveOpen(Direction.DOWN)) {
+        // Check if DOWN direction allows output (OUT state)
+        if (!allowsOutput(Direction.DOWN)) {
             return 0;
         }
         BlockPos downPos = Objects.requireNonNull(worldPosition.below());
@@ -212,7 +236,8 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
         }
         int moved = 0;
         for (Direction dir : Direction.Plane.HORIZONTAL) {
-            if (!isValveOpen(dir)) {
+            // Check if this direction allows output (OUT state)
+            if (!allowsOutput(dir)) {
                 continue;
             }
             BlockEntity targetBe = level.getBlockEntity(Objects.requireNonNull(worldPosition.relative(Objects.requireNonNull(dir))));
@@ -286,21 +311,69 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
         return true;
     }
 
-    public boolean toggleValve(Direction direction) {
-        int bit = 1 << direction.get3DDataValue();
-        if ((valveMask & bit) != 0) {
-            valveMask &= ~bit;
-            sync();
-            return false;
-        }
-        valveMask |= bit;
-        sync();
-        return true;
+    /**
+     * Cycle the valve state for a direction: NONE -> IN -> OUT -> NONE
+     * @return the new state after cycling
+     */
+    public ChannelConnectionState cycleValve(Direction direction) {
+        ChannelConnectionState current = getConnectionState(direction);
+        ChannelConnectionState next = current.cycle();
+        setConnectionState(direction, next);
+        return next;
     }
 
+    /**
+     * Cycle the valve state backwards: NONE -> OUT -> IN -> NONE
+     * @return the new state after cycling
+     */
+    public ChannelConnectionState cycleValveReverse(Direction direction) {
+        ChannelConnectionState current = getConnectionState(direction);
+        ChannelConnectionState next = current.cycleReverse();
+        setConnectionState(direction, next);
+        return next;
+    }
+
+    /**
+     * Get the connection state for a direction.
+     */
+    public ChannelConnectionState getConnectionState(Direction direction) {
+        int shift = direction.get3DDataValue() * 2;
+        int value = (valveMask >> shift) & 0x3;
+        return ChannelConnectionState.decode(value);
+    }
+
+    /**
+     * Set the connection state for a direction.
+     */
+    public void setConnectionState(Direction direction, ChannelConnectionState state) {
+        int shift = direction.get3DDataValue() * 2;
+        valveMask &= ~(0x3 << shift); // Clear the 2 bits
+        valveMask |= (state.encode() << shift); // Set the new value
+        sync();
+    }
+
+    /**
+     * Check if the valve allows input from a direction.
+     */
+    public boolean allowsInput(Direction direction) {
+        return getConnectionState(direction).allowsInput();
+    }
+
+    /**
+     * Check if the valve allows output in a direction.
+     */
+    public boolean allowsOutput(Direction direction) {
+        return getConnectionState(direction).allowsOutput();
+    }
+
+    /**
+     * Legacy compatibility: check if valve is "open" (either IN or OUT).
+     * @deprecated Use allowsInput/allowsOutput for directional checks
+     */
+    @Deprecated
     public boolean isValveOpen(Direction direction) {
-        int bit = 1 << direction.get3DDataValue();
-        return (valveMask & bit) != 0;
+        ChannelConnectionState state = getConnectionState(direction);
+        return state != ChannelConnectionState.NONE;
     }
 
     private boolean matchesFilter(FluidStack incoming) {
@@ -347,7 +420,7 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
             buffer = FluidStack.EMPTY;
         }
         cooldown = tag.getInt(TAG_COOLDOWN);
-        valveMask = tag.contains(TAG_VALVES) ? tag.getInt(TAG_VALVES) : VALVE_ALL_OPEN;
+        valveMask = tag.contains(TAG_VALVES) ? tag.getInt(TAG_VALVES) : VALVE_ALL_OUT;
         if (tag.contains(TAG_FILTER)) {
             filterFluidId = ResourceLocation.tryParse(Objects.requireNonNull(tag.getString(TAG_FILTER)));
         } else {

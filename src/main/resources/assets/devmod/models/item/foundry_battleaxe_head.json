@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_tool_head"
+    "layer0": "devmod:item/tconstruct/tool/broad_axe/blade"
   }
 }

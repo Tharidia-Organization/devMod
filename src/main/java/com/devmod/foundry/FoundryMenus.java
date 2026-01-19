@@ -14,6 +14,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import com.devmod.DevMod;
 import com.devmod.foundry.menu.FoundryControllerMenu;
 import com.devmod.foundry.menu.FoundryPartBuilderMenu;
+import com.devmod.foundry.menu.FoundryStencilTableMenu;
 import com.devmod.foundry.menu.FoundryToolAnvilMenu;
 import com.devmod.foundry.menu.FoundryToolStationMenu;
 
@@ -41,6 +42,10 @@ public final class FoundryMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<FoundryToolAnvilMenu>> FOUNDRY_TOOL_ANVIL =
         MENUS.register("foundry_tool_anvil", () -> new MenuType<>(
             (IContainerFactory<FoundryToolAnvilMenu>) FoundryToolAnvilMenu::new, FeatureFlags.VANILLA_SET));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<FoundryStencilTableMenu>> FOUNDRY_STENCIL_TABLE =
+        MENUS.register("foundry_stencil_table", () -> new MenuType<>(
+            (IContainerFactory<FoundryStencilTableMenu>) FoundryStencilTableMenu::new, FeatureFlags.VANILLA_SET));
 
     public static void register(IEventBus modEventBus) {
         MENUS.register(Objects.requireNonNull(modEventBus));

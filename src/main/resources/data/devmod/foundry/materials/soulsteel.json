@@ -6,7 +6,10 @@
   "tier": 4,
   "melting": {
     "temperature": 2200,
-    "optimal_range": [2150, 2300],
+    "optimal_range": [
+      2150,
+      2300
+    ],
     "impurity_base": 0.08
   },
   "stats": {
@@ -24,6 +27,9 @@
     "binding": {
       "durability": 40
     },
+    "extra": {
+      "durability": 40
+    },
     "plate": {
       "durability": 170,
       "mining_speed": 5.5,
@@ -39,5 +45,7 @@
       "durability": 40
     }
   },
-  "traits": ["devmod:trait_warden"]
+  "traits": [
+    "devmod:trait_warden"
+  ]
 }

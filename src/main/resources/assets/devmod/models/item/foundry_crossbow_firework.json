@@ -1,6 +1,9 @@
 {
   "parent": "minecraft:item/crossbow",
   "textures": {
-    "layer0": "devmod:item/foundry_crossbow_firework"
+    "layer0": "devmod:item/tconstruct/tool/crossbow/limb",
+    "layer1": "devmod:item/tconstruct/tool/crossbow/body",
+    "layer2": "devmod:item/tconstruct/tool/crossbow/bowstring_3",
+    "layer3": "devmod:item/tconstruct/tool/crossbow/firework"
   }
 }

@@ -12,6 +12,12 @@
     ],
     "impurity_base": 0.1
   },
+  "alloying": {
+    "ratio_tolerance": 0.04,
+    "purity_bonus": 0.03,
+    "efficiency": 1.04,
+    "speed_multiplier": 0.95
+  },
   "stats": {
     "head": {
       "durability": 180,
@@ -19,7 +25,9 @@
       "attack_damage": 2.0,
       "attack_speed": 0.0,
       "mining_level": 3,
-      "hardness": 7
+      "hardness": 7,
+      "crit_chance": 0.05,
+      "crit_damage": 1.6
     },
     "handle": {
       "durability": 50,
@@ -27,6 +35,10 @@
       "flexibility": 0.4
     },
     "binding": {
+      "durability": 35,
+      "connection_strength": 1.15
+    },
+    "extra": {
       "durability": 35,
       "connection_strength": 1.15
     },
@@ -50,7 +62,8 @@
   },
   "traits": [
     "devmod:trait_rigid",
-    "devmod:trait_vorpal"
+    "devmod:trait_vorpal",
+    "devmod:trait_alloy_master"
   ],
   "synergies": {
     "devmod:iron": {

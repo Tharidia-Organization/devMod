@@ -18,6 +18,7 @@ import com.devmod.foundry.block.entity.FoundryControllerBlockEntity;
 import com.devmod.foundry.block.entity.FoundryDrainBlockEntity;
 import com.devmod.foundry.block.entity.FoundryFaucetBlockEntity;
 import com.devmod.foundry.block.entity.FoundryPartBuilderBlockEntity;
+import com.devmod.foundry.block.entity.FoundryStencilTableBlockEntity;
 import com.devmod.foundry.block.entity.FoundryTankBlockEntity;
 import com.devmod.foundry.block.entity.FoundryToolAnvilBlockEntity;
 import com.devmod.foundry.block.entity.FoundryToolStationBlockEntity;
@@ -88,6 +89,11 @@ public final class FoundryBlockEntities {
         BLOCK_ENTITIES.register("foundry_chute",
             () -> BlockEntityType.Builder.of(FoundryChuteBlockEntity::new,
                 Objects.requireNonNull(FoundryBlocks.FOUNDRY_CHUTE.get())).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FoundryStencilTableBlockEntity>> FOUNDRY_STENCIL_TABLE =
+        BLOCK_ENTITIES.register("foundry_stencil_table",
+            () -> BlockEntityType.Builder.of(FoundryStencilTableBlockEntity::new,
+                Objects.requireNonNull(FoundryBlocks.FOUNDRY_STENCIL_TABLE.get())).build(null));
 
     public static void register(IEventBus modEventBus) {
         BLOCK_ENTITIES.register(Objects.requireNonNull(modEventBus));

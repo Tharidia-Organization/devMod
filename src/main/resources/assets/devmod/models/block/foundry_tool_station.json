@@ -1,9 +1,73 @@
 {
-  "parent": "minecraft:block/orientable_with_bottom",
+  "parent": "block/block",
   "textures": {
+    "particle": "devmod:block/foundry_tool_station_front",
     "front": "devmod:block/foundry_tool_station_front",
     "side": "devmod:block/foundry_tool_base_side",
     "top": "devmod:block/foundry_tool_base_top",
     "bottom": "devmod:block/foundry_tool_base_bottom"
-  }
+  },
+  "elements": [
+    {
+      "name": "top",
+      "from": [0, 10, 0],
+      "to": [16, 16, 16],
+      "faces": {
+        "north": { "texture": "#front", "cullface": "north" },
+        "south": { "texture": "#side", "cullface": "south" },
+        "west": { "texture": "#side", "cullface": "west" },
+        "east": { "texture": "#side", "cullface": "east" },
+        "up": { "texture": "#top", "cullface": "up" },
+        "down": { "texture": "#bottom" }
+      }
+    },
+    {
+      "name": "leg_nw",
+      "from": [0, 0, 0],
+      "to": [4, 10, 4],
+      "faces": {
+        "north": { "texture": "#side", "cullface": "north", "uv": [0, 6, 4, 16] },
+        "south": { "texture": "#side", "uv": [12, 6, 16, 16] },
+        "west": { "texture": "#side", "cullface": "west", "uv": [0, 6, 4, 16] },
+        "east": { "texture": "#side", "uv": [12, 6, 16, 16] },
+        "down": { "texture": "#bottom", "cullface": "down", "uv": [0, 0, 4, 4] }
+      }
+    },
+    {
+      "name": "leg_ne",
+      "from": [12, 0, 0],
+      "to": [16, 10, 4],
+      "faces": {
+        "north": { "texture": "#side", "cullface": "north", "uv": [0, 6, 4, 16] },
+        "south": { "texture": "#side", "uv": [12, 6, 16, 16] },
+        "west": { "texture": "#side", "uv": [0, 6, 4, 16] },
+        "east": { "texture": "#side", "cullface": "east", "uv": [12, 6, 16, 16] },
+        "down": { "texture": "#bottom", "cullface": "down", "uv": [12, 0, 16, 4] }
+      }
+    },
+    {
+      "name": "leg_se",
+      "from": [12, 0, 12],
+      "to": [16, 10, 16],
+      "faces": {
+        "north": { "texture": "#side", "uv": [0, 6, 4, 16] },
+        "south": { "texture": "#side", "cullface": "south", "uv": [12, 6, 16, 16] },
+        "west": { "texture": "#side", "uv": [12, 6, 16, 16] },
+        "east": { "texture": "#side", "cullface": "east", "uv": [0, 6, 4, 16] },
+        "down": { "texture": "#bottom", "cullface": "down", "uv": [12, 12, 16, 16] }
+      }
+    },
+    {
+      "name": "leg_sw",
+      "from": [0, 0, 12],
+      "to": [4, 10, 16],
+      "faces": {
+        "north": { "texture": "#side", "uv": [12, 6, 16, 16] },
+        "south": { "texture": "#side", "cullface": "south", "uv": [0, 6, 4, 16] },
+        "west": { "texture": "#side", "cullface": "west", "uv": [12, 6, 16, 16] },
+        "east": { "texture": "#side", "uv": [0, 6, 4, 16] },
+        "down": { "texture": "#bottom", "cullface": "down", "uv": [0, 12, 4, 16] }
+      }
+    }
+  ]
 }

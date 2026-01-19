@@ -18,6 +18,7 @@ public record FoundryMaterialDefinition(
     int color,
     int tier,
     @Nullable FoundryMaterialMelting melting,
+    FoundryMaterialAlloying alloying,
     Map<String, FoundryMaterialStats> stats,
     List<ResourceLocation> traits
 ) {

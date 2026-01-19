@@ -6,7 +6,10 @@
   "tier": 3,
   "melting": {
     "temperature": 1768,
-    "optimal_range": [1720, 1820],
+    "optimal_range": [
+      1720,
+      1820
+    ],
     "impurity_base": 0.05
   },
   "stats": {
@@ -24,6 +27,9 @@
     "binding": {
       "durability": 35
     },
+    "extra": {
+      "durability": 35
+    },
     "plate": {
       "durability": 140,
       "mining_speed": 5.0,
@@ -39,5 +45,7 @@
       "durability": 35
     }
   },
-  "traits": ["devmod:trait_polished"]
+  "traits": [
+    "devmod:trait_polished"
+  ]
 }

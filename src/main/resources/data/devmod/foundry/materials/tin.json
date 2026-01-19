@@ -30,6 +30,10 @@
       "durability": 20,
       "connection_strength": 0.9
     },
+    "extra": {
+      "durability": 20,
+      "connection_strength": 0.9
+    },
     "plate": {
       "durability": 55,
       "mining_speed": 3.0,

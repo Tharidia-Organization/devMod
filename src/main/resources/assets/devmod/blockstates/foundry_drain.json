@@ -1,5 +1,12 @@
 {
   "variants": {
-    "": { "model": "devmod:block/foundry_drain" }
+    "facing=north,in_structure=false": { "model": "devmod:block/foundry_drain_inactive" },
+    "facing=south,in_structure=false": { "model": "devmod:block/foundry_drain_inactive", "y": 180 },
+    "facing=west,in_structure=false": { "model": "devmod:block/foundry_drain_inactive", "y": 270 },
+    "facing=east,in_structure=false": { "model": "devmod:block/foundry_drain_inactive", "y": 90 },
+    "facing=north,in_structure=true": { "model": "devmod:block/foundry_drain_active" },
+    "facing=south,in_structure=true": { "model": "devmod:block/foundry_drain_active", "y": 180 },
+    "facing=west,in_structure=true": { "model": "devmod:block/foundry_drain_active", "y": 270 },
+    "facing=east,in_structure=true": { "model": "devmod:block/foundry_drain_active", "y": 90 }
   }
 }

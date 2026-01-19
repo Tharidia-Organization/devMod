@@ -10,9 +10,11 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import com.devmod.DevMod;
 import com.devmod.foundry.item.FoundryFluxItem;
 import com.devmod.foundry.item.FoundryGuideItem;
+import com.devmod.foundry.item.FoundryGuideNpcItem;
 import com.devmod.foundry.item.FoundrySpecializationItem;
 import com.devmod.foundry.item.FoundrySpecializationResetItem;
 import com.devmod.foundry.progression.FoundrySpecialization;
+import com.devmod.foundry.tool.FoundryBlankStencilItem;
 
 /**
  * Foundry module item registrations.
@@ -117,6 +119,16 @@ public final class FoundryItems {
         () -> new BlockItem(Objects.requireNonNull(FoundryBlocks.FOUNDRY_TOOL_ANVIL.get()), new Item.Properties())
     );
 
+    public static final DeferredHolder<Item, Item> FOUNDRY_STENCIL_TABLE_ITEM = DevMod.ITEMS.register(
+        "foundry_stencil_table",
+        () -> new BlockItem(Objects.requireNonNull(FoundryBlocks.FOUNDRY_STENCIL_TABLE.get()), new Item.Properties())
+    );
+
+    public static final DeferredHolder<Item, FoundryBlankStencilItem> FOUNDRY_BLANK_STENCIL = DevMod.ITEMS.register(
+        "foundry_blank_stencil",
+        FoundryBlankStencilItem::new
+    );
+
     public static final DeferredHolder<Item, Item> FOUNDRY_INGOT_CAST = DevMod.ITEMS.register(
         "foundry_ingot_cast",
         () -> new Item(new Item.Properties().stacksTo(1))
@@ -130,6 +142,11 @@ public final class FoundryItems {
     public static final DeferredHolder<Item, Item> FOUNDRY_GUIDE = DevMod.ITEMS.register(
         "foundry_guide",
         () -> new FoundryGuideItem(new Item.Properties().stacksTo(1))
+    );
+
+    public static final DeferredHolder<Item, Item> FOUNDRY_GUIDE_NPC = DevMod.ITEMS.register(
+        "foundry_guide_npc",
+        FoundryGuideNpcItem::new
     );
 
     public static final DeferredHolder<Item, Item> FOUNDRY_SPECIALIZATION_WEAPONSMITH = DevMod.ITEMS.register(

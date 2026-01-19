@@ -6,7 +6,10 @@
   "tier": 4,
   "melting": {
     "temperature": 1600,
-    "optimal_range": [1550, 1650],
+    "optimal_range": [
+      1550,
+      1650
+    ],
     "impurity_base": 0.05
   },
   "stats": {
@@ -24,6 +27,9 @@
     "binding": {
       "durability": 45
     },
+    "extra": {
+      "durability": 45
+    },
     "plate": {
       "durability": 180,
       "mining_speed": 5.0,
@@ -39,5 +45,7 @@
       "durability": 45
     }
   },
-  "traits": ["devmod:trait_verdant"]
+  "traits": [
+    "devmod:trait_verdant"
+  ]
 }

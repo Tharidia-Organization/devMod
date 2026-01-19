@@ -18,6 +18,7 @@ import com.devmod.foundry.block.FoundryDrainBlock;
 import com.devmod.foundry.block.FoundryDuctBlock;
 import com.devmod.foundry.block.FoundryFaucetBlock;
 import com.devmod.foundry.block.FoundryPartBuilderBlock;
+import com.devmod.foundry.block.FoundryStencilTableBlock;
 import com.devmod.foundry.block.FoundryTankBlock;
 import com.devmod.foundry.block.FoundryToolAnvilBlock;
 import com.devmod.foundry.block.FoundryToolStationBlock;
@@ -130,6 +131,11 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, FoundryToolAnvilBlock> FOUNDRY_TOOL_ANVIL = DevMod.BLOCKS.register(
         "foundry_tool_anvil",
         FoundryToolAnvilBlock::new
+    );
+
+    public static final DeferredHolder<Block, FoundryStencilTableBlock> FOUNDRY_STENCIL_TABLE = DevMod.BLOCKS.register(
+        "foundry_stencil_table",
+        FoundryStencilTableBlock::new
     );
 
     // Material storage blocks

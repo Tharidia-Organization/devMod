@@ -6,7 +6,10 @@
   "tier": 1,
   "melting": {
     "temperature": 420,
-    "optimal_range": [400, 450],
+    "optimal_range": [
+      400,
+      450
+    ],
     "impurity_base": 0.12
   },
   "stats": {
@@ -24,6 +27,9 @@
     "binding": {
       "durability": 15
     },
+    "extra": {
+      "durability": 15
+    },
     "plate": {
       "durability": 60,
       "mining_speed": 4.5,
@@ -39,5 +45,7 @@
       "durability": 15
     }
   },
-  "traits": ["devmod:trait_brittle"]
+  "traits": [
+    "devmod:trait_brittle"
+  ]
 }

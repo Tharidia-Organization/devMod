@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/foundry_controller",
+  "textures": {
+    "front": "devmod:block/foundry_controller_front_on"
+  }
+}

@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import com.devmod.foundry.block.ChannelConnectionState;
 import com.devmod.foundry.block.FoundryChannelBlock;
 import com.devmod.foundry.block.entity.FoundryChannelBlockEntity;
 import com.devmod.foundry.quality.FoundryFluidQuality;
@@ -34,6 +36,12 @@ public class FoundryChannelRenderer implements BlockEntityRenderer<FoundryChanne
     private static final float FLUID_MIN_Y = 1.0f / 16.0f;
     private static final float FLUID_MAX_Y = 5.0f / 16.0f;
     private static final float INSET = 0.001f;
+
+    // Direction indicator colors
+    private static final float IN_RED = 0.2f, IN_GREEN = 0.6f, IN_BLUE = 1.0f;    // Blue for IN
+    private static final float OUT_RED = 1.0f, OUT_GREEN = 0.6f, OUT_BLUE = 0.2f;  // Orange for OUT
+    private static final float INDICATOR_ALPHA = 0.8f;
+    private static final float INDICATOR_Y = 5.5f / 16.0f;
 
     public FoundryChannelRenderer(BlockEntityRendererProvider.Context context) {
         // No-op
@@ -127,6 +135,156 @@ public class FoundryChannelRenderer implements BlockEntityRenderer<FoundryChanne
                 packedLight, packedOverlay
             );
         }
+
+        // Render direction indicators for tri-state connections
+        renderDirectionIndicators(blockEntity, poseStack, bufferSource, packedLight, packedOverlay);
+    }
+
+    /**
+     * Render small arrow indicators showing flow direction for each connected side.
+     */
+    private void renderDirectionIndicators(
+        FoundryChannelBlockEntity blockEntity,
+        PoseStack poseStack,
+        MultiBufferSource bufferSource,
+        int packedLight,
+        int packedOverlay
+    ) {
+        BlockState state = blockEntity.getBlockState();
+        VertexConsumer consumer = bufferSource.getBuffer(RenderType.translucent());
+        Matrix4f matrix = poseStack.last().pose();
+
+        // Get white texture for solid color indicators
+        TextureAtlasSprite whiteSprite = Minecraft.getInstance()
+            .getModelManager()
+            .getAtlas(InventoryMenu.BLOCK_ATLAS)
+            .getSprite(ResourceLocation.withDefaultNamespace("block/white_concrete"));
+
+        // Check each horizontal direction
+        if (state.getValue(FoundryChannelBlock.NORTH)) {
+            renderHorizontalIndicator(blockEntity, Direction.NORTH, matrix, consumer, whiteSprite, packedLight, packedOverlay);
+        }
+        if (state.getValue(FoundryChannelBlock.SOUTH)) {
+            renderHorizontalIndicator(blockEntity, Direction.SOUTH, matrix, consumer, whiteSprite, packedLight, packedOverlay);
+        }
+        if (state.getValue(FoundryChannelBlock.WEST)) {
+            renderHorizontalIndicator(blockEntity, Direction.WEST, matrix, consumer, whiteSprite, packedLight, packedOverlay);
+        }
+        if (state.getValue(FoundryChannelBlock.EAST)) {
+            renderHorizontalIndicator(blockEntity, Direction.EAST, matrix, consumer, whiteSprite, packedLight, packedOverlay);
+        }
+    }
+
+    private void renderHorizontalIndicator(
+        FoundryChannelBlockEntity blockEntity,
+        Direction direction,
+        Matrix4f matrix,
+        VertexConsumer consumer,
+        TextureAtlasSprite sprite,
+        int light,
+        int overlay
+    ) {
+        ChannelConnectionState connectionState = blockEntity.getConnectionState(direction);
+        if (connectionState == ChannelConnectionState.NONE) {
+            return; // No indicator for closed connections
+        }
+
+        float red, green, blue;
+        if (connectionState == ChannelConnectionState.IN) {
+            red = IN_RED; green = IN_GREEN; blue = IN_BLUE;
+        } else {
+            red = OUT_RED; green = OUT_GREEN; blue = OUT_BLUE;
+        }
+
+        float u0 = sprite.getU0();
+        float u1 = sprite.getU1();
+        float v0 = sprite.getV0();
+        float v1 = sprite.getV1();
+
+        // Position arrow at edge of channel arm
+        float edgeOffset = direction == Direction.NORTH || direction == Direction.SOUTH
+            ? (direction == Direction.NORTH ? ARM_MIN + 0.5f/16f : ARM_OUT_MAX - 0.5f/16f)
+            : (direction == Direction.WEST ? ARM_MIN + 0.5f/16f : ARM_OUT_MAX - 0.5f/16f);
+
+        // Arrow pointing direction (IN points toward center, OUT points away)
+        boolean pointToward = connectionState == ChannelConnectionState.IN;
+
+        // Render a small triangle/arrow indicator on top of the channel
+        renderArrowIndicator(matrix, consumer, sprite, direction, edgeOffset, pointToward,
+            red, green, blue, INDICATOR_ALPHA, u0, v0, u1, v1, light, overlay);
+    }
+
+    private void renderArrowIndicator(
+        Matrix4f matrix,
+        VertexConsumer consumer,
+        TextureAtlasSprite sprite,
+        Direction direction,
+        float edgePos,
+        boolean pointToward,
+        float red, float green, float blue, float alpha,
+        float u0, float v0, float u1, float v1,
+        int light, int overlay
+    ) {
+        float y = INDICATOR_Y;
+        float arrowHalfWidth = 1.5f / 16.0f;
+        float arrowLength = 2.0f / 16.0f;
+
+        // Calculate arrow vertices based on direction
+        float tipX, tipZ, base1X, base1Z, base2X, base2Z;
+        float centerX = 0.5f;
+        float centerZ = 0.5f;
+
+        switch (direction) {
+            case NORTH -> {
+                float baseZ = pointToward ? edgePos + arrowLength : edgePos;
+                float tipZ2 = pointToward ? edgePos : edgePos + arrowLength;
+                tipX = centerX;
+                tipZ = tipZ2;
+                base1X = centerX - arrowHalfWidth;
+                base1Z = baseZ;
+                base2X = centerX + arrowHalfWidth;
+                base2Z = baseZ;
+            }
+            case SOUTH -> {
+                float baseZ = pointToward ? edgePos - arrowLength : edgePos;
+                float tipZ2 = pointToward ? edgePos : edgePos - arrowLength;
+                tipX = centerX;
+                tipZ = tipZ2;
+                base1X = centerX + arrowHalfWidth;
+                base1Z = baseZ;
+                base2X = centerX - arrowHalfWidth;
+                base2Z = baseZ;
+            }
+            case WEST -> {
+                float baseX = pointToward ? edgePos + arrowLength : edgePos;
+                float tipX2 = pointToward ? edgePos : edgePos + arrowLength;
+                tipX = tipX2;
+                tipZ = centerZ;
+                base1X = baseX;
+                base1Z = centerZ + arrowHalfWidth;
+                base2X = baseX;
+                base2Z = centerZ - arrowHalfWidth;
+            }
+            case EAST -> {
+                float baseX = pointToward ? edgePos - arrowLength : edgePos;
+                float tipX2 = pointToward ? edgePos : edgePos - arrowLength;
+                tipX = tipX2;
+                tipZ = centerZ;
+                base1X = baseX;
+                base1Z = centerZ - arrowHalfWidth;
+                base2X = baseX;
+                base2Z = centerZ + arrowHalfWidth;
+            }
+            default -> { return; }
+        }
+
+        // Render triangle (arrow) on Y+ face
+        float uMid = (u0 + u1) / 2;
+        vertex(consumer, matrix, tipX, y, tipZ, uMid, v0, red, green, blue, alpha, light, overlay, 0f, 1f, 0f);
+        vertex(consumer, matrix, base1X, y, base1Z, u0, v1, red, green, blue, alpha, light, overlay, 0f, 1f, 0f);
+        vertex(consumer, matrix, base2X, y, base2Z, u1, v1, red, green, blue, alpha, light, overlay, 0f, 1f, 0f);
+        // Duplicate last vertex to complete quad (degenerate triangle)
+        vertex(consumer, matrix, base2X, y, base2Z, u1, v1, red, green, blue, alpha, light, overlay, 0f, 1f, 0f);
     }
 
     private static void renderCuboid(

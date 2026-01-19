@@ -1,6 +1,8 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "devmod:item/foundry_sword"
+    "layer0": "devmod:item/tconstruct/tool/scythe/head",
+    "layer1": "devmod:item/tconstruct/tool/scythe/handle",
+    "layer2": "devmod:item/tconstruct/tool/scythe/binding"
   }
 }

@@ -35,8 +35,18 @@ public class FoundryFaucetBlockEntity extends BlockEntity {
 
         BlockState state = getBlockState();
         Direction facing = state.getValue(FoundryFaucetBlock.FACING);
-        BlockPos sourcePos = worldPosition.relative(facing.getOpposite());
-        BlockPos targetPos = worldPosition.below();
+
+        // For vertical faucets (DOWN/UP), source is above, target is below
+        // For horizontal faucets, source is behind, target is below
+        BlockPos sourcePos;
+        BlockPos targetPos;
+        if (facing == Direction.DOWN || facing == Direction.UP) {
+            sourcePos = worldPosition.above();
+            targetPos = worldPosition.below();
+        } else {
+            sourcePos = worldPosition.relative(facing.getOpposite());
+            targetPos = worldPosition.below();
+        }
 
         BlockEntity sourceBe = level.getBlockEntity(sourcePos);
         FoundryControllerBlockEntity controller = null;

@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:steel_block"
+    "id": "devmod:steel_block"
   },
   "cooling_time": 330,
   "consume_cast": false

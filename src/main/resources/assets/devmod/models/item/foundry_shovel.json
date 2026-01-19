@@ -1,6 +1,9 @@
 {
+  "loader": "devmod:foundry_tool",
   "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "devmod:item/foundry_shovel"
-  }
+  "parts": [
+    { "name": "head", "texture": "devmod:item/tool/shovel/head", "index": 0 },
+    { "name": "handle", "texture": "devmod:item/tool/shovel/handle", "index": 1 },
+    { "name": "binding", "texture": "devmod:item/tool/shovel/binding", "index": 2 }
+  ]
 }

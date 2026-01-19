@@ -46,6 +46,7 @@ public final class FoundryControllerBlock extends HorizontalDirectionalBlock imp
     public static final MapCodec<FoundryControllerBlock> CODEC = simpleCodec(p -> new FoundryControllerBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
+    public static final BooleanProperty IN_STRUCTURE = BooleanProperty.create("in_structure");
 
     @Override
     @Nonnull
@@ -63,19 +64,20 @@ public final class FoundryControllerBlock extends HorizontalDirectionalBlock imp
             .noOcclusion());
         registerDefaultState(stateDefinition.any()
             .setValue(FACING, Objects.requireNonNull(Direction.NORTH))
-            .setValue(ACTIVE, false));
+            .setValue(ACTIVE, false)
+            .setValue(IN_STRUCTURE, false));
     }
 
     @Override
     protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, ACTIVE);
+        builder.add(FACING, ACTIVE, IN_STRUCTURE);
     }
 
     @Override
     @Nullable
     public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context) {
         Direction facing = Objects.requireNonNull(context.getHorizontalDirection().getOpposite());
-        return defaultBlockState().setValue(FACING, facing).setValue(ACTIVE, false);
+        return defaultBlockState().setValue(FACING, facing).setValue(ACTIVE, false).setValue(IN_STRUCTURE, false);
     }
 
     @Override

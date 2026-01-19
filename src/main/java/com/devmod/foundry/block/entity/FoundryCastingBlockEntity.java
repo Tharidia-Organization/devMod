@@ -17,6 +17,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,6 +25,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.FoundryItems;
+import com.devmod.foundry.block.FoundryCastingBasinBlock;
+import com.devmod.foundry.block.FoundryCastingTableBlock;
 import com.devmod.foundry.progression.FoundryPlayerProgress;
 import com.devmod.foundry.progression.FoundryProgressAttachment;
 import com.devmod.foundry.quality.FoundryFluidQuality;
@@ -61,6 +64,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         if (level.isClientSide) {
             return;
         }
+        updateHasItemState();
         if (fluidStack.isEmpty()) {
             progress = 0;
             return;
@@ -102,6 +106,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
             }
             fluidStack = FluidStack.EMPTY;
             progress = 0;
+            updateHasItemState();
             setChanged();
         }
     }
@@ -169,6 +174,8 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
                 player.drop(Objects.requireNonNull(output.copy()), false);
             }
             inventory.setItem(1, Objects.requireNonNull(ItemStack.EMPTY));
+            updateHasItemState();
+            setChanged();
             return InteractionResult.CONSUME;
         }
 
@@ -179,6 +186,8 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
                 if (!player.isCreative()) {
                     held.shrink(1);
                 }
+                updateHasItemState();
+                setChanged();
                 return InteractionResult.CONSUME;
             }
         }
@@ -186,6 +195,8 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         if (!cast.isEmpty() && held.isEmpty()) {
             player.setItemInHand(hand, Objects.requireNonNull(cast.copy()));
             inventory.setItem(0, Objects.requireNonNull(ItemStack.EMPTY));
+            updateHasItemState();
+            setChanged();
             return InteractionResult.CONSUME;
         }
 
@@ -246,5 +257,25 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         }
         progress = tag.getInt(TAG_PROGRESS);
         maxProgress = tag.getInt(TAG_MAX_PROGRESS);
+    }
+
+    private void updateHasItemState() {
+        Level level = getLevel();
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        boolean hasItem = !inventory.getItem(0).isEmpty() || !inventory.getItem(1).isEmpty();
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof FoundryCastingTableBlock) {
+            if (state.getValue(FoundryCastingTableBlock.HAS_ITEM) != hasItem) {
+                level.setBlock(worldPosition, state.setValue(FoundryCastingTableBlock.HAS_ITEM, hasItem), Block.UPDATE_CLIENTS);
+            }
+            return;
+        }
+        if (state.getBlock() instanceof FoundryCastingBasinBlock) {
+            if (state.getValue(FoundryCastingBasinBlock.HAS_ITEM) != hasItem) {
+                level.setBlock(worldPosition, state.setValue(FoundryCastingBasinBlock.HAS_ITEM, hasItem), Block.UPDATE_CLIENTS);
+            }
+        }
     }
 }

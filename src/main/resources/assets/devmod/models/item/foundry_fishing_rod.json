@@ -1,6 +1,14 @@
 {
   "parent": "minecraft:item/handheld_rod",
   "textures": {
-    "layer0": "minecraft:item/fishing_rod"
-  }
+    "layer0": "devmod:item/tconstruct/tool/fishing_rod/rod",
+    "layer1": "devmod:item/tconstruct/tool/fishing_rod/string",
+    "layer2": "devmod:item/tconstruct/tool/fishing_rod/hook"
+  },
+  "overrides": [
+    {
+      "predicate": { "cast": 1 },
+      "model": "devmod:item/foundry_fishing_rod_cast"
+    }
+  ]
 }

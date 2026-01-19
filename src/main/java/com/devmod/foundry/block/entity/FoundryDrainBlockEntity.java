@@ -3,6 +3,7 @@ package com.devmod.foundry.block.entity;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.FoundryBlockEntities;
+import com.devmod.foundry.block.FoundryDrainBlock;
 
 /**
  * Drain block entity for foundry fluid IO.
@@ -23,6 +25,23 @@ import com.devmod.foundry.FoundryBlockEntities;
 public class FoundryDrainBlockEntity extends FoundryComponentBlockEntity {
     public FoundryDrainBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_DRAIN.get()), pos, state);
+    }
+
+    @Override
+    public void setControllerPos(@Nullable BlockPos pos) {
+        super.setControllerPos(pos);
+        updateInStructureState(pos != null);
+    }
+
+    private void updateInStructureState(boolean inStructure) {
+        Level level = getLevel();
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (state.hasProperty(FoundryDrainBlock.IN_STRUCTURE) && state.getValue(FoundryDrainBlock.IN_STRUCTURE) != inStructure) {
+            level.setBlock(worldPosition, state.setValue(FoundryDrainBlock.IN_STRUCTURE, inStructure), 3);
+        }
     }
 
     public InteractionResult handleBucketInteraction(@Nonnull Player player, @Nonnull InteractionHand hand) {

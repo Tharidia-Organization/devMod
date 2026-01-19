@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:void_metal_block"
+    "id": "devmod:void_metal_block"
   },
   "cooling_time": 600,
   "consume_cast": false

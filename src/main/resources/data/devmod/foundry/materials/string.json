@@ -7,10 +7,21 @@
   "stats": {
     "handle": {
       "durability": 20,
-      "durability_multiplier": 0.8
+      "durability_multiplier": 0.8,
+      "flexibility": 0.8
     },
     "binding": {
-      "durability": 35
+      "durability": 35,
+      "connection_strength": 0.7
+    },
+    "extra": {
+      "durability": 35,
+      "connection_strength": 0.7
+    },
+    "bowstring": {
+      "durability": 30,
+      "draw_speed": 0.1,
+      "projectile_speed": 1.0
     }
   },
   "traits": [

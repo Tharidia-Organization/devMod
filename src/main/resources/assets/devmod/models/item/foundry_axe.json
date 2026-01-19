@@ -1,6 +1,9 @@
 {
+  "loader": "devmod:foundry_tool",
   "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "devmod:item/foundry_axe"
-  }
+  "parts": [
+    { "name": "head", "texture": "devmod:item/tool/axe/head", "index": 0 },
+    { "name": "handle", "texture": "devmod:item/tool/axe/handle", "index": 1 },
+    { "name": "binding", "texture": "devmod:item/tool/axe/binding", "index": 2 }
+  ]
 }

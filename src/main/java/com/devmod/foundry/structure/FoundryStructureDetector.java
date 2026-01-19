@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,12 +24,18 @@ public final class FoundryStructureDetector {
 
     public static FoundryStructureResult detect(@Nonnull Level level, @Nonnull BlockPos controllerPos) {
         BlockState controllerState = level.getBlockState(controllerPos);
-        BlockPos origin = controllerPos.relative(controllerState.getValue(com.devmod.foundry.block.FoundryControllerBlock.FACING).getOpposite());
-
+        Direction facing = controllerState.getValue(com.devmod.foundry.block.FoundryControllerBlock.FACING);
+        BlockPos behind = controllerPos.relative(Objects.requireNonNull(facing.getOpposite()));
+        BlockPos origin = behind;
+        int floorY = controllerPos.getY() - 1;
         if (!isInteriorBlock(level.getBlockState(origin))) {
-            return new FoundryStructureResult(null,
-                Component.translatable("devmod.foundry.error.no_inner_space"),
-                origin);
+            origin = behind.above();
+            floorY = controllerPos.getY();
+            if (!isInteriorBlock(level.getBlockState(origin))) {
+                return new FoundryStructureResult(null,
+                    Component.translatable("devmod.foundry.error.no_inner_space"),
+                    origin);
+            }
         }
 
         int maxSize = Config.FOUNDRY_MAX_INNER_SIZE.get();
@@ -59,7 +66,6 @@ public final class FoundryStructureDetector {
                 origin);
         }
 
-        int floorY = controllerPos.getY();
         int maxY = floorY;
         int heightChecked = 0;
         while (heightChecked < maxHeight) {
@@ -72,7 +78,7 @@ public final class FoundryStructureDetector {
         }
         maxY = maxY - 1;
 
-        int innerHeight = maxY - floorY - 1;
+        int innerHeight = maxY - floorY;
         if (innerHeight < 1) {
             return new FoundryStructureResult(null,
                 Component.translatable("devmod.foundry.error.too_short"),

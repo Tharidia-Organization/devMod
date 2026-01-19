@@ -12,6 +12,12 @@
     ],
     "impurity_base": 0.07
   },
+  "alloying": {
+    "ratio_tolerance": 0.06,
+    "purity_bonus": 0.04,
+    "efficiency": 1.06,
+    "speed_multiplier": 0.92
+  },
   "stats": {
     "head": {
       "durability": 200,
@@ -27,6 +33,10 @@
       "flexibility": 0.3
     },
     "binding": {
+      "durability": 40,
+      "connection_strength": 1.2
+    },
+    "extra": {
       "durability": 40,
       "connection_strength": 1.2
     },
@@ -49,7 +59,8 @@
     }
   },
   "traits": [
-    "devmod:trait_stable"
+    "devmod:trait_stable",
+    "devmod:trait_alloy_master"
   ],
   "synergies": {
     "devmod:iron": {

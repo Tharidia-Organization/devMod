@@ -11,7 +11,8 @@
     "mining_speed": 0.0,
     "attack_damage": 3.0,
     "attack_speed": -2.4,
-    "mining_level": 0
+    "mining_level": 0,
+    "reach": 1.5
   },
   "priority": 1,
   "base_upgrades": 3,

@@ -19,6 +19,9 @@
     "binding": {
       "durability": 55
     },
+    "extra": {
+      "durability": 55
+    },
     "plate": {
       "durability": 200,
       "mining_speed": 3.9,

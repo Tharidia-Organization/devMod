@@ -64,7 +64,12 @@ public enum FoundrySpecialization {
             stats.miningLevel(),
             stats.armor(),
             stats.toughness(),
-            stats.knockbackResistance()
+            stats.knockbackResistance(),
+            stats.reach(),
+            stats.critChance(),
+            stats.critDamage(),
+            stats.drawSpeed(),
+            stats.projectileSpeed()
         );
     }
 

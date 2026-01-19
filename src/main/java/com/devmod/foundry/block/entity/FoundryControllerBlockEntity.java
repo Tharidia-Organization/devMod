@@ -13,6 +13,9 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -43,6 +46,7 @@ import com.devmod.foundry.FoundryBlocks;
 import com.devmod.foundry.FoundryRecipeTypes;
 import com.devmod.foundry.FoundryTags;
 import com.devmod.foundry.block.FoundryControllerBlock;
+import com.devmod.foundry.entity.FoundryEntityMeltingModule;
 import com.devmod.foundry.fluid.FoundryFluidTank;
 import com.devmod.foundry.item.FoundryFluxItem;
 import com.devmod.foundry.menu.FoundryControllerMenu;
@@ -63,6 +67,7 @@ import com.devmod.foundry.structure.FoundryStructure;
 import com.devmod.foundry.structure.FoundryStructureDetector;
 import com.devmod.foundry.structure.FoundryStructureResult;
 import com.devmod.foundry.thermal.ThermalManager;
+import com.devmod.foundry.tool.material.FoundryMaterialAlloying;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 
@@ -112,6 +117,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     // New systems
     private final ThermalManager thermalManager = new ThermalManager();
     private final RiskManager riskManager = new RiskManager();
+    @Nullable private FoundryEntityMeltingModule entityMeltingModule;
 
     private boolean formed = false;
     private boolean structureDirty = true;
@@ -145,6 +151,12 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private boolean meltInitialized = false;
     private int tickCounter = 0;
 
+    // Client-side cached data for rendering
+    @Nullable private BlockPos clientMinPos;
+    @Nullable private BlockPos clientMaxPos;
+    private int lastSyncedTankAmount = -1;
+    private static final int TANK_SYNC_INTERVAL = 20; // Sync every second when tank changes
+
     public FoundryControllerBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_CONTROLLER.get()), pos, state);
         moltenTank = new FoundryFluidTank(Config.FOUNDRY_CAPACITY_PER_BLOCK.get());
@@ -154,6 +166,21 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     public void tickServer() {
         Level level = Objects.requireNonNull(getLevel());
         tickCounter++;
+
+        // Lazy initialization of entity melting module (needs level)
+        if (entityMeltingModule == null) {
+            entityMeltingModule = new FoundryEntityMeltingModule(
+                level,
+                moltenTank,
+                this::canMeltEntities,
+                this::getInteriorBounds
+            );
+        }
+
+        // Debug log every 100 ticks
+        if (tickCounter % 100 == 0) {
+            DevMod.LOGGER.info("[Foundry] Tick #{} at {} - formed={}, structureDirty={}", tickCounter, worldPosition, formed, structureDirty);
+        }
 
         if (structureDirty) {
             validateStructure(level);
@@ -166,6 +193,16 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             thermalManager.tick(0, false);
             moltenTank.tick(0, false);
             return;
+        }
+
+        // Periodic sync of tank data to clients for rendering
+        if (tickCounter % TANK_SYNC_INTERVAL == 0) {
+            int currentAmount = moltenTank.getUsed();
+            if (currentAmount != lastSyncedTankAmount) {
+                DevMod.LOGGER.info("[Foundry] Tank changed: {} -> {}, syncing to clients", lastSyncedTankAmount, currentAmount);
+                lastSyncedTankAmount = currentAmount;
+                syncToClients();
+            }
         }
 
         consumeFuelItem(level);
@@ -201,6 +238,12 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         maybePlayPuritySizzle(level, effectiveTemp);
         updateAlloyPreview(level, (int) effectiveTemp);
 
+        // Debug: log fuel and temperature status
+        if (tickCounter % 100 == 0) {
+            DevMod.LOGGER.info("[Foundry] Status at {}: fuelTicks={}, effectiveTemp={}, requiredTemp={}, fuelTank={}/{}",
+                worldPosition, fuelTicks, (int)effectiveTemp, requiredTemp, fuelTank.getFluidAmount(), fuelTank.getCapacity());
+        }
+
         if (fuelTicks > 0 && effectiveTemp >= requiredTemp) {
             fuelTicks--;
 
@@ -226,6 +269,12 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
 
             processMelting(level, (int) effectiveTemp, totalEfficiency, riskMultiplier);
             processAlloying(level, (int) effectiveTemp, totalEfficiency, riskMultiplier);
+
+            // Process entity melting (entities falling into molten metal)
+            if (entityMeltingModule != null) {
+                entityMeltingModule.tick();
+            }
+
             updateActiveState(level, true);
 
             // Check for thermal damage
@@ -307,12 +356,18 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         structureDirty = false;
         FoundryStructureResult result = FoundryStructureDetector.detect(Objects.requireNonNull(level), Objects.requireNonNull(worldPosition));
         if (!result.isValid()) {
+            boolean wasFormed = formed;
             structure = null;
             formed = false;
             lastError = result.error();
+            DevMod.LOGGER.warn("[Foundry] Structure validation failed at {}: {}", worldPosition, lastError != null ? lastError.getString() : "unknown error");
             updateActiveState(level, false);
+            if (wasFormed) {
+                syncToClients();
+            }
             return;
         }
+        DevMod.LOGGER.info("[Foundry] Structure validated successfully at {}", worldPosition);
 
         FoundryStructure detectedStructure = Objects.requireNonNull(result.structure());
         structure = detectedStructure;
@@ -330,6 +385,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         moltenTank.setCapacity(capacity);
         linkComponents(level, detectedStructure);
         updateActiveState(level, false);
+        syncToClients();
     }
 
     private void linkComponents(@Nonnull Level level, @Nonnull FoundryStructure structure) {
@@ -368,9 +424,13 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             FluidStack toFill = new FluidStack(Objects.requireNonNull(bucket.content), 1000);
             FoundryFuelRecipe recipe = findFuelRecipe(level, toFill);
             if (recipe == null) {
+                if (tickCounter % 100 == 0) {
+                    DevMod.LOGGER.warn("[Foundry] No fuel recipe found for fluid: {}", toFill.getFluid());
+                }
                 return;
             }
             int filled = fuelTank.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
+            DevMod.LOGGER.info("[Foundry] Filled fuel tank with {} mB, total now: {}", filled, fuelTank.getFluidAmount());
             if (filled > 0 && !level.isClientSide) {
                 inventory.setItem(FoundryControllerMenu.SLOT_FUEL, new ItemStack(Objects.requireNonNull(Items.BUCKET)));
             }
@@ -397,7 +457,10 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                     recipe = found;
                     activeSlot = i;
                     input = candidate;
+                    DevMod.LOGGER.info("[Foundry] Found recipe for {} at slot {}", candidate.getItem(), i);
                     break;
+                } else if (tickCounter % 100 == 0) {
+                    DevMod.LOGGER.warn("[Foundry] No recipe found for: {}", candidate.getItem());
                 }
             }
             currentRecipe = recipe;
@@ -419,10 +482,16 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         FluidStack output = recipe.getOutput();
         int byproductTotal = recipe.getByproductsTotal();
         if (moltenTank.getFree() < output.getAmount() + byproductTotal) {
+            if (tickCounter % 100 == 0) {
+                DevMod.LOGGER.warn("[Foundry] Tank full - free: {}, needed: {}", moltenTank.getFree(), output.getAmount() + byproductTotal);
+            }
             return;
         }
 
         if (temperature < recipe.getTemperature()) {
+            if (tickCounter % 100 == 0) {
+                DevMod.LOGGER.warn("[Foundry] Temp too low: {} < {}", temperature, recipe.getTemperature());
+            }
             return;
         }
 
@@ -432,7 +501,13 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         int progressGain = Math.max(1, Math.round(efficiency));
         progress += progressGain;
 
+        // Debug log progress
+        if (tickCounter % 40 == 0) {
+            DevMod.LOGGER.info("[Foundry] Melting progress: {}/{}, item={}", progress, maxProgress, input.getItem());
+        }
+
         if (progress >= maxProgress) {
+            DevMod.LOGGER.info("[Foundry] Melting COMPLETE for {}, outputting {} mB", input.getItem(), recipe.getOutput().getAmount());
             FoundryMaterialDefinition meltedMaterial = FoundryMaterialRegistry.findMaterial(input).orElse(null);
             input.shrink(1);
 
@@ -701,8 +776,13 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             return;
         }
 
+        // Calculate alloying bonuses from materials in the recipe
+        FoundryMaterialAlloying alloyingBonus = calculateAlloyingBonuses(recipe.getComponentFluids());
+
         alloyMaxProgress = recipe.getTime();
-        int progressGain = Math.max(1, Math.round(efficiency));
+        // Apply speed multiplier from material alloying bonuses
+        float effectiveSpeed = efficiency * (1f / alloyingBonus.speedMultiplier());
+        int progressGain = Math.max(1, Math.round(effectiveSpeed));
         alloyProgress += progressGain;
 
         if (alloyProgress >= alloyMaxProgress) {
@@ -717,6 +797,10 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                 FoundryAlloyingRecipe.RatioTier tier = ratioState.tier();
                 outputPurity = clampPurity(outputPurity + tier.purityBonus());
                 outputQuality = applyQualityShift(outputQuality, tier.qualityShift());
+            }
+            // Apply material alloying bonuses
+            if (alloyingBonus.hasBonus()) {
+                outputPurity = clampPurity(outputPurity + alloyingBonus.purityBonus());
             }
             int drained = recipe.consumeInputs(moltenTank);
             if (drained <= 0) {
@@ -738,6 +822,10 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                 if (specialization != null) {
                     yieldMultiplier *= specialization.getAlloyYieldMultiplier();
                 }
+            }
+            // Apply material alloying efficiency bonus
+            if (alloyingBonus.hasBonus()) {
+                yieldMultiplier *= alloyingBonus.efficiency();
             }
             int outputAmount = Math.min(Math.max(baseOutputAmount, Math.round(baseOutputAmount * yieldMultiplier)), freeAfterDrain);
             output.setAmount(outputAmount);
@@ -884,18 +972,93 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     @Nullable
     private FoundryFuelRecipe findFuelRecipe(@Nonnull Level level, @Nonnull FluidStack stack) {
         RecipeManager recipeManager = level.getRecipeManager();
-        FoundryFuelRecipe.FuelInput input = new FoundryFuelRecipe.FuelInput(stack);
-        return recipeManager.getRecipeFor(Objects.requireNonNull(FoundryRecipeTypes.FUEL.get()), input, level)
-            .map(RecipeHolder::value)
-            .orElse(null);
+
+        // Manual iteration to find matching fuel recipe
+        var allFuelRecipes = recipeManager.getAllRecipesFor(Objects.requireNonNull(FoundryRecipeTypes.FUEL.get()));
+        for (var holder : allFuelRecipes) {
+            FoundryFuelRecipe recipe = holder.value();
+            if (recipe.getFluid().getFluid() == stack.getFluid()) {
+                DevMod.LOGGER.info("[Foundry] Found matching fuel recipe: {} for {}", holder.id(), stack.getFluid());
+                return recipe;
+            }
+        }
+
+        if (tickCounter % 200 == 1) {
+            DevMod.LOGGER.warn("[Foundry] No fuel recipe found for {} (checked {} recipes)", stack.getFluid(), allFuelRecipes.size());
+        }
+        return null;
     }
 
     private void updateActiveState(@Nonnull Level level, boolean active) {
         BlockPos pos = Objects.requireNonNull(worldPosition);
         BlockState state = level.getBlockState(pos);
+        boolean needsUpdate = false;
+        BlockState newState = state;
+
+        // Update ACTIVE property
         if (state.hasProperty(Objects.requireNonNull(FoundryControllerBlock.ACTIVE)) && state.getValue(Objects.requireNonNull(FoundryControllerBlock.ACTIVE)) != active) {
-            level.setBlock(pos, Objects.requireNonNull(state.setValue(Objects.requireNonNull(FoundryControllerBlock.ACTIVE), active)), 3);
+            newState = Objects.requireNonNull(newState.setValue(Objects.requireNonNull(FoundryControllerBlock.ACTIVE), active));
+            needsUpdate = true;
         }
+
+        // Update IN_STRUCTURE property
+        if (state.hasProperty(Objects.requireNonNull(FoundryControllerBlock.IN_STRUCTURE)) && state.getValue(Objects.requireNonNull(FoundryControllerBlock.IN_STRUCTURE)) != formed) {
+            newState = Objects.requireNonNull(newState.setValue(Objects.requireNonNull(FoundryControllerBlock.IN_STRUCTURE), formed));
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            level.setBlock(pos, newState, 3);
+        }
+    }
+
+    /**
+     * Calculates combined alloying bonuses from materials present in the tank.
+     * Bonuses are averaged across all fluids with alloying properties.
+     */
+    private FoundryMaterialAlloying calculateAlloyingBonuses(List<Fluid> componentFluids) {
+        float totalRatioTolerance = 0f;
+        float totalPurityBonus = 0f;
+        float totalEfficiency = 0f;
+        float totalSpeedMultiplier = 0f;
+        int count = 0;
+
+        for (Fluid fluid : componentFluids) {
+            ResourceLocation fluidId = BuiltInRegistries.FLUID.getKey(fluid);
+            if (fluidId == null) continue;
+
+            // Try to find a material that produces this fluid (convention: molten_<material>)
+            String fluidPath = fluidId.getPath();
+            String materialName = fluidPath.startsWith("molten_") ? fluidPath.substring(7) : fluidPath;
+            ResourceLocation materialId = ResourceLocation.fromNamespaceAndPath(fluidId.getNamespace(), materialName);
+
+            FoundryMaterialDefinition material = FoundryMaterialRegistry.get(materialId);
+            if (material == null) {
+                // Try devmod namespace
+                materialId = ResourceLocation.fromNamespaceAndPath("devmod", materialName);
+                material = FoundryMaterialRegistry.get(materialId);
+            }
+
+            if (material != null && material.alloying().hasBonus()) {
+                FoundryMaterialAlloying alloying = material.alloying();
+                totalRatioTolerance += alloying.ratioTolerance();
+                totalPurityBonus += alloying.purityBonus();
+                totalEfficiency += alloying.efficiency();
+                totalSpeedMultiplier += alloying.speedMultiplier();
+                count++;
+            }
+        }
+
+        if (count == 0) {
+            return FoundryMaterialAlloying.NONE;
+        }
+
+        return new FoundryMaterialAlloying(
+            totalRatioTolerance / count,
+            totalPurityBonus / count,
+            totalEfficiency / count,
+            totalSpeedMultiplier / count
+        );
     }
 
     public void markStructureDirty() {
@@ -904,6 +1067,15 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
 
     public boolean isFormed() {
         return formed;
+    }
+
+    @Nullable
+    public FoundryStructure getStructure() {
+        return structure;
+    }
+
+    public FoundryFluidTank getMoltenTank() {
+        return moltenTank;
     }
 
     @Nullable
@@ -949,6 +1121,43 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
 
     public int getMoltenAmountForFluid(Fluid fluid) {
         return moltenTank.getAmountForFluid(fluid);
+    }
+
+    /**
+     * Gets the registry ID of the fluid at the specified index in the tank.
+     * Used for GUI fluid composition display.
+     * @param index The fluid index (0-3)
+     * @return The fluid registry ID, or -1 if no fluid at that index
+     */
+    public int getFluidIdAt(int index) {
+        List<FluidStack> fluids = moltenTank.getFluids();
+        if (index < 0 || index >= fluids.size()) {
+            return -1;
+        }
+        return BuiltInRegistries.FLUID.getId(fluids.get(index).getFluid());
+    }
+
+    /**
+     * Gets the amount of fluid at the specified index in the tank.
+     * Used for GUI fluid composition display.
+     * @param index The fluid index (0-3)
+     * @return The fluid amount in mB, or 0 if no fluid at that index
+     */
+    public int getFluidAmountAt(int index) {
+        List<FluidStack> fluids = moltenTank.getFluids();
+        if (index < 0 || index >= fluids.size()) {
+            return 0;
+        }
+        return fluids.get(index).getAmount();
+    }
+
+    /**
+     * Gets the number of distinct fluid types currently in the tank.
+     * Used for GUI fluid composition display.
+     * @return The number of fluid types (0-n)
+     */
+    public int getFluidTypeCount() {
+        return moltenTank.getFluids().size();
     }
 
     public int getFuelAmount() {
@@ -1248,5 +1457,146 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             : FoundryTier.PRIMITIVE;
 
         structureDirty = true;
+    }
+
+    // ==================== CLIENT SYNC ====================
+
+    private static final String TAG_CLIENT_MIN_X = "ClientMinX";
+    private static final String TAG_CLIENT_MIN_Y = "ClientMinY";
+    private static final String TAG_CLIENT_MIN_Z = "ClientMinZ";
+    private static final String TAG_CLIENT_MAX_X = "ClientMaxX";
+    private static final String TAG_CLIENT_MAX_Y = "ClientMaxY";
+    private static final String TAG_CLIENT_MAX_Z = "ClientMaxZ";
+
+    @Override
+    @Nonnull
+    public CompoundTag getUpdateTag(@Nonnull HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        tag.putBoolean(TAG_FORMED, formed);
+
+        // Save structure bounds for client rendering
+        FoundryStructure currentStructure = structure;
+        if (currentStructure != null) {
+            BlockPos min = currentStructure.minPos();
+            BlockPos max = currentStructure.maxPos();
+            tag.putInt(TAG_CLIENT_MIN_X, min.getX());
+            tag.putInt(TAG_CLIENT_MIN_Y, min.getY());
+            tag.putInt(TAG_CLIENT_MIN_Z, min.getZ());
+            tag.putInt(TAG_CLIENT_MAX_X, max.getX());
+            tag.putInt(TAG_CLIENT_MAX_Y, max.getY());
+            tag.putInt(TAG_CLIENT_MAX_Z, max.getZ());
+        }
+
+        // Save molten tank data for client rendering
+        tag.put(TAG_MOLTEN, Objects.requireNonNull(moltenTank.save(registries)));
+        System.out.println("[Foundry-Server] getUpdateTag() called, tankUsed=" + moltenTank.getUsed() + ", formed=" + formed);
+
+        return tag;
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(
+        @Nonnull net.minecraft.network.Connection connection,
+        @Nonnull ClientboundBlockEntityDataPacket packet,
+        @Nonnull HolderLookup.Provider registries
+    ) {
+        System.out.println("[Foundry-Client] onDataPacket received at " + worldPosition);
+        CompoundTag tag = packet.getTag();
+        if (tag != null) {
+            handleUpdateTag(tag, registries);
+        }
+    }
+
+    @Override
+    public void handleUpdateTag(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
+        formed = tag.getBoolean(TAG_FORMED);
+        System.out.println("[Foundry-Client] handleUpdateTag called, formed=" + formed + ", hasMoltenTag=" + tag.contains(TAG_MOLTEN));
+
+        // Load structure bounds for client rendering
+        if (tag.contains(TAG_CLIENT_MIN_X)) {
+            clientMinPos = new BlockPos(
+                tag.getInt(TAG_CLIENT_MIN_X),
+                tag.getInt(TAG_CLIENT_MIN_Y),
+                tag.getInt(TAG_CLIENT_MIN_Z)
+            );
+            clientMaxPos = new BlockPos(
+                tag.getInt(TAG_CLIENT_MAX_X),
+                tag.getInt(TAG_CLIENT_MAX_Y),
+                tag.getInt(TAG_CLIENT_MAX_Z)
+            );
+            System.out.println("[Foundry-Client] Structure bounds loaded: min=" + clientMinPos + ", max=" + clientMaxPos);
+        } else {
+            clientMinPos = null;
+            clientMaxPos = null;
+        }
+
+        // Load molten tank data for client rendering
+        if (tag.contains(TAG_MOLTEN)) {
+            int beforeUsed = moltenTank.getUsed();
+            moltenTank.load(registries, Objects.requireNonNull(tag.getCompound(TAG_MOLTEN)));
+            int afterUsed = moltenTank.getUsed();
+            System.out.println("[Foundry-Client] Tank loaded: before=" + beforeUsed + ", after=" + afterUsed + ", capacity=" + moltenTank.getCapacity());
+        }
+    }
+
+    /**
+     * Sends a block update to sync client data.
+     * Call this when structure or tank data changes that affects rendering.
+     */
+    public void syncToClients() {
+        Level level = getLevel();
+        if (level != null && !level.isClientSide) {
+            System.out.println("[Foundry-Server] syncToClients() called, tankUsed=" + moltenTank.getUsed() + ", pos=" + worldPosition);
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    /**
+     * Gets the structure bounds for client-side rendering.
+     * Uses cached client data if on client, or actual structure if on server.
+     */
+    @Nullable
+    public BlockPos getClientMinPos() {
+        if (structure != null) {
+            return structure.minPos();
+        }
+        return clientMinPos;
+    }
+
+    /**
+     * Gets the structure bounds for client-side rendering.
+     * Uses cached client data if on client, or actual structure if on server.
+     */
+    @Nullable
+    public BlockPos getClientMaxPos() {
+        if (structure != null) {
+            return structure.maxPos();
+        }
+        return clientMaxPos;
+    }
+
+    /**
+     * Check if the foundry can melt entities.
+     * Requires: formed structure, fuel burning, and molten metal in tank.
+     */
+    public boolean canMeltEntities() {
+        return formed && fuelTicks > 0 && !moltenTank.isEmpty();
+    }
+
+    /**
+     * Get the interior bounds of the foundry for entity detection.
+     * @return AABB of the interior space, or null if not formed
+     */
+    @Nullable
+    public net.minecraft.world.phys.AABB getInteriorBounds() {
+        if (structure == null) {
+            return null;
+        }
+        return structure.getInteriorBounds();
     }
 }

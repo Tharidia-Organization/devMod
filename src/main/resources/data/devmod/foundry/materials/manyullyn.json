@@ -12,6 +12,12 @@
     ],
     "impurity_base": 0.05
   },
+  "alloying": {
+    "ratio_tolerance": 0.1,
+    "purity_bonus": 0.08,
+    "efficiency": 1.12,
+    "speed_multiplier": 0.85
+  },
   "stats": {
     "head": {
       "durability": 200,
@@ -19,7 +25,10 @@
       "attack_damage": 4.5,
       "attack_speed": 0.0,
       "mining_level": 4,
-      "hardness": 10
+      "hardness": 10,
+      "reach": 0.5,
+      "crit_chance": 0.1,
+      "crit_damage": 1.75
     },
     "handle": {
       "durability": 50,
@@ -27,6 +36,11 @@
       "attack_damage_multiplier": 1.1
     },
     "binding": {
+      "durability": 40,
+      "connection_strength": 1.1,
+      "attack_damage": 0.5
+    },
+    "extra": {
       "durability": 40,
       "connection_strength": 1.1,
       "attack_damage": 0.5
@@ -51,6 +65,7 @@
     }
   },
   "traits": [
-    "devmod:trait_insatiable"
+    "devmod:trait_insatiable",
+    "devmod:trait_alloy_master"
   ]
 }

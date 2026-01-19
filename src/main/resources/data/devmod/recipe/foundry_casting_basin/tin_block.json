@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:tin_block"
+    "id": "devmod:tin_block"
   },
   "cooling_time": 280,
   "consume_cast": false

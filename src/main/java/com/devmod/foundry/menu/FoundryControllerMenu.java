@@ -52,7 +52,19 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
     private static final int DATA_ALLOY_PREVIEW_FLUID = 13;
     private static final int DATA_ALLOY_PREVIEW_RATIO = 14;
     private static final int DATA_OXIDATION = 15;
-    private static final int DATA_SLOT_COUNT = 16;
+    // Fluid composition for visual mixing (up to 4 fluids)
+    private static final int DATA_FLUID_0_ID = 16;
+    private static final int DATA_FLUID_0_AMOUNT = 17;
+    private static final int DATA_FLUID_1_ID = 18;
+    private static final int DATA_FLUID_1_AMOUNT = 19;
+    private static final int DATA_FLUID_2_ID = 20;
+    private static final int DATA_FLUID_2_AMOUNT = 21;
+    private static final int DATA_FLUID_3_ID = 22;
+    private static final int DATA_FLUID_3_AMOUNT = 23;
+    private static final int DATA_FLUID_COUNT = 24;
+    private static final int DATA_SLOT_COUNT = 25;
+
+    public static final int MAX_DISPLAYED_FLUIDS = 4;
 
     public FoundryControllerMenu(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
         this(containerId, playerInv, new SimpleContainer(CONTAINER_SIZE), ContainerLevelAccess.NULL, new SimpleContainerData(DATA_SLOT_COUNT));
@@ -88,6 +100,15 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
                     case DATA_ALLOY_PREVIEW_FLUID -> be.getAlloyPreviewFluidId();
                     case DATA_ALLOY_PREVIEW_RATIO -> be.getAlloyPreviewRatio();
                     case DATA_OXIDATION -> (int) (be.getOxidationPercent() * 100);
+                    case DATA_FLUID_0_ID, DATA_FLUID_1_ID, DATA_FLUID_2_ID, DATA_FLUID_3_ID -> {
+                        int fluidIndex = (index - DATA_FLUID_0_ID) / 2;
+                        yield be.getFluidIdAt(fluidIndex);
+                    }
+                    case DATA_FLUID_0_AMOUNT, DATA_FLUID_1_AMOUNT, DATA_FLUID_2_AMOUNT, DATA_FLUID_3_AMOUNT -> {
+                        int fluidIndex = (index - DATA_FLUID_0_AMOUNT) / 2;
+                        yield be.getFluidAmountAt(fluidIndex);
+                    }
+                    case DATA_FLUID_COUNT -> be.getFluidTypeCount();
                     default -> 0;
                 };
             }
@@ -114,25 +135,25 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
         checkContainerSize(containerObj, CONTAINER_SIZE);
 
         // Input slots: 2x2 grid
-        this.addSlot(new Slot(containerObj, 0, 44, 21));
-        this.addSlot(new Slot(containerObj, 1, 62, 21));
-        this.addSlot(new Slot(containerObj, 2, 44, 39));
-        this.addSlot(new Slot(containerObj, 3, 62, 39));
+        this.addSlot(new Slot(containerObj, 0, 44, 37));
+        this.addSlot(new Slot(containerObj, 1, 62, 37));
+        this.addSlot(new Slot(containerObj, 2, 44, 55));
+        this.addSlot(new Slot(containerObj, 3, 62, 55));
 
         // Fuel slot
-        this.addSlot(new Slot(containerObj, SLOT_FUEL, 116, 39));
+        this.addSlot(new Slot(containerObj, SLOT_FUEL, 116, 55));
 
         // Player inventory
         var inv = Objects.requireNonNull(playerInv);
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 100 + row * 18));
             }
         }
 
         // Hotbar
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(inv, col, 8 + col * 18, 142));
+            this.addSlot(new Slot(inv, col, 8 + col * 18, 158));
         }
 
         addDataSlots(data);
@@ -206,6 +227,45 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
 
     public boolean hasAlloyPreview() {
         return getAlloyPreviewFluidId() >= 0;
+    }
+
+    // Fluid composition getters for visual mixing display
+
+    /**
+     * Gets the number of distinct fluid types in the tank.
+     */
+    public int getFluidTypeCount() {
+        return data.get(DATA_FLUID_COUNT);
+    }
+
+    /**
+     * Gets the fluid registry ID at the specified index.
+     * @param index The fluid index (0-3)
+     * @return The fluid registry ID, or -1 if no fluid at that index
+     */
+    public int getFluidIdAt(int index) {
+        return switch (index) {
+            case 0 -> data.get(DATA_FLUID_0_ID);
+            case 1 -> data.get(DATA_FLUID_1_ID);
+            case 2 -> data.get(DATA_FLUID_2_ID);
+            case 3 -> data.get(DATA_FLUID_3_ID);
+            default -> -1;
+        };
+    }
+
+    /**
+     * Gets the fluid amount at the specified index.
+     * @param index The fluid index (0-3)
+     * @return The fluid amount in mB, or 0 if no fluid at that index
+     */
+    public int getFluidAmountAt(int index) {
+        return switch (index) {
+            case 0 -> data.get(DATA_FLUID_0_AMOUNT);
+            case 1 -> data.get(DATA_FLUID_1_AMOUNT);
+            case 2 -> data.get(DATA_FLUID_2_AMOUNT);
+            case 3 -> data.get(DATA_FLUID_3_AMOUNT);
+            default -> 0;
+        };
     }
 
     @Override

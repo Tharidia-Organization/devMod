@@ -31,6 +31,11 @@ public class FoundryFluidTank implements IFluidHandler {
     private int capacity;
     private final List<FluidStack> fluids = new ArrayList<>();
 
+    // Animation fields for smooth client-side rendering
+    private float renderFillRatio = 0f;
+    private float targetFillRatio = 0f;
+    private static final float INTERPOLATION_SPEED = 0.15f;
+
     public FoundryFluidTank(int capacity) {
         this.capacity = capacity;
     }
@@ -126,6 +131,7 @@ public class FoundryFluidTank implements IFluidHandler {
             FluidStack toAdd = resource.copy();
             toAdd.setAmount(toFill);
             addFluidInternal(toAdd);
+            updateTargetFillRatio();
         }
         return toFill;
     }
@@ -147,6 +153,7 @@ public class FoundryFluidTank implements IFluidHandler {
                     if (stack.isEmpty()) {
                         fluids.remove(i);
                     }
+                    updateTargetFillRatio();
                 }
                 return result;
             }
@@ -169,6 +176,7 @@ public class FoundryFluidTank implements IFluidHandler {
             if (stack.isEmpty()) {
                 fluids.remove(0);
             }
+            updateTargetFillRatio();
         }
         return result;
     }
@@ -313,29 +321,93 @@ public class FoundryFluidTank implements IFluidHandler {
     public CompoundTag save(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         ListTag list = new ListTag();
+        System.out.println("[FoundryFluidTank] save() called, fluids.size()=" + fluids.size() + ", totalUsed=" + getUsed());
         for (FluidStack stack : fluids) {
-            CompoundTag stackTag = new CompoundTag();
-            stack.save(registries, stackTag);
+            // In NeoForge 1.21.1, FluidStack.save() returns a new tag, doesn't populate the provided one
+            CompoundTag stackTag = (CompoundTag) stack.save(registries);
+            System.out.println("[FoundryFluidTank] Saving fluid: " + stack.getFluid() + " x" + stack.getAmount() + " -> " + stackTag);
             list.add(stackTag);
         }
         tag.put(TAG_FLUIDS, list);
         tag.putInt(TAG_CAPACITY, capacity);
+        System.out.println("[FoundryFluidTank] Saved tag list size: " + list.size());
         return tag;
     }
 
     public void load(HolderLookup.Provider registries, CompoundTag tag) {
         fluids.clear();
         capacity = tag.getInt(TAG_CAPACITY);
+        System.out.println("[FoundryFluidTank] load() called, capacity=" + capacity + ", hasFluids=" + tag.contains(TAG_FLUIDS));
         if (tag.contains(TAG_FLUIDS)) {
             ListTag list = tag.getList(TAG_FLUIDS, Tag.TAG_COMPOUND);
+            System.out.println("[FoundryFluidTank] Fluid list size: " + list.size());
             for (Tag entry : list) {
                 if (entry instanceof CompoundTag fluidTag) {
+                    System.out.println("[FoundryFluidTank] Parsing fluid tag: " + fluidTag);
                     FluidStack stack = FluidStack.parseOptional(registries, fluidTag);
+                    System.out.println("[FoundryFluidTank] Parsed stack: " + (stack.isEmpty() ? "EMPTY" : stack.getFluid() + " x" + stack.getAmount()));
                     if (!stack.isEmpty()) {
                         fluids.add(stack);
                     }
                 }
             }
         }
+        System.out.println("[FoundryFluidTank] After load: totalUsed=" + getUsed());
+        // Update target fill ratio after loading
+        updateTargetFillRatio();
+    }
+
+    // ==================== Animation Methods (Client-side) ====================
+
+    /**
+     * Updates the target fill ratio based on current fluid levels.
+     * Call this when fluid contents change.
+     */
+    public void updateTargetFillRatio() {
+        targetFillRatio = capacity > 0 ? (float) getUsed() / capacity : 0f;
+    }
+
+    /**
+     * Tick the client-side animation interpolation.
+     * Call this every client tick to smoothly animate fluid level changes.
+     */
+    public void tickClient() {
+        if (Math.abs(renderFillRatio - targetFillRatio) < 0.001f) {
+            renderFillRatio = targetFillRatio;
+            return;
+        }
+        float delta = targetFillRatio - renderFillRatio;
+        renderFillRatio += delta * INTERPOLATION_SPEED;
+    }
+
+    /**
+     * Gets the interpolated fill ratio for rendering.
+     * @param partialTick Partial tick for smooth animation
+     * @return Fill ratio between 0.0 and 1.0, smoothly interpolated
+     */
+    public float getRenderFillRatio(float partialTick) {
+        if (Math.abs(renderFillRatio - targetFillRatio) < 0.001f) {
+            return targetFillRatio;
+        }
+        // Interpolate between current render position and target
+        float delta = targetFillRatio - renderFillRatio;
+        return renderFillRatio + delta * INTERPOLATION_SPEED * partialTick;
+    }
+
+    /**
+     * Gets the actual (non-animated) fill ratio.
+     * @return Fill ratio between 0.0 and 1.0
+     */
+    public float getFillRatio() {
+        return capacity > 0 ? (float) getUsed() / capacity : 0f;
+    }
+
+    /**
+     * Instantly sets the render fill ratio to the current level (no animation).
+     * Useful when first loading or teleporting.
+     */
+    public void snapRenderToTarget() {
+        updateTargetFillRatio();
+        renderFillRatio = targetFillRatio;
     }
 }

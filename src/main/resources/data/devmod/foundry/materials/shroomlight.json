@@ -19,6 +19,9 @@
     "binding": {
       "durability": 12
     },
+    "extra": {
+      "durability": 12
+    },
     "plate": {
       "durability": 55,
       "mining_speed": 3.0,
@@ -34,5 +37,7 @@
       "durability": 12
     }
   },
-  "traits": ["devmod:trait_lustrous"]
+  "traits": [
+    "devmod:trait_lustrous"
+  ]
 }

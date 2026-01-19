@@ -73,7 +73,19 @@ public class FoundryToolAnvilMenu extends AbstractContainerMenu {
         this.addSlot(new Slot(containerObj, SLOT_MODIFIER, 62, 35) {
             @Override
             public boolean mayPlace(@Nonnull ItemStack stack) {
-                return FoundryModifierRegistry.findModifier(stack).isPresent();
+                // Accept modifiers
+                if (FoundryModifierRegistry.findModifier(stack).isPresent()) {
+                    return true;
+                }
+                // Accept foundry tools for embossment
+                if (FoundryToolData.fromStack(stack).isPresent()) {
+                    return true;
+                }
+                // Accept materials for repair
+                if (com.devmod.foundry.tool.material.FoundryMaterialRegistry.findMaterial(stack).isPresent()) {
+                    return true;
+                }
+                return false;
             }
         });
         this.addSlot(new Slot(containerObj, SLOT_OUTPUT, 134, 35) {

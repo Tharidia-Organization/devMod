@@ -18,6 +18,9 @@
     },
     "binding": {
       "durability": 70
+    },
+    "extra": {
+      "durability": 70
     }
   },
   "traits": [

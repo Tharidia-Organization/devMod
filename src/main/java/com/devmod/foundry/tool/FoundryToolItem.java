@@ -1,6 +1,7 @@
 package com.devmod.foundry.tool;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 
@@ -51,6 +52,25 @@ public class FoundryToolItem extends Item {
             double attack = attributes.compute(0.0, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
             tooltip.add(Component.translatable("tooltip.devmod.foundry.attack_damage", String.format(java.util.Locale.ROOT, "%.2f", attack)));
         }
+
+        // Display extended stats (crit, reach)
+        Optional<FoundryToolStats> statsOpt = FoundryToolingEvents.getToolStats(stack);
+        if (statsOpt.isPresent()) {
+            FoundryToolStats stats = statsOpt.get();
+            if (stats.reach() != 0.0f) {
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.reach",
+                    String.format(java.util.Locale.ROOT, "%.1f", stats.reach())));
+            }
+            if (stats.critChance() > 0.0f) {
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.crit_chance",
+                    String.format(java.util.Locale.ROOT, "%.0f", stats.critChance() * 100)));
+            }
+            if (stats.critDamage() > 1.5f) {
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.crit_damage",
+                    String.format(java.util.Locale.ROOT, "%.2f", stats.critDamage())));
+            }
+        }
+
         FoundryToolData.fromStack(stack).ifPresent(data -> {
             tooltip.add(data.quality().getColoredDisplayName());
             tooltip.add(Component.translatable("tooltip.devmod.foundry.level", data.level()));

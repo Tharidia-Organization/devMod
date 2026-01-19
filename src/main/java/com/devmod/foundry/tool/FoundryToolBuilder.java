@@ -41,6 +41,8 @@ public final class FoundryToolBuilder {
     private static final ResourceLocation ARMOR_ID = ResourceLocation.fromNamespaceAndPath("devmod", "foundry_armor");
     private static final ResourceLocation ARMOR_TOUGHNESS_ID = ResourceLocation.fromNamespaceAndPath("devmod", "foundry_armor_toughness");
     private static final ResourceLocation KNOCKBACK_RESISTANCE_ID = ResourceLocation.fromNamespaceAndPath("devmod", "foundry_knockback_resistance");
+    private static final ResourceLocation ENTITY_REACH_ID = ResourceLocation.fromNamespaceAndPath("devmod", "foundry_entity_reach");
+    private static final ResourceLocation BLOCK_REACH_ID = ResourceLocation.fromNamespaceAndPath("devmod", "foundry_block_reach");
 
     private FoundryToolBuilder() {}
 
@@ -95,6 +97,13 @@ public final class FoundryToolBuilder {
         float toughness = definition.baseStats().toughness();
         float knockbackResistance = definition.baseStats().knockbackResistance();
 
+        // Extended stats
+        float reach = definition.baseStats().reach();
+        float critChance = definition.baseStats().critChance();
+        float critDamage = definition.baseStats().critDamage();
+        float drawSpeed = definition.baseStats().drawSpeed();
+        float projectileSpeed = definition.baseStats().projectileSpeed();
+
         float durabilityMultiplier = 1.0f;
         float miningSpeedMultiplier = 1.0f;
         float attackDamageMultiplier = 1.0f;
@@ -116,6 +125,16 @@ public final class FoundryToolBuilder {
             miningSpeedMultiplier *= stats.miningSpeedMultiplier();
             attackDamageMultiplier *= stats.attackDamageMultiplier();
             miningLevel = Math.max(miningLevel, stats.miningLevel());
+
+            // Extended stats from materials
+            reach += stats.reach();
+            critChance += stats.critChance();
+            critDamage = Math.max(critDamage, stats.critDamage());
+            drawSpeed += stats.drawSpeed();
+            if (stats.projectileSpeed() > 0) {
+                projectileSpeed = (projectileSpeed + stats.projectileSpeed()) / 2f;
+            }
+
             float armorBonus = stats.armor();
             float toughnessBonus = stats.toughness();
             float knockbackBonus = stats.knockbackResistance();
@@ -139,6 +158,9 @@ public final class FoundryToolBuilder {
         miningSpeed = miningSpeed * miningSpeedMultiplier;
         attackDamage = attackDamage * attackDamageMultiplier;
 
+        // Cap crit chance at 100%
+        critChance = Math.min(1.0f, critChance);
+
         for (Map.Entry<ResourceLocation, Integer> entry : combinedModifiers.entrySet()) {
             FoundryModifierDefinition modifier = FoundryModifierRegistry.all().stream()
                 .filter(def -> Objects.equals(def.id(), entry.getKey()))
@@ -158,7 +180,8 @@ public final class FoundryToolBuilder {
             knockbackResistance += bonus.knockbackResistance() * level;
         }
 
-        FoundryToolStats raw = new FoundryToolStats(durability, miningSpeed, attackDamage, attackSpeed, miningLevel, armor, toughness, knockbackResistance);
+        FoundryToolStats raw = new FoundryToolStats(durability, miningSpeed, attackDamage, attackSpeed, miningLevel,
+            armor, toughness, knockbackResistance, reach, critChance, critDamage, drawSpeed, projectileSpeed);
         return applyQuality(raw, quality);
     }
 
@@ -171,7 +194,14 @@ public final class FoundryToolBuilder {
         float armor = stats.armor() * mult;
         float toughness = stats.toughness() * mult;
         float knockbackResistance = stats.knockbackResistance() * mult;
-        return new FoundryToolStats(durability, miningSpeed, attackDamage, attackSpeed, stats.miningLevel(), armor, toughness, knockbackResistance);
+        // Extended stats - reach scales with quality, crit stats don't
+        float reach = stats.reach() * mult;
+        float critChance = stats.critChance(); // Crit chance not scaled by quality
+        float critDamage = stats.critDamage(); // Crit damage not scaled by quality
+        float drawSpeed = stats.drawSpeed() * mult;
+        float projectileSpeed = stats.projectileSpeed(); // Projectile speed not scaled
+        return new FoundryToolStats(durability, miningSpeed, attackDamage, attackSpeed, stats.miningLevel(),
+            armor, toughness, knockbackResistance, reach, critChance, critDamage, drawSpeed, projectileSpeed);
     }
 
     public static FoundryToolStats applySpecialization(
@@ -227,6 +257,20 @@ public final class FoundryToolBuilder {
                     new AttributeModifier(ATTACK_SPEED_ID, stats.attackSpeed(), AttributeModifier.Operation.ADD_VALUE),
                     EquipmentSlotGroup.MAINHAND
                 );
+
+            // Apply reach bonus if present (1.21+ uses ENTITY_INTERACTION_RANGE and BLOCK_INTERACTION_RANGE)
+            if (stats.reach() != 0.0f) {
+                attributeBuilder.add(
+                    Attributes.ENTITY_INTERACTION_RANGE,
+                    new AttributeModifier(ENTITY_REACH_ID, stats.reach(), AttributeModifier.Operation.ADD_VALUE),
+                    EquipmentSlotGroup.MAINHAND
+                );
+                attributeBuilder.add(
+                    Attributes.BLOCK_INTERACTION_RANGE,
+                    new AttributeModifier(BLOCK_REACH_ID, stats.reach(), AttributeModifier.Operation.ADD_VALUE),
+                    EquipmentSlotGroup.MAINHAND
+                );
+            }
         }
         ItemAttributeModifiers attributes = attributeBuilder.build();
         stack.set(DataComponents.ATTRIBUTE_MODIFIERS, attributes);

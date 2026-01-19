@@ -6,8 +6,11 @@
   "tier": 2,
   "melting": {
     "temperature": 900,
-    "optimal_range": [860, 940],
-    "impurity_base": 0.10
+    "optimal_range": [
+      860,
+      940
+    ],
+    "impurity_base": 0.1
   },
   "stats": {
     "head": {
@@ -22,6 +25,9 @@
       "durability_multiplier": 1.08
     },
     "binding": {
+      "durability": 30
+    },
+    "extra": {
       "durability": 30
     }
   },

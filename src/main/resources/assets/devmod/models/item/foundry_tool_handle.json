@@ -1,6 +1,4 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "devmod:item/foundry_tool_handle"
-  }
+  "loader": "devmod:foundry_part",
+  "texture": "devmod:item/tool/parts/tool_handle"
 }

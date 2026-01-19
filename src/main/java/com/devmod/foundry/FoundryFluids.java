@@ -35,9 +35,9 @@ public final class FoundryFluids {
     public static final DeferredRegister<net.minecraft.world.level.material.Fluid> FLUIDS =
         DeferredRegister.create(Objects.requireNonNull(Registries.FLUID), DevMod.MODID);
 
-    public static final MoltenFluid MOLTEN_IRON = registerMolten("molten_iron", SharedColorTokens.Foundry.Fluids.MOLTEN_IRON, 10, false);
-    public static final MoltenFluid MOLTEN_GOLD = registerMolten("molten_gold", SharedColorTokens.Foundry.Fluids.MOLTEN_GOLD, 10, false);
-    public static final MoltenFluid MOLTEN_COPPER = registerMolten("molten_copper", SharedColorTokens.Foundry.Fluids.MOLTEN_COPPER, 9, false);
+    public static final MoltenFluid MOLTEN_IRON = registerMolten("molten_iron", SharedColorTokens.Foundry.Fluids.MOLTEN_IRON, 10, true);
+    public static final MoltenFluid MOLTEN_GOLD = registerMolten("molten_gold", SharedColorTokens.Foundry.Fluids.MOLTEN_GOLD, 10, true);
+    public static final MoltenFluid MOLTEN_COPPER = registerMolten("molten_copper", SharedColorTokens.Foundry.Fluids.MOLTEN_COPPER, 9, true);
     public static final MoltenFluid MOLTEN_TIN = registerMolten("molten_tin", SharedColorTokens.Foundry.Fluids.MOLTEN_TIN, 7, true);
     public static final MoltenFluid MOLTEN_BRONZE = registerMolten("molten_bronze", SharedColorTokens.Foundry.Fluids.MOLTEN_BRONZE, 10, true);
     public static final MoltenFluid MOLTEN_STEEL = registerMolten("molten_steel", SharedColorTokens.Foundry.Fluids.MOLTEN_STEEL, 12, true);
@@ -49,7 +49,7 @@ public final class FoundryFluids {
     public static final MoltenFluid MOLTEN_ELECTRUM = registerMolten("molten_electrum", SharedColorTokens.Foundry.Fluids.MOLTEN_ELECTRUM, 12, true);
     public static final MoltenFluid MOLTEN_INVAR = registerMolten("molten_invar", SharedColorTokens.Foundry.Fluids.MOLTEN_INVAR, 11, true);
     public static final MoltenFluid MOLTEN_ARDITE = registerMolten("molten_ardite", SharedColorTokens.Foundry.Fluids.MOLTEN_ARDITE, 15, true);
-    public static final MoltenFluid MOLTEN_NETHERITE = registerMolten("molten_netherite", SharedColorTokens.Foundry.Fluids.MOLTEN_NETHERITE, 15, false);
+    public static final MoltenFluid MOLTEN_NETHERITE = registerMolten("molten_netherite", SharedColorTokens.Foundry.Fluids.MOLTEN_NETHERITE, 15, true);
     public static final MoltenFluid MOLTEN_VOID_METAL = registerMolten("molten_void_metal", SharedColorTokens.Foundry.Fluids.MOLTEN_VOID_METAL, 10, true);
 
     public static void init(IEventBus modEventBus) {

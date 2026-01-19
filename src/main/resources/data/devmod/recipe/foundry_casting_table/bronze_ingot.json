@@ -8,7 +8,7 @@
     "amount": 144
   },
   "result": {
-    "item": "devmod:bronze_ingot"
+    "id": "devmod:bronze_ingot"
   },
   "cooling_time": 100,
   "consume_cast": false

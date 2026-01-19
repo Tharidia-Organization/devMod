@@ -19,6 +19,9 @@
     "binding": {
       "durability": 21
     },
+    "extra": {
+      "durability": 21
+    },
     "plate": {
       "durability": 95,
       "mining_speed": 5.0,
@@ -34,5 +37,7 @@
       "durability": 21
     }
   },
-  "traits": ["devmod:trait_verdant"]
+  "traits": [
+    "devmod:trait_verdant"
+  ]
 }

@@ -8,7 +8,7 @@
     "amount": 144
   },
   "result": {
-    "item": "devmod:steel_ingot"
+    "id": "devmod:steel_ingot"
   },
   "cooling_time": 110,
   "consume_cast": false

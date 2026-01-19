@@ -19,6 +19,9 @@
     "binding": {
       "durability": 20
     },
+    "extra": {
+      "durability": 20
+    },
     "plate": {
       "durability": 90,
       "mining_speed": 5.0,
@@ -34,5 +37,7 @@
       "durability": 20
     }
   },
-  "traits": ["devmod:trait_prismatic"]
+  "traits": [
+    "devmod:trait_prismatic"
+  ]
 }

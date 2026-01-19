@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_wrench_head"
+    "layer0": "devmod:item/tconstruct/tool/pickaxe/head"
   }
 }

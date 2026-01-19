@@ -17,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.foundry.FoundryBlockEntities;
+import com.devmod.foundry.block.FoundryChuteBlock;
 import com.devmod.foundry.menu.FoundryControllerMenu;
 
 /**
@@ -33,6 +34,23 @@ public class FoundryChuteBlockEntity extends FoundryComponentBlockEntity impleme
 
     public FoundryChuteBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_CHUTE.get()), pos, state);
+    }
+
+    @Override
+    public void setControllerPos(@Nullable BlockPos pos) {
+        super.setControllerPos(pos);
+        updateInStructureState(pos != null);
+    }
+
+    private void updateInStructureState(boolean inStructure) {
+        Level level = getLevel();
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (state.hasProperty(FoundryChuteBlock.IN_STRUCTURE) && state.getValue(FoundryChuteBlock.IN_STRUCTURE) != inStructure) {
+            level.setBlock(worldPosition, state.setValue(FoundryChuteBlock.IN_STRUCTURE, inStructure), 3);
+        }
     }
 
     public void tickServer() {

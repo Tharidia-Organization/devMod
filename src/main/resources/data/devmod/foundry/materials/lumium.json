@@ -6,8 +6,11 @@
   "tier": 3,
   "melting": {
     "temperature": 1700,
-    "optimal_range": [1650, 1750],
-    "impurity_base": 0.10
+    "optimal_range": [
+      1650,
+      1750
+    ],
+    "impurity_base": 0.1
   },
   "stats": {
     "head": {
@@ -22,6 +25,9 @@
       "durability_multiplier": 0.95
     },
     "binding": {
+      "durability": 25
+    },
+    "extra": {
       "durability": 25
     },
     "plate": {
@@ -39,5 +45,7 @@
       "durability": 25
     }
   },
-  "traits": ["devmod:trait_lustrous"]
+  "traits": [
+    "devmod:trait_lustrous"
+  ]
 }

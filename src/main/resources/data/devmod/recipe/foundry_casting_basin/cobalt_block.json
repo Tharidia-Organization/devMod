@@ -5,7 +5,7 @@
     "amount": 1296
   },
   "result": {
-    "item": "devmod:cobalt_block"
+    "id": "devmod:cobalt_block"
   },
   "cooling_time": 360,
   "consume_cast": false
