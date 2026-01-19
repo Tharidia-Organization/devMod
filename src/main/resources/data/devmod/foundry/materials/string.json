@@ -1,0 +1,19 @@
+{
+  "ingredient": {
+    "item": "minecraft:string"
+  },
+  "color": "E8E8E8",
+  "tier": 0,
+  "stats": {
+    "handle": {
+      "durability": 20,
+      "durability_multiplier": 0.8
+    },
+    "binding": {
+      "durability": 35
+    }
+  },
+  "traits": [
+    "devmod:trait_lightweight"
+  ]
+}

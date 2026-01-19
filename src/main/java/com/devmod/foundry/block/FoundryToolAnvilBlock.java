@@ -32,7 +32,7 @@ import com.devmod.foundry.block.entity.FoundryToolAnvilBlockEntity;
 /**
  * Foundry tool anvil block for applying modifiers.
  */
-public class FoundryToolAnvilBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FoundryToolAnvilBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<FoundryToolAnvilBlock> CODEC = simpleCodec(p -> new FoundryToolAnvilBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -42,6 +42,7 @@ public class FoundryToolAnvilBlock extends HorizontalDirectionalBlock implements
         return Objects.requireNonNull(CODEC);
     }
 
+    @SuppressWarnings("this-escape")
     public FoundryToolAnvilBlock() {
         super(BlockBehaviour.Properties.of()
             .strength(4.0f, 8.0f)

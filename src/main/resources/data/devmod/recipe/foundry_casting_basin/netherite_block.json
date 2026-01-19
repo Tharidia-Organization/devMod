@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_casting_basin",
+  "fluid": {
+    "fluid": "devmod:molten_netherite",
+    "amount": 1296
+  },
+  "result": {
+    "item": "minecraft:netherite_block"
+  },
+  "cooling_time": 540,
+  "consume_cast": false
+}

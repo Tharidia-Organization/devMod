@@ -1,0 +1,31 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/brass"
+  },
+  "color": "C9A227",
+  "tier": 2,
+  "melting": {
+    "temperature": 900,
+    "optimal_range": [860, 940],
+    "impurity_base": 0.10
+  },
+  "stats": {
+    "head": {
+      "durability": 120,
+      "mining_speed": 4.8,
+      "attack_damage": 1.0,
+      "attack_speed": 0.1,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 35,
+      "durability_multiplier": 1.08
+    },
+    "binding": {
+      "durability": 30
+    }
+  },
+  "traits": [
+    "devmod:trait_resonant"
+  ]
+}

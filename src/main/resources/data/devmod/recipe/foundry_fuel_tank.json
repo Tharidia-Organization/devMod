@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "devmod:foundry_tank" },
+    { "item": "minecraft:magma_block" }
+  ],
+  "result": {
+    "id": "devmod:foundry_fuel_tank",
+    "count": 1
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:cactus"
+  },
+  "color": "0F6B0F",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 35,
+      "mining_speed": 2.5,
+      "attack_damage": 0.5,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 15,
+      "durability_multiplier": 0.85
+    },
+    "binding": {
+      "durability": 10
+    }
+  },
+  "traits": [
+    "devmod:trait_prickly"
+  ]
+}

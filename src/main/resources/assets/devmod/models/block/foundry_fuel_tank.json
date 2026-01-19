@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "north": "devmod:block/foundry_tank",
+    "south": "devmod:block/foundry_tank",
+    "east": "devmod:block/foundry_tank",
+    "west": "devmod:block/foundry_tank",
+    "up": "devmod:block/foundry_bricks",
+    "down": "devmod:block/foundry_bricks"
+  }
+}

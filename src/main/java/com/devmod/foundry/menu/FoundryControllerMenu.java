@@ -19,6 +19,8 @@ import net.minecraft.world.item.ItemStack;
 import com.devmod.foundry.FoundryBlocks;
 import com.devmod.foundry.FoundryMenus;
 import com.devmod.foundry.block.entity.FoundryControllerBlockEntity;
+import com.devmod.foundry.progression.FoundryPlayerProgress;
+import com.devmod.foundry.progression.FoundryProgressAttachment;
 
 /**
  * Container menu for the Foundry Controller.
@@ -33,14 +35,35 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
     private final ContainerLevelAccess access;
     private final ContainerData data;
 
+    // Data slot indices
+    private static final int DATA_PROGRESS = 0;
+    private static final int DATA_MAX_PROGRESS = 1;
+    private static final int DATA_FUEL_TICKS = 2;
+    private static final int DATA_FUEL_TICKS_MAX = 3;
+    private static final int DATA_FUEL_TEMP = 4;
+    private static final int DATA_MOLTEN_AMOUNT = 5;
+    private static final int DATA_MOLTEN_CAPACITY = 6;
+    private static final int DATA_STRUCTURE_HEAT = 7;
+    private static final int DATA_THERMAL_STRESS = 8;
+    private static final int DATA_RISK_LEVEL = 9;
+    private static final int DATA_PURITY = 10;
+    private static final int DATA_STRUCTURE_DAMAGE = 11;
+    private static final int DATA_MOLTEN_QUALITY = 12;
+    private static final int DATA_ALLOY_PREVIEW_FLUID = 13;
+    private static final int DATA_ALLOY_PREVIEW_RATIO = 14;
+    private static final int DATA_SLOT_COUNT = 15;
+
     public FoundryControllerMenu(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
-        this(containerId, playerInv, new SimpleContainer(CONTAINER_SIZE), ContainerLevelAccess.NULL, new SimpleContainerData(5));
+        this(containerId, playerInv, new SimpleContainer(CONTAINER_SIZE), ContainerLevelAccess.NULL, new SimpleContainerData(DATA_SLOT_COUNT));
     }
 
     public FoundryControllerMenu(int containerId, Inventory playerInv, FoundryControllerBlockEntity blockEntity) {
         this(containerId, playerInv, blockEntity.getInventory(),
             ContainerLevelAccess.create(Objects.requireNonNull(blockEntity.getLevel()), Objects.requireNonNull(blockEntity.getBlockPos())),
             createContainerData(blockEntity));
+        FoundryPlayerProgress progress = FoundryProgressAttachment.get(Objects.requireNonNull(playerInv.player));
+        blockEntity.setLastOperator(playerInv.player);
+        blockEntity.applyTierLimit(progress.getTier());
     }
 
     private static ContainerData createContainerData(FoundryControllerBlockEntity be) {
@@ -48,11 +71,21 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
             @Override
             public int get(int index) {
                 return switch (index) {
-                    case 0 -> be.getProgress();
-                    case 1 -> be.getMaxProgress();
-                    case 2 -> be.getFuelTicks();
-                    case 3 -> be.getFuelTicksMax();
-                    case 4 -> be.getFuelTemperature();
+                    case DATA_PROGRESS -> be.getProgress();
+                    case DATA_MAX_PROGRESS -> be.getMaxProgress();
+                    case DATA_FUEL_TICKS -> be.getFuelTicks();
+                    case DATA_FUEL_TICKS_MAX -> be.getFuelTicksMax();
+                    case DATA_FUEL_TEMP -> be.getFuelTemperature();
+                    case DATA_MOLTEN_AMOUNT -> be.getMoltenAmount();
+                    case DATA_MOLTEN_CAPACITY -> be.getMoltenCapacity();
+                    case DATA_STRUCTURE_HEAT -> (int) be.getStructureHeat();
+                    case DATA_THERMAL_STRESS -> (int) (be.getThermalStressPercent() * 100);
+                    case DATA_RISK_LEVEL -> be.getCurrentRiskLevel().ordinal();
+                    case DATA_PURITY -> (int) (be.getCurrentPurity() * 100);
+                    case DATA_STRUCTURE_DAMAGE -> be.getStructureDamage();
+                    case DATA_MOLTEN_QUALITY -> be.getMoltenQualityTier();
+                    case DATA_ALLOY_PREVIEW_FLUID -> be.getAlloyPreviewFluidId();
+                    case DATA_ALLOY_PREVIEW_RATIO -> be.getAlloyPreviewRatio();
                     default -> 0;
                 };
             }
@@ -64,7 +97,7 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
 
             @Override
             public int getCount() {
-                return 5;
+                return DATA_SLOT_COUNT;
             }
         };
     }
@@ -104,17 +137,69 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
     }
 
     public float getProgressPercent() {
-        int max = data.get(1);
-        return max > 0 ? (float) data.get(0) / max : 0.0f;
+        int max = data.get(DATA_MAX_PROGRESS);
+        return max > 0 ? (float) data.get(DATA_PROGRESS) / max : 0.0f;
     }
 
     public float getFuelPercent() {
-        int max = data.get(3);
-        return max > 0 ? (float) data.get(2) / max : 0.0f;
+        int max = data.get(DATA_FUEL_TICKS_MAX);
+        return max > 0 ? (float) data.get(DATA_FUEL_TICKS) / max : 0.0f;
     }
 
     public int getFuelTemperature() {
-        return data.get(4);
+        return data.get(DATA_FUEL_TEMP);
+    }
+
+    public int getMoltenAmount() {
+        return data.get(DATA_MOLTEN_AMOUNT);
+    }
+
+    public int getMoltenCapacity() {
+        int cap = data.get(DATA_MOLTEN_CAPACITY);
+        return cap > 0 ? cap : 1;
+    }
+
+    public float getMoltenPercent() {
+        int cap = data.get(DATA_MOLTEN_CAPACITY);
+        return cap > 0 ? (float) data.get(DATA_MOLTEN_AMOUNT) / cap : 0.0f;
+    }
+
+    // New system getters
+
+    public int getStructureHeat() {
+        return data.get(DATA_STRUCTURE_HEAT);
+    }
+
+    public float getThermalStressPercent() {
+        return data.get(DATA_THERMAL_STRESS) / 100f;
+    }
+
+    public int getRiskLevelOrdinal() {
+        return data.get(DATA_RISK_LEVEL);
+    }
+
+    public float getPurityPercent() {
+        return data.get(DATA_PURITY) / 100f;
+    }
+
+    public int getStructureDamage() {
+        return data.get(DATA_STRUCTURE_DAMAGE);
+    }
+
+    public int getMoltenQualityTier() {
+        return data.get(DATA_MOLTEN_QUALITY);
+    }
+
+    public int getAlloyPreviewFluidId() {
+        return data.get(DATA_ALLOY_PREVIEW_FLUID);
+    }
+
+    public int getAlloyPreviewRatio() {
+        return data.get(DATA_ALLOY_PREVIEW_RATIO);
+    }
+
+    public boolean hasAlloyPreview() {
+        return getAlloyPreviewFluidId() >= 0;
     }
 
     @Override

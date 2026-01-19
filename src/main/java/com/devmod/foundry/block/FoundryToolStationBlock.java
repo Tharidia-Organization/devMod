@@ -32,7 +32,7 @@ import com.devmod.foundry.block.entity.FoundryToolStationBlockEntity;
 /**
  * Foundry tool station block.
  */
-public class FoundryToolStationBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FoundryToolStationBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<FoundryToolStationBlock> CODEC = simpleCodec(p -> new FoundryToolStationBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -42,6 +42,7 @@ public class FoundryToolStationBlock extends HorizontalDirectionalBlock implemen
         return Objects.requireNonNull(CODEC);
     }
 
+    @SuppressWarnings("this-escape")
     public FoundryToolStationBlock() {
         super(BlockBehaviour.Properties.of()
             .strength(3.0f, 6.0f)

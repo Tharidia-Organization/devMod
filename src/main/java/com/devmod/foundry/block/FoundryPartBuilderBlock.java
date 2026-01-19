@@ -32,7 +32,7 @@ import com.devmod.foundry.block.entity.FoundryPartBuilderBlockEntity;
 /**
  * Foundry part builder block.
  */
-public class FoundryPartBuilderBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FoundryPartBuilderBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<FoundryPartBuilderBlock> CODEC = simpleCodec(p -> new FoundryPartBuilderBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -42,6 +42,7 @@ public class FoundryPartBuilderBlock extends HorizontalDirectionalBlock implemen
         return Objects.requireNonNull(CODEC);
     }
 
+    @SuppressWarnings("this-escape")
     public FoundryPartBuilderBlock() {
         super(BlockBehaviour.Properties.of()
             .strength(3.0f, 6.0f)

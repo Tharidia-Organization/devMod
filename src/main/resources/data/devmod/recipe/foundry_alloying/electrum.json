@@ -1,0 +1,42 @@
+{
+  "type": "devmod:foundry_alloying",
+  "components": [
+    {
+      "fluid": "devmod:molten_gold",
+      "min_ratio": 0.40,
+      "max_ratio": 0.60
+    },
+    {
+      "fluid": "devmod:molten_silver",
+      "min_ratio": 0.40,
+      "max_ratio": 0.60
+    }
+  ],
+  "primary_component": "devmod:molten_gold",
+  "ratio_tiers": [
+    {
+      "id": "gold_heavy",
+      "min_ratio": 0.55,
+      "max_ratio": 0.60,
+      "quality_shift": 1,
+      "purity_bonus": 0.01
+    },
+    {
+      "id": "balanced",
+      "min_ratio": 0.45,
+      "max_ratio": 0.55
+    },
+    {
+      "id": "silver_heavy",
+      "min_ratio": 0.40,
+      "max_ratio": 0.45,
+      "quality_shift": -1,
+      "purity_bonus": -0.01
+    }
+  ],
+  "result": {
+    "fluid": "devmod:molten_electrum",
+    "amount": 144
+  },
+  "temperature": 750
+}

@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:bronze_ingot"
+  },
+  "result": {
+    "fluid": "devmod:molten_bronze",
+    "amount": 144
+  },
+  "time": 200,
+  "temperature": 1050
+}

@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:phantom_membrane"
+  },
+  "color": "B8C9CC",
+  "tier": 3,
+  "stats": {
+    "head": {
+      "durability": 80,
+      "mining_speed": 3.5,
+      "attack_damage": 0.8,
+      "attack_speed": 0.3,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 45,
+      "durability_multiplier": 1.1
+    },
+    "binding": {
+      "durability": 40
+    }
+  },
+  "traits": [
+    "devmod:trait_ghostly"
+  ]
+}

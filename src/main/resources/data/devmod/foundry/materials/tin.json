@@ -1,0 +1,54 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/tin"
+  },
+  "color": "C1C1C1",
+  "tier": 1,
+  "melting": {
+    "temperature": 505,
+    "optimal_range": [
+      480,
+      530
+    ],
+    "impurity_base": 0.12
+  },
+  "stats": {
+    "head": {
+      "durability": 55,
+      "mining_speed": 3.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.05,
+      "mining_level": 1,
+      "hardness": 3
+    },
+    "handle": {
+      "durability": 30,
+      "durability_multiplier": 0.95,
+      "flexibility": 0.6
+    },
+    "binding": {
+      "durability": 20,
+      "connection_strength": 0.9
+    },
+    "plate": {
+      "durability": 55,
+      "mining_speed": 3.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.05,
+      "mining_level": 1,
+      "hardness": 3
+    },
+    "mail": {
+      "durability": 30,
+      "durability_multiplier": 0.95,
+      "flexibility": 0.6
+    },
+    "trim": {
+      "durability": 20,
+      "connection_strength": 0.9
+    }
+  },
+  "traits": [
+    "devmod:trait_malleable"
+  ]
+}

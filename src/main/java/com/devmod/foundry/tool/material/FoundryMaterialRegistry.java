@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -28,6 +30,7 @@ public final class FoundryMaterialRegistry {
         return java.util.List.copyOf(MATERIALS.values());
     }
 
+    @Nullable
     public static FoundryMaterialDefinition get(ResourceLocation id) {
         return MATERIALS.get(id);
     }

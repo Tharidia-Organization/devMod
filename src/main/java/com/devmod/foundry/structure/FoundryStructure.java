@@ -15,5 +15,7 @@ public record FoundryStructure(
     int innerHeight,
     int interiorVolume,
     Set<BlockPos> tankPositions,
-    Set<BlockPos> drainPositions
+    Set<BlockPos> drainPositions,
+    Set<BlockPos> ductPositions,
+    Set<BlockPos> chutePositions
 ) {}

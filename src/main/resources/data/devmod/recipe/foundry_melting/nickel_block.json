@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:nickel_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_nickel",
+    "amount": 1296
+  },
+  "time": 600,
+  "temperature": 1728
+}

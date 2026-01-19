@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:void_metal_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_void_metal",
+    "amount": 16
+  },
+  "time": 70,
+  "temperature": 4000
+}

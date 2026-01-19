@@ -1,0 +1,19 @@
+{
+  "ingredient": {
+    "item": "minecraft:sponge"
+  },
+  "color": "D4C85D",
+  "tier": 1,
+  "stats": {
+    "handle": {
+      "durability": 40,
+      "durability_multiplier": 0.8
+    },
+    "binding": {
+      "durability": 50
+    }
+  },
+  "traits": [
+    "devmod:trait_absorbent"
+  ]
+}

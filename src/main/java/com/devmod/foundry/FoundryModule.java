@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import net.neoforged.bus.api.IEventBus;
 
 import com.devmod.DevMod;
+import com.devmod.foundry.progression.FoundryProgressAttachment;
 
 /**
  * Foundry module initialization.
@@ -19,9 +20,11 @@ public final class FoundryModule {
      */
     public static void init(@Nonnull IEventBus modEventBus) {
         FoundryFluids.init(modEventBus);
+        FoundryProgressAttachment.register(modEventBus);
 
         FoundryBlocks.init();
         FoundryItems.init();
+        com.devmod.foundry.tool.FoundryToolItems.init();
         FoundryBlockEntities.register(modEventBus);
         FoundryMenus.register(modEventBus);
         FoundryRecipeTypes.register(modEventBus);

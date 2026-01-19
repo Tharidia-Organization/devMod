@@ -11,7 +11,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -33,12 +35,14 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import com.devmod.foundry.FoundryBlockEntities;
+import com.devmod.foundry.FoundryItems;
 import com.devmod.foundry.block.entity.FoundryControllerBlockEntity;
+import com.devmod.foundry.progression.FoundryProgressAttachment;
 
 /**
  * Foundry controller block for multiblock smelting.
  */
-public class FoundryControllerBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FoundryControllerBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<FoundryControllerBlock> CODEC = simpleCodec(p -> new FoundryControllerBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
@@ -49,6 +53,7 @@ public class FoundryControllerBlock extends HorizontalDirectionalBlock implement
         return Objects.requireNonNull(CODEC);
     }
 
+    @SuppressWarnings("this-escape")
     public FoundryControllerBlock() {
         super(BlockBehaviour.Properties.of()
             .strength(4.0f, 6.0f)
@@ -113,6 +118,8 @@ public class FoundryControllerBlock extends HorizontalDirectionalBlock implement
 
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof FoundryControllerBlockEntity controller) {
+            controller.setLastOperator(player);
+            controller.applyTierLimit(FoundryProgressAttachment.get(player).getTier());
             if (controller.isFormed()) {
                 player.openMenu(controller);
             } else {
@@ -124,6 +131,42 @@ public class FoundryControllerBlock extends HorizontalDirectionalBlock implement
         }
 
         return InteractionResult.CONSUME;
+    }
+
+    @Override
+    @Nonnull
+    protected ItemInteractionResult useItemOn(
+        @Nonnull ItemStack stack,
+        @Nonnull BlockState state,
+        @Nonnull Level level,
+        @Nonnull BlockPos pos,
+        @Nonnull Player player,
+        @Nonnull net.minecraft.world.InteractionHand hand,
+        @Nonnull BlockHitResult hit
+    ) {
+        if (level.isClientSide) {
+            return ItemInteractionResult.SUCCESS;
+        }
+        if (!stack.is(Objects.requireNonNull(FoundryItems.FOUNDRY_BRICKS_ITEM.get()))) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof FoundryControllerBlockEntity controller) {
+            if (controller.getStructureDamage() <= 0) {
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            }
+            if (controller.getFuelTicks() > 0 || controller.getProgress() > 0) {
+                player.displayClientMessage(Component.translatable("devmod.foundry.error.repair_active"), true);
+                return ItemInteractionResult.CONSUME;
+            }
+            controller.repairStructure();
+            if (!player.isCreative()) {
+                stack.shrink(1);
+            }
+            player.displayClientMessage(Component.translatable("devmod.foundry.info.repaired"), true);
+            return ItemInteractionResult.CONSUME;
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

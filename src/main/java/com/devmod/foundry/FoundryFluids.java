@@ -1,10 +1,10 @@
 package com.devmod.foundry;
 
 import java.util.Objects;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -21,6 +21,7 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import com.devmod.DevMod;
 import com.devmod.foundry.fluid.MoltenFluidType;
+import com.devmod.shared.SharedColorTokens;
 
 /**
  * Foundry molten fluid registrations.
@@ -34,21 +35,34 @@ public final class FoundryFluids {
     public static final DeferredRegister<net.minecraft.world.level.material.Fluid> FLUIDS =
         DeferredRegister.create(Objects.requireNonNull(Registries.FLUID), DevMod.MODID);
 
-    public static final MoltenFluid MOLTEN_IRON = registerMolten("molten_iron", 0xFFCD8B7A, 10);
-    public static final MoltenFluid MOLTEN_GOLD = registerMolten("molten_gold", 0xFFF9D65C, 10);
-    public static final MoltenFluid MOLTEN_COPPER = registerMolten("molten_copper", 0xFFD97B52, 9);
-    public static final MoltenFluid MOLTEN_TIN = registerMolten("molten_tin", 0xFFB9C7D1, 7);
-    public static final MoltenFluid MOLTEN_BRONZE = registerMolten("molten_bronze", 0xFFCF8B3A, 10);
+    public static final MoltenFluid MOLTEN_IRON = registerMolten("molten_iron", SharedColorTokens.Foundry.Fluids.MOLTEN_IRON, 10, false);
+    public static final MoltenFluid MOLTEN_GOLD = registerMolten("molten_gold", SharedColorTokens.Foundry.Fluids.MOLTEN_GOLD, 10, false);
+    public static final MoltenFluid MOLTEN_COPPER = registerMolten("molten_copper", SharedColorTokens.Foundry.Fluids.MOLTEN_COPPER, 9, false);
+    public static final MoltenFluid MOLTEN_TIN = registerMolten("molten_tin", SharedColorTokens.Foundry.Fluids.MOLTEN_TIN, 7, true);
+    public static final MoltenFluid MOLTEN_BRONZE = registerMolten("molten_bronze", SharedColorTokens.Foundry.Fluids.MOLTEN_BRONZE, 10, true);
+    public static final MoltenFluid MOLTEN_STEEL = registerMolten("molten_steel", SharedColorTokens.Foundry.Fluids.MOLTEN_STEEL, 12, true);
+    public static final MoltenFluid MOLTEN_COBALT = registerMolten("molten_cobalt", SharedColorTokens.Foundry.Fluids.MOLTEN_COBALT, 14, true);
+    public static final MoltenFluid MOLTEN_MANYULLYN = registerMolten("molten_manyullyn", SharedColorTokens.Foundry.Fluids.MOLTEN_MANYULLYN, 15, true);
+    public static final MoltenFluid MOLTEN_LEAD = registerMolten("molten_lead", SharedColorTokens.Foundry.Fluids.MOLTEN_LEAD, 8, true);
+    public static final MoltenFluid MOLTEN_SILVER = registerMolten("molten_silver", SharedColorTokens.Foundry.Fluids.MOLTEN_SILVER, 11, true);
+    public static final MoltenFluid MOLTEN_NICKEL = registerMolten("molten_nickel", SharedColorTokens.Foundry.Fluids.MOLTEN_NICKEL, 10, true);
+    public static final MoltenFluid MOLTEN_ELECTRUM = registerMolten("molten_electrum", SharedColorTokens.Foundry.Fluids.MOLTEN_ELECTRUM, 12, true);
+    public static final MoltenFluid MOLTEN_INVAR = registerMolten("molten_invar", SharedColorTokens.Foundry.Fluids.MOLTEN_INVAR, 11, true);
+    public static final MoltenFluid MOLTEN_ARDITE = registerMolten("molten_ardite", SharedColorTokens.Foundry.Fluids.MOLTEN_ARDITE, 15, true);
+    public static final MoltenFluid MOLTEN_NETHERITE = registerMolten("molten_netherite", SharedColorTokens.Foundry.Fluids.MOLTEN_NETHERITE, 15, false);
+    public static final MoltenFluid MOLTEN_VOID_METAL = registerMolten("molten_void_metal", SharedColorTokens.Foundry.Fluids.MOLTEN_VOID_METAL, 10, true);
 
     public static void init(IEventBus modEventBus) {
         FLUID_TYPES.register(Objects.requireNonNull(modEventBus));
         FLUIDS.register(Objects.requireNonNull(modEventBus));
     }
 
-    private static MoltenFluid registerMolten(String name, int tintColor, int lightLevel) {
+    private static MoltenFluid registerMolten(String name, int tintColor, int lightLevel, boolean customTextures) {
+        ResourceLocation stillTexture = customTextures ? moltenTexture(name, true) : null;
+        ResourceLocation flowingTexture = customTextures ? moltenTexture(name, false) : null;
         DeferredHolder<FluidType, FluidType> type = FLUID_TYPES.register(
             name,
-            () -> new MoltenFluidType(tintColor, lightLevel)
+            () -> new MoltenFluidType(tintColor, lightLevel, stillTexture, flowingTexture)
         );
 
         AtomicReference<BaseFlowingFluid.Properties> propsRef = new AtomicReference<>();
@@ -80,6 +94,11 @@ public final class FoundryFluids {
         propsRef.set(properties);
 
         return new MoltenFluid(type, source, flowing, block, bucket, properties);
+    }
+
+    private static ResourceLocation moltenTexture(String name, boolean still) {
+        String suffix = still ? "_still" : "_flow";
+        return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "block/fluid/" + name + suffix);
     }
 
     public record MoltenFluid(

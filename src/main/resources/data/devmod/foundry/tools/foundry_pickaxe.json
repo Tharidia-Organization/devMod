@@ -1,0 +1,19 @@
+{
+  "kind": "pickaxe",
+  "item": "devmod:foundry_pickaxe",
+  "parts": [
+    "devmod:pickaxe_head",
+    "devmod:tool_handle",
+    "devmod:tool_binding"
+  ],
+  "base_stats": {
+    "durability": 100,
+    "mining_speed": 2.0,
+    "attack_damage": 1.0,
+    "attack_speed": -2.8,
+    "mining_level": 0
+  },
+  "priority": 1,
+  "base_upgrades": 3,
+  "base_abilities": 1
+}

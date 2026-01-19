@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_casting_basin",
+  "fluid": {
+    "fluid": "devmod:molten_void_metal",
+    "amount": 1296
+  },
+  "result": {
+    "item": "devmod:void_metal_block"
+  },
+  "cooling_time": 600,
+  "consume_cast": false
+}

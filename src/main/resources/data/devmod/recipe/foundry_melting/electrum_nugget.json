@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:electrum_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_electrum",
+    "amount": 16
+  },
+  "time": 40,
+  "temperature": 1100
+}

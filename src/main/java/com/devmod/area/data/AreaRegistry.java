@@ -109,7 +109,9 @@ public class AreaRegistry extends SavedData {
                 .computeIfAbsent(Objects.requireNonNull(factory()), DATA_NAME)
         );
         // Store server reference for zone linking operations
-        registry.server = server;
+        synchronized (registry) {
+            registry.server = server;
+        }
         return registry;
     }
 
@@ -353,7 +355,7 @@ public class AreaRegistry extends SavedData {
      * Gets the main hub area if one exists.
      */
     @Nonnull
-    public Optional<AreaDefinition> getMainHub() {
+    public synchronized Optional<AreaDefinition> getMainHub() {
         return mainHubId != null ? getArea(mainHubId) : Objects.requireNonNull(Optional.empty());
     }
 

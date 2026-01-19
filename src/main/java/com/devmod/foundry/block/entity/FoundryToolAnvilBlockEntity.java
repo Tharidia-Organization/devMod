@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -22,8 +23,13 @@ import com.devmod.foundry.tool.FoundryToolBuilder;
 import com.devmod.foundry.tool.FoundryToolData;
 import com.devmod.foundry.tool.FoundryToolDefinition;
 import com.devmod.foundry.tool.FoundryToolDefinitionRegistry;
+import com.devmod.foundry.tool.FoundryToolRepair;
+import com.devmod.foundry.tool.FoundryToolSlots;
+import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
+import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 import com.devmod.foundry.tool.modifier.FoundryModifierDefinition;
 import com.devmod.foundry.tool.modifier.FoundryModifierRegistry;
+import com.devmod.foundry.tool.modifier.FoundryModifierSlot;
 
 /**
  * Block entity for applying modifiers to tools.
@@ -73,31 +79,85 @@ public class FoundryToolAnvilBlockEntity extends net.minecraft.world.level.block
             return;
         }
 
-        FoundryModifierDefinition modifier = FoundryModifierRegistry.findModifier(modifierStack).orElse(null);
-        if (modifier == null) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
-            return;
-        }
-
-        int currentLevel = data.modifiers().getOrDefault(modifier.id(), 0);
-        if (currentLevel >= modifier.maxLevel()) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
-            return;
-        }
-
         FoundryToolDefinition definition = FoundryToolDefinitionRegistry.get(data.toolId());
         if (definition == null) {
             inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
             return;
         }
 
-        FoundryToolData updated = data.withModifier(modifier.id(), currentLevel + 1);
-        FoundryToolBuilder.applyStats(toolStack, definition.kind(),
-            FoundryToolBuilder.computeStats(definition, definition.parts(), data.materials(), updated.modifiers()));
+        FoundryModifierDefinition modifier = FoundryModifierRegistry.findModifier(modifierStack).orElse(null);
+        if (modifier != null) {
+            int currentLevel = data.modifiers().getOrDefault(modifier.id(), 0);
+            if (currentLevel >= modifier.maxLevel()) {
+                inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+                return;
+            }
+            FoundryToolSlots.SlotUsage usage = FoundryToolSlots.calculate(definition, data);
+            int free = modifier.slotType() == FoundryModifierSlot.ABILITY ? usage.freeAbilities() : usage.freeUpgrades();
+            if (modifier.slots() > 0 && modifier.slots() > free) {
+                inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+                return;
+            }
 
-        ItemStack output = toolStack.copy();
-        updated.writeToStack(output);
-        inventory.setItem(SLOT_OUTPUT, output);
+            FoundryToolData updated = data.withModifier(modifier.id(), currentLevel + 1);
+            ItemStack output = toolStack.copy();
+            var stats = FoundryToolBuilder.computeStats(
+                definition,
+                definition.parts(),
+                data.materials(),
+                updated.modifiersWithEmbossment(),
+                data.quality()
+            );
+            stats = FoundryToolBuilder.applySpecialization(stats, definition.kind(), data.specialization());
+            FoundryToolBuilder.applyStats(output, definition.kind(), stats);
+            updated.writeToStack(output);
+            inventory.setItem(SLOT_OUTPUT, output);
+            return;
+        }
+
+        FoundryToolData embossData = FoundryToolData.fromStack(modifierStack).orElse(null);
+        if (embossData != null && data.embossment() == null) {
+            ResourceLocation embossTrait = null;
+            if (!embossData.materials().isEmpty()) {
+                FoundryMaterialDefinition material = FoundryMaterialRegistry.get(embossData.materials().get(0));
+                if (material != null && !material.traits().isEmpty()) {
+                    embossTrait = material.traits().get(0);
+                }
+            }
+            if (embossTrait == null) {
+                inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+                return;
+            }
+            FoundryToolData updated = data.withEmbossment(embossTrait);
+            ItemStack output = toolStack.copy();
+            var stats = FoundryToolBuilder.computeStats(
+                definition,
+                definition.parts(),
+                data.materials(),
+                updated.modifiersWithEmbossment(),
+                data.quality()
+            );
+            stats = FoundryToolBuilder.applySpecialization(stats, definition.kind(), data.specialization());
+            FoundryToolBuilder.applyStats(output, definition.kind(), stats);
+            updated.writeToStack(output);
+            inventory.setItem(SLOT_OUTPUT, output);
+            return;
+        }
+
+        FoundryMaterialDefinition repairMaterial = FoundryMaterialRegistry.findMaterial(modifierStack).orElse(null);
+        if (repairMaterial != null && data.materials().contains(repairMaterial.id())) {
+            int repairAmount = FoundryToolRepair.getRepairAmount(repairMaterial, data.repairCount());
+            ItemStack output = toolStack.copy();
+            int damage = output.getOrDefault(net.minecraft.core.component.DataComponents.DAMAGE, 0);
+            int newDamage = Math.max(0, damage - repairAmount);
+            output.set(net.minecraft.core.component.DataComponents.DAMAGE, newDamage);
+            FoundryToolData updated = data.withRepairCount(data.repairCount() + 1);
+            updated.writeToStack(output);
+            inventory.setItem(SLOT_OUTPUT, output);
+            return;
+        }
+
+        inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
     }
 
     @Override

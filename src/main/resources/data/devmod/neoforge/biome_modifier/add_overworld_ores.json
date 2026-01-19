@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "devmod:ore_tin",
+    "devmod:ore_lead",
+    "devmod:ore_silver",
+    "devmod:ore_nickel"
+  ],
+  "step": "underground_ores"
+}

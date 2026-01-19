@@ -1,0 +1,15 @@
+{
+  "type": "devmod:foundry_casting_table",
+  "cast": {
+    "item": "devmod:foundry_ingot_cast"
+  },
+  "fluid": {
+    "fluid": "devmod:molten_invar",
+    "amount": 144
+  },
+  "result": {
+    "item": "devmod:invar_ingot"
+  },
+  "cooling_time": 110,
+  "consume_cast": false
+}

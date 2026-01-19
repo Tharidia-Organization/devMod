@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:invar_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_invar",
+    "amount": 1296
+  },
+  "time": 660,
+  "temperature": 1700
+}

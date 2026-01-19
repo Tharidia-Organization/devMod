@@ -213,14 +213,7 @@ public class AsyncArenaBuilder {
             return false;
         }
 
-        AsyncBuild build = new AsyncBuild(
-            arenaId,
-            template,
-            originX,
-            originY,
-            originZ,
-            callback
-        );
+        AsyncBuild build = AsyncBuild.create(arenaId, template, originX, originY, originZ, callback);
 
         activeBuildQueue.add(build);
         buildsByArenaId.put(arenaId, build);
@@ -734,14 +727,20 @@ public class AsyncArenaBuilder {
         final List<BlockPlacement> placements;
         int placementIndex = 0;
 
-        AsyncBuild(UUID arenaId, ArenaTemplate template, int originX, int originY, int originZ,
-                   Consumer<AsyncBuildResult> callback) {
+        static AsyncBuild create(UUID arenaId, ArenaTemplate template, int originX, int originY, int originZ,
+                                 Consumer<AsyncBuildResult> callback) {
+            List<BlockPlacement> placements = computePlacements(template, originX, originY, originZ);
+            return new AsyncBuild(arenaId, template, callback, placements);
+        }
+
+        private AsyncBuild(UUID arenaId, ArenaTemplate template, Consumer<AsyncBuildResult> callback,
+                           List<BlockPlacement> placements) {
             this.arenaId = arenaId;
             this.template = template;
             this.callback = callback;
             this.transaction = new BuildTransaction(template.id());
             this.budget = BuildBudget.defaults();
-            this.placements = computePlacements(template, originX, originY, originZ);
+            this.placements = placements;
 
             budget.start();
         }

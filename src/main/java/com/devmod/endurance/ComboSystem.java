@@ -10,8 +10,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -23,8 +21,6 @@ import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class ComboSystem {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ComboSystem.class);
-
     public static final ComboSystem INSTANCE = new ComboSystem();
 
     // Active combo sessions per player
@@ -147,9 +143,6 @@ public class ComboSystem {
         private final UUID playerId;
         private final UUID questId;
 
-        // Config manager reference
-        private static final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
-
         // Combo tracking
         private int currentCombo = 0;
         private int maxCombo = 0;
@@ -173,7 +166,7 @@ public class ComboSystem {
         private long getComboTimeoutMs() {
             if (questId != null) {
                 // Convert ticks to ms (20 ticks = 1000ms)
-                return config.getComboTimeoutTicks(questId) * 50L;
+                return EnduranceConfigManager.INSTANCE.getComboTimeoutTicks(questId) * 50L;
             }
             return DEFAULT_COMBO_TIMEOUT_MS;
         }
@@ -181,14 +174,14 @@ public class ComboSystem {
         private long getStyleDecayIntervalMs() {
             if (questId != null) {
                 // Convert ticks to ms (20 ticks = 1000ms)
-                return config.getStyleDecayDelayTicks(questId) * 50L;
+                return EnduranceConfigManager.INSTANCE.getStyleDecayDelayTicks(questId) * 50L;
             }
             return DEFAULT_STYLE_DECAY_INTERVAL_MS;
         }
 
         private int getStyleDecayRate() {
             if (questId != null) {
-                return (int) config.getStyleDecayRate(questId);
+                return (int) EnduranceConfigManager.INSTANCE.getStyleDecayRate(questId);
             }
             return DEFAULT_STYLE_DECAY_RATE;
         }
@@ -294,8 +287,12 @@ public class ComboSystem {
             lastFlowState = flowResult.state();
 
             // Get combo config values
-            double comboIncrement = questId != null ? config.getComboMultiplierIncrement(questId) : 0.02;
-            double maxMultiplier = questId != null ? config.getComboMaxMultiplier(questId) : 5.0;
+            double comboIncrement = questId != null
+                ? EnduranceConfigManager.INSTANCE.getComboMultiplierIncrement(questId)
+                : 0.02;
+            double maxMultiplier = questId != null
+                ? EnduranceConfigManager.INSTANCE.getComboMaxMultiplier(questId)
+                : 5.0;
 
             // Calculate points with multipliers (including flow state)
             float comboMultiplier = (float) Math.min(1.0 + (currentCombo * comboIncrement), maxMultiplier);
@@ -665,7 +662,6 @@ public class ComboSystem {
     public ComboSession startSession(UUID playerId, UUID questId) {
         ComboSession session = new ComboSession(playerId, questId);
         activeSessions.put(playerId, session);
-        LOGGER.debug("[ComboSystem] Started session for player {}", playerId);
         return session;
     }
 
@@ -680,12 +676,7 @@ public class ComboSystem {
      * End session and return final stats.
      */
     public ComboSession endSession(UUID playerId) {
-        ComboSession session = activeSessions.remove(playerId);
-        if (session != null) {
-            LOGGER.info("[ComboSystem] Session ended for player {} - Final: {} style, {} max combo, {} rank",
-                playerId, session.totalStyleEarned, session.maxCombo, session.highestRank);
-        }
-        return session;
+        return activeSessions.remove(playerId);
     }
 
     /**

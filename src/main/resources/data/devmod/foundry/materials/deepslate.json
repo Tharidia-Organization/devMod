@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:deepslate"
+  },
+  "color": "505050",
+  "tier": 2,
+  "stats": {
+    "head": {
+      "durability": 150,
+      "mining_speed": 4.2,
+      "attack_damage": 1.2,
+      "attack_speed": -0.2,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 40,
+      "durability_multiplier": 0.95
+    },
+    "binding": {
+      "durability": 35
+    }
+  },
+  "traits": [
+    "devmod:trait_dense"
+  ]
+}

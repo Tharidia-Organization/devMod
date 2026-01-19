@@ -1,0 +1,19 @@
+{
+  "kind": "dagger",
+  "item": "devmod:foundry_dagger",
+  "parts": [
+    "devmod:dagger_blade",
+    "devmod:tool_handle",
+    "devmod:tool_binding"
+  ],
+  "base_stats": {
+    "durability": 50,
+    "mining_speed": 0.0,
+    "attack_damage": 2.0,
+    "attack_speed": -1.8,
+    "mining_level": 0
+  },
+  "priority": 1,
+  "base_upgrades": 3,
+  "base_abilities": 1
+}

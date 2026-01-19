@@ -54,7 +54,7 @@ public class FoundryCastingRecipe implements Recipe<FoundryCastingRecipe.Casting
         if (!cast.isEmpty() && !cast.test(input.cast)) {
             return false;
         }
-        return FluidStack.isSameFluidSameComponents(input.fluid, fluid) && input.fluid.getAmount() > 0;
+        return input.fluid.getFluid() == fluid.getFluid() && input.fluid.getAmount() > 0;
     }
 
     @Override

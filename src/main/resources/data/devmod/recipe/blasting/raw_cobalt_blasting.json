@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:blasting",
+  "category": "misc",
+  "ingredient": {
+    "item": "devmod:raw_cobalt"
+  },
+  "result": {
+    "id": "devmod:cobalt_ingot"
+  },
+  "experience": 1.0,
+  "cookingtime": 100
+}

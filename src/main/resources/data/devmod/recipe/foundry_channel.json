@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BBB",
+    "BIB",
+    "BBB"
+  ],
+  "key": {
+    "B": { "item": "devmod:foundry_bricks" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "result": {
+    "id": "devmod:foundry_channel",
+    "count": 4
+  }
+}

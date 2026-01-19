@@ -11,6 +11,7 @@ import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,7 +33,6 @@ import com.devmod.area.data.AreaShape;
 import com.devmod.area.data.BiomeGenerationConfig;
 import com.devmod.area.data.BiomeGenerationConfig.TerrainStyle;
 import com.devmod.area.snapshot.AreaSnapshotManager;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * GameTests for the Area module.
@@ -1383,8 +1383,9 @@ public class AreaSystemGameTests {
             "Same seed should produce same block count");
 
         // Verify all blocks match
-        for (BlockPos pos : blocks1.keySet()) {
-            BlockState state1 = blocks1.get(pos);
+        for (Map.Entry<BlockPos, BlockState> entry : blocks1.entrySet()) {
+            BlockPos pos = entry.getKey();
+            BlockState state1 = entry.getValue();
             BlockState state2 = blocks2.get(pos);
             helper.assertTrue(Objects.equals(state1, state2),
                 "Same seed should produce identical blocks at " + pos);

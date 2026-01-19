@@ -38,13 +38,22 @@ public class FoundryMeltingRecipe implements Recipe<SingleRecipeInput> {
     private final int time;
     private final int temperature;
     private final List<FluidStack> byproducts;
+    private final float impurity;
 
-    public FoundryMeltingRecipe(Ingredient ingredient, FluidStack output, int time, int temperature, List<FluidStack> byproducts) {
+    public FoundryMeltingRecipe(
+        Ingredient ingredient,
+        FluidStack output,
+        int time,
+        int temperature,
+        List<FluidStack> byproducts,
+        float impurity
+    ) {
         this.ingredient = ingredient;
         this.output = output;
         this.time = time;
         this.temperature = temperature;
         this.byproducts = byproducts;
+        this.impurity = impurity;
     }
 
     @Override
@@ -111,6 +120,10 @@ public class FoundryMeltingRecipe implements Recipe<SingleRecipeInput> {
         return byproducts;
     }
 
+    public float getImpurity() {
+        return impurity;
+    }
+
     public int getByproductsTotal() {
         int total = 0;
         for (FluidStack stack : byproducts) {
@@ -121,7 +134,7 @@ public class FoundryMeltingRecipe implements Recipe<SingleRecipeInput> {
 
     public void fillByproducts(FoundryFluidTank tank) {
         for (FluidStack stack : byproducts) {
-            tank.fill(stack, false);
+            tank.fill(stack, net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
         }
     }
 
@@ -132,9 +145,10 @@ public class FoundryMeltingRecipe implements Recipe<SingleRecipeInput> {
                 Objects.requireNonNull(FoundryCodecs.FLUID_STACK_CODEC).fieldOf("result").forGetter(FoundryMeltingRecipe::getOutput),
                 Codec.INT.optionalFieldOf("time", DEFAULT_TIME).forGetter(FoundryMeltingRecipe::getTime),
                 Codec.INT.optionalFieldOf("temperature", 0).forGetter(FoundryMeltingRecipe::getTemperature),
-                FoundryCodecs.FLUID_STACK_CODEC.listOf().optionalFieldOf("byproducts", List.of()).forGetter(FoundryMeltingRecipe::getByproducts)
-            ).apply(instance, (ingredient, result, time, temperature, byproducts) ->
-                new FoundryMeltingRecipe(ingredient, result, time, temperature, byproducts))
+                FoundryCodecs.FLUID_STACK_CODEC.listOf().optionalFieldOf("byproducts", List.of()).forGetter(FoundryMeltingRecipe::getByproducts),
+                Codec.FLOAT.optionalFieldOf("impurity", 0.0f).forGetter(FoundryMeltingRecipe::getImpurity)
+            ).apply(instance, (ingredient, result, time, temperature, byproducts, impurity) ->
+                new FoundryMeltingRecipe(ingredient, result, time, temperature, byproducts, impurity))
         );
 
         public static final StreamCodec<RegistryFriendlyByteBuf, FoundryMeltingRecipe> STREAM_CODEC =
@@ -144,6 +158,7 @@ public class FoundryMeltingRecipe implements Recipe<SingleRecipeInput> {
                 ByteBufCodecs.INT, FoundryMeltingRecipe::getTime,
                 ByteBufCodecs.INT, FoundryMeltingRecipe::getTemperature,
                 FoundryCodecs.FLUID_STACK_STREAM_CODEC.apply(ByteBufCodecs.list()), FoundryMeltingRecipe::getByproducts,
+                ByteBufCodecs.FLOAT, FoundryMeltingRecipe::getImpurity,
                 FoundryMeltingRecipe::new
             );
 

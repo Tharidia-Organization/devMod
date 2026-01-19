@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "devmod:silver_block" }],
+  "result": { "id": "devmod:silver_ingot", "count": 9 }
+}

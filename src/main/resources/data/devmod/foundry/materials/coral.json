@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "tag": "minecraft:coral_blocks"
+  },
+  "color": "FF7F7F",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 45,
+      "mining_speed": 3.0,
+      "attack_damage": 0.6,
+      "attack_speed": 0.1,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 15,
+      "durability_multiplier": 0.85
+    },
+    "binding": {
+      "durability": 20
+    }
+  },
+  "traits": [
+    "devmod:trait_aquatic"
+  ]
+}

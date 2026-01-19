@@ -1,0 +1,14 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "abilities": {
+    "immune_to_fire": true,
+    "immune_to_lava": true,
+    "on_hit": {
+      "effect": "fire_aspect",
+      "duration": 40
+    }
+  },
+  "description": "Netherite cannot burn and sets enemies ablaze"
+}

@@ -1,0 +1,19 @@
+{
+  "ingredient": {
+    "item": "minecraft:dried_kelp"
+  },
+  "color": "3B5D28",
+  "tier": 0,
+  "stats": {
+    "handle": {
+      "durability": 12,
+      "durability_multiplier": 0.75
+    },
+    "binding": {
+      "durability": 20
+    }
+  },
+  "traits": [
+    "devmod:trait_aquatic"
+  ]
+}

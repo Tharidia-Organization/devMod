@@ -24,6 +24,10 @@ public final class FoundryModifierRegistry {
         MODIFIERS.put(definition.id(), definition);
     }
 
+    public static FoundryModifierDefinition get(ResourceLocation id) {
+        return MODIFIERS.get(id);
+    }
+
     public static Collection<FoundryModifierDefinition> all() {
         return java.util.List.copyOf(MODIFIERS.values());
     }

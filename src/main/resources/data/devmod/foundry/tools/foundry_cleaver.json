@@ -1,0 +1,19 @@
+{
+  "kind": "cleaver",
+  "item": "devmod:foundry_cleaver",
+  "parts": [
+    "devmod:cleaver_blade",
+    "devmod:tool_handle",
+    "devmod:tool_binding"
+  ],
+  "base_stats": {
+    "durability": 150,
+    "mining_speed": 0.0,
+    "attack_damage": 6.0,
+    "attack_speed": -3.5,
+    "mining_level": 0
+  },
+  "priority": 1,
+  "base_upgrades": 3,
+  "base_abilities": 1
+}

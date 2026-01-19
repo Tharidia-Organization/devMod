@@ -753,6 +753,20 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_CLASSES)
         );
 
+        RadialCategory nexusLabs = nexus.addSubcategory("nexus_labs", "Labs", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.REDSTONE_LAMP));
+        nexusLabs.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_OVERVIEW),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COMBAT),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ARENA),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_UI),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TELEMETRY),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SHOWCASE),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_INTEGRATION),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SANDBOX),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_MECHANICS)
+        );
+
         RadialCategory nexusRing1 = nexus.addSubcategory("nexus_ring1", "Ring 1", DesignTokens.Radial.TOOLS_COMMANDS,
             stack(Items.COMPASS));
         nexusRing1.addItems(

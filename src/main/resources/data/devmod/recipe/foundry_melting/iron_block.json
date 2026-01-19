@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "minecraft:iron_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_iron",
+    "amount": 1296
+  },
+  "time": 600,
+  "temperature": 800
+}

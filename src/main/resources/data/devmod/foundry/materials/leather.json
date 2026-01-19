@@ -1,0 +1,40 @@
+{
+  "ingredient": {
+    "item": "minecraft:leather"
+  },
+  "color": "8C5A2E",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 95,
+      "mining_speed": 2.1,
+      "attack_damage": 0.9,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 32,
+      "durability_multiplier": 1.03
+    },
+    "binding": {
+      "durability": 25
+    },
+    "plate": {
+      "durability": 95,
+      "mining_speed": 2.1,
+      "attack_damage": 0.9,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "mail": {
+      "durability": 32,
+      "durability_multiplier": 1.03
+    },
+    "trim": {
+      "durability": 25
+    }
+  },
+  "traits": [
+    "devmod:trait_stalwart"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "minecraft:netherite_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_netherite",
+    "amount": 1296
+  },
+  "time": 900,
+  "temperature": 3500
+}

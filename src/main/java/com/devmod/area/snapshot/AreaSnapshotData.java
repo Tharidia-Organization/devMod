@@ -167,7 +167,11 @@ public final class AreaSnapshotData {
         }
 
         // Create parent directories if needed
-        Files.createDirectories(file.getParent());
+        Path parent = file.getParent();
+        if (parent == null) {
+            throw new IOException("Snapshot path has no parent: " + file);
+        }
+        Files.createDirectories(parent);
 
         // Write compressed (atomic via temp file)
         Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");

@@ -1,7 +1,5 @@
 package com.devmod.foundry.recipe;
 
-import java.util.Objects;
-
 import javax.annotation.Nonnull;
 
 import com.mojang.serialization.Codec;
@@ -42,7 +40,7 @@ public class FoundryFuelRecipe implements Recipe<FoundryFuelRecipe.FuelInput> {
 
     @Override
     public boolean matches(@Nonnull FuelInput input, @Nonnull Level level) {
-        return FluidStack.isSameFluidSameComponents(input.fluid, fluid);
+        return input.fluid.getFluid() == fluid.getFluid();
     }
 
     @Override

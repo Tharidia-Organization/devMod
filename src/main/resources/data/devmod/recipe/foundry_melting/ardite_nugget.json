@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:ardite_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_ardite",
+    "amount": 16
+  },
+  "time": 50,
+  "temperature": 2600
+}

@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:ardite_ingot"
+  },
+  "result": {
+    "fluid": "devmod:molten_ardite",
+    "amount": 144
+  },
+  "time": 250,
+  "temperature": 2600
+}

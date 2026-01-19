@@ -1,0 +1,12 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "abilities": {
+    "on_break": {
+      "effect": "auto_pickup",
+      "radius": 3
+    }
+  },
+  "description": "Nickel's magnetism pulls nearby drops to you"
+}

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "devmod:foundry_flux" },
+    { "item": "devmod:foundry_flux" },
+    { "item": "minecraft:glowstone_dust" }
+  ],
+  "result": {
+    "item": "devmod:foundry_flux_refined",
+    "count": 1
+  }
+}

@@ -1,9 +1,42 @@
 {
   "type": "devmod:foundry_alloying",
-  "inputs": [
-    { "fluid": "devmod:molten_copper", "amount": 3000 },
-    { "fluid": "devmod:molten_tin", "amount": 1000 }
+  "components": [
+    {
+      "fluid": "devmod:molten_copper",
+      "min_ratio": 0.70,
+      "max_ratio": 0.95
+    },
+    {
+      "fluid": "devmod:molten_tin",
+      "min_ratio": 0.05,
+      "max_ratio": 0.30
+    }
   ],
-  "result": { "fluid": "devmod:molten_bronze", "amount": 4000 },
+  "primary_component": "devmod:molten_copper",
+  "ratio_tiers": [
+    {
+      "id": "high_copper",
+      "min_ratio": 0.88,
+      "max_ratio": 0.95,
+      "quality_shift": 1,
+      "purity_bonus": 0.02
+    },
+    {
+      "id": "balanced",
+      "min_ratio": 0.78,
+      "max_ratio": 0.88
+    },
+    {
+      "id": "high_tin",
+      "min_ratio": 0.70,
+      "max_ratio": 0.78,
+      "quality_shift": -1,
+      "purity_bonus": -0.02
+    }
+  ],
+  "result": {
+    "fluid": "devmod:molten_bronze",
+    "amount": 144
+  },
   "temperature": 650
 }

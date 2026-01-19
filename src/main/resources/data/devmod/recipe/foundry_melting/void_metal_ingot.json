@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:void_metal_ingot"
+  },
+  "result": {
+    "fluid": "devmod:molten_void_metal",
+    "amount": 144
+  },
+  "time": 350,
+  "temperature": 4000
+}

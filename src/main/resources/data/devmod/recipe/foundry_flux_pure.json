@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "devmod:foundry_flux_refined" },
+    { "item": "devmod:foundry_flux_refined" },
+    { "item": "minecraft:echo_shard" }
+  ],
+  "result": {
+    "item": "devmod:foundry_flux_pure",
+    "count": 1
+  }
+}

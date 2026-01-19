@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -26,7 +25,7 @@ public class FoundryDrainBlockEntity extends FoundryComponentBlockEntity {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_DRAIN.get()), pos, state);
     }
 
-    public InteractionResult handleBucketInteraction(Player player, InteractionHand hand) {
+    public InteractionResult handleBucketInteraction(@Nonnull Player player, @Nonnull InteractionHand hand) {
         Level level = Objects.requireNonNull(getLevel());
         ItemStack held = player.getItemInHand(hand);
         FoundryControllerBlockEntity controller = getController(level);

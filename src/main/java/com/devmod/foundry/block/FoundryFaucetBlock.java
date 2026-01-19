@@ -31,7 +31,7 @@ import com.devmod.foundry.block.entity.FoundryFaucetBlockEntity;
 /**
  * Foundry faucet block, pulls molten fluid from drain/tank and pours into casting blocks.
  */
-public class FoundryFaucetBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FoundryFaucetBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<FoundryFaucetBlock> CODEC = simpleCodec(p -> new FoundryFaucetBlock());
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 
@@ -41,6 +41,7 @@ public class FoundryFaucetBlock extends HorizontalDirectionalBlock implements En
         return Objects.requireNonNull(CODEC);
     }
 
+    @SuppressWarnings("this-escape")
     public FoundryFaucetBlock() {
         super(BlockBehaviour.Properties.of()
             .strength(2.0f, 6.0f)

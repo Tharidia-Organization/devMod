@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:lead_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_lead",
+    "amount": 16
+  },
+  "time": 40,
+  "temperature": 600
+}

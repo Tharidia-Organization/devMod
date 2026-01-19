@@ -5,14 +5,10 @@ import java.util.Deque;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.ComboSystem.ActionType;
 
 public class FlowStateTracker {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlowStateTracker.class);
-
     // Configuration
     private static final int STALE_THRESHOLD = 3;           // Actions before STALE triggers
     private static final int HISTORY_SIZE = 10;             // Actions to remember
@@ -100,11 +96,6 @@ public class FlowStateTracker {
         float multiplier = newState.multiplier;
         if (isVirtuoso && newState != FlowState.STALE) {
             multiplier = VIRTUOSO_MULTIPLIER;
-        }
-
-        if (stateChanged) {
-            LOGGER.debug("[FlowState] {} → {} (consecutive={}, unique={})",
-                previousState, newState, consecutiveSameAction, uniqueActionsThisCombo.size());
         }
 
         return new FlowResult(newState, multiplier, stateChanged, isVirtuoso);

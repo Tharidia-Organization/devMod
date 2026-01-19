@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:tuff"
+  },
+  "color": "6E6A65",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 90,
+      "mining_speed": 3.2,
+      "attack_damage": 0.8,
+      "attack_speed": -0.1,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 30,
+      "durability_multiplier": 0.95
+    },
+    "binding": {
+      "durability": 25
+    }
+  },
+  "traits": [
+    "devmod:trait_stonebound"
+  ]
+}

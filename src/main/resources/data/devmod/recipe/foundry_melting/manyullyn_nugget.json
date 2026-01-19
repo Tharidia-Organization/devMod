@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:manyullyn_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_manyullyn",
+    "amount": 16
+  },
+  "time": 60,
+  "temperature": 2800
+}

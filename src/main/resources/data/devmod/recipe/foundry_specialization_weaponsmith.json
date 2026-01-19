@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    { "item": "devmod:foundry_flux_refined" },
+    { "item": "devmod:foundry_pattern_sword_blade" },
+    { "item": "devmod:steel_ingot" }
+  ],
+  "result": {
+    "id": "devmod:foundry_specialization_weaponsmith",
+    "count": 1
+  }
+}

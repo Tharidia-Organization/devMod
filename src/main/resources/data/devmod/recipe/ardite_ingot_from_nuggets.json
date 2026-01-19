@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["###", "###", "###"],
+  "key": { "#": { "item": "devmod:ardite_nugget" } },
+  "result": { "id": "devmod:ardite_ingot", "count": 1 }
+}

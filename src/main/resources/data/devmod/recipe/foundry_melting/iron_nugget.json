@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "minecraft:iron_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_iron",
+    "amount": 16
+  },
+  "time": 40,
+  "temperature": 800
+}

@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_casting_basin",
+  "fluid": {
+    "fluid": "devmod:molten_lead",
+    "amount": 1296
+  },
+  "result": {
+    "item": "devmod:lead_block"
+  },
+  "cooling_time": 290,
+  "consume_cast": false
+}

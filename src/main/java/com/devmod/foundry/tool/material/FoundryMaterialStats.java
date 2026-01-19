@@ -15,10 +15,13 @@ public record FoundryMaterialStats(
     float durabilityMultiplier,
     float miningSpeedMultiplier,
     float attackDamageMultiplier,
-    int miningLevel
+    int miningLevel,
+    float armor,
+    float toughness,
+    float knockbackResistance
 ) {
     public static final FoundryMaterialStats EMPTY = new FoundryMaterialStats(
-        0, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0
+        0, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0, 0.0f, 0.0f, 0.0f
     );
 
     public static FoundryMaterialStats fromJson(JsonObject obj) {
@@ -30,6 +33,9 @@ public record FoundryMaterialStats(
         float miningSpeedMultiplier = GsonHelper.getAsFloat(obj, "mining_speed_multiplier", 1.0f);
         float attackDamageMultiplier = GsonHelper.getAsFloat(obj, "attack_damage_multiplier", 1.0f);
         int miningLevel = GsonHelper.getAsInt(obj, "mining_level", 0);
+        float armor = GsonHelper.getAsFloat(obj, "armor", 0.0f);
+        float toughness = GsonHelper.getAsFloat(obj, "toughness", 0.0f);
+        float knockbackResistance = GsonHelper.getAsFloat(obj, "knockback_resistance", 0.0f);
         return new FoundryMaterialStats(
             durability,
             miningSpeed,
@@ -38,7 +44,10 @@ public record FoundryMaterialStats(
             durabilityMultiplier,
             miningSpeedMultiplier,
             attackDamageMultiplier,
-            miningLevel
+            miningLevel,
+            armor,
+            toughness,
+            knockbackResistance
         );
     }
 }

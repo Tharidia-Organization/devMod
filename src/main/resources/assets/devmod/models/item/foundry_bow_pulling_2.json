@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:item/foundry_bow",
+  "textures": {
+    "layer0": "devmod:item/foundry_bow_pulling_2"
+  }
+}

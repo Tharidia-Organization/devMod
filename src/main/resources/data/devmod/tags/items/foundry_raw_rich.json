@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:raw_tin",
+    "devmod:raw_lead",
+    "devmod:raw_silver",
+    "devmod:raw_nickel",
+    "minecraft:raw_iron",
+    "minecraft:raw_gold",
+    "minecraft:raw_copper"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "ingredient": { "item": "minecraft:rabbit_foot" },
+  "max_level": 3,
+  "slot_type": "upgrade",
+  "slots": 1,
+  "bonuses": {},
+  "ability": "fortune",
+  "description": "Increases drops from mining (Fortune)"
+}

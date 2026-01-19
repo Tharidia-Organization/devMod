@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:silver_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_silver",
+    "amount": 1296
+  },
+  "time": 600,
+  "temperature": 1235
+}

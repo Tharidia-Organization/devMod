@@ -1,0 +1,9 @@
+{
+  "ingredient": { "item": "minecraft:string" },
+  "max_level": 1,
+  "slot_type": "ability",
+  "slots": 1,
+  "bonuses": {},
+  "ability": "silk_touch",
+  "description": "Allows collection of blocks in their natural state"
+}

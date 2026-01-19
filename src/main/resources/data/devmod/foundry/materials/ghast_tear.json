@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:ghast_tear"
+  },
+  "color": "E8E8E8",
+  "tier": 3,
+  "stats": {
+    "head": {
+      "durability": 100,
+      "mining_speed": 4.0,
+      "attack_damage": 1.0,
+      "attack_speed": 0.2,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 45,
+      "durability_multiplier": 1.05
+    },
+    "binding": {
+      "durability": 50
+    }
+  },
+  "traits": [
+    "devmod:trait_volatile"
+  ]
+}

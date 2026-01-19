@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "devmod:void_metal_block" }],
+  "result": { "id": "devmod:void_metal_ingot", "count": 9 }
+}

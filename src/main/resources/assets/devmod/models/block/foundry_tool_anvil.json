@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "front": "devmod:block/foundry_tool_anvil_front",
+    "side": "devmod:block/foundry_tool_base_side",
+    "top": "devmod:block/foundry_tool_base_top",
+    "bottom": "devmod:block/foundry_tool_base_bottom"
+  }
+}

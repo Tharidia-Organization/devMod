@@ -1,0 +1,19 @@
+{
+  "kind": "hammer",
+  "item": "devmod:foundry_hammer",
+  "parts": [
+    "devmod:hammer_head",
+    "devmod:tool_handle",
+    "devmod:tool_binding"
+  ],
+  "base_stats": {
+    "durability": 130,
+    "mining_speed": 2.0,
+    "attack_damage": 4.0,
+    "attack_speed": -3.2,
+    "mining_level": 1
+  },
+  "priority": 1,
+  "base_upgrades": 3,
+  "base_abilities": 1
+}

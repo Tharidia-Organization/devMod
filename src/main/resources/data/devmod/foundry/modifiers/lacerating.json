@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:flint"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "attack_damage": 0.5
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

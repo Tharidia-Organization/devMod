@@ -58,7 +58,7 @@ public final class NexusCommand {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("list")
                             .executes(ctx -> listSlots(ctx, 1))
-                            .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                            .then(Commands.argument("page", Objects.requireNonNull(IntegerArgumentType.integer(1), "IntegerArgumentType.integer"))
                                 .executes(ctx -> listSlots(ctx, IntegerArgumentType.getInteger(ctx, "page")))))
                         .then(Commands.literal("info")
                             .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))

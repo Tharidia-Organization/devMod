@@ -1,0 +1,10 @@
+{
+  "ingredient": { "item": "minecraft:ghast_tear" },
+  "max_level": 3,
+  "slot_type": "trait",
+  "slots": 0,
+  "bonuses": {
+    "attack_damage": 0.5
+  },
+  "description": "Gains bonus damage as tool takes damage (manyullyn's hunger)"
+}

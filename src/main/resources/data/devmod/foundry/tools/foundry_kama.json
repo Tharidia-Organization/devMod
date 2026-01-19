@@ -1,0 +1,19 @@
+{
+  "kind": "kama",
+  "item": "devmod:foundry_kama",
+  "parts": [
+    "devmod:kama_head",
+    "devmod:tool_handle",
+    "devmod:tool_binding"
+  ],
+  "base_stats": {
+    "durability": 70,
+    "mining_speed": 1.5,
+    "attack_damage": 2.0,
+    "attack_speed": -2.2,
+    "mining_level": 0
+  },
+  "priority": 1,
+  "base_upgrades": 3,
+  "base_abilities": 1
+}

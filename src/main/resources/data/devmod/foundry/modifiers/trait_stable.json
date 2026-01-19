@@ -1,0 +1,12 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "bonuses": {
+    "durability": 30
+  },
+  "abilities": {
+    "durability_loss_reduction": 0.15
+  },
+  "description": "Invar's thermal stability reduces tool wear"
+}

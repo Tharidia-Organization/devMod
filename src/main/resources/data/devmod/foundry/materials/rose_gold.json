@@ -1,0 +1,31 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/rose_gold"
+  },
+  "color": "E8A87C",
+  "tier": 2,
+  "melting": {
+    "temperature": 650,
+    "optimal_range": [620, 680],
+    "impurity_base": 0.12
+  },
+  "stats": {
+    "head": {
+      "durability": 85,
+      "mining_speed": 5.5,
+      "attack_damage": 0.8,
+      "attack_speed": 0.2,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 25,
+      "durability_multiplier": 1.0
+    },
+    "binding": {
+      "durability": 30
+    }
+  },
+  "traits": [
+    "devmod:trait_lustrous"
+  ]
+}

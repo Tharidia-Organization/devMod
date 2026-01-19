@@ -1,0 +1,54 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/nickel"
+  },
+  "color": "B5B596",
+  "tier": 2,
+  "melting": {
+    "temperature": 1728,
+    "optimal_range": [
+      1680,
+      1780
+    ],
+    "impurity_base": 0.1
+  },
+  "stats": {
+    "head": {
+      "durability": 140,
+      "mining_speed": 4.5,
+      "attack_damage": 1.6,
+      "attack_speed": 0.0,
+      "mining_level": 2,
+      "hardness": 6
+    },
+    "handle": {
+      "durability": 45,
+      "durability_multiplier": 1.05,
+      "flexibility": 0.35
+    },
+    "binding": {
+      "durability": 32,
+      "connection_strength": 1.05
+    },
+    "plate": {
+      "durability": 140,
+      "mining_speed": 4.5,
+      "attack_damage": 1.6,
+      "attack_speed": 0.0,
+      "mining_level": 2,
+      "hardness": 6
+    },
+    "mail": {
+      "durability": 45,
+      "durability_multiplier": 1.05,
+      "flexibility": 0.35
+    },
+    "trim": {
+      "durability": 32,
+      "connection_strength": 1.05
+    }
+  },
+  "traits": [
+    "devmod:trait_magnetic"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:ender_pearl"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "durability": 15
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

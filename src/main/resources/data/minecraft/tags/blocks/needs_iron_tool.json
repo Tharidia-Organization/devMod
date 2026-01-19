@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:cobalt_ore",
+    "devmod:ardite_ore",
+    "devmod:cobalt_block",
+    "devmod:ardite_block",
+    "devmod:steel_block",
+    "devmod:manyullyn_block",
+    "devmod:void_metal_block"
+  ]
+}

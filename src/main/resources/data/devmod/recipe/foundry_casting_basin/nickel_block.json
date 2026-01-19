@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_casting_basin",
+  "fluid": {
+    "fluid": "devmod:molten_nickel",
+    "amount": 1296
+  },
+  "result": {
+    "item": "devmod:nickel_block"
+  },
+  "cooling_time": 300,
+  "consume_cast": false
+}

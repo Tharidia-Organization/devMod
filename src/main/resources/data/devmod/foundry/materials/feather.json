@@ -1,0 +1,19 @@
+{
+  "ingredient": {
+    "item": "minecraft:feather"
+  },
+  "color": "FAFAFA",
+  "tier": 0,
+  "stats": {
+    "handle": {
+      "durability": 10,
+      "durability_multiplier": 0.6
+    },
+    "binding": {
+      "durability": 15
+    }
+  },
+  "traits": [
+    "devmod:trait_airy"
+  ]
+}

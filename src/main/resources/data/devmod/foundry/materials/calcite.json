@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:calcite"
+  },
+  "color": "E0DDD4",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 55,
+      "mining_speed": 3.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.1,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 15,
+      "durability_multiplier": 0.8
+    },
+    "binding": {
+      "durability": 20
+    }
+  },
+  "traits": [
+    "devmod:trait_brittle"
+  ]
+}

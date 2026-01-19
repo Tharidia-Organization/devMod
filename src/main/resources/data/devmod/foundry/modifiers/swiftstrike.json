@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:sugar"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "attack_speed": 0.2
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

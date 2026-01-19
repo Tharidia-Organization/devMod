@@ -15,6 +15,8 @@ public record FoundryToolDefinition(
     FoundryToolKind kind,
     List<FoundryPartType> parts,
     FoundryToolStats baseStats,
+    int baseUpgrades,
+    int baseAbilities,
     int priority
 ) {
     public boolean matches(List<FoundryPartType> provided) {

@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:tin_ore",
+    "devmod:deepslate_tin_ore",
+    "devmod:lead_ore",
+    "devmod:deepslate_lead_ore",
+    "devmod:silver_ore",
+    "devmod:deepslate_silver_ore",
+    "devmod:nickel_ore",
+    "devmod:deepslate_nickel_ore",
+    "devmod:tin_block",
+    "devmod:lead_block",
+    "devmod:silver_block",
+    "devmod:nickel_block",
+    "devmod:bronze_block",
+    "devmod:electrum_block",
+    "devmod:invar_block"
+  ]
+}

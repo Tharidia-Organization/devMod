@@ -1,0 +1,15 @@
+{
+  "type": "devmod:foundry_casting_table",
+  "cast": {
+    "item": "devmod:foundry_ingot_cast"
+  },
+  "fluid": {
+    "fluid": "devmod:molten_void_metal",
+    "amount": 144
+  },
+  "result": {
+    "item": "devmod:void_metal_ingot"
+  },
+  "cooling_time": 200,
+  "consume_cast": false
+}

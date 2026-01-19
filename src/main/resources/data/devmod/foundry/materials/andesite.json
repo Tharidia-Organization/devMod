@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:andesite"
+  },
+  "color": "888888",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 75,
+      "mining_speed": 3.5,
+      "attack_damage": 0.8,
+      "attack_speed": -0.1,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 20,
+      "durability_multiplier": 0.9
+    },
+    "binding": {
+      "durability": 25
+    }
+  },
+  "traits": [
+    "devmod:trait_stonebound"
+  ]
+}

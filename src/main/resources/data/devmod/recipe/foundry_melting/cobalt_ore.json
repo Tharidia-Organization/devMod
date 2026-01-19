@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:cobalt_ore"
+  },
+  "result": {
+    "fluid": "devmod:molten_cobalt",
+    "amount": 288
+  },
+  "time": 400,
+  "temperature": 2500
+}

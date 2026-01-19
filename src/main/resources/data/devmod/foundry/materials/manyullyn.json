@@ -1,0 +1,56 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/manyullyn"
+  },
+  "color": "A15CE5",
+  "tier": 4,
+  "melting": {
+    "temperature": 2800,
+    "optimal_range": [
+      2750,
+      2900
+    ],
+    "impurity_base": 0.05
+  },
+  "stats": {
+    "head": {
+      "durability": 200,
+      "mining_speed": 6.5,
+      "attack_damage": 4.5,
+      "attack_speed": 0.0,
+      "mining_level": 4,
+      "hardness": 10
+    },
+    "handle": {
+      "durability": 50,
+      "durability_multiplier": 1.0,
+      "attack_damage_multiplier": 1.1
+    },
+    "binding": {
+      "durability": 40,
+      "connection_strength": 1.1,
+      "attack_damage": 0.5
+    },
+    "plate": {
+      "durability": 200,
+      "mining_speed": 6.5,
+      "attack_damage": 4.5,
+      "attack_speed": 0.0,
+      "mining_level": 4,
+      "hardness": 10
+    },
+    "mail": {
+      "durability": 50,
+      "durability_multiplier": 1.0,
+      "attack_damage_multiplier": 1.1
+    },
+    "trim": {
+      "durability": 40,
+      "connection_strength": 1.1,
+      "attack_damage": 0.5
+    }
+  },
+  "traits": [
+    "devmod:trait_insatiable"
+  ]
+}

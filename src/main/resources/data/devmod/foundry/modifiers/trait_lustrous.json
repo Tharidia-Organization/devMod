@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:air"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "mining_speed": 0.5
+  },
+  "slot_type": "upgrade",
+  "slots": 0
+}

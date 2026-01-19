@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:redstone"
+  },
+  "max_level": 5,
+  "bonuses": {
+    "mining_speed": 0.4
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

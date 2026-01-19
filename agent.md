@@ -9,6 +9,7 @@ Scope (per user request)
 - Data-driven recipes and materials (JSON) to allow fast expansion.
 - Multi-block structure validation (hollow cuboid, open top, size bounds configurable).
 - DevMod-specific assets (blockstates, models, textures) matching clone_pulverizer style.
+- Tool system port (Part Builder, Tool Station/Anvil, materials, traits/modifiers).
 
 Design Notes
 - Module namespace: com.devmod.foundry
@@ -34,8 +35,8 @@ Implementation Phases
 5) Casting
    - Faucet transfer logic, casting table/basin BEs.
    - Cast items and cast tags.
-6) Tool system (future expansion)
-   - Part builder, tool station/anvil, materials, modifiers, tool definitions.
+6) Tool system
+   - Part builder, tool station/anvil, materials, modifiers, tool definitions, and basic trait handling.
 
 License & Attribution
 - Tinkers' Construct is MIT (see tmp/tinkersconstruct/LICENSE).

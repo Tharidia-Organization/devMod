@@ -1,0 +1,21 @@
+{
+  "kind": "shield",
+  "item": "devmod:foundry_shield",
+  "parts": [
+    "devmod:shield_core",
+    "devmod:shield_plating"
+  ],
+  "base_stats": {
+    "durability": 250,
+    "mining_speed": 0.0,
+    "attack_damage": 0.0,
+    "attack_speed": 0.0,
+    "mining_level": 0,
+    "armor": 3.0,
+    "toughness": 1.0,
+    "knockback_resistance": 0.2
+  },
+  "priority": 1,
+  "base_upgrades": 2,
+  "base_abilities": 1
+}

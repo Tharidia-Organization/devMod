@@ -1,0 +1,15 @@
+{
+  "type": "devmod:foundry_casting_table",
+  "cast": {
+    "item": "devmod:foundry_ingot_cast"
+  },
+  "fluid": {
+    "fluid": "devmod:molten_electrum",
+    "amount": 144
+  },
+  "result": {
+    "item": "devmod:electrum_ingot"
+  },
+  "cooling_time": 100,
+  "consume_cast": false
+}

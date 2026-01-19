@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:wither_rose"
+  },
+  "color": "1C1C1C",
+  "tier": 4,
+  "stats": {
+    "head": {
+      "durability": 90,
+      "mining_speed": 3.5,
+      "attack_damage": 1.5,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 40,
+      "durability_multiplier": 1.0
+    },
+    "binding": {
+      "durability": 35
+    }
+  },
+  "traits": [
+    "devmod:trait_withering"
+  ]
+}

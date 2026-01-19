@@ -83,7 +83,9 @@ public class ZoneSlotRegistry extends SavedData {
             server.overworld().getDataStorage()
                 .computeIfAbsent(Objects.requireNonNull(factory()), DATA_NAME)
         );
-        registry.server = server;
+        synchronized (registry) {
+            registry.server = server;
+        }
         return registry;
     }
 

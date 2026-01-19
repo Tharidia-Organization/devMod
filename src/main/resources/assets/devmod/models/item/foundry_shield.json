@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:item/shield",
+  "textures": {
+    "particle": "devmod:item/foundry_shield"
+  },
+  "overrides": [
+    {
+      "predicate": { "blocking": 1 },
+      "model": "devmod:item/foundry_shield_blocking"
+    }
+  ]
+}

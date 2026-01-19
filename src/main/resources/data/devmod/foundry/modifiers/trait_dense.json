@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:air"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "durability": 25
+  },
+  "slot_type": "upgrade",
+  "slots": 0
+}

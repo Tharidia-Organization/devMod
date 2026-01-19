@@ -1,0 +1,46 @@
+{
+  "ingredient": {
+    "item": "minecraft:bone"
+  },
+  "color": "E0D9C8",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 40,
+      "mining_speed": 2.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.1,
+      "mining_level": 1,
+      "hardness": 2
+    },
+    "handle": {
+      "durability": 25,
+      "durability_multiplier": 0.9,
+      "flexibility": 0.1
+    },
+    "binding": {
+      "durability": 15,
+      "connection_strength": 0.8
+    },
+    "plate": {
+      "durability": 40,
+      "mining_speed": 2.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.1,
+      "mining_level": 1,
+      "hardness": 2
+    },
+    "mail": {
+      "durability": 25,
+      "durability_multiplier": 0.9,
+      "flexibility": 0.1
+    },
+    "trim": {
+      "durability": 15,
+      "connection_strength": 0.8
+    }
+  },
+  "traits": [
+    "devmod:trait_splintering"
+  ]
+}

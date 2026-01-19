@@ -37,7 +37,7 @@ public final class MannequinBillboardRegistry {
      * Get the singleton instance.
      */
     @Nonnull
-    public static MannequinBillboardRegistry getInstance() {
+    public static synchronized MannequinBillboardRegistry getInstance() {
         if (instance == null) {
             instance = new MannequinBillboardRegistry();
         }
@@ -142,7 +142,7 @@ public final class MannequinBillboardRegistry {
     /**
      * Reset the singleton instance.
      */
-    public static void reset() {
+    public static synchronized void reset() {
         if (instance != null) {
             instance.clear();
             instance = null;

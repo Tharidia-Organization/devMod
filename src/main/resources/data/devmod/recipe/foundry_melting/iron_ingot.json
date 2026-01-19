@@ -1,7 +1,12 @@
 {
   "type": "devmod:foundry_melting",
-  "ingredient": { "item": "minecraft:iron_ingot" },
-  "result": { "fluid": "devmod:molten_iron", "amount": 1000 },
+  "ingredient": {
+    "item": "minecraft:iron_ingot"
+  },
+  "result": {
+    "fluid": "devmod:molten_iron",
+    "amount": 144
+  },
   "time": 200,
   "temperature": 800
 }

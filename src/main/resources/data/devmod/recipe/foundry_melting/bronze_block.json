@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:bronze_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_bronze",
+    "amount": 1296
+  },
+  "time": 600,
+  "temperature": 1050
+}

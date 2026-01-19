@@ -87,6 +87,8 @@ public final class FoundryStructureDetector {
 
         Set<BlockPos> tanks = new HashSet<>();
         Set<BlockPos> drains = new HashSet<>();
+        Set<BlockPos> ducts = new HashSet<>();
+        Set<BlockPos> chutes = new HashSet<>();
         for (int y = floorY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -99,10 +101,16 @@ public final class FoundryStructureDetector {
                                 Component.translatable("devmod.foundry.error.invalid_wall"),
                                 pos);
                         }
-                        if (state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_TANK.get()))) {
+                        if (state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_TANK.get()))
+                            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_GAUGE.get()))
+                            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_FUEL_TANK.get()))) {
                             tanks.add(pos);
                         } else if (state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_DRAIN.get()))) {
                             drains.add(pos);
+                        } else if (state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_DUCT.get()))) {
+                            ducts.add(pos);
+                        } else if (state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_CHUTE.get()))) {
+                            chutes.add(pos);
                         }
                     } else if (y == floorY) {
                         if (!isWallBlock(state)) {
@@ -128,7 +136,9 @@ public final class FoundryStructureDetector {
             innerHeight,
             interiorVolume,
             tanks,
-            drains
+            drains,
+            ducts,
+            chutes
         );
 
         return new FoundryStructureResult(structure, null, null);
@@ -188,12 +198,24 @@ public final class FoundryStructureDetector {
 
     private static boolean isWallBlock(BlockState state) {
         return state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_BRICKS.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_CRACKED_BRICKS.get()))
             || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_CONTROLLER.get()))
             || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_DRAIN.get()))
-            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_TANK.get()));
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_TANK.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_GAUGE.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_FUEL_TANK.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_DUCT.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_CHUTE.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_GLASS.get()))
+            || state.is(Objects.requireNonNull(FoundryBlocks.FOUNDRY_WINDOW.get()));
     }
 
+    /**
+     * Checks if a block is valid for the interior of the foundry.
+     * Only air blocks are allowed - fluids from other sources (water, lava) are not permitted.
+     * Molten metals are stored in the tank system, not as world blocks in the interior.
+     */
     private static boolean isInteriorBlock(BlockState state) {
-        return state.isAir() || !state.getFluidState().isEmpty();
+        return state.isAir();
     }
 }

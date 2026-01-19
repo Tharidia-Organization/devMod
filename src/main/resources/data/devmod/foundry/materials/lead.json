@@ -1,0 +1,54 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/lead"
+  },
+  "color": "4A4A5E",
+  "tier": 2,
+  "melting": {
+    "temperature": 600,
+    "optimal_range": [
+      570,
+      630
+    ],
+    "impurity_base": 0.15
+  },
+  "stats": {
+    "head": {
+      "durability": 120,
+      "mining_speed": 2.5,
+      "attack_damage": 1.8,
+      "attack_speed": -0.15,
+      "mining_level": 2,
+      "hardness": 4
+    },
+    "handle": {
+      "durability": 60,
+      "durability_multiplier": 1.2,
+      "flexibility": 0.3
+    },
+    "binding": {
+      "durability": 40,
+      "connection_strength": 1.1
+    },
+    "plate": {
+      "durability": 120,
+      "mining_speed": 2.5,
+      "attack_damage": 1.8,
+      "attack_speed": -0.15,
+      "mining_level": 2,
+      "hardness": 4
+    },
+    "mail": {
+      "durability": 60,
+      "durability_multiplier": 1.2,
+      "flexibility": 0.3
+    },
+    "trim": {
+      "durability": 40,
+      "connection_strength": 1.1
+    }
+  },
+  "traits": [
+    "devmod:trait_heavy"
+  ]
+}

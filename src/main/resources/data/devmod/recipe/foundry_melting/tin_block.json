@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:tin_block"
+  },
+  "result": {
+    "fluid": "devmod:molten_tin",
+    "amount": 1296
+  },
+  "time": 600,
+  "temperature": 505
+}

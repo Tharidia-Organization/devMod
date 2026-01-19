@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:smelting",
+  "ingredient": { "item": "devmod:raw_tin" },
+  "result": { "id": "devmod:tin_ingot", "count": 1 },
+  "experience": 0.7,
+  "cookingtime": 200
+}

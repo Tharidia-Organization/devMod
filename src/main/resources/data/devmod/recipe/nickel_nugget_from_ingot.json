@@ -1,0 +1,5 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [{ "item": "devmod:nickel_ingot" }],
+  "result": { "id": "devmod:nickel_nugget", "count": 9 }
+}

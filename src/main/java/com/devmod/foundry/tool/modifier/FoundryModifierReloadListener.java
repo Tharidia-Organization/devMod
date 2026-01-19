@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -33,11 +34,17 @@ public class FoundryModifierReloadListener extends SimpleJsonResourceReloadListe
             ResourceLocation id = entry.getKey();
             JsonObject root = entry.getValue().getAsJsonObject();
 
-            Ingredient ingredient = Ingredient.fromJson(GsonHelper.getAsJsonObject(root, "ingredient"));
+            JsonElement ingredientElement = GsonHelper.getAsJsonObject(root, "ingredient");
+            Ingredient ingredient = Ingredient.CODEC.parse(JsonOps.INSTANCE, ingredientElement)
+                .resultOrPartial(message -> DevMod.LOGGER.warn("[Foundry] Invalid modifier ingredient {}: {}", id, message))
+                .orElse(Ingredient.EMPTY);
             int maxLevel = GsonHelper.getAsInt(root, "max_level", 1);
+            String slotRaw = GsonHelper.getAsString(root, "slot_type", "upgrade");
+            FoundryModifierSlot slotType = FoundryModifierSlot.fromString(slotRaw);
+            int slots = GsonHelper.getAsInt(root, "slots", 1);
             FoundryModifierStats bonuses = FoundryModifierStats.fromJson(GsonHelper.getAsJsonObject(root, "bonuses", new JsonObject()));
 
-            FoundryModifierDefinition definition = new FoundryModifierDefinition(id, ingredient, maxLevel, bonuses);
+            FoundryModifierDefinition definition = new FoundryModifierDefinition(id, ingredient, maxLevel, slotType, slots, bonuses);
             FoundryModifierRegistry.register(definition);
         }
         DevMod.LOGGER.info("[Foundry] Loaded {} modifiers", FoundryModifierRegistry.all().size());

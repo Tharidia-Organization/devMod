@@ -1,0 +1,12 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "bonuses": {
+    "modifier_slots": 1
+  },
+  "abilities": {
+    "repair_bonus": 0.25
+  },
+  "description": "Tin's softness allows for easier modification and repair"
+}

@@ -1,21 +1,30 @@
 package com.devmod.foundry.fluid;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.material.Fluid;
 
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+
+import com.devmod.foundry.quality.FoundryFluidQuality;
+import com.devmod.foundry.quality.MaterialQuality;
+import com.devmod.foundry.quality.MoltenMetal;
 
 /**
- * Simple multi-fluid tank for foundry molten storage.
+ * Multi-fluid tank for foundry molten storage.
+ * Implements IFluidHandler for compatibility with pipes and other fluid transport mods.
  */
-public class FoundryFluidTank {
+public class FoundryFluidTank implements IFluidHandler {
     private static final String TAG_FLUIDS = "Fluids";
     private static final String TAG_CAPACITY = "Capacity";
 
@@ -46,6 +55,24 @@ public class FoundryFluidTank {
         return Math.max(0, capacity - getUsed());
     }
 
+    public int getAmountForFluid(Fluid fluid) {
+        int total = 0;
+        for (FluidStack stack : fluids) {
+            if (stack.getFluid() == fluid) {
+                total += stack.getAmount();
+            }
+        }
+        return total;
+    }
+
+    public int getTotalAmountForFluids(Collection<Fluid> targetFluids) {
+        int total = 0;
+        for (Fluid fluid : targetFluids) {
+            total += getAmountForFluid(fluid);
+        }
+        return total;
+    }
+
     public boolean isEmpty() {
         return fluids.isEmpty() || getUsed() == 0;
     }
@@ -58,47 +85,64 @@ public class FoundryFluidTank {
         return Collections.unmodifiableList(copy);
     }
 
-    public int fill(FluidStack input, boolean simulate) {
-        if (input.isEmpty()) {
+    // ==================== IFluidHandler Implementation ====================
+
+    @Override
+    public int getTanks() {
+        // Report at least 1 tank, or the number of different fluids stored
+        return Math.max(1, fluids.size());
+    }
+
+    @Override
+    public FluidStack getFluidInTank(int tank) {
+        if (tank < 0 || tank >= fluids.size()) {
+            return FluidStack.EMPTY;
+        }
+        return fluids.get(tank).copy();
+    }
+
+    @Override
+    public int getTankCapacity(int tank) {
+        return capacity;
+    }
+
+    @Override
+    public boolean isFluidValid(int tank, @Nonnull FluidStack stack) {
+        // Accept any fluid - the foundry can handle multiple fluid types
+        return !stack.isEmpty();
+    }
+
+    @Override
+    public int fill(@Nonnull FluidStack resource, @Nonnull FluidAction action) {
+        if (resource.isEmpty()) {
             return 0;
         }
         int free = getFree();
         if (free <= 0) {
             return 0;
         }
-        int toFill = Math.min(free, input.getAmount());
-        if (!simulate) {
-            addFluidInternal(new FluidStack(input.getFluid(), toFill));
+        int toFill = Math.min(free, resource.getAmount());
+        if (action.execute()) {
+            FluidStack toAdd = resource.copy();
+            toAdd.setAmount(toFill);
+            addFluidInternal(toAdd);
         }
         return toFill;
     }
 
-    public FluidStack drain(int amount, boolean simulate) {
-        if (fluids.isEmpty() || amount <= 0) {
-            return FluidStack.EMPTY;
-        }
-        FluidStack stack = fluids.get(0);
-        int drained = Math.min(amount, stack.getAmount());
-        FluidStack result = new FluidStack(stack.getFluid(), drained);
-        if (!simulate) {
-            stack.shrink(drained);
-            if (stack.isEmpty()) {
-                fluids.remove(0);
-            }
-        }
-        return result;
-    }
-
-    public FluidStack drain(FluidStack request, boolean simulate) {
-        if (request.isEmpty()) {
+    @Override
+    @Nonnull
+    public FluidStack drain(@Nonnull FluidStack resource, @Nonnull FluidAction action) {
+        if (resource.isEmpty()) {
             return FluidStack.EMPTY;
         }
         for (int i = 0; i < fluids.size(); i++) {
             FluidStack stack = fluids.get(i);
-            if (FluidStack.isSameFluidSameComponents(stack, request)) {
-                int drained = Math.min(request.getAmount(), stack.getAmount());
-                FluidStack result = new FluidStack(stack.getFluid(), drained);
-                if (!simulate) {
+            if (stack.getFluid() == resource.getFluid()) {
+                int drained = Math.min(resource.getAmount(), stack.getAmount());
+                FluidStack result = stack.copy();
+                result.setAmount(drained);
+                if (action.execute()) {
                     stack.shrink(drained);
                     if (stack.isEmpty()) {
                         fluids.remove(i);
@@ -110,12 +154,57 @@ public class FoundryFluidTank {
         return FluidStack.EMPTY;
     }
 
+    @Override
+    @Nonnull
+    public FluidStack drain(int maxDrain, @Nonnull FluidAction action) {
+        if (fluids.isEmpty() || maxDrain <= 0) {
+            return FluidStack.EMPTY;
+        }
+        FluidStack stack = fluids.get(0);
+        int drained = Math.min(maxDrain, stack.getAmount());
+        FluidStack result = stack.copy();
+        result.setAmount(drained);
+        if (action.execute()) {
+            stack.shrink(drained);
+            if (stack.isEmpty()) {
+                fluids.remove(0);
+            }
+        }
+        return result;
+    }
+
+    // ==================== Legacy Methods (for internal use) ====================
+
+    /**
+     * @deprecated Use {@link #fill(FluidStack, FluidAction)} instead
+     */
+    @Deprecated
+    public int fill(FluidStack input, boolean simulate) {
+        return fill(input, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
+    }
+
+    /**
+     * @deprecated Use {@link #drain(int, FluidAction)} instead
+     */
+    @Deprecated
+    public FluidStack drain(int amount, boolean simulate) {
+        return drain(amount, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
+    }
+
+    /**
+     * @deprecated Use {@link #drain(FluidStack, FluidAction)} instead
+     */
+    @Deprecated
+    public FluidStack drain(FluidStack request, boolean simulate) {
+        return drain(request, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
+    }
+
     public boolean contains(FluidStack required) {
         if (required.isEmpty()) {
             return false;
         }
         for (FluidStack stack : fluids) {
-            if (FluidStack.isSameFluidSameComponents(stack, required) && stack.getAmount() >= required.getAmount()) {
+            if (stack.getFluid() == required.getFluid() && stack.getAmount() >= required.getAmount()) {
                 return true;
             }
         }
@@ -124,12 +213,69 @@ public class FoundryFluidTank {
 
     private void addFluidInternal(FluidStack toAdd) {
         for (FluidStack stack : fluids) {
-            if (FluidStack.isSameFluidSameComponents(stack, toAdd)) {
+            if (stack.getFluid() == toAdd.getFluid()) {
+                float mergedPurity = FoundryFluidQuality.mergePurity(stack, toAdd);
+                MaterialQuality mergedQuality = FoundryFluidQuality.mergeQuality(stack, toAdd);
+                int mergedOxidation = FoundryFluidQuality.mergeOxidationTicks(stack, toAdd);
+                float mergedPeakTemp = FoundryFluidQuality.mergePeakTemperature(stack, toAdd);
                 stack.grow(toAdd.getAmount());
+                FoundryFluidQuality.applyMoltenState(stack, mergedQuality, mergedPurity, mergedOxidation, mergedPeakTemp);
                 return;
             }
         }
         fluids.add(toAdd);
+    }
+
+    public MaterialQuality getLowestQualityForFluid(net.minecraft.world.level.material.Fluid fluid) {
+        MaterialQuality lowest = null;
+        for (FluidStack stack : fluids) {
+            if (stack.getFluid() != fluid) {
+                continue;
+            }
+            MaterialQuality quality = FoundryFluidQuality.getQuality(stack);
+            if (lowest == null || quality.getTier() < lowest.getTier()) {
+                lowest = quality;
+            }
+        }
+        return lowest != null ? lowest : MaterialQuality.STANDARD;
+    }
+
+    public MaterialQuality getLowestQuality() {
+        MaterialQuality lowest = null;
+        for (FluidStack stack : fluids) {
+            MaterialQuality quality = FoundryFluidQuality.getQuality(stack);
+            if (lowest == null || quality.getTier() < lowest.getTier()) {
+                lowest = quality;
+            }
+        }
+        return lowest != null ? lowest : MaterialQuality.STANDARD;
+    }
+
+    public float getLowestPurityForFluid(net.minecraft.world.level.material.Fluid fluid) {
+        float lowest = 1.0f;
+        boolean found = false;
+        for (FluidStack stack : fluids) {
+            if (stack.getFluid() != fluid) {
+                continue;
+            }
+            float purity = FoundryFluidQuality.getPurity(stack);
+            if (!found || purity < lowest) {
+                lowest = purity;
+                found = true;
+            }
+        }
+        return found ? lowest : 1.0f;
+    }
+
+    public void tick(float temperature, boolean sealed) {
+        for (FluidStack stack : fluids) {
+            MoltenMetal metal = FoundryFluidQuality.toMoltenMetal(stack);
+            if (metal == null) {
+                continue;
+            }
+            metal.tick(temperature, sealed);
+            FoundryFluidQuality.applyMoltenMetal(stack, metal);
+        }
     }
 
     public CompoundTag save(HolderLookup.Provider registries) {

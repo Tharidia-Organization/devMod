@@ -1,0 +1,15 @@
+{
+  "type": "devmod:foundry_casting_table",
+  "cast": {
+    "item": "devmod:foundry_ingot_cast"
+  },
+  "fluid": {
+    "fluid": "devmod:molten_netherite",
+    "amount": 144
+  },
+  "result": {
+    "item": "minecraft:netherite_ingot"
+  },
+  "cooling_time": 180,
+  "consume_cast": false
+}

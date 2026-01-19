@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:blasting",
+  "ingredient": { "item": "devmod:raw_ardite" },
+  "result": { "id": "devmod:ardite_ingot", "count": 1 },
+  "experience": 0.7,
+  "cookingtime": 100
+}

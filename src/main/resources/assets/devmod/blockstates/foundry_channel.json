@@ -1,0 +1,11 @@
+{
+  "multipart": [
+    { "apply": { "model": "devmod:block/foundry_channel_center" } },
+    { "when": { "north": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm" } },
+    { "when": { "south": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm", "y": 180 } },
+    { "when": { "east": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm", "y": 90 } },
+    { "when": { "west": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm", "y": 270 } },
+    { "when": { "up": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm", "x": 90 } },
+    { "when": { "down": "true" }, "apply": { "model": "devmod:block/foundry_channel_arm", "x": 270 } }
+  ]
+}

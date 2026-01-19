@@ -1,0 +1,16 @@
+{
+  "max_level": 1,
+  "slot_type": "trait",
+  "slots": 0,
+  "bonuses": {
+    "attack_damage": 0.8
+  },
+  "abilities": {
+    "on_damage": {
+      "effect": "extra_damage_on_low_durability",
+      "threshold": 0.25,
+      "bonus": 1.5
+    }
+  },
+  "description": "Flint's sharp edges deal more damage when tool is worn"
+}

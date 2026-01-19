@@ -11,7 +11,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Tool;
-import net.minecraft.world.item.tooltip.TooltipContext;
 
 import net.neoforged.neoforge.common.ItemAbility;
 
@@ -53,9 +52,24 @@ public class FoundryToolItem extends Item {
             tooltip.add(Component.translatable("tooltip.devmod.foundry.attack_damage", String.format(java.util.Locale.ROOT, "%.2f", attack)));
         }
         FoundryToolData.fromStack(stack).ifPresent(data -> {
+            tooltip.add(data.quality().getColoredDisplayName());
+            tooltip.add(Component.translatable("tooltip.devmod.foundry.level", data.level()));
+            int xpNeeded = FoundryToolLeveling.getXpForNextLevel(data.level());
+            tooltip.add(Component.translatable("tooltip.devmod.foundry.xp", data.xp(), xpNeeded));
             tooltip.add(Component.translatable("tooltip.devmod.foundry.materials", data.materials().size()));
             if (!data.modifiers().isEmpty()) {
                 tooltip.add(Component.translatable("tooltip.devmod.foundry.modifiers", data.modifiers().size()));
+            }
+            FoundryToolDefinition definition = FoundryToolDefinitionRegistry.get(data.toolId());
+            if (definition != null) {
+                FoundryToolSlots.SlotUsage usage = FoundryToolSlots.calculate(definition, data);
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.slots_upgrade",
+                    usage.usedUpgrades(), usage.totalUpgrades()));
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.slots_ability",
+                    usage.usedAbilities(), usage.totalAbilities()));
+            }
+            if (data.embossment() != null) {
+                tooltip.add(Component.translatable("tooltip.devmod.foundry.embossment", data.embossment().getPath()));
             }
         });
     }

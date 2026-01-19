@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "devmod:item/foundry_pattern_tool_handle"
+  }
+}

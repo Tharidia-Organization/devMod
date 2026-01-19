@@ -1,7 +1,12 @@
 {
   "type": "devmod:foundry_casting_basin",
-  "fluid": { "fluid": "devmod:molten_gold", "amount": 9000 },
-  "result": { "item": "minecraft:gold_block" },
-  "cooling_time": 200,
+  "fluid": {
+    "fluid": "devmod:molten_gold",
+    "amount": 1296
+  },
+  "result": {
+    "item": "minecraft:gold_block"
+  },
+  "cooling_time": 300,
   "consume_cast": false
 }

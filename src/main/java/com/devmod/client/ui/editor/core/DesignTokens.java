@@ -4195,4 +4195,105 @@ public final class DesignTokens {
 
         private AdminPanel() {}
     }
+
+    /**
+     * Colors specific to the Foundry module.
+     */
+    public static final class Foundry {
+        public static final class Quality {
+            public static final int CRUDE = 0xA0A0A0;
+            public static final int STANDARD = 0xFFFFFF;
+            public static final int REFINED = 0x7EC8E3;
+            public static final int PRISTINE = 0xFFD700;
+            public static final int MASTERWORK = 0xFF6B6B;
+
+            private Quality() {}
+        }
+
+        public static final class Fluids {
+            public static final int MOLTEN_IRON = 0xFFCD8B7A;
+            public static final int MOLTEN_GOLD = 0xFFF9D65C;
+            public static final int MOLTEN_COPPER = 0xFFD97B52;
+            public static final int MOLTEN_TIN = 0xFFB9C7D1;
+            public static final int MOLTEN_BRONZE = 0xFFCF8B3A;
+            public static final int MOLTEN_STEEL = 0xFFC0C0C0;
+            public static final int MOLTEN_COBALT = 0xFF4169E1;
+            public static final int MOLTEN_MANYULLYN = 0xFFDA70D6;
+            public static final int MOLTEN_LEAD = 0xFF4A4A5E;
+            public static final int MOLTEN_SILVER = 0xFFD8E8EE;
+            public static final int MOLTEN_NICKEL = 0xFFB5B596;
+            public static final int MOLTEN_ELECTRUM = 0xFFF0E060;
+            public static final int MOLTEN_INVAR = 0xFF8C9C92;
+            public static final int MOLTEN_ARDITE = 0xFFD14210;
+            public static final int MOLTEN_NETHERITE = 0xFF4D494D;
+            public static final int MOLTEN_VOID_METAL = 0xFF2A0A30;
+
+            private Fluids() {}
+        }
+
+        public static final class Risk {
+            public static final int SAFE = 0x00FF00;
+            public static final int ELEVATED = 0xFFFF00;
+            public static final int HIGH = 0xFFA500;
+            public static final int CRITICAL = 0xFF0000;
+
+            private Risk() {}
+        }
+
+        public static final class PatternTier {
+            public static final int BASIC = 0x8B4513;
+            public static final int STANDARD = 0x808080;
+            public static final int QUALITY = 0xC0C0C0;
+            public static final int MASTER = 0xFFD700;
+            public static final int ANCIENT = 0x4B0082;
+
+            private PatternTier() {}
+        }
+
+        public static final class Pattern {
+            public static final int SPECIALIZED = 0x00FF00;
+            public static final int DURABILITY_HIGH = 0x00FF00;
+            public static final int DURABILITY_MEDIUM = 0xFFFF00;
+            public static final int DURABILITY_LOW = 0xFF0000;
+
+            private Pattern() {}
+        }
+
+        public static final class Ui {
+            public static final int PROGRESS = 0xFFCF7A2C;
+            public static final int FUEL = 0xFFF2902A;
+            public static final int HEAT_COLD = 0xFF3366FF;
+            public static final int HEAT_HOT = 0xFFFF3300;
+            public static final int STRESS_LOW = 0xFF00FF00;
+            public static final int STRESS_HIGH = 0xFFFF0000;
+            public static final int PURITY = 0xFF7EC8E3;
+            public static final int BAR_BACKGROUND = 0xFF333333;
+            public static final int DAMAGE_TEXT = 0xFFFF4444;
+            public static final int STRESS_WARNING = 0xFF0000;
+            public static final int INCIDENT_WARNING = 0xFFAA00;
+
+            private Ui() {}
+        }
+
+        public static final class Material {
+            public static final int DEFAULT_COLOR = 0xFFFFFF;
+
+            private Material() {}
+        }
+
+        public static final class Guide {
+            public static final int BOOK_BORDER = 0xFF1B1916;
+            public static final int BOOK_INTERIOR = 0xFF2A2622;
+
+            private Guide() {}
+        }
+
+        public static final class Jei {
+            public static final int TEXT = 0xFFAAAAAA;
+
+            private Jei() {}
+        }
+
+        private Foundry() {}
+    }
 }

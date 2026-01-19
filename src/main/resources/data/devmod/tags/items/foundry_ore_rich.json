@@ -1,0 +1,19 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:tin_ore",
+    "devmod:lead_ore",
+    "devmod:silver_ore",
+    "devmod:nickel_ore",
+    "devmod:deepslate_tin_ore",
+    "devmod:deepslate_lead_ore",
+    "devmod:deepslate_silver_ore",
+    "devmod:deepslate_nickel_ore",
+    "minecraft:iron_ore",
+    "minecraft:deepslate_iron_ore",
+    "minecraft:gold_ore",
+    "minecraft:deepslate_gold_ore",
+    "minecraft:copper_ore",
+    "minecraft:deepslate_copper_ore"
+  ]
+}

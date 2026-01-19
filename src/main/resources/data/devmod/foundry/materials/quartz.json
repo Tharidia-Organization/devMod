@@ -1,0 +1,40 @@
+{
+  "ingredient": {
+    "item": "minecraft:quartz"
+  },
+  "color": "E6E1D6",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 165,
+      "mining_speed": 3.3,
+      "attack_damage": 1.7,
+      "attack_speed": 0.0,
+      "mining_level": 3
+    },
+    "handle": {
+      "durability": 56,
+      "durability_multiplier": 1.09
+    },
+    "binding": {
+      "durability": 45
+    },
+    "plate": {
+      "durability": 165,
+      "mining_speed": 3.3,
+      "attack_damage": 1.7,
+      "attack_speed": 0.0,
+      "mining_level": 3
+    },
+    "mail": {
+      "durability": 56,
+      "durability_multiplier": 1.09
+    },
+    "trim": {
+      "durability": 45
+    }
+  },
+  "traits": [
+    "devmod:trait_glasslike"
+  ]
+}

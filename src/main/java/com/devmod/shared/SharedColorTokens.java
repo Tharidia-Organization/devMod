@@ -535,4 +535,73 @@ public final class SharedColorTokens {
 
         protected Endurance() {}
     }
+
+    public static class Foundry {
+        public static final class Quality {
+            public static final int CRUDE = DesignTokens.Foundry.Quality.CRUDE;
+            public static final int STANDARD = DesignTokens.Foundry.Quality.STANDARD;
+            public static final int REFINED = DesignTokens.Foundry.Quality.REFINED;
+            public static final int PRISTINE = DesignTokens.Foundry.Quality.PRISTINE;
+            public static final int MASTERWORK = DesignTokens.Foundry.Quality.MASTERWORK;
+
+            private Quality() {}
+        }
+
+        public static final class Fluids {
+            public static final int MOLTEN_IRON = DesignTokens.Foundry.Fluids.MOLTEN_IRON;
+            public static final int MOLTEN_GOLD = DesignTokens.Foundry.Fluids.MOLTEN_GOLD;
+            public static final int MOLTEN_COPPER = DesignTokens.Foundry.Fluids.MOLTEN_COPPER;
+            public static final int MOLTEN_TIN = DesignTokens.Foundry.Fluids.MOLTEN_TIN;
+            public static final int MOLTEN_BRONZE = DesignTokens.Foundry.Fluids.MOLTEN_BRONZE;
+            public static final int MOLTEN_STEEL = DesignTokens.Foundry.Fluids.MOLTEN_STEEL;
+            public static final int MOLTEN_COBALT = DesignTokens.Foundry.Fluids.MOLTEN_COBALT;
+            public static final int MOLTEN_MANYULLYN = DesignTokens.Foundry.Fluids.MOLTEN_MANYULLYN;
+            public static final int MOLTEN_LEAD = DesignTokens.Foundry.Fluids.MOLTEN_LEAD;
+            public static final int MOLTEN_SILVER = DesignTokens.Foundry.Fluids.MOLTEN_SILVER;
+            public static final int MOLTEN_NICKEL = DesignTokens.Foundry.Fluids.MOLTEN_NICKEL;
+            public static final int MOLTEN_ELECTRUM = DesignTokens.Foundry.Fluids.MOLTEN_ELECTRUM;
+            public static final int MOLTEN_INVAR = DesignTokens.Foundry.Fluids.MOLTEN_INVAR;
+            public static final int MOLTEN_ARDITE = DesignTokens.Foundry.Fluids.MOLTEN_ARDITE;
+            public static final int MOLTEN_NETHERITE = DesignTokens.Foundry.Fluids.MOLTEN_NETHERITE;
+            public static final int MOLTEN_VOID_METAL = DesignTokens.Foundry.Fluids.MOLTEN_VOID_METAL;
+
+            private Fluids() {}
+        }
+
+        public static final class Risk {
+            public static final int SAFE = DesignTokens.Foundry.Risk.SAFE;
+            public static final int ELEVATED = DesignTokens.Foundry.Risk.ELEVATED;
+            public static final int HIGH = DesignTokens.Foundry.Risk.HIGH;
+            public static final int CRITICAL = DesignTokens.Foundry.Risk.CRITICAL;
+
+            private Risk() {}
+        }
+
+        public static final class PatternTier {
+            public static final int BASIC = DesignTokens.Foundry.PatternTier.BASIC;
+            public static final int STANDARD = DesignTokens.Foundry.PatternTier.STANDARD;
+            public static final int QUALITY = DesignTokens.Foundry.PatternTier.QUALITY;
+            public static final int MASTER = DesignTokens.Foundry.PatternTier.MASTER;
+            public static final int ANCIENT = DesignTokens.Foundry.PatternTier.ANCIENT;
+
+            private PatternTier() {}
+        }
+
+        public static final class Pattern {
+            public static final int SPECIALIZED = DesignTokens.Foundry.Pattern.SPECIALIZED;
+            public static final int DURABILITY_HIGH = DesignTokens.Foundry.Pattern.DURABILITY_HIGH;
+            public static final int DURABILITY_MEDIUM = DesignTokens.Foundry.Pattern.DURABILITY_MEDIUM;
+            public static final int DURABILITY_LOW = DesignTokens.Foundry.Pattern.DURABILITY_LOW;
+
+            private Pattern() {}
+        }
+
+        public static final class Material {
+            public static final int DEFAULT_COLOR = DesignTokens.Foundry.Material.DEFAULT_COLOR;
+
+            private Material() {}
+        }
+
+        protected Foundry() {}
+    }
 }

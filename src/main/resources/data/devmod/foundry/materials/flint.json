@@ -1,0 +1,46 @@
+{
+  "ingredient": {
+    "item": "minecraft:flint"
+  },
+  "color": "3B3B3B",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 30,
+      "mining_speed": 2.5,
+      "attack_damage": 1.0,
+      "attack_speed": 0.0,
+      "mining_level": 1,
+      "hardness": 3
+    },
+    "handle": {
+      "durability": 10,
+      "durability_multiplier": 0.7,
+      "flexibility": 0.0
+    },
+    "binding": {
+      "durability": 10,
+      "connection_strength": 0.7
+    },
+    "plate": {
+      "durability": 30,
+      "mining_speed": 2.5,
+      "attack_damage": 1.0,
+      "attack_speed": 0.0,
+      "mining_level": 1,
+      "hardness": 3
+    },
+    "mail": {
+      "durability": 10,
+      "durability_multiplier": 0.7,
+      "flexibility": 0.0
+    },
+    "trim": {
+      "durability": 10,
+      "connection_strength": 0.7
+    }
+  },
+  "traits": [
+    "devmod:trait_jagged"
+  ]
+}

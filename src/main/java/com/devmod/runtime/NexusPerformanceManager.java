@@ -73,10 +73,6 @@ public final class NexusPerformanceManager {
         LOGGER.info("[NexusPerf] Initializing performance optimizations");
 
         var server = level.getServer();
-        if (server == null) {
-            LOGGER.warn("[NexusPerf] Cannot initialize performance manager: server not available");
-            return;
-        }
         NexusHubManager.INSTANCE.initialize(server);
 
         // Pre-calculate chunk positions for each zone from the registry
@@ -136,12 +132,12 @@ public final class NexusPerformanceManager {
      */
     private void updatePlayerZones(@Nonnull ServerLevel level) {
         for (ServerPlayer player : level.players()) {
-            Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolve(level, player.blockPosition());
+            Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolve(level, Objects.requireNonNull(player.blockPosition()));
             String currentZone = zoneOpt.map(ZoneDefinition::zoneId).orElse("outside");
             String previousZone = playerZones.put(player.getUUID(), currentZone);
 
             if (previousZone != null && !previousZone.equals(currentZone)) {
-                onPlayerZoneChange(player, previousZone, currentZone);
+                onPlayerZoneChange(player, Objects.requireNonNull(previousZone), Objects.requireNonNull(currentZone));
             }
         }
 
@@ -167,7 +163,7 @@ public final class NexusPerformanceManager {
         UUID playerId = player.getUUID();
 
         // Get chunks for new zone
-        Set<ChunkPos> newChunks = zoneChunks.getOrDefault(newZone, getHubChunks(player.blockPosition()));
+        Set<ChunkPos> newChunks = zoneChunks.getOrDefault(newZone, getHubChunks(Objects.requireNonNull(player.blockPosition())));
 
         // Track loaded chunks for this player
         playerLoadedChunks.put(playerId, new HashSet<>(newChunks));

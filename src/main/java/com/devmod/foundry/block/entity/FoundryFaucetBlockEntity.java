@@ -54,13 +54,16 @@ public class FoundryFaucetBlockEntity extends BlockEntity {
 
         BlockEntity targetBe = level.getBlockEntity(targetPos);
         FoundryCastingBlockEntity casting = null;
+        FoundryChannelBlockEntity channel = null;
         if (targetBe instanceof FoundryCastingTableBlockEntity table) {
             casting = table;
         } else if (targetBe instanceof FoundryCastingBasinBlockEntity basin) {
             casting = basin;
+        } else if (targetBe instanceof FoundryChannelBlockEntity foundryChannel) {
+            channel = foundryChannel;
         }
 
-        if (casting == null) {
+        if (casting == null && channel == null) {
             return;
         }
 
@@ -69,7 +72,14 @@ public class FoundryFaucetBlockEntity extends BlockEntity {
             return;
         }
 
-        int accepted = casting.tryFillFromFaucet(drained);
+        int accepted;
+        if (casting != null) {
+            accepted = casting.tryFillFromFaucet(drained);
+        } else if (channel != null) {
+            accepted = channel.tryFillFromFaucet(drained);
+        } else {
+            return;
+        }
         if (accepted > 0) {
             controller.drainMolten(accepted, true);
             cooldown = POUR_COOLDOWN_TICKS;

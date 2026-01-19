@@ -66,6 +66,8 @@ public class FoundryToolDefinitionReloadListener extends SimpleJsonResourceReloa
             }
 
             FoundryToolStats baseStats = FoundryToolStats.fromJson(GsonHelper.getAsJsonObject(root, "base_stats", new JsonObject()));
+            int baseUpgrades = GsonHelper.getAsInt(root, "base_upgrades", 3);
+            int baseAbilities = GsonHelper.getAsInt(root, "base_abilities", 1);
             int priority = GsonHelper.getAsInt(root, "priority", 0);
 
             if (parts.isEmpty()) {
@@ -79,6 +81,8 @@ public class FoundryToolDefinitionReloadListener extends SimpleJsonResourceReloa
                 kind,
                 List.copyOf(parts),
                 baseStats,
+                baseUpgrades,
+                baseAbilities,
                 priority
             );
             FoundryToolDefinitionRegistry.register(definition);

@@ -1,0 +1,11 @@
+{
+  "ingredient": { "item": "minecraft:blaze_powder" },
+  "max_level": 2,
+  "slot_type": "upgrade",
+  "slots": 1,
+  "bonuses": {
+    "attack_damage": 0.5
+  },
+  "ability": "fire_aspect",
+  "description": "Sets targets on fire"
+}

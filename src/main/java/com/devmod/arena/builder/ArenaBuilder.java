@@ -1033,10 +1033,6 @@ public class ArenaBuilder {
     private void buildZoneAwareFloor(ArenaTemplate template, int originX, int originZ,
                                      ArenaTemplate.ZoneSettings zoneSettings, BuildTransaction tx) {
         var floor = template.floor();
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
-        }
 
         int sizeX = getSizeX(template);
         int sizeZ = getSizeZ(template);
@@ -1163,10 +1159,6 @@ public class ArenaBuilder {
      */
     private void buildTemplateFloor(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var floor = template.floor();
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
-        }
 
         int minX = minOffsetX(template);
         int maxX = maxOffsetX(template);
@@ -1302,10 +1294,6 @@ public class ArenaBuilder {
 
     private void buildCeiling(ArenaTemplate template, int originX, int originZ, BuildTransaction tx) {
         var ceiling = template.ceiling();
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
-        }
 
         int minX = minOffsetX(template);
         int maxX = maxOffsetX(template);
@@ -1330,11 +1318,6 @@ public class ArenaBuilder {
         var underfloor = template.underfloor();
         var floor = template.floor();
         if (floor == null) return;
-
-        ArenaTemplate.ArenaShape shape = template.arenaShape();
-        if (shape == null) {
-            shape = ArenaTemplate.ArenaShape.RECTANGULAR;
-        }
 
         String material = underfloor.sameAsFloor() ? floor.material() : underfloor.material();
 

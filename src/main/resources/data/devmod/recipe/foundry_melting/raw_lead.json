@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:raw_lead"
+  },
+  "result": {
+    "fluid": "devmod:molten_lead",
+    "amount": 144
+  },
+  "time": 200,
+  "temperature": 600
+}

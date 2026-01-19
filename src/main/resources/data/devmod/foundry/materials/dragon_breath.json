@@ -1,0 +1,26 @@
+{
+  "ingredient": {
+    "item": "minecraft:dragon_breath"
+  },
+  "color": "9B30FF",
+  "tier": 5,
+  "stats": {
+    "head": {
+      "durability": 250,
+      "mining_speed": 6.0,
+      "attack_damage": 2.0,
+      "attack_speed": 0.1,
+      "mining_level": 4
+    },
+    "handle": {
+      "durability": 80,
+      "durability_multiplier": 1.2
+    },
+    "binding": {
+      "durability": 70
+    }
+  },
+  "traits": [
+    "devmod:trait_corrosive"
+  ]
+}

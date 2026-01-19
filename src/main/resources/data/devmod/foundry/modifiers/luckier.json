@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:emerald"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "mining_speed": 0.1
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

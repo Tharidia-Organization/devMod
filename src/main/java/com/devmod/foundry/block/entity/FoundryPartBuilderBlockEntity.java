@@ -18,11 +18,15 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.menu.FoundryPartBuilderMenu;
+import com.devmod.foundry.quality.FoundryItemQuality;
+import com.devmod.foundry.quality.MaterialQuality;
+import com.devmod.foundry.quality.QualityCalculator;
 import com.devmod.foundry.tool.FoundryPartItem;
 import com.devmod.foundry.tool.FoundryPatternItem;
 import com.devmod.foundry.tool.FoundryToolItems;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
+import com.devmod.foundry.tool.material.FoundryMaterialStats;
 
 /**
  * Block entity for the Part Builder.
@@ -51,17 +55,25 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
     public void consumeInputs() {
         ItemStack pattern = inventory.getItem(SLOT_PATTERN);
         ItemStack material = inventory.getItem(SLOT_MATERIAL);
-        if (pattern.isEmpty() || material.isEmpty()) {
+        if (material.isEmpty() || !(pattern.getItem() instanceof FoundryPatternItem patternItem)) {
             return;
         }
-        pattern.shrink(1);
-        material.shrink(1);
-        if (pattern.isEmpty()) {
-            inventory.setItem(SLOT_PATTERN, ItemStack.EMPTY);
+        FoundryMaterialDefinition materialDef = FoundryMaterialRegistry.findMaterial(material).orElse(null);
+        if (materialDef == null) {
+            return;
         }
+        int cost = Math.max(1, patternItem.getPartType().materialCost());
+        material.shrink(cost);
         if (material.isEmpty()) {
             inventory.setItem(SLOT_MATERIAL, ItemStack.EMPTY);
         }
+        FoundryMaterialStats stats = materialDef.getStats(patternItem.getPartType().statKey());
+        int hardness = Math.max(1, stats.miningLevel());
+        boolean stillUsable = patternItem.usePattern(pattern, materialDef.id(), hardness);
+        if (!stillUsable) {
+            inventory.setItem(SLOT_PATTERN, ItemStack.EMPTY);
+        }
+        setChanged();
     }
 
     private void updateOutput() {
@@ -72,6 +84,11 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
             return;
         }
         if (material.isEmpty()) {
+            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            return;
+        }
+        int cost = Math.max(1, patternItem.getPartType().materialCost());
+        if (material.getCount() < cost) {
             inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
             return;
         }
@@ -87,7 +104,16 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
             inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
             return;
         }
-        ItemStack output = partItem.createWithMaterial(materialDef.id());
+        float patternQuality = patternItem.getQualityBonus(pattern);
+        float specBonus = patternItem.getSpecializationBonus(pattern, materialDef.id());
+        float effectivePatternQuality = Math.max(0.8f, Math.min(1.3f, patternQuality * specBonus));
+        MaterialQuality materialQuality = FoundryItemQuality.getQuality(material);
+        MaterialQuality partQuality = QualityCalculator.calculateCastingQuality(
+            materialQuality,
+            effectivePatternQuality,
+            1.0f
+        );
+        ItemStack output = partItem.createWithMaterial(materialDef.id(), partQuality);
         inventory.setItem(SLOT_OUTPUT, output);
     }
 

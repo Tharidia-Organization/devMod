@@ -81,7 +81,25 @@ public class FoundryToolStationBlockEntity extends net.minecraft.world.level.blo
             return;
         }
 
-        ItemStack output = FoundryToolBuilder.buildTool(definition, parts, java.util.Map.of());
+        List<ItemStack> orderedParts = new ArrayList<>();
+        boolean[] used = new boolean[parts.size()];
+        for (FoundryPartType required : definition.parts()) {
+            int matchIndex = -1;
+            for (int i = 0; i < types.size(); i++) {
+                if (!used[i] && Objects.equals(types.get(i), required)) {
+                    matchIndex = i;
+                    break;
+                }
+            }
+            if (matchIndex < 0) {
+                inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+                return;
+            }
+            used[matchIndex] = true;
+            orderedParts.add(parts.get(matchIndex));
+        }
+
+        ItemStack output = FoundryToolBuilder.buildTool(definition, orderedParts, java.util.Map.of());
         inventory.setItem(SLOT_OUTPUT, output);
     }
 

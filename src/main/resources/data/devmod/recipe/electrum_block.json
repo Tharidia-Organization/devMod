@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["###", "###", "###"],
+  "key": { "#": { "item": "devmod:electrum_ingot" } },
+  "result": { "id": "devmod:electrum_block", "count": 1 }
+}

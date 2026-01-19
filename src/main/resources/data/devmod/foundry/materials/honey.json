@@ -1,0 +1,40 @@
+{
+  "ingredient": {
+    "item": "minecraft:honeycomb"
+  },
+  "color": "D7A33D",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 130,
+      "mining_speed": 2.7,
+      "attack_damage": 1.3,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 44,
+      "durability_multiplier": 1.06
+    },
+    "binding": {
+      "durability": 35
+    },
+    "plate": {
+      "durability": 130,
+      "mining_speed": 2.7,
+      "attack_damage": 1.3,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "mail": {
+      "durability": 44,
+      "durability_multiplier": 1.06
+    },
+    "trim": {
+      "durability": 35
+    }
+  },
+  "traits": [
+    "devmod:trait_prismatic"
+  ]
+}

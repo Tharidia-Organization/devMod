@@ -13,18 +13,27 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.RecipeType;
 
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.FoundryItems;
+import com.devmod.foundry.progression.FoundryPlayerProgress;
+import com.devmod.foundry.progression.FoundryProgressAttachment;
+import com.devmod.foundry.quality.FoundryFluidQuality;
+import com.devmod.foundry.quality.FoundryItemQuality;
+import com.devmod.foundry.quality.MaterialQuality;
+import com.devmod.foundry.quality.QualityCalculator;
 import com.devmod.foundry.recipe.FoundryCastingRecipe;
+import com.devmod.foundry.tool.FoundryPartItem;
+import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
+import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 
 /**
  * Base block entity for casting table/basin.
@@ -77,9 +86,19 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         maxProgress = recipe.getCoolingTime();
         progress++;
         if (progress >= maxProgress) {
-            inventory.setItem(1, recipe.getResultItem(level.registryAccess()).copy());
+            MaterialQuality fluidQuality = FoundryFluidQuality.getQuality(fluidStack);
+            float fluidPurity = FoundryFluidQuality.getPurity(fluidStack);
+            MaterialQuality castQuality = QualityCalculator.calculateCastingQuality(fluidQuality, 1.0f, 1.0f);
+            ItemStack result = recipe.getResultItem(Objects.requireNonNull(level.registryAccess())).copy();
+            if (result.getItem() instanceof FoundryPartItem partItem) {
+                partItem.setQuality(result, castQuality);
+                partItem.setPurity(result, fluidPurity);
+            } else {
+                FoundryItemQuality.applyQuality(result, castQuality, fluidPurity);
+            }
+            inventory.setItem(1, result);
             if (recipe.isConsumeCast()) {
-                inventory.setItem(0, ItemStack.EMPTY);
+                inventory.setItem(0, Objects.requireNonNull(ItemStack.EMPTY));
             }
             fluidStack = FluidStack.EMPTY;
             progress = 0;
@@ -99,10 +118,11 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
 
         int required = recipe.getFluid().getAmount();
         if (fluidStack.isEmpty()) {
-            fluidStack = new FluidStack(incoming.getFluid(), 0);
+            fluidStack = incoming.copy();
+            fluidStack.setAmount(0);
         }
 
-        if (!FluidStack.isSameFluidSameComponents(fluidStack, recipe.getFluid())) {
+        if (fluidStack.getFluid() != recipe.getFluid().getFluid()) {
             return 0;
         }
 
@@ -112,28 +132,50 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         }
 
         int accepted = Math.min(missing, incoming.getAmount());
+        FluidStack portion = incoming.copy();
+        portion.setAmount(accepted);
+        float mergedPurity = FoundryFluidQuality.mergePurity(fluidStack, portion);
+        MaterialQuality mergedQuality = FoundryFluidQuality.mergeQuality(fluidStack, portion);
+        int mergedOxidation = FoundryFluidQuality.mergeOxidationTicks(fluidStack, portion);
+        float mergedPeakTemp = FoundryFluidQuality.mergePeakTemperature(fluidStack, portion);
         fluidStack.grow(accepted);
+        FoundryFluidQuality.applyMoltenState(fluidStack, mergedQuality, mergedPurity, mergedOxidation, mergedPeakTemp);
         setChanged();
         return accepted;
     }
 
-    public InteractionResult handleInteraction(Player player, InteractionHand hand) {
+    public InteractionResult handleInteraction(@Nonnull Player player, @Nonnull InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
         ItemStack cast = inventory.getItem(0);
         ItemStack output = inventory.getItem(1);
+        Level currentLevel = Objects.requireNonNull(getLevel());
 
         if (!output.isEmpty()) {
-            if (!player.getInventory().add(output.copy())) {
-                player.drop(output.copy(), false);
+            if (!currentLevel.isClientSide) {
+                FoundryPlayerProgress progress = FoundryProgressAttachment.get(player);
+                FoundryMaterialDefinition material = FoundryMaterialRegistry.findMaterial(output).orElse(null);
+                if (material != null) {
+                    progress.unlockMaterial(material.id());
+                    FoundryProgressAttachment.sync(player);
+                } else if (output.getItem() instanceof FoundryPartItem partItem) {
+                    partItem.getMaterialId(output).ifPresent(id -> {
+                        progress.unlockMaterial(id);
+                        FoundryProgressAttachment.sync(player);
+                    });
+                }
             }
-            inventory.setItem(1, ItemStack.EMPTY);
+            ItemStack outputCopy = Objects.requireNonNull(output.copy());
+            if (!player.getInventory().add(outputCopy)) {
+                player.drop(Objects.requireNonNull(output.copy()), false);
+            }
+            inventory.setItem(1, Objects.requireNonNull(ItemStack.EMPTY));
             return InteractionResult.CONSUME;
         }
 
         if (cast.isEmpty() && !held.isEmpty()) {
             if (held.is(Objects.requireNonNull(FoundryItems.FOUNDRY_INGOT_CAST.get()))
                 || held.is(Objects.requireNonNull(FoundryItems.FOUNDRY_NUGGET_CAST.get()))) {
-                inventory.setItem(0, held.copyWithCount(1));
+                inventory.setItem(0, Objects.requireNonNull(held.copyWithCount(1)));
                 if (!player.isCreative()) {
                     held.shrink(1);
                 }
@@ -142,8 +184,8 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         }
 
         if (!cast.isEmpty() && held.isEmpty()) {
-            player.setItemInHand(hand, cast.copy());
-            inventory.setItem(0, ItemStack.EMPTY);
+            player.setItemInHand(hand, Objects.requireNonNull(cast.copy()));
+            inventory.setItem(0, Objects.requireNonNull(ItemStack.EMPTY));
             return InteractionResult.CONSUME;
         }
 
@@ -162,17 +204,19 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         RecipeManager manager = level.getRecipeManager();
         ItemStack cast = inventory.getItem(0);
         FoundryCastingRecipe.CastingInput input = new FoundryCastingRecipe.CastingInput(cast, fluid);
-        return manager.getRecipeFor(getRecipeType(), input, level).map(RecipeHolder::value);
+        return manager.getRecipeFor(Objects.requireNonNull(getRecipeType()), input, level).map(RecipeHolder::value);
     }
 
     @Override
     protected void saveAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (!inventory.getItem(0).isEmpty()) {
-            tag.put(TAG_CAST, inventory.getItem(0).save(registries));
+        ItemStack castItem = inventory.getItem(0);
+        if (!castItem.isEmpty()) {
+            tag.put(TAG_CAST, Objects.requireNonNull(castItem.save(registries)));
         }
-        if (!inventory.getItem(1).isEmpty()) {
-            tag.put(TAG_OUTPUT, inventory.getItem(1).save(registries));
+        ItemStack outputItem = inventory.getItem(1);
+        if (!outputItem.isEmpty()) {
+            tag.put(TAG_OUTPUT, Objects.requireNonNull(outputItem.save(registries)));
         }
         if (!fluidStack.isEmpty()) {
             CompoundTag fluidTag = new CompoundTag();
@@ -187,13 +231,16 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains(TAG_CAST)) {
-            inventory.setItem(0, ItemStack.parse(registries, tag.getCompound(TAG_CAST)).orElse(ItemStack.EMPTY));
+            CompoundTag castTag = Objects.requireNonNull(tag.getCompound(TAG_CAST));
+            inventory.setItem(0, Objects.requireNonNull(ItemStack.parse(registries, castTag).orElse(ItemStack.EMPTY)));
         }
         if (tag.contains(TAG_OUTPUT)) {
-            inventory.setItem(1, ItemStack.parse(registries, tag.getCompound(TAG_OUTPUT)).orElse(ItemStack.EMPTY));
+            CompoundTag outputTag = Objects.requireNonNull(tag.getCompound(TAG_OUTPUT));
+            inventory.setItem(1, Objects.requireNonNull(ItemStack.parse(registries, outputTag).orElse(ItemStack.EMPTY)));
         }
         if (tag.contains(TAG_FLUID)) {
-            fluidStack = FluidStack.parseOptional(registries, tag.getCompound(TAG_FLUID));
+            CompoundTag fluidTag = Objects.requireNonNull(tag.getCompound(TAG_FLUID));
+            fluidStack = FluidStack.parseOptional(registries, fluidTag);
         } else {
             fluidStack = FluidStack.EMPTY;
         }

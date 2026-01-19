@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:air"
+  },
+  "max_level": 1,
+  "bonuses": {
+    "attack_damage": 0.3
+  },
+  "slot_type": "trait",
+  "slots": 0
+}

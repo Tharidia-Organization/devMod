@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "devmod:foundry_flux",
+    "devmod:foundry_flux_refined",
+    "devmod:foundry_flux_pure"
+  ]
+}

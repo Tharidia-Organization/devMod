@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 
+import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.block.entity.FoundryTankBlockEntity;
 
 /**
@@ -48,6 +49,11 @@ public class FoundryTankBlock extends Block implements EntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
         @Nonnull Level level, @Nonnull BlockState state, @Nonnull BlockEntityType<T> type
     ) {
-        return null;
+        if (level.isClientSide) {
+            return null;
+        }
+        return type == FoundryBlockEntities.FOUNDRY_TANK.get()
+            ? (lvl, pos, st, be) -> ((FoundryTankBlockEntity) be).tickServer()
+            : null;
     }
 }

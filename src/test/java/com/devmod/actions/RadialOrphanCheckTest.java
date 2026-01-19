@@ -40,6 +40,14 @@ class RadialOrphanCheckTest {
     private static String actionKeybindRegistrySource;
     private static String renderEventsSource;
     private static String arenaActionRegistrySource;
+    private static String devModActionsSource;
+    private static String leaderboardCommandEventsSource;
+    private static String telemetryReloadCommandSource;
+    private static String dashboardCommandSource;
+    private static String dungeonCommandSource;
+    private static String mailboxCommandsSource;
+    private static String testHarnessCommandsSource;
+    private static String debugCommandSource;
 
     private static final Path ACTION_IDS_PATH = Paths.get(
         "src/main/java/com/devmod/actions/ActionIds.java");
@@ -51,6 +59,22 @@ class RadialOrphanCheckTest {
         "src/main/java/com/devmod/client/rendering/RenderEvents.java");
     private static final Path ARENA_ACTION_REGISTRY_PATH = Paths.get(
         "src/main/java/com/devmod/arena/command/ArenaActionRegistry.java");
+    private static final Path DEVMOD_ACTIONS_PATH = Paths.get(
+        "src/main/java/com/devmod/actions/DevModActions.java");
+    private static final Path LEADERBOARD_COMMAND_EVENTS_PATH = Paths.get(
+        "src/main/java/com/devmod/endurance/LeaderboardCommandEvents.java");
+    private static final Path TELEMETRY_RELOAD_COMMAND_PATH = Paths.get(
+        "src/main/java/com/devmod/telemetry/TelemetryReloadCommand.java");
+    private static final Path DASHBOARD_COMMAND_PATH = Paths.get(
+        "src/main/java/com/devmod/telemetry/dashboard/DashboardCommand.java");
+    private static final Path DUNGEON_COMMAND_PATH = Paths.get(
+        "src/main/java/com/devmod/telemetry/dungeon/DungeonCommand.java");
+    private static final Path MAILBOX_COMMANDS_PATH = Paths.get(
+        "src/main/java/com/devmod/mailbox/admin/MailboxCommands.java");
+    private static final Path TEST_HARNESS_COMMANDS_PATH = Paths.get(
+        "src/main/java/com/devmod/gametest/TestHarnessCommands.java");
+    private static final Path DEBUG_COMMAND_PATH = Paths.get(
+        "src/main/java/com/devmod/debug/DebugCommand.java");
 
     @BeforeAll
     static void loadSourceCode() throws IOException {
@@ -59,6 +83,14 @@ class RadialOrphanCheckTest {
         actionKeybindRegistrySource = Files.readString(ACTION_KEYBIND_REGISTRY_PATH);
         renderEventsSource = Files.readString(RENDER_EVENTS_PATH);
         arenaActionRegistrySource = Files.readString(ARENA_ACTION_REGISTRY_PATH);
+        devModActionsSource = Files.readString(DEVMOD_ACTIONS_PATH);
+        leaderboardCommandEventsSource = Files.readString(LEADERBOARD_COMMAND_EVENTS_PATH);
+        telemetryReloadCommandSource = Files.readString(TELEMETRY_RELOAD_COMMAND_PATH);
+        dashboardCommandSource = Files.readString(DASHBOARD_COMMAND_PATH);
+        dungeonCommandSource = Files.readString(DUNGEON_COMMAND_PATH);
+        mailboxCommandsSource = Files.readString(MAILBOX_COMMANDS_PATH);
+        testHarnessCommandsSource = Files.readString(TEST_HARNESS_COMMANDS_PATH);
+        debugCommandSource = Files.readString(DEBUG_COMMAND_PATH);
     }
 
     // ============================================================
@@ -119,7 +151,7 @@ class RadialOrphanCheckTest {
                 "Should have more than 100 ActionIds defined. Found: " + actionIds.size());
 
             // Combine all registration sources
-            String combinedSources = devModClientActionsSource + arenaActionRegistrySource;
+            String combinedSources = combinedRegistrationSources();
 
             // Check each ActionId is referenced somewhere in registration
             List<String> unregistered = new ArrayList<>();
@@ -320,7 +352,7 @@ class RadialOrphanCheckTest {
                 "ActionCategory.UI"
             };
 
-            String combinedSources = devModClientActionsSource + arenaActionRegistrySource;
+            String combinedSources = combinedRegistrationSources();
 
             for (String category : categories) {
                 assertTrue(combinedSources.contains(category),
@@ -384,7 +416,7 @@ class RadialOrphanCheckTest {
         @DisplayName("L5-01: Generate orphan report")
         void generateOrphanReport() {
             Set<String> allActionIds = extractActionIds();
-            String combinedSources = devModClientActionsSource + arenaActionRegistrySource;
+            String combinedSources = combinedRegistrationSources();
 
             List<String> orphans = new ArrayList<>();
             for (String actionId : allActionIds) {
@@ -429,6 +461,19 @@ class RadialOrphanCheckTest {
             ids.add(matcher.group(1));
         }
         return ids;
+    }
+
+    private String combinedRegistrationSources() {
+        return devModClientActionsSource
+            + arenaActionRegistrySource
+            + devModActionsSource
+            + leaderboardCommandEventsSource
+            + telemetryReloadCommandSource
+            + dashboardCommandSource
+            + dungeonCommandSource
+            + mailboxCommandsSource
+            + testHarnessCommandsSource
+            + debugCommandSource;
     }
 
     private String actionIdToConstantName(String actionId) {

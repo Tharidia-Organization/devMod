@@ -1,0 +1,41 @@
+{
+  "ingredient": {
+    "item": "minecraft:cobblestone"
+  },
+  "color": "8C8C8C",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 60,
+      "mining_speed": 2.5,
+      "attack_damage": 0.5,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 20,
+      "durability_multiplier": 1.0
+    },
+    "binding": {
+      "durability": 10
+    },
+    "plate": {
+      "durability": 60,
+      "mining_speed": 2.5,
+      "attack_damage": 0.5,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "mail": {
+      "durability": 20,
+      "durability_multiplier": 1.0
+    },
+    "trim": {
+      "durability": 10
+    }
+  },
+  "traits": [
+    "devmod:trait_rigid",
+    "devmod:trait_savage"
+  ]
+}

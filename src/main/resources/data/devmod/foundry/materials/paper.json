@@ -1,0 +1,19 @@
+{
+  "ingredient": {
+    "item": "minecraft:paper"
+  },
+  "color": "F5F5DC",
+  "tier": 0,
+  "stats": {
+    "handle": {
+      "durability": 5,
+      "durability_multiplier": 0.5
+    },
+    "binding": {
+      "durability": 8
+    }
+  },
+  "traits": [
+    "devmod:trait_papery"
+  ]
+}

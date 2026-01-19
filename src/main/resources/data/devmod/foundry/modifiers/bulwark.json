@@ -1,0 +1,11 @@
+{
+  "ingredient": {
+    "item": "minecraft:shield"
+  },
+  "max_level": 3,
+  "bonuses": {
+    "armor": 0.5
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

@@ -10,6 +10,7 @@ public record FoundryModifierDefinition(
     ResourceLocation id,
     Ingredient ingredient,
     int maxLevel,
+    FoundryModifierSlot slotType,
+    int slots,
     FoundryModifierStats bonuses
 ) {}
-

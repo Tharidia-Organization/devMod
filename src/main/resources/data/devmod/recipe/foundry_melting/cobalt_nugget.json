@@ -1,0 +1,12 @@
+{
+  "type": "devmod:foundry_melting",
+  "ingredient": {
+    "item": "devmod:cobalt_nugget"
+  },
+  "result": {
+    "fluid": "devmod:molten_cobalt",
+    "amount": 16
+  },
+  "time": 50,
+  "temperature": 2500
+}
