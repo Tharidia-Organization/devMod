@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "tag": "c:gems/topaz"
+  },
+  "color": "FFC000",
+  "tier": 2,
+  "stats": {
+    "head": {
+      "durability": 100,
+      "mining_speed": 5.5,
+      "attack_damage": 2.0,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 28,
+      "durability_multiplier": 0.95
+    },
+    "binding": {
+      "durability": 22
+    },
+    "plate": {
+      "durability": 100,
+      "mining_speed": 5.5,
+      "attack_damage": 2.0,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "mail": {
+      "durability": 28,
+      "durability_multiplier": 0.95
+    },
+    "trim": {
+      "durability": 22
+    }
+  },
+  "traits": ["devmod:trait_solar"]
+}

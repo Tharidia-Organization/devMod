@@ -1,0 +1,11 @@
+{
+  "id": "devmod:cosmetic_dye",
+  "name": "Cosmetic Dye",
+  "slot_type": "slotless",
+  "slots": 0,
+  "max_level": 1,
+  "ingredient": {
+    "tag": "c:dyes"
+  },
+  "effects": {}
+}

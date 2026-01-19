@@ -1,0 +1,13 @@
+{
+  "id": "devmod:protection",
+  "name": "Protection",
+  "slot_type": "defense",
+  "slots": 1,
+  "max_level": 4,
+  "ingredient": {
+    "tag": "c:ingots/iron"
+  },
+  "effects": {
+    "armor": 0.5
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "item": "minecraft:shroomlight"
+  },
+  "color": "FFA850",
+  "tier": 2,
+  "stats": {
+    "head": {
+      "durability": 55,
+      "mining_speed": 3.0,
+      "attack_damage": 1.0,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "handle": {
+      "durability": 18,
+      "durability_multiplier": 0.85
+    },
+    "binding": {
+      "durability": 12
+    },
+    "plate": {
+      "durability": 55,
+      "mining_speed": 3.0,
+      "attack_damage": 1.0,
+      "attack_speed": 0.0,
+      "mining_level": 1
+    },
+    "mail": {
+      "durability": 18,
+      "durability_multiplier": 0.85
+    },
+    "trim": {
+      "durability": 12
+    }
+  },
+  "traits": ["devmod:trait_lustrous"]
+}

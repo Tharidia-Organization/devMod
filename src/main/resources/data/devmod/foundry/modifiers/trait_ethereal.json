@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_ethereal",
+  "name": "Ethereal",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "phase_through_chance": 0.1
+  }
+}

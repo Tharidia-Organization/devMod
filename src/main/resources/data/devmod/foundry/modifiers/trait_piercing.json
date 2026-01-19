@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_piercing",
+  "name": "Piercing",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "armor_penetration": 0.25
+  }
+}

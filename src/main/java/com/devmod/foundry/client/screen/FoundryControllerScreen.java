@@ -72,6 +72,10 @@ public class FoundryControllerScreen extends AbstractContainerScreen<FoundryCont
     private static final int STRESS_COLOR_HIGH = DesignTokens.Foundry.Ui.STRESS_HIGH;
     private static final int PURITY_COLOR = DesignTokens.Foundry.Ui.PURITY;
     private static final int BAR_BACKGROUND = DesignTokens.Foundry.Ui.BAR_BACKGROUND;
+    private static final float PURITY_WARNING_THRESHOLD = 0.85f;
+    private static final float PURITY_CRITICAL_THRESHOLD = 0.7f;
+    private static final float OXIDATION_WARNING_THRESHOLD = 0.3f;
+    private static final float OXIDATION_CRITICAL_THRESHOLD = 0.6f;
 
     public FoundryControllerScreen(FoundryControllerMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
@@ -235,6 +239,24 @@ public class FoundryControllerScreen extends AbstractContainerScreen<FoundryCont
         int purityPercent = (int) (menu.getPurityPercent() * 100);
         graphics.drawString(fontObj, "Purity: " + purityPercent + "%", PURITY_BAR_X + PURITY_BAR_WIDTH + 4, PURITY_BAR_Y - 1, DesignTokens.Neurocell.LABEL_TEXT, false);
 
+        int warningX = PURITY_BAR_X + PURITY_BAR_WIDTH + 4;
+        int warningY = PURITY_BAR_Y + fontObj.lineHeight + 2;
+        float purity = menu.getPurityPercent();
+        if (purity < PURITY_WARNING_THRESHOLD) {
+            int color = purity < PURITY_CRITICAL_THRESHOLD
+                ? DesignTokens.Foundry.Ui.INCIDENT_WARNING
+                : DesignTokens.Foundry.Ui.STRESS_WARNING;
+            graphics.drawString(fontObj, Component.translatable("gui.devmod.foundry.purity_warning"), warningX, warningY, color, false);
+            warningY += fontObj.lineHeight + 1;
+        }
+        float oxidation = menu.getOxidationPercent();
+        if (oxidation > OXIDATION_WARNING_THRESHOLD) {
+            int color = oxidation > OXIDATION_CRITICAL_THRESHOLD
+                ? DesignTokens.Foundry.Ui.INCIDENT_WARNING
+                : DesignTokens.Foundry.Ui.STRESS_WARNING;
+            graphics.drawString(fontObj, Component.translatable("gui.devmod.foundry.oxidation_warning"), warningX, warningY, color, false);
+        }
+
         // Structure damage indicator (if any)
         int damage = menu.getStructureDamage();
         if (damage > 0) {
@@ -298,6 +320,18 @@ public class FoundryControllerScreen extends AbstractContainerScreen<FoundryCont
             tooltip.add(Component.translatable("gui.devmod.foundry.purity"));
             int purity = (int) (menu.getPurityPercent() * 100);
             tooltip.add(Component.literal(purity + "%"));
+            int oxidation = (int) (menu.getOxidationPercent() * 100);
+            if (oxidation > 0) {
+                tooltip.add(Component.translatable("gui.devmod.foundry.oxidation", oxidation));
+            }
+            if (menu.getPurityPercent() < PURITY_WARNING_THRESHOLD) {
+                tooltip.add(Component.translatable("gui.devmod.foundry.purity_warning")
+                    .withStyle(s -> s.withColor(DesignTokens.Foundry.Ui.STRESS_WARNING)));
+            }
+            if (menu.getOxidationPercent() > OXIDATION_WARNING_THRESHOLD) {
+                tooltip.add(Component.translatable("gui.devmod.foundry.oxidation_warning")
+                    .withStyle(s -> s.withColor(DesignTokens.Foundry.Ui.INCIDENT_WARNING)));
+            }
             graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
         }
     }

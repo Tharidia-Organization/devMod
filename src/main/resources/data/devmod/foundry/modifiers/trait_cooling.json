@@ -1,0 +1,11 @@
+{
+  "id": "devmod:trait_cooling",
+  "name": "Cooling",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "fire_resistance": 0.5,
+    "burn_reduction": 0.5
+  }
+}

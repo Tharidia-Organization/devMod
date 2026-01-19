@@ -3,6 +3,7 @@
     "item": "minecraft:flint"
   },
   "max_level": 3,
+  "specialization": "devmod:weaponsmith",
   "bonuses": {
     "attack_damage": 0.5
   },

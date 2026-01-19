@@ -1,0 +1,43 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/knightslime"
+  },
+  "color": "9A4AC2",
+  "tier": 3,
+  "melting": {
+    "temperature": 1400,
+    "optimal_range": [1350, 1450],
+    "impurity_base": 0.08
+  },
+  "stats": {
+    "head": {
+      "durability": 150,
+      "mining_speed": 4.0,
+      "attack_damage": 2.5,
+      "attack_speed": 0.1,
+      "mining_level": 3
+    },
+    "handle": {
+      "durability": 50,
+      "durability_multiplier": 1.15
+    },
+    "binding": {
+      "durability": 35
+    },
+    "plate": {
+      "durability": 150,
+      "mining_speed": 4.0,
+      "attack_damage": 2.5,
+      "attack_speed": 0.1,
+      "mining_level": 3
+    },
+    "mail": {
+      "durability": 50,
+      "durability_multiplier": 1.15
+    },
+    "trim": {
+      "durability": 35
+    }
+  },
+  "traits": ["devmod:trait_bouncy"]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_cultivated",
+  "name": "Cultivated",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "crop_bonus": 1.0
+  }
+}

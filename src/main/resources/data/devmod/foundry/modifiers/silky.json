@@ -1,6 +1,7 @@
 {
   "ingredient": { "item": "minecraft:string" },
   "max_level": 1,
+  "specialization": "devmod:toolsmith",
   "slot_type": "ability",
   "slots": 1,
   "bonuses": {},

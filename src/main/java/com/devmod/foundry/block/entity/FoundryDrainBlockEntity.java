@@ -33,10 +33,10 @@ public class FoundryDrainBlockEntity extends FoundryComponentBlockEntity {
             return InteractionResult.PASS;
         }
 
-        if (held.is(Items.BUCKET)) {
+        if (held.is(Objects.requireNonNull(Items.BUCKET))) {
             FluidStack drained = controller.drainMolten(1000, true);
             if (!drained.isEmpty()) {
-                ItemStack filled = drained.getFluid().getBucket().getDefaultInstance();
+                ItemStack filled = Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(drained.getFluid()).getBucket()).getDefaultInstance());
                 held.shrink(1);
                 if (held.isEmpty()) {
                     player.setItemInHand(hand, filled);
@@ -48,10 +48,10 @@ public class FoundryDrainBlockEntity extends FoundryComponentBlockEntity {
         } else {
             var bucketItem = held.getItem();
             if (bucketItem instanceof net.minecraft.world.item.BucketItem bucket && bucket.content != net.minecraft.world.level.material.Fluids.EMPTY) {
-                FluidStack toFill = new FluidStack(bucket.content, 1000);
+                FluidStack toFill = new FluidStack(Objects.requireNonNull(bucket.content), 1000);
                 int filled = controller.fillMolten(toFill, true);
                 if (filled > 0) {
-                    ItemStack emptyBucket = new ItemStack(Items.BUCKET);
+                    ItemStack emptyBucket = new ItemStack(Objects.requireNonNull(Items.BUCKET));
                     if (!player.isCreative()) {
                         held.shrink(1);
                     }

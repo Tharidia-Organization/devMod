@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_phantom",
+  "name": "Phantom",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "invisibility_when_sneaking": true
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_prospecting",
+  "name": "Prospecting",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "ore_detection_radius": 8
+  }
+}

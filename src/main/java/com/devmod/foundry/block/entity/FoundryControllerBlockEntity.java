@@ -15,6 +15,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -98,6 +100,10 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private static final float ORE_POOR_PENALTY = 0.05f;
     private static final float RAW_RICH_BONUS = -0.04f;
     private static final float RAW_POOR_PENALTY = 0.04f;
+    private static final float PURITY_SIZZLE_THRESHOLD = 0.8f;
+    private static final float PURITY_SIZZLE_TEMP = 500f;
+    private static final int PURITY_SIZZLE_INTERVAL = 80;
+    private static final float PURITY_SIZZLE_CHANCE = 0.35f;
 
     private final SimpleContainer inventory = new SimpleContainer(FoundryControllerMenu.CONTAINER_SIZE);
     private final FoundryFluidTank moltenTank;
@@ -192,6 +198,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         // Get effective temperature (accounts for structure warmup)
         float effectiveTemp = thermalManager.getEffectiveTemperature(currentTemp);
         moltenTank.tick(thermalManager.getStructureHeat(), false);
+        maybePlayPuritySizzle(level, effectiveTemp);
         updateAlloyPreview(level, (int) effectiveTemp);
 
         if (fuelTicks > 0 && effectiveTemp >= requiredTemp) {
@@ -230,6 +237,25 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             updateActiveState(level, false);
             progress = 0;
         }
+    }
+
+    private void maybePlayPuritySizzle(Level level, float effectiveTemp) {
+        if (tickCounter % PURITY_SIZZLE_INTERVAL != 0) {
+            return;
+        }
+        if (moltenTank.isEmpty() || effectiveTemp < PURITY_SIZZLE_TEMP) {
+            return;
+        }
+        float lowestPurity = moltenTank.getLowestPurity();
+        if (lowestPurity >= PURITY_SIZZLE_THRESHOLD) {
+            return;
+        }
+        if (level.random.nextFloat() > PURITY_SIZZLE_CHANCE) {
+            return;
+        }
+        float volume = 0.15f + ((1.0f - lowestPurity) * 0.45f);
+        float pitch = 0.85f + (level.random.nextFloat() * 0.3f);
+        level.playSound(null, worldPosition, SoundEvents.LAVA_POP, SoundSource.BLOCKS, volume, pitch);
     }
 
     private void handleIncident(IncidentType incident, ServerLevel level) {
@@ -517,15 +543,30 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             if (stack.isEmpty() || !isFluxItem(stack)) {
                 continue;
             }
+            float cap = getFluxPurityCap(stack);
+            if (purity >= cap) {
+                continue;
+            }
             int remaining = MAX_FLUX_PER_MELT - used;
             if (remaining <= 0) {
                 break;
             }
-            int toUse = Math.min(stack.getCount(), remaining);
+            float bonus = getFluxPurityBonus(stack);
+            if (bonus <= 0.0f) {
+                continue;
+            }
+            float toCap = Math.max(0.0f, cap - purity);
+            int needed = (int) Math.ceil(toCap / bonus);
+            int toUse = Math.min(stack.getCount(), Math.min(remaining, needed));
+            if (toUse <= 0) {
+                continue;
+            }
             stack.shrink(toUse);
             used += toUse;
-            float bonus = getFluxPurityBonus(stack);
             purity = clampPurity(purity + (bonus * toUse));
+            if (purity > cap) {
+                purity = cap;
+            }
             if (stack.isEmpty()) {
                 inventory.setItem(i, Objects.requireNonNull(ItemStack.EMPTY));
             }
@@ -547,6 +588,13 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         return FLUX_PURITY_BONUS;
     }
 
+    private float getFluxPurityCap(ItemStack stack) {
+        if (stack.getItem() instanceof FoundryFluxItem fluxItem) {
+            return fluxItem.getPurityCap();
+        }
+        return 1.0f;
+    }
+
     private static float clampPurity(float value) {
         return Math.max(0.1f, Math.min(1.0f, value));
     }
@@ -554,11 +602,15 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private void updateAlloyPreview(Level level, int temperature) {
         alloyPreviewFluidId = -1;
         alloyPreviewRatio = 0;
+        Player operator = resolveLastOperator(level);
         RecipeManager recipeManager = level.getRecipeManager();
         List<RecipeHolder<FoundryAlloyingRecipe>> recipes = recipeManager.getAllRecipesFor(Objects.requireNonNull(FoundryRecipeTypes.ALLOYING.get()));
         for (RecipeHolder<FoundryAlloyingRecipe> holder : recipes) {
             FoundryAlloyingRecipe recipe = holder.value();
             if (!recipe.isDynamic()) {
+                continue;
+            }
+            if (!canUseAlloyRecipe(recipe, operator)) {
                 continue;
             }
             if (!recipe.canApply(moltenTank)) {
@@ -585,6 +637,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private void processAlloying(Level level, int temperature, float efficiency, float riskMultiplier) {
         RecipeManager recipeManager = level.getRecipeManager();
         FoundryAlloyingRecipe recipe = currentAlloyRecipe;
+        Player operator = resolveLastOperator(level);
 
         if (recipe == null && currentAlloyRecipeId != null) {
             recipe = recipeManager.byKey(currentAlloyRecipeId)
@@ -598,11 +651,22 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
         }
 
+        if (recipe != null && !canUseAlloyRecipe(recipe, operator)) {
+            recipe = null;
+            currentAlloyRecipe = null;
+            currentAlloyRecipeId = null;
+            alloyProgress = 0;
+            alloyMaxProgress = 0;
+        }
+
         if (recipe == null || !recipe.canApply(moltenTank)) {
             recipe = null;
             List<RecipeHolder<FoundryAlloyingRecipe>> recipes = recipeManager.getAllRecipesFor(Objects.requireNonNull(FoundryRecipeTypes.ALLOYING.get()));
             for (RecipeHolder<FoundryAlloyingRecipe> holder : recipes) {
                 FoundryAlloyingRecipe candidate = holder.value();
+                if (!canUseAlloyRecipe(candidate, operator)) {
+                    continue;
+                }
                 if (!candidate.canApply(moltenTank)) {
                     continue;
                 }
@@ -667,7 +731,6 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             if (recipe.isDynamic()) {
                 baseOutputAmount = Math.min(baseOutputAmount, drained);
             }
-            Player operator = resolveLastOperator(level);
             FoundryPlayerProgress progressData = operator != null ? FoundryProgressAttachment.get(operator) : null;
             float yieldMultiplier = riskMultiplier;
             if (progressData != null) {
@@ -715,6 +778,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private int findRequiredTemperature(@Nonnull Level level) {
         int required = Integer.MAX_VALUE;
         tierBlocked = false;
+        Player operator = resolveLastOperator(level);
         for (int i = 0; i < FoundryControllerMenu.SLOT_INPUT_COUNT; i++) {
             ItemStack candidate = inventory.getItem(i);
             if (candidate.isEmpty()) {
@@ -742,6 +806,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         List<RecipeHolder<FoundryAlloyingRecipe>> recipes = recipeManager.getAllRecipesFor(Objects.requireNonNull(FoundryRecipeTypes.ALLOYING.get()));
         for (RecipeHolder<FoundryAlloyingRecipe> holder : recipes) {
             FoundryAlloyingRecipe alloyRecipe = holder.value();
+            if (!canUseAlloyRecipe(alloyRecipe, operator)) {
+                continue;
+            }
             if (!alloyRecipe.canApply(moltenTank)) {
                 continue;
             }
@@ -758,6 +825,18 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         }
 
         return required == Integer.MAX_VALUE ? -1 : required;
+    }
+
+    private boolean canUseAlloyRecipe(FoundryAlloyingRecipe recipe, @Nullable Player operator) {
+        ResourceLocation required = recipe.getRequiredSpecialization();
+        if (required == null) {
+            return true;
+        }
+        if (operator == null) {
+            return false;
+        }
+        FoundryPlayerProgress progress = FoundryProgressAttachment.get(operator);
+        return required.equals(progress.getSpecialization());
     }
 
     private void ensureFuel(@Nonnull Level level, int requiredTemp) {
@@ -964,6 +1043,17 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
 
     public float getCurrentPurity() {
         return currentMeltPurity;
+    }
+
+    public float getDisplayedPurity() {
+        if (!moltenTank.isEmpty()) {
+            return moltenTank.getLowestPurity();
+        }
+        return currentMeltPurity;
+    }
+
+    public float getOxidationPercent() {
+        return moltenTank.getHighestOxidationPercent();
     }
 
     public void repairStructure() {

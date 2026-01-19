@@ -1,0 +1,13 @@
+{
+  "id": "devmod:feather_falling",
+  "name": "Feather Falling",
+  "slot_type": "defense",
+  "slots": 1,
+  "max_level": 4,
+  "ingredient": {
+    "item": "minecraft:feather"
+  },
+  "effects": {
+    "fall_damage_reduction": 0.12
+  }
+}

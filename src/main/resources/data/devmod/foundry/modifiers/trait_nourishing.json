@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_nourishing",
+  "name": "Nourishing",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "saturation_on_kill": 1.0
+  }
+}

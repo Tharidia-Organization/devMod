@@ -1,0 +1,13 @@
+{
+  "ingredient": {
+    "item": "minecraft:amethyst_shard"
+  },
+  "max_level": 1,
+  "specialization": "devmod:alloyist",
+  "bonuses": {
+    "mining_speed": 0.25,
+    "attack_speed": 0.05
+  },
+  "slot_type": "ability",
+  "slots": 1
+}

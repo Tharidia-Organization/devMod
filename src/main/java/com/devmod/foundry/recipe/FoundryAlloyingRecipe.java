@@ -43,11 +43,12 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
     private final List<AlloyComponent> components;
     private final List<RatioTier> ratioTiers;
     @Nullable private final Fluid primaryComponent;
+    @Nullable private final ResourceLocation requiredSpecialization;
     private final FluidStack output;
     private final int time;
     private final int temperature;
     public FoundryAlloyingRecipe(List<FluidStack> inputs, FluidStack output, int time, int temperature) {
-        this(inputs, List.of(), null, List.of(), output, time, temperature);
+        this(inputs, List.of(), null, List.of(), null, output, time, temperature);
     }
 
     public FoundryAlloyingRecipe(
@@ -55,6 +56,7 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         List<AlloyComponent> components,
         @Nullable Fluid primaryComponent,
         List<RatioTier> ratioTiers,
+        @Nullable ResourceLocation requiredSpecialization,
         FluidStack output,
         int time,
         int temperature
@@ -63,6 +65,7 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         this.components = List.copyOf(Objects.requireNonNull(components));
         this.primaryComponent = primaryComponent;
         this.ratioTiers = List.copyOf(Objects.requireNonNull(ratioTiers));
+        this.requiredSpecialization = requiredSpecialization;
         this.output = Objects.requireNonNull(output);
         this.time = time;
         this.temperature = temperature;
@@ -155,6 +158,11 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
 
     public int getTemperature() {
         return temperature;
+    }
+
+    @Nullable
+    public ResourceLocation getRequiredSpecialization() {
+        return requiredSpecialization;
     }
 
     public int getInputAmount() {
@@ -380,15 +388,18 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
                     .forGetter(FoundryAlloyingRecipe::getPrimaryComponentId),
                 RatioTier.CODEC.codec().listOf().optionalFieldOf("ratio_tiers", List.of())
                     .forGetter(FoundryAlloyingRecipe::getRatioTiers),
+                ResourceLocation.CODEC.optionalFieldOf("specialization")
+                    .forGetter(recipe -> Optional.ofNullable(recipe.getRequiredSpecialization())),
                 FoundryCodecs.FLUID_STACK_CODEC.fieldOf("result").forGetter(FoundryAlloyingRecipe::getOutput),
                 Codec.INT.optionalFieldOf("time", DEFAULT_TIME).forGetter(FoundryAlloyingRecipe::getTime),
                 Codec.INT.optionalFieldOf("temperature", 0).forGetter(FoundryAlloyingRecipe::getTemperature)
-            ).apply(instance, (inputs, components, primaryId, ratioTiers, output, time, temperature) ->
+            ).apply(instance, (inputs, components, primaryId, ratioTiers, specialization, output, time, temperature) ->
                 new FoundryAlloyingRecipe(
                     inputs,
                     components,
                     resolvePrimaryComponent(components, primaryId),
                     ratioTiers,
+                    specialization.orElse(null),
                     output,
                     time,
                     temperature
@@ -401,6 +412,8 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
             AlloyComponent.STREAM_CODEC.apply(ByteBufCodecs.list());
         private static final StreamCodec<RegistryFriendlyByteBuf, Optional<ResourceLocation>> OPTIONAL_PRIMARY_STREAM_CODEC =
             StreamCodec.of(Serializer::encodeOptionalPrimary, Serializer::decodeOptionalPrimary);
+        private static final StreamCodec<RegistryFriendlyByteBuf, Optional<ResourceLocation>> OPTIONAL_SPECIALIZATION_STREAM_CODEC =
+            StreamCodec.of(Serializer::encodeOptionalSpecialization, Serializer::decodeOptionalSpecialization);
         private static final StreamCodec<RegistryFriendlyByteBuf, List<RatioTier>> RATIO_TIER_LIST_STREAM_CODEC =
             RatioTier.STREAM_CODEC.apply(ByteBufCodecs.list());
 
@@ -415,6 +428,7 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
             FoundryCodecs.FLUID_STACK_STREAM_CODEC.encode(buf, recipe.getOutput());
             ByteBufCodecs.INT.encode(buf, recipe.getTime());
             ByteBufCodecs.INT.encode(buf, recipe.getTemperature());
+            OPTIONAL_SPECIALIZATION_STREAM_CODEC.encode(buf, Optional.ofNullable(recipe.getRequiredSpecialization()));
         }
 
         private static FoundryAlloyingRecipe decode(RegistryFriendlyByteBuf buf) {
@@ -425,11 +439,13 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
             FluidStack output = FoundryCodecs.FLUID_STACK_STREAM_CODEC.decode(buf);
             int time = ByteBufCodecs.INT.decode(buf);
             int temperature = ByteBufCodecs.INT.decode(buf);
+            Optional<ResourceLocation> specialization = OPTIONAL_SPECIALIZATION_STREAM_CODEC.decode(buf);
             return new FoundryAlloyingRecipe(
                 inputs,
                 components,
                 resolvePrimaryComponent(components, primaryId),
                 ratioTiers,
+                specialization.orElse(null),
                 output,
                 time,
                 temperature
@@ -442,6 +458,17 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         }
 
         private static Optional<ResourceLocation> decodeOptionalPrimary(RegistryFriendlyByteBuf buf) {
+            return buf.readBoolean()
+                ? Optional.of(ResourceLocation.STREAM_CODEC.decode(buf))
+                : Optional.empty();
+        }
+
+        private static void encodeOptionalSpecialization(RegistryFriendlyByteBuf buf, Optional<ResourceLocation> value) {
+            buf.writeBoolean(value.isPresent());
+            value.ifPresent(id -> ResourceLocation.STREAM_CODEC.encode(buf, id));
+        }
+
+        private static Optional<ResourceLocation> decodeOptionalSpecialization(RegistryFriendlyByteBuf buf) {
             return buf.readBoolean()
                 ? Optional.of(ResourceLocation.STREAM_CODEC.decode(buf))
                 : Optional.empty();

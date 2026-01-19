@@ -20,6 +20,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.block.FoundryChannelBlock;
 import com.devmod.foundry.block.entity.FoundryChannelBlockEntity;
+import com.devmod.foundry.quality.FoundryFluidQuality;
 
 /**
  * Renders the molten fluid overlay for foundry channels.
@@ -70,7 +71,7 @@ public class FoundryChannelRenderer implements BlockEntityRenderer<FoundryChanne
             .getAtlas(InventoryMenu.BLOCK_ATLAS)
             .getSprite(stillTexture);
 
-        int color = clientFluid.getTintColor();
+        int color = FoundryFluidQuality.getPurityTintColor(stack, clientFluid.getTintColor());
         float alpha = ((color >> 24) & 0xFF) / 255f;
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;

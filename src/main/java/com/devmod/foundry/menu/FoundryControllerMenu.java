@@ -51,7 +51,8 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
     private static final int DATA_MOLTEN_QUALITY = 12;
     private static final int DATA_ALLOY_PREVIEW_FLUID = 13;
     private static final int DATA_ALLOY_PREVIEW_RATIO = 14;
-    private static final int DATA_SLOT_COUNT = 15;
+    private static final int DATA_OXIDATION = 15;
+    private static final int DATA_SLOT_COUNT = 16;
 
     public FoundryControllerMenu(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
         this(containerId, playerInv, new SimpleContainer(CONTAINER_SIZE), ContainerLevelAccess.NULL, new SimpleContainerData(DATA_SLOT_COUNT));
@@ -81,11 +82,12 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
                     case DATA_STRUCTURE_HEAT -> (int) be.getStructureHeat();
                     case DATA_THERMAL_STRESS -> (int) (be.getThermalStressPercent() * 100);
                     case DATA_RISK_LEVEL -> be.getCurrentRiskLevel().ordinal();
-                    case DATA_PURITY -> (int) (be.getCurrentPurity() * 100);
+                    case DATA_PURITY -> (int) (be.getDisplayedPurity() * 100);
                     case DATA_STRUCTURE_DAMAGE -> be.getStructureDamage();
                     case DATA_MOLTEN_QUALITY -> be.getMoltenQualityTier();
                     case DATA_ALLOY_PREVIEW_FLUID -> be.getAlloyPreviewFluidId();
                     case DATA_ALLOY_PREVIEW_RATIO -> be.getAlloyPreviewRatio();
+                    case DATA_OXIDATION -> (int) (be.getOxidationPercent() * 100);
                     default -> 0;
                 };
             }
@@ -180,6 +182,10 @@ public class FoundryControllerMenu extends AbstractContainerMenu {
 
     public float getPurityPercent() {
         return data.get(DATA_PURITY) / 100f;
+    }
+
+    public float getOxidationPercent() {
+        return data.get(DATA_OXIDATION) / 100f;
     }
 
     public int getStructureDamage() {

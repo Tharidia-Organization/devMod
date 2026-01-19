@@ -140,6 +140,24 @@ public final class FoundryFluidQuality {
         );
     }
 
+    public static int getPurityTintColor(FluidStack stack, int baseColor) {
+        return applyPurityTint(baseColor, getPurity(stack));
+    }
+
+    public static int applyPurityTint(int baseColor, float purity) {
+        float clamped = clampPurity(purity);
+        float factor = 0.35f + (0.65f * clamped);
+
+        int alpha = (baseColor >> 24) & 0xFF;
+        if (alpha == 0) {
+            alpha = 0xFF;
+        }
+        int red = Math.min(0xFF, Math.round(((baseColor >> 16) & 0xFF) * factor));
+        int green = Math.min(0xFF, Math.round(((baseColor >> 8) & 0xFF) * factor));
+        int blue = Math.min(0xFF, Math.round((baseColor & 0xFF) * factor));
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+    }
+
     @Nullable
     private static CompoundTag getRoot(FluidStack stack) {
         if (stack.isEmpty()) {

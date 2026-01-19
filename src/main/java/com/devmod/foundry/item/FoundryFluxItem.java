@@ -7,13 +7,19 @@ import net.minecraft.world.item.Item;
  */
 public class FoundryFluxItem extends Item {
     private final float purityBonus;
+    private final float purityCap;
 
-    public FoundryFluxItem(Properties properties, float purityBonus) {
+    public FoundryFluxItem(Properties properties, float purityBonus, float purityCap) {
         super(properties);
         this.purityBonus = purityBonus;
+        this.purityCap = purityCap;
     }
 
     public float getPurityBonus() {
         return purityBonus;
+    }
+
+    public float getPurityCap() {
+        return purityCap;
     }
 }

@@ -1,0 +1,13 @@
+{
+  "id": "devmod:thorns",
+  "name": "Thorns",
+  "slot_type": "defense",
+  "slots": 2,
+  "max_level": 3,
+  "ingredient": {
+    "item": "minecraft:cactus"
+  },
+  "effects": {
+    "thorns_damage": 1.0
+  }
+}

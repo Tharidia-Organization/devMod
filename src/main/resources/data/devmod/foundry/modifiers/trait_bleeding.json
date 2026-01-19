@@ -1,0 +1,11 @@
+{
+  "id": "devmod:trait_bleeding",
+  "name": "Bleeding",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "bleed_damage": 1.0,
+    "bleed_duration": 60
+  }
+}

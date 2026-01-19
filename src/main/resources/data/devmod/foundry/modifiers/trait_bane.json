@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_bane",
+  "name": "Bane",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "damage_vs_arthropods": 2.5
+  }
+}

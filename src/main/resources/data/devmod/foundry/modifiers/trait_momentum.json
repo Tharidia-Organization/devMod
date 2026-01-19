@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_momentum",
+  "name": "Momentum",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "speed_buildup": 0.05
+  }
+}

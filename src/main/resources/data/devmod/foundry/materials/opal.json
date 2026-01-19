@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "tag": "c:gems/opal"
+  },
+  "color": "C8E0FF",
+  "tier": 3,
+  "stats": {
+    "head": {
+      "durability": 90,
+      "mining_speed": 5.0,
+      "attack_damage": 2.0,
+      "attack_speed": 0.1,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 25,
+      "durability_multiplier": 0.85
+    },
+    "binding": {
+      "durability": 20
+    },
+    "plate": {
+      "durability": 90,
+      "mining_speed": 5.0,
+      "attack_damage": 2.0,
+      "attack_speed": 0.1,
+      "mining_level": 2
+    },
+    "mail": {
+      "durability": 25,
+      "durability_multiplier": 0.85
+    },
+    "trim": {
+      "durability": 20
+    }
+  },
+  "traits": ["devmod:trait_prismatic"]
+}

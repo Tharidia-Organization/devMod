@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:nether_gold_ore",
+    "minecraft:nether_quartz_ore",
+    "minecraft:ancient_debris",
+    "devmod:cobalt_ore",
+    "devmod:ardite_ore"
+  ]
+}

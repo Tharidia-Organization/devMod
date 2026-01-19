@@ -1,0 +1,43 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/queens_slime"
+  },
+  "color": "43B75F",
+  "tier": 4,
+  "melting": {
+    "temperature": 1600,
+    "optimal_range": [1550, 1650],
+    "impurity_base": 0.05
+  },
+  "stats": {
+    "head": {
+      "durability": 180,
+      "mining_speed": 5.0,
+      "attack_damage": 2.0,
+      "attack_speed": 0.2,
+      "mining_level": 3
+    },
+    "handle": {
+      "durability": 60,
+      "durability_multiplier": 1.2
+    },
+    "binding": {
+      "durability": 45
+    },
+    "plate": {
+      "durability": 180,
+      "mining_speed": 5.0,
+      "attack_damage": 2.0,
+      "attack_speed": 0.2,
+      "mining_level": 3
+    },
+    "mail": {
+      "durability": 60,
+      "durability_multiplier": 1.2
+    },
+    "trim": {
+      "durability": 45
+    }
+  },
+  "traits": ["devmod:trait_verdant"]
+}

@@ -3,6 +3,7 @@
     "item": "minecraft:redstone"
   },
   "max_level": 5,
+  "specialization": "devmod:toolsmith",
   "bonuses": {
     "mining_speed": 0.4
   },

@@ -1,0 +1,43 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/constantan"
+  },
+  "color": "D4A070",
+  "tier": 2,
+  "melting": {
+    "temperature": 1220,
+    "optimal_range": [1180, 1260],
+    "impurity_base": 0.12
+  },
+  "stats": {
+    "head": {
+      "durability": 100,
+      "mining_speed": 5.0,
+      "attack_damage": 1.5,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 35,
+      "durability_multiplier": 1.0
+    },
+    "binding": {
+      "durability": 25
+    },
+    "plate": {
+      "durability": 100,
+      "mining_speed": 5.0,
+      "attack_damage": 1.5,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "mail": {
+      "durability": 35,
+      "durability_multiplier": 1.0
+    },
+    "trim": {
+      "durability": 25
+    }
+  },
+  "traits": ["devmod:trait_stable"]
+}

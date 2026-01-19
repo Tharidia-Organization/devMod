@@ -1,0 +1,13 @@
+{
+  "id": "devmod:fire_protection",
+  "name": "Fire Protection",
+  "slot_type": "defense",
+  "slots": 1,
+  "max_level": 4,
+  "ingredient": {
+    "item": "minecraft:magma_cream"
+  },
+  "effects": {
+    "fire_resistance": 0.15
+  }
+}

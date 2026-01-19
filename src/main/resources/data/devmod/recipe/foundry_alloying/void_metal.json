@@ -1,0 +1,20 @@
+{
+  "type": "devmod:foundry_alloying",
+  "inputs": [
+    {
+      "fluid": "devmod:molten_netherite",
+      "amount": 144
+    },
+    {
+      "fluid": "devmod:molten_manyullyn",
+      "amount": 144
+    }
+  ],
+  "specialization": "devmod:alloyist",
+  "result": {
+    "fluid": "devmod:molten_void_metal",
+    "amount": 144
+  },
+  "time": 600,
+  "temperature": 3500
+}

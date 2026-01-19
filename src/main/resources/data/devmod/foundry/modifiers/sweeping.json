@@ -3,6 +3,7 @@
     "item": "minecraft:feather"
   },
   "max_level": 3,
+  "specialization": "devmod:weaponsmith",
   "bonuses": {
     "attack_speed": 0.1
   },

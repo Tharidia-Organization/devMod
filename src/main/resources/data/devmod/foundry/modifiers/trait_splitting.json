@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_splitting",
+  "name": "Splitting",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "multi_hit_chance": 0.15
+  }
+}

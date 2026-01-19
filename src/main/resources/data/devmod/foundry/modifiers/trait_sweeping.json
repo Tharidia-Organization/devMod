@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_sweeping",
+  "name": "Sweeping",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "sweep_damage_mult": 0.75
+  }
+}

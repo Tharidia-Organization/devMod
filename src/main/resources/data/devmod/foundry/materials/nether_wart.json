@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "item": "minecraft:nether_wart"
+  },
+  "color": "8B1A1A",
+  "tier": 1,
+  "stats": {
+    "head": {
+      "durability": 40,
+      "mining_speed": 2.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.0,
+      "mining_level": 0
+    },
+    "handle": {
+      "durability": 15,
+      "durability_multiplier": 0.8
+    },
+    "binding": {
+      "durability": 10
+    },
+    "plate": {
+      "durability": 40,
+      "mining_speed": 2.0,
+      "attack_damage": 0.5,
+      "attack_speed": 0.0,
+      "mining_level": 0
+    },
+    "mail": {
+      "durability": 15,
+      "durability_multiplier": 0.8
+    },
+    "trim": {
+      "durability": 10
+    }
+  },
+  "traits": ["devmod:trait_volatile"]
+}

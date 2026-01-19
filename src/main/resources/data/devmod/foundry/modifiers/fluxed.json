@@ -1,0 +1,13 @@
+{
+  "ingredient": {
+    "item": "devmod:foundry_flux_refined"
+  },
+  "max_level": 3,
+  "specialization": "devmod:alloyist",
+  "bonuses": {
+    "mining_speed": 0.15,
+    "durability": 12
+  },
+  "slot_type": "upgrade",
+  "slots": 1
+}

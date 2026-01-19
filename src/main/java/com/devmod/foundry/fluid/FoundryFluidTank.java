@@ -267,6 +267,38 @@ public class FoundryFluidTank implements IFluidHandler {
         return found ? lowest : 1.0f;
     }
 
+    public float getLowestPurity() {
+        float lowest = 1.0f;
+        boolean found = false;
+        for (FluidStack stack : fluids) {
+            float purity = FoundryFluidQuality.getPurity(stack);
+            if (!found || purity < lowest) {
+                lowest = purity;
+                found = true;
+            }
+        }
+        return found ? lowest : 1.0f;
+    }
+
+    public int getHighestOxidationTicks() {
+        int highest = 0;
+        for (FluidStack stack : fluids) {
+            int oxidation = FoundryFluidQuality.getOxidationTicks(stack);
+            if (oxidation > highest) {
+                highest = oxidation;
+            }
+        }
+        return highest;
+    }
+
+    public float getHighestOxidationPercent() {
+        if (fluids.isEmpty()) {
+            return 0.0f;
+        }
+        int highest = getHighestOxidationTicks();
+        return Math.min(1.0f, highest / (float) MoltenMetal.OXIDATION_THRESHOLD);
+    }
+
     public void tick(float temperature, boolean sealed) {
         for (FluidStack stack : fluids) {
             MoltenMetal metal = FoundryFluidQuality.toMoltenMetal(stack);

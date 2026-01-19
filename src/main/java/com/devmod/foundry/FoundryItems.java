@@ -23,6 +23,9 @@ public final class FoundryItems {
     private static final float FLUX_STANDARD_BONUS = 0.08f;
     private static final float FLUX_REFINED_BONUS = 0.14f;
     private static final float FLUX_PURE_BONUS = 0.22f;
+    private static final float FLUX_STANDARD_CAP = 0.85f;
+    private static final float FLUX_REFINED_CAP = 0.93f;
+    private static final float FLUX_PURE_CAP = 1.0f;
 
     public static final DeferredHolder<Item, Item> FOUNDRY_BRICKS_ITEM = DevMod.ITEMS.register(
         "foundry_bricks",
@@ -151,17 +154,17 @@ public final class FoundryItems {
 
     public static final DeferredHolder<Item, Item> FOUNDRY_FLUX = DevMod.ITEMS.register(
         "foundry_flux",
-        () -> new FoundryFluxItem(new Item.Properties(), FLUX_STANDARD_BONUS)
+        () -> new FoundryFluxItem(new Item.Properties(), FLUX_STANDARD_BONUS, FLUX_STANDARD_CAP)
     );
 
     public static final DeferredHolder<Item, Item> FOUNDRY_FLUX_REFINED = DevMod.ITEMS.register(
         "foundry_flux_refined",
-        () -> new FoundryFluxItem(new Item.Properties(), FLUX_REFINED_BONUS)
+        () -> new FoundryFluxItem(new Item.Properties(), FLUX_REFINED_BONUS, FLUX_REFINED_CAP)
     );
 
     public static final DeferredHolder<Item, Item> FOUNDRY_FLUX_PURE = DevMod.ITEMS.register(
         "foundry_flux_pure",
-        () -> new FoundryFluxItem(new Item.Properties(), FLUX_PURE_BONUS)
+        () -> new FoundryFluxItem(new Item.Properties(), FLUX_PURE_BONUS, FLUX_PURE_CAP)
     );
 
     // Material ingots

@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_unbreaking",
+  "name": "Unbreaking",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "durability_save_chance": 0.25
+  }
+}

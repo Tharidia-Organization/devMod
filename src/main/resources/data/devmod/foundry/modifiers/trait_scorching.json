@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_scorching",
+  "name": "Scorching",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "autosmelt_chance": 0.25
+  }
+}

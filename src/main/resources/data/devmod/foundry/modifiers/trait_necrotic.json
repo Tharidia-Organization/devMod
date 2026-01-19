@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_necrotic",
+  "name": "Necrotic",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "lifesteal": 0.1
+  }
+}

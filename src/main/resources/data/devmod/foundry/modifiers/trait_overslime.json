@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_overslime",
+  "name": "Overslime",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "bonus_durability_layer": 100
+  }
+}

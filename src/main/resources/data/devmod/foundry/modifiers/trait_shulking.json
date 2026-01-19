@@ -1,0 +1,11 @@
+{
+  "id": "devmod:trait_shulking",
+  "name": "Shulking",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "levitation_duration": 40,
+    "levitation_amplifier": 0
+  }
+}

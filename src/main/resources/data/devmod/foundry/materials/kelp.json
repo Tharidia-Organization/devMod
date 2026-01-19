@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "item": "minecraft:kelp"
+  },
+  "color": "2E8B4F",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 15,
+      "mining_speed": 1.2,
+      "attack_damage": 0.2,
+      "attack_speed": 0.1,
+      "mining_level": 0
+    },
+    "handle": {
+      "durability": 8,
+      "durability_multiplier": 0.65
+    },
+    "binding": {
+      "durability": 5
+    },
+    "plate": {
+      "durability": 15,
+      "mining_speed": 1.2,
+      "attack_damage": 0.2,
+      "attack_speed": 0.1,
+      "mining_level": 0
+    },
+    "mail": {
+      "durability": 8,
+      "durability_multiplier": 0.65
+    },
+    "trim": {
+      "durability": 5
+    }
+  },
+  "traits": ["devmod:trait_tidal"]
+}

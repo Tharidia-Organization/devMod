@@ -1,0 +1,10 @@
+{
+  "id": "devmod:trait_searing",
+  "name": "Searing",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "fire_damage_bonus": 2.0
+  }
+}

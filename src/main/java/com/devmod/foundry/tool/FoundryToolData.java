@@ -30,6 +30,7 @@ public record FoundryToolData(
     int xp,
     int bonusUpgrades,
     int bonusAbilities,
+    int bonusDefense,
     int repairCount,
     @Nullable ResourceLocation specialization,
     @Nullable ResourceLocation embossment
@@ -42,6 +43,7 @@ public record FoundryToolData(
     private static final String TAG_XP = "Xp";
     private static final String TAG_BONUS_UPGRADES = "BonusUpgrades";
     private static final String TAG_BONUS_ABILITIES = "BonusAbilities";
+    private static final String TAG_BONUS_DEFENSE = "BonusDefense";
     private static final String TAG_REPAIR = "RepairCount";
     private static final String TAG_SPECIALIZATION = "Specialization";
     private static final String TAG_EMBOSS = "Embossment";
@@ -86,6 +88,7 @@ public record FoundryToolData(
         int xp = toolTag.contains(TAG_XP) ? toolTag.getInt(TAG_XP) : 0;
         int bonusUpgrades = toolTag.contains(TAG_BONUS_UPGRADES) ? toolTag.getInt(TAG_BONUS_UPGRADES) : 0;
         int bonusAbilities = toolTag.contains(TAG_BONUS_ABILITIES) ? toolTag.getInt(TAG_BONUS_ABILITIES) : 0;
+        int bonusDefense = toolTag.contains(TAG_BONUS_DEFENSE) ? toolTag.getInt(TAG_BONUS_DEFENSE) : 0;
         int repairCount = toolTag.contains(TAG_REPAIR) ? toolTag.getInt(TAG_REPAIR) : 0;
         ResourceLocation specialization = null;
         if (toolTag.contains(TAG_SPECIALIZATION)) {
@@ -97,7 +100,7 @@ public record FoundryToolData(
         }
 
         return Optional.of(new FoundryToolData(toolId, List.copyOf(materials), Map.copyOf(modifiers),
-            quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment));
+            quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment));
     }
 
     public void writeToStack(ItemStack stack) {
@@ -122,6 +125,7 @@ public record FoundryToolData(
         toolTag.putInt(TAG_XP, xp);
         toolTag.putInt(TAG_BONUS_UPGRADES, bonusUpgrades);
         toolTag.putInt(TAG_BONUS_ABILITIES, bonusAbilities);
+        toolTag.putInt(TAG_BONUS_DEFENSE, bonusDefense);
         toolTag.putInt(TAG_REPAIR, repairCount);
         if (specialization != null) {
             toolTag.putString(TAG_SPECIALIZATION, specialization.toString());
@@ -147,38 +151,42 @@ public record FoundryToolData(
         Map<ResourceLocation, Integer> updated = new LinkedHashMap<>(modifiers);
         updated.put(id, level);
         return new FoundryToolData(toolId, materials, Map.copyOf(updated),
-            quality, this.level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+            quality, this.level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withQuality(MaterialQuality quality) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withXp(int xp) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withLevel(int level) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withBonusUpgrades(int bonusUpgrades) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withBonusAbilities(int bonusAbilities) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
+    }
+
+    public FoundryToolData withBonusDefense(int bonusDefense) {
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withRepairCount(int repairCount) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withEmbossment(@Nullable ResourceLocation embossment) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 
     public FoundryToolData withSpecialization(@Nullable ResourceLocation specialization) {
-        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, repairCount, specialization, embossment);
+        return new FoundryToolData(toolId, materials, modifiers, quality, level, xp, bonusUpgrades, bonusAbilities, bonusDefense, repairCount, specialization, embossment);
     }
 }

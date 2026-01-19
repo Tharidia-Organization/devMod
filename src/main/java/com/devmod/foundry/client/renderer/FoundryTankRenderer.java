@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtension
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.devmod.foundry.block.entity.FoundryTankBlockEntity;
+import com.devmod.foundry.quality.FoundryFluidQuality;
 
 /**
  * Renders the molten fluid overlay for foundry tanks.
@@ -69,7 +70,7 @@ public class FoundryTankRenderer implements BlockEntityRenderer<FoundryTankBlock
             .getAtlas(InventoryMenu.BLOCK_ATLAS)
             .getSprite(stillTexture);
 
-        int color = clientFluid.getTintColor();
+        int color = FoundryFluidQuality.getPurityTintColor(stack, clientFluid.getTintColor());
         float alpha = ((color >> 24) & 0xFF) / 255f;
         float red = ((color >> 16) & 0xFF) / 255f;
         float green = ((color >> 8) & 0xFF) / 255f;

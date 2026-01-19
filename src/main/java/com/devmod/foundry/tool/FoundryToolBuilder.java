@@ -73,7 +73,7 @@ public final class FoundryToolBuilder {
 
         ItemStack result = new ItemStack(item);
         FoundryToolData data = new FoundryToolData(definition.id(), List.copyOf(materialIds), Map.copyOf(modifiers),
-            toolQuality, 1, 0, 0, 0, 0, null, null);
+            toolQuality, 1, 0, 0, 0, 0, 0, null, null);
         data.writeToStack(result);
         applyStats(result, definition.kind(), stats);
         return result;

@@ -34,17 +34,29 @@ public class FoundryModifierReloadListener extends SimpleJsonResourceReloadListe
             ResourceLocation id = entry.getKey();
             JsonObject root = entry.getValue().getAsJsonObject();
 
-            JsonElement ingredientElement = GsonHelper.getAsJsonObject(root, "ingredient");
-            Ingredient ingredient = Ingredient.CODEC.parse(JsonOps.INSTANCE, ingredientElement)
-                .resultOrPartial(message -> DevMod.LOGGER.warn("[Foundry] Invalid modifier ingredient {}: {}", id, message))
-                .orElse(Ingredient.EMPTY);
+            Ingredient ingredient = Ingredient.EMPTY;
+            if (root.has("ingredient")) {
+                JsonElement ingredientElement = root.get("ingredient");
+                ingredient = Ingredient.CODEC.parse(JsonOps.INSTANCE, ingredientElement)
+                    .resultOrPartial(message -> DevMod.LOGGER.warn("[Foundry] Invalid modifier ingredient {}: {}", id, message))
+                    .orElse(Ingredient.EMPTY);
+            }
             int maxLevel = GsonHelper.getAsInt(root, "max_level", 1);
             String slotRaw = GsonHelper.getAsString(root, "slot_type", "upgrade");
             FoundryModifierSlot slotType = FoundryModifierSlot.fromString(slotRaw);
             int slots = GsonHelper.getAsInt(root, "slots", 1);
             FoundryModifierStats bonuses = FoundryModifierStats.fromJson(GsonHelper.getAsJsonObject(root, "bonuses", new JsonObject()));
 
-            FoundryModifierDefinition definition = new FoundryModifierDefinition(id, ingredient, maxLevel, slotType, slots, bonuses);
+            ResourceLocation specialization = null;
+            if (root.has("specialization")) {
+                String specRaw = GsonHelper.getAsString(root, "specialization");
+                specialization = ResourceLocation.tryParse(specRaw);
+                if (specialization == null) {
+                    DevMod.LOGGER.warn("[Foundry] Invalid modifier specialization {}: {}", id, specRaw);
+                }
+            }
+
+            FoundryModifierDefinition definition = new FoundryModifierDefinition(id, ingredient, maxLevel, slotType, slots, bonuses, specialization);
             FoundryModifierRegistry.register(definition);
         }
         DevMod.LOGGER.info("[Foundry] Loaded {} modifiers", FoundryModifierRegistry.all().size());

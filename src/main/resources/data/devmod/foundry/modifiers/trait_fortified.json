@@ -1,0 +1,11 @@
+{
+  "id": "devmod:trait_fortified",
+  "name": "Fortified",
+  "slot_type": "trait",
+  "slots": 0,
+  "max_level": 1,
+  "effects": {
+    "armor_bonus": 1.0,
+    "armor_toughness": 0.5
+  }
+}

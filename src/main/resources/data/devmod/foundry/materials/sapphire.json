@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "tag": "c:gems/sapphire"
+  },
+  "color": "0064DC",
+  "tier": 3,
+  "stats": {
+    "head": {
+      "durability": 115,
+      "mining_speed": 6.5,
+      "attack_damage": 2.5,
+      "attack_speed": 0.1,
+      "mining_level": 3
+    },
+    "handle": {
+      "durability": 32,
+      "durability_multiplier": 0.9
+    },
+    "binding": {
+      "durability": 26
+    },
+    "plate": {
+      "durability": 115,
+      "mining_speed": 6.5,
+      "attack_damage": 2.5,
+      "attack_speed": 0.1,
+      "mining_level": 3
+    },
+    "mail": {
+      "durability": 32,
+      "durability_multiplier": 0.9
+    },
+    "trim": {
+      "durability": 26
+    }
+  },
+  "traits": ["devmod:trait_glacial"]
+}

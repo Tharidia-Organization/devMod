@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "item": "minecraft:moss_block"
+  },
+  "color": "5B8C32",
+  "tier": 0,
+  "stats": {
+    "head": {
+      "durability": 20,
+      "mining_speed": 1.5,
+      "attack_damage": 0.2,
+      "attack_speed": 0.0,
+      "mining_level": 0
+    },
+    "handle": {
+      "durability": 10,
+      "durability_multiplier": 0.7
+    },
+    "binding": {
+      "durability": 6
+    },
+    "plate": {
+      "durability": 20,
+      "mining_speed": 1.5,
+      "attack_damage": 0.2,
+      "attack_speed": 0.0,
+      "mining_level": 0
+    },
+    "mail": {
+      "durability": 10,
+      "durability_multiplier": 0.7
+    },
+    "trim": {
+      "durability": 6
+    }
+  },
+  "traits": ["devmod:trait_verdant"]
+}

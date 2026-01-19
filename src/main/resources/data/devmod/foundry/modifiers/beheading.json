@@ -3,6 +3,7 @@
     "item": "minecraft:bone"
   },
   "max_level": 3,
+  "specialization": "devmod:weaponsmith",
   "bonuses": {
     "attack_damage": 0.4
   },

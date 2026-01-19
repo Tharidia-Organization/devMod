@@ -1,0 +1,13 @@
+{
+  "id": "devmod:respiration",
+  "name": "Respiration",
+  "slot_type": "defense",
+  "slots": 1,
+  "max_level": 3,
+  "ingredient": {
+    "item": "minecraft:pufferfish"
+  },
+  "effects": {
+    "underwater_breathing": 15.0
+  }
+}

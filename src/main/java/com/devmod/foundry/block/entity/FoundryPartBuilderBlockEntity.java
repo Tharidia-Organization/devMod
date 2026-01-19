@@ -65,13 +65,13 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
         int cost = Math.max(1, patternItem.getPartType().materialCost());
         material.shrink(cost);
         if (material.isEmpty()) {
-            inventory.setItem(SLOT_MATERIAL, ItemStack.EMPTY);
+            inventory.setItem(SLOT_MATERIAL, Objects.requireNonNull(ItemStack.EMPTY));
         }
         FoundryMaterialStats stats = materialDef.getStats(patternItem.getPartType().statKey());
         int hardness = Math.max(1, stats.miningLevel());
         boolean stillUsable = patternItem.usePattern(pattern, materialDef.id(), hardness);
         if (!stillUsable) {
-            inventory.setItem(SLOT_PATTERN, ItemStack.EMPTY);
+            inventory.setItem(SLOT_PATTERN, Objects.requireNonNull(ItemStack.EMPTY));
         }
         setChanged();
     }
@@ -80,28 +80,28 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
         ItemStack pattern = inventory.getItem(SLOT_PATTERN);
         ItemStack material = inventory.getItem(SLOT_MATERIAL);
         if (!(pattern.getItem() instanceof FoundryPatternItem patternItem)) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
             return;
         }
         if (material.isEmpty()) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
             return;
         }
         int cost = Math.max(1, patternItem.getPartType().materialCost());
         if (material.getCount() < cost) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
             return;
         }
 
         FoundryMaterialDefinition materialDef = FoundryMaterialRegistry.findMaterial(material).orElse(null);
         if (materialDef == null) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
             return;
         }
 
         FoundryPartItem partItem = FoundryToolItems.getPartItem(patternItem.getPartType());
         if (partItem == null) {
-            inventory.setItem(SLOT_OUTPUT, ItemStack.EMPTY);
+            inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(ItemStack.EMPTY));
             return;
         }
         float patternQuality = patternItem.getQualityBonus(pattern);
@@ -114,13 +114,13 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
             1.0f
         );
         ItemStack output = partItem.createWithMaterial(materialDef.id(), partQuality);
-        inventory.setItem(SLOT_OUTPUT, output);
+        inventory.setItem(SLOT_OUTPUT, Objects.requireNonNull(output));
     }
 
     @Override
     @Nonnull
     public net.minecraft.network.chat.Component getDisplayName() {
-        return net.minecraft.network.chat.Component.translatable("block.devmod.foundry_part_builder");
+        return Objects.requireNonNull(net.minecraft.network.chat.Component.translatable("block.devmod.foundry_part_builder"));
     }
 
     @Override
@@ -136,7 +136,7 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
             if (!stack.isEmpty()) {
-                invTag.put("Slot" + i, stack.save(registries));
+                invTag.put("Slot" + i, Objects.requireNonNull(stack.save(registries)));
             }
         }
         tag.put(TAG_INVENTORY, invTag);
@@ -150,7 +150,7 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
             for (int i = 0; i < inventory.getContainerSize(); i++) {
                 String key = "Slot" + i;
                 if (invTag.contains(key)) {
-                    inventory.setItem(i, ItemStack.parse(registries, invTag.getCompound(key)).orElse(ItemStack.EMPTY));
+                    inventory.setItem(i, Objects.requireNonNull(ItemStack.parse(registries, Objects.requireNonNull(invTag.getCompound(key))).orElse(ItemStack.EMPTY)));
                 }
             }
         }

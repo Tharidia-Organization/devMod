@@ -1,0 +1,38 @@
+{
+  "ingredient": {
+    "tag": "c:gems/peridot"
+  },
+  "color": "80C020",
+  "tier": 2,
+  "stats": {
+    "head": {
+      "durability": 95,
+      "mining_speed": 5.0,
+      "attack_damage": 1.8,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "handle": {
+      "durability": 27,
+      "durability_multiplier": 0.9
+    },
+    "binding": {
+      "durability": 21
+    },
+    "plate": {
+      "durability": 95,
+      "mining_speed": 5.0,
+      "attack_damage": 1.8,
+      "attack_speed": 0.0,
+      "mining_level": 2
+    },
+    "mail": {
+      "durability": 27,
+      "durability_multiplier": 0.9
+    },
+    "trim": {
+      "durability": 21
+    }
+  },
+  "traits": ["devmod:trait_verdant"]
+}

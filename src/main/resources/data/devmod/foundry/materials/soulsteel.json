@@ -1,0 +1,43 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/soulsteel"
+  },
+  "color": "4A2C2A",
+  "tier": 4,
+  "melting": {
+    "temperature": 2200,
+    "optimal_range": [2150, 2300],
+    "impurity_base": 0.08
+  },
+  "stats": {
+    "head": {
+      "durability": 170,
+      "mining_speed": 5.5,
+      "attack_damage": 4.0,
+      "attack_speed": -0.1,
+      "mining_level": 4
+    },
+    "handle": {
+      "durability": 55,
+      "durability_multiplier": 1.05
+    },
+    "binding": {
+      "durability": 40
+    },
+    "plate": {
+      "durability": 170,
+      "mining_speed": 5.5,
+      "attack_damage": 4.0,
+      "attack_speed": -0.1,
+      "mining_level": 4
+    },
+    "mail": {
+      "durability": 55,
+      "durability_multiplier": 1.05
+    },
+    "trim": {
+      "durability": 40
+    }
+  },
+  "traits": ["devmod:trait_warden"]
+}

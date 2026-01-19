@@ -1,0 +1,43 @@
+{
+  "ingredient": {
+    "tag": "c:ingots/enderium"
+  },
+  "color": "2E8B8B",
+  "tier": 4,
+  "melting": {
+    "temperature": 2400,
+    "optimal_range": [2350, 2500],
+    "impurity_base": 0.06
+  },
+  "stats": {
+    "head": {
+      "durability": 190,
+      "mining_speed": 6.5,
+      "attack_damage": 3.5,
+      "attack_speed": 0.0,
+      "mining_level": 4
+    },
+    "handle": {
+      "durability": 60,
+      "durability_multiplier": 1.1
+    },
+    "binding": {
+      "durability": 45
+    },
+    "plate": {
+      "durability": 190,
+      "mining_speed": 6.5,
+      "attack_damage": 3.5,
+      "attack_speed": 0.0,
+      "mining_level": 4
+    },
+    "mail": {
+      "durability": 60,
+      "durability_multiplier": 1.1
+    },
+    "trim": {
+      "durability": 45
+    }
+  },
+  "traits": ["devmod:trait_enderference"]
+}

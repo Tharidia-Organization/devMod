@@ -100,6 +100,17 @@ public class FoundryToolAnvilMenu extends AbstractContainerMenu {
                     );
                     return false;
                 }
+                if (modifier.requiredSpecialization() != null
+                    && !modifier.requiredSpecialization().equals(progress.getSpecialization())) {
+                    Component specName = Component.translatable(
+                        "gui.devmod.foundry_progress.spec." + modifier.requiredSpecialization().getPath()
+                    );
+                    player.displayClientMessage(
+                        Component.translatable("message.devmod.foundry.modifier.wrong_specialization", specName),
+                        true
+                    );
+                    return false;
+                }
                 if (!progress.isModifierUnlocked(modifier.id()) && !hasUnlockFlux(player)) {
                     player.displayClientMessage(
                         Component.translatable("message.devmod.foundry.modifier.needs_flux"),
