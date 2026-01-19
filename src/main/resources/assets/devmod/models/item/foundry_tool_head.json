@@ -1,4 +1,4 @@
 {
   "loader": "devmod:foundry_part",
-  "texture": "devmod:item/tool/parts/tool_head"
+  "texture": "tconstruct:item/tool/pickaxe/head"
 }

@@ -35,7 +35,14 @@ public class MantlePassthroughModelLoader implements IGeometryLoader<MantlePasst
 
     @Override
     public Geometry read(JsonObject json, JsonDeserializationContext context) throws JsonParseException {
-        BlockModel model = context.deserialize(json, BlockModel.class);
+        // Remove "loader" field to prevent infinite recursion when deserializing as BlockModel
+        JsonObject baseJson = new JsonObject();
+        for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : json.entrySet()) {
+            if (!entry.getKey().equals("loader")) {
+                baseJson.add(entry.getKey(), entry.getValue());
+            }
+        }
+        BlockModel model = context.deserialize(baseJson, BlockModel.class);
         return new Geometry(model);
     }
 

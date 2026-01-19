@@ -3,7 +3,7 @@
   "values": [
     { "id": "#c:tools/swords", "required": false },
     { "id": "#c:tools/axes", "required": false },
-    { "id": "#forge:tools/melee_weapon", "required": false },
+    { "id": "#c:tools/melee_weapons", "required": false },
     { "id": "#neoforge:melee_weapons", "required": false }
   ]
 }

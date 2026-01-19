@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/sword/guard"
+    "layer0": "tconstruct:item/tool/sword/guard"
   }
 }

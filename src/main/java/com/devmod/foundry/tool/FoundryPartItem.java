@@ -13,11 +13,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.foundry.quality.MaterialQuality;
+import slimeknights.tconstruct.library.materials.definition.IMaterial;
+import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
+import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 
 /**
  * Item representing a materialized tool part.
  */
-public class FoundryPartItem extends Item {
+public class FoundryPartItem extends Item implements IMaterialItem {
     private static final String TAG_ROOT = "FoundryPart";
     private static final String TAG_MATERIAL = "Material";
     private static final String TAG_QUALITY = "Quality";
@@ -67,6 +70,13 @@ public class FoundryPartItem extends Item {
         }
         CompoundTag partTag = root.getCompound(TAG_ROOT);
         return Optional.ofNullable(ResourceLocation.tryParse(partTag.getString(TAG_MATERIAL)));
+    }
+
+    @Override
+    public MaterialVariantId getMaterial(ItemStack stack) {
+        return getMaterialId(stack)
+            .map(id -> MaterialVariantId.create(id, ""))
+            .orElse(IMaterial.UNKNOWN_ID);
     }
 
     public void setQuality(ItemStack stack, MaterialQuality quality) {

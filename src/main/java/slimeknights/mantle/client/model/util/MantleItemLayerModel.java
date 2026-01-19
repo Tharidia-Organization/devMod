@@ -2,6 +2,7 @@ package slimeknights.mantle.client.model.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Transformation;
@@ -19,7 +20,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Axis;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
-import net.neoforged.neoforge.client.ForgeRenderTypes;
 import net.neoforged.neoforge.client.RenderTypeGroup;
 import net.neoforged.neoforge.client.model.CompositeModel;
 import net.neoforged.neoforge.client.model.ItemLayerModel;
@@ -84,7 +84,8 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
     if (renderTypeHint != null) {
       return context.getRenderType(renderTypeHint);
     } else {
-      return new RenderTypeGroup(RenderType.translucent(), ForgeRenderTypes.ITEM_UNSORTED_TRANSLUCENT.get());
+      // In NeoForge 1.21+, use translucent for both render types
+      return new RenderTypeGroup(RenderType.translucent(), RenderType.translucent());
     }
   }
 
@@ -100,7 +101,7 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
   }
 
   @Override
-  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelTransform, ItemOverrides overrides, ResourceLocation modelLocation) {
+  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelTransform, ItemOverrides overrides) {
     if (textures.isEmpty()) {
       throw new IllegalStateException("Empty textures list");
     }
@@ -208,8 +209,9 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
       }
     }
 
-    // setup quad builder
-    QuadBakingVertexConsumer quadBuilder = new QuadBakingVertexConsumer(builder::add);
+    // setup quad builder - in NeoForge 1.21, QuadBakingVertexConsumer uses no-arg constructor
+    // and bakeQuad() is called after each quad's 4 vertices are added
+    QuadBakingVertexConsumer quadBuilder = new QuadBakingVertexConsumer();
     // common settings
     quadBuilder.setSprite(sprite);
     quadBuilder.setTintIndex(tint);
@@ -245,6 +247,7 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
             if (!canDraw || translucent) {
               int off = facing == Direction.DOWN ? 1 : 0;
               buildSideQuad(quadBuilder, quadConsumer, facing, color, sprite, uStart, v + off, uEnd - uStart, emissivity);
+              builder.add(quadBuilder.bakeQuad());
               building = false;
             }
           }
@@ -253,6 +256,7 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
           // make quad [uStart, uEnd]
           int off = facing == Direction.DOWN ? 1 : 0;
           buildSideQuad(quadBuilder, quadConsumer, facing, color, sprite, uStart, v+off, uEnd-uStart, emissivity);
+          builder.add(quadBuilder.bakeQuad());
         }
       }
     }
@@ -280,6 +284,7 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
             if (!canDraw || translucent) {
               int off = facing == Direction.EAST ? 1 : 0;
               buildSideQuad(quadBuilder, quadConsumer, facing, color, sprite, u + off, vStart, vEnd - vStart, emissivity);
+              builder.add(quadBuilder.bakeQuad());
               building = false;
             }
           }
@@ -288,6 +293,7 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
           // make quad [vStart, vEnd]
           int off = facing == Direction.EAST ? 1 : 0;
           buildSideQuad(quadBuilder, quadConsumer, facing, color, sprite, u+off, vStart, vEnd-vStart, emissivity);
+          builder.add(quadBuilder.bakeQuad());
         }
       }
     }
@@ -298,12 +304,14 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
               0, 1, 7.5f / 16f, sprite.getU0(), sprite.getV0(),
               1, 1, 7.5f / 16f, sprite.getU1(), sprite.getV0(),
               1, 0, 7.5f / 16f, sprite.getU1(), sprite.getV1());
+    builder.add(quadBuilder.bakeQuad());
     // front
     buildQuad(quadBuilder, quadConsumer, Direction.SOUTH, color, emissivity,
               0, 0, 8.5f / 16f, sprite.getU0(), sprite.getV1(),
               1, 0, 8.5f / 16f, sprite.getU1(), sprite.getV1(),
               1, 1, 8.5f / 16f, sprite.getU1(), sprite.getV0(),
               0, 1, 8.5f / 16f, sprite.getU0(), sprite.getV0());
+    builder.add(quadBuilder.bakeQuad());
 
     // fill in the pixel map with new pixels from the sprite
     if (pixels != null) {
@@ -341,26 +349,17 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
    */
   @SuppressWarnings("unused")  // API
   public static BakedQuad getQuadForGui(int color, int tint, TextureAtlasSprite sprite, Transformation transform, int emissivity) {
-    // setup quad builder
-    QuadBakingVertexConsumer.Buffered quadBuilder = new QuadBakingVertexConsumer.Buffered();
-    // common settings
-    quadBuilder.setSprite(sprite);
-    quadBuilder.setTintIndex(tint);
-    // TODO: should we customize these?
-    quadBuilder.setShade(false);
-    quadBuilder.setHasAmbientOcclusion(true);
-    // only need to set up transforms once, isn't that nice?
-    VertexConsumer quadConsumer = quadBuilder;
-    if (!transform.isIdentity()) {
-      quadConsumer = new TransformingVertexPipeline(quadBuilder, transform);
+    // Get all quads and filter for the SOUTH face (front face for GUI)
+    List<BakedQuad> allQuads = getQuadsForSprite(color, tint, sprite, transform, emissivity);
+    // Return the last quad which should be the SOUTH (front) face
+    for (int i = allQuads.size() - 1; i >= 0; i--) {
+      BakedQuad quad = allQuads.get(i);
+      if (quad.getDirection() == Direction.SOUTH) {
+        return quad;
+      }
     }
-    // only need south
-    buildQuad(quadBuilder, quadConsumer, Direction.SOUTH, color, emissivity,
-              0, 0, 8.5f / 16f, sprite.getU0(), sprite.getV1(),
-              1, 0, 8.5f / 16f, sprite.getU1(), sprite.getV1(),
-              1, 1, 8.5f / 16f, sprite.getU1(), sprite.getV0(),
-              0, 1, 8.5f / 16f, sprite.getU0(), sprite.getV0());
-    return quadBuilder.getQuad();
+    // Fallback to last quad if no SOUTH found
+    return allQuads.isEmpty() ? null : allQuads.get(allQuads.size() - 1);
   }
 
   /**
@@ -451,14 +450,19 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
    * @param luminosity Extra light to add to the quad between 0 and 15
    */
   private static void putVertex(VertexConsumer consumer, Direction side, float x, float y, float z, float u, float v, int color, int luminosity) {
-    // format is always DefaultVertexFormat#BLOCK, though order does not matter too much
-    consumer.vertex(x, y, z);
-    consumer.color(color);
-    consumer.normal(side.getStepX(), side.getStepY(), side.getStepZ());
-    consumer.uv(u, v);
+    // format is always DefaultVertexFormat#BLOCK
+    // Extract color components from AARRGGBB format
+    int a = (color >> 24) & 0xFF;
+    int r = (color >> 16) & 0xFF;
+    int g = (color >> 8) & 0xFF;
+    int b = color & 0xFF;
     int light = (luminosity << 4);
-    consumer.uv2(light, light);
-    consumer.endVertex();
+    // Use the 1.21 fluent VertexConsumer API
+    consumer.addVertex(x, y, z)
+        .setColor(r, g, b, a)
+        .setUv(u, v)
+        .setUv2(light, light)
+        .setNormal(side.getStepX(), side.getStepY(), side.getStepZ());
   }
 
   /** Cloned from {@link ItemLayerModel}'s FaceData subclass */
@@ -503,7 +507,21 @@ public class MantleItemLayerModel implements IUnbakedGeometry<MantleItemLayerMod
     }
 
     public static LayerData fromJson(JsonObject json) {
-      int color = json.has("color") ? json.get("color").getAsInt() : -1;
+      int color = -1;
+      if (json.has("color")) {
+        // Color can be specified as hex string (e.g., "FF7F3FB2") or as integer
+        JsonElement colorElement = json.get("color");
+        if (colorElement.isJsonPrimitive() && colorElement.getAsJsonPrimitive().isString()) {
+          // Parse hex color string - use Long.parseLong to handle ARGB values > Integer.MAX_VALUE
+          String colorStr = colorElement.getAsString();
+          if (colorStr.startsWith("0x") || colorStr.startsWith("0X")) {
+            colorStr = colorStr.substring(2);
+          }
+          color = (int) Long.parseLong(colorStr, 16);
+        } else {
+          color = colorElement.getAsInt();
+        }
+      }
       int luminosity = json.has("luminosity") ? json.get("luminosity").getAsInt() : 0;
       boolean noTint = json.has("no_tint") && json.get("no_tint").getAsBoolean();
       ResourceLocation renderType = null;

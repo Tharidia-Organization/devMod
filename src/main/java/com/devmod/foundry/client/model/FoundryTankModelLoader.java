@@ -86,8 +86,19 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
             fluidCuboid = FoundryFluidCuboid.create(from[0], from[1], from[2], to[0], to[1], to[2], increments);
         }
 
-        // Parse the base block model for tank shell geometry
-        BlockModel baseModel = context.deserialize(json, BlockModel.class);
+        // Create a copy of the JSON without the "loader" and "fluid" fields to prevent recursion
+        // When we deserialize as BlockModel, it would trigger this loader again if "loader" is present
+        JsonObject baseJson = new JsonObject();
+        for (Map.Entry<String, com.google.gson.JsonElement> entry : json.entrySet()) {
+            String key = entry.getKey();
+            // Skip loader and fluid fields - they're specific to our custom loader
+            if (!key.equals("loader") && !key.equals("fluid")) {
+                baseJson.add(key, entry.getValue());
+            }
+        }
+
+        // Parse the base block model for tank shell geometry (without loader to avoid recursion)
+        BlockModel baseModel = context.deserialize(baseJson, BlockModel.class);
 
         return new TankGeometry(fluidCuboid, baseModel);
     }
@@ -316,7 +327,7 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
         }
 
         private BakedQuad createQuad(
-            Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
+            Vector3f pos1, Vector3f pos2, Vector3f pos3, Vector3f pos4,
             TextureAtlasSprite sprite,
             float u0, float v0, float u1, float v1,
             int color, Direction face, int luminosity
@@ -334,10 +345,10 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
             // Calculate light based on luminosity
             int light = luminosity > 0 ? (luminosity << 4) | (luminosity << 20) : 0;
 
-            putVertex(vertexData, 0, v1, u0, v1, packedColor, face, light);
-            putVertex(vertexData, 8, v2, u1, v1, packedColor, face, light);
-            putVertex(vertexData, 16, v3, u1, v0, packedColor, face, light);
-            putVertex(vertexData, 24, v4, u0, v0, packedColor, face, light);
+            putVertex(vertexData, 0, pos1, u0, v1, packedColor, face, light);
+            putVertex(vertexData, 8, pos2, u1, v1, packedColor, face, light);
+            putVertex(vertexData, 16, pos3, u1, v0, packedColor, face, light);
+            putVertex(vertexData, 24, pos4, u0, v0, packedColor, face, light);
 
             return new BakedQuad(vertexData, 0, face, sprite, true);
         }

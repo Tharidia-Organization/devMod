@@ -1,10 +1,10 @@
 {
   "parent": "minecraft:item/bow",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/longbow/large/limb_bottom",
-    "layer1": "devmod:item/tconstruct/tool/longbow/large/limb_top",
-    "layer2": "devmod:item/tconstruct/tool/longbow/large/grip",
-    "layer3": "devmod:item/tconstruct/tool/longbow/large/bowstring"
+    "layer0": "tconstruct:item/tool/longbow/large/limb_bottom",
+    "layer1": "tconstruct:item/tool/longbow/large/limb_top",
+    "layer2": "tconstruct:item/tool/longbow/large/grip",
+    "layer3": "tconstruct:item/tool/longbow/large/bowstring"
   },
   "overrides": [
     {

@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/mattock/pick",
-    "layer1": "devmod:item/tconstruct/tool/pickaxe/handle",
-    "layer2": "devmod:item/tconstruct/tool/mattock/axe"
+    "layer0": "tconstruct:item/tool/mattock/pick",
+    "layer1": "tconstruct:item/tool/pickaxe/handle",
+    "layer2": "tconstruct:item/tool/mattock/axe"
   }
 }

@@ -1,6 +1,5 @@
 package slimeknights.mantle.client.model.util;
 
-import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
@@ -35,16 +34,13 @@ import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import net.neoforged.neoforge.client.model.geometry.UnbakedGeometryHelper;
 import slimeknights.mantle.Mantle;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Simpler version of {@link BlockModel} for use in an {@link IUnbakedGeometry}, as the owner handles most block model properties
@@ -118,72 +114,21 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
       return;
     }
 
-    // iterate through model parents
-    Set<UnbakedModel> chain = Sets.newLinkedHashSet();
-
-    // load the first model directly
-    parent = getParent(modelGetter, chain, parentLocation, owner.getModelName());
-    // null means no model, so set missing
-    if (parent == null) {
-      parent = getMissing(modelGetter);
+    // load the parent model
+    UnbakedModel unbaked = modelGetter.apply(parentLocation);
+    if (unbaked == null) {
+      Mantle.logger.warn("No parent '{}' while loading model '{}'", parentLocation, owner.getModelName());
+      unbaked = modelGetter.apply(ModelBakery.MISSING_MODEL_LOCATION);
       parentLocation = ModelBakery.MISSING_MODEL_LOCATION;
     }
 
-    // loop through each parent, adding in parents
-    for (BlockModel link = parent; link.parentLocation != null && link.parent == null; link = link.parent) {
-      chain.add(link);
-
-      // fetch model parent
-      link.parent = getParent(modelGetter, chain, link.parentLocation, link.name);
-
-      // null means no model, so set missing
-      if (link.parent == null) {
-        link.parent = getMissing(modelGetter);
-        link.parentLocation = ModelBakery.MISSING_MODEL_LOCATION;
-      }
-    }
-  }
-
-  /**
-   * Gets the parent for a model
-   * @param modelGetter  Model getter function
-   * @param chain        Chain of models that are in progress
-   * @param location     Location to fetch
-   * @param name         Name of the model being fetched
-   * @return  Block model instance, null if there was an error
-   */
-  @Nullable
-  private static BlockModel getParent(Function<ResourceLocation,UnbakedModel> modelGetter, Set<UnbakedModel> chain, ResourceLocation location, String name) {
-    // model must exist
-    UnbakedModel unbaked = modelGetter.apply(location);
-    if (unbaked == null) {
-      Mantle.logger.warn("No parent '{}' while loading model '{}'", location, name);
-      return null;
-    }
-    // no loops in chain
-    if (chain.contains(unbaked)) {
-      Mantle.logger.warn("Found 'parent' loop while loading model '{}' in chain: {} -> {}", name, chain.stream().map(Object::toString).collect(Collectors.joining(" -> ")), location);
-      return null;
-    }
-    // model must be block model, this is a serious error in vanilla
-    if (!(unbaked instanceof BlockModel)) {
+    if (!(unbaked instanceof BlockModel blockModel)) {
       throw new IllegalStateException("BlockModel parent has to be a block model.");
     }
-    return (BlockModel) unbaked;
-  }
 
-  /**
-   * Gets the missing model, ensuring its the right type
-   * @param modelGetter  Model getter function
-   * @return  Missing model as a {@link BlockModel}
-   */
-  @Nonnull
-  private static BlockModel getMissing(Function<ResourceLocation,UnbakedModel> modelGetter) {
-    UnbakedModel model = modelGetter.apply(ModelBakery.MISSING_MODEL_LOCATION);
-    if (!(model instanceof BlockModel)) {
-      throw new IllegalStateException("Failed to load missing model");
-    }
-    return (BlockModel) model;
+    parent = blockModel;
+    // Let the parent model resolve its own parents using the vanilla system
+    parent.resolveParents(modelGetter);
   }
 
   /* Baking */
@@ -207,20 +152,20 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
     for(Direction direction : part.faces.keySet()) {
       BlockElementFace face = part.faces.get(direction);
       // ensure the name is not prefixed (it always is)
-      String texture = face.texture;
+      String texture = face.texture();
       if (texture.charAt(0) == '#') {
         texture = texture.substring(1);
       }
       // bake the face
       TextureAtlasSprite sprite = spriteGetter.apply(owner.getMaterial(texture));
-      BakedQuad bakedQuad = BlockModel.bakeFace(part, face, sprite, direction, transform, location);
+      BakedQuad bakedQuad = BlockModel.bakeFace(part, face, sprite, direction, transform);
       quadTransformer.processInPlace(bakedQuad);
       // apply cull face
       //noinspection ConstantConditions  Its nullable, just annotated wrongly
-      if (face.cullForDirection == null) {
+      if (face.cullForDirection() == null) {
         builder.addUnculledFace(bakedQuad);
       } else {
-        builder.addCulledFace(Direction.rotate(transform.getRotation().getMatrix(), face.cullForDirection), bakedQuad);
+        builder.addCulledFace(Direction.rotate(transform.getRotation().getMatrix(), face.cullForDirection()), bakedQuad);
       }
     }
   }
@@ -264,8 +209,8 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
   }
 
   @Override
-  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, ItemOverrides overrides, ResourceLocation location) {
-    return bakeModel(owner, this.getElements(), spriteGetter, transform, overrides, location);
+  public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, ItemOverrides overrides) {
+    return bakeModel(owner, this.getElements(), spriteGetter, transform, overrides, BAKE_LOCATION);
   }
 
   /**
@@ -292,6 +237,19 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
   /* Deserializing */
 
   /**
+   * Parses a texture reference string, which can either be a texture path or a reference to another texture (starting with #)
+   * @param atlas   Atlas location for materials
+   * @param texture Texture string (can be "#reference" or "namespace:path")
+   * @return Either a Material or a texture reference string
+   */
+  private static Either<Material, String> parseTextureLocationOrReference(ResourceLocation atlas, String texture) {
+    if (texture.charAt(0) == '#') {
+      return Either.right(texture.substring(1));
+    }
+    return Either.left(new Material(atlas, ResourceLocation.parse(texture)));
+  }
+
+  /**
    * Deserializes a SimpleBlockModel from JSON
    * @param json     Json element containing the model
    * @param context  Json Context
@@ -300,7 +258,7 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
   public static SimpleBlockModel deserialize(JsonObject json, JsonDeserializationContext context) {
     // parent, null if missing
     String parentName = GsonHelper.getAsString(json, "parent", "");
-    ResourceLocation parent = parentName.isEmpty() ? null : new ResourceLocation(parentName);
+    ResourceLocation parent = parentName.isEmpty() ? null : ResourceLocation.parse(parentName);
 
     // textures, empty map if missing
     Map<String, Either<Material, String>> textureMap;
@@ -309,7 +267,7 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
       JsonObject textures = GsonHelper.getAsJsonObject(json, "textures");
       Map<String, Either<Material, String>> builder = new HashMap<>(textures.size());
       for(Entry<String, JsonElement> entry : textures.entrySet()) {
-        builder.put(entry.getKey(), BlockModel.Deserializer.parseTextureLocationOrReference(atlas, entry.getValue().getAsString()));
+        builder.put(entry.getKey(), parseTextureLocationOrReference(atlas, entry.getValue().getAsString()));
       }
       textureMap = Map.copyOf(builder);
     } else {

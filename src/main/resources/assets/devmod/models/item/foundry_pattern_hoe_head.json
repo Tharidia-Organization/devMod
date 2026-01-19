@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_pattern_tool_head"
+    "layer0": "devmod:item/foundry_pattern_hoe_head"
   }
 }

@@ -1,4 +1,4 @@
 {
   "loader": "devmod:foundry_part",
-  "texture": "devmod:item/tool/parts/tool_handle"
+  "texture": "tconstruct:item/tool/parts/tool_handle"
 }

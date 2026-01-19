@@ -1,6 +1,6 @@
 {
   "loader": "tconstruct:tool",
-  "parent": "forge:item/default",
+  "parent": "neoforge:item/default",
   "textures": {
     "tool": "tconstruct:item/tool/armor/slime/helmet_broken",
     "skull": "tconstruct:item/tool/armor/slime/helmet_skull"

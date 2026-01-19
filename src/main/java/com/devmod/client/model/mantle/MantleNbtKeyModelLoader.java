@@ -35,7 +35,14 @@ public class MantleNbtKeyModelLoader implements IGeometryLoader<MantleNbtKeyMode
     @Override
     public Geometry read(JsonObject json, JsonDeserializationContext context) throws JsonParseException {
         ensureLayer0Texture(json);
-        BlockModel model = context.deserialize(json, BlockModel.class);
+        // Remove "loader" field to prevent infinite recursion when deserializing as BlockModel
+        JsonObject baseJson = new JsonObject();
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            if (!entry.getKey().equals("loader")) {
+                baseJson.add(entry.getKey(), entry.getValue());
+            }
+        }
+        BlockModel model = context.deserialize(baseJson, BlockModel.class);
         return new Geometry(model);
     }
 

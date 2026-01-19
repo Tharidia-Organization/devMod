@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/mattock/pick"
+    "layer0": "tconstruct:item/tool/mattock/pick"
   }
 }

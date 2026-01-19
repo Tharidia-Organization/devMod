@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/javelin/head"
+    "layer0": "tconstruct:item/tool/javelin/head"
   }
 }

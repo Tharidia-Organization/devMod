@@ -14,11 +14,12 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Tool;
 
 import net.neoforged.neoforge.common.ItemAbility;
+import slimeknights.tconstruct.library.tools.item.IModifiable;
 
 /**
  * Base item for foundry tools.
  */
-public class FoundryToolItem extends Item {
+public class FoundryToolItem extends Item implements IModifiable {
     private final FoundryToolKind kind;
 
     public FoundryToolItem(FoundryToolKind kind) {

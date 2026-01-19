@@ -1,15 +1,12 @@
 package com.devmod.foundry.client.screen;
 
 import java.util.List;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -23,9 +20,6 @@ import com.devmod.foundry.tool.FoundryPartType;
  * Displays a grid of available patterns for selection.
  */
 public class FoundryStencilTableScreen extends AbstractContainerScreen<FoundryStencilTableMenu> {
-    private static final ResourceLocation TEXTURE = Objects.requireNonNull(
-        ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/foundry_stencil_table.png"));
-
     private static final int PATTERN_BUTTON_SIZE = 18;
     private static final int PATTERN_GRID_X = 55;
     private static final int PATTERN_GRID_Y = 17;
@@ -56,14 +50,17 @@ public class FoundryStencilTableScreen extends AbstractContainerScreen<FoundrySt
 
     @Override
     protected void renderBg(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        FoundryScreenStyle.renderStandardBackground(graphics, leftPos, topPos, imageWidth, imageHeight, menu.slots);
     }
 
     @Override
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
-        var fontObj = Objects.requireNonNull(this.font);
-        graphics.drawString(fontObj, Objects.requireNonNull(this.title), this.titleLabelX, this.titleLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
-        graphics.drawString(fontObj, Objects.requireNonNull(this.playerInventoryTitle), this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
+        var fontObj = this.font;
+        if (fontObj == null) {
+            return;
+        }
+        graphics.drawString(fontObj, this.title, this.titleLabelX, this.titleLabelY, FoundryScreenStyle.LABEL_TEXT, false);
+        graphics.drawString(fontObj, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, FoundryScreenStyle.LABEL_TEXT_MUTED, false);
     }
 
     /**
@@ -90,11 +87,13 @@ public class FoundryStencilTableScreen extends AbstractContainerScreen<FoundrySt
                 && mouseY >= y && mouseY < y + PATTERN_BUTTON_SIZE;
 
             // Draw button background
-            int bgColor = isSelected ? 0xFF4A90D9 : (isHovered ? 0xFF5A5A5A : 0xFF3A3A3A);
+            int bgColor = isSelected
+                ? DesignTokens.Foundry.Ui.PROGRESS
+                : (isHovered ? FoundryScreenStyle.SLOT_INNER : FoundryScreenStyle.SLOT_BG);
             graphics.fill(x, y, x + PATTERN_BUTTON_SIZE - 1, y + PATTERN_BUTTON_SIZE - 1, bgColor);
 
             // Draw border
-            int borderColor = isSelected ? 0xFFFFFFFF : 0xFF606060;
+            int borderColor = isSelected ? FoundryScreenStyle.LABEL_TEXT : FoundryScreenStyle.SLOT_BORDER;
             graphics.renderOutline(x, y, PATTERN_BUTTON_SIZE - 1, PATTERN_BUTTON_SIZE - 1, borderColor);
 
             // Draw pattern icon (first letter as placeholder)

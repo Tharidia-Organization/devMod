@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/longbow/limb_top"
+    "layer0": "tconstruct:item/tool/longbow/limb_top"
   }
 }

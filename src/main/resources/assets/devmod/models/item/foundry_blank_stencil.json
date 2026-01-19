@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_blank_stencil"
+    "layer0": "tconstruct:gui/tinker_pattern/pattern"
   }
 }

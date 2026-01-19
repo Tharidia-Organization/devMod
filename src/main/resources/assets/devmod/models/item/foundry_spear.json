@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/javelin/head",
-    "layer1": "devmod:item/tconstruct/tool/javelin/handle",
-    "layer2": "devmod:item/tconstruct/tool/javelin/guard"
+    "layer0": "tconstruct:item/tool/javelin/head",
+    "layer1": "tconstruct:item/tool/javelin/handle",
+    "layer2": "tconstruct:item/tool/javelin/guard"
   }
 }

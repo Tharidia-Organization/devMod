@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "devmod:item/foundry_nugget_cast"
+    "layer0": "tconstruct:item/cast/nugget"
   }
 }

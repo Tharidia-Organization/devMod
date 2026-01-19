@@ -16,6 +16,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.FoundryBlocks;
 import com.devmod.foundry.client.model.FoundryTankModelLoader;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 
 /**
  * Tank block entity for foundry (visual, links to controller).
@@ -99,6 +100,8 @@ public class FoundryTankBlockEntity extends FoundryComponentBlockEntity {
         return ModelData.builder()
             .with(FoundryTankModelLoader.FLUID_STACK, renderFluid)
             .with(FoundryTankModelLoader.TANK_CAPACITY, displayCapacity)
+            .with(ModelProperties.FLUID_STACK, renderFluid)
+            .with(ModelProperties.TANK_CAPACITY, displayCapacity)
             .build();
     }
 

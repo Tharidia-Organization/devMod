@@ -143,6 +143,13 @@ public class FoundryToolModelLoader implements IGeometryLoader<FoundryToolModelL
             return List.of();
         }
 
+        @Override
+        @Nonnull
+        public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @Nonnull RandomSource rand, @Nonnull net.neoforged.neoforge.client.model.data.ModelData data, @Nullable net.minecraft.client.renderer.RenderType renderType) {
+            // Default quads without materials
+            return List.of();
+        }
+
         /**
          * Get quads for a specific set of materials.
          */

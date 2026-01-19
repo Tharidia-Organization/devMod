@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "devmod:item/tconstruct/tool/sledge_hammer/head",
-    "layer1": "devmod:item/tconstruct/tool/sledge_hammer/handle",
-    "layer2": "devmod:item/tconstruct/tool/sledge_hammer/back"
+    "layer0": "tconstruct:item/tool/sledge_hammer/head",
+    "layer1": "tconstruct:item/tool/sledge_hammer/handle",
+    "layer2": "tconstruct:item/tool/sledge_hammer/back"
   }
 }

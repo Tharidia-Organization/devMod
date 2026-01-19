@@ -2,8 +2,8 @@
   "loader": "devmod:foundry_tool",
   "parent": "minecraft:item/handheld",
   "parts": [
-    { "name": "head", "texture": "devmod:item/tool/pickaxe/head", "index": 0 },
-    { "name": "handle", "texture": "devmod:item/tool/pickaxe/handle", "index": 1 },
-    { "name": "binding", "texture": "devmod:item/tool/pickaxe/binding", "index": 2 }
+    { "name": "head", "texture": "tconstruct:item/tool/pickaxe/head", "index": 0 },
+    { "name": "handle", "texture": "tconstruct:item/tool/pickaxe/handle", "index": 1 },
+    { "name": "binding", "texture": "tconstruct:item/tool/pickaxe/binding", "index": 2 }
   ]
 }

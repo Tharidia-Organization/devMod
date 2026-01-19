@@ -10,11 +10,10 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 
 import com.devmod.DevMod;
-import com.devmod.client.model.mantle.MantleNbtKeyModelLoader;
-import com.devmod.client.model.mantle.MantlePassthroughModelLoader;
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.FoundryMenus;
 import com.devmod.foundry.client.model.FoundryMaterialRenderInfoLoader;
@@ -29,11 +28,21 @@ import com.devmod.foundry.client.screen.FoundryPartBuilderScreen;
 import com.devmod.foundry.client.screen.FoundryStencilTableScreen;
 import com.devmod.foundry.client.screen.FoundryToolAnvilScreen;
 import com.devmod.foundry.client.screen.FoundryToolStationScreen;
-import com.devmod.foundry.tool.FoundryPartItem;
-import com.devmod.foundry.tool.FoundryToolData;
 import com.devmod.foundry.tool.FoundryToolItems;
-import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
-import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
+import slimeknights.mantle.client.model.NBTKeyModel;
+import slimeknights.mantle.client.model.RetexturedModel;
+import slimeknights.mantle.client.model.connected.ConnectedModel;
+import slimeknights.mantle.client.model.util.ColoredBlockModel;
+import slimeknights.mantle.client.model.util.MantleItemLayerModel;
+import slimeknights.tconstruct.library.client.model.DynamicTextureLoader;
+import slimeknights.tconstruct.library.client.model.FluidContainerModel;
+import slimeknights.tconstruct.library.client.model.UniqueGuiModel;
+import slimeknights.tconstruct.library.client.model.block.FluidTextureModel;
+import slimeknights.tconstruct.library.client.model.block.TankModel;
+import slimeknights.tconstruct.library.client.model.tools.MaterialBlockModel;
+import slimeknights.tconstruct.library.client.model.tools.MaterialModel;
+import slimeknights.tconstruct.library.client.model.tools.ToolModel;
+import slimeknights.tconstruct.library.client.modifiers.ModifierModelManager;
 
 /**
  * Client-side setup for the Foundry module.
@@ -72,45 +81,32 @@ public final class FoundryClientSetup {
         event.register(FoundryPartModelLoader.ID, FoundryPartModelLoader.INSTANCE);
         event.register(FoundryToolModelLoader.ID, FoundryToolModelLoader.INSTANCE);
         event.register(FoundryTankModelLoader.ID, FoundryTankModelLoader.INSTANCE);
-        event.register(MantlePassthroughModelLoader.CONNECTED_ID, MantlePassthroughModelLoader.INSTANCE);
-        event.register(MantlePassthroughModelLoader.RETEXTURED_ID, MantlePassthroughModelLoader.INSTANCE);
-        event.register(MantlePassthroughModelLoader.ITEM_LAYER_ID, MantlePassthroughModelLoader.INSTANCE);
-        event.register(MantlePassthroughModelLoader.COLORED_BLOCK_ID, MantlePassthroughModelLoader.INSTANCE);
-        event.register(MantleNbtKeyModelLoader.ID, MantleNbtKeyModelLoader.INSTANCE);
+
+        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "connected"), ConnectedModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "retextured"), RetexturedModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "item_layer"), MantleItemLayerModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "colored_block"), ColoredBlockModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "nbt_key"), NBTKeyModel.LOADER);
+
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "tool"), ToolModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "material"), MaterialModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "material_block"), MaterialBlockModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "tank"), TankModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "fluid_texture"), FluidTextureModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "fluid_container"), FluidContainerModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "gui"), UniqueGuiModel.LOADER);
     }
 
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
         event.registerReloadListener(FoundryMaterialRenderInfoLoader.INSTANCE);
+        DynamicTextureLoader.init(event);
+        ModifierModelManager.init(event);
     }
 
     @SubscribeEvent
     public static void onRegisterItemColors(RegisterColorHandlersEvent.Item event) {
-        event.register((stack, tintIndex) -> {
-            if (tintIndex != 0 || !(stack.getItem() instanceof FoundryPartItem part)) {
-                return 0xFFFFFFFF;
-            }
-            return part.getMaterialId(stack)
-                .map(FoundryClientSetup::resolveMaterialColor)
-                .orElse(0xFFFFFFFF);
-        }, FoundryToolItems.getPartItems().toArray(new Item[0]));
-
-        event.register((stack, tintIndex) -> {
-            if (tintIndex < 0) {
-                return 0xFFFFFFFF;
-            }
-            return FoundryToolData.fromStack(stack)
-                .filter(data -> tintIndex < data.materials().size())
-                .map(data -> resolveMaterialColor(data.materials().get(tintIndex)))
-                .orElse(0xFFFFFFFF);
-        }, FoundryToolItems.getToolItems().toArray(new Item[0]));
+        event.register(ToolModel.COLOR_HANDLER, FoundryToolItems.getToolItems().toArray(new Item[0]));
     }
 
-    private static int resolveMaterialColor(net.minecraft.resources.ResourceLocation materialId) {
-        FoundryMaterialDefinition material = FoundryMaterialRegistry.get(materialId);
-        if (material == null) {
-            return 0xFFFFFFFF;
-        }
-        return 0xFF000000 | material.color();
-    }
 }
