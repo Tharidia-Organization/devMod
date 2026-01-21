@@ -1,7 +1,0 @@
-{
-  "parent": "neoforge:item/default",
-  "loader": "tconstruct:material",
-  "textures": {
-    "texture": "devmod:item/foundry/tool/armor/plate/boots/plating"
-  }
-}
