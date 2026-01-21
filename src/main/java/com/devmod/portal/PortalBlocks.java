@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -35,6 +36,7 @@ public final class PortalBlocks {
     public static final DeferredHolder<Block, CustomPortalBlock> CUSTOM_PORTAL = DevMod.BLOCKS.register(
         "custom_portal",
         () -> new CustomPortalBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
             .noCollission()
             .noOcclusion()
             .strength(-1.0F, 3600000.0F)  // Unbreakable except by frame destruction
@@ -54,6 +56,7 @@ public final class PortalBlocks {
             String name = "rune_" + rune.getSerializedName();
             RUNE_BLOCKS.put(rune, DevMod.BLOCKS.register(name,
                 () -> new RuneBlock(rune, BlockBehaviour.Properties.of()
+                    .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
                     .strength(1.5F, 6.0F)  // Same as stone
                     .sound(Objects.requireNonNull(SoundType.AMETHYST))
                     .lightLevel(state -> 7)

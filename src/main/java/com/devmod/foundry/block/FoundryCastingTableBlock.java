@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -40,8 +41,10 @@ public class FoundryCastingTableBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty HAS_ITEM = BooleanProperty.create("has_item");
 
+    @SuppressWarnings("this-escape")
     public FoundryCastingTableBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.TERRACOTTA_BROWN))
             .strength(3.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops()

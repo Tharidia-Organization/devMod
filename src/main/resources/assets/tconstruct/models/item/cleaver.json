@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/tall",
   "textures": {
-    "head":   "tconstruct:item/tool/cleaver/head",
-    "handle": "tconstruct:item/tool/cleaver/handle",
-    "guard":  "tconstruct:item/tool/cleaver/guard",
-    "shield": "tconstruct:item/tool/cleaver/shield",
+    "head":   "devmod:item/foundry/tool/cleaver/head",
+    "handle": "devmod:item/foundry/tool/cleaver/handle",
+    "guard":  "devmod:item/foundry/tool/cleaver/guard",
+    "shield": "devmod:item/foundry/tool/cleaver/shield",
 
-    "large_head":   "tconstruct:item/tool/cleaver/large/head",
-    "large_handle": "tconstruct:item/tool/cleaver/large/handle",
-    "large_guard":  "tconstruct:item/tool/cleaver/large/guard",
-    "large_shield": "tconstruct:item/tool/cleaver/large/shield"
+    "large_head":   "devmod:item/foundry/tool/cleaver/large/head",
+    "large_handle": "devmod:item/foundry/tool/cleaver/large/handle",
+    "large_guard":  "devmod:item/foundry/tool/cleaver/large/guard",
+    "large_shield": "devmod:item/foundry/tool/cleaver/large/shield"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/cleaver/modifiers/" ],
-    "large": [ "tconstruct:item/tool/cleaver/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/cleaver/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/cleaver/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,15 +27,15 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 1.75 },
-      "model": "tconstruct:item/tool/cleaver/throwing"
+      "model": "devmod:item/foundry/tool/cleaver/throwing"
     },
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/cleaver/blocking"
+      "model": "devmod:item/foundry/tool/cleaver/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/cleaver/broken"
+      "model": "devmod:item/foundry/tool/cleaver/broken"
     }
   ]
 }

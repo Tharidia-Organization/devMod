@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -40,6 +41,7 @@ public class FoundryDrainBlock extends Block implements EntityBlock {
     @SuppressWarnings("this-escape")
     public FoundryDrainBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.TERRACOTTA_BROWN))
             .strength(4.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops()

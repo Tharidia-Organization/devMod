@@ -1,22 +1,22 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/bow",
   "textures": {
-    "limb_bottom": "tconstruct:item/tool/longbow/limb_bottom",
-    "limb_top":    "tconstruct:item/tool/longbow/limb_top",
-    "grip":        "tconstruct:item/tool/longbow/grip",
-    "bowstring":   "tconstruct:item/tool/longbow/bowstring",
+    "limb_bottom": "devmod:item/foundry/tool/longbow/limb_bottom",
+    "limb_top":    "devmod:item/foundry/tool/longbow/limb_top",
+    "grip":        "devmod:item/foundry/tool/longbow/grip",
+    "bowstring":   "devmod:item/foundry/tool/longbow/bowstring",
 
-    "large_limb_bottom": "tconstruct:item/tool/longbow/large/limb_bottom",
-    "large_limb_top":    "tconstruct:item/tool/longbow/large/limb_top",
-    "large_grip":        "tconstruct:item/tool/longbow/large/grip",
-    "large_bowstring":   "tconstruct:item/tool/longbow/large/bowstring"
+    "large_limb_bottom": "devmod:item/foundry/tool/longbow/large/limb_bottom",
+    "large_limb_top":    "devmod:item/foundry/tool/longbow/large/limb_top",
+    "large_grip":        "devmod:item/foundry/tool/longbow/large/grip",
+    "large_bowstring":   "devmod:item/foundry/tool/longbow/large/bowstring"
   },
   "large": true,
   "large_offset": [-7, 9],
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/longbow/modifiers/" ],
-    "large": [ "tconstruct:item/tool/longbow/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/longbow/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/longbow/large/modifiers/" ]
   },
   "parts": [
     { "name": "limb_bottom", "index": 0 },
@@ -27,38 +27,38 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 1, "tconstruct:charge": 0.05 },
-      "model": "tconstruct:item/tool/longbow/pulling_1"
+      "model": "devmod:item/foundry/tool/longbow/pulling_1"
     },
     {
       "predicate": { "tconstruct:charging": 1, "tconstruct:charge": 0.6 },
-      "model": "tconstruct:item/tool/longbow/pulling_2"
+      "model": "devmod:item/foundry/tool/longbow/pulling_2"
     },
     {
       "predicate": { "tconstruct:charging": 1, "tconstruct:charge": 1.0 },
-      "model": "tconstruct:item/tool/longbow/pulling_3"
+      "model": "devmod:item/foundry/tool/longbow/pulling_3"
     },
 
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/longbow/blocking"
+      "model": "devmod:item/foundry/tool/longbow/blocking"
     },
 
     {
       "predicate": { "tconstruct:charging": 2, "tconstruct:charge": 0.05 },
-      "model": "tconstruct:item/tool/longbow/blocking_1"
+      "model": "devmod:item/foundry/tool/longbow/blocking_1"
     },
     {
       "predicate": { "tconstruct:charging": 2, "tconstruct:charge": 0.6 },
-      "model": "tconstruct:item/tool/longbow/blocking_2"
+      "model": "devmod:item/foundry/tool/longbow/blocking_2"
     },
     {
       "predicate": { "tconstruct:charging": 2, "tconstruct:charge": 1.0 },
-      "model": "tconstruct:item/tool/longbow/blocking_3"
+      "model": "devmod:item/foundry/tool/longbow/blocking_3"
     },
 
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/longbow/broken"
+      "model": "devmod:item/foundry/tool/longbow/broken"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "tconstruct:item/tool/sledge_hammer/head"
+    "layer0": "devmod:item/foundry/tool/sledge_hammer/head"
   }
 }

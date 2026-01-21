@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "tconstruct:item/tool/sword/blade",
-    "layer1": "tconstruct:item/tool/sword/handle",
-    "layer2": "tconstruct:item/tool/sword/guard"
+    "layer0": "devmod:item/foundry/tool/sword/blade",
+    "layer1": "devmod:item/foundry/tool/sword/handle",
+    "layer2": "devmod:item/foundry/tool/sword/guard"
   }
 }

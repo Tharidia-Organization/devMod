@@ -1,12 +1,12 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "head":    "tconstruct:item/tool/ammo/arrow_head",
-    "shaft":   "tconstruct:item/tool/ammo/arrow_shaft",
-    "feather": "tconstruct:item/tool/ammo/arrow_feather"
+    "head":    "devmod:item/foundry/tool/ammo/arrow_head",
+    "shaft":   "devmod:item/foundry/tool/ammo/arrow_shaft",
+    "feather": "devmod:item/foundry/tool/ammo/arrow_feather"
   },
-  "modifier_roots": [ "tconstruct:item/tool/ammo/arrow_modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/ammo/arrow_modifiers/" ],
   "first_modifiers": [ "tconstruct:dyed" ],
   "show_traits": true,
   "parts": [

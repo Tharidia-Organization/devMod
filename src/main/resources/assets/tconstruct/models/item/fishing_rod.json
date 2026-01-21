@@ -1,12 +1,12 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/rod",
   "textures": {
-    "rod":    "tconstruct:item/tool/fishing_rod/rod",
-    "string": "tconstruct:item/tool/fishing_rod/string",
-    "hook":   "tconstruct:item/tool/fishing_rod/hook"
+    "rod":    "devmod:item/foundry/tool/fishing_rod/rod",
+    "string": "devmod:item/foundry/tool/fishing_rod/string",
+    "hook":   "devmod:item/foundry/tool/fishing_rod/hook"
   },
-  "modifier_roots": [ "tconstruct:item/tool/fishing_rod/modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/fishing_rod/modifiers/" ],
   "parts": [
     { "name": "rod",    "index": 0 },
     { "name": "string", "index": 1 },
@@ -19,19 +19,19 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/fishing_rod/blocking"
+      "model": "devmod:item/foundry/tool/fishing_rod/blocking"
     },
     {
       "predicate": { "tconstruct:cast": 1 },
-      "model": "tconstruct:item/tool/fishing_rod/cast"
+      "model": "devmod:item/foundry/tool/fishing_rod/cast"
     },
     {
       "predicate": { "tconstruct:cast": 1, "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/fishing_rod/blocking_cast"
+      "model": "devmod:item/foundry/tool/fishing_rod/blocking_cast"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/fishing_rod/broken"
+      "model": "devmod:item/foundry/tool/fishing_rod/broken"
     }
   ]
 }

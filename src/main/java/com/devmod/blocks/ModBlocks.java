@@ -6,6 +6,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -19,6 +20,7 @@ public final class ModBlocks {
     public static final DeferredHolder<Block, NexusPortalBlock> NEXUS_PORTAL = BLOCKS.register(
         "nexus_portal",
         () -> new NexusPortalBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .noCollission()
             .noOcclusion()
             .strength(-1.0F, 3600000.0F)

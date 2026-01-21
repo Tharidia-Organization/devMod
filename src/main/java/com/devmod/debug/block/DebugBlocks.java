@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -24,6 +25,7 @@ public final class DebugBlocks {
     public static final DeferredHolder<Block, EntityScannerBlock> ENTITY_SCANNER = DevMod.BLOCKS.register(
         "entity_scanner",
         () -> new EntityScannerBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_GREEN))
             .strength(2.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(state -> 5)

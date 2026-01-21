@@ -2,6 +2,6 @@
   "parent": "neoforge:item/default",
   "loader": "tconstruct:material",
   "textures": {
-    "texture": "tconstruct:item/tool/parts/small_blade"
+    "texture": "devmod:item/foundry/tool/parts/small_blade"
   }
 }

@@ -1,13 +1,13 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "plating": "tconstruct:item/tool/armor/plate/boots/plating_broken",
-    "maille": "tconstruct:item/tool/armor/plate/boots/maille_broken"
+    "plating": "devmod:item/foundry/tool/armor/plate/boots/plating_broken",
+    "maille": "devmod:item/foundry/tool/armor/plate/boots/maille_broken"
   },
   "modifier_roots": [
-    "tconstruct:item/tool/armor/plate/boots/modifiers/broken/",
-    "tconstruct:item/tool/armor/plate/boots/modifiers/"
+    "devmod:item/foundry/tool/armor/plate/boots/modifiers/broken/",
+    "devmod:item/foundry/tool/armor/plate/boots/modifiers/"
   ],
   "first_modifiers": [
     "tconstruct:trim"

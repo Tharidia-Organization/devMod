@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/tall_axe",
   "textures": {
-    "head":    "tconstruct:item/tool/broad_axe/blade",
-    "handle":  "tconstruct:item/tool/broad_axe/handle",
-    "back":    "tconstruct:item/tool/broad_axe/back",
-    "binding": "tconstruct:item/tool/broad_axe/binding",
+    "head":    "devmod:item/foundry/tool/broad_axe/blade",
+    "handle":  "devmod:item/foundry/tool/broad_axe/handle",
+    "back":    "devmod:item/foundry/tool/broad_axe/back",
+    "binding": "devmod:item/foundry/tool/broad_axe/binding",
     
-    "large_head":    "tconstruct:item/tool/broad_axe/large/blade",
-    "large_handle":  "tconstruct:item/tool/broad_axe/large/handle",
-    "large_back":    "tconstruct:item/tool/broad_axe/large/back",
-    "large_binding": "tconstruct:item/tool/broad_axe/large/binding"
+    "large_head":    "devmod:item/foundry/tool/broad_axe/large/blade",
+    "large_handle":  "devmod:item/foundry/tool/broad_axe/large/handle",
+    "large_back":    "devmod:item/foundry/tool/broad_axe/large/back",
+    "large_binding": "devmod:item/foundry/tool/broad_axe/large/binding"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/broad_axe/modifiers/" ],
-    "large": [ "tconstruct:item/tool/broad_axe/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/broad_axe/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/broad_axe/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,11 +27,11 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/broad_axe/blocking"
+      "model": "devmod:item/foundry/tool/broad_axe/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/broad_axe/broken"
+      "model": "devmod:item/foundry/tool/broad_axe/broken"
     }
   ]
 }

@@ -154,10 +154,14 @@ public final class TelepadBlock extends HorizontalDirectionalBlock implements En
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@Nonnull Level level,
                                                                     @Nonnull BlockState state,
                                                                     @Nonnull BlockEntityType<T> type) {
-        if (level.isClientSide) {
-            return null;
-        }
         if (type == CloneBlockEntities.TELEPAD.get()) {
+            if (level.isClientSide) {
+                return (lvl, pos, st, be) -> {
+                    if (be instanceof TelepadBlockEntity telepad) {
+                        telepad.clientTick();
+                    }
+                };
+            }
             return (lvl, pos, st, be) -> {
                 if (be instanceof TelepadBlockEntity telepad && telepad.needsTicking()) {
                     telepad.tick();

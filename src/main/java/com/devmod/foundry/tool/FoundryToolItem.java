@@ -14,7 +14,7 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Tool;
 
 import net.neoforged.neoforge.common.ItemAbility;
-import slimeknights.tconstruct.library.tools.item.IModifiable;
+import com.devmod.foundry.tool.item.IModifiable;
 
 /**
  * Base item for foundry tools.

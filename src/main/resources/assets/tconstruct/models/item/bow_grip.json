@@ -6,6 +6,6 @@
     -2
   ],
   "textures": {
-    "texture": "tconstruct:item/tool/crossbow/body"
+    "texture": "devmod:item/foundry/tool/crossbow/body"
   }
 }

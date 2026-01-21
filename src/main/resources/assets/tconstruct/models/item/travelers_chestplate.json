@@ -1,11 +1,11 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "cuirass": "tconstruct:item/tool/armor/travelers/vest/cuirass",
-    "metal":   "tconstruct:item/tool/armor/travelers/vest/metal"
+    "cuirass": "devmod:item/foundry/tool/armor/travelers/vest/cuirass",
+    "metal":   "devmod:item/foundry/tool/armor/travelers/vest/metal"
   },
-  "modifier_roots": [ "tconstruct:item/tool/armor/travelers/vest/modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/armor/travelers/vest/modifiers/" ],
   "first_modifiers": [ "tconstruct:dyed", "tconstruct:trim" ],
   "parts": [
     { "name": "cuirass", "index": 1 },

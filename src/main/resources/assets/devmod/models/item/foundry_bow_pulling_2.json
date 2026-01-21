@@ -1,9 +1,9 @@
 {
   "parent": "minecraft:item/bow",
   "textures": {
-    "layer0": "tconstruct:item/tool/longbow/limb_bottom_3",
-    "layer1": "tconstruct:item/tool/longbow/limb_top_3",
-    "layer2": "tconstruct:item/tool/longbow/grip",
-    "layer3": "tconstruct:item/tool/longbow/bowstring_3"
+    "layer0": "devmod:item/foundry/tool/longbow/limb_bottom_3",
+    "layer1": "devmod:item/foundry/tool/longbow/limb_top_3",
+    "layer2": "devmod:item/foundry/tool/longbow/grip",
+    "layer3": "devmod:item/foundry/tool/longbow/bowstring_3"
   }
 }

@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -79,6 +80,7 @@ public final class NeurocellBlock extends HorizontalDirectionalBlock implements 
 
     public NeurocellBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion()

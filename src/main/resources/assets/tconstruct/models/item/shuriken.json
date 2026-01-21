@@ -1,11 +1,11 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "top":    "tconstruct:item/tool/ammo/shuriken_top",
-    "bottom": "tconstruct:item/tool/ammo/shuriken_bottom"
+    "top":    "devmod:item/foundry/tool/ammo/shuriken_top",
+    "bottom": "devmod:item/foundry/tool/ammo/shuriken_bottom"
   },
-  "modifier_roots": [ "tconstruct:item/tool/ammo/shuriken_modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/ammo/shuriken_modifiers/" ],
   "show_traits": true,
   "parts": [
     { "name": "bottom", "index": 1 },

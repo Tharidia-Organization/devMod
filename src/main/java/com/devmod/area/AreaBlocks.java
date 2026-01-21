@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -24,6 +25,7 @@ public final class AreaBlocks {
     public static final DeferredHolder<Block, AreaEditorBlock> AREA_EDITOR =
         DevMod.BLOCKS.register("area_editor",
             () -> new AreaEditorBlock(BlockBehaviour.Properties.of()
+                .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
                 .strength(2.0F, 6.0F)
                 .sound(Objects.requireNonNull(SoundType.METAL))
                 .lightLevel(state -> 7)
@@ -36,6 +38,7 @@ public final class AreaBlocks {
     public static final DeferredHolder<Block, NexusEditorCentralBlock> NEXUS_EDITOR_CENTRAL =
         DevMod.BLOCKS.register("nexus_editor_central",
             () -> new NexusEditorCentralBlock(BlockBehaviour.Properties.of()
+                .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
                 .strength(-1.0F, 3600000.0F)
                 .sound(Objects.requireNonNull(SoundType.AMETHYST))
                 .lightLevel(state -> 15)

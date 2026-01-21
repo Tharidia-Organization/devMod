@@ -1,13 +1,18 @@
 package com.devmod.foundry.client.model;
 
 import java.util.List;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.Material;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
+
+import com.devmod.foundry.tool.material.MaterialVariantId;
 
 /**
  * Client-side render info for a foundry material.
@@ -24,7 +29,7 @@ public record FoundryMaterialRenderInfo(
         ResourceLocation.withDefaultNamespace("empty"),
         null,
         List.of(),
-        0xFFFFFFFF,
+        -1,
         0
     );
 
@@ -71,16 +76,82 @@ public record FoundryMaterialRenderInfo(
         return new TintedSprite(sprite, color, luminosity);
     }
 
+    /**
+     * Get the sprite for this material using a model baking sprite getter.
+     * @param baseTexture The base texture material
+     * @param spriteGetter The sprite fetcher from the model baker
+     * @return TintedSprite with the resolved sprite and color
+     */
+    public TintedSprite getSprite(Material baseTexture, Function<Material, TextureAtlasSprite> spriteGetter) {
+        return getSprite(baseTexture, spriteGetter, null);
+    }
+
+    /**
+     * Get the sprite for this material using a model baking sprite getter and variant ID.
+     * @param baseTexture The base texture material
+     * @param spriteGetter The sprite fetcher from the model baker
+     * @param variant The material variant (optional)
+     * @return TintedSprite with the resolved sprite and color
+     */
+    public TintedSprite getSprite(Material baseTexture, Function<Material, TextureAtlasSprite> spriteGetter, @Nullable MaterialVariantId variant) {
+        if (texture != null) {
+            TintedSprite override = getSpriteForLocation(baseTexture, spriteGetter, texture);
+            if (override != null) {
+                return override;
+            }
+        }
+
+        ResourceLocation baseLocation = baseTexture.texture();
+        String suffix = variant != null ? variant.getSuffix() : materialId.getPath();
+        ResourceLocation materialTexture = ResourceLocation.fromNamespaceAndPath(
+            baseLocation.getNamespace(),
+            baseLocation.getPath() + "_" + suffix
+        );
+        TintedSprite tinted = getSpriteForLocation(baseTexture, spriteGetter, materialTexture);
+        if (tinted != null) {
+            return tinted;
+        }
+
+        for (String fallback : fallbacks) {
+            ResourceLocation fallbackTexture = ResourceLocation.fromNamespaceAndPath(
+                baseLocation.getNamespace(),
+                baseLocation.getPath() + "_" + fallback
+            );
+            tinted = getSpriteForLocation(baseTexture, spriteGetter, fallbackTexture);
+            if (tinted != null) {
+                return tinted;
+            }
+        }
+
+        TextureAtlasSprite sprite = spriteGetter.apply(baseTexture);
+        return new TintedSprite(sprite, color, luminosity);
+    }
+
     @Nullable
+    private TintedSprite getSpriteForLocation(Material baseTexture, Function<Material, TextureAtlasSprite> spriteGetter, ResourceLocation location) {
+        TextureAtlasSprite sprite = spriteGetter.apply(new Material(baseTexture.atlasLocation(), location));
+        if (isMissingSprite(sprite)) {
+            return null;
+        }
+        return new TintedSprite(sprite, color, luminosity);
+    }
+
     private static TextureAtlasSprite getAtlasSprite(ResourceLocation location) {
-        return Minecraft.getInstance()
+        TextureAtlasSprite sprite = Minecraft.getInstance()
             .getModelManager()
             .getAtlas(InventoryMenu.BLOCK_ATLAS)
             .getSprite(location);
+        if (sprite == null) {
+            return Minecraft.getInstance()
+                .getModelManager()
+                .getAtlas(InventoryMenu.BLOCK_ATLAS)
+                .getSprite(MissingTextureAtlasSprite.getLocation());
+        }
+        return sprite;
     }
 
     private static boolean isMissingSprite(TextureAtlasSprite sprite) {
-        return sprite.contents().name().getPath().equals("missingno");
+        return sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation());
     }
 
     /**
@@ -91,6 +162,10 @@ public record FoundryMaterialRenderInfo(
         int color,
         int luminosity
     ) {
+        public int emissivity() {
+            return luminosity;
+        }
+
         public float red() {
             return ((color >> 16) & 0xFF) / 255f;
         }

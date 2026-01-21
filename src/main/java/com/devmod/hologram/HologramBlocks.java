@@ -3,6 +3,7 @@ package com.devmod.hologram;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -23,6 +24,7 @@ public final class HologramBlocks {
     public static final DeferredHolder<Block, HologramProjectorBlock> HOLOGRAM_PROJECTOR = DevMod.BLOCKS.register(
         "hologram_projector",
         () -> new HologramProjectorBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_LIGHT_BLUE)
             .strength(2.0F, 6.0F)
             .sound(SoundType.METAL)
             .lightLevel(state -> 7)

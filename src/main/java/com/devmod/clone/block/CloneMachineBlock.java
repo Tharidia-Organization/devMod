@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -64,6 +65,7 @@ public class CloneMachineBlock extends HorizontalDirectionalBlock implements Ent
 
     public static Properties createDefaultProperties() {
         return BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(4.0f, 6.0f)
             .sound(SoundType.METAL)
             .requiresCorrectToolForDrops()

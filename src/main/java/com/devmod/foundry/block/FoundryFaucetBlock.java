@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -54,6 +55,7 @@ public final class FoundryFaucetBlock extends Block implements EntityBlock {
     @SuppressWarnings("this-escape")
     public FoundryFaucetBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(2.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops()

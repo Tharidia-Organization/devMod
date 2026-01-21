@@ -1,13 +1,13 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "tool": "tconstruct:item/tool/armor/slime/helmet_broken",
-    "skull": "tconstruct:item/tool/armor/slime/helmet_skull"
+    "tool": "devmod:item/foundry/tool/armor/slime/helmet_broken",
+    "skull": "devmod:item/foundry/tool/armor/slime/helmet_skull"
   },
   "modifier_roots": [
-    "tconstruct:item/tool/armor/slime/skull_modifiers/broken/",
-    "tconstruct:item/tool/armor/slime/skull_modifiers/"
+    "devmod:item/foundry/tool/armor/slime/skull_modifiers/broken/",
+    "devmod:item/foundry/tool/armor/slime/skull_modifiers/"
   ],
   "parts": [
     {

@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -46,6 +47,7 @@ public class AdminTerminalBlock extends CloneMachineBlock {
 
     private static Properties createAdminProperties() {
         return BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_RED))
             .strength(5.0F, 1200.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(state -> 8)

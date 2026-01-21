@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
-  "parent": "tconstruct:item/tool/scythe/display",
+  "loader": "devmod:foundry_tool",
+  "parent": "devmod:item/foundry/tool/scythe/display",
   "textures": {
-    "head":      "tconstruct:item/tool/scythe/head",
-    "handle":    "tconstruct:item/tool/scythe/handle",
-    "binding":   "tconstruct:item/tool/scythe/binding",
-    "accessory": "tconstruct:item/tool/scythe/accessory",
+    "head":      "devmod:item/foundry/tool/scythe/head",
+    "handle":    "devmod:item/foundry/tool/scythe/handle",
+    "binding":   "devmod:item/foundry/tool/scythe/binding",
+    "accessory": "devmod:item/foundry/tool/scythe/accessory",
     
-    "large_head":      "tconstruct:item/tool/scythe/large/head",
-    "large_handle":    "tconstruct:item/tool/scythe/large/handle",
-    "large_binding":   "tconstruct:item/tool/scythe/large/binding",
-    "large_accessory": "tconstruct:item/tool/scythe/large/accessory"
+    "large_head":      "devmod:item/foundry/tool/scythe/large/head",
+    "large_handle":    "devmod:item/foundry/tool/scythe/large/handle",
+    "large_binding":   "devmod:item/foundry/tool/scythe/large/binding",
+    "large_accessory": "devmod:item/foundry/tool/scythe/large/accessory"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/scythe/modifiers/" ],
-    "large": [ "tconstruct:item/tool/scythe/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/scythe/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/scythe/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,11 +27,11 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/scythe/blocking"
+      "model": "devmod:item/foundry/tool/scythe/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/scythe/broken"
+      "model": "devmod:item/foundry/tool/scythe/broken"
     }
   ]
 }

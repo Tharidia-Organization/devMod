@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -60,6 +61,7 @@ public final class ImprinterBlock extends HorizontalDirectionalBlock implements 
 
     public ImprinterBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_CYAN)
             .strength(3.5f)
             .requiresCorrectToolForDrops()
             .noOcclusion()

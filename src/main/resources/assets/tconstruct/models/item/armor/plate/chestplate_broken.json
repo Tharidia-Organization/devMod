@@ -1,13 +1,13 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "plating": "tconstruct:item/tool/armor/plate/chestplate/plating_broken",
-    "maille": "tconstruct:item/tool/armor/plate/chestplate/maille_broken"
+    "plating": "devmod:item/foundry/tool/armor/plate/chestplate/plating_broken",
+    "maille": "devmod:item/foundry/tool/armor/plate/chestplate/maille_broken"
   },
   "modifier_roots": [
-    "tconstruct:item/tool/armor/plate/chestplate/modifiers/broken/",
-    "tconstruct:item/tool/armor/plate/chestplate/modifiers/"
+    "devmod:item/foundry/tool/armor/plate/chestplate/modifiers/broken/",
+    "devmod:item/foundry/tool/armor/plate/chestplate/modifiers/"
   ],
   "first_modifiers": [
     "tconstruct:trim"

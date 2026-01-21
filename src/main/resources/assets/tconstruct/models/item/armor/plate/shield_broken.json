@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/shield_large",
   "textures": {
-    "plating": "tconstruct:item/tool/armor/plate/shield/plating_broken",
-    "core": "tconstruct:item/tool/armor/plate/shield/core_broken",
-    "large_plating": "tconstruct:item/tool/armor/plate/shield/plating_large_broken",
-    "large_core": "tconstruct:item/tool/armor/plate/shield/core_large_broken"
+    "plating": "devmod:item/foundry/tool/armor/plate/shield/plating_broken",
+    "core": "devmod:item/foundry/tool/armor/plate/shield/core_broken",
+    "large_plating": "devmod:item/foundry/tool/armor/plate/shield/plating_large_broken",
+    "large_core": "devmod:item/foundry/tool/armor/plate/shield/core_large_broken"
   },
   "modifier_roots": {
     "small": [
-      "tconstruct:item/tool/armor/plate/shield/modifiers/broken/",
-      "tconstruct:item/tool/armor/plate/shield/modifiers/"
+      "devmod:item/foundry/tool/armor/plate/shield/modifiers/broken/",
+      "devmod:item/foundry/tool/armor/plate/shield/modifiers/"
     ],
     "large": [
-      "tconstruct:item/tool/armor/plate/shield/large_modifiers/broken/",
-      "tconstruct:item/tool/armor/plate/shield/large_modifiers/"
+      "devmod:item/foundry/tool/armor/plate/shield/large_modifiers/broken/",
+      "devmod:item/foundry/tool/armor/plate/shield/large_modifiers/"
     ]
   },
   "parts": [

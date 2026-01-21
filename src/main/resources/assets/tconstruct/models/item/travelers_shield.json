@@ -1,11 +1,11 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/shield",
   "textures": {
-    "cuirass": "tconstruct:item/tool/armor/travelers/shield/cuirass",
-    "wood":    "tconstruct:item/tool/armor/travelers/shield/wood"
+    "cuirass": "devmod:item/foundry/tool/armor/travelers/shield/cuirass",
+    "wood":    "devmod:item/foundry/tool/armor/travelers/shield/wood"
   },
-  "modifier_roots": [ "tconstruct:item/tool/armor/travelers/shield/modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/armor/travelers/shield/modifiers/" ],
   "first_modifiers": [ "tconstruct:dyed" ],
   "parts": [
     { "name": "wood", "index": 0 },

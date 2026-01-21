@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -43,6 +44,7 @@ public final class FoundryStencilTableBlock extends HorizontalDirectionalBlock i
     @SuppressWarnings("this-escape")
     public FoundryStencilTableBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.WOOD))
             .strength(2.5f, 5.0f)
             .sound(Objects.requireNonNull(SoundType.WOOD))
             .noOcclusion());

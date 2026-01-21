@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "tconstruct:item/tool/excavator/head",
-    "layer1": "tconstruct:item/tool/excavator/handle",
-    "layer2": "tconstruct:item/tool/excavator/binding"
+    "layer0": "devmod:item/foundry/tool/excavator/head",
+    "layer1": "devmod:item/foundry/tool/excavator/handle",
+    "layer2": "devmod:item/foundry/tool/excavator/binding"
   }
 }

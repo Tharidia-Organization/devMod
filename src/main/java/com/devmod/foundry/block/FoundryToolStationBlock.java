@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -45,6 +46,7 @@ public final class FoundryToolStationBlock extends HorizontalDirectionalBlock im
     @SuppressWarnings("this-escape")
     public FoundryToolStationBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.WOOD))
             .strength(3.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops()

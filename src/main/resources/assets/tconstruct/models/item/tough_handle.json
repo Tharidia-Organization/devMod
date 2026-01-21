@@ -2,6 +2,6 @@
   "parent": "neoforge:item/default",
   "loader": "tconstruct:material",
   "textures": {
-    "texture": "tconstruct:item/tool/parts/tough_handle"
+    "texture": "devmod:item/foundry/tool/parts/tough_handle"
   }
 }

@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/tall",
   "textures": {
-    "head":   "tconstruct:item/tool/javelin/head",
-    "guard":  "tconstruct:item/tool/javelin/guard",
-    "handle": "tconstruct:item/tool/javelin/handle",
-    "grip":   "tconstruct:item/tool/javelin/grip",
+    "head":   "devmod:item/foundry/tool/javelin/head",
+    "guard":  "devmod:item/foundry/tool/javelin/guard",
+    "handle": "devmod:item/foundry/tool/javelin/handle",
+    "grip":   "devmod:item/foundry/tool/javelin/grip",
 
-    "large_head":   "tconstruct:item/tool/javelin/large/head",
-    "large_guard":  "tconstruct:item/tool/javelin/large/guard",
-    "large_handle": "tconstruct:item/tool/javelin/large/handle",
-    "large_grip":   "tconstruct:item/tool/javelin/large/grip"
+    "large_head":   "devmod:item/foundry/tool/javelin/large/head",
+    "large_guard":  "devmod:item/foundry/tool/javelin/large/guard",
+    "large_handle": "devmod:item/foundry/tool/javelin/large/handle",
+    "large_grip":   "devmod:item/foundry/tool/javelin/large/grip"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/javelin/modifiers/" ],
-    "large": [ "tconstruct:item/tool/javelin/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/javelin/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/javelin/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,15 +27,15 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 1.75 },
-      "model": "tconstruct:item/tool/javelin/throwing"
+      "model": "devmod:item/foundry/tool/javelin/throwing"
     },
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/javelin/blocking"
+      "model": "devmod:item/foundry/tool/javelin/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/javelin/broken"
+      "model": "devmod:item/foundry/tool/javelin/broken"
     }
   ]
 }

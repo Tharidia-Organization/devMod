@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -24,6 +25,7 @@ public final class ZoneBlocks {
     public static final DeferredHolder<Block, ZoneMarkerBlock> ZONE_MARKER =
         DevMod.BLOCKS.register("zone_marker",
             () -> new ZoneMarkerBlock(BlockBehaviour.Properties.of()
+                .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
                 .strength(2.0F, 6.0F)
                 .sound(Objects.requireNonNull(SoundType.AMETHYST))
                 .lightLevel(state -> 5)

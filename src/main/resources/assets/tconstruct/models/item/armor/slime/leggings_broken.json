@@ -1,12 +1,12 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "tool": "tconstruct:item/tool/armor/slime/shell_broken"
+    "tool": "devmod:item/foundry/tool/armor/slime/shell_broken"
   },
   "modifier_roots": [
-    "tconstruct:item/tool/armor/slime/shell_modifiers/broken/",
-    "tconstruct:item/tool/armor/slime/shell_modifiers/"
+    "devmod:item/foundry/tool/armor/slime/shell_modifiers/broken/",
+    "devmod:item/foundry/tool/armor/slime/shell_modifiers/"
   ],
   "first_modifiers": [
     "tconstruct:embellishment",

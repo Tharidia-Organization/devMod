@@ -1,12 +1,12 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "head":   "tconstruct:item/tool/sword/blade",
-    "handle": "tconstruct:item/tool/sword/handle",
-    "guard":  "tconstruct:item/tool/sword/guard"
+    "head":   "devmod:item/foundry/tool/sword/blade",
+    "handle": "devmod:item/foundry/tool/sword/handle",
+    "guard":  "devmod:item/foundry/tool/sword/guard"
   },
-  "modifier_roots": [ "tconstruct:item/tool/sword/modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/sword/modifiers/" ],
   "parts": [
     { "name": "handle", "index": 1 },
     { "name": "head",   "index": 0 },
@@ -15,15 +15,15 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 1.75 },
-      "model": "tconstruct:item/tool/sword/throwing"
+      "model": "devmod:item/foundry/tool/sword/throwing"
     },
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/sword/blocking"
+      "model": "devmod:item/foundry/tool/sword/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/sword/broken"
+      "model": "devmod:item/foundry/tool/sword/broken"
     }
   ]
 }

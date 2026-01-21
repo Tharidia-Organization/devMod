@@ -1,11 +1,11 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "devmod:block/foundry_tool_anvil_front",
-    "front": "devmod:block/foundry_tool_anvil_front",
-    "side": "devmod:block/foundry_tool_base_side",
-    "top": "devmod:block/foundry_tool_base_top",
-    "bottom": "devmod:block/foundry_tool_base_bottom"
+    "particle": "tconstruct:block/table/anvil_base",
+    "front": "tconstruct:block/table/side",
+    "side": "tconstruct:block/table/side",
+    "top": "tconstruct:block/table/anvil_base",
+    "bottom": "tconstruct:block/table/bottom"
   },
   "elements": [
     {

@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -48,6 +49,7 @@ public class FoundryChannelBlock extends Block implements EntityBlock {
     @SuppressWarnings("this-escape")
     public FoundryChannelBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(3.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops()

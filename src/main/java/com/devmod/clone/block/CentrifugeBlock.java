@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
@@ -57,6 +58,7 @@ public final class CentrifugeBlock extends HorizontalDirectionalBlock implements
 
     public CentrifugeBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(4.0f)
             .requiresCorrectToolForDrops()
             .noOcclusion() // Allows seeing through transparent parts

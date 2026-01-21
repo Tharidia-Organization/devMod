@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "tconstruct:item/tool/parts/tool_binding"
+    "layer0": "devmod:item/foundry/tool/parts/tool_binding"
   }
 }

@@ -1,11 +1,11 @@
 {
-  "loader": "tconstruct:tool",
-  "parent": "tconstruct:item/tool/dagger/display",
+  "loader": "devmod:foundry_tool",
+  "parent": "devmod:item/foundry/tool/dagger/display",
   "textures": {
-    "head":        "tconstruct:item/tool/dagger/blade",
-    "crossguard":  "tconstruct:item/tool/dagger/crossguard"
+    "head":        "devmod:item/foundry/tool/dagger/blade",
+    "crossguard":  "devmod:item/foundry/tool/dagger/crossguard"
   },
-  "modifier_roots": [ "tconstruct:item/tool/dagger/modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/dagger/modifiers/" ],
   "parts": [
     { "name": "head",       "index": 0 },
     { "name": "crossguard", "index": 1 }
@@ -13,15 +13,15 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 1.75 },
-      "model": "tconstruct:item/tool/dagger/throwing"
+      "model": "devmod:item/foundry/tool/dagger/throwing"
     },
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/dagger/blocking"
+      "model": "devmod:item/foundry/tool/dagger/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/dagger/broken"
+      "model": "devmod:item/foundry/tool/dagger/broken"
     }
   ]
 }

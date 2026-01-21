@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -37,6 +38,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportCoreBlock> WARP_CORE = DevMod.BLOCKS.register(
         "warp_core",
         () -> new TransportCoreBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
             .strength(3.0F, 8.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportCoreBlock::getLightEmission)
@@ -51,6 +53,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> CHROMATIC_LENS = DevMod.BLOCKS.register(
         "chromatic_lens",
         () -> new ChromaticTransportModuleBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .strength(2.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.GLASS))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -63,6 +66,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> RANGE_AMPLIFIER = DevMod.BLOCKS.register(
         "range_amplifier",
         () -> new TransportModuleBlock(TransportEnhancement.RANGE_AMPLIFIER, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(2.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -75,6 +79,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> DIMENSIONAL_GATE = DevMod.BLOCKS.register(
         "dimensional_gate",
         () -> new TransportModuleBlock(TransportEnhancement.GATE, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
             .strength(3.0F, 8.0F)
             .sound(Objects.requireNonNull(SoundType.AMETHYST))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -87,6 +92,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> FLUX_CAPACITOR = DevMod.BLOCKS.register(
         "flux_capacitor",
         () -> new TransportModuleBlock(TransportEnhancement.FLUX_CAPACITOR, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_ORANGE))
             .strength(2.5F, 7.0F)
             .sound(Objects.requireNonNull(SoundType.COPPER))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -99,6 +105,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> NETWORK_RELAY = DevMod.BLOCKS.register(
         "network_relay",
         () -> new TransportModuleBlock(TransportEnhancement.NETWORK_RELAY, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(2.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -111,6 +118,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> MEMORY_CORE = DevMod.BLOCKS.register(
         "memory_core",
         () -> new TransportModuleBlock(TransportEnhancement.MEMORY_CORE, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_CYAN))
             .strength(2.5F, 7.0F)
             .sound(Objects.requireNonNull(SoundType.SCULK))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -123,6 +131,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportModuleBlock> PARTY_BEACON = DevMod.BLOCKS.register(
         "party_beacon",
         () -> new TransportModuleBlock(TransportEnhancement.PARTY_BEACON, BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_MAGENTA))
             .strength(2.5F, 7.0F)
             .sound(Objects.requireNonNull(SoundType.AMETHYST_CLUSTER))
             .lightLevel(TransportModuleBlock::getLightEmission)
@@ -138,6 +147,7 @@ public final class TransportBlocks {
     public static final DeferredHolder<Block, TransportFrameBlock> FRAME_SEGMENT = DevMod.BLOCKS.register(
         "frame_segment",
         () -> new TransportFrameBlock(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.METAL))
             .strength(2.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .lightLevel(TransportFrameBlock::getLightEmission)

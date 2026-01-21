@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -42,6 +43,7 @@ public final class NexusDecorBlocks {
     @Nonnull
     private static BlockBehaviour.Properties baseProps() {
         return Objects.requireNonNull(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_GRAY))
             .strength(1.5f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops());
@@ -49,7 +51,12 @@ public final class NexusDecorBlocks {
 
     @Nonnull
     private static BlockBehaviour.Properties lightProps() {
-        return Objects.requireNonNull(baseProps().lightLevel(state -> 12));
+        return Objects.requireNonNull(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
+            .strength(1.5f, 6.0f)
+            .sound(Objects.requireNonNull(SoundType.METAL))
+            .requiresCorrectToolForDrops()
+            .lightLevel(state -> 12));
     }
 
     @Nonnull

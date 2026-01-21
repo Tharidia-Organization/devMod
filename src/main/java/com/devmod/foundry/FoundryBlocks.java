@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 
 import net.neoforged.neoforge.registries.DeferredHolder;
 
@@ -32,6 +33,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> FOUNDRY_BRICKS = DevMod.BLOCKS.register(
         "foundry_bricks",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.TERRACOTTA_BROWN))
             .strength(4.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -40,6 +42,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> FOUNDRY_CRACKED_BRICKS = DevMod.BLOCKS.register(
         "foundry_cracked_bricks",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.TERRACOTTA_BROWN))
             .strength(4.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -63,6 +66,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> FOUNDRY_GLASS = DevMod.BLOCKS.register(
         "foundry_glass",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .strength(3.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.GLASS))
             .requiresCorrectToolForDrops()
@@ -72,6 +76,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> FOUNDRY_WINDOW = DevMod.BLOCKS.register(
         "foundry_window",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .strength(3.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.GLASS))
             .requiresCorrectToolForDrops()
@@ -142,6 +147,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> STEEL_BLOCK = DevMod.BLOCKS.register(
         "steel_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_GRAY))
             .strength(5.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -150,6 +156,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> BRONZE_BLOCK = DevMod.BLOCKS.register(
         "bronze_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_ORANGE))
             .strength(4.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -158,6 +165,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> COBALT_BLOCK = DevMod.BLOCKS.register(
         "cobalt_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_BLUE))
             .strength(6.0F, 8.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -166,6 +174,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> MANYULLYN_BLOCK = DevMod.BLOCKS.register(
         "manyullyn_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_PURPLE))
             .strength(7.0F, 10.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -174,6 +183,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> TIN_BLOCK = DevMod.BLOCKS.register(
         "tin_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_GRAY))
             .strength(3.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -182,6 +192,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> LEAD_BLOCK = DevMod.BLOCKS.register(
         "lead_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.TERRACOTTA_BLUE))
             .strength(4.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -190,6 +201,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> SILVER_BLOCK = DevMod.BLOCKS.register(
         "silver_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.SNOW))
             .strength(4.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -198,6 +210,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> NICKEL_BLOCK = DevMod.BLOCKS.register(
         "nickel_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_GRAY))
             .strength(5.0F, 6.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -206,6 +219,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> ELECTRUM_BLOCK = DevMod.BLOCKS.register(
         "electrum_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.GOLD))
             .strength(4.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -214,6 +228,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> INVAR_BLOCK = DevMod.BLOCKS.register(
         "invar_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_GRAY))
             .strength(5.0F, 7.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -222,6 +237,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> ARDITE_BLOCK = DevMod.BLOCKS.register(
         "ardite_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_RED))
             .strength(6.0F, 8.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -230,6 +246,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> VOID_METAL_BLOCK = DevMod.BLOCKS.register(
         "void_metal_block",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_BLACK))
             .strength(8.0F, 12.0F)
             .sound(Objects.requireNonNull(SoundType.METAL))
             .requiresCorrectToolForDrops())
@@ -239,6 +256,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> TIN_ORE = DevMod.BLOCKS.register(
         "tin_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.STONE))
             .strength(3.0F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -247,6 +265,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> DEEPSLATE_TIN_ORE = DevMod.BLOCKS.register(
         "deepslate_tin_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.DEEPSLATE))
             .strength(4.5F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.DEEPSLATE))
             .requiresCorrectToolForDrops())
@@ -255,6 +274,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> LEAD_ORE = DevMod.BLOCKS.register(
         "lead_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.STONE))
             .strength(3.0F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -263,6 +283,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> DEEPSLATE_LEAD_ORE = DevMod.BLOCKS.register(
         "deepslate_lead_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.DEEPSLATE))
             .strength(4.5F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.DEEPSLATE))
             .requiresCorrectToolForDrops())
@@ -271,6 +292,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> SILVER_ORE = DevMod.BLOCKS.register(
         "silver_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.STONE))
             .strength(3.0F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -279,6 +301,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> DEEPSLATE_SILVER_ORE = DevMod.BLOCKS.register(
         "deepslate_silver_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.DEEPSLATE))
             .strength(4.5F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.DEEPSLATE))
             .requiresCorrectToolForDrops())
@@ -287,6 +310,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> NICKEL_ORE = DevMod.BLOCKS.register(
         "nickel_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.STONE))
             .strength(3.0F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.STONE))
             .requiresCorrectToolForDrops())
@@ -295,6 +319,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> DEEPSLATE_NICKEL_ORE = DevMod.BLOCKS.register(
         "deepslate_nickel_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.DEEPSLATE))
             .strength(4.5F, 3.0F)
             .sound(Objects.requireNonNull(SoundType.DEEPSLATE))
             .requiresCorrectToolForDrops())
@@ -304,6 +329,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> COBALT_ORE = DevMod.BLOCKS.register(
         "cobalt_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.NETHER))
             .strength(10.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.NETHER_ORE))
             .requiresCorrectToolForDrops())
@@ -312,6 +338,7 @@ public final class FoundryBlocks {
     public static final DeferredHolder<Block, Block> ARDITE_ORE = DevMod.BLOCKS.register(
         "ardite_ore",
         () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.NETHER))
             .strength(10.0F, 5.0F)
             .sound(Objects.requireNonNull(SoundType.NETHER_ORE))
             .requiresCorrectToolForDrops())

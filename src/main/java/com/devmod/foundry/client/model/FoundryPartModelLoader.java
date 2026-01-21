@@ -104,12 +104,12 @@ public class FoundryPartModelLoader implements IGeometryLoader<FoundryPartModelL
     /**
      * Baked model that dynamically renders based on material from ItemStack.
      */
+    @SuppressWarnings("deprecation")
     public static class BakedPartModel implements IDynamicBakedModel {
         private final ResourceLocation baseTexture;
         private final TextureAtlasSprite particleSprite;
         private final ItemTransforms transforms;
         private final MaterialOverrideHandler overrideHandler;
-        private final Map<ResourceLocation, BakedModel> modelCache = new ConcurrentHashMap<>();
 
         public BakedPartModel(ResourceLocation baseTexture, TextureAtlasSprite particleSprite, ItemTransforms transforms) {
             this.baseTexture = baseTexture;
@@ -228,9 +228,9 @@ public class FoundryPartModelLoader implements IGeometryLoader<FoundryPartModelL
         }
 
         private int packNormal(Direction face) {
-            int x = (int)(face.getStepX() * 127) & 0xFF;
-            int y = (int)(face.getStepY() * 127) & 0xFF;
-            int z = (int)(face.getStepZ() * 127) & 0xFF;
+            int x = (face.getStepX() * 127) & 0xFF;
+            int y = (face.getStepY() * 127) & 0xFF;
+            int z = (face.getStepZ() * 127) & 0xFF;
             return x | (y << 8) | (z << 16);
         }
 
@@ -309,10 +309,12 @@ public class FoundryPartModelLoader implements IGeometryLoader<FoundryPartModelL
     /**
      * Baked model for a specific material.
      */
+    @SuppressWarnings("deprecation")
     public static class MaterialBakedModel implements BakedModel {
         private final BakedPartModel parent;
         private final ResourceLocation materialId;
-        private List<BakedQuad> cachedQuads;
+        private List<BakedQuad> cachedQuads = List.of();
+        private boolean cached = false;
 
         public MaterialBakedModel(BakedPartModel parent, ResourceLocation materialId) {
             this.parent = parent;
@@ -325,8 +327,9 @@ public class FoundryPartModelLoader implements IGeometryLoader<FoundryPartModelL
             if (side != null) {
                 return List.of();
             }
-            if (cachedQuads == null) {
+            if (!cached) {
                 cachedQuads = parent.getQuadsForMaterial(materialId, side);
+                cached = true;
             }
             return cachedQuads;
         }

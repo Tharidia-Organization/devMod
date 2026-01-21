@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.PipeBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -58,6 +59,7 @@ public final class NeurolinkBlock extends Block {
 
     public NeurolinkBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_CYAN)
             .strength(1.5f)
             .noOcclusion()
             .lightLevel(state -> 3));

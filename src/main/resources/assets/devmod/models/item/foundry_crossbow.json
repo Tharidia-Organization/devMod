@@ -1,9 +1,9 @@
 {
   "parent": "minecraft:item/crossbow",
   "textures": {
-    "layer0": "tconstruct:item/tool/crossbow/limb",
-    "layer1": "tconstruct:item/tool/crossbow/body",
-    "layer2": "tconstruct:item/tool/crossbow/bowstring"
+    "layer0": "devmod:item/foundry/tool/crossbow/limb",
+    "layer1": "devmod:item/foundry/tool/crossbow/body",
+    "layer2": "devmod:item/foundry/tool/crossbow/bowstring"
   },
   "overrides": [
     {

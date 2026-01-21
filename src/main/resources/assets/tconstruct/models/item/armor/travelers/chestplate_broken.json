@@ -1,13 +1,13 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "cuirass": "tconstruct:item/tool/armor/travelers/vest/cuirass_broken",
-    "metal": "tconstruct:item/tool/armor/travelers/vest/metal_broken"
+    "cuirass": "devmod:item/foundry/tool/armor/travelers/vest/cuirass_broken",
+    "metal": "devmod:item/foundry/tool/armor/travelers/vest/metal_broken"
   },
   "modifier_roots": [
-    "tconstruct:item/tool/armor/travelers/vest/modifiers/broken/",
-    "tconstruct:item/tool/armor/travelers/vest/modifiers/"
+    "devmod:item/foundry/tool/armor/travelers/vest/modifiers/broken/",
+    "devmod:item/foundry/tool/armor/travelers/vest/modifiers/"
   ],
   "first_modifiers": [
     "tconstruct:dyed",

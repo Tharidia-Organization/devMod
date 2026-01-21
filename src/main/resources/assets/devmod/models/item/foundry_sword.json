@@ -1,9 +1,8 @@
 {
-  "loader": "devmod:foundry_tool",
   "parent": "minecraft:item/handheld",
-  "parts": [
-    { "name": "blade", "texture": "tconstruct:item/tool/sword/blade", "index": 0 },
-    { "name": "handle", "texture": "tconstruct:item/tool/sword/handle", "index": 1 },
-    { "name": "guard", "texture": "tconstruct:item/tool/sword/guard", "index": 2 }
-  ]
+  "textures": {
+    "layer0": "devmod:item/foundry/tool/sword/blade",
+    "layer1": "devmod:item/foundry/tool/sword/handle",
+    "layer2": "devmod:item/foundry/tool/sword/guard"
+  }
 }

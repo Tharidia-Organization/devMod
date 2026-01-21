@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -42,11 +43,19 @@ public class TelepadBlockEntity extends BlockEntity {
     private static final int CHARGE_TIME = 40; // ticks (2 seconds)
     private static final long ARRIVAL_COOLDOWN = 60; // ticks (3 seconds)
     private static final String TELEPAD_NETWORK_PREFIX = "telepad:";
+    private static final float CHARGE_DECAY = 0.05f;
+    private static final int CHARGE_SYNC_INTERVAL = 4;
+    private static final float CHARGE_SYNC_EPS = 0.02f;
+    private static final String TAG_CHARGE_PROGRESS = "ChargeProgress";
 
     private String telepadName = "";
     private UUID portalId;
     private final Map<UUID, Integer> chargingPlayers = new HashMap<>();
     private final Map<UUID, Long> recentArrivals = new HashMap<>();
+    private float chargeProgress = 0.0f;
+    private float chargeProgressPrev = 0.0f;
+    private float lastSyncedChargeProgress = 0.0f;
+    private long lastChargeSyncTick = 0L;
 
     public TelepadBlockEntity(BlockPos pos, BlockState state) {
         super(CloneBlockEntities.TELEPAD.get(), pos, state);
@@ -62,7 +71,7 @@ public class TelepadBlockEntity extends BlockEntity {
         setChanged();
         if (level != null && !level.isClientSide) {
             updateRegistry();
-            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 2);
+            syncToClient();
         }
     }
 
@@ -104,7 +113,15 @@ public class TelepadBlockEntity extends BlockEntity {
     }
 
     public boolean needsTicking() {
-        return !chargingPlayers.isEmpty() || !recentArrivals.isEmpty();
+        return !chargingPlayers.isEmpty() || !recentArrivals.isEmpty() || chargeProgress > 0.001f;
+    }
+
+    public void clientTick() {
+        chargeProgressPrev = chargeProgress;
+    }
+
+    public float getChargeProgress(float partialTick) {
+        return Mth.clamp(Mth.lerp(partialTick, chargeProgressPrev, chargeProgress), 0.0f, 1.0f);
     }
 
     public void tick() {
@@ -163,6 +180,8 @@ public class TelepadBlockEntity extends BlockEntity {
         if (level != null && wasActive != isActive) {
             TelepadBlock.setActive(level, worldPosition, getBlockState(), isActive);
         }
+
+        updateChargeProgress(currentTime);
     }
 
     private boolean isPlayerOnTelepad(Player player) {
@@ -307,6 +326,51 @@ public class TelepadBlockEntity extends BlockEntity {
         serverLevel.sendParticles(ParticleTypes.END_ROD, x, y + 0.5, z, 20, 0.2, 0.3, 0.2, 0.1);
     }
 
+    private void updateChargeProgress(long currentTime) {
+        int maxCharge = 0;
+        for (int chargeTime : chargingPlayers.values()) {
+            if (chargeTime > maxCharge) {
+                maxCharge = chargeTime;
+            }
+        }
+
+        float targetCharge = maxCharge > 0 ? (float) maxCharge / (float) CHARGE_TIME : 0.0f;
+        chargeProgressPrev = chargeProgress;
+
+        if (maxCharge > 0) {
+            chargeProgress = Mth.clamp(targetCharge, 0.0f, 1.0f);
+        } else if (chargeProgress > 0.0f) {
+            chargeProgress = Math.max(0.0f, chargeProgress - CHARGE_DECAY);
+        }
+
+        maybeSyncChargeProgress(currentTime);
+    }
+
+    private void maybeSyncChargeProgress(long currentTime) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+
+        boolean timeElapsed = currentTime - lastChargeSyncTick >= CHARGE_SYNC_INTERVAL;
+        if (Math.abs(chargeProgress - lastSyncedChargeProgress) >= CHARGE_SYNC_EPS || timeElapsed) {
+            lastSyncedChargeProgress = chargeProgress;
+            lastChargeSyncTick = currentTime;
+            markDirtyAndSync();
+        }
+    }
+
+    private void markDirtyAndSync() {
+        setChanged();
+        syncToClient();
+    }
+
+    private void syncToClient() {
+        if (level != null && !level.isClientSide) {
+            BlockState currentState = getBlockState();
+            level.sendBlockUpdated(worldPosition, currentState, currentState, 2);
+        }
+    }
+
     // === NBT Persistence ===
 
     @Override
@@ -321,6 +385,13 @@ public class TelepadBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
         telepadName = tag.contains("TelepadName") ? tag.getString("TelepadName") : "";
         portalId = tag.hasUUID("PortalId") ? tag.getUUID("PortalId") : UUID.randomUUID();
+        if (tag.contains(TAG_CHARGE_PROGRESS)) {
+            chargeProgressPrev = chargeProgress;
+            chargeProgress = tag.getFloat(TAG_CHARGE_PROGRESS);
+        } else {
+            chargeProgress = 0.0f;
+            chargeProgressPrev = 0.0f;
+        }
     }
 
     @Override
@@ -328,6 +399,7 @@ public class TelepadBlockEntity extends BlockEntity {
     public CompoundTag getUpdateTag(@Nonnull HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
         tag.putString("TelepadName", telepadName);
+        tag.putFloat(TAG_CHARGE_PROGRESS, chargeProgress);
         return tag;
     }
 

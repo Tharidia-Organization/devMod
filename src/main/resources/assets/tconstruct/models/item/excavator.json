@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/tall",
   "textures": {
-    "head":    "tconstruct:item/tool/excavator/head",
-    "handle":  "tconstruct:item/tool/excavator/handle",
-    "grip":    "tconstruct:item/tool/excavator/grip",
-    "binding": "tconstruct:item/tool/excavator/binding",
+    "head":    "devmod:item/foundry/tool/excavator/head",
+    "handle":  "devmod:item/foundry/tool/excavator/handle",
+    "grip":    "devmod:item/foundry/tool/excavator/grip",
+    "binding": "devmod:item/foundry/tool/excavator/binding",
     
-    "large_head":    "tconstruct:item/tool/excavator/large/head",
-    "large_handle":  "tconstruct:item/tool/excavator/large/handle",
-    "large_grip":    "tconstruct:item/tool/excavator/large/grip",
-    "large_binding": "tconstruct:item/tool/excavator/large/binding"
+    "large_head":    "devmod:item/foundry/tool/excavator/large/head",
+    "large_handle":  "devmod:item/foundry/tool/excavator/large/handle",
+    "large_grip":    "devmod:item/foundry/tool/excavator/large/grip",
+    "large_binding": "devmod:item/foundry/tool/excavator/large/binding"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/excavator/modifiers/" ],
-    "large": [ "tconstruct:item/tool/excavator/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/excavator/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/excavator/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,11 +27,11 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/excavator/blocking"
+      "model": "devmod:item/foundry/tool/excavator/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/excavator/broken"
+      "model": "devmod:item/foundry/tool/excavator/broken"
     }
   ]
 }

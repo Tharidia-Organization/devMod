@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "tconstruct:item/tool/cleaver/head",
-    "layer1": "tconstruct:item/tool/cleaver/handle",
-    "layer2": "tconstruct:item/tool/cleaver/guard"
+    "layer0": "devmod:item/foundry/tool/cleaver/head",
+    "layer1": "devmod:item/foundry/tool/cleaver/handle",
+    "layer2": "devmod:item/foundry/tool/cleaver/guard"
   }
 }

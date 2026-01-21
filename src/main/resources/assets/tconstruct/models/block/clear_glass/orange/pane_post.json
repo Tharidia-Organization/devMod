@@ -11,7 +11,7 @@
       "pane": "cornerless_full"
     }
   },
-  "loader": "mantle:connected",
+  "loader": "devmod:foundry_connected",
   "render_type": "minecraft:translucent",
   "textures": {
     "edge": "tconstruct:block/clear_stained_glass_top",

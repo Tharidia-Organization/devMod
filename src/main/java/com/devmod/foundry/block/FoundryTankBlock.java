@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -26,6 +27,7 @@ import com.devmod.foundry.block.entity.FoundryTankBlockEntity;
 public class FoundryTankBlock extends Block implements EntityBlock {
     public FoundryTankBlock() {
         super(BlockBehaviour.Properties.of()
+            .mapColor(Objects.requireNonNull(MapColor.COLOR_LIGHT_BLUE))
             .strength(4.0f, 6.0f)
             .sound(Objects.requireNonNull(SoundType.GLASS))
             .requiresCorrectToolForDrops()

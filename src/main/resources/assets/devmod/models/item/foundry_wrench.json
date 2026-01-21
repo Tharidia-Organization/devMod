@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "tconstruct:item/tool/pickaxe/head",
-    "layer1": "tconstruct:item/tool/pickaxe/handle"
+    "layer0": "devmod:item/foundry/tool/pickaxe/head",
+    "layer1": "devmod:item/foundry/tool/pickaxe/handle"
   }
 }

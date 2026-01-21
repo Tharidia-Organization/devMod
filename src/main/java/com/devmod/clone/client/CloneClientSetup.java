@@ -27,6 +27,7 @@ import com.devmod.clone.client.renderer.NeurocellItemRenderer;
 import com.devmod.clone.client.renderer.NeurocellLRenderer;
 import com.devmod.clone.client.renderer.NeurocellMannequinRenderer;
 import com.devmod.clone.client.renderer.NeurocellRenderer;
+import com.devmod.clone.client.renderer.TelepadPortalRenderer;
 import com.devmod.clone.client.screen.CentrifugeScreen;
 import com.devmod.clone.client.screen.NeurocellItemScreen;
 import com.devmod.clone.client.screen.NeurocellLScreen;
@@ -66,6 +67,12 @@ public final class CloneClientSetup {
             NeurocellItemRenderer::new
         );
         DevMod.LOGGER.info("[Clone] Registered neurocell renderers");
+
+        event.registerBlockEntityRenderer(
+            Objects.requireNonNull(CloneBlockEntities.TELEPAD.get()),
+            TelepadPortalRenderer::new
+        );
+        DevMod.LOGGER.info("[Clone] Registered telepad portal renderer");
 
         // Register GeckoLib renderer for all Clone machine blocks
         // Uses dynamic model selection based on block type

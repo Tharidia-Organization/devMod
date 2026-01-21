@@ -1,11 +1,11 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "devmod:block/foundry_tool_station_front",
-    "front": "devmod:block/foundry_tool_station_front",
-    "side": "devmod:block/foundry_tool_base_side",
-    "top": "devmod:block/foundry_tool_base_top",
-    "bottom": "devmod:block/foundry_tool_base_bottom"
+    "particle": "tconstruct:block/table/tinker_station_top",
+    "front": "tconstruct:block/table/side",
+    "side": "tconstruct:block/table/side",
+    "top": "tconstruct:block/table/tinker_station_top",
+    "bottom": "tconstruct:block/table/bottom"
   },
   "elements": [
     {

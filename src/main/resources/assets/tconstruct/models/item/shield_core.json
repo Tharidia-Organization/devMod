@@ -2,6 +2,6 @@
   "parent": "neoforge:item/default",
   "loader": "tconstruct:material",
   "textures": {
-    "texture": "tconstruct:item/tool/armor/plate/shield/core"
+    "texture": "devmod:item/foundry/tool/armor/plate/shield/core"
   }
 }

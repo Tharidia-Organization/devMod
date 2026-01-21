@@ -13,9 +13,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.foundry.quality.MaterialQuality;
-import slimeknights.tconstruct.library.materials.definition.IMaterial;
-import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
-import slimeknights.tconstruct.library.tools.part.IMaterialItem;
+import com.devmod.foundry.tool.material.IMaterial;
+import com.devmod.foundry.tool.material.MaterialVariantId;
+import com.devmod.foundry.tool.part.IMaterialItem;
 
 /**
  * Item representing a materialized tool part.

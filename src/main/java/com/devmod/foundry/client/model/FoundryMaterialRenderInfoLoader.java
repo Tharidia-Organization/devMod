@@ -2,8 +2,10 @@ package com.devmod.foundry.client.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
@@ -23,9 +25,9 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 
-import com.devmod.DevMod;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
+import com.devmod.foundry.tool.material.MaterialVariantId;
 
 /**
  * Loads material render info from JSON files in assets/<modid>/foundry/materials/.
@@ -81,7 +83,7 @@ public class FoundryMaterialRenderInfoLoader extends SimpleJsonResourceReloadLis
         }
 
         // Parse color (hex string or integer)
-        int color = 0xFFFFFFFF;
+        int color = -1;
         if (json.has("color")) {
             JsonElement colorElement = json.get("color");
             if (colorElement.isJsonPrimitive()) {
@@ -105,6 +107,17 @@ public class FoundryMaterialRenderInfoLoader extends SimpleJsonResourceReloadLis
         int luminosity = GsonHelper.getAsInt(json, "luminosity", 0);
 
         return new FoundryMaterialRenderInfo(id, texture, List.copyOf(fallbacks), color, luminosity);
+    }
+
+    /**
+     * Get render info for a material variant.
+     */
+    @Nullable
+    public FoundryMaterialRenderInfo getRenderInfo(@Nullable MaterialVariantId material) {
+        if (material == null) {
+            return null;
+        }
+        return getRenderInfo(material.getId());
     }
 
     /**
@@ -173,7 +186,29 @@ public class FoundryMaterialRenderInfoLoader extends SimpleJsonResourceReloadLis
     }
 
     /**
-     * Get all loaded render info entries.
+     * Get all render info entries, including fallbacks for materials without explicit JSON.
+     */
+    public List<FoundryMaterialRenderInfo> getAllRenderInfos() {
+        Map<ResourceLocation, FoundryMaterialRenderInfo> combined = new HashMap<>(renderInfoMap);
+        for (FoundryMaterialDefinition material : FoundryMaterialRegistry.all()) {
+            combined.computeIfAbsent(material.id(), id -> createFromMaterialDefinition(material));
+        }
+        return List.copyOf(combined.values());
+    }
+
+    /**
+     * Get a count of all render info entries, including material fallbacks.
+     */
+    public int getAllRenderInfoCount() {
+        Set<ResourceLocation> ids = new HashSet<>(renderInfoMap.keySet());
+        for (FoundryMaterialDefinition material : FoundryMaterialRegistry.all()) {
+            ids.add(material.id());
+        }
+        return ids.size();
+    }
+
+    /**
+     * Get all loaded render info entries (explicit JSON only).
      */
     public Map<ResourceLocation, FoundryMaterialRenderInfo> getAllRenderInfo() {
         return Map.copyOf(renderInfoMap);

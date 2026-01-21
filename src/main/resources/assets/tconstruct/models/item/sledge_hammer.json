@@ -1,20 +1,20 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "tconstruct:item/base/tall",
   "textures": {
-    "head":   "tconstruct:item/tool/sledge_hammer/head",
-    "handle": "tconstruct:item/tool/sledge_hammer/handle",
-    "back":   "tconstruct:item/tool/sledge_hammer/back",
-    "front":  "tconstruct:item/tool/sledge_hammer/front",
+    "head":   "devmod:item/foundry/tool/sledge_hammer/head",
+    "handle": "devmod:item/foundry/tool/sledge_hammer/handle",
+    "back":   "devmod:item/foundry/tool/sledge_hammer/back",
+    "front":  "devmod:item/foundry/tool/sledge_hammer/front",
 
-    "large_head":   "tconstruct:item/tool/sledge_hammer/large/head",
-    "large_handle": "tconstruct:item/tool/sledge_hammer/large/handle",
-    "large_back":   "tconstruct:item/tool/sledge_hammer/large/back",
-    "large_front":  "tconstruct:item/tool/sledge_hammer/large/front"
+    "large_head":   "devmod:item/foundry/tool/sledge_hammer/large/head",
+    "large_handle": "devmod:item/foundry/tool/sledge_hammer/large/handle",
+    "large_back":   "devmod:item/foundry/tool/sledge_hammer/large/back",
+    "large_front":  "devmod:item/foundry/tool/sledge_hammer/large/front"
   },
   "modifier_roots": {
-    "small": [ "tconstruct:item/tool/sledge_hammer/modifiers/" ],
-    "large": [ "tconstruct:item/tool/sledge_hammer/large/modifiers/" ]
+    "small": [ "devmod:item/foundry/tool/sledge_hammer/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/sledge_hammer/large/modifiers/" ]
   },
   "large": true,
   "large_offset": [-2, 2],
@@ -27,11 +27,11 @@
   "overrides": [
     {
       "predicate": { "tconstruct:charging": 2 },
-      "model": "tconstruct:item/tool/sledge_hammer/blocking"
+      "model": "devmod:item/foundry/tool/sledge_hammer/blocking"
     },
     {
       "predicate": { "tconstruct:broken": 1 },
-      "model": "tconstruct:item/tool/sledge_hammer/broken"
+      "model": "devmod:item/foundry/tool/sledge_hammer/broken"
     }
   ]
 }

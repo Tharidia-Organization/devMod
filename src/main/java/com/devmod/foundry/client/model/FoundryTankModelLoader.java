@@ -28,6 +28,7 @@ import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.RandomSource;
@@ -126,6 +127,7 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public BakedModel bake(
             IGeometryBakingContext context,
             ModelBaker baker,
@@ -155,6 +157,7 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
     /**
      * Baked tank model with dynamic fluid rendering.
      */
+    @SuppressWarnings("deprecation")
     public static class BakedTankModel implements IDynamicBakedModel {
         @Nullable
         private final FoundryFluidCuboid fluidCuboid;
@@ -198,7 +201,7 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
                     float fillPercentage = Math.min(1.0f, (float) fluid.getAmount() / capacity);
 
                     // Check cache
-                    FluidCacheKey cacheKey = new FluidCacheKey(fluid.getFluid().builtInRegistryHolder().key().location(), fillPercentage);
+                    FluidCacheKey cacheKey = new FluidCacheKey(BuiltInRegistries.FLUID.getKey(fluid.getFluid()), fillPercentage);
                     quads.addAll(fluidQuadCache.computeIfAbsent(cacheKey, key -> generateFluidQuads(fluid, fillPercentage)));
                 }
             }
@@ -365,9 +368,9 @@ public class FoundryTankModelLoader implements IGeometryLoader<FoundryTankModelL
         }
 
         private int packNormal(Direction face) {
-            int x = (int)(face.getStepX() * 127) & 0xFF;
-            int y = (int)(face.getStepY() * 127) & 0xFF;
-            int z = (int)(face.getStepZ() * 127) & 0xFF;
+            int x = (face.getStepX() * 127) & 0xFF;
+            int y = (face.getStepY() * 127) & 0xFF;
+            int z = (face.getStepZ() * 127) & 0xFF;
             return x | (y << 8) | (z << 16);
         }
 

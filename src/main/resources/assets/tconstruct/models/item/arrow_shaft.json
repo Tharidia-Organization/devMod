@@ -6,6 +6,6 @@
     -1
   ],
   "textures": {
-    "texture": "tconstruct:item/tool/ammo/arrow_shaft"
+    "texture": "devmod:item/foundry/tool/ammo/arrow_shaft"
   }
 }

@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "tconstruct:item/tool/cleaver/large/head"
+    "layer0": "devmod:item/foundry/tool/cleaver/large/head"
   }
 }

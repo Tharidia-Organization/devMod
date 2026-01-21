@@ -1,10 +1,10 @@
 {
-  "loader": "tconstruct:tool",
+  "loader": "devmod:foundry_tool",
   "parent": "neoforge:item/default",
   "textures": {
-    "tool": "tconstruct:item/tool/armor/slime/boots"
+    "tool": "devmod:item/foundry/tool/armor/slime/boots"
   },
-  "modifier_roots": [ "tconstruct:item/tool/armor/slime/boot_modifiers/" ],
+  "modifier_roots": [ "devmod:item/foundry/tool/armor/slime/boot_modifiers/" ],
   "first_modifiers": [ "tconstruct:embellishment", "tconstruct:golden", "tconstruct:trim" ],
   "overrides": [
     {
