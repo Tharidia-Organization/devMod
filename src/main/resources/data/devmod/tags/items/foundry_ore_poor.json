@@ -19,7 +19,6 @@
     { "id": "alltheores:nether_osmium_ore", "required": false },
     { "id": "alltheores:nether_uranium_ore", "required": false },
     { "id": "alltheores:nether_zinc_ore", "required": false },
-    { "id": "tconstruct:cobalt_ore", "required": false },
     { "id": "aether:zanite_ore", "required": false },
     { "id": "aether:ambrosium_ore", "required": false },
     { "id": "aether:gravitite_ore", "required": false },

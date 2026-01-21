@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/foundry/fluid_cannon/base",
+  "textures": {
+    "top": "devmod:block/foundry/fluid_cannon/top_nozzle"
+  }
+}

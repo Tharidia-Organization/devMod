@@ -1,0 +1,8 @@
+{
+  "parent": "devmod:block/template/controller_fluid",
+  "textures": {
+    "front": "devmod:block/smeltery/controller/smeltery_inactive",
+    "bricks": "devmod:block/smeltery/seared/bricks",
+    "back": "devmod:block/smeltery/io/back"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "loader": "devmod:retextured",
+  "parent": "devmod:block/table/table",
+  "textures": {
+    "particle":  "devmod:block/table/modifier_workstation_top",
+    "top":       "devmod:block/table/modifier_workstation_top",
+    "side":      "devmod:block/table/modifier_workstation_side",
+    "leg":       "devmod:block/table/modifier_workstation_side",
+    "bottom":    "devmod:block/table/modifier_workstation_top",
+    "legBottom": "devmod:block/table/modifier_workstation_top"
+  },
+  "retextured": [ "leg", "legBottom" ]
+}

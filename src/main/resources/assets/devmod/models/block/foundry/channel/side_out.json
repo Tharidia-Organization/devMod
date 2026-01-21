@@ -1,0 +1,7 @@
+{
+  "parent": "devmod:block/template/channel/side",
+  "textures": {
+    "texture": "devmod:block/foundry/scorched/stone_side",
+    "top":     "devmod:block/foundry/channel_out"
+  }
+}

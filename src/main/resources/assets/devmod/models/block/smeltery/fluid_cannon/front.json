@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/smeltery/fluid_cannon/base",
+  "textures": {
+    "front": "devmod:block/smeltery/fluid_cannon/front"
+  }
+}

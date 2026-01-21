@@ -1,0 +1,18 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "neoforge:item/default",
+  "textures": {
+    "tool": "devmod:item/foundry/tool/flint_and_brick/tool"
+  },
+  "modifier_roots": [ "devmod:item/foundry/tool/flint_and_bronze/modifiers/" ],
+  "overrides": [
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/flint_and_brick/blocking"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/flint_and_brick/broken"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/template/lantern",
+  "textures": {
+    "lantern": "devmod:block/smeltery/lantern"
+  }
+}

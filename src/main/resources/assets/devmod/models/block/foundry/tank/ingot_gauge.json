@@ -1,0 +1,7 @@
+{
+  "parent": "devmod:block/template/tank",
+  "textures": {
+    "top":  "devmod:block/foundry/tank/gauge_top",
+    "side": "devmod:block/foundry/tank/ingot_gauge"
+  }
+}

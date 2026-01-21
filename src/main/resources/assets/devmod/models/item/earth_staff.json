@@ -1,0 +1,64 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "devmod:item/base/staff",
+  "textures": {
+    "tool":       "devmod:item/foundry/tool/staff/earth",
+    "large_tool": "devmod:item/foundry/tool/staff/earth_large"
+  },
+  "large": true,
+  "modifier_roots": {
+    "small": [ "devmod:item/foundry/tool/staff/modifiers/earth/", "devmod:item/foundry/tool/staff/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/staff/large_modifiers/earth/", "devmod:item/foundry/tool/staff/large_modifiers/" ]
+  },
+  "first_modifiers": [ "devmod:dyed", "devmod:embellishment" ],
+  "overrides": [
+    {
+      "predicate": { "devmod:charging": 1 },
+      "model": "devmod:item/foundry/tool/staff/earth/charging_1"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.4 },
+      "model": "devmod:item/foundry/tool/staff/earth/charging_2"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.7 },
+      "model": "devmod:item/foundry/tool/staff/earth/charging_3"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.9 },
+      "model": "devmod:item/foundry/tool/staff/earth/charging_4"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/staff/earth/charging_5"
+    },
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.05 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking_1"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.4 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking_2"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.7 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking_3"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.9 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking_4"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/staff/earth/blocking_5"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/staff/earth/broken"
+    }
+  ]
+}

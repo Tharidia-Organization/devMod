@@ -19,6 +19,7 @@
     "client.ModelPartTransformMixin",
     "client.LivingEntityRendererMixin",
     "client.DebugRendererMixin",
+    "client.EffekseerLevelRendererMixin",
     "client.HexereiDynamicRegistriesMixin",
     "client.ClientLevelTimeMixin",
     "client.LevelAccessorTimeMixin",

@@ -1,0 +1,8 @@
+{
+    "parent": "block/slab",
+    "textures": {
+        "bottom": "devmod:block/foundry/scorched/bricks",
+        "top":    "devmod:block/foundry/scorched/bricks",
+        "side":   "devmod:block/foundry/scorched/bricks"
+    }
+}

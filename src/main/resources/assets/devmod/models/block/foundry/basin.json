@@ -1,0 +1,8 @@
+{
+  "parent": "devmod:block/template/basin",
+  "textures": {
+    "top":    "devmod:block/foundry/casting/basin_top_bars",
+    "side":   "devmod:block/foundry/casting/basin_side",
+    "bottom": "devmod:block/foundry/casting/basin_bottom"
+  }
+}

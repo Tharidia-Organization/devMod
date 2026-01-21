@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/template/faucet",
+  "textures": {
+    "tex": "devmod:block/foundry/scorched/stone_side"
+  }
+}

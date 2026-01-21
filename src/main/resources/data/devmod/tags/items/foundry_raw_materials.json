@@ -36,7 +36,6 @@
     { "id": "alltheores:raw_uranium", "required": false },
     { "id": "alltheores:raw_zinc", "required": false },
     { "id": "alltheores:raw_platinum", "required": false },
-    { "id": "tconstruct:raw_cobalt", "required": false },
     { "id": "bigreactors:raw_yellorite", "required": false }
   ]
 }

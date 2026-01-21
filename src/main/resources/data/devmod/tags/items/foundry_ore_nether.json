@@ -6,7 +6,6 @@
     "minecraft:ancient_debris",
     "devmod:cobalt_ore",
     "devmod:ardite_ore",
-    { "id": "tconstruct:cobalt_ore", "required": false },
     { "id": "mekanism:nether_tin_ore", "required": false },
     { "id": "mekanism:nether_osmium_ore", "required": false },
     { "id": "thermal:nether_tin_ore", "required": false },

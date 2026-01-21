@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/template/channel/side_wall",
+  "textures": {
+    "texture": "devmod:block/foundry/scorched/stone_side"
+  }
+}

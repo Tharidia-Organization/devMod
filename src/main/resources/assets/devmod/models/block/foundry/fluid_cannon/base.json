@@ -1,0 +1,10 @@
+{
+  "parent": "devmod:block/template/half_tank",
+  "textures": {
+    "front":  "devmod:block/foundry/fluid_cannon/side",
+    "top":    "devmod:block/foundry/fluid_cannon/top",
+    "side":   "devmod:block/foundry/fluid_cannon/side",
+    "bottom": "devmod:block/foundry/fluid_cannon/bottom",
+    "inside": "devmod:block/foundry/fluid_cannon/inside"
+  }
+}

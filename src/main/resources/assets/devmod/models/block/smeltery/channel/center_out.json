@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/template/channel/center_out",
+  "textures": {
+    "texture": "devmod:block/smeltery/seared/stone"
+  }
+}

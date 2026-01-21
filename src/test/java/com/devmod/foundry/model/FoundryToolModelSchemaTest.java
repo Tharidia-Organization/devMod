@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FoundryToolModelSchemaTest {
 
-    private static final Path ASSETS_ROOT = Paths.get("src/main/resources/assets");
+    private static final Path ASSETS_ROOT = Paths.get("src/main/resources/assets/devmod/models");
 
     @Test
     @DisplayName("Foundry tool models declare textures for each part")
@@ -29,9 +30,10 @@ class FoundryToolModelSchemaTest {
         }
 
         List<String> failures = new ArrayList<>();
-        Files.walk(ASSETS_ROOT)
-            .filter(path -> path.toString().endsWith(".json"))
-            .forEach(path -> validateToolModel(path, failures));
+        try (Stream<Path> stream = Files.walk(ASSETS_ROOT)) {
+            stream.filter(path -> path.toString().endsWith(".json"))
+                .forEach(path -> validateToolModel(path, failures));
+        }
 
         assertTrue(failures.isEmpty(), "Foundry tool model schema issues:\n" + String.join("\n", failures));
     }
@@ -45,7 +47,7 @@ class FoundryToolModelSchemaTest {
         }
 
         String loader = json.has("loader") ? json.get("loader").getAsString() : "";
-        if (!"devmod:foundry_tool".equals(loader) && !"tconstruct:tool".equals(loader)) {
+        if (!"devmod:foundry_tool".equals(loader)) {
             return;
         }
 

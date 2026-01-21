@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "devmod:block/foundry/scorched/stone_top",
+    "side": "devmod:block/foundry/scorched/stone_side"
+  }
+}

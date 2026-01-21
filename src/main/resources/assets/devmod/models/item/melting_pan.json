@@ -1,0 +1,32 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "neoforge:item/default",
+  "textures": {
+    "head":    "devmod:item/foundry/tool/melting_pan/head",
+    "handle":  "devmod:item/foundry/tool/melting_pan/handle"
+  },
+  "modifier_roots": [ "devmod:item/foundry/tool/melting_pan/modifiers/" ],
+  "parts": [
+    { "name": "handle",  "index": 1 },
+    { "name": "head",    "index": 0 }
+  ],
+  "first_modifiers": [{ "name": "devmod:foundry_tank_model", "forced": true }],
+  "overrides": [
+    {
+      "predicate": { "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/melting_pan/charged"
+    },
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/melting_pan/blocking"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/melting_pan/blocking_charged"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/melting_pan/broken"
+    }
+  ]
+}

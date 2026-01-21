@@ -1,0 +1,64 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "devmod:item/base/staff",
+  "textures": {
+    "tool":       "devmod:item/foundry/tool/staff/ender",
+    "large_tool": "devmod:item/foundry/tool/staff/ender_large"
+  },
+  "large": true,
+  "modifier_roots": {
+    "small": [ "devmod:item/foundry/tool/staff/modifiers/ender/", "devmod:item/foundry/tool/staff/modifiers/" ],
+    "large": [ "devmod:item/foundry/tool/staff/large_modifiers/ender/", "devmod:item/foundry/tool/staff/large_modifiers/" ]
+  },
+  "first_modifiers": [ "devmod:dyed", "devmod:embellishment" ],
+  "overrides": [
+    {
+      "predicate": { "devmod:charging": 1 },
+      "model": "devmod:item/foundry/tool/staff/ender/charging_1"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.4 },
+      "model": "devmod:item/foundry/tool/staff/ender/charging_2"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.7 },
+      "model": "devmod:item/foundry/tool/staff/ender/charging_3"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 0.9 },
+      "model": "devmod:item/foundry/tool/staff/ender/charging_4"
+    },
+    {
+      "predicate": { "devmod:charging": 1, "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/staff/ender/charging_5"
+    },
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.05 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking_1"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.4 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking_2"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.7 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking_3"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 0.9 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking_4"
+    },
+    {
+      "predicate": { "devmod:charging": 2, "devmod:charge": 1.0 },
+      "model": "devmod:item/foundry/tool/staff/ender/blocking_5"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/staff/ender/broken"
+    }
+  ]
+}

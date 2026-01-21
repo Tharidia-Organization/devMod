@@ -1,0 +1,29 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "neoforge:item/default",
+  "textures": {
+    "head":   "devmod:item/foundry/tool/sword/blade",
+    "handle": "devmod:item/foundry/tool/sword/handle",
+    "guard":  "devmod:item/foundry/tool/sword/guard"
+  },
+  "modifier_roots": [ "devmod:item/foundry/tool/sword/modifiers/" ],
+  "parts": [
+    { "name": "handle", "index": 1 },
+    { "name": "head",   "index": 0 },
+    { "name": "guard",  "index": 2 }
+  ],
+  "overrides": [
+    {
+      "predicate": { "devmod:charging": 1.75 },
+      "model": "devmod:item/foundry/tool/sword/throwing"
+    },
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/sword/blocking"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/sword/broken"
+    }
+  ]
+}

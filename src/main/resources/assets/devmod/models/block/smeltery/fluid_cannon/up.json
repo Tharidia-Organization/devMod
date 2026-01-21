@@ -1,0 +1,6 @@
+{
+  "parent": "devmod:block/smeltery/fluid_cannon/base",
+  "textures": {
+    "top": "devmod:block/smeltery/fluid_cannon/top_nozzle"
+  }
+}

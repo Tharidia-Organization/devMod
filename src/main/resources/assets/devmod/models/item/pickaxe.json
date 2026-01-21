@@ -1,0 +1,25 @@
+{
+  "loader": "devmod:foundry_tool",
+  "parent": "devmod:item/base/axe",
+  "textures": {
+    "head":    "devmod:item/foundry/tool/pickaxe/head",
+    "handle":  "devmod:item/foundry/tool/pickaxe/handle",
+    "binding": "devmod:item/foundry/tool/pickaxe/binding"
+  },
+  "modifier_roots": [ "devmod:item/foundry/tool/pickaxe/modifiers/" ],
+  "parts": [
+    { "name": "handle",  "index": 1 },
+    { "name": "head",    "index": 0 },
+    { "name": "binding", "index": 2 }
+  ],
+  "overrides": [
+    {
+      "predicate": { "devmod:charging": 2 },
+      "model": "devmod:item/foundry/tool/pickaxe/blocking"
+    },
+    {
+      "predicate": { "devmod:broken": 1 },
+      "model": "devmod:item/foundry/tool/pickaxe/broken"
+    }
+  ]
+}

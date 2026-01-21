@@ -1,0 +1,9 @@
+{
+  "parent": "devmod:block/template/chute",
+  "textures": {
+    "top": "devmod:block/foundry/io/chute_top_inactive",
+    "back": "devmod:block/foundry/io/back",
+    "bricks": "devmod:block/foundry/scorched/bricks",
+    "side": "devmod:block/foundry/io/chute_side_inactive"
+  }
+}
