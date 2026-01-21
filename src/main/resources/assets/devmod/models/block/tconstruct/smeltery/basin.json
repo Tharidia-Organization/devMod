@@ -1,8 +1,8 @@
 {
-  "parent": "tconstruct:block/template/basin",
+  "parent": "devmod:block/template/basin",
   "textures": {
-    "top":    "tconstruct:block/smeltery/casting/basin_top",
-    "side":   "tconstruct:block/smeltery/casting/basin_side",
-    "bottom": "tconstruct:block/smeltery/casting/basin_bottom"
+    "top":    "devmod:block/smeltery/casting/basin_top",
+    "side":   "devmod:block/smeltery/casting/basin_side",
+    "bottom": "devmod:block/smeltery/casting/basin_bottom"
   }
 }

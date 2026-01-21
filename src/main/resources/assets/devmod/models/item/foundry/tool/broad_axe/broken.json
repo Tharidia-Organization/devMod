@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/tall_axe",
+  "parent": "devmod:item/base/tall_axe",
   "textures": {
     "head": "devmod:item/foundry/tool/broad_axe/blade_broken",
     "handle": "devmod:item/foundry/tool/broad_axe/handle",

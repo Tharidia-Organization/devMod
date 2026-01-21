@@ -1,8 +1,8 @@
 {
-  "parent": "tconstruct:block/template/table",
+  "parent": "devmod:block/template/table",
   "textures": {
-    "side":   "tconstruct:block/smeltery/casting/table_side",
-    "top":    "tconstruct:block/smeltery/casting/table_top",
-    "bottom": "tconstruct:block/smeltery/casting/table_bottom"
+    "side":   "devmod:block/smeltery/casting/table_side",
+    "top":    "devmod:block/smeltery/casting/table_top",
+    "bottom": "devmod:block/smeltery/casting/table_bottom"
   }
 }

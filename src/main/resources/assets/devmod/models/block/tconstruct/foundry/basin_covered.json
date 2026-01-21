@@ -2,11 +2,11 @@
   "parent": "block/block",
   "render_type": "minecraft:cutout",
   "textures": {
-    "particle": "tconstruct:block/foundry/casting/basin_side",
-    "side":     "tconstruct:block/foundry/casting/basin_side",
-    "bottom":   "tconstruct:block/foundry/casting/basin_bottom",
-    "top":      "tconstruct:block/foundry/casting/basin_top",
-    "bars":     "tconstruct:block/foundry/casting/basin_bars"
+    "particle": "devmod:block/foundry/casting/basin_side",
+    "side":     "devmod:block/foundry/casting/basin_side",
+    "bottom":   "devmod:block/foundry/casting/basin_bottom",
+    "top":      "devmod:block/foundry/casting/basin_top",
+    "bars":     "devmod:block/foundry/casting/basin_bars"
   },
   "elements": [
     {

@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "tconstruct:block/foundry/tank/fuel_tank"}
+    "": { "model": "devmod:block/foundry/tank/fuel_tank"}
   }
 }

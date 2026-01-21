@@ -1,10 +1,10 @@
 {
-    "parent": "tconstruct:block/table/chest/chest",
+    "parent": "devmod:block/table/chest/chest",
     "textures": {
-        "side": "tconstruct:block/chest/cast/side",
-        "front": "tconstruct:block/chest/cast/front",
-        "top": "tconstruct:block/chest/cast/side",
-        "drawer_front": "tconstruct:block/chest/cast/drawer_front",
-        "drawer_side": "tconstruct:block/chest/cast/drawer_side"
+        "side": "devmod:block/chest/cast/side",
+        "front": "devmod:block/chest/cast/front",
+        "top": "devmod:block/chest/cast/side",
+        "drawer_front": "devmod:block/chest/cast/drawer_front",
+        "drawer_side": "devmod:block/chest/cast/drawer_side"
     }
 }

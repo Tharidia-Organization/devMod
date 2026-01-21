@@ -1,9 +1,9 @@
 {
-  "parent": "tconstruct:block/template/chute",
+  "parent": "devmod:block/template/chute",
   "textures": {
-    "top": "tconstruct:block/foundry/io/chute_top_inactive",
-    "back": "tconstruct:block/foundry/io/back",
-    "bricks": "tconstruct:block/foundry/scorched/bricks",
-    "side": "tconstruct:block/foundry/io/chute_side_inactive"
+    "top": "devmod:block/foundry/io/chute_top_inactive",
+    "back": "devmod:block/foundry/io/back",
+    "bricks": "devmod:block/foundry/scorched/bricks",
+    "side": "devmod:block/foundry/io/chute_side_inactive"
   }
 }

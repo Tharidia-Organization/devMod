@@ -1,6 +1,6 @@
 {
-  "parent": "tconstruct:block/template/lantern_hanging",
+  "parent": "devmod:block/template/lantern_hanging",
   "textures": {
-    "lantern": "tconstruct:block/smeltery/lantern"
+    "lantern": "devmod:block/smeltery/lantern"
   }
 }

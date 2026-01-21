@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/hand_axe",
+  "parent": "devmod:item/hand_axe",
   "display": {
     "firstperson_righthand": {
       "rotation": [

@@ -3,7 +3,7 @@
   "loader": "devmod:foundry_connected",
   "parent": "block/cube_all",
   "textures": {
-    "all": "tconstruct:block/foundry/tinted_glass"
+    "all": "devmod:block/foundry/tinted_glass"
   },
   "connection": {
     "textures": {"all": "cornerless_full"}

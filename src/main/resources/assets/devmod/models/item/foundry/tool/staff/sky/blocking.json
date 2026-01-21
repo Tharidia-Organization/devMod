@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/sky_staff",
+  "parent": "devmod:item/sky_staff",
   "display": {
     "firstperson_righthand": {
       "rotation": [

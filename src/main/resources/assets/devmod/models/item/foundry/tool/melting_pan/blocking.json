@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/melting_pan",
+  "parent": "devmod:item/melting_pan",
   "display": {
     "firstperson_righthand": {
       "rotation": [

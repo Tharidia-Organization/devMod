@@ -1,12 +1,12 @@
 {
   "render_type": "minecraft:cutout",
-  "loader": "tconstruct:tank",
+  "loader": "devmod:foundry_tank_model",
   "parent": "block/block",
   "textures": {
-    "bottom": "tconstruct:block/smeltery/tank/gauge_top",
-    "top": "tconstruct:block/smeltery/tank/casting_tank_top",
+    "bottom": "devmod:block/smeltery/tank/gauge_top",
+    "top": "devmod:block/smeltery/tank/casting_tank_top",
     "particle": "#side",
-    "side": "tconstruct:block/smeltery/tank/casting_tank"
+    "side": "devmod:block/smeltery/tank/casting_tank"
   },
   "elements": [
     {

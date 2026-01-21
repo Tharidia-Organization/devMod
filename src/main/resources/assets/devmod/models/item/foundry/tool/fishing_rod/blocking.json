@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/fishing_rod",
+  "parent": "devmod:item/fishing_rod",
   "display": {
     "firstperson_righthand": {
       "rotation": [

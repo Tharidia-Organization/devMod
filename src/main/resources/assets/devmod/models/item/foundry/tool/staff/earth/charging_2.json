@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/staff_charging",
+  "parent": "devmod:item/base/staff_charging",
   "textures": {
     "tool": "devmod:item/foundry/tool/staff/earth_2",
     "large_tool": "devmod:item/foundry/tool/staff/earth_large_2"
@@ -19,7 +19,7 @@
     ]
   },
   "first_modifiers": [
-    "tconstruct:dyed",
-    "tconstruct:embellishment"
+    "devmod:dyed",
+    "devmod:embellishment"
   ]
 }

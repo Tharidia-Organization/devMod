@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/sword",
+  "parent": "devmod:item/sword",
   "display": {
     "firstperson_righthand": {
       "rotation": [

@@ -94,8 +94,8 @@ public class EnduranceQuestOverlay {
 
     private static final int PROGRESS_BAR_HEIGHT = 6;
 
-    // === Toggle ===
-    private static boolean enabled = true;
+    // === Toggle (disabled by default - enable via radial menu) ===
+    private static boolean enabled = false;
     private static boolean showDetails = true; // Show detailed stats
 
     // === Animation ===

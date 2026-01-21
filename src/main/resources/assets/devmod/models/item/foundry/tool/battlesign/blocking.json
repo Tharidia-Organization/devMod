@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/battlesign",
+  "parent": "devmod:item/battlesign",
   "display": {
     "thirdperson_righthand": {
       "rotation": [ 20, -25, 0 ],

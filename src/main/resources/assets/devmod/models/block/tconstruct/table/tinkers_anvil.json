@@ -1,11 +1,11 @@
 {
-  "loader": "tconstruct:material_block",
+  "loader": "devmod:foundry_material_block",
   "parent": "block/block",
   "textures": {
-    "particle": "tconstruct:block/storage/fallback",
-    "top": "tconstruct:block/storage/fallback",
-    "base": "tconstruct:block/table/anvil_base",
-    "upper": "tconstruct:block/table/anvil_base_upper"
+    "particle": "devmod:block/storage/fallback",
+    "top": "devmod:block/storage/fallback",
+    "base": "devmod:block/table/anvil_base",
+    "upper": "devmod:block/table/anvil_base_upper"
   },
   "retextured": [ "particle", "top" ],
   "display": {

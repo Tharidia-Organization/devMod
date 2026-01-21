@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/pickaxe",
+  "parent": "devmod:item/pickaxe",
   "display": {
     "firstperson_righthand": {
       "rotation": [

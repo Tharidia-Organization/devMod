@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/crossbow",
+  "parent": "devmod:item/base/crossbow",
   "textures": {
     "limb": "devmod:item/foundry/tool/crossbow/limb",
     "body": "devmod:item/foundry/tool/crossbow/body",
@@ -25,7 +25,7 @@
     }
   ],
   "ammo": {
-    "key": "tconstruct:crossbow_ammo",
+    "key": "devmod:crossbow_ammo",
     "flip": true,
     "left": false,
     "offset": [

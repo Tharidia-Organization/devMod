@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/swasher",
+  "parent": "devmod:item/swasher",
   "display": {
     "firstperson_righthand": {
       "rotation": [

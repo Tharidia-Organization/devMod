@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/ichor_staff",
+  "parent": "devmod:item/ichor_staff",
   "display": {
     "firstperson_righthand": {
       "rotation": [

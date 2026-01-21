@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/javelin",
+  "parent": "devmod:item/javelin",
   "display": {
     "thirdperson_righthand": {
       "rotation": [ 180, -90, 55 ],

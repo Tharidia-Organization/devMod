@@ -25,7 +25,7 @@
   ],
   "first_modifiers": [
     {
-      "name": "tconstruct:tank",
+      "name": "devmod:foundry_tank_model",
       "forced": true
     }
   ]

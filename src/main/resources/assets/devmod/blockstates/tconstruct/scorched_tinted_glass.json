@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "tconstruct:block/foundry/tinted_glass" }
+    "": { "model": "devmod:block/foundry/tinted_glass" }
   }
 }

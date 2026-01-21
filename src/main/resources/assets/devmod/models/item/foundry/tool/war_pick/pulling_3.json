@@ -25,7 +25,7 @@
     }
   ],
   "ammo": {
-    "key": "tconstruct:crossbow_ammo",
+    "key": "devmod:crossbow_ammo",
     "flip": false,
     "left": true,
     "offset": [

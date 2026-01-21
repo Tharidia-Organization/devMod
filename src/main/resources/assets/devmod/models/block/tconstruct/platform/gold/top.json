@@ -1,7 +1,7 @@
 {
-    "parent": "tconstruct:block/platform/top",
+    "parent": "devmod:block/platform/top",
 	"textures": {
-		"side": "tconstruct:block/platform/gold_side",
-		"top":  "tconstruct:block/platform/gold_top"
+		"side": "devmod:block/platform/gold_side",
+		"top":  "devmod:block/platform/gold_top"
 	}
 }

@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/sledge_hammer",
+  "parent": "devmod:item/sledge_hammer",
   "display": {
     "firstperson_righthand": {
       "rotation": [

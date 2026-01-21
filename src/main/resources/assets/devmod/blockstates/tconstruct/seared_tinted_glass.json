@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "tconstruct:block/smeltery/tinted_glass" }
+    "": { "model": "devmod:block/smeltery/tinted_glass" }
   }
 }

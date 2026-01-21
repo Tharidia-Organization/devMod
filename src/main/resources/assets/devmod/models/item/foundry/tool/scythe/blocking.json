@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/scythe",
+  "parent": "devmod:item/scythe",
   "display": {
     "firstperson_righthand": {
       "rotation": [

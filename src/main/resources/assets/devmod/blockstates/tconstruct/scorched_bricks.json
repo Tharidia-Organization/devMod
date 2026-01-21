@@ -1,7 +1,7 @@
 {
   "variants": {
     "": {
-      "model": "tconstruct:block/foundry/scorched/bricks"
+      "model": "devmod:block/foundry/scorched/bricks"
     }
   }
 }

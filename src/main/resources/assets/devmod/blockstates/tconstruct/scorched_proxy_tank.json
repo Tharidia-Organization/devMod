@@ -1,5 +1,5 @@
 {
   "variants": {
-    "": { "model": "tconstruct:block/foundry/proxy_tank" }
+    "": { "model": "devmod:block/foundry/proxy_tank" }
   }
 }

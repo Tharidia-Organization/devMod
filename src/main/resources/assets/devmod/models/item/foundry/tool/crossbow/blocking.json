@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/crossbow",
+  "parent": "devmod:item/crossbow",
   "display": {
     "firstperson_righthand": {
       "rotation": [

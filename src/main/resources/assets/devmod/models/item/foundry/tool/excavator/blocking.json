@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/excavator",
+  "parent": "devmod:item/excavator",
   "display": {
     "firstperson_righthand": {
       "rotation": [

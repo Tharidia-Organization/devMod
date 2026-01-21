@@ -50,8 +50,8 @@ public class NutritionHudOverlay {
     private static final int COLOR_WELL_FED = DesignTokens.Nutrition.HUD_WELL_FED;
     private static final int COLOR_CRITICAL = DesignTokens.Nutrition.HUD_CRITICAL;
 
-    // Visibility control
-    private static boolean enabled = true;
+    // Visibility control (disabled by default - enable via radial menu)
+    private static boolean enabled = false;
 
     // FIX AUDIT #5: Configurable position offsets (from bottom-left)
     // Can be adjusted by config or other mods to avoid HUD collisions

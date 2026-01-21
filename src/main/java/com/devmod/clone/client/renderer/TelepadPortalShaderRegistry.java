@@ -55,11 +55,17 @@ public final class TelepadPortalShaderRegistry {
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_portal"),
         BASE_CONFIG
     );
+    private static final ResourceLocation RUNE_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+        DevMod.MODID,
+        "textures/effect/telepad_runes.png"
+    );
 
     @Nullable
     private static RenderType baseRenderType;
     @Nullable
     private static RenderType glowRenderType;
+    private static boolean baseUsingFallback = true;
+    private static boolean glowUsingFallback = true;
 
     private TelepadPortalShaderRegistry() {}
 
@@ -72,13 +78,33 @@ public final class TelepadPortalShaderRegistry {
     }
 
     private static void refreshRenderTypes() {
-        baseRenderType = PIPELINE.buildRenderType(BASE_CONFIG, true);
-        glowRenderType = PIPELINE.buildRenderType(GLOW_CONFIG, true);
+        boolean useFallback = !PIPELINE.isReady();
+        baseRenderType = buildPortalRenderType(BASE_CONFIG, useFallback);
+        glowRenderType = buildPortalRenderType(GLOW_CONFIG, useFallback);
+        baseUsingFallback = useFallback;
+        glowUsingFallback = useFallback;
+    }
+
+    private static RenderType buildPortalRenderType(ShaderRenderTypeConfig config, boolean useFallbackFormat) {
+        String renderTypeName = useFallbackFormat ? config.fallbackName() : config.name();
+        var format = useFallbackFormat ? config.fallbackFormat() : config.primaryFormat();
+
+        RenderType.CompositeState compositeState = RenderType.CompositeState.builder()
+            .setShaderState(PIPELINE.shaderStateShard())
+            .setTextureState(new RenderStateShard.TextureStateShard(RUNE_TEXTURE, false, false))
+            .setTransparencyState(config.transparencyState())
+            .setDepthTestState(config.depthTestState())
+            .setWriteMaskState(config.writeMaskState())
+            .setCullState(config.cullState())
+            .createCompositeState(false);
+
+        return RenderType.create(renderTypeName, format, config.mode(), config.bufferSize(),
+            config.affectsCrumbling(), config.sortOnUpload(), compositeState);
     }
 
     @Nullable
     public static RenderType getBaseRenderType() {
-        if (baseRenderType == null) {
+        if (baseRenderType == null || (baseUsingFallback && PIPELINE.isReady())) {
             refreshRenderTypes();
         }
         return baseRenderType != null ? baseRenderType : PIPELINE.renderType();
@@ -86,7 +112,7 @@ public final class TelepadPortalShaderRegistry {
 
     @Nullable
     public static RenderType getGlowRenderType() {
-        if (glowRenderType == null) {
+        if (glowRenderType == null || (glowUsingFallback && PIPELINE.isReady())) {
             refreshRenderTypes();
         }
         return glowRenderType != null ? glowRenderType : PIPELINE.renderType();

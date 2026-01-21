@@ -1,13 +1,13 @@
 {
-  "loader": "mantle:retextured",
-  "parent": "tconstruct:block/table/table",
+  "loader": "devmod:retextured",
+  "parent": "devmod:block/table/table",
   "textures": {
-    "particle": "tconstruct:block/table/crafting_station_top",
-    "top": "tconstruct:block/table/crafting_station_top",
-    "side": "tconstruct:block/table/crafting_station_side",
-    "leg": "tconstruct:block/table/crafting_station_side",
-    "bottom": "tconstruct:block/table/bottom",
-    "legBottom": "tconstruct:block/table/bottom"
+    "particle": "devmod:block/table/crafting_station_top",
+    "top": "devmod:block/table/crafting_station_top",
+    "side": "devmod:block/table/crafting_station_side",
+    "leg": "devmod:block/table/crafting_station_side",
+    "bottom": "devmod:block/table/bottom",
+    "legBottom": "devmod:block/table/bottom"
   },
   "retextured": [ "leg", "legBottom" ]
 }

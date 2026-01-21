@@ -49,8 +49,8 @@ public class ActiveTestHudOverlay {
     private static final int LINE_HEIGHT = 11;
     private static final int HEADER_HEIGHT = 22;
 
-    // === State ===
-    private static boolean enabled = true;
+    // === State (disabled by default - enable via radial menu) ===
+    private static boolean enabled = false;
     private static boolean minimized = false;
     @Nullable
     private static TestCase activeTest = null;

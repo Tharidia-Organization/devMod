@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/ender_staff",
+  "parent": "devmod:item/ender_staff",
   "display": {
     "firstperson_righthand": {
       "rotation": [

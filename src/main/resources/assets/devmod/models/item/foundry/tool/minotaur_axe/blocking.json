@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/minotaur_axe",
+  "parent": "devmod:item/minotaur_axe",
   "display": {
     "firstperson_righthand": {
       "rotation": [

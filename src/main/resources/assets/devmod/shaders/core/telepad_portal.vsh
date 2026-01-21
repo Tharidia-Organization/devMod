@@ -18,11 +18,12 @@ void main() {
     gl_Position = ProjMat * view;
 
     vertexColor = Color;
-    uv = Position.xy * 0.5 + 0.5;
+    uv = Normal.yz * 0.5 + 0.5;
     viewPos = view.xyz;
 
-    vec3 normal = normalize(mat3(ModelViewMat) * vec3(0.0, 0.0, 1.0));
-    viewNormal = normal;
-
     layerId = Normal.x;
+
+    vec3 baseNormal = layerId < -0.35 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
+    vec3 normal = normalize(mat3(ModelViewMat) * baseNormal);
+    viewNormal = normal;
 }

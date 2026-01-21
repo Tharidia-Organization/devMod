@@ -43,8 +43,8 @@ public class IntegratedTestOverlay {
     private static final int PANEL_PADDING = OverlayTheme.Dimension.PADDING_TIGHT;
     private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT;
 
-    // === State ===
-    private static boolean enabled = true;
+    // === State (disabled by default - enable via radial menu) ===
+    private static boolean enabled = false;
     private static boolean forceShow = false;
 
     @SubscribeEvent

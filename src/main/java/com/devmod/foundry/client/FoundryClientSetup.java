@@ -78,25 +78,18 @@ public final class FoundryClientSetup {
         event.register(FoundryPartModelLoader.ID, FoundryPartModelLoader.INSTANCE);
         event.register(FoundryToolModelLoader.ID, FoundryToolModelLoader.INSTANCE);
         event.register(FoundryTankModelLoader.ID, FoundryTankModelLoader.INSTANCE);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_material"), FoundryMaterialModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_tank_model"), FoundryTankModel.LOADER);
         event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_connected"), FoundryConnectedModel.LOADER);
         event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "retextured"), FoundryRetexturedModel.LOADER);
         event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "item_layer"), FoundryItemLayerModel.LOADER);
         event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "colored_block"), FoundryColoredBlockModel.LOADER);
         event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nbt_key"), FoundryNBTKeyModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_material_block"), FoundryMaterialBlockModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_fluid_texture"), FoundryFluidTextureModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_fluid_container"), FoundryFluidContainerModel.LOADER);
+        event.register(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_gui"), FoundryUniqueGuiModel.LOADER);
 
-        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "connected"), FoundryConnectedModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "retextured"), FoundryRetexturedModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "item_layer"), FoundryItemLayerModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "colored_block"), FoundryColoredBlockModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("mantle", "nbt_key"), FoundryNBTKeyModel.LOADER);
-
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "tool"), FoundryToolModelLoader.INSTANCE);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "material"), FoundryMaterialModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "material_block"), FoundryMaterialBlockModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "tank"), FoundryTankModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "fluid_texture"), FoundryFluidTextureModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "fluid_container"), FoundryFluidContainerModel.LOADER);
-        event.register(ResourceLocation.fromNamespaceAndPath("tconstruct", "gui"), FoundryUniqueGuiModel.LOADER);
     }
 
     @SubscribeEvent

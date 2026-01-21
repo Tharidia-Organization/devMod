@@ -1,12 +1,12 @@
 {
   "render_type": "minecraft:cutout",
-  "loader": "tconstruct:tank",
+  "loader": "devmod:foundry_tank_model",
   "parent": "block/block",
   "textures": {
     "particle": "#front",
-    "top":   "tconstruct:block/foundry/tank/gauge_top",
-    "side":  "tconstruct:block/foundry/controller/alloyer_side",
-    "brick": "tconstruct:block/foundry/scorched/bricks"
+    "top":   "devmod:block/foundry/tank/gauge_top",
+    "side":  "devmod:block/foundry/controller/alloyer_side",
+    "brick": "devmod:block/foundry/scorched/bricks"
   },
   "elements": [
     { "from": [ 0, 0, 0 ],

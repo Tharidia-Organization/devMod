@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/bow",
+  "parent": "devmod:item/base/bow",
   "textures": {
     "limb_bottom": "devmod:item/foundry/tool/longbow/limb_bottom_2",
     "limb_top": "devmod:item/foundry/tool/longbow/limb_top_2",
@@ -45,7 +45,7 @@
     }
   ],
   "ammo": {
-    "key": "tconstruct:drawback_ammo",
+    "key": "devmod:drawback_ammo",
     "flip": true,
     "left": true,
     "small_offset": [

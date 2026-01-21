@@ -1,6 +1,6 @@
 {
-  "parent": "tconstruct:block/foundry/controller/alloyer",
+  "parent": "devmod:block/foundry/controller/alloyer",
   "textures": {
-    "front": "tconstruct:block/foundry/controller/alloyer_active"
+    "front": "devmod:block/foundry/controller/alloyer_active"
   }
 }

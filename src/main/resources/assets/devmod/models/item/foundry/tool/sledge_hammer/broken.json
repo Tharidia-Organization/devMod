@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/tall",
+  "parent": "devmod:item/base/tall",
   "textures": {
     "head": "devmod:item/foundry/tool/sledge_hammer/head_broken",
     "handle": "devmod:item/foundry/tool/sledge_hammer/handle",

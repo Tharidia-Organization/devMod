@@ -1,7 +1,7 @@
 {
-  "parent": "tconstruct:block/template/tank",
+  "parent": "devmod:block/template/tank",
   "textures": {
-    "top":  "tconstruct:block/foundry/tank/gauge_top",
-    "side": "tconstruct:block/foundry/tank/fuel_gauge"
+    "top":  "devmod:block/foundry/tank/gauge_top",
+    "side": "devmod:block/foundry/tank/fuel_gauge"
   }
 }

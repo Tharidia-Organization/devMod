@@ -1,7 +1,7 @@
 {
   "variants": {
     "": {
-      "model": "tconstruct:block/foundry/scorched/road"
+      "model": "devmod:block/foundry/scorched/road"
     }
   }
 }

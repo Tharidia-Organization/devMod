@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/earth_staff",
+  "parent": "devmod:item/earth_staff",
   "display": {
     "firstperson_righthand": {
       "rotation": [

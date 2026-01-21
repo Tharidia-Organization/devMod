@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/bow",
+  "parent": "devmod:item/base/bow",
   "textures": {
     "limb_bottom": "devmod:item/foundry/tool/longbow/limb_bottom",
     "limb_top": "devmod:item/foundry/tool/longbow/limb_top",

@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/axe",
+  "parent": "devmod:item/base/axe",
   "textures": {
     "adze": "devmod:item/foundry/tool/pickadze/adze",
     "pick": "devmod:item/foundry/tool/pickadze/pick_broken",

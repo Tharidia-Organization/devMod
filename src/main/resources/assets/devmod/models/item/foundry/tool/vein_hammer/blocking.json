@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/vein_hammer",
+  "parent": "devmod:item/vein_hammer",
   "display": {
     "firstperson_righthand": {
       "rotation": [

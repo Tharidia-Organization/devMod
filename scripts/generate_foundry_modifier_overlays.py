@@ -75,8 +75,7 @@ def is_large_root(root: str) -> bool:
 def is_placeholder_root(root: str) -> bool:
     if not root.startswith("devmod:item/foundry/tool/"):
         return False
-    t_root = root.replace("devmod:item/foundry/", "tconstruct:item/", 1)
-    return not resource_to_texture_dir(t_root).exists()
+    return not resource_to_texture_dir(root).exists()
 
 
 def choose_model(paths: List[Path]) -> Path:

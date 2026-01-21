@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/dagger",
+  "parent": "devmod:item/dagger",
   "display": {
     "firstperson_righthand": {
       "rotation": [

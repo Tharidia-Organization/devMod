@@ -2,7 +2,7 @@
   "parent": "neoforge:item/default",
   "gui_light": "front",
   "display": {
-    "tconstruct:thrown": {
+    "devmod:thrown": {
       "rotation": [ 0, 180, 0 ],
       "scale": [ 1, 1, 1 ],
       "translation": [ 5, -5, 0 ]

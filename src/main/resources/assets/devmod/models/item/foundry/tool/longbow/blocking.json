@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/longbow",
+  "parent": "devmod:item/longbow",
   "display": {
     "firstperson_righthand": {
       "rotation": [

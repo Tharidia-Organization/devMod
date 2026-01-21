@@ -1,10 +1,10 @@
 {
   "variants": {
-    "facing=west":  { "model": "tconstruct:block/foundry/fluid_cannon/front", "y": 270 },
-    "facing=south": { "model": "tconstruct:block/foundry/fluid_cannon/front", "y": 180 },
-    "facing=north": { "model": "tconstruct:block/foundry/fluid_cannon/front" },
-    "facing=east":  { "model": "tconstruct:block/foundry/fluid_cannon/front", "y":  90 },
-    "facing=up":    { "model": "tconstruct:block/foundry/fluid_cannon/up"   },
-    "facing=down":  { "model": "tconstruct:block/foundry/fluid_cannon/down" }
+    "facing=west":  { "model": "devmod:block/foundry/fluid_cannon/front", "y": 270 },
+    "facing=south": { "model": "devmod:block/foundry/fluid_cannon/front", "y": 180 },
+    "facing=north": { "model": "devmod:block/foundry/fluid_cannon/front" },
+    "facing=east":  { "model": "devmod:block/foundry/fluid_cannon/front", "y":  90 },
+    "facing=up":    { "model": "devmod:block/foundry/fluid_cannon/up"   },
+    "facing=down":  { "model": "devmod:block/foundry/fluid_cannon/down" }
   }
 }

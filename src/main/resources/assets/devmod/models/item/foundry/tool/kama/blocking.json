@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/kama",
+  "parent": "devmod:item/kama",
   "display": {
     "firstperson_righthand": {
       "rotation": [

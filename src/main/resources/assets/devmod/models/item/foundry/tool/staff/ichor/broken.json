@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/staff",
+  "parent": "devmod:item/base/staff",
   "textures": {
     "tool": "devmod:item/foundry/tool/staff/ichor_broken",
     "large_tool": "devmod:item/foundry/tool/staff/ichor_large_broken"
@@ -21,7 +21,7 @@
     ]
   },
   "first_modifiers": [
-    "tconstruct:dyed",
-    "tconstruct:embellishment"
+    "devmod:dyed",
+    "devmod:embellishment"
   ]
 }

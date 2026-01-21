@@ -49,8 +49,8 @@ public class QuestHudOverlay {
     private static final int MARGIN_RIGHT = 10;
     private static final int MARGIN_BOTTOM = 10;
 
-    // === Toggle ===
-    private static boolean enabled = true;
+    // === Toggle (disabled by default - enable via radial menu) ===
+    private static boolean enabled = false;
     private static boolean minimized = false;
 
     // === Animation ===

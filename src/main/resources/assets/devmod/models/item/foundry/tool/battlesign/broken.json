@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/battlesign",
+  "parent": "devmod:item/base/battlesign",
   "textures": {
     "head": "devmod:item/foundry/tool/battlesign/head_broken",
     "handle": "devmod:item/foundry/tool/battlesign/handle"

@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/crossbow",
+  "parent": "devmod:item/base/crossbow",
   "textures": {
     "limb": "devmod:item/foundry/tool/crossbow/limb",
     "body": "devmod:item/foundry/tool/crossbow/body",

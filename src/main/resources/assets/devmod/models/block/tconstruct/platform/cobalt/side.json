@@ -1,7 +1,7 @@
 {
-    "parent": "tconstruct:block/platform/side",
+    "parent": "devmod:block/platform/side",
     "textures": {
-		"side":     "tconstruct:block/platform/cobalt_side",
-		"particle": "tconstruct:block/platform/cobalt_top"
+		"side":     "devmod:block/platform/cobalt_side",
+		"particle": "devmod:block/platform/cobalt_top"
     }
 }

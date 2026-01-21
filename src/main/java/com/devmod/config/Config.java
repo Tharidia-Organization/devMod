@@ -331,8 +331,8 @@ public class Config {
                 .define("overlayEnabled", false);
 
         IMPACT_HUD_ENABLED = BUILDER
-                .comment("Enable impact analysis HUD")
-                .define("impactHudEnabled", true);
+                .comment("Enable impact analysis HUD (disabled by default - enable via radial menu)")
+                .define("impactHudEnabled", false);
 
         IMPACT_HUD_POSITION = BUILDER
                 .comment("Position of the Impact HUD on screen (TOP_RIGHT, TOP_LEFT, BOTTOM_RIGHT, BOTTOM_LEFT, CENTER_RIGHT, CENTER_LEFT)")

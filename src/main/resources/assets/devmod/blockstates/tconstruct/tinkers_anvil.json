@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "tconstruct:block/table/tinkers_anvil", "y":  90 },
-    "facing=south": { "model": "tconstruct:block/table/tinkers_anvil", "y": 270 },
-    "facing=west":  { "model": "tconstruct:block/table/tinkers_anvil" },
-    "facing=east":  { "model": "tconstruct:block/table/tinkers_anvil", "y": 180 }
+    "facing=north": { "model": "devmod:block/table/tinkers_anvil", "y":  90 },
+    "facing=south": { "model": "devmod:block/table/tinkers_anvil", "y": 270 },
+    "facing=west":  { "model": "devmod:block/table/tinkers_anvil" },
+    "facing=east":  { "model": "devmod:block/table/tinkers_anvil", "y": 180 }
   }
 }

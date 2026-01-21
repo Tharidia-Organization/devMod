@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "tconstruct:block/smeltery/basin" },
-    "facing=south": { "model": "tconstruct:block/smeltery/basin", "y": 180 },
-    "facing=west":  { "model": "tconstruct:block/smeltery/basin", "y": 270 },
-    "facing=east":  { "model": "tconstruct:block/smeltery/basin", "y":  90 }
+    "facing=north": { "model": "devmod:block/smeltery/basin" },
+    "facing=south": { "model": "devmod:block/smeltery/basin", "y": 180 },
+    "facing=west":  { "model": "devmod:block/smeltery/basin", "y": 270 },
+    "facing=east":  { "model": "devmod:block/smeltery/basin", "y":  90 }
   }
 }

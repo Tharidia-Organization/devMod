@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:block/table/chest/chest_display",
+  "parent": "devmod:block/table/chest/chest_display",
   "textures": {
     "particle": "#side"
   },

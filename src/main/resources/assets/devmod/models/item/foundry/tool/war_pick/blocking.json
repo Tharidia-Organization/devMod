@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/war_pick",
+  "parent": "devmod:item/war_pick",
   "display": {
     "firstperson_righthand": {
       "rotation": [

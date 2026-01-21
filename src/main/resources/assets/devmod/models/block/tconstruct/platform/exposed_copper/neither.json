@@ -1,7 +1,7 @@
 {
-    "parent": "tconstruct:block/platform/neither",
+    "parent": "devmod:block/platform/neither",
 	"textures": {
-		"side": "tconstruct:block/platform/exposed_copper_side",
-		"top":  "tconstruct:block/platform/exposed_copper_top"
+		"side": "devmod:block/platform/exposed_copper_side",
+		"top":  "devmod:block/platform/exposed_copper_top"
 	}
 }

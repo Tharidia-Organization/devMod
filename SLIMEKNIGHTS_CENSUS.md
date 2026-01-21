@@ -5,10 +5,16 @@
 - Fornisce loader, util e dati per materiali/modifier/texture usati dai modelli Foundry.
 - Diversi componenti sono stub/minimali: servono solo a far girare i modelli, non gameplay completo.
 
+## Stato attuale
+- `src/main/java/slimeknights` rimosso: i loader e utilita` equivalenti sono ora sotto `com.devmod.foundry`.
+- Alias Mantle/TCon rimossi da `FoundryClientSetup` (solo loader `devmod:` registrati).
+- Modelli/texture DevMod ripuntati a loader `devmod:foundry_*` e namespace `devmod:` (nessun riferimento `tconstruct:` nei JSON DevMod).
+- Questo file resta come snapshot per la migrazione.
+
 ## Integrazione con Foundry (com.devmod)
 
 ### Loader e Listener
-- `com.devmod.foundry.client.FoundryClientSetup` registra i geometry loader Mantle (`connected`, `retextured`, `item_layer`, `colored_block`, `nbt_key`) e TConstruct (`tool`, `material`, `material_block`, `tank`, `fluid_texture`, `fluid_container`, `gui`).
+- `com.devmod.foundry.client.FoundryClientSetup` registra i geometry loader DevMod (`foundry_part`, `foundry_tool`, `foundry_tank`, `foundry_material`, `foundry_tank_model`, `foundry_connected`, `retextured`, `item_layer`, `colored_block`, `nbt_key`, `foundry_material_block`, `foundry_fluid_texture`, `foundry_fluid_container`, `foundry_gui`).
 - `com.devmod.foundry.client.FoundryClientSetup` registra `DynamicTextureLoader` e `ModifierModelManager` come reload listener.
 - `com.devmod.foundry.client.FoundryClientSetup` registra `FoundryMaterialRenderInfoLoader` per caricare render info materiali custom.
 - `com.devmod.foundry.client.FoundryClientSetup` registra `ToolModel.COLOR_HANDLER` solo per gli item tool di `FoundryToolItems` (non per parti/pattern).
@@ -135,11 +141,39 @@
 - `FoundryToolModelLoader` (`devmod:foundry_tool`): rendering tool multi-part, usa `FoundryMaterialRenderInfo` per texture.
 - `FoundryPartModelLoader` (`devmod:foundry_part`): rendering singole parti, usa `FoundryPartItem` e `FoundryMaterialRenderInfo`.
 - `FoundryTankModelLoader` (`devmod:foundry_tank`): rendering tank con fluido interno.
-- Questi loader lavorano in parallelo ai loader `tconstruct:tool` / `tconstruct:material` registrati per compatibilità.
+- `FoundryTankModel` (`devmod:foundry_tank_model`): tank dinamico con cubo fluido incrementale + GUI opzionale.
+- `FoundryMaterialBlockModel` (`devmod:foundry_material_block`): block model per anvil/parti con retexturing materiali.
+- `FoundryFluidTextureModel` (`devmod:foundry_fluid_texture`): sostituzione texture fluido da ModelData.
+- `FoundryUniqueGuiModel` (`devmod:foundry_gui`): modello alternativo per GUI.
+- Questi loader sostituiscono completamente Mantle/TCon (nessun alias attivo).
+
+## Modelli DevMod migrati a loader DevMod (ex Mantle/TCon)
+
+- Residui Mantle/TCon in `assets/devmod/models/block/tconstruct`: 0.
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/tank_knob.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/controller_fluid.json` (`devmod:foundry_fluid_texture`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/tinker_station.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/chute.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/tinkers_anvil.json` (`devmod:foundry_material_block`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/crafting_station.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/lantern_hanging.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/io_fluid.json` (`devmod:foundry_fluid_texture`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/lantern.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/io.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/half_tank.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/controller.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/template/tank.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/part_builder.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/scorched_anvil.json` (`devmod:foundry_material_block`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/table/modifier_worktable.json` (`devmod:retextured`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/smeltery/tank/casting_tank.json` (`devmod:foundry_tank_model`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/foundry/proxy_tank.json` (`devmod:foundry_gui`)
+- `src/main/resources/assets/devmod/models/block/tconstruct/foundry/controller/alloyer.json` (`devmod:foundry_tank_model`)
 
 ## Stato overlay Foundry (modifiers)
 
 - Overlay rigenerati per tutti i root `devmod:item/foundry/tool/**/modifiers`.
+- Overlay rinominati con prefisso `devmod_` per allineare gli ID modifier DevMod.
 - Copertura gruppi chiave: plate armor (boots/chestplate/helmet/leggings/shield + large_modifiers), heavy broken, light broken, staff broken, swasher livelli, melting_pan charged, minotaur_axe, flint_and_bronze, ammo, slime.
 - Check automatico alpha zero: 0 PNG (ultimo run).
 - Script: `scripts/generate_foundry_modifier_overlays.py` ora include root con suffisso `_modifiers`, posizionamento per overlap reale, fallback broken -> non-broken per template mancanti.
@@ -243,8 +277,8 @@
 
 ## Audit
 
-- Ultimo aggiornamento: 2026-01-20
-- File Java verificati: 67 (tutti presenti nel codebase)
+- Ultimo aggiornamento: 2026-01-21
+- File Java verificati: 67 (snapshot storico; package rimosso dal codebase)
 - Integrazioni Foundry verificate: FoundryClientSetup, FoundryToolItem, FoundryPartItem, FoundryTankBlockEntity
 - Risorse JSON tinkering: assenti (nessun overlay modifier attivo)
 - Test eseguiti: FoundryToolModelSchemaTest, FoundryModifierRootCoverageTest (pass)

@@ -1,5 +1,5 @@
 {
-  "loader": "mantle:retextured",
+  "loader": "devmod:retextured",
 	"parent": "block/block",
 	"textures": {
 		"particle": "#side"

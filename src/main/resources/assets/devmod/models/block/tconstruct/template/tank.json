@@ -1,6 +1,6 @@
 {
   "render_type": "minecraft:cutout",
-  "loader": "tconstruct:tank",
+  "loader": "devmod:foundry_tank_model",
   "parent": "block/block",
   "fluid": {
     "from": [ 0.08, 0.08, 0.08 ],

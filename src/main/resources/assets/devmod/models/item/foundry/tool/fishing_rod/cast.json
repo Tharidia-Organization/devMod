@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/rod",
+  "parent": "devmod:item/base/rod",
   "textures": {
     "rod": "devmod:item/foundry/tool/fishing_rod/rod",
     "string": "devmod:item/foundry/tool/fishing_rod/string_cast",
@@ -26,11 +26,11 @@
   ],
   "first_modifiers": [
     {
-      "name": "tconstruct:tipped",
+      "name": "devmod:tipped",
       "forced": true
     },
     {
-      "name": "tconstruct:tank_handler",
+      "name": "devmod:foundry_tank_model_handler",
       "forced": true
     }
   ]

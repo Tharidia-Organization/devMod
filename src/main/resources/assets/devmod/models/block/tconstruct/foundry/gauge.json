@@ -1,6 +1,6 @@
 {
-  "parent": "tconstruct:block/template/gauge",
+  "parent": "devmod:block/template/gauge",
   "textures": {
-    "gauge": "tconstruct:block/foundry/io/gauge"
+    "gauge": "devmod:block/foundry/io/gauge"
   }
 }

@@ -1,7 +1,7 @@
 {
     "variants": {
         "": {
-            "model": "tconstruct:block/smeltery/seared/stone"
+            "model": "devmod:block/smeltery/seared/stone"
         }
     }
 }

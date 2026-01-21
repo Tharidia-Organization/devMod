@@ -1,6 +1,6 @@
 {
   "loader": "devmod:foundry_tool",
-  "parent": "tconstruct:item/base/axe",
+  "parent": "devmod:item/base/axe",
   "textures": {
     "front": "devmod:item/foundry/tool/minotaur_axe/front_broken",
     "back": "devmod:item/foundry/tool/minotaur_axe/back",

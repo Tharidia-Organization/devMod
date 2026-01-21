@@ -1,11 +1,11 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "tconstruct:block/table/anvil_base",
-    "front": "tconstruct:block/table/side",
-    "side": "tconstruct:block/table/side",
-    "top": "tconstruct:block/table/anvil_base",
-    "bottom": "tconstruct:block/table/bottom"
+    "particle": "devmod:block/table/anvil_base",
+    "front": "devmod:block/table/side",
+    "side": "devmod:block/table/side",
+    "top": "devmod:block/table/anvil_base",
+    "bottom": "devmod:block/table/bottom"
   },
   "elements": [
     {

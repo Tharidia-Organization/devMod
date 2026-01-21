@@ -61,8 +61,8 @@ public class PartyHudOverlay {
     private static final int MARGIN_LEFT = 10;
     private static final int MARGIN_TOP = 300; // Below EnduranceQuestOverlay
 
-    // === Toggle ===
-    private static boolean enabled = true;
+    // === Toggle (disabled by default - enable via radial menu) ===
+    private static boolean enabled = false;
 
     @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {

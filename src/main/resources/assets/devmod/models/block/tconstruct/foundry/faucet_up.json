@@ -1,6 +1,6 @@
 {
-  "parent": "tconstruct:block/template/faucet_up",
+  "parent": "devmod:block/template/faucet_up",
   "textures": {
-    "tex": "tconstruct:block/foundry/scorched/stone_side"
+    "tex": "devmod:block/foundry/scorched/stone_side"
   }
 }

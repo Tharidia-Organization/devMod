@@ -1,9 +1,9 @@
 {
   "render_type": "minecraft:cutout",
-  "loader": "tconstruct:fluid_texture",
+  "loader": "devmod:foundry_fluid_texture",
   "parent": "block/block",
   "textures": {
-    "fluid": "tconstruct:block/black",
+    "fluid": "devmod:block/black",
     "particle": "#drain"
   },
   "colors": [{"uvlock": true}],

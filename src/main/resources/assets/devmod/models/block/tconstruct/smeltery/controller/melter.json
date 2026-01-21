@@ -1,9 +1,9 @@
 {
-  "parent": "tconstruct:block/template/half_tank",
+  "parent": "devmod:block/template/half_tank",
   "textures": {
-    "top":    "tconstruct:block/smeltery/tank/gauge_top",
-    "side":   "tconstruct:block/smeltery/controller/melter_side",
-    "bottom": "tconstruct:block/smeltery/seared/bricks",
-    "inside": "tconstruct:block/smeltery/seared/bricks"
+    "top":    "devmod:block/smeltery/tank/gauge_top",
+    "side":   "devmod:block/smeltery/controller/melter_side",
+    "bottom": "devmod:block/smeltery/seared/bricks",
+    "inside": "devmod:block/smeltery/seared/bricks"
   }
 }

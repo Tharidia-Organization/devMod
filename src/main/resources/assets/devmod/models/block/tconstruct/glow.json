@@ -1,6 +1,6 @@
 {
-    "parent": "tconstruct:block/flat_in",
+    "parent": "devmod:block/flat_in",
     "textures": {
-        "all": "tconstruct:block/glow"
+        "all": "devmod:block/glow"
     }
 }

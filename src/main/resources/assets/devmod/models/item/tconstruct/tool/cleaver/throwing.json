@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/cleaver",
+  "parent": "devmod:item/cleaver",
   "display": {
     "thirdperson_righthand": {
       "rotation": [ 180, -90, 55 ],

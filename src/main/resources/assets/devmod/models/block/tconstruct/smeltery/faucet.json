@@ -1,6 +1,6 @@
 {
-  "parent": "tconstruct:block/template/faucet",
+  "parent": "devmod:block/template/faucet",
   "textures": {
-    "tex": "tconstruct:block/smeltery/seared/stone"
+    "tex": "devmod:block/smeltery/seared/stone"
   }
 }

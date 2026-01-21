@@ -1,13 +1,13 @@
 {
   "render_type": "minecraft:cutout",
-  "loader": "tconstruct:gui",
+  "loader": "devmod:foundry_gui",
   "parent": "block/block",
   "textures": {
-    "particle": "tconstruct:block/foundry/casting/tank_side",
-    "side":     "tconstruct:block/foundry/casting/tank_side",
-    "top":      "tconstruct:block/foundry/casting/tank_top",
-    "bottom":   "tconstruct:block/foundry/casting/basin_bottom",
-    "inside":   "tconstruct:block/foundry/casting/tank_inside"
+    "particle": "devmod:block/foundry/casting/tank_side",
+    "side":     "devmod:block/foundry/casting/tank_side",
+    "top":      "devmod:block/foundry/casting/tank_top",
+    "bottom":   "devmod:block/foundry/casting/basin_bottom",
+    "inside":   "devmod:block/foundry/casting/tank_inside"
   },
   "elements": [
     {

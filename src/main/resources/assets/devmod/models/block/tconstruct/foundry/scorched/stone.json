@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:block/cube_column",
   "textures": {
-    "end": "tconstruct:block/foundry/scorched/stone_top",
-    "side": "tconstruct:block/foundry/scorched/stone_side"
+    "end": "devmod:block/foundry/scorched/stone_top",
+    "side": "devmod:block/foundry/scorched/stone_side"
   }
 }

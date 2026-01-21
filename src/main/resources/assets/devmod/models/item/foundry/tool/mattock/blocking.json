@@ -1,5 +1,5 @@
 {
-  "parent": "tconstruct:item/mattock",
+  "parent": "devmod:item/mattock",
   "display": {
     "firstperson_righthand": {
       "rotation": [

@@ -1,11 +1,11 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "tconstruct:block/table/part_builder_top",
-    "front": "tconstruct:block/table/side",
-    "side": "tconstruct:block/table/side",
-    "top": "tconstruct:block/table/part_builder_top",
-    "bottom": "tconstruct:block/table/bottom"
+    "particle": "devmod:block/table/part_builder_top",
+    "front": "devmod:block/table/side",
+    "side": "devmod:block/table/side",
+    "top": "devmod:block/table/part_builder_top",
+    "bottom": "devmod:block/table/bottom"
   },
   "elements": [
     {
