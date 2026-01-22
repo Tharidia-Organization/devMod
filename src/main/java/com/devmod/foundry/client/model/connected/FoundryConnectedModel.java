@@ -91,7 +91,7 @@ public class FoundryConnectedModel implements IUnbakedGeometry<FoundryConnectedM
   }
 
   /** Map of full texture name to the resulting material, filled during {@link #resolveParents(Function, IGeometryBakingContext)} */
-  private Map<String,Material> extraTextures;
+  private Map<String,Material> extraTextures = java.util.Map.of();
 
   @Override
   public void resolveParents(Function<ResourceLocation,UnbakedModel> modelGetter, IGeometryBakingContext owner) {
@@ -290,7 +290,9 @@ public class FoundryConnectedModel implements IUnbakedGeometry<FoundryConnectedM
       }
       // if empty, do not prefix
       String[] suffixes = parent.connectedTextures.get(texture);
-      assert suffixes != null;
+      if (suffixes == null) {
+        return "";
+      }
       String suffix = suffixes[key];
       if (suffix.isEmpty()) {
         return suffix;
