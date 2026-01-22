@@ -28,8 +28,8 @@ public final class TelepadEffekseerController {
     private static final ResourceLocation EFFECT_SPIRAL = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad/spiral");
 
     // Effect positioning - centered above the telepad (matching portal dimensions)
-    private static final float CENTER_Y = 2.3f;  // Height above telepad block (center of oval)
-    private static final float SCALE = 0.189f;   // Scale reduced by 50% from 0.378
+    private static final float CENTER_Y = 2.755f;  // Height above telepad block (center of oval) - updated for 35% larger portal
+    private static final float SCALE = 0.0342f;  // Scale reduced by 50% from 0.057
 
     // Portal aspect ratio for oval shape (height / width = 2.6 / 1.82 ≈ 1.43)
     private static final float ASPECT_RATIO = 2.6f / 1.82f;
@@ -83,36 +83,26 @@ public final class TelepadEffekseerController {
                 state.stop();
             }
 
-            // Create front and back emitters
-            ResourceLocation frontName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_front_" + key);
+            // Create only back emitter (front disabled)
             ResourceLocation backName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_back_" + key);
-            ParticleEmitter front = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, frontName);
             ParticleEmitter back = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
 
-            state = new EmitterState(front, back);
+            state = new EmitterState(null, back);
             state.lastSpawnTick = now;
             emitters.put(key, state);
 
-            // Ensure effects are visible
-            front.setVisibility(true);
-            front.resume();
+            // Ensure back effect is visible
             back.setVisibility(true);
             back.resume();
 
             if (firstSpawn && !loggedOnce) {
-                DevMod.LOGGER.info("[TelepadEffekseer] Spawned spiral effects (front+back) at {}",
+                DevMod.LOGGER.info("[TelepadEffekseer] Spawned spiral effect (back only) at {}",
                     pos);
                 loggedOnce = true;
             }
         }
 
-        // Respawn if effects died
-        if (!state.emitterFront.exists()) {
-            ResourceLocation frontName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_front_" + key);
-            state.emitterFront = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, frontName);
-            state.emitterFront.setVisibility(true);
-            state.emitterFront.resume();
-        }
+        // Respawn if back effect died
         if (!state.emitterBack.exists()) {
             ResourceLocation backName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_back_" + key);
             state.emitterBack = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
@@ -142,25 +132,21 @@ public final class TelepadEffekseerController {
             default -> 0.0f;
         };
 
-        // Rotate 90° on X to flatten onto portal plane
-        float flatTilt = (float)(Math.PI * 0.5);
+        // Rotate 180° on X (90° + 90° extra requested)
+        float flatTilt = (float) Math.PI;
 
-        // Front emitter - facing forward
-        state.emitterFront.setPosition(x, y, z);
-        state.emitterFront.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
-        state.emitterFront.setRotation(flatTilt, facingYaw, 0);
+        // Offset behind portal
+        float depthOffset = 0.15f;
+        float offsetX = facing.getStepX() * depthOffset;
+        float offsetZ = facing.getStepZ() * depthOffset;
 
-        // Back emitter - facing backward (rotated 180° on Y)
-        state.emitterBack.setPosition(x, y, z);
+        // Back emitter only - behind portal
+        state.emitterBack.setPosition(x - offsetX, y, z - offsetZ);
         state.emitterBack.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
         state.emitterBack.setRotation(flatTilt, facingYaw + (float) Math.PI, 0);
 
-        // Try all dynamic inputs to control transparency
+        // Dynamic inputs to control transparency
         float dynamicInput = Mth.clamp(intensity, MIN_DYNAMIC_INPUT, MAX_DYNAMIC_INPUT);
-        state.emitterFront.setDynamicInput(0, dynamicInput);
-        state.emitterFront.setDynamicInput(1, dynamicInput);
-        state.emitterFront.setDynamicInput(2, dynamicInput);
-        state.emitterFront.setDynamicInput(3, dynamicInput);
         state.emitterBack.setDynamicInput(0, dynamicInput);
         state.emitterBack.setDynamicInput(1, dynamicInput);
         state.emitterBack.setDynamicInput(2, dynamicInput);
@@ -206,12 +192,12 @@ public final class TelepadEffekseerController {
         }
 
         private void stop() {
-            emitterFront.stop();
-            emitterBack.stop();
+            if (emitterFront != null) emitterFront.stop();
+            if (emitterBack != null) emitterBack.stop();
         }
 
         private boolean exists() {
-            return emitterFront.exists() && emitterBack.exists();
+            return emitterBack != null && emitterBack.exists();
         }
     }
 
