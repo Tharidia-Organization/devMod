@@ -10,12 +10,13 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request slot list for Nexus UI.
  * Empty payload - server responds with SlotListPayload.
  */
-public record RequestSlotListPayload() implements CustomPacketPayload {
+public record RequestSlotListPayload() implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<RequestSlotListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus_request_slot_list")));
@@ -27,5 +28,10 @@ public record RequestSlotListPayload() implements CustomPacketPayload {
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 0;
     }
 }

@@ -1,8 +1,0 @@
-{
-    "parent": "devmod:block/frame/base",
-    "textures": {
-        "particle": "devmod:block/storage/manyullyn",
-        "wood": "devmod:block/storage/manyullyn",
-        "back": "devmod:block/item_frame_background"
-    }
-}

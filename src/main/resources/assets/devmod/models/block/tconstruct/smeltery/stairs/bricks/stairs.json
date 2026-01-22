@@ -1,8 +1,0 @@
-{
-    "parent": "block/stairs",
-    "textures": {
-        "bottom": "devmod:block/smeltery/seared/bricks",
-        "top": "devmod:block/smeltery/seared/bricks",
-        "side": "devmod:block/smeltery/seared/bricks"
-    }
-}

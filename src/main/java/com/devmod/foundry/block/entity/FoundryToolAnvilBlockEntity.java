@@ -30,6 +30,7 @@ import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 import com.devmod.foundry.tool.modifier.FoundryModifierDefinition;
 import com.devmod.foundry.tool.modifier.FoundryModifierRegistry;
 import com.devmod.foundry.tool.modifier.FoundryModifierSlot;
+import com.devmod.foundry.util.FoundryContainers;
 
 /**
  * Block entity for applying modifiers to tools.
@@ -41,10 +42,17 @@ public class FoundryToolAnvilBlockEntity extends net.minecraft.world.level.block
     public static final int SLOT_MODIFIER = 1;
     public static final int SLOT_OUTPUT = 2;
 
-    private final SimpleContainer inventory = new SimpleContainer(3);
+    private final SimpleContainer inventory;
 
     public FoundryToolAnvilBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_TOOL_ANVIL.get()), pos, state);
+        this.inventory = FoundryContainers.tracked(3);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
     }
 
     public void tickServer() {

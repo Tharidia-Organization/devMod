@@ -17,6 +17,7 @@ import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.FoundryBlocks;
 import com.devmod.foundry.client.model.FoundryModelProperties;
 import com.devmod.foundry.client.model.FoundryTankModelLoader;
+import com.devmod.foundry.util.FoundryNbtHelper;
 
 /**
  * Tank block entity for foundry (visual, links to controller).
@@ -108,11 +109,7 @@ public class FoundryTankBlockEntity extends FoundryComponentBlockEntity {
     @Override
     protected void saveAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (!displayFluid.isEmpty()) {
-            CompoundTag fluidTag = new CompoundTag();
-            displayFluid.save(registries, fluidTag);
-            tag.put(TAG_DISPLAY_FLUID, fluidTag);
-        }
+        FoundryNbtHelper.putFluidStack(tag, TAG_DISPLAY_FLUID, registries, displayFluid);
         tag.putInt(TAG_DISPLAY_AMOUNT, displayAmount);
         tag.putInt(TAG_DISPLAY_CAPACITY, displayCapacity);
     }
@@ -120,11 +117,7 @@ public class FoundryTankBlockEntity extends FoundryComponentBlockEntity {
     @Override
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains(TAG_DISPLAY_FLUID)) {
-            displayFluid = FluidStack.parseOptional(registries, tag.getCompound(TAG_DISPLAY_FLUID));
-        } else {
-            displayFluid = FluidStack.EMPTY;
-        }
+        displayFluid = FoundryNbtHelper.readFluidStack(tag, TAG_DISPLAY_FLUID, registries);
         displayAmount = tag.getInt(TAG_DISPLAY_AMOUNT);
         displayCapacity = tag.getInt(TAG_DISPLAY_CAPACITY);
     }

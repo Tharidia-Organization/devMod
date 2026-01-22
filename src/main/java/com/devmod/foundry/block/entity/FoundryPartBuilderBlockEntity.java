@@ -27,6 +27,7 @@ import com.devmod.foundry.tool.FoundryToolItems;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 import com.devmod.foundry.tool.material.FoundryMaterialStats;
+import com.devmod.foundry.util.FoundryContainers;
 
 /**
  * Block entity for the Part Builder.
@@ -38,10 +39,17 @@ public class FoundryPartBuilderBlockEntity extends net.minecraft.world.level.blo
     public static final int SLOT_MATERIAL = 1;
     public static final int SLOT_OUTPUT = 2;
 
-    private final SimpleContainer inventory = new SimpleContainer(3);
+    private final SimpleContainer inventory;
 
     public FoundryPartBuilderBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_PART_BUILDER.get()), pos, state);
+        this.inventory = FoundryContainers.tracked(3);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
     }
 
     public void tickServer() {

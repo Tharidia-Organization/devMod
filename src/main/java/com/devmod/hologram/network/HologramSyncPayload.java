@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server to Client payload for syncing hologram updates to nearby clients.
@@ -22,7 +24,7 @@ public record HologramSyncPayload(
     @Nonnull UUID hologramId,
     int revision,
     @Nonnull List<String> lines
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "hologram_sync"));
@@ -61,5 +63,16 @@ public record HologramSyncPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // UUID
+        size += PayloadSizeUtil.varIntSize(revision);
+        size += PayloadSizeUtil.varIntSize(lines.size());
+        for (String line : lines) {
+            size += PayloadSizeUtil.estimatedUtfSize(line);
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

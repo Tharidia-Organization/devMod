@@ -10,12 +10,13 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request template list for TemplateListWidget.
  * Empty payload - server responds with TemplateListPayload.
  */
-public record RequestTemplateListPayload() implements CustomPacketPayload {
+public record RequestTemplateListPayload() implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<RequestTemplateListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "request_template_list")));
@@ -27,5 +28,10 @@ public record RequestTemplateListPayload() implements CustomPacketPayload {
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 0;
     }
 }

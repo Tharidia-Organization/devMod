@@ -19,7 +19,6 @@ import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.client.resources.model.SimpleBakedModel;
-import net.minecraft.client.resources.model.SimpleBakedModel.Builder;
 import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -148,7 +147,7 @@ public class FoundrySimpleBlockModel implements IUnbakedGeometry<FoundrySimpleBl
    * @param quadTransformer  Additional forge transforms
    * @param location         Model location
    */
-  public static void bakePart(Builder builder, IGeometryBakingContext owner, BlockElement part, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, IQuadTransformer quadTransformer, ResourceLocation location) {
+  public static void bakePart(SimpleBakedModel.Builder builder, IGeometryBakingContext owner, BlockElement part, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, IQuadTransformer quadTransformer, ResourceLocation location) {
     for(Direction direction : part.faces.keySet()) {
       BlockElementFace face = part.faces.get(direction);
       // ensure the name is not prefixed (it always is)
@@ -224,7 +223,8 @@ public class FoundrySimpleBlockModel implements IUnbakedGeometry<FoundrySimpleBl
   }
 
   /**
-   * Same as {@link #bake(IGeometryBakingContext, ModelBaker, Function, ModelState, ItemOverrides, ResourceLocation)}, but passes in sensible defaults for values unneeded in dynamic models
+   * Same as {@link #bakeModel(IGeometryBakingContext, List, Function, ModelState, ItemOverrides, ResourceLocation)},
+   * but passes in sensible defaults for values unneeded in dynamic models.
    * @param owner         Model configuration
    * @param transform     Transform to apply
    * @return  Baked model

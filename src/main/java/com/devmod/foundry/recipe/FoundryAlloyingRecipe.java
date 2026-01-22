@@ -38,6 +38,7 @@ import com.devmod.foundry.fluid.FoundryFluidTank;
 public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.AlloyingInput> {
     public static final int DEFAULT_TIME = 100;
     private static final float RATIO_EPSILON = 0.0001f;
+    private static final float MAX_RATIO_TOLERANCE = 0.3f;
 
     private final List<FluidStack> inputs;
     private final List<AlloyComponent> components;
@@ -177,8 +178,12 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
     }
 
     public boolean canApply(FoundryFluidTank tank) {
+        return canApply(tank, 0f);
+    }
+
+    public boolean canApply(FoundryFluidTank tank, float ratioTolerance) {
         if (isDynamic()) {
-            return canApplyDynamic(tank);
+            return canApplyDynamic(tank, clampTolerance(ratioTolerance));
         }
         if (inputs.isEmpty()) {
             return false;
@@ -247,7 +252,7 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         return new AlloyRatioState(ratio, tier);
     }
 
-    private boolean canApplyDynamic(FoundryFluidTank tank) {
+    private boolean canApplyDynamic(FoundryFluidTank tank, float ratioTolerance) {
         if (components.isEmpty()) {
             return false;
         }
@@ -258,7 +263,7 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         for (AlloyComponent component : components) {
             int amount = tank.getAmountForFluid(component.fluid());
             float ratio = totalAmount > 0 ? (float) amount / totalAmount : 0f;
-            if (!component.matchesRatio(ratio)) {
+            if (!component.matchesRatio(ratio, ratioTolerance)) {
                 return false;
             }
         }
@@ -279,6 +284,10 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
 
     private static float clampRatio(float value) {
         return Math.max(0f, Math.min(1f, value));
+    }
+
+    private static float clampTolerance(float value) {
+        return Math.max(0f, Math.min(MAX_RATIO_TOLERANCE, value));
     }
 
     public record AlloyRatioState(float ratio, RatioTier tier) {}
@@ -310,7 +319,13 @@ public class FoundryAlloyingRecipe implements Recipe<FoundryAlloyingRecipe.Alloy
         }
 
         public boolean matchesRatio(float ratio) {
-            return ratio + RATIO_EPSILON >= minRatio && ratio - RATIO_EPSILON <= maxRatio;
+            return matchesRatio(ratio, 0f);
+        }
+
+        public boolean matchesRatio(float ratio, float tolerance) {
+            float min = clampRatio(minRatio - tolerance);
+            float max = clampRatio(maxRatio + tolerance);
+            return ratio + RATIO_EPSILON >= min && ratio - RATIO_EPSILON <= max;
         }
     }
 

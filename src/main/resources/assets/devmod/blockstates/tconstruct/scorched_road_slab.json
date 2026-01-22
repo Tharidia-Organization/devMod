@@ -1,7 +1,0 @@
-{
-    "variants": {
-        "type=bottom": { "model": "devmod:block/foundry/scorched/road_slab" },
-        "type=top":    { "model": "devmod:block/foundry/scorched/road_slab_top" },
-        "type=double": { "model": "devmod:block/foundry/scorched/road" }
-    }
-}

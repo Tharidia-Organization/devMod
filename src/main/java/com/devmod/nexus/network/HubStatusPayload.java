@@ -10,6 +10,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server -> Client: Hub status update.
@@ -20,7 +22,7 @@ public record HubStatusPayload(
     int totalSlots,
     int linkedSlots,
     int emptySlots
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<HubStatusPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus_hub_status")));
@@ -44,5 +46,14 @@ public record HubStatusPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 1; // initialized
+        size += PayloadSizeUtil.varIntSize(totalSlots);
+        size += PayloadSizeUtil.varIntSize(linkedSlots);
+        size += PayloadSizeUtil.varIntSize(emptySlots);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

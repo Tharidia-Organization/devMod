@@ -12,6 +12,7 @@ import com.devmod.foundry.tool.FoundryToolStats;
 /**
  * Player specialization that influences foundry outcomes.
  */
+@SuppressWarnings("ImmutableEnumChecker")
 public enum FoundrySpecialization {
     WEAPONSMITH("weaponsmith", 1.0f, 0.9f, 1.2f, 1.2f, 1.0f),
     TOOLSMITH("toolsmith", 1.2f, 1.2f, 0.9f, 0.9f, 1.0f),

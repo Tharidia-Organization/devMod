@@ -12,6 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 public record EntityGoalsPayload(
     int entityId,
@@ -21,7 +23,7 @@ public record EntityGoalsPayload(
     double posZ,
     List<GoalInfo> goals,
     List<GoalInfo> targetGoals
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<EntityGoalsPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_goals")));
@@ -85,6 +87,26 @@ public record EntityGoalsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(entityId);
+        size += PayloadSizeUtil.estimatedUtfSize(entityName);
+        size += 8L * 3; // posX/Y/Z
+        size += estimateGoalListSize(goals);
+        size += estimateGoalListSize(targetGoals);
+        return PayloadSizeUtil.clampToInt(size);
+    }
+
+    private static long estimateGoalListSize(List<GoalInfo> goals) {
+        long size = PayloadSizeUtil.varIntSize(goals.size());
+        for (GoalInfo goal : goals) {
+            size += PayloadSizeUtil.varIntSize(goal.priority);
+            size += 1; // isRunning
+            size += PayloadSizeUtil.estimatedUtfSize(goal.name);
+        }
+        return size;
     }
 
     /**

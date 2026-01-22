@@ -13,9 +13,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.material.Fluid;
 
+import com.google.errorprone.annotations.InlineMe;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
+import com.devmod.DevMod;
 import com.devmod.foundry.quality.FoundryFluidQuality;
 import com.devmod.foundry.quality.MaterialQuality;
 import com.devmod.foundry.quality.MoltenMetal;
@@ -45,7 +47,9 @@ public class FoundryFluidTank implements IFluidHandler {
     }
 
     public void setCapacity(int capacity) {
-        this.capacity = capacity;
+        this.capacity = Math.max(0, capacity);
+        trimToCapacity();
+        updateTargetFillRatio();
     }
 
     public int getUsed() {
@@ -187,6 +191,10 @@ public class FoundryFluidTank implements IFluidHandler {
      * @deprecated Use {@link #fill(FluidStack, FluidAction)} instead
      */
     @Deprecated
+    @InlineMe(
+        replacement = "this.fill(input, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
+        imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
+    )
     public int fill(FluidStack input, boolean simulate) {
         return fill(input, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
@@ -195,6 +203,10 @@ public class FoundryFluidTank implements IFluidHandler {
      * @deprecated Use {@link #drain(int, FluidAction)} instead
      */
     @Deprecated
+    @InlineMe(
+        replacement = "this.drain(amount, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
+        imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
+    )
     public FluidStack drain(int amount, boolean simulate) {
         return drain(amount, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
@@ -203,6 +215,10 @@ public class FoundryFluidTank implements IFluidHandler {
      * @deprecated Use {@link #drain(FluidStack, FluidAction)} instead
      */
     @Deprecated
+    @InlineMe(
+        replacement = "this.drain(request, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
+        imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
+    )
     public FluidStack drain(FluidStack request, boolean simulate) {
         return drain(request, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
@@ -321,38 +337,50 @@ public class FoundryFluidTank implements IFluidHandler {
     public CompoundTag save(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         ListTag list = new ListTag();
-        System.out.println("[FoundryFluidTank] save() called, fluids.size()=" + fluids.size() + ", totalUsed=" + getUsed());
+        if (DevMod.LOGGER.isDebugEnabled()) {
+            DevMod.LOGGER.debug("[FoundryFluidTank] save: fluids={}, totalUsed={}", fluids.size(), getUsed());
+        }
         for (FluidStack stack : fluids) {
             // In NeoForge 1.21.1, FluidStack.save() returns a new tag, doesn't populate the provided one
             CompoundTag stackTag = (CompoundTag) stack.save(registries);
-            System.out.println("[FoundryFluidTank] Saving fluid: " + stack.getFluid() + " x" + stack.getAmount() + " -> " + stackTag);
             list.add(stackTag);
         }
         tag.put(TAG_FLUIDS, list);
         tag.putInt(TAG_CAPACITY, capacity);
-        System.out.println("[FoundryFluidTank] Saved tag list size: " + list.size());
+        if (DevMod.LOGGER.isDebugEnabled()) {
+            DevMod.LOGGER.debug("[FoundryFluidTank] save: listSize={}", list.size());
+        }
         return tag;
     }
 
     public void load(HolderLookup.Provider registries, CompoundTag tag) {
         fluids.clear();
-        capacity = tag.getInt(TAG_CAPACITY);
-        System.out.println("[FoundryFluidTank] load() called, capacity=" + capacity + ", hasFluids=" + tag.contains(TAG_FLUIDS));
+        if (tag.contains(TAG_CAPACITY, Tag.TAG_INT)) {
+            int storedCapacity = tag.getInt(TAG_CAPACITY);
+            if (storedCapacity > 0) {
+                capacity = storedCapacity;
+            }
+        }
+        if (DevMod.LOGGER.isDebugEnabled()) {
+            DevMod.LOGGER.debug("[FoundryFluidTank] load: capacity={}, hasFluids={}", capacity, tag.contains(TAG_FLUIDS));
+        }
         if (tag.contains(TAG_FLUIDS)) {
             ListTag list = tag.getList(TAG_FLUIDS, Tag.TAG_COMPOUND);
-            System.out.println("[FoundryFluidTank] Fluid list size: " + list.size());
+            if (DevMod.LOGGER.isDebugEnabled()) {
+                DevMod.LOGGER.debug("[FoundryFluidTank] load: listSize={}", list.size());
+            }
             for (Tag entry : list) {
                 if (entry instanceof CompoundTag fluidTag) {
-                    System.out.println("[FoundryFluidTank] Parsing fluid tag: " + fluidTag);
                     FluidStack stack = FluidStack.parseOptional(registries, fluidTag);
-                    System.out.println("[FoundryFluidTank] Parsed stack: " + (stack.isEmpty() ? "EMPTY" : stack.getFluid() + " x" + stack.getAmount()));
                     if (!stack.isEmpty()) {
                         fluids.add(stack);
                     }
                 }
             }
         }
-        System.out.println("[FoundryFluidTank] After load: totalUsed=" + getUsed());
+        if (DevMod.LOGGER.isDebugEnabled()) {
+            DevMod.LOGGER.debug("[FoundryFluidTank] load: totalUsed={}", getUsed());
+        }
         // Update target fill ratio after loading
         updateTargetFillRatio();
     }
@@ -364,7 +392,7 @@ public class FoundryFluidTank implements IFluidHandler {
      * Call this when fluid contents change.
      */
     public void updateTargetFillRatio() {
-        targetFillRatio = capacity > 0 ? (float) getUsed() / capacity : 0f;
+        targetFillRatio = capacity > 0 ? Math.min(1f, (float) getUsed() / capacity) : 0f;
     }
 
     /**
@@ -399,7 +427,7 @@ public class FoundryFluidTank implements IFluidHandler {
      * @return Fill ratio between 0.0 and 1.0
      */
     public float getFillRatio() {
-        return capacity > 0 ? (float) getUsed() / capacity : 0f;
+        return capacity > 0 ? Math.min(1f, (float) getUsed() / capacity) : 0f;
     }
 
     /**
@@ -409,5 +437,18 @@ public class FoundryFluidTank implements IFluidHandler {
     public void snapRenderToTarget() {
         updateTargetFillRatio();
         renderFillRatio = targetFillRatio;
+    }
+
+    private void trimToCapacity() {
+        int overflow = getUsed() - capacity;
+        while (overflow > 0 && !fluids.isEmpty()) {
+            FluidStack stack = fluids.get(0);
+            int toDrain = Math.min(overflow, stack.getAmount());
+            stack.shrink(toDrain);
+            overflow -= toDrain;
+            if (stack.isEmpty()) {
+                fluids.remove(0);
+            }
+        }
     }
 }

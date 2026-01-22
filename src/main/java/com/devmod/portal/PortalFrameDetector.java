@@ -29,6 +29,7 @@ import com.devmod.DevMod;
 public class PortalFrameDetector {
     public static final int MIN_SIZE = 3;
     public static final int MAX_SIZE = 23;
+    private static final int NO_EDGE = -1;
 
     private final BiPredicate<BlockGetter, BlockPos> isFrameBlock;
 
@@ -73,18 +74,21 @@ public class PortalFrameDetector {
         DevMod.LOGGER.debug("[FrameDetector] axis={} edges: minW={} maxW={} minH={} maxH={}",
             axis, minWidth, maxWidth, minHeight, maxHeight);
 
-        if ((minWidth == 0 && maxWidth == 0) || (minHeight == 0 && maxHeight == 0)) {
-            DevMod.LOGGER.debug("[FrameDetector] FAIL: no frame edges found (width or height both 0)");
-            return Optional.empty(); // No frame found
+        if (minWidth == NO_EDGE || maxWidth == NO_EDGE || minHeight == NO_EDGE || maxHeight == NO_EDGE) {
+            DevMod.LOGGER.debug("[FrameDetector] FAIL: no frame edges found");
+            return Optional.empty();
         }
 
         int width = minWidth + maxWidth + 1;
         int height = minHeight + maxHeight + 1;
+        int frameWidth = width + 2;
+        int frameHeight = height + 2;
 
-        DevMod.LOGGER.debug("[FrameDetector] interior size: {}x{}", width, height);
+        DevMod.LOGGER.debug("[FrameDetector] interior size: {}x{}, frame size: {}x{}",
+            width, height, frameWidth, frameHeight);
 
         // Validate size
-        if (width < MIN_SIZE || width > MAX_SIZE || height < MIN_SIZE || height > MAX_SIZE) {
+        if (frameWidth < MIN_SIZE || frameWidth > MAX_SIZE || frameHeight < MIN_SIZE || frameHeight > MAX_SIZE) {
             DevMod.LOGGER.debug("[FrameDetector] FAIL: size out of range (min={}, max={})", MIN_SIZE, MAX_SIZE);
             return Optional.empty();
         }
@@ -115,7 +119,8 @@ public class PortalFrameDetector {
         // Calculate frame positions
         Set<BlockPos> framePositions = calculateFramePositions(bottomLeft, width, height, axis);
 
-        DevMod.LOGGER.info("[FrameDetector] SUCCESS: detected {}x{} frame at {}", width, height, bottomLeft);
+        DevMod.LOGGER.info("[FrameDetector] SUCCESS: detected frame {}x{} (interior {}x{}) at {}",
+            frameWidth, frameHeight, width, height, bottomLeft);
 
         return Optional.of(new FrameResult(
             bottomLeft,
@@ -129,7 +134,7 @@ public class PortalFrameDetector {
 
     /**
      * Finds the distance to the frame edge in the given direction.
-     * Returns 0 if already at frame or no frame found within MAX_SIZE.
+     * Returns 0 if already at frame; returns {@link #NO_EDGE} if no frame found within MAX_SIZE.
      */
     private int findFrameEdge(@Nonnull BlockGetter level, @Nonnull BlockPos start, @Nonnull Direction dir) {
         BlockPos.MutableBlockPos pos = start.mutable();
@@ -144,13 +149,13 @@ public class PortalFrameDetector {
             }
 
             if (!state.isAir() && !state.canBeReplaced()) {
-                return 0; // Blocked by non-air, non-frame block
+                return NO_EDGE; // Blocked by non-air, non-frame block
             }
 
             distance++;
         }
 
-        return 0; // No frame found within range
+        return NO_EDGE; // No frame found within range
     }
 
     /**
@@ -159,34 +164,39 @@ public class PortalFrameDetector {
     private boolean validateFrame(@Nonnull BlockGetter level, @Nonnull BlockPos bottomLeft,
                                    int width, int height, @Nonnull Direction.Axis axis) {
         Direction widthDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        BlockPos frameBottomLeft = bottomLeft.relative(widthDir, -1).below();
+        int frameWidth = width + 2;
+        int frameHeight = height + 2;
 
         // Check bottom edge
-        for (int w = 0; w < width; w++) {
-            BlockPos pos = bottomLeft.relative(widthDir, w).below();
+        for (int w = 0; w < frameWidth; w++) {
+            BlockPos pos = frameBottomLeft.relative(widthDir, w);
             if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
 
         // Check top edge
-        for (int w = 0; w < width; w++) {
-            BlockPos pos = bottomLeft.relative(widthDir, w).above(height - 1).above();
+        BlockPos frameTopLeft = frameBottomLeft.above(frameHeight - 1);
+        for (int w = 0; w < frameWidth; w++) {
+            BlockPos pos = frameTopLeft.relative(widthDir, w);
             if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
 
         // Check left edge
-        for (int h = 0; h < height; h++) {
-            BlockPos pos = bottomLeft.relative(widthDir, -1).above(h);
+        for (int h = 0; h < frameHeight; h++) {
+            BlockPos pos = frameBottomLeft.above(h);
             if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
         }
 
         // Check right edge
-        for (int h = 0; h < height; h++) {
-            BlockPos pos = bottomLeft.relative(widthDir, width).above(h);
+        BlockPos frameBottomRight = frameBottomLeft.relative(widthDir, frameWidth - 1);
+        for (int h = 0; h < frameHeight; h++) {
+            BlockPos pos = frameBottomRight.above(h);
             if (!isFrameBlock.test(level, pos)) {
                 return false;
             }
@@ -213,30 +223,29 @@ public class PortalFrameDetector {
     }
 
     /**
-     * Calculates the frame block positions (excluding corners for 4x5+ frames).
+     * Calculates the frame block positions.
      */
     @Nonnull
     private Set<BlockPos> calculateFramePositions(@Nonnull BlockPos bottomLeft, int width, int height, @Nonnull Direction.Axis axis) {
         Set<BlockPos> frame = new HashSet<>();
         Direction widthDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        BlockPos frameBottomLeft = bottomLeft.relative(widthDir, -1).below();
+        int frameWidth = width + 2;
+        int frameHeight = height + 2;
 
         // Bottom and top edges
-        for (int w = 0; w < width; w++) {
-            frame.add(bottomLeft.relative(widthDir, w).below());
-            frame.add(bottomLeft.relative(widthDir, w).above(height));
+        BlockPos frameTopLeft = frameBottomLeft.above(frameHeight - 1);
+        for (int w = 0; w < frameWidth; w++) {
+            frame.add(frameBottomLeft.relative(widthDir, w));
+            frame.add(frameTopLeft.relative(widthDir, w));
         }
 
         // Left and right edges
-        for (int h = 0; h < height; h++) {
-            frame.add(bottomLeft.relative(widthDir, -1).above(h));
-            frame.add(bottomLeft.relative(widthDir, width).above(h));
+        BlockPos frameBottomRight = frameBottomLeft.relative(widthDir, frameWidth - 1);
+        for (int h = 0; h < frameHeight; h++) {
+            frame.add(frameBottomLeft.above(h));
+            frame.add(frameBottomRight.above(h));
         }
-
-        // Corners
-        frame.add(bottomLeft.relative(widthDir, -1).below());
-        frame.add(bottomLeft.relative(widthDir, width).below());
-        frame.add(bottomLeft.relative(widthDir, -1).above(height));
-        frame.add(bottomLeft.relative(widthDir, width).above(height));
 
         return frame;
     }

@@ -1,9 +1,0 @@
-{
-  "parent": "devmod:block/template/chute",
-  "textures": {
-    "top": "devmod:block/smeltery/io/chute_top_active",
-    "back": "devmod:block/smeltery/io/back",
-    "bricks": "devmod:block/smeltery/seared/bricks",
-    "side": "devmod:block/smeltery/io/chute_side_active"
-  }
-}

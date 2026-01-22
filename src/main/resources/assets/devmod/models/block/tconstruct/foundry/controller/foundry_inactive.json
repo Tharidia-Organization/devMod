@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/controller_fluid",
-  "textures": {
-    "front": "devmod:block/foundry/controller/foundry_inactive",
-    "bricks": "devmod:block/foundry/scorched/bricks",
-    "back": "devmod:block/foundry/io/back"
-  }
-}

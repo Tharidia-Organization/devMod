@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "end": "devmod:block/foundry/scorched/polished_top",
-    "side": "devmod:block/foundry/scorched/polished_side"
-  }
-}

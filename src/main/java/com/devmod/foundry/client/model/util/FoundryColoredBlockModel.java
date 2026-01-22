@@ -16,7 +16,6 @@ import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ModelBaker;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.client.resources.model.SimpleBakedModel;
-import net.minecraft.client.resources.model.SimpleBakedModel.Builder;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
@@ -72,12 +71,12 @@ public class FoundryColoredBlockModel extends FoundrySimpleBlockModel {
    * @param part             Part to bake
    * @param emissivity       Emissivity for fullbright, -1 will leave forge in charge, 0-15 will override the forge value
    * @param spriteGetter     Sprite getter
-   * @param transform        Transform for the face
+   * @param modelState       Transform for the face
    * @param quadTransformer  Forge transformations for the face, this is notably where you should handle color transformations
    * @param uvlock           UV lock for the face, separated to allow overriding the model state
    * @param location         Model location
    */
-  public static void bakePart(Builder builder, IGeometryBakingContext owner, BlockElement part, int emissivity, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelState, IQuadTransformer quadTransformer, boolean uvlock, ResourceLocation location) {
+  public static void bakePart(SimpleBakedModel.Builder builder, IGeometryBakingContext owner, BlockElement part, int emissivity, Function<Material,TextureAtlasSprite> spriteGetter, ModelState modelState, IQuadTransformer quadTransformer, boolean uvlock, ResourceLocation location) {
     for (Entry<Direction, BlockElementFace> entry : part.faces.entrySet()) {
       BlockElementFace face = entry.getValue();
       Direction direction = entry.getKey();

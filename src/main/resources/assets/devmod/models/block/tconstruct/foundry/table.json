@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/table",
-  "textures": {
-    "side":   "devmod:block/foundry/casting/table_side",
-    "top":    "devmod:block/foundry/casting/table_plate",
-    "bottom": "devmod:block/foundry/casting/table_bottom"
-  }
-}

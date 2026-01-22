@@ -10,6 +10,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.template.data.RoomTemplate;
 
 /**
@@ -18,7 +20,7 @@ import com.devmod.template.data.RoomTemplate;
 public record SaveTemplatePayload(
     @Nonnull RoomTemplate template,
     int expectedRevision
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_save"));
@@ -47,5 +49,12 @@ public record SaveTemplatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = TemplatePayloadSizing.estimateRoomTemplateSize(template);
+        size += PayloadSizeUtil.varIntSize(expectedRevision);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

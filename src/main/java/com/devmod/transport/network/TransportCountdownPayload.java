@@ -12,6 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client payload to sync countdown state for BossBar display.
@@ -24,7 +26,7 @@ public record TransportCountdownPayload(
     int totalSeconds,
     int phase,          // 0=normal, 1=warning, 2=urgent
     int colorIndex      // TransportColor ordinal
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportCountdownPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "216")));
@@ -46,6 +48,15 @@ public record TransportCountdownPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(secondsRemaining);
+        size += PayloadSizeUtil.varIntSize(totalSeconds);
+        size += PayloadSizeUtil.varIntSize(phase);
+        size += PayloadSizeUtil.varIntSize(colorIndex);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

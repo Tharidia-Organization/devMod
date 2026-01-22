@@ -11,6 +11,8 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
 import com.devmod.hologram.data.HologramDefinition;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server to Client payload for opening the hologram editor.
@@ -18,7 +20,7 @@ import com.devmod.hologram.data.HologramDefinition;
  */
 public record OpenHologramEditorPayload(
     @Nonnull HologramDefinition definition
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "hologram_editor_open"));
@@ -39,5 +41,11 @@ public record OpenHologramEditorPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = HologramPayloadSizing.estimateDefinitionSize(definition);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

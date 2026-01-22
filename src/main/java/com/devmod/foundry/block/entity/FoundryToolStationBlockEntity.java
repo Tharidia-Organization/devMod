@@ -25,6 +25,7 @@ import com.devmod.foundry.tool.FoundryPartType;
 import com.devmod.foundry.tool.FoundryToolBuilder;
 import com.devmod.foundry.tool.FoundryToolDefinition;
 import com.devmod.foundry.tool.FoundryToolDefinitionRegistry;
+import com.devmod.foundry.util.FoundryContainers;
 
 /**
  * Block entity for the Tool Station.
@@ -36,10 +37,17 @@ public class FoundryToolStationBlockEntity extends net.minecraft.world.level.blo
     public static final int SLOT_PART_COUNT = 3;
     public static final int SLOT_OUTPUT = 3;
 
-    private final SimpleContainer inventory = new SimpleContainer(4);
+    private final SimpleContainer inventory;
 
     public FoundryToolStationBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_TOOL_STATION.get()), pos, state);
+        this.inventory = FoundryContainers.tracked(4);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
     }
 
     public void tickServer() {

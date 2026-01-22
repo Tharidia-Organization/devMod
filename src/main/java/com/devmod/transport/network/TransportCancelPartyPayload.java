@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client → Server payload to cancel a party teleport in progress.
@@ -22,7 +24,7 @@ import com.devmod.DevMod;
  */
 public record TransportCancelPartyPayload(
     UUID partyId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportCancelPartyPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "219")));
@@ -37,5 +39,10 @@ public record TransportCancelPartyPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

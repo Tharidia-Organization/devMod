@@ -551,15 +551,14 @@ class PayloadValidationTest {
             String ip = "192.168.1.103";
 
             // ticket_create has limit of 5/min
-            // Note: IpRateLimiter initializes count to 1, so effective limit is (limit - 1)
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 5; i++) {
                 boolean allowed = IpRateLimiter.INSTANCE.checkRateLimit(ip, "ticket_create");
                 assertTrue(allowed, "Request " + (i + 1) + " should be allowed");
             }
 
-            // 5th request should be blocked (count goes 2,3,4,5,6 where 6 > 5)
+            // 6th request should be blocked
             boolean blocked = IpRateLimiter.INSTANCE.checkRateLimit(ip, "ticket_create");
-            assertFalse(blocked, "5th ticket_create request should be blocked");
+            assertFalse(blocked, "6th ticket_create request should be blocked");
         }
 
         @Test

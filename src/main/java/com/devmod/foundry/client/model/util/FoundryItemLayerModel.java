@@ -350,6 +350,7 @@ public class FoundryItemLayerModel implements IUnbakedGeometry<FoundryItemLayerM
    * @see #getQuadsForSprite(int, int, TextureAtlasSprite, Transformation, int, FoundryItemLayerPixels)
    */
   @SuppressWarnings("unused")  // API
+  @Nullable
   public static BakedQuad getQuadForGui(int color, int tint, TextureAtlasSprite sprite, Transformation transform, int emissivity) {
     // Get all quads and filter for the SOUTH face (front face for GUI)
     List<BakedQuad> allQuads = getQuadsForSprite(color, tint, sprite, transform, emissivity);
@@ -376,6 +377,7 @@ public class FoundryItemLayerModel implements IUnbakedGeometry<FoundryItemLayerM
    * @param size       Size of the quad in the correct direction (depth is always 1 pixel)
    * @param luminosity Extra light to add to the quad between 0 and 15
    */
+  @SuppressWarnings("fallthrough")
   private static void buildSideQuad(QuadBakingVertexConsumer builder, VertexConsumer consumer, Direction side, int color, TextureAtlasSprite sprite, int u, int v, int size, int luminosity) {
     final float eps = 1e-2f;
     SpriteContents contents = sprite.contents();
@@ -389,14 +391,14 @@ public class FoundryItemLayerModel implements IUnbakedGeometry<FoundryItemLayerM
       case WEST:
         z0 = 8.5f / 16f;
         z1 = 7.5f / 16f;
-        // continue into EAST
+        // fall through
       case EAST:
         y1 = (float) (v + size) / height;
         break;
       case DOWN:
         z0 = 8.5f / 16f;
         z1 = 7.5f / 16f;
-        // continue into UP
+        // fall through
       case UP:
         x1 = (float) (u + size) / width;
         break;
@@ -482,11 +484,15 @@ public class FoundryItemLayerModel implements IUnbakedGeometry<FoundryItemLayerM
     }
 
     public void set(Direction facing, int u, int v) {
-      data.get(facing).set(getIndex(u, v));
+      BitSet bits = data.get(facing);
+      if (bits != null) {
+        bits.set(getIndex(u, v));
+      }
     }
 
     public boolean get(Direction facing, int u, int v) {
-      return data.get(facing).get(getIndex(u, v));
+      BitSet bits = data.get(facing);
+      return bits != null && bits.get(getIndex(u, v));
     }
 
     private int getIndex(int u, int v) {

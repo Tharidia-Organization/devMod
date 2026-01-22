@@ -1,6 +1,7 @@
 package com.devmod.foundry.client.screen;
 
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nonnull;
 
@@ -97,7 +98,7 @@ public class FoundryStencilTableScreen extends AbstractContainerScreen<FoundrySt
             graphics.renderOutline(x, y, PATTERN_BUTTON_SIZE - 1, PATTERN_BUTTON_SIZE - 1, borderColor);
 
             // Draw pattern icon (first letter as placeholder)
-            String iconChar = pattern.id().getPath().substring(0, 1).toUpperCase();
+            String iconChar = pattern.id().getPath().substring(0, 1).toUpperCase(Locale.ROOT);
             graphics.drawCenteredString(this.font, iconChar, x + PATTERN_BUTTON_SIZE / 2, y + 5, 0xFFFFFFFF);
         }
 

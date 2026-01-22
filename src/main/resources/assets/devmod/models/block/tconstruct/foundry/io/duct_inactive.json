@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/io",
-  "textures": {
-    "drain": "devmod:block/foundry/io/duct_front_inactive",
-    "bricks": "devmod:block/foundry/scorched/bricks",
-    "back": "devmod:block/foundry/io/back"
-  }
-}

@@ -1,6 +1,0 @@
-{
-  "variants": {
-    "hanging=false": { "model": "devmod:block/smeltery/tank/lantern" },
-    "hanging=true": { "model": "devmod:block/smeltery/tank/lantern_hanging" }
-  }
-}

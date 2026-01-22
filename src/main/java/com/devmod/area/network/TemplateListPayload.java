@@ -14,13 +14,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.area.data.AreaShape;
 
 /**
  * Server -> Client: Template list for template selection UI.
  * Contains list of template summaries with basic info.
  */
-public record TemplateListPayload(List<TemplateSummary> templates) implements CustomPacketPayload {
+public record TemplateListPayload(List<TemplateSummary> templates) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum templates to sync at once */
     public static final int MAX_TEMPLATES = 200;
@@ -77,5 +79,19 @@ public record TemplateListPayload(List<TemplateSummary> templates) implements Cu
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(templates.size());
+        for (TemplateSummary summary : templates) {
+            size += 16; // UUID
+            size += PayloadSizeUtil.estimatedUtfSize(summary.name());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.description());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.author());
+            size += PayloadSizeUtil.varIntSize(summary.shape().ordinal());
+            size += PayloadSizeUtil.varLongSize(summary.createdAt());
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

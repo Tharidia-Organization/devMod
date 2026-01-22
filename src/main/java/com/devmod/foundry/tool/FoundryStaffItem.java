@@ -172,6 +172,10 @@ public class FoundryStaffItem extends Item {
     }
 
     private void executeAbility(Level level, Player player, ItemStack stack, StaffAbility ability, float power) {
+        // stack is reserved for future use (tool traits or NBT-based ability tweaks)
+        if (stack.isEmpty()) {
+            return;
+        }
         Vec3 look = player.getLookAngle();
         double range = 8.0 * power;
 
@@ -189,7 +193,7 @@ public class FoundryStaffItem extends Item {
                 // Slow nearby enemies
                 AABB area = player.getBoundingBox().inflate(range);
                 for (Entity entity : level.getEntities(player, area)) {
-                    if (entity instanceof LivingEntity living && living != player) {
+                    if (entity instanceof LivingEntity living && !living.equals(player)) {
                         living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, (int) (60 * power), (int) power));
                         living.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, (int) (40 * power), 0));
                     }
@@ -231,7 +235,7 @@ public class FoundryStaffItem extends Item {
                 Entity nearest = null;
                 double nearestDist = Double.MAX_VALUE;
                 for (Entity entity : level.getEntities(player, area)) {
-                    if (entity instanceof LivingEntity living && living != player) {
+                    if (entity instanceof LivingEntity living && !living.equals(player)) {
                         double dist = entity.distanceToSqr(player);
                         if (dist < nearestDist) {
                             nearest = entity;
@@ -261,7 +265,7 @@ public class FoundryStaffItem extends Item {
                 // Knockback wave
                 AABB area = player.getBoundingBox().inflate(range / 2);
                 for (Entity entity : level.getEntities(player, area)) {
-                    if (entity instanceof LivingEntity living && living != player) {
+                    if (entity instanceof LivingEntity living && !living.equals(player)) {
                         Vec3 push = entity.position().subtract(player.position()).normalize().scale(power);
                         living.setDeltaMovement(living.getDeltaMovement().add(push.x, 0.3 * power, push.z));
                         living.hurt(level.damageSources().magic(), 2.0f * power);

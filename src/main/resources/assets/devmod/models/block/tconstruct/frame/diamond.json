@@ -1,8 +1,0 @@
-{
-    "parent": "devmod:block/frame/base",
-    "textures": {
-        "particle": "minecraft:block/diamond_block",
-        "wood": "minecraft:block/diamond_block",
-        "back": "devmod:block/item_frame_background"
-    }
-}

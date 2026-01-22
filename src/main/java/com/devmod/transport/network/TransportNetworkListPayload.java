@@ -17,6 +17,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client payload to sync network list for selection GUI.
@@ -27,7 +29,7 @@ import com.devmod.DevMod;
 public record TransportNetworkListPayload(
     String networkName,
     List<NetworkNodeInfo> nodes
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportNetworkListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "215")));
@@ -80,6 +82,21 @@ public record TransportNetworkListPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.estimatedUtfSize(networkName);
+        size += 2; // node count (short)
+        for (NetworkNodeInfo node : nodes) {
+            size += 16; // UUID
+            size += PayloadSizeUtil.estimatedUtfSize(node.displayName);
+            size += PayloadSizeUtil.estimatedUtfSize(node.dimension);
+            size += 4L * 3; // x/y/z
+            size += 1; // colorIndex
+            size += 1; // available
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

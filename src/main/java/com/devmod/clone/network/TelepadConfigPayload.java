@@ -11,6 +11,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload for configuring telepad settings.
@@ -22,7 +24,7 @@ import com.devmod.DevMod;
 public record TelepadConfigPayload(
     BlockPos pos,
     String telepadName
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TelepadConfigPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_config")));
@@ -46,5 +48,12 @@ public record TelepadConfigPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 8; // BlockPos
+        size += PayloadSizeUtil.estimatedUtfSize(telepadName);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

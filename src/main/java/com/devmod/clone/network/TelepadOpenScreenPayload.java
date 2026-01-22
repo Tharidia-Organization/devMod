@@ -9,6 +9,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload to open the telepad configuration screen on the client.
@@ -20,7 +22,7 @@ import com.devmod.DevMod;
 public record TelepadOpenScreenPayload(
     BlockPos pos,
     String telepadName
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TelepadOpenScreenPayload> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_open_screen"));
@@ -44,5 +46,12 @@ public record TelepadOpenScreenPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 8; // BlockPos
+        size += PayloadSizeUtil.estimatedUtfSize(telepadName);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

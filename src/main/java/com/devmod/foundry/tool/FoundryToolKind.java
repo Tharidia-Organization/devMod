@@ -2,6 +2,8 @@ package com.devmod.foundry.tool;
 
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EquipmentSlotGroup;
@@ -13,6 +15,7 @@ import net.neoforged.neoforge.common.ItemAbility;
 /**
  * Supported foundry tool kinds for mining and actions.
  */
+@SuppressWarnings("ImmutableEnumChecker")
 public enum FoundryToolKind {
     PICKAXE(BlockTags.MINEABLE_WITH_PICKAXE, ItemAbilities.DEFAULT_PICKAXE_ACTIONS, true, EquipmentSlotGroup.MAINHAND, false),
     AXE(BlockTags.MINEABLE_WITH_AXE, ItemAbilities.DEFAULT_AXE_ACTIONS, false, EquipmentSlotGroup.MAINHAND, false),
@@ -41,6 +44,7 @@ public enum FoundryToolKind {
     ARMOR_LEGGINGS(null, Set.of(), false, EquipmentSlotGroup.LEGS, true),
     ARMOR_BOOTS(null, Set.of(), false, EquipmentSlotGroup.FEET, true);
 
+    @Nullable
     private final TagKey<Block> mineableTag;
     private final Set<ItemAbility> abilities;
     private final boolean usesMiningLevel;
@@ -48,7 +52,7 @@ public enum FoundryToolKind {
     private final boolean armor;
 
     FoundryToolKind(
-        TagKey<Block> mineableTag,
+        @Nullable TagKey<Block> mineableTag,
         Set<ItemAbility> abilities,
         boolean usesMiningLevel,
         EquipmentSlotGroup slotGroup,
@@ -61,6 +65,7 @@ public enum FoundryToolKind {
         this.armor = armor;
     }
 
+    @Nullable
     public TagKey<Block> getMineableTag() {
         return mineableTag;
     }

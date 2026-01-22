@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to save current area configuration as a template.
@@ -25,7 +27,7 @@ public record SaveAreaTemplatePayload(
     UUID sourceAreaId,
     String templateName,
     String description
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum template name length */
     public static final int MAX_NAME_LENGTH = 64;
@@ -47,6 +49,14 @@ public record SaveAreaTemplatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // UUID
+        size += PayloadSizeUtil.estimatedUtfSize(templateName);
+        size += PayloadSizeUtil.estimatedUtfSize(description);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

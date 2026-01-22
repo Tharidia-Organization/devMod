@@ -12,8 +12,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
-public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload {
+public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<RaidsPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_raids")));
@@ -57,6 +59,21 @@ public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(raids.size());
+        for (RaidInfo raid : raids) {
+            size += PayloadSizeUtil.varIntSize(raid.raidId);
+            size += 8L * 3; // centerX/Y/Z
+            size += PayloadSizeUtil.varIntSize(raid.badOmenLevel);
+            size += PayloadSizeUtil.varIntSize(raid.groupsSpawned);
+            size += PayloadSizeUtil.varIntSize(raid.numGroups);
+            size += 1; // isActive
+            size += 1; // isVictory
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     public record RaidInfo(

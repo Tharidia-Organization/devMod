@@ -1,6 +1,0 @@
-{
-  "variants": {
-    "hanging=false": { "model": "devmod:block/foundry/tank/lantern" },
-    "hanging=true": { "model": "devmod:block/foundry/tank/lantern_hanging" }
-  }
-}

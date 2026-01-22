@@ -15,6 +15,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.arena.policy.TemplateSuggestion;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client: Arena template suggestions for a mob.
@@ -23,7 +25,7 @@ public record ArenaSuggestionsPayload(
     String mobId,
     List<TemplateSuggestion> suggestions,
     @Nullable String selectedTemplateId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 256;
     private static final int MAX_SUGGESTIONS = 20;
@@ -146,6 +148,45 @@ public record ArenaSuggestionsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.estimatedUtfSize(mobId);
+        size += PayloadSizeUtil.varIntSize(suggestions.size());
+        for (TemplateSuggestion suggestion : suggestions) {
+            size += estimateSuggestionSize(suggestion);
+        }
+        size += 1; // selectedTemplateId present flag
+        if (selectedTemplateId != null) {
+            size += PayloadSizeUtil.estimatedUtfSize(selectedTemplateId);
+        }
+        return PayloadSizeUtil.clampToInt(size);
+    }
+
+    private static long estimateSuggestionSize(TemplateSuggestion suggestion) {
+        long size = PayloadSizeUtil.estimatedUtfSize(suggestion.templateId());
+        size += PayloadSizeUtil.estimatedUtfSize(suggestion.templateName());
+        size += PayloadSizeUtil.varIntSize(suggestion.size());
+        size += PayloadSizeUtil.estimatedUtfSize(suggestion.biome());
+        size += PayloadSizeUtil.estimatedUtfSize(suggestion.arenaShape());
+        size += 1; // hasWalls
+        size += 1; // hasHazards
+        size += PayloadSizeUtil.varIntSize(suggestion.spawnSlotCount());
+        size += 8; // compatibilityScore
+
+        size += PayloadSizeUtil.varIntSize(suggestion.scoreBreakdown().size());
+        for (Map.Entry<String, Double> entry : suggestion.scoreBreakdown().entrySet()) {
+            size += PayloadSizeUtil.estimatedUtfSize(entry.getKey());
+            size += 8; // value
+        }
+
+        size += 1; // isSelected
+        size += 1; // incompatibilityReason present flag
+        if (suggestion.incompatibilityReason() != null) {
+            size += PayloadSizeUtil.estimatedUtfSize(suggestion.incompatibilityReason());
+        }
+        return size;
     }
 
     /**

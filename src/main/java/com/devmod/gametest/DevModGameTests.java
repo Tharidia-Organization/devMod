@@ -1,11 +1,13 @@
 package com.devmod.gametest;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.AfterBatch;
 import net.minecraft.gametest.framework.BeforeBatch;
 import net.minecraft.gametest.framework.GameTest;
@@ -16,6 +18,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -24,8 +28,14 @@ import com.devmod.DevMod;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
+import com.devmod.config.Config;
+import com.devmod.foundry.FoundryBlocks;
+import com.devmod.foundry.block.FoundryControllerBlock;
+import com.devmod.foundry.block.entity.FoundryControllerBlockEntity;
+import com.devmod.foundry.menu.FoundryControllerMenu;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
+import com.devmod.portal.PortalFrameDetector;
 import com.devmod.stats.WeaponStats;
 
 @GameTestHolder(DevMod.MODID)
@@ -38,6 +48,45 @@ public class DevModGameTests {
 
     // Epsilon for float comparisons
     private static final float EPSILON = 0.001f;
+
+    // ============================================================
+    // PORTAL TEST HELPERS
+    // ============================================================
+
+    private static BlockPos frameBottomLeft(BlockPos interiorBottomLeft, Direction.Axis axis) {
+        Direction widthDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        return interiorBottomLeft.relative(widthDir, -1).below();
+    }
+
+    private static int expectedFrameBlockCount(int interiorWidth, int interiorHeight) {
+        int frameWidth = interiorWidth + 2;
+        int frameHeight = interiorHeight + 2;
+        return frameWidth * 2 + (frameHeight - 2) * 2;
+    }
+
+    private static void buildFrame(ServerLevel level,
+                                   BlockPos interiorBottomLeft,
+                                   Direction.Axis axis,
+                                   int interiorWidth,
+                                   int interiorHeight,
+                                   BlockState frameState) {
+        Direction widthDir = axis == Direction.Axis.X ? Direction.EAST : Direction.SOUTH;
+        BlockPos frameBottomLeft = frameBottomLeft(interiorBottomLeft, axis);
+        int frameWidth = interiorWidth + 2;
+        int frameHeight = interiorHeight + 2;
+
+        BlockPos frameTopLeft = frameBottomLeft.above(frameHeight - 1);
+        for (int w = 0; w < frameWidth; w++) {
+            level.setBlock(frameBottomLeft.relative(widthDir, w), frameState, 3);
+            level.setBlock(frameTopLeft.relative(widthDir, w), frameState, 3);
+        }
+
+        BlockPos frameBottomRight = frameBottomLeft.relative(widthDir, frameWidth - 1);
+        for (int h = 0; h < frameHeight; h++) {
+            level.setBlock(frameBottomLeft.above(h), frameState, 3);
+            level.setBlock(frameBottomRight.above(h), frameState, 3);
+        }
+    }
 
     // ============================================================
     // BATCH LIFECYCLE METHODS
@@ -662,5 +711,196 @@ public class DevModGameTests {
         } catch (Exception e) {
             helper.fail("clearCache() should not throw on empty cache: " + e.getMessage());
         }
+    }
+
+    // ============================================================
+    // BATCH: portal - Portal frame detection
+    // ============================================================
+
+    /**
+     * TEST 19: Portal frame detection for minimum size (3x3 frame, 1x1 interior).
+     */
+    @GameTest(template = TEMPLATE_5X5, batch = "portal", required = true)
+    public static void portalFrameDetectsMinSize(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
+        int interiorWidth = 1;
+        int interiorHeight = 1;
+
+        buildFrame(level, interior, Direction.Axis.X, interiorWidth, interiorHeight, Blocks.OBSIDIAN.defaultBlockState());
+
+        PortalFrameDetector detector = new PortalFrameDetector();
+        Optional<PortalFrameDetector.FrameResult> result = detector.detectFrame(level, interior, Direction.Axis.X);
+
+        helper.assertTrue(result.isPresent(), "Expected portal frame to be detected");
+        PortalFrameDetector.FrameResult frame = result.orElseThrow();
+        helper.assertTrue(frame.width() == interiorWidth,
+            "Interior width mismatch: expected " + interiorWidth + ", got " + frame.width());
+        helper.assertTrue(frame.height() == interiorHeight,
+            "Interior height mismatch: expected " + interiorHeight + ", got " + frame.height());
+        helper.assertTrue(frame.frameBlockCount() == expectedFrameBlockCount(interiorWidth, interiorHeight),
+            "Frame block count mismatch: expected " + expectedFrameBlockCount(interiorWidth, interiorHeight)
+                + ", got " + frame.frameBlockCount());
+
+        helper.succeed();
+    }
+
+    /**
+     * TEST 20: Portal frame rejects missing corner blocks.
+     */
+    @GameTest(template = TEMPLATE_5X5, batch = "portal")
+    public static void portalFrameRejectsMissingCorner(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
+
+        buildFrame(level, interior, Direction.Axis.X, 1, 1, Blocks.OBSIDIAN.defaultBlockState());
+
+        BlockPos corner = frameBottomLeft(interior, Direction.Axis.X);
+        level.setBlock(corner, Blocks.AIR.defaultBlockState(), 3);
+
+        PortalFrameDetector detector = new PortalFrameDetector();
+        Optional<PortalFrameDetector.FrameResult> result = detector.detectFrame(level, interior, Direction.Axis.X);
+
+        helper.assertTrue(result.isEmpty(), "Expected detection to fail with missing corner block");
+        helper.succeed();
+    }
+
+    /**
+     * TEST 21: Portal frame rejects blocked interiors.
+     */
+    @GameTest(template = TEMPLATE_5X5, batch = "portal")
+    public static void portalFrameRejectsBlockedInterior(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
+
+        buildFrame(level, interior, Direction.Axis.X, 1, 1, Blocks.OBSIDIAN.defaultBlockState());
+        level.setBlock(interior, Blocks.STONE.defaultBlockState(), 3);
+
+        PortalFrameDetector detector = new PortalFrameDetector();
+        Optional<PortalFrameDetector.FrameResult> result = detector.detectFrame(level, interior, Direction.Axis.X);
+
+        helper.assertTrue(result.isEmpty(), "Expected detection to fail with blocked interior");
+        helper.succeed();
+    }
+
+    // ============================================================
+    // BATCH: foundry - Foundry multiblock detection
+    // ============================================================
+
+    /**
+     * TEST 22: Foundry forms at minimum size (1x1 interior, height 1).
+     */
+    @GameTest(template = TEMPLATE_5X5, batch = "foundry", required = true, timeoutTicks = 60)
+    public static void foundryFormsMinimumStructure(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
+        BlockState brick = Objects.requireNonNull(FoundryBlocks.FOUNDRY_BRICKS.get()).defaultBlockState();
+
+        int minX = interior.getX() - 1;
+        int maxX = interior.getX() + 1;
+        int minZ = interior.getZ() - 1;
+        int maxZ = interior.getZ() + 1;
+        int floorY = interior.getY() - 1;
+        int wallY = interior.getY();
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                level.setBlock(new BlockPos(x, floorY, z), brick, 3);
+            }
+        }
+
+        for (int x = minX; x <= maxX; x++) {
+            level.setBlock(new BlockPos(x, wallY, minZ), brick, 3);
+            level.setBlock(new BlockPos(x, wallY, maxZ), brick, 3);
+        }
+        for (int z = minZ; z <= maxZ; z++) {
+            level.setBlock(new BlockPos(minX, wallY, z), brick, 3);
+            level.setBlock(new BlockPos(maxX, wallY, z), brick, 3);
+        }
+
+        BlockPos controllerPos = new BlockPos(interior.getX(), wallY, minZ);
+        BlockState controllerState = Objects.requireNonNull(FoundryBlocks.FOUNDRY_CONTROLLER.get())
+            .defaultBlockState()
+            .setValue(FoundryControllerBlock.FACING, Direction.NORTH);
+        level.setBlock(controllerPos, controllerState, 3);
+
+        var blockEntity = level.getBlockEntity(controllerPos);
+        helper.assertTrue(blockEntity instanceof FoundryControllerBlockEntity, "Controller block entity should exist");
+        FoundryControllerBlockEntity controller = (FoundryControllerBlockEntity) blockEntity;
+
+        controller.markStructureDirty();
+        controller.tickServer();
+
+        helper.assertTrue(controller.isFormed(), "Expected foundry to form");
+        helper.assertTrue(
+            controller.getMoltenCapacity() == Config.FOUNDRY_CAPACITY_PER_BLOCK.get(),
+            "Capacity mismatch for 1x1x1 interior"
+        );
+        helper.succeed();
+    }
+
+    /**
+     * TEST 23: Foundry melting progress persists across save/load.
+     */
+    @GameTest(template = TEMPLATE_5X5, batch = "foundry", timeoutTicks = 200)
+    public static void foundryProgressPersistsOnSave(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
+        BlockState brick = Objects.requireNonNull(FoundryBlocks.FOUNDRY_BRICKS.get()).defaultBlockState();
+
+        int minX = interior.getX() - 1;
+        int maxX = interior.getX() + 1;
+        int minZ = interior.getZ() - 1;
+        int maxZ = interior.getZ() + 1;
+        int floorY = interior.getY() - 1;
+        int wallY = interior.getY();
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                level.setBlock(new BlockPos(x, floorY, z), brick, 3);
+            }
+        }
+
+        for (int x = minX; x <= maxX; x++) {
+            level.setBlock(new BlockPos(x, wallY, minZ), brick, 3);
+            level.setBlock(new BlockPos(x, wallY, maxZ), brick, 3);
+        }
+        for (int z = minZ; z <= maxZ; z++) {
+            level.setBlock(new BlockPos(minX, wallY, z), brick, 3);
+            level.setBlock(new BlockPos(maxX, wallY, z), brick, 3);
+        }
+
+        BlockPos controllerPos = new BlockPos(interior.getX(), wallY, minZ);
+        BlockState controllerState = Objects.requireNonNull(FoundryBlocks.FOUNDRY_CONTROLLER.get())
+            .defaultBlockState()
+            .setValue(FoundryControllerBlock.FACING, Direction.NORTH);
+        level.setBlock(controllerPos, controllerState, 3);
+
+        FoundryControllerBlockEntity controller = (FoundryControllerBlockEntity) level.getBlockEntity(controllerPos);
+        helper.assertTrue(controller != null, "Controller block entity should exist");
+
+        controller.getInventory().setItem(0, new ItemStack(Items.IRON_INGOT));
+        controller.getInventory().setItem(FoundryControllerMenu.SLOT_FUEL, new ItemStack(Items.LAVA_BUCKET));
+        controller.markStructureDirty();
+
+        controller.tickServer();
+        helper.assertTrue(controller.isFormed(), "Expected foundry to form before melting");
+
+        for (int i = 0; i < 100; i++) {
+            controller.tickServer();
+        }
+
+        int progress = controller.getProgress();
+        helper.assertTrue(progress > 0, "Expected melting progress to be > 0");
+
+        CompoundTag tag = controller.saveWithoutMetadata(Objects.requireNonNull(level.registryAccess()));
+        helper.assertTrue(tag.contains("Progress"), "Expected progress to be saved to NBT");
+        helper.assertTrue(tag.getInt("Progress") == progress, "Saved progress mismatch");
+
+        FoundryControllerBlockEntity reloaded = new FoundryControllerBlockEntity(controllerPos, controllerState);
+        reloaded.loadWithComponents(tag, Objects.requireNonNull(level.registryAccess()));
+        helper.assertTrue(reloaded.getProgress() == progress, "Reloaded progress mismatch");
+
+        helper.succeed();
     }
 }

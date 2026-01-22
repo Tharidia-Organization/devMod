@@ -1,9 +1,0 @@
-{
-  "variants": {
-    "facing=down":  { "model": "devmod:block/smeltery/faucet_up" },
-    "facing=north": { "model": "devmod:block/smeltery/faucet", "y":   0 },
-    "facing=east":  { "model": "devmod:block/smeltery/faucet", "y":  90 },
-    "facing=south": { "model": "devmod:block/smeltery/faucet", "y": 180 },
-    "facing=west":  { "model": "devmod:block/smeltery/faucet", "y": 270 }
-  }
-}

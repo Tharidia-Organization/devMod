@@ -1,5 +1,7 @@
 package com.devmod.foundry.quality;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -49,6 +51,7 @@ public final class FoundryItemQuality {
         return clampPurity(root.getFloat(TAG_PURITY));
     }
 
+    @Nullable
     private static CompoundTag getRoot(ItemStack stack) {
         if (stack.isEmpty()) {
             return null;

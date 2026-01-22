@@ -12,13 +12,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to delete an area.
  * Only admins (OP level 2+) can delete areas.
  * The main hub cannot be deleted unless another area is promoted first.
  */
-public record DeleteAreaPayload(UUID areaId) implements CustomPacketPayload {
+public record DeleteAreaPayload(UUID areaId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<DeleteAreaPayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -34,5 +36,10 @@ public record DeleteAreaPayload(UUID areaId) implements CustomPacketPayload {
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

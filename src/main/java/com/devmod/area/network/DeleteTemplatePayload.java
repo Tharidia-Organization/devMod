@@ -12,12 +12,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to delete a template.
  * Only the template creator or admin (OP level 4) can delete templates.
  */
-public record DeleteTemplatePayload(UUID templateId) implements CustomPacketPayload {
+public record DeleteTemplatePayload(UUID templateId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<DeleteTemplatePayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -33,5 +35,10 @@ public record DeleteTemplatePayload(UUID templateId) implements CustomPacketPayl
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.TransportMode;
 import com.devmod.transport.TransportNodeType;
@@ -34,7 +36,7 @@ public record TransportConfigOpenPayload(
     int cooldownTime,
     boolean hasLinkedNode,
     int frameCount
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportConfigOpenPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "210")));
@@ -70,6 +72,21 @@ public record TransportConfigOpenPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varLongSize(nodePos.asLong());
+        size += PayloadSizeUtil.varIntSize(nodeTypeIndex);
+        size += PayloadSizeUtil.varIntSize(modeIndex);
+        size += PayloadSizeUtil.varIntSize(colorIndex);
+        size += PayloadSizeUtil.estimatedUtfSize(networkName);
+        size += PayloadSizeUtil.estimatedUtfSize(displayName);
+        size += PayloadSizeUtil.varIntSize(chargeTime);
+        size += PayloadSizeUtil.varIntSize(cooldownTime);
+        size += 1; // hasLinkedNode
+        size += PayloadSizeUtil.varIntSize(frameCount);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

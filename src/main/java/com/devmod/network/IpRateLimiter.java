@@ -93,6 +93,7 @@ public final class IpRateLimiter {
 
         totalRequests.incrementAndGet();
         maybeCleanup();
+        long now = System.currentTimeMillis();
 
         // Check block list first
         if (isBlocked(ip)) {
@@ -110,7 +111,6 @@ public final class IpRateLimiter {
         // Get or create IP entry
         Map<String, RateLimitEntry> categoryMap = ipLimits.computeIfAbsent(ip, k -> new ConcurrentHashMap<>());
         RateLimitEntry entry = categoryMap.compute(category, (k, existing) -> {
-            long now = System.currentTimeMillis();
             if (existing == null) {
                 return new RateLimitEntry(now);
             }
@@ -122,8 +122,8 @@ public final class IpRateLimiter {
             return existing;
         });
 
+        entry.lastAccess = now;
         int count = entry.count.incrementAndGet();
-        entry.lastAccess = System.currentTimeMillis();
 
         if (count > limit.maxRequests) {
             rateLimitedRequests.incrementAndGet();
@@ -304,7 +304,7 @@ public final class IpRateLimiter {
     private static class RateLimitEntry {
         volatile long windowStart;
         volatile long lastAccess;
-        final AtomicInteger count = new AtomicInteger(1);
+        final AtomicInteger count = new AtomicInteger(0);
 
         RateLimitEntry(long windowStart) {
             this.windowStart = windowStart;

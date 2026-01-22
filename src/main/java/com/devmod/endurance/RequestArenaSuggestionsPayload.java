@@ -9,12 +9,15 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
+
 /**
  * Client → Server: Request arena template suggestions for a mob.
  */
 public record RequestArenaSuggestionsPayload(
     String mobId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_STRING_LENGTH = 256;
 
@@ -38,6 +41,11 @@ public record RequestArenaSuggestionsPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.estimatedUtfSize(mobId);
     }
 
     /**

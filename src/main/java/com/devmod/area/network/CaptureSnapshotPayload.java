@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to capture a snapshot of an area.
@@ -21,7 +23,7 @@ import com.devmod.DevMod;
 public record CaptureSnapshotPayload(
     UUID areaId,
     String description
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum description length for validation */
     public static final int MAX_DESCRIPTION_LENGTH = 128;
@@ -41,5 +43,12 @@ public record CaptureSnapshotPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // UUID
+        size += PayloadSizeUtil.estimatedUtfSize(description);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

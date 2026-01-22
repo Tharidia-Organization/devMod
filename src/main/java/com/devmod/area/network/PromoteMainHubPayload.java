@@ -12,13 +12,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to promote an area to main hub status.
  * Only admins (OP level 2+) can promote areas.
  * The current main hub (if any) will be demoted to regular area.
  */
-public record PromoteMainHubPayload(UUID areaId) implements CustomPacketPayload {
+public record PromoteMainHubPayload(UUID areaId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<PromoteMainHubPayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -34,5 +36,10 @@ public record PromoteMainHubPayload(UUID areaId) implements CustomPacketPayload 
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

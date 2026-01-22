@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -27,6 +29,7 @@ public final class FoundryToolDefinitionRegistry {
         return java.util.List.copyOf(DEFINITIONS.values());
     }
 
+    @Nullable
     public static FoundryToolDefinition get(ResourceLocation id) {
         return DEFINITIONS.get(id);
     }

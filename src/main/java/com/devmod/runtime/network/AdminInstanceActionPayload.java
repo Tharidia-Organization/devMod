@@ -10,6 +10,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
+
 /**
  * Client-to-server payload for admin actions on instances.
  * Requires admin permission level to process.
@@ -18,7 +21,7 @@ public record AdminInstanceActionPayload(
     ActionType action,
     UUID instanceId,
     @Nullable UUID playerId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<AdminInstanceActionPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "admin_instance_action"))
@@ -55,6 +58,14 @@ public record AdminInstanceActionPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(action != null ? action.ordinal() : 0);
+        size += 16; // instanceId (encoded as UUID, zero if null)
+        size += 16; // playerId (encoded as UUID, zero if null)
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

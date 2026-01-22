@@ -24,6 +24,7 @@ import com.devmod.foundry.block.ChannelConnectionState;
 import com.devmod.foundry.block.FoundryDuctBlock;
 import com.devmod.foundry.quality.FoundryFluidQuality;
 import com.devmod.foundry.quality.MaterialQuality;
+import com.devmod.foundry.util.FoundryNbtHelper;
 
 /**
  * Channel block entity that buffers and routes molten fluids.
@@ -145,6 +146,19 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
         FoundryFluidQuality.applyMoltenState(buffer, mergedQuality, mergedPurity, mergedOxidation, mergedPeakTemp);
         sync();
         return accepted;
+    }
+
+    /**
+     * Selects the preferred fluid to pour from the controller into this channel.
+     * If the channel already has buffered fluid, it will keep that fluid type.
+     */
+    @Nonnull
+    public FluidStack getPreferredPourFluid(@Nonnull FoundryControllerBlockEntity controller) {
+        if (!buffer.isEmpty()) {
+            return buffer.copy();
+        }
+        FluidStack available = selectControllerFluid(controller);
+        return available.isEmpty() ? FluidStack.EMPTY : available.copy();
     }
 
     private int pullFromController(Level level) {
@@ -398,11 +412,7 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
     @Override
     protected void saveAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (!buffer.isEmpty()) {
-            CompoundTag fluidTag = new CompoundTag();
-            buffer.save(registries, fluidTag);
-            tag.put(TAG_FLUID, fluidTag);
-        }
+        FoundryNbtHelper.putFluidStack(tag, TAG_FLUID, registries, buffer);
         tag.putInt(TAG_COOLDOWN, cooldown);
         tag.putInt(TAG_VALVES, valveMask);
         ResourceLocation filter = filterFluidId;
@@ -414,11 +424,7 @@ public class FoundryChannelBlockEntity extends FoundryComponentBlockEntity {
     @Override
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains(TAG_FLUID)) {
-            buffer = FluidStack.parseOptional(registries, Objects.requireNonNull(tag.getCompound(TAG_FLUID)));
-        } else {
-            buffer = FluidStack.EMPTY;
-        }
+        buffer = FoundryNbtHelper.readFluidStack(tag, TAG_FLUID, registries);
         cooldown = tag.getInt(TAG_COOLDOWN);
         valveMask = tag.contains(TAG_VALVES) ? tag.getInt(TAG_VALVES) : VALVE_ALL_OUT;
         if (tag.contains(TAG_FILTER)) {

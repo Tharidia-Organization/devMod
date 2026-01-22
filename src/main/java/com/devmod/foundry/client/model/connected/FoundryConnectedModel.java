@@ -346,7 +346,7 @@ public class FoundryConnectedModel implements IUnbakedGeometry<FoundryConnectedM
       byte connections = 0;
       for (Direction dir : Direction.values()) {
         if (predicate.test(dir)) {
-          connections |= 1 << dir.get3DDataValue();
+          connections = (byte) (connections | (1 << dir.get3DDataValue()));
         }
       }
       return connections;
@@ -388,6 +388,7 @@ public class FoundryConnectedModel implements IUnbakedGeometry<FoundryConnectedM
 
     @Nonnull
     @Override
+    @SuppressWarnings("deprecation")
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData data, @Nullable RenderType renderType) {
       // try model data first
       Byte connections = data.get(CONNECTIONS);

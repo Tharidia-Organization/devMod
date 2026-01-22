@@ -37,6 +37,8 @@ import com.devmod.foundry.recipe.FoundryCastingRecipe;
 import com.devmod.foundry.tool.FoundryPartItem;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
+import com.devmod.foundry.util.FoundryContainers;
+import com.devmod.foundry.util.FoundryNbtHelper;
 
 /**
  * Base block entity for casting table/basin.
@@ -48,16 +50,25 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
 
-    protected final SimpleContainer inventory = new SimpleContainer(2);
+    protected final SimpleContainer inventory;
     protected FluidStack fluidStack = FluidStack.EMPTY;
     protected int progress = 0;
     protected int maxProgress = 100;
+    private static final int PROGRESS_SAVE_INTERVAL = 20;
+    private int progressSaveTicks = 0;
 
     protected FoundryCastingBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(type), pos, state);
+        this.inventory = FoundryContainers.tracked(2);
     }
 
     public abstract RecipeType<FoundryCastingRecipe> getRecipeType();
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
+    }
 
     public void tickServer() {
         Level level = Objects.requireNonNull(getLevel());
@@ -66,19 +77,19 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         }
         updateHasItemState();
         if (fluidStack.isEmpty()) {
-            progress = 0;
+            resetProgress();
             return;
         }
 
         FoundryCastingRecipe recipe = findRecipe().orElse(null);
         if (recipe == null) {
-            progress = 0;
+            resetProgress();
             return;
         }
 
         int required = recipe.getFluid().getAmount();
         if (fluidStack.getAmount() < required) {
-            progress = 0;
+            resetProgress();
             return;
         }
 
@@ -89,6 +100,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
 
         maxProgress = recipe.getCoolingTime();
         progress++;
+        maybeMarkProgressDirty();
         if (progress >= maxProgress) {
             MaterialQuality fluidQuality = FoundryFluidQuality.getQuality(fluidStack);
             float fluidPurity = FoundryFluidQuality.getPurity(fluidStack);
@@ -106,6 +118,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
             }
             fluidStack = FluidStack.EMPTY;
             progress = 0;
+            progressSaveTicks = 0;
             updateHasItemState();
             setChanged();
         }
@@ -147,6 +160,41 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         FoundryFluidQuality.applyMoltenState(fluidStack, mergedQuality, mergedPurity, mergedOxidation, mergedPeakTemp);
         setChanged();
         return accepted;
+    }
+
+    /**
+     * Selects the preferred fluid to pour from the controller based on the current cast/fluid state.
+     * If this casting block already contains fluid, it will keep that fluid type.
+     */
+    @Nonnull
+    public FluidStack getPreferredPourFluid(@Nonnull FoundryControllerBlockEntity controller) {
+        if (!fluidStack.isEmpty()) {
+            return fluidStack.copy();
+        }
+        Level level = getLevel();
+        if (level == null) {
+            return FluidStack.EMPTY;
+        }
+        RecipeManager manager = level.getRecipeManager();
+        ItemStack cast = inventory.getItem(0);
+        FluidStack best = FluidStack.EMPTY;
+        int bestAmount = 0;
+        for (RecipeHolder<FoundryCastingRecipe> holder : manager.getAllRecipesFor(Objects.requireNonNull(getRecipeType()))) {
+            FoundryCastingRecipe recipe = holder.value();
+            if (!matchesCast(recipe, cast)) {
+                continue;
+            }
+            FluidStack recipeFluid = recipe.getFluid();
+            int available = controller.getMoltenAmountForFluid(recipeFluid.getFluid());
+            if (available <= 0) {
+                continue;
+            }
+            if (available > bestAmount) {
+                bestAmount = available;
+                best = recipeFluid;
+            }
+        }
+        return best.isEmpty() ? FluidStack.EMPTY : best.copy();
     }
 
     public InteractionResult handleInteraction(@Nonnull Player player, @Nonnull InteractionHand hand) {
@@ -210,6 +258,13 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         return findRecipe(fluidStack);
     }
 
+    private static boolean matchesCast(FoundryCastingRecipe recipe, ItemStack cast) {
+        if (recipe.getCast().isEmpty()) {
+            return true;
+        }
+        return recipe.getCast().test(cast);
+    }
+
     private Optional<FoundryCastingRecipe> findRecipe(FluidStack fluid) {
         Level level = Objects.requireNonNull(getLevel());
         RecipeManager manager = level.getRecipeManager();
@@ -229,11 +284,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
         if (!outputItem.isEmpty()) {
             tag.put(TAG_OUTPUT, Objects.requireNonNull(outputItem.save(registries)));
         }
-        if (!fluidStack.isEmpty()) {
-            CompoundTag fluidTag = new CompoundTag();
-            fluidStack.save(registries, fluidTag);
-            tag.put(TAG_FLUID, fluidTag);
-        }
+        FoundryNbtHelper.putFluidStack(tag, TAG_FLUID, registries, fluidStack);
         tag.putInt(TAG_PROGRESS, progress);
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
     }
@@ -249,12 +300,7 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
             CompoundTag outputTag = Objects.requireNonNull(tag.getCompound(TAG_OUTPUT));
             inventory.setItem(1, Objects.requireNonNull(ItemStack.parse(registries, outputTag).orElse(ItemStack.EMPTY)));
         }
-        if (tag.contains(TAG_FLUID)) {
-            CompoundTag fluidTag = Objects.requireNonNull(tag.getCompound(TAG_FLUID));
-            fluidStack = FluidStack.parseOptional(registries, fluidTag);
-        } else {
-            fluidStack = FluidStack.EMPTY;
-        }
+        fluidStack = FoundryNbtHelper.readFluidStack(tag, TAG_FLUID, registries);
         progress = tag.getInt(TAG_PROGRESS);
         maxProgress = tag.getInt(TAG_MAX_PROGRESS);
     }
@@ -276,6 +322,22 @@ public abstract class FoundryCastingBlockEntity extends BlockEntity {
             if (state.getValue(FoundryCastingBasinBlock.HAS_ITEM) != hasItem) {
                 level.setBlock(worldPosition, state.setValue(FoundryCastingBasinBlock.HAS_ITEM, hasItem), Block.UPDATE_CLIENTS);
             }
+        }
+    }
+
+    private void maybeMarkProgressDirty() {
+        progressSaveTicks++;
+        if (progressSaveTicks >= PROGRESS_SAVE_INTERVAL) {
+            progressSaveTicks = 0;
+            setChanged();
+        }
+    }
+
+    private void resetProgress() {
+        if (progress != 0) {
+            progress = 0;
+            progressSaveTicks = 0;
+            setChanged();
         }
     }
 }

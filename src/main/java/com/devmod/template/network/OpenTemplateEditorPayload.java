@@ -11,6 +11,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.template.data.RoomTemplate;
 
 /**
@@ -21,7 +23,7 @@ public record OpenTemplateEditorPayload(
     int minX, int minZ, int maxX, int maxZ, int floorY,
     @Nonnull List<RoomTemplate> availableTemplates,
     @Nonnull String currentTemplateId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_editor_open"));
@@ -77,5 +79,21 @@ public record OpenTemplateEditorPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.estimatedUtfSize(zoneId);
+        size += PayloadSizeUtil.varIntSize(minX);
+        size += PayloadSizeUtil.varIntSize(minZ);
+        size += PayloadSizeUtil.varIntSize(maxX);
+        size += PayloadSizeUtil.varIntSize(maxZ);
+        size += PayloadSizeUtil.varIntSize(floorY);
+        size += PayloadSizeUtil.varIntSize(availableTemplates.size());
+        for (RoomTemplate template : availableTemplates) {
+            size += TemplatePayloadSizing.estimateRoomTemplateSize(template);
+        }
+        size += PayloadSizeUtil.estimatedUtfSize(currentTemplateId);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

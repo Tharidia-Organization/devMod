@@ -15,6 +15,8 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.hologram.data.HologramOptions;
 import com.devmod.hologram.data.HologramStyle;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client to Server payload for saving hologram changes.
@@ -26,7 +28,7 @@ public record SaveHologramPayload(
     @Nonnull HologramStyle style,
     @Nonnull HologramOptions options,
     int expectedRevision
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "hologram_save"));
@@ -71,5 +73,18 @@ public record SaveHologramPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // UUID
+        size += PayloadSizeUtil.varIntSize(lines.size());
+        for (String line : lines) {
+            size += PayloadSizeUtil.estimatedUtfSize(line);
+        }
+        size += HologramPayloadSizing.estimateStyleSize(style);
+        size += HologramPayloadSizing.estimateOptionsSize(options);
+        size += PayloadSizeUtil.varIntSize(expectedRevision);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

@@ -20,8 +20,8 @@ class FoundryDevmodLoaderIsolationTest {
     private static final Path DEV_MOD_MODELS = Paths.get("src/main/resources/assets/devmod/models");
 
     @Test
-    @DisplayName("DevMod models do not use legacy Mantle/TCon loaders")
-    void devmodModelsAvoidLegacyLoaders() throws IOException {
+    @DisplayName("DevMod models use only DevMod model loaders")
+    void devmodModelsUseOnlyDevmodLoaders() throws IOException {
         if (!Files.exists(DEV_MOD_MODELS)) {
             System.out.println("DevMod models not found, skipping test: " + DEV_MOD_MODELS);
             return;
@@ -49,7 +49,9 @@ class FoundryDevmodLoaderIsolationTest {
         }
 
         String loader = json.get("loader").getAsString();
-        if (loader.startsWith("mantle:") || loader.startsWith("tconstruct:")) {
+        int colonIndex = loader.indexOf(':');
+        String namespace = colonIndex > 0 ? loader.substring(0, colonIndex) : "";
+        if (!"devmod".equals(namespace)) {
             offenders.add(path + ": " + loader);
         }
     }

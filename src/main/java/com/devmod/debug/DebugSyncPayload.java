@@ -13,8 +13,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
-public record DebugSyncPayload(String featureId, boolean enabled) implements CustomPacketPayload {
+public record DebugSyncPayload(String featureId, boolean enabled) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<DebugSyncPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_sync")));
@@ -28,6 +30,13 @@ public record DebugSyncPayload(String featureId, boolean enabled) implements Cus
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.estimatedUtfSize(featureId);
+        size += 1; // enabled
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

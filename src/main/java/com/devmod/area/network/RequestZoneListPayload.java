@@ -10,12 +10,13 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request zone list for ZoneSelectorWidget.
  * Empty payload - server responds with ZoneListPayload.
  */
-public record RequestZoneListPayload() implements CustomPacketPayload {
+public record RequestZoneListPayload() implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<RequestZoneListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "request_zone_list")));
@@ -27,5 +28,10 @@ public record RequestZoneListPayload() implements CustomPacketPayload {
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return 0;
     }
 }

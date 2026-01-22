@@ -70,6 +70,8 @@ import com.devmod.foundry.thermal.ThermalManager;
 import com.devmod.foundry.tool.material.FoundryMaterialAlloying;
 import com.devmod.foundry.tool.material.FoundryMaterialDefinition;
 import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
+import com.devmod.foundry.util.FoundryContainers;
+import com.devmod.foundry.util.ProgressAccumulator;
 
 /**
  * Foundry controller block entity.
@@ -77,6 +79,7 @@ import com.devmod.foundry.tool.material.FoundryMaterialRegistry;
 public class FoundryControllerBlockEntity extends net.minecraft.world.level.block.entity.BlockEntity implements MenuProvider {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_PROGRESS = "Progress";
+    private static final String TAG_PROGRESS_REMAINDER = "ProgressRemainder";
     private static final String TAG_MAX_PROGRESS = "MaxProgress";
     private static final String TAG_FORMED = "Formed";
     private static final String TAG_MOLTEN = "MoltenTank";
@@ -90,6 +93,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private static final String TAG_CURRENT_PURITY = "CurrentPurity";
     private static final String TAG_HAD_INCIDENT = "HadIncident";
     private static final String TAG_ALLOY_PROGRESS = "AlloyProgress";
+    private static final String TAG_ALLOY_PROGRESS_REMAINDER = "AlloyProgressRemainder";
     private static final String TAG_ALLOY_MAX_PROGRESS = "AlloyMaxProgress";
     private static final String TAG_ALLOY_RECIPE = "AlloyRecipe";
     private static final String TAG_TIER_LIMIT = "TierLimit";
@@ -110,7 +114,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private static final int PURITY_SIZZLE_INTERVAL = 80;
     private static final float PURITY_SIZZLE_CHANCE = 0.35f;
 
-    private final SimpleContainer inventory = new SimpleContainer(FoundryControllerMenu.CONTAINER_SIZE);
+    private final SimpleContainer inventory;
     private final FoundryFluidTank moltenTank;
     private final FluidTank fuelTank;
 
@@ -125,10 +129,12 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     @Nullable private Component lastError;
 
     private int progress = 0;
+    private final ProgressAccumulator meltProgressAccumulator = new ProgressAccumulator();
     private int maxProgress = 200;
     private int activeSlot = -1;
     @Nullable private FoundryMeltingRecipe currentRecipe;
     private int alloyProgress = 0;
+    private final ProgressAccumulator alloyProgressAccumulator = new ProgressAccumulator();
     private int alloyMaxProgress = 0;
     @Nullable private FoundryAlloyingRecipe currentAlloyRecipe;
     @Nullable private ResourceLocation currentAlloyRecipeId;
@@ -150,6 +156,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
     private int meltOptimalHigh = 0;
     private boolean meltInitialized = false;
     private int tickCounter = 0;
+    private static final int PROGRESS_SAVE_INTERVAL = 20;
+    private int progressSaveTicks = 0;
 
     // Client-side cached data for rendering
     @Nullable private BlockPos clientMinPos;
@@ -159,8 +167,15 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
 
     public FoundryControllerBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_CONTROLLER.get()), pos, state);
+        this.inventory = FoundryContainers.tracked(FoundryControllerMenu.CONTAINER_SIZE);
         moltenTank = new FoundryFluidTank(Config.FOUNDRY_CAPACITY_PER_BLOCK.get());
         fuelTank = new FluidTank(Config.FOUNDRY_FUEL_CAPACITY.get());
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
     }
 
     public void tickServer() {
@@ -178,8 +193,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         }
 
         // Debug log every 100 ticks
-        if (tickCounter % 100 == 0) {
-            DevMod.LOGGER.info("[Foundry] Tick #{} at {} - formed={}, structureDirty={}", tickCounter, worldPosition, formed, structureDirty);
+        if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+            DevMod.LOGGER.debug("[Foundry] Tick #{} at {} - formed={}, structureDirty={}", tickCounter, worldPosition, formed, structureDirty);
         }
 
         if (structureDirty) {
@@ -199,7 +214,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         if (tickCounter % TANK_SYNC_INTERVAL == 0) {
             int currentAmount = moltenTank.getUsed();
             if (currentAmount != lastSyncedTankAmount) {
-                DevMod.LOGGER.info("[Foundry] Tank changed: {} -> {}, syncing to clients", lastSyncedTankAmount, currentAmount);
+                if (DevMod.LOGGER.isDebugEnabled()) {
+                    DevMod.LOGGER.debug("[Foundry] Tank changed: {} -> {}, syncing to clients", lastSyncedTankAmount, currentAmount);
+                }
                 lastSyncedTankAmount = currentAmount;
                 syncToClients();
             }
@@ -214,7 +231,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             updateActiveState(level, false);
             thermalManager.tick(fuelTemperature, false);
             moltenTank.tick(thermalManager.getStructureHeat(), false);
-            progress = 0;
+            resetMeltProgress(true);
             if (tierBlocked) {
                 lastError = Component.translatable("devmod.foundry.error.tier_temp", tierLimit.getDisplayName());
                 tierErrorActive = true;
@@ -239,8 +256,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         updateAlloyPreview(level, (int) effectiveTemp);
 
         // Debug: log fuel and temperature status
-        if (tickCounter % 100 == 0) {
-            DevMod.LOGGER.info("[Foundry] Status at {}: fuelTicks={}, effectiveTemp={}, requiredTemp={}, fuelTank={}/{}",
+        if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+            DevMod.LOGGER.debug("[Foundry] Status at {}: fuelTicks={}, effectiveTemp={}, requiredTemp={}, fuelTank={}/{}",
                 worldPosition, fuelTicks, (int)effectiveTemp, requiredTemp, fuelTank.getFluidAmount(), fuelTank.getCapacity());
         }
 
@@ -284,7 +301,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
         } else {
             updateActiveState(level, false);
-            progress = 0;
+            resetMeltProgress(true);
         }
     }
 
@@ -367,7 +384,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
             return;
         }
-        DevMod.LOGGER.info("[Foundry] Structure validated successfully at {}", worldPosition);
+        if (DevMod.LOGGER.isDebugEnabled()) {
+            DevMod.LOGGER.debug("[Foundry] Structure validated successfully at {}", worldPosition);
+        }
 
         FoundryStructure detectedStructure = Objects.requireNonNull(result.structure());
         structure = detectedStructure;
@@ -424,14 +443,23 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             FluidStack toFill = new FluidStack(Objects.requireNonNull(bucket.content), 1000);
             FoundryFuelRecipe recipe = findFuelRecipe(level, toFill);
             if (recipe == null) {
-                if (tickCounter % 100 == 0) {
-                    DevMod.LOGGER.warn("[Foundry] No fuel recipe found for fluid: {}", toFill.getFluid());
+                if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+                    DevMod.LOGGER.debug("[Foundry] No fuel recipe found for fluid: {}", toFill.getFluid());
+                }
+                return;
+            }
+            int simulated = fuelTank.fill(toFill, IFluidHandler.FluidAction.SIMULATE);
+            if (simulated < toFill.getAmount()) {
+                if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+                    DevMod.LOGGER.debug("[Foundry] Fuel tank lacks space: needed={}, available={}", toFill.getAmount(), simulated);
                 }
                 return;
             }
             int filled = fuelTank.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
-            DevMod.LOGGER.info("[Foundry] Filled fuel tank with {} mB, total now: {}", filled, fuelTank.getFluidAmount());
-            if (filled > 0 && !level.isClientSide) {
+            if (DevMod.LOGGER.isDebugEnabled()) {
+                DevMod.LOGGER.debug("[Foundry] Filled fuel tank with {} mB, total now: {}", filled, fuelTank.getFluidAmount());
+            }
+            if (filled == toFill.getAmount() && !level.isClientSide) {
                 inventory.setItem(FoundryControllerMenu.SLOT_FUEL, new ItemStack(Objects.requireNonNull(Items.BUCKET)));
             }
         }
@@ -457,15 +485,17 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                     recipe = found;
                     activeSlot = i;
                     input = candidate;
-                    DevMod.LOGGER.info("[Foundry] Found recipe for {} at slot {}", candidate.getItem(), i);
+                    if (DevMod.LOGGER.isDebugEnabled()) {
+                        DevMod.LOGGER.debug("[Foundry] Found recipe for {} at slot {}", candidate.getItem(), i);
+                    }
                     break;
-                } else if (tickCounter % 100 == 0) {
-                    DevMod.LOGGER.warn("[Foundry] No recipe found for: {}", candidate.getItem());
+                } else if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+                    DevMod.LOGGER.debug("[Foundry] No recipe found for: {}", candidate.getItem());
                 }
             }
             currentRecipe = recipe;
             if (recipe == null) {
-                progress = 0;
+                resetMeltProgress(true);
                 hadIncidentThisCycle = false; // Reset for new item
                 return;
             }
@@ -474,7 +504,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         }
 
         if (input.isEmpty() || recipe == null) {
-            progress = 0;
+            resetMeltProgress(true);
             resetMeltState();
             return;
         }
@@ -482,32 +512,37 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         FluidStack output = recipe.getOutput();
         int byproductTotal = recipe.getByproductsTotal();
         if (moltenTank.getFree() < output.getAmount() + byproductTotal) {
-            if (tickCounter % 100 == 0) {
-                DevMod.LOGGER.warn("[Foundry] Tank full - free: {}, needed: {}", moltenTank.getFree(), output.getAmount() + byproductTotal);
+            if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+                DevMod.LOGGER.debug("[Foundry] Tank full - free: {}, needed: {}", moltenTank.getFree(), output.getAmount() + byproductTotal);
             }
             return;
         }
 
         if (temperature < recipe.getTemperature()) {
-            if (tickCounter % 100 == 0) {
-                DevMod.LOGGER.warn("[Foundry] Temp too low: {} < {}", temperature, recipe.getTemperature());
+            if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 100 == 0) {
+                DevMod.LOGGER.debug("[Foundry] Temp too low: {} < {}", temperature, recipe.getTemperature());
             }
             return;
         }
 
         initMeltState(input, recipe);
         maxProgress = recipe.getTime();
-        // Apply efficiency to progress (higher efficiency = faster)
-        int progressGain = Math.max(1, Math.round(efficiency));
+        // Apply efficiency to progress (supports fractional speed)
+        int progressGain = meltProgressAccumulator.accumulate(efficiency);
         progress += progressGain;
+        if (efficiency > 0f) {
+            maybeMarkProgressDirty();
+        }
 
         // Debug log progress
-        if (tickCounter % 40 == 0) {
-            DevMod.LOGGER.info("[Foundry] Melting progress: {}/{}, item={}", progress, maxProgress, input.getItem());
+        if (DevMod.LOGGER.isDebugEnabled() && tickCounter % 40 == 0) {
+            DevMod.LOGGER.debug("[Foundry] Melting progress: {}/{}, item={}", progress, maxProgress, input.getItem());
         }
 
         if (progress >= maxProgress) {
-            DevMod.LOGGER.info("[Foundry] Melting COMPLETE for {}, outputting {} mB", input.getItem(), recipe.getOutput().getAmount());
+            if (DevMod.LOGGER.isDebugEnabled()) {
+                DevMod.LOGGER.debug("[Foundry] Melting COMPLETE for {}, outputting {} mB", input.getItem(), recipe.getOutput().getAmount());
+            }
             FoundryMaterialDefinition meltedMaterial = FoundryMaterialRegistry.findMaterial(input).orElse(null);
             input.shrink(1);
 
@@ -535,7 +570,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
 
             // Reset state for next item
-            progress = 0;
+            resetMeltProgress(false);
             hadIncidentThisCycle = false;
             resetMeltState();
             setChanged();
@@ -574,6 +609,39 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         meltOptimalLow = 0;
         meltOptimalHigh = 0;
         meltInitialized = false;
+    }
+
+    private void resetMeltProgress(boolean markDirty) {
+        if (progress == 0 && meltProgressAccumulator.getRemainder() == 0f) {
+            return;
+        }
+        progress = 0;
+        meltProgressAccumulator.reset();
+        progressSaveTicks = 0;
+        if (markDirty) {
+            setChanged();
+        }
+    }
+
+    private void resetAlloyProgress(boolean markDirty) {
+        if (alloyProgress == 0 && alloyMaxProgress == 0 && alloyProgressAccumulator.getRemainder() == 0f) {
+            return;
+        }
+        alloyProgress = 0;
+        alloyMaxProgress = 0;
+        alloyProgressAccumulator.reset();
+        progressSaveTicks = 0;
+        if (markDirty) {
+            setChanged();
+        }
+    }
+
+    private void maybeMarkProgressDirty() {
+        progressSaveTicks++;
+        if (progressSaveTicks >= PROGRESS_SAVE_INTERVAL) {
+            progressSaveTicks = 0;
+            setChanged();
+        }
     }
 
     private MaterialQuality calculateMeltQuality(FoundryMeltingRecipe recipe, int actualTemp) {
@@ -688,7 +756,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             if (!canUseAlloyRecipe(recipe, operator)) {
                 continue;
             }
-            if (!recipe.canApply(moltenTank)) {
+            FoundryMaterialAlloying alloyingBonus = calculateAlloyingBonuses(recipe.getComponentFluids());
+            if (!recipe.canApply(moltenTank, alloyingBonus.ratioTolerance())) {
                 continue;
             }
             if (temperature < recipe.getTemperature()) {
@@ -713,6 +782,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         RecipeManager recipeManager = level.getRecipeManager();
         FoundryAlloyingRecipe recipe = currentAlloyRecipe;
         Player operator = resolveLastOperator(level);
+        FoundryMaterialAlloying alloyingBonus = FoundryMaterialAlloying.NONE;
 
         if (recipe == null && currentAlloyRecipeId != null) {
             recipe = recipeManager.byKey(currentAlloyRecipeId)
@@ -730,11 +800,21 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             recipe = null;
             currentAlloyRecipe = null;
             currentAlloyRecipeId = null;
-            alloyProgress = 0;
-            alloyMaxProgress = 0;
+            resetAlloyProgress(true);
         }
 
-        if (recipe == null || !recipe.canApply(moltenTank)) {
+        if (recipe != null) {
+            alloyingBonus = calculateAlloyingBonuses(recipe.getComponentFluids());
+            if (!recipe.canApply(moltenTank, alloyingBonus.ratioTolerance())) {
+                recipe = null;
+                currentAlloyRecipe = null;
+                currentAlloyRecipeId = null;
+                resetAlloyProgress(true);
+                alloyingBonus = FoundryMaterialAlloying.NONE;
+            }
+        }
+
+        if (recipe == null) {
             recipe = null;
             List<RecipeHolder<FoundryAlloyingRecipe>> recipes = recipeManager.getAllRecipesFor(Objects.requireNonNull(FoundryRecipeTypes.ALLOYING.get()));
             for (RecipeHolder<FoundryAlloyingRecipe> holder : recipes) {
@@ -742,7 +822,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                 if (!canUseAlloyRecipe(candidate, operator)) {
                     continue;
                 }
-                if (!candidate.canApply(moltenTank)) {
+                FoundryMaterialAlloying candidateBonus = calculateAlloyingBonuses(candidate.getComponentFluids());
+                if (!candidate.canApply(moltenTank, candidateBonus.ratioTolerance())) {
                     continue;
                 }
                 if (temperature < candidate.getTemperature()) {
@@ -755,11 +836,11 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                 }
                 recipe = candidate;
                 currentAlloyRecipeId = holder.id();
+                alloyingBonus = candidateBonus;
                 break;
             }
             currentAlloyRecipe = recipe;
-            alloyProgress = 0;
-            alloyMaxProgress = 0;
+            resetAlloyProgress(true);
             if (recipe == null) {
                 currentAlloyRecipeId = null;
                 return;
@@ -776,14 +857,14 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             return;
         }
 
-        // Calculate alloying bonuses from materials in the recipe
-        FoundryMaterialAlloying alloyingBonus = calculateAlloyingBonuses(recipe.getComponentFluids());
-
         alloyMaxProgress = recipe.getTime();
         // Apply speed multiplier from material alloying bonuses
         float effectiveSpeed = efficiency * (1f / alloyingBonus.speedMultiplier());
-        int progressGain = Math.max(1, Math.round(effectiveSpeed));
+        int progressGain = alloyProgressAccumulator.accumulate(effectiveSpeed);
         alloyProgress += progressGain;
+        if (effectiveSpeed > 0f) {
+            maybeMarkProgressDirty();
+        }
 
         if (alloyProgress >= alloyMaxProgress) {
             MaterialQuality outputQuality = MaterialQuality.MASTERWORK;
@@ -804,8 +885,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
             int drained = recipe.consumeInputs(moltenTank);
             if (drained <= 0) {
-                alloyProgress = 0;
-                alloyMaxProgress = 0;
+                resetAlloyProgress(false);
                 currentAlloyRecipe = null;
                 setChanged();
                 return;
@@ -838,8 +918,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
                     FoundryProgressAttachment.sync(operator);
                 }
             }
-            alloyProgress = 0;
-            alloyMaxProgress = 0;
+            resetAlloyProgress(false);
             currentAlloyRecipe = null;
             setChanged();
         }
@@ -897,7 +976,8 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             if (!canUseAlloyRecipe(alloyRecipe, operator)) {
                 continue;
             }
-            if (!alloyRecipe.canApply(moltenTank)) {
+            FoundryMaterialAlloying alloyingBonus = calculateAlloyingBonuses(alloyRecipe.getComponentFluids());
+            if (!alloyRecipe.canApply(moltenTank, alloyingBonus.ratioTolerance())) {
                 continue;
             }
             if (!tierLimit.allowsTemperature(alloyRecipe.getTemperature())) {
@@ -978,7 +1058,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         for (var holder : allFuelRecipes) {
             FoundryFuelRecipe recipe = holder.value();
             if (recipe.getFluid().getFluid() == stack.getFluid()) {
-                DevMod.LOGGER.info("[Foundry] Found matching fuel recipe: {} for {}", holder.id(), stack.getFluid());
+                if (DevMod.LOGGER.isDebugEnabled()) {
+                    DevMod.LOGGER.debug("[Foundry] Found matching fuel recipe: {} for {}", holder.id(), stack.getFluid());
+                }
                 return recipe;
             }
         }
@@ -1380,6 +1462,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         }
         tag.put(TAG_INVENTORY, invTag);
         tag.putInt(TAG_PROGRESS, progress);
+        tag.putFloat(TAG_PROGRESS_REMAINDER, meltProgressAccumulator.getRemainder());
         tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         tag.putBoolean(TAG_FORMED, formed);
         tag.put(TAG_MOLTEN, Objects.requireNonNull(moltenTank.save(registries)));
@@ -1400,6 +1483,7 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         tag.putInt(TAG_MELT_OPTIMAL_HIGH, meltOptimalHigh);
         tag.putBoolean(TAG_MELT_INITIALIZED, meltInitialized);
         tag.putInt(TAG_ALLOY_PROGRESS, alloyProgress);
+        tag.putFloat(TAG_ALLOY_PROGRESS_REMAINDER, alloyProgressAccumulator.getRemainder());
         tag.putInt(TAG_ALLOY_MAX_PROGRESS, alloyMaxProgress);
         tag.putString(TAG_TIER_LIMIT, Objects.requireNonNull(tierLimit.getName()));
         ResourceLocation alloyRecipeId = currentAlloyRecipeId;
@@ -1421,6 +1505,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
             }
         }
         progress = tag.getInt(TAG_PROGRESS);
+        meltProgressAccumulator.setRemainder(
+            tag.contains(TAG_PROGRESS_REMAINDER) ? tag.getFloat(TAG_PROGRESS_REMAINDER) : 0f
+        );
         maxProgress = tag.getInt(TAG_MAX_PROGRESS);
         formed = tag.getBoolean(TAG_FORMED);
         if (tag.contains(TAG_MOLTEN)) {
@@ -1447,6 +1534,9 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
         meltOptimalHigh = tag.contains(TAG_MELT_OPTIMAL_HIGH) ? tag.getInt(TAG_MELT_OPTIMAL_HIGH) : 0;
         meltInitialized = tag.getBoolean(TAG_MELT_INITIALIZED);
         alloyProgress = tag.getInt(TAG_ALLOY_PROGRESS);
+        alloyProgressAccumulator.setRemainder(
+            tag.contains(TAG_ALLOY_PROGRESS_REMAINDER) ? tag.getFloat(TAG_ALLOY_PROGRESS_REMAINDER) : 0f
+        );
         alloyMaxProgress = tag.getInt(TAG_ALLOY_MAX_PROGRESS);
         currentAlloyRecipe = null;
         currentAlloyRecipeId = tag.contains(TAG_ALLOY_RECIPE)
@@ -1585,7 +1675,13 @@ public class FoundryControllerBlockEntity extends net.minecraft.world.level.bloc
      * Requires: formed structure, fuel burning, and molten metal in tank.
      */
     public boolean canMeltEntities() {
-        return formed && fuelTicks > 0 && !moltenTank.isEmpty();
+        if (!formed) {
+            return false;
+        }
+        if (fuelTicks <= 0) {
+            return false;
+        }
+        return !moltenTank.isEmpty();
     }
 
     /**

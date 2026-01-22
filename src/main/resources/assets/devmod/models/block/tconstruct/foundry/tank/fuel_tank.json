@@ -1,7 +1,0 @@
-{
-  "parent": "devmod:block/template/tank_knob",
-  "textures": {
-    "top":  "devmod:block/foundry/tank/tank_top",
-    "side": "devmod:block/foundry/tank/fuel_tank"
-  }
-}

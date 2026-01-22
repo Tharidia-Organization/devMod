@@ -8,7 +8,6 @@ import org.lwjgl.BufferUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -69,7 +68,14 @@ public class EffekRenderer {
         transposeMatrix(PROJECTION_BUFFER);
         PROJECTION_BUFFER.get(PROJECTION_MATRIX_DATA);
 
-        viewMatrix.get(CAMERA_TRANSFORM_BUFFER);
+        // Build camera matrix like AAAParticles does:
+        // Start with identity, then translate by -camera position for WORLD particles
+        Matrix4f cameraMatrix = new Matrix4f(viewMatrix);
+        if (type == ParticleEmitter.Type.WORLD) {
+            var camPos = camera.getPosition();
+            cameraMatrix.translate((float) -camPos.x, (float) -camPos.y, (float) -camPos.z);
+        }
+        cameraMatrix.get(CAMERA_TRANSFORM_BUFFER);
         transposeMatrix(CAMERA_TRANSFORM_BUFFER);
         CAMERA_TRANSFORM_BUFFER.get(CAMERA_TRANSFORM_DATA);
 

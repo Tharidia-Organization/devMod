@@ -180,7 +180,7 @@ public class FoundryChannelRenderer implements BlockEntityRenderer<FoundryChanne
         Direction direction,
         Matrix4f matrix,
         VertexConsumer consumer,
-        TextureAtlasSprite sprite,
+        @SuppressWarnings("unused") TextureAtlasSprite sprite,
         int light,
         int overlay
     ) {
@@ -210,14 +210,13 @@ public class FoundryChannelRenderer implements BlockEntityRenderer<FoundryChanne
         boolean pointToward = connectionState == ChannelConnectionState.IN;
 
         // Render a small triangle/arrow indicator on top of the channel
-        renderArrowIndicator(matrix, consumer, sprite, direction, edgeOffset, pointToward,
+        renderArrowIndicator(matrix, consumer, direction, edgeOffset, pointToward,
             red, green, blue, INDICATOR_ALPHA, u0, v0, u1, v1, light, overlay);
     }
 
     private void renderArrowIndicator(
         Matrix4f matrix,
         VertexConsumer consumer,
-        TextureAtlasSprite sprite,
         Direction direction,
         float edgePos,
         boolean pointToward,

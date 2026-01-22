@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload for updating mannequin skin UUID.
@@ -24,7 +26,7 @@ import com.devmod.DevMod;
 public record MannequinSkinPayload(
     BlockPos pos,
     @Nullable UUID skinUUID
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<MannequinSkinPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "mannequin_skin")));
@@ -51,5 +53,15 @@ public record MannequinSkinPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 8; // BlockPos
+        size += 1; // hasSkin
+        if (skinUUID != null) {
+            size += 16;
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

@@ -1,7 +1,0 @@
-{
-    "parent": "devmod:block/platform/both",
-	"textures": {
-		"side": "devmod:block/platform/cobalt_side",
-		"top":  "devmod:block/platform/cobalt_top"
-	}
-}

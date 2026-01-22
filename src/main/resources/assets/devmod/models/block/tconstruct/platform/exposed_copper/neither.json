@@ -1,7 +1,0 @@
-{
-    "parent": "devmod:block/platform/neither",
-	"textures": {
-		"side": "devmod:block/platform/exposed_copper_side",
-		"top":  "devmod:block/platform/exposed_copper_top"
-	}
-}

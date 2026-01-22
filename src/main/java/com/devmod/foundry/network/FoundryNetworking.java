@@ -18,6 +18,7 @@ import com.devmod.foundry.menu.FoundryStencilTableMenu;
 /**
  * Network handler for Foundry module packets.
  */
+@SuppressWarnings("removal")
 @EventBusSubscriber(modid = DevMod.MODID, bus = EventBusSubscriber.Bus.MOD)
 public final class FoundryNetworking {
     private FoundryNetworking() {}
@@ -39,7 +40,7 @@ public final class FoundryNetworking {
     }
 
     private static void handleStencilTableSelect(StencilTableSelectPacket packet, IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var unused = context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }

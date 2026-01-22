@@ -1,6 +1,7 @@
 package com.devmod.runtime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -523,7 +524,7 @@ public final class NexusCommand {
         NexusHubManager.INSTANCE.initialize(server);
         ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
         for (ZoneSlot slot : registry.getAllSlots()) {
-            if (slot.slotId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+            if (slot.slotId().toLowerCase(Locale.ROOT).startsWith(builder.getRemainingLowerCase())) {
                 builder.suggest(slot.slotId());
             }
         }
@@ -539,7 +540,7 @@ public final class NexusCommand {
         NexusHubManager.INSTANCE.initialize(server);
         ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
         for (ZoneSlot slot : registry.getLinkedSlots()) {
-            if (slot.slotId().toLowerCase().startsWith(builder.getRemainingLowerCase())) {
+            if (slot.slotId().toLowerCase(Locale.ROOT).startsWith(builder.getRemainingLowerCase())) {
                 builder.suggest(slot.slotId());
             }
         }
@@ -555,7 +556,7 @@ public final class NexusCommand {
         AreaRegistry registry = AreaRegistry.get(server);
         String remaining = builder.getRemainingLowerCase();
         for (AreaDefinition area : registry.getAllAreas()) {
-            if (area.name().toLowerCase().startsWith(remaining)) {
+            if (area.name().toLowerCase(Locale.ROOT).startsWith(remaining)) {
                 builder.suggest(area.name());
             }
         }

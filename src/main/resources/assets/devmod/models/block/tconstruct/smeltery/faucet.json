@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/template/faucet",
-  "textures": {
-    "tex": "devmod:block/smeltery/seared/stone"
-  }
-}

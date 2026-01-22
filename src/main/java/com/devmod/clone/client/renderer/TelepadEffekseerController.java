@@ -1,11 +1,11 @@
 package com.devmod.clone.client.renderer;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 
 import javax.annotation.Nullable;
+
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -14,39 +14,47 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
-import com.devmod.clone.block.TelepadBlock;
-import com.devmod.clone.block.entity.TelepadBlockEntity;
 import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.api.ParticleEmitter;
-import com.devmod.client.vfx.effekseer.registry.EffectRegistry;
+import com.devmod.clone.block.TelepadBlock;
+import com.devmod.clone.block.entity.TelepadBlockEntity;
 
+/**
+ * Controls the Effekseer spiral effect above the telepad.
+ * Single centered effect that syncs with the shader vortex rotation.
+ */
 public final class TelepadEffekseerController {
-    private static final ResourceLocation EFFECT_RING = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad/portal");
-    private static final ResourceLocation EFFECT_AURA = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad/aura");
-    private static final ResourceLocation EFFECT_CORE = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad/core");
-    private static final ResourceLocation EMITTER_RING = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_portal_ring");
-    private static final ResourceLocation EMITTER_AURA = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_portal_aura");
-    private static final ResourceLocation EMITTER_CORE = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_portal_core");
-    private static final float SCALE_RING = 1.4f;
-    private static final float SCALE_AURA = 1.8f;
-    private static final float SCALE_CORE = 0.9f;
-    private static final float CENTER_Y = 1.55f;
-    private static final float AURA_Y_OFFSET = 0.12f;
-    private static final float CORE_Y_OFFSET = -0.05f;
-    private static final float MIN_DYNAMIC_INPUT = 0.2f;
-    private static final float MAX_DYNAMIC_INPUT = 1.6f;
-    private static final float ROTATION_PITCH = (float) (Math.PI * 0.5);
+    // 3D spiral effect - follows central vortex rotation
+    private static final ResourceLocation EFFECT_SPIRAL = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad/spiral");
+
+    // Effect positioning - centered above the telepad (matching portal dimensions)
+    private static final float CENTER_Y = 2.3f;  // Height above telepad block (center of oval)
+    private static final float SCALE = 0.189f;   // Scale reduced by 50% from 0.378
+
+    // Portal aspect ratio for oval shape (height / width = 2.6 / 1.82 ≈ 1.43)
+    private static final float ASPECT_RATIO = 2.6f / 1.82f;
+
+    // Dynamic input bounds (lower = more transparent)
+    private static final float MIN_DYNAMIC_INPUT = 0.15f;
+    private static final float MAX_DYNAMIC_INPUT = 0.5f;
+
+    // Lifecycle timings
     private static final int EXPIRE_TICKS = 40;
-    private static final int RESPAWN_TICKS = 60;
-    private static final Set<ResourceLocation> MISSING_EFFECT_LOG = new HashSet<>();
-    private static final Set<ResourceLocation> DUMMY_EMITTER_LOG = new HashSet<>();
+    private static final int RESPAWN_TICKS = 200;
 
     private static final Map<Level, Long2ObjectMap> ACTIVE = new WeakHashMap<>();
+    private static boolean loggedOnce = false;
 
     private TelepadEffekseerController() {
     }
 
-    public static void update(TelepadBlockEntity be, float intensity) {
+    /**
+     * Update the vortex effect with synchronized rotation.
+     * @param be The telepad block entity
+     * @param intensity Effect intensity (0-1.5)
+     * @param vortexRotation Current vortex rotation angle in radians (from shader)
+     */
+    public static void update(TelepadBlockEntity be, float intensity, float vortexRotation) {
         Level level = be.getLevel();
         if (level == null) {
             return;
@@ -58,6 +66,7 @@ public final class TelepadEffekseerController {
         Long2ObjectMap emitters = ACTIVE.computeIfAbsent(level, _lvl -> new Long2ObjectMap());
         EmitterState state = emitters.get(key);
 
+        // Stop effects if intensity is too low
         if (intensity <= 0.02f) {
             if (state != null) {
                 state.stop();
@@ -67,94 +76,111 @@ public final class TelepadEffekseerController {
             return;
         }
 
+        // Spawn or respawn effect
         boolean firstSpawn = state == null;
         if (state == null || now - state.lastSpawnTick > RESPAWN_TICKS) {
             if (state != null) {
                 state.stop();
             }
-            logMissingEffect(EFFECT_RING);
-            logMissingEffect(EFFECT_AURA);
-            logMissingEffect(EFFECT_CORE);
-            ParticleEmitter ring = EffekseerClient.play(EFFECT_RING, ParticleEmitter.Type.WORLD, EMITTER_RING);
-            ParticleEmitter aura = EffekseerClient.play(EFFECT_AURA, ParticleEmitter.Type.WORLD, EMITTER_AURA);
-            ParticleEmitter core = EffekseerClient.play(EFFECT_CORE, ParticleEmitter.Type.WORLD, EMITTER_CORE);
-            logDummyEmitter(EFFECT_RING, ring);
-            logDummyEmitter(EFFECT_AURA, aura);
-            logDummyEmitter(EFFECT_CORE, core);
-            state = new EmitterState(ring, aura, core);
+
+            // Create front and back emitters
+            ResourceLocation frontName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_front_" + key);
+            ResourceLocation backName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_back_" + key);
+            ParticleEmitter front = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, frontName);
+            ParticleEmitter back = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
+
+            state = new EmitterState(front, back);
             state.lastSpawnTick = now;
             emitters.put(key, state);
-            ensureActive(state.ring);
-            ensureActive(state.aura);
-            ensureActive(state.core);
-            if (firstSpawn) {
-                DevMod.LOGGER.info("[TelepadEffekseer] Spawned ring={} aura={} core={} (exists r/a/c: {}/{}/{})",
-                    state.ring.handle, state.aura.handle, state.core.handle,
-                    state.ring.exists(), state.aura.exists(), state.core.exists());
+
+            // Ensure effects are visible
+            front.setVisibility(true);
+            front.resume();
+            back.setVisibility(true);
+            back.resume();
+
+            if (firstSpawn && !loggedOnce) {
+                DevMod.LOGGER.info("[TelepadEffekseer] Spawned spiral effects (front+back) at {}",
+                    pos);
+                loggedOnce = true;
             }
         }
 
-        if (!state.ring.exists()) {
-            state.ring = EffekseerClient.play(EFFECT_RING, ParticleEmitter.Type.WORLD, EMITTER_RING);
-            logDummyEmitter(EFFECT_RING, state.ring);
+        // Respawn if effects died
+        if (!state.emitterFront.exists()) {
+            ResourceLocation frontName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_front_" + key);
+            state.emitterFront = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, frontName);
+            state.emitterFront.setVisibility(true);
+            state.emitterFront.resume();
         }
-        if (!state.aura.exists()) {
-            state.aura = EffekseerClient.play(EFFECT_AURA, ParticleEmitter.Type.WORLD, EMITTER_AURA);
-            logDummyEmitter(EFFECT_AURA, state.aura);
-        }
-        if (!state.core.exists()) {
-            state.core = EffekseerClient.play(EFFECT_CORE, ParticleEmitter.Type.WORLD, EMITTER_CORE);
-            logDummyEmitter(EFFECT_CORE, state.core);
+        if (!state.emitterBack.exists()) {
+            ResourceLocation backName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_back_" + key);
+            state.emitterBack = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
+            state.emitterBack.setVisibility(true);
+            state.emitterBack.resume();
         }
 
         state.lastSeenTick = now;
-        updateEmitter(be, state.ring, intensity, SCALE_RING, CENTER_Y, 1.0f);
-        updateEmitter(be, state.aura, intensity, SCALE_AURA, CENTER_Y + AURA_Y_OFFSET, 0.85f);
-        updateEmitter(be, state.core, intensity, SCALE_CORE, CENTER_Y + CORE_Y_OFFSET, 0.65f);
+        updateEmitter(be, state, intensity, vortexRotation);
         cleanup(level, emitters, now);
     }
 
-    private static void updateEmitter(TelepadBlockEntity be, ParticleEmitter emitter, float intensity,
-                                      float scale, float centerY, float inputScale) {
+    private static void updateEmitter(TelepadBlockEntity be, EmitterState state, float intensity, float vortexRotation) {
         BlockPos pos = be.getBlockPos();
-        float x = pos.getX() + 0.5f;
-        float y = pos.getY() + centerY;
-        float z = pos.getZ() + 0.5f;
-        emitter.setPosition(x, y, z);
-        emitter.setScale(scale, scale, scale);
 
+        // Base position: center of block, elevated above telepad
+        float x = pos.getX() + 0.5f;
+        float y = pos.getY() + CENTER_Y;
+        float z = pos.getZ() + 0.5f;
+
+        // Get facing direction for rotation
         Direction facing = be.getBlockState().getValue(TelepadBlock.FACING);
-        float rotation = switch (facing) {
+        float facingYaw = switch (facing) {
             case SOUTH -> (float) Math.PI;
             case WEST -> (float) (Math.PI * 0.5);
             case EAST -> (float) (-Math.PI * 0.5);
             default -> 0.0f;
         };
-        emitter.setRotation(ROTATION_PITCH, rotation, 0.0f);
 
-        float pulse = Mth.clamp(intensity * inputScale, MIN_DYNAMIC_INPUT, MAX_DYNAMIC_INPUT);
-        emitter.setDynamicInput(0, pulse);
+        // Rotate 90° on X to flatten onto portal plane
+        float flatTilt = (float)(Math.PI * 0.5);
+
+        // Front emitter - facing forward
+        state.emitterFront.setPosition(x, y, z);
+        state.emitterFront.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
+        state.emitterFront.setRotation(flatTilt, facingYaw, 0);
+
+        // Back emitter - facing backward (rotated 180° on Y)
+        state.emitterBack.setPosition(x, y, z);
+        state.emitterBack.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
+        state.emitterBack.setRotation(flatTilt, facingYaw + (float) Math.PI, 0);
+
+        // Try all dynamic inputs to control transparency
+        float dynamicInput = Mth.clamp(intensity, MIN_DYNAMIC_INPUT, MAX_DYNAMIC_INPUT);
+        state.emitterFront.setDynamicInput(0, dynamicInput);
+        state.emitterFront.setDynamicInput(1, dynamicInput);
+        state.emitterFront.setDynamicInput(2, dynamicInput);
+        state.emitterFront.setDynamicInput(3, dynamicInput);
+        state.emitterBack.setDynamicInput(0, dynamicInput);
+        state.emitterBack.setDynamicInput(1, dynamicInput);
+        state.emitterBack.setDynamicInput(2, dynamicInput);
+        state.emitterBack.setDynamicInput(3, dynamicInput);
     }
 
-    private static void ensureActive(ParticleEmitter emitter) {
-        emitter.setVisibility(true);
-        emitter.resume();
-    }
+    /**
+     * Force stop all effects at a position (called when block is removed).
+     */
+    public static void stopAt(Level level, BlockPos pos) {
+        if (level == null) return;
+        Long2ObjectMap emitters = ACTIVE.get(level);
+        if (emitters == null) return;
 
-    private static void logMissingEffect(ResourceLocation effectId) {
-        if (!MISSING_EFFECT_LOG.add(effectId)) {
-            return;
+        long key = pos.asLong();
+        EmitterState state = emitters.get(key);
+        if (state != null) {
+            state.stop();
+            emitters.remove(key);
         }
-        if (EffectRegistry.get(effectId) == null) {
-            DevMod.LOGGER.warn("[TelepadEffekseer] Effect '{}' not found in registry", effectId);
-        }
-    }
-
-    private static void logDummyEmitter(ResourceLocation effectId, ParticleEmitter emitter) {
-        if (emitter.exists() || !DUMMY_EMITTER_LOG.add(effectId)) {
-            return;
-        }
-        DevMod.LOGGER.warn("[TelepadEffekseer] Effect '{}' returned a dummy emitter", effectId);
     }
 
     private static void cleanup(Level level, Long2ObjectMap emitters, long now) {
@@ -169,28 +195,28 @@ public final class TelepadEffekseerController {
     }
 
     private static final class EmitterState {
-        private ParticleEmitter ring;
-        private ParticleEmitter aura;
-        private ParticleEmitter core;
+        private ParticleEmitter emitterFront;
+        private ParticleEmitter emitterBack;
         private long lastSeenTick;
         private long lastSpawnTick;
 
-        private EmitterState(ParticleEmitter ring, ParticleEmitter aura, ParticleEmitter core) {
-            this.ring = ring;
-            this.aura = aura;
-            this.core = core;
+        private EmitterState(ParticleEmitter front, ParticleEmitter back) {
+            this.emitterFront = front;
+            this.emitterBack = back;
         }
 
         private void stop() {
-            ring.stop();
-            aura.stop();
-            core.stop();
+            emitterFront.stop();
+            emitterBack.stop();
+        }
+
+        private boolean exists() {
+            return emitterFront.exists() && emitterBack.exists();
         }
     }
 
     private static final class Long2ObjectMap {
-        private final it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<EmitterState> backing =
-            new it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap<>();
+        private final Long2ObjectOpenHashMap<EmitterState> backing = new Long2ObjectOpenHashMap<>();
         private long lastCleanupTick = 0L;
 
         private @Nullable EmitterState get(long key) {

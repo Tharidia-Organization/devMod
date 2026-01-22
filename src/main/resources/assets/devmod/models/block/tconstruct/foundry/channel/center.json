@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/template/channel/center",
-  "textures": {
-    "texture": "devmod:block/foundry/scorched/stone_side"
-  }
-}

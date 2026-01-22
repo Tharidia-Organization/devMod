@@ -14,6 +14,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.nexus.data.SlotType;
 import com.devmod.portal.PortalColor;
 
@@ -21,7 +23,7 @@ import com.devmod.portal.PortalColor;
  * Server -> Client: Slot list for Nexus UI.
  * Contains list of slot summaries with basic info.
  */
-public record SlotListPayload(List<SlotSummary> slots) implements CustomPacketPayload {
+public record SlotListPayload(List<SlotSummary> slots) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum slots to sync at once */
     public static final int MAX_SLOTS = 100;
@@ -82,5 +84,23 @@ public record SlotListPayload(List<SlotSummary> slots) implements CustomPacketPa
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(slots.size());
+        for (SlotSummary summary : slots) {
+            size += PayloadSizeUtil.estimatedUtfSize(summary.slotId());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.displayName());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.type().name());
+            size += PayloadSizeUtil.varIntSize(summary.portalColor().getIndex());
+            size += 1; // hasLinkedArea
+            if (summary.hasLinkedArea() && summary.linkedAreaId() != null) {
+                size += 16; // linkedAreaId
+                String linkedName = summary.linkedAreaName() != null ? summary.linkedAreaName() : "";
+                size += PayloadSizeUtil.estimatedUtfSize(linkedName);
+            }
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

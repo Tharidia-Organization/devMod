@@ -1,10 +1,13 @@
 package com.devmod.foundry.quality;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import com.devmod.foundry.util.FoundryNbtHelper;
 /**
  * Represents molten metal with quality properties.
  * Tracks purity, oxidation, and temperature history.
@@ -157,6 +160,7 @@ public class MoltenMetal {
      * @param amount Amount to split off
      * @return New MoltenMetal with the split portion, or null if invalid
      */
+    @Nullable
     public MoltenMetal split(int amount) {
         if (amount <= 0 || amount > fluidStack.getAmount()) {
             return null;
@@ -226,9 +230,7 @@ public class MoltenMetal {
 
     public CompoundTag save(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
-        CompoundTag fluidTag = new CompoundTag();
-        fluidStack.save(registries, fluidTag);
-        tag.put(TAG_FLUID, fluidTag);
+        tag.put(TAG_FLUID, FoundryNbtHelper.saveFluidStack(registries, fluidStack));
         tag.putFloat(TAG_PURITY, purity);
         tag.putInt(TAG_OXIDATION, oxidationTicks);
         tag.putFloat(TAG_PEAK_TEMP, peakTemperature);
@@ -236,8 +238,9 @@ public class MoltenMetal {
         return tag;
     }
 
+    @Nullable
     public static MoltenMetal load(HolderLookup.Provider registries, CompoundTag tag) {
-        FluidStack fluid = FluidStack.parseOptional(registries, tag.getCompound(TAG_FLUID));
+        FluidStack fluid = FoundryNbtHelper.readFluidStack(tag, TAG_FLUID, registries);
         if (fluid.isEmpty()) {
             return null;
         }

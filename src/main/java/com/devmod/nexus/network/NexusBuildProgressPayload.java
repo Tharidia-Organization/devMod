@@ -11,6 +11,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server -> Client: Nexus build progress update.
@@ -24,7 +26,7 @@ public record NexusBuildProgressPayload(
     int totalSteps,       // Total number of steps
     @Nullable String stepName,  // Name of current step (e.g., "floor", "corridors")
     boolean complete      // Build completed flag
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<NexusBuildProgressPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus_build_progress")));
@@ -51,6 +53,18 @@ public record NexusBuildProgressPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(currentStep);
+        size += PayloadSizeUtil.varIntSize(totalSteps);
+        size += 1; // stepName present
+        if (stepName != null) {
+            size += PayloadSizeUtil.estimatedUtfSize(stepName);
+        }
+        size += 1; // complete
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

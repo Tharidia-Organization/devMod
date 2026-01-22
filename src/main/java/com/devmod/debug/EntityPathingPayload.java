@@ -12,6 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 public record EntityPathingPayload(
     int entityId,
@@ -22,7 +24,7 @@ public record EntityPathingPayload(
     double targetZ,
     boolean canReach,
     float maxDistanceToWaypoint
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<EntityPathingPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_pathing")));
@@ -74,6 +76,22 @@ public record EntityPathingPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(entityId);
+        size += PayloadSizeUtil.estimatedUtfSize(entityName);
+        size += PayloadSizeUtil.varIntSize(nodes.size());
+        for (PathNode node : nodes) {
+            size += 8L * 3; // x, y, z
+            size += PayloadSizeUtil.varIntSize(node.nodeType);
+            size += 4; // costMalus
+        }
+        size += 8L * 3; // targetX/Y/Z
+        size += 1; // canReach
+        size += 4; // maxDistanceToWaypoint
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

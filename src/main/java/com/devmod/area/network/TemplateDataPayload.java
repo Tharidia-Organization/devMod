@@ -20,6 +20,8 @@ import com.devmod.area.data.AreaOptions;
 import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaShape;
 import com.devmod.area.data.BiomeGenerationConfig;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server -> Client: Full template data for loading into editor.
@@ -43,7 +45,7 @@ public record TemplateDataPayload(
     @Nullable BiomeGenerationConfig biomeConfig,
     AreaOptions options,
     String presetId
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TemplateDataPayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -85,5 +87,21 @@ public record TemplateDataPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // templateId
+        size += PayloadSizeUtil.varIntSize(generationType.ordinal());
+        size += PayloadSizeUtil.varIntSize(shape.ordinal());
+        size += AreaPayloadSizing.estimateDimensionsSize(dimensions);
+        size += AreaPayloadSizing.estimatePaletteSize(palette);
+        size += 1; // biomeConfig present
+        if (biomeConfig != null) {
+            size += AreaPayloadSizing.estimateBiomeConfigSize(biomeConfig);
+        }
+        size += AreaPayloadSizing.estimateOptionsSize(options);
+        size += PayloadSizeUtil.estimatedUtfSize(presetId);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

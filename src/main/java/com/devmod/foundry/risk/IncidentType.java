@@ -1,5 +1,7 @@
 package com.devmod.foundry.risk;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -82,6 +84,7 @@ public enum IncidentType {
     /**
      * Gets a weighted random incident based on risk level.
      */
+    @Nullable
     public static IncidentType getRandomForRisk(RiskLevel risk, java.util.Random random) {
         return switch (risk) {
             case SAFE -> null; // No incidents at safe level

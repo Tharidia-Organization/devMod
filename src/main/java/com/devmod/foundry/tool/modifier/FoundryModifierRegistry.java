@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -24,6 +26,7 @@ public final class FoundryModifierRegistry {
         MODIFIERS.put(definition.id(), definition);
     }
 
+    @Nullable
     public static FoundryModifierDefinition get(ResourceLocation id) {
         return MODIFIERS.get(id);
     }

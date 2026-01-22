@@ -1,7 +1,0 @@
-{
-  "variants": {
-    "type=bottom": { "model": "devmod:block/foundry/scorched/bricks_slab" },
-    "type=top":    { "model": "devmod:block/foundry/scorched/bricks_slab_top" },
-    "type=double": { "model": "devmod:block/foundry/scorched/bricks" }
-  }
-}

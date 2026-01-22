@@ -77,7 +77,18 @@ public class FoundryFaucetBlockEntity extends BlockEntity {
             return;
         }
 
-        FluidStack drained = controller.drainMolten(POUR_AMOUNT, false);
+        FluidStack preferred = FluidStack.EMPTY;
+        if (casting != null) {
+            preferred = casting.getPreferredPourFluid(controller);
+        } else if (channel != null) {
+            preferred = channel.getPreferredPourFluid(controller);
+        }
+        if (preferred.isEmpty()) {
+            return;
+        }
+        FluidStack request = preferred.copy();
+        request.setAmount(POUR_AMOUNT);
+        FluidStack drained = controller.drainMolten(request, false);
         if (drained.isEmpty()) {
             return;
         }

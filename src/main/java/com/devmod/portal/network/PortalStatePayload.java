@@ -12,6 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.portal.PortalColor;
 
 /**
@@ -31,7 +33,7 @@ public record PortalStatePayload(
     int portalColorIndex,
     int ticksInPortal,
     int requiredDelay
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<PortalStatePayload> TYPE = new Type<>(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "portal_state")
@@ -49,6 +51,15 @@ public record PortalStatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 1; // inPortal
+        size += PayloadSizeUtil.varIntSize(portalColorIndex);
+        size += PayloadSizeUtil.varIntSize(ticksInPortal);
+        size += PayloadSizeUtil.varIntSize(requiredDelay);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     // === Factory Methods ===

@@ -12,6 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client payload to update charge progress during charging.
@@ -23,7 +25,7 @@ public record TransportChargeUpdatePayload(
     int currentCharge,
     int requiredCharge,
     int progressPercent
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportChargeUpdatePayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "213")));
@@ -43,6 +45,14 @@ public record TransportChargeUpdatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(currentCharge);
+        size += PayloadSizeUtil.varIntSize(requiredCharge);
+        size += PayloadSizeUtil.varIntSize(progressPercent);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

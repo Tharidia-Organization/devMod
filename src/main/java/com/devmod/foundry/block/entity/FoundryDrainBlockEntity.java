@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidType;
 
 import com.devmod.foundry.FoundryBlockEntities;
 import com.devmod.foundry.block.FoundryDrainBlock;
@@ -53,23 +54,44 @@ public class FoundryDrainBlockEntity extends FoundryComponentBlockEntity {
         }
 
         if (held.is(Objects.requireNonNull(Items.BUCKET))) {
-            FluidStack drained = controller.drainMolten(1000, true);
-            if (!drained.isEmpty()) {
-                ItemStack filled = Objects.requireNonNull(Objects.requireNonNull(Objects.requireNonNull(drained.getFluid()).getBucket()).getDefaultInstance());
-                held.shrink(1);
-                if (held.isEmpty()) {
-                    player.setItemInHand(hand, filled);
-                } else if (!player.getInventory().add(filled)) {
-                    player.drop(filled, false);
-                }
-                return InteractionResult.CONSUME;
+            FluidStack simulated = controller.drainMolten(FluidType.BUCKET_VOLUME, false);
+            if (simulated.isEmpty() || simulated.getAmount() < FluidType.BUCKET_VOLUME) {
+                return InteractionResult.PASS;
             }
+            ItemStack filled = new ItemStack(Objects.requireNonNull(simulated.getFluid().getBucket()));
+            if (filled.isEmpty()) {
+                return InteractionResult.PASS;
+            }
+            FluidStack drained = controller.drainMolten(FluidType.BUCKET_VOLUME, true);
+            if (drained.isEmpty() || drained.getAmount() < FluidType.BUCKET_VOLUME) {
+                if (!drained.isEmpty()) {
+                    controller.fillMolten(drained, true);
+                }
+                return InteractionResult.PASS;
+            }
+            if (!player.isCreative()) {
+                held.shrink(1);
+            }
+            if (held.isEmpty()) {
+                player.setItemInHand(hand, filled);
+            } else if (!player.getInventory().add(filled)) {
+                player.drop(filled, false);
+            }
+            return InteractionResult.CONSUME;
         } else {
             var bucketItem = held.getItem();
             if (bucketItem instanceof net.minecraft.world.item.BucketItem bucket && bucket.content != net.minecraft.world.level.material.Fluids.EMPTY) {
-                FluidStack toFill = new FluidStack(Objects.requireNonNull(bucket.content), 1000);
-                int filled = controller.fillMolten(toFill, true);
-                if (filled > 0) {
+                FluidStack toFill = new FluidStack(Objects.requireNonNull(bucket.content), FluidType.BUCKET_VOLUME);
+                int simulated = controller.fillMolten(toFill, false);
+                if (simulated >= toFill.getAmount()) {
+                    int filled = controller.fillMolten(toFill, true);
+                    if (filled < toFill.getAmount()) {
+                        if (filled > 0) {
+                            FluidStack rollback = new FluidStack(Objects.requireNonNull(bucket.content), filled);
+                            controller.drainMolten(rollback, true);
+                        }
+                        return InteractionResult.PASS;
+                    }
                     ItemStack emptyBucket = new ItemStack(Objects.requireNonNull(Items.BUCKET));
                     if (!player.isCreative()) {
                         held.shrink(1);

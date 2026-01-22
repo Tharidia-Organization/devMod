@@ -9,6 +9,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Payload to open the hologram configuration screen on the client.
@@ -26,7 +28,7 @@ public record HologramOpenScreenPayload(
     int blockSize,
     boolean rotationEnabled,
     boolean transparentMode
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<HologramOpenScreenPayload> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "hologram_open_screen"));
@@ -56,5 +58,15 @@ public record HologramOpenScreenPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 8; // BlockPos
+        size += PayloadSizeUtil.varIntSize(scanSize);
+        size += PayloadSizeUtil.varIntSize(blockSize);
+        size += 1; // rotationEnabled
+        size += 1; // transparentMode
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

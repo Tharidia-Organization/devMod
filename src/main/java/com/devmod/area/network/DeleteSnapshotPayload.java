@@ -12,12 +12,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to delete a snapshot.
  * Requires OP level 2+ permissions.
  */
-public record DeleteSnapshotPayload(UUID snapshotId) implements CustomPacketPayload {
+public record DeleteSnapshotPayload(UUID snapshotId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<DeleteSnapshotPayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -33,5 +35,10 @@ public record DeleteSnapshotPayload(UUID snapshotId) implements CustomPacketPayl
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

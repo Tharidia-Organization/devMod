@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -97,8 +98,8 @@ public class FoundryControllerScreen extends AbstractContainerScreen<FoundryCont
     private boolean warningBlink = false;
 
     // UI Widgets
-    private FluidTankWidget tankWidget;
-    private AlloyPreviewWidget alloyWidget;
+    @Nullable private FluidTankWidget tankWidget;
+    @Nullable private AlloyPreviewWidget alloyWidget;
 
     // Fluid tank widget position
     private static final int TANK_WIDGET_X = 8;
@@ -491,8 +492,11 @@ public class FoundryControllerScreen extends AbstractContainerScreen<FoundryCont
                     .withStyle(s -> s.withColor(DesignTokens.Foundry.Ui.STRESS_WARNING)));
             }
             if (menu.getOxidationPercent() > OXIDATION_WARNING_THRESHOLD) {
+                int oxidationColor = menu.getOxidationPercent() > OXIDATION_CRITICAL_THRESHOLD
+                    ? DesignTokens.Foundry.Ui.INCIDENT_WARNING
+                    : DesignTokens.Foundry.Ui.STRESS_WARNING;
                 tooltip.add(Component.translatable("gui.devmod.foundry.oxidation_warning")
-                    .withStyle(s -> s.withColor(DesignTokens.Foundry.Ui.INCIDENT_WARNING)));
+                    .withStyle(s -> s.withColor(oxidationColor)));
             }
             graphics.renderComponentTooltip(this.font, tooltip, mouseX, mouseY);
         }

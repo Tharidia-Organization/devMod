@@ -12,11 +12,13 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.TransportState;
 
 /**
- * Server → Client payload to sync transport state for overlay display.
+ * Server -> Client payload to sync transport state for overlay display.
  * Sent when player enters/exits a transport node area.
  *
  * <p>Channel ID: 212 (TRANSPORT_STATE)
@@ -29,7 +31,7 @@ public record TransportStatePayload(
     int requiredCharge,
     @Nonnull String destinationName,
     int distance
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportStatePayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "212")));
@@ -59,6 +61,18 @@ public record TransportStatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 1; // inTransport
+        size += PayloadSizeUtil.varIntSize(stateIndex);
+        size += PayloadSizeUtil.varIntSize(colorIndex);
+        size += PayloadSizeUtil.varIntSize(currentCharge);
+        size += PayloadSizeUtil.varIntSize(requiredCharge);
+        size += PayloadSizeUtil.estimatedUtfSize(destinationName);
+        size += PayloadSizeUtil.varIntSize(distance);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

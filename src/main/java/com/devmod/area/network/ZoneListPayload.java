@@ -12,12 +12,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server -> Client: Zone list for ZoneSelectorWidget.
  * Contains list of zone summaries with basic info.
  */
-public record ZoneListPayload(List<ZoneSummary> zones) implements CustomPacketPayload {
+public record ZoneListPayload(List<ZoneSummary> zones) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum zones to sync at once */
     public static final int MAX_ZONES = 500;
@@ -59,5 +61,16 @@ public record ZoneListPayload(List<ZoneSummary> zones) implements CustomPacketPa
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(zones.size());
+        for (ZoneSummary summary : zones) {
+            size += PayloadSizeUtil.estimatedUtfSize(summary.id());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.displayName());
+            size += PayloadSizeUtil.varIntSize(summary.areaCount());
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

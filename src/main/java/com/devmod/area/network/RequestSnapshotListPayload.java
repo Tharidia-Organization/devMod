@@ -12,12 +12,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request snapshot list for an area.
  * Server will respond with SnapshotListPayload.
  */
-public record RequestSnapshotListPayload(UUID areaId) implements CustomPacketPayload {
+public record RequestSnapshotListPayload(UUID areaId) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<RequestSnapshotListPayload> TYPE =
         new Type<>(Objects.requireNonNull(
@@ -33,5 +35,10 @@ public record RequestSnapshotListPayload(UUID areaId) implements CustomPacketPay
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        return PayloadSizeUtil.clampToInt(16);
     }
 }

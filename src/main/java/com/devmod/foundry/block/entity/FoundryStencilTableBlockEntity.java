@@ -27,6 +27,7 @@ import com.devmod.foundry.tool.FoundryPartType;
 import com.devmod.foundry.tool.FoundryPartTypes;
 import com.devmod.foundry.tool.FoundryPatternItem;
 import com.devmod.foundry.tool.FoundryToolItems;
+import com.devmod.foundry.util.FoundryContainers;
 
 /**
  * Block entity for the Stencil Table.
@@ -39,12 +40,19 @@ public class FoundryStencilTableBlockEntity extends BlockEntity implements MenuP
     public static final int SLOT_STENCIL = 0;
     public static final int SLOT_OUTPUT = 1;
 
-    private final SimpleContainer inventory = new SimpleContainer(2);
+    private final SimpleContainer inventory;
     @Nullable
     private FoundryPartType selectedPattern = null;
 
     public FoundryStencilTableBlockEntity(BlockPos pos, BlockState state) {
         super(Objects.requireNonNull(FoundryBlockEntities.FOUNDRY_STENCIL_TABLE.get()), pos, state);
+        this.inventory = FoundryContainers.tracked(2);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        FoundryContainers.bind(inventory, this);
     }
 
     public SimpleContainer getInventory() {

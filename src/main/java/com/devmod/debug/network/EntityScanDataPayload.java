@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client: Entity scan data from an EntityScanner block.
@@ -21,7 +23,7 @@ public record EntityScanDataPayload(
     BlockPos scannerPos,
     int scanRadius,
     List<ScannedEntity> entities
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final int MAX_ENTITIES = 100;
     private static final int MAX_STRING_LENGTH = 256;
@@ -165,6 +167,53 @@ public record EntityScanDataPayload(
         return TYPE;
     }
 
+    @Override
+    public int estimatedSize() {
+        long size = 8; // BlockPos (long)
+        size += PayloadSizeUtil.varIntSize(scanRadius);
+        size += PayloadSizeUtil.varIntSize(entities.size());
+        for (ScannedEntity entity : entities) {
+            size += estimateEntitySize(entity);
+        }
+        return PayloadSizeUtil.clampToInt(size);
+    }
+
+    private static long estimateEntitySize(ScannedEntity entity) {
+        long size = PayloadSizeUtil.varIntSize(entity.entityId);
+        size += PayloadSizeUtil.estimatedUtfSize(entity.name);
+        size += PayloadSizeUtil.estimatedUtfSize(entity.type);
+        size += 8L * 3; // x/y/z
+        size += 4; // health
+        size += 4; // maxHealth
+
+        size += PayloadSizeUtil.varIntSize(entity.attributes.size());
+        for (AttributeData attr : entity.attributes) {
+            size += PayloadSizeUtil.estimatedUtfSize(attr.name);
+            size += 8L * 2; // baseValue/currentValue
+        }
+
+        size += PayloadSizeUtil.varIntSize(entity.equipment.size());
+        for (EquipmentData equip : entity.equipment) {
+            size += PayloadSizeUtil.estimatedUtfSize(equip.slot);
+            size += PayloadSizeUtil.estimatedUtfSize(equip.itemName);
+            size += PayloadSizeUtil.varIntSize(equip.count);
+        }
+
+        size += estimateGoalListSize(entity.goals);
+        size += estimateGoalListSize(entity.targetGoals);
+        return size;
+    }
+
+    private static long estimateGoalListSize(List<GoalData> goals) {
+        long size = PayloadSizeUtil.varIntSize(goals.size());
+        for (GoalData goal : goals) {
+            size += PayloadSizeUtil.varIntSize(goal.priority);
+            size += 1; // isRunning
+            size += PayloadSizeUtil.estimatedUtfSize(goal.name);
+        }
+        return size;
+    }
+
     /**
      * Scanned entity data.
      */
@@ -213,7 +262,7 @@ public record EntityScanDataPayload(
     /**
      * Server → Client: Open the scanner screen.
      */
-    public record OpenScreenPayload(BlockPos scannerPos) implements CustomPacketPayload {
+    public record OpenScreenPayload(BlockPos scannerPos) implements CustomPacketPayload, PayloadValidation.SizedPayload {
         public static final Type<OpenScreenPayload> TYPE = new Type<>(
             Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "entity_scanner_open"))
         );
@@ -233,6 +282,11 @@ public record EntityScanDataPayload(
         @Override
         public Type<? extends CustomPacketPayload> type() {
             return TYPE;
+        }
+
+        @Override
+        public int estimatedSize() {
+            return 8;
         }
     }
 }

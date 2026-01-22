@@ -1,7 +1,0 @@
-{
-    "parent": "devmod:block/platform/bottom",
-	"textures": {
-		"side": "devmod:block/platform/weathered_copper_side",
-		"top":  "devmod:block/platform/weathered_copper_top"
-	}
-}

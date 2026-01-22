@@ -6,7 +6,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,20 +18,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FoundryDevmodNamespaceIsolationTest {
 
-    private static final Path DEV_MOD_ASSETS = Paths.get("src/main/resources/assets/devmod");
-    private static final Path DEV_MOD_DATA = Paths.get("src/main/resources/data/devmod");
+    private static final Path DEV_MOD_MODELS = Paths.get("src/main/resources/assets/devmod/models");
+    private static final Set<String> ALLOWED_NAMESPACES = Set.of("devmod", "minecraft", "neoforge");
+    private static final Pattern NAMESPACE_PATTERN = Pattern.compile("\"([a-z0-9_\\-]+):[^\"]+\"");
 
     @Test
-    @DisplayName("DevMod JSON resources avoid Mantle/TCon namespaces")
-    void devmodJsonAvoidsLegacyNamespaces() throws IOException {
+    @DisplayName("DevMod model JSON uses only allowed namespaces")
+    void devmodModelJsonUsesAllowedNamespaces() throws IOException {
         List<String> offenders = new ArrayList<>();
-        scanForLegacyNamespaces(DEV_MOD_ASSETS, offenders);
-        scanForLegacyNamespaces(DEV_MOD_DATA, offenders);
+        scanForUnexpectedNamespaces(DEV_MOD_MODELS, offenders);
 
-        assertTrue(offenders.isEmpty(), "Legacy namespaces found in DevMod resources:\n" + String.join("\n", offenders));
+        assertTrue(offenders.isEmpty(), "Unexpected namespaces found in DevMod models:\n" + String.join("\n", offenders));
     }
 
-    private static void scanForLegacyNamespaces(Path root, List<String> offenders) throws IOException {
+    private static void scanForUnexpectedNamespaces(Path root, List<String> offenders) throws IOException {
         if (!Files.exists(root)) {
             System.out.println("DevMod resources not found, skipping scan: " + root);
             return;
@@ -36,20 +39,24 @@ class FoundryDevmodNamespaceIsolationTest {
 
         try (Stream<Path> stream = Files.walk(root)) {
             stream.filter(path -> path.toString().endsWith(".json"))
-                .filter(path -> !path.toString().contains("/lang/"))
-                .forEach(path -> checkForLegacyNamespaces(path, offenders));
+                .forEach(path -> checkForUnexpectedNamespaces(path, offenders));
         }
     }
 
-    private static void checkForLegacyNamespaces(Path path, List<String> offenders) {
+    private static void checkForUnexpectedNamespaces(Path path, List<String> offenders) {
         String content;
         try {
             content = Files.readString(path);
         } catch (IOException e) {
             return;
         }
-        if (content.contains("tconstruct:") || content.contains("mantle:")) {
-            offenders.add(path.toString());
+        Matcher matcher = NAMESPACE_PATTERN.matcher(content);
+        while (matcher.find()) {
+            String namespace = matcher.group(1);
+            if (!ALLOWED_NAMESPACES.contains(namespace)) {
+                offenders.add(path + ": " + namespace);
+                break;
+            }
         }
     }
 }

@@ -49,6 +49,7 @@ public final class MoltenFluidType extends FluidType {
     }
 
     @Override
+    @SuppressWarnings("removal")
     public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
         consumer.accept(new IClientFluidTypeExtensions() {
             @Override

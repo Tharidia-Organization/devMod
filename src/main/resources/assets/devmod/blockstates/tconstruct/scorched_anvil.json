@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "devmod:block/table/scorched_anvil", "y":  90 },
-    "facing=south": { "model": "devmod:block/table/scorched_anvil", "y": 270 },
-    "facing=west":  { "model": "devmod:block/table/scorched_anvil" },
-    "facing=east":  { "model": "devmod:block/table/scorched_anvil", "y": 180 }
-  }
-}

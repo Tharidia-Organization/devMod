@@ -30,9 +30,9 @@ public final class TelepadPortalShaderRegistry {
     private static final ShaderRenderTypeConfig BASE_CONFIG = new ShaderRenderTypeConfig(
         "devmod_telepad_portal_base",
         "devmod_telepad_portal_base_fallback",
-        DefaultVertexFormat.POSITION_COLOR_NORMAL,
+        DefaultVertexFormat.POSITION_TEX_COLOR,
         DefaultVertexFormat.POSITION_COLOR,
-        VertexFormat.Mode.TRIANGLES,
+        VertexFormat.Mode.TRIANGLE_FAN,
         2048,
         RenderStateShard.TRANSLUCENT_TRANSPARENCY,
         false,
@@ -42,9 +42,9 @@ public final class TelepadPortalShaderRegistry {
     private static final ShaderRenderTypeConfig GLOW_CONFIG = new ShaderRenderTypeConfig(
         "devmod_telepad_portal_glow",
         "devmod_telepad_portal_glow_fallback",
-        DefaultVertexFormat.POSITION_COLOR_NORMAL,
+        DefaultVertexFormat.POSITION_TEX_COLOR,
         DefaultVertexFormat.POSITION_COLOR,
-        VertexFormat.Mode.TRIANGLES,
+        VertexFormat.Mode.TRIANGLE_FAN,
         2048,
         RenderStateShard.ADDITIVE_TRANSPARENCY,
         false,

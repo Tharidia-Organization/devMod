@@ -15,6 +15,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server → Client payload to sync party teleport status.
@@ -28,7 +30,7 @@ public record TransportPartyStatusPayload(
     int arrivedCount,
     int expectedCount,
     List<UUID> arrivedMembers
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportPartyStatusPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "217")));
@@ -64,6 +66,14 @@ public record TransportPartyStatusPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // partyId
+        size += 4; // phase + arrivedCount + expectedCount + memberCount (bytes)
+        size += 16L * arrivedMembers.size();
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.TransportData.NetworkSelectionMode;
 import com.devmod.transport.TransportMode;
@@ -30,7 +32,7 @@ public record TransportConfigSavePayload(
     @Nonnull String networkName,
     int selectionModeIndex,
     @Nonnull String displayName
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum length for network name. */
     public static final int MAX_NETWORK_NAME_LENGTH = 64;
@@ -62,6 +64,17 @@ public record TransportConfigSavePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varLongSize(nodePos.asLong());
+        size += PayloadSizeUtil.varIntSize(modeIndex);
+        size += PayloadSizeUtil.varIntSize(colorIndex);
+        size += PayloadSizeUtil.estimatedUtfSize(networkName);
+        size += PayloadSizeUtil.varIntSize(selectionModeIndex);
+        size += PayloadSizeUtil.estimatedUtfSize(displayName);
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

@@ -1,6 +1,0 @@
-{
-    "parent": "devmod:block/flat_in",
-    "textures": {
-        "all": "devmod:block/glow"
-    }
-}

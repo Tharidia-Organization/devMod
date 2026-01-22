@@ -12,8 +12,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
-public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload {
+public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final CustomPacketPayload.Type<POIPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_poi")));
@@ -51,6 +53,20 @@ public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload {
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varIntSize(pois.size());
+        for (POIInfo poi : pois) {
+            size += PayloadSizeUtil.varIntSize(poi.x);
+            size += PayloadSizeUtil.varIntSize(poi.y);
+            size += PayloadSizeUtil.varIntSize(poi.z);
+            size += PayloadSizeUtil.estimatedUtfSize(poi.type);
+            size += PayloadSizeUtil.varIntSize(poi.freeTickets);
+            size += PayloadSizeUtil.varIntSize(poi.maxTickets);
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     public record POIInfo(

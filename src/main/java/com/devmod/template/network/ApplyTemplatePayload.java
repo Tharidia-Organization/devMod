@@ -10,6 +10,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client to Server payload for applying a template to a room.
@@ -18,7 +20,7 @@ public record ApplyTemplatePayload(
     @Nonnull String templateId,
     int minX, int minZ, int maxX, int maxZ, int floorY,
     boolean clearFirst
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "template_apply"));
@@ -57,5 +59,17 @@ public record ApplyTemplatePayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.estimatedUtfSize(templateId);
+        size += PayloadSizeUtil.varIntSize(minX);
+        size += PayloadSizeUtil.varIntSize(minZ);
+        size += PayloadSizeUtil.varIntSize(maxX);
+        size += PayloadSizeUtil.varIntSize(maxZ);
+        size += PayloadSizeUtil.varIntSize(floorY);
+        size += 1; // clearFirst
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

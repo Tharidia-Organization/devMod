@@ -9,6 +9,8 @@ import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +44,10 @@ public final class DatapackIO {
      * @return number of files exported
      */
     public static int exportOverrides(String packName) {
-        // Null safety on game directory
-        Path gameDir = ConfigPaths.getGameDir();
-        if (gameDir == null) {
-            LOGGER.error("[DatapackIO] Game directory is null, cannot export datapack");
+        Path base = resolveDatapackBase(packName);
+        if (base == null) {
             return 0;
         }
-        Path base = gameDir.resolve("datapacks").resolve(packName);
         int count = 0;
         try {
             // pack.mcmeta
@@ -96,13 +95,10 @@ public final class DatapackIO {
      * @return number of overrides imported
      */
     public static int importOverrides(String packName) {
-        // Null safety on game directory
-        Path gameDir = ConfigPaths.getGameDir();
-        if (gameDir == null) {
-            LOGGER.error("[DatapackIO] Game directory is null, cannot import datapack");
+        Path base = resolveDatapackBase(packName);
+        if (base == null) {
             return 0;
         }
-        Path base = gameDir.resolve("datapacks").resolve(packName);
         int imported = 0;
 
         // Armor
@@ -173,6 +169,38 @@ public final class DatapackIO {
         root.add("pack", pack);
 
         Files.writeString(base.resolve("pack.mcmeta"), GSON.toJson(root), StandardCharsets.UTF_8);
+    }
+
+    @Nullable
+    private static Path resolveDatapackBase(String packName) {
+        if (packName == null) {
+            LOGGER.warn("[DatapackIO] Datapack name is null");
+            return null;
+        }
+        String trimmed = packName.trim();
+        if (trimmed.isEmpty()) {
+            LOGGER.warn("[DatapackIO] Datapack name is empty");
+            return null;
+        }
+        String sanitized = PathSanitizer.sanitizeFilename(trimmed);
+        if (sanitized == null || sanitized.isBlank() || ".".equals(sanitized) || "..".equals(sanitized)) {
+            LOGGER.warn("[DatapackIO] Datapack name is invalid: {}", packName);
+            return null;
+        }
+
+        Path gameDir = ConfigPaths.getGameDir();
+        if (gameDir == null) {
+            LOGGER.error("[DatapackIO] Game directory is null, cannot resolve datapack path");
+            return null;
+        }
+
+        Path datapacksDir = gameDir.resolve("datapacks").normalize();
+        Path base = datapacksDir.resolve(sanitized).normalize();
+        if (!base.startsWith(datapacksDir)) {
+            LOGGER.warn("[DatapackIO] Datapack path escaped base directory: {}", base);
+            return null;
+        }
+        return base;
     }
 
     private static void writeArmor(Path path, ResourceLocation id, ArmorStats stats) throws IOException {

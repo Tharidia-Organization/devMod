@@ -15,6 +15,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Server -> Client: Snapshot list for an area.
@@ -23,7 +25,7 @@ import com.devmod.DevMod;
 public record SnapshotListPayload(
     UUID areaId,
     List<SnapshotSummary> snapshots
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum snapshots to sync at once (matches AreaSnapshotRegistry.MAX_SNAPSHOTS_PER_AREA) */
     public static final int MAX_SNAPSHOTS = 10;
@@ -102,5 +104,21 @@ public record SnapshotListPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // areaId
+        size += PayloadSizeUtil.varIntSize(snapshots.size());
+        for (SnapshotSummary summary : snapshots) {
+            size += 16; // snapshot id
+            size += PayloadSizeUtil.estimatedUtfSize(summary.description());
+            String creator = summary.creatorName() != null ? summary.creatorName() : "";
+            size += PayloadSizeUtil.estimatedUtfSize(creator);
+            size += PayloadSizeUtil.varLongSize(summary.createdAt());
+            size += PayloadSizeUtil.varIntSize(summary.blockCount());
+            size += PayloadSizeUtil.varLongSize(summary.fileSizeBytes());
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

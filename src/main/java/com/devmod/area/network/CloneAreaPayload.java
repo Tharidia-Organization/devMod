@@ -14,6 +14,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 
 /**
  * Client -> Server: Request to clone an existing area to a new position.
@@ -28,7 +30,7 @@ public record CloneAreaPayload(
     BlockPos newCenter,
     String newName,
     boolean keepLinkedZone
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum name length for cloned area */
     public static final int MAX_NAME_LENGTH = 64;
@@ -55,6 +57,15 @@ public record CloneAreaPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = 16; // UUID
+        size += PayloadSizeUtil.varLongSize(newCenter.asLong());
+        size += PayloadSizeUtil.estimatedUtfSize(newName);
+        size += 1; // keepLinkedZone
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

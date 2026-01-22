@@ -1,7 +1,0 @@
-{
-    "variants": {
-        "type=bottom": { "model": "devmod:block/smeltery/slab/bricks/slab" },
-        "type=top": { "model": "devmod:block/smeltery/slab/bricks/slab_top" },
-        "type=double": { "model": "devmod:block/smeltery/seared/bricks" }
-    }
-}

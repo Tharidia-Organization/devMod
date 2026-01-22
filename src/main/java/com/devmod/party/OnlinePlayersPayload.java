@@ -12,9 +12,12 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
+
 public record OnlinePlayersPayload(
     List<PlayerInfo> players
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<OnlinePlayersPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "online_players"))
@@ -62,6 +65,20 @@ public record OnlinePlayersPayload(
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
+    }
+
+    @Override
+    public int estimatedSize() {
+        int count = Math.min(players.size(), MAX_PLAYERS);
+        long size = PayloadSizeUtil.varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            PlayerInfo player = players.get(i);
+            size += 16; // UUID
+            size += PayloadSizeUtil.estimatedUtfSize(player.playerName);
+            size += 1; // inParty
+            size += 1; // canInvite
+        }
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

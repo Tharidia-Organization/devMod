@@ -13,6 +13,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
+import com.devmod.network.PayloadValidation;
 import com.devmod.portal.PortalColor;
 
 /**
@@ -33,7 +35,7 @@ public record PortalPreviewPayload(
     int distance,
     int portalColorIndex,
     boolean isFixedDestination
-) implements CustomPacketPayload {
+) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<PortalPreviewPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "portal_preview"))
@@ -60,6 +62,17 @@ public record PortalPreviewPayload(
     @Nonnull
     public Type<? extends CustomPacketPayload> type() {
         return Objects.requireNonNull(TYPE);
+    }
+
+    @Override
+    public int estimatedSize() {
+        long size = PayloadSizeUtil.varLongSize(portalPos.asLong());
+        size += PayloadSizeUtil.estimatedUtfSize(destinationName);
+        size += PayloadSizeUtil.estimatedUtfSize(dimensionName);
+        size += PayloadSizeUtil.varIntSize(distance);
+        size += PayloadSizeUtil.varIntSize(portalColorIndex);
+        size += 1; // isFixedDestination
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

@@ -1,7 +1,0 @@
-{
-    "parent": "devmod:block/platform/side",
-    "textures": {
-		"side":     "devmod:block/platform/oxidized_copper_side",
-		"particle": "devmod:block/platform/oxidized_copper_top"
-    }
-}
