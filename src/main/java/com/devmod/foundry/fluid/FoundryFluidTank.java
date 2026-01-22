@@ -195,7 +195,7 @@ public class FoundryFluidTank implements IFluidHandler {
         replacement = "this.fill(input, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
         imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
     )
-    public int fill(FluidStack input, boolean simulate) {
+    public final int fill(FluidStack input, boolean simulate) {
         return fill(input, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
 
@@ -207,7 +207,7 @@ public class FoundryFluidTank implements IFluidHandler {
         replacement = "this.drain(amount, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
         imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
     )
-    public FluidStack drain(int amount, boolean simulate) {
+    public final FluidStack drain(int amount, boolean simulate) {
         return drain(amount, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
 
@@ -219,7 +219,7 @@ public class FoundryFluidTank implements IFluidHandler {
         replacement = "this.drain(request, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE)",
         imports = "net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction"
     )
-    public FluidStack drain(FluidStack request, boolean simulate) {
+    public final FluidStack drain(FluidStack request, boolean simulate) {
         return drain(request, simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE);
     }
 
