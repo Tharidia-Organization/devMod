@@ -16,11 +16,15 @@ import com.devmod.client.vfx.effekseer.render.EffekRenderer;
 
 @Mixin(LevelRenderer.class)
 public class EffekseerLevelRendererMixin {
+
     @Inject(method = "renderLevel", at = @At("RETURN"))
     private void devmod$renderEffekseer(DeltaTracker deltaTracker, boolean drawBlockOutline,
             Camera camera, GameRenderer gameRenderer, LightTexture lightTexture,
             Matrix4f viewMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         float partial = deltaTracker.getGameTimeDeltaPartialTick(false);
         EffekRenderer.renderWorldEffeks(partial, viewMatrix, projectionMatrix, camera);
+
+        // Telepad depth rendering is now handled by TelepadDepthRenderHandler using RenderLevelStageEvent
+        // at AFTER_CUTOUT_BLOCKS stage (before entities) for proper player occlusion
     }
 }

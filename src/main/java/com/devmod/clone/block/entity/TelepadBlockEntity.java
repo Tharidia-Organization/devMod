@@ -113,11 +113,30 @@ public class TelepadBlockEntity extends BlockEntity {
     }
 
     public boolean needsTicking() {
+        // Always tick on client side if the telepad is active (for depth rendering registration)
+        if (level != null && level.isClientSide) {
+            BlockState state = getBlockState();
+            if (state.hasProperty(TelepadBlock.ACTIVE) && state.getValue(TelepadBlock.ACTIVE)) {
+                return true;
+            }
+        }
         return !chargingPlayers.isEmpty() || !recentArrivals.isEmpty() || chargeProgress > 0.001f;
     }
 
     public void clientTick() {
         chargeProgressPrev = chargeProgress;
+
+        // Register for depth rendering on client side
+        // This must happen in tick (before render) so the mixin can access it
+        BlockState state = getBlockState();
+        boolean active = state.getValue(TelepadBlock.ACTIVE);
+        float intensity = active ? 1.0f : (chargeProgress > 0.01f ? 0.75f : 0.0f);
+
+        if (intensity > 0.01f) {
+            com.devmod.clone.client.renderer.TelepadDepthRenderer.registerTelepad(worldPosition);
+        } else {
+            com.devmod.clone.client.renderer.TelepadDepthRenderer.unregisterTelepad(worldPosition);
+        }
     }
 
     public float getChargeProgress(float partialTick) {

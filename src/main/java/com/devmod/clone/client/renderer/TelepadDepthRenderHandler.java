@@ -1,17 +1,12 @@
 package com.devmod.clone.client.renderer;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.math.Axis;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -30,9 +25,8 @@ import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
 
 /**
- * Renders depth-only ovals for telepads at AFTER_CUTOUT_BLOCKS stage.
- * This renders AFTER terrain but BEFORE entities, allowing proper player occlusion in third person.
- * Uses colorMask to disable color writes and only write to depth buffer.
+ * Renders depth-only ovals for telepads at AFTER_SOLID_BLOCKS stage.
+ * This renders AFTER solid terrain but BEFORE entities, allowing proper player occlusion in third person.
  */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class TelepadDepthRenderHandler {
@@ -42,14 +36,29 @@ public final class TelepadDepthRenderHandler {
     private static final float PORTAL_Y_OFFSET = 1.0f;
     private static final int OVAL_SEGMENTS = 32;
 
+    // DEBUG: Set to true to see the depth layer as visible red oval
+    private static final boolean DEBUG_VISIBLE = true;
+
+    private static boolean loggedOnce = false;
+    private static int frameCount = 0;
+
     private TelepadDepthRenderHandler() {
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        // Render at AFTER_CUTOUT_BLOCKS - right before entities
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) {
+        // TEST: Use AFTER_ENTITIES to verify rendering works (same timing as WorldRenderEvents)
+        // Once we see red lines, we can move to earlier stage for actual occlusion
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
             return;
+        }
+
+        frameCount++;
+
+        // Log every 60 frames to see if handler is being called
+        if (frameCount % 60 == 1) {
+            DevMod.LOGGER.info("[TelepadDepthRenderHandler] Frame {}, active telepads: {}",
+                frameCount, TelepadDepthRenderer.getActiveTelepadPositions().size());
         }
 
         // Check if there are any active telepads to render
@@ -63,17 +72,25 @@ public final class TelepadDepthRenderHandler {
             return;
         }
 
+        if (!loggedOnce) {
+            DevMod.LOGGER.info("[TelepadDepthRenderHandler] RENDERING {} telepads (DEBUG_VISIBLE={})",
+                TelepadDepthRenderer.getActiveTelepadPositions().size(), DEBUG_VISIBLE);
+            loggedOnce = true;
+        }
+
         PoseStack poseStack = event.getPoseStack();
         Vec3 cameraPos = event.getCamera().getPosition();
 
-        // Setup render state for depth-only rendering
-        // Disable color writes - we ONLY want to write to depth buffer
-        RenderSystem.colorMask(false, false, false, false);
+        // Get buffer source from Minecraft (same as WorldRenderEvents)
+        MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
+
+        // Setup render state for depth writing
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(true);
-        RenderSystem.disableBlend(); // No blending needed for depth-only
-        RenderSystem.disableCull();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        if (!DEBUG_VISIBLE) {
+            RenderSystem.colorMask(false, false, false, false);
+        }
 
         // Iterate through active telepads
         for (BlockPos pos : TelepadDepthRenderer.getActiveTelepadPositions()) {
@@ -96,72 +113,92 @@ public final class TelepadDepthRenderHandler {
             // Get facing direction
             Direction facing = state.getValue(TelepadBlock.FACING);
 
-            // Render depth oval for this telepad
-            renderDepthOval(poseStack, pos, facing, cameraPos);
+            // Render depth oval for this telepad using lines (visible for debug)
+            renderDepthOvalWithLines(poseStack, bufferSource, pos, facing, cameraPos);
         }
 
+        // Flush the buffer to ensure rendering happens
+        bufferSource.endBatch();
+
         // Restore render state
-        RenderSystem.colorMask(true, true, true, true); // Re-enable color writes
-        RenderSystem.enableCull();
+        if (!DEBUG_VISIBLE) {
+            RenderSystem.colorMask(true, true, true, true);
+        }
     }
 
-    private static void renderDepthOval(PoseStack poseStack, BlockPos pos, Direction facing, Vec3 cameraPos) {
+    /**
+     * Render the oval outline using lines (like WorldRenderEvents does).
+     * This uses the proven rendering approach that works.
+     */
+    private static void renderDepthOvalWithLines(PoseStack poseStack, MultiBufferSource bufferSource,
+            BlockPos pos, Direction facing, Vec3 cameraPos) {
+
+        // Get line buffer (this is proven to work in WorldRenderEvents)
+        VertexConsumer builder = bufferSource.getBuffer(RenderType.lines());
+
         poseStack.pushPose();
 
-        // Translate to telepad position (relative to camera)
-        double x = pos.getX() + 0.5 - cameraPos.x;
-        double y = pos.getY() + PORTAL_Y_OFFSET - cameraPos.y;
-        double z = pos.getZ() + 0.5 - cameraPos.z;
-        poseStack.translate(x, y, z);
+        // Translate relative to camera (same approach as WorldRenderEvents)
+        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+
+        // Now translate to the telepad position (absolute world coordinates)
+        double centerX = pos.getX() + 0.5;
+        double centerY = pos.getY() + PORTAL_Y_OFFSET;
+        double centerZ = pos.getZ() + 0.5;
+        poseStack.translate(centerX, centerY, centerZ);
 
         // Rotate based on facing direction
-        float yRot = switch (facing) {
+        float yRotRad = (float) Math.toRadians(switch (facing) {
             case SOUTH -> 180.0f;
             case WEST -> 90.0f;
             case EAST -> -90.0f;
             default -> 0.0f;
-        };
-        poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
+        });
 
         Matrix4f matrix = poseStack.last().pose();
         float halfWidth = PORTAL_WIDTH / 2.0f;
         float halfHeight = PORTAL_HEIGHT / 2.0f;
 
-        // Full alpha to ensure depth write (color writes are disabled, so color doesn't matter)
-        float r = 0.0f;
+        // Debug: red color to see the depth layer position
+        float r = DEBUG_VISIBLE ? 1.0f : 0.0f;
         float g = 0.0f;
         float b = 0.0f;
-        float a = 1.0f; // Full alpha to ensure shader doesn't discard fragment
+        float a = 1.0f;
 
-        Tesselator tesselator = Tesselator.getInstance();
+        // Draw oval outline using line segments
+        float cosY = (float) Math.cos(yRotRad);
+        float sinY = (float) Math.sin(yRotRad);
 
-        // Front face
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        buffer.addVertex(matrix, 0, halfHeight, -0.005f).setColor(r, g, b, a);
-        for (int i = 0; i <= OVAL_SEGMENTS; i++) {
-            float angle = (float) (i * 2.0 * Math.PI / OVAL_SEGMENTS);
-            float px = (float) Math.sin(angle) * halfWidth;
-            float py = (float) Math.cos(angle) * halfHeight + halfHeight;
-            buffer.addVertex(matrix, px, py, -0.005f).setColor(r, g, b, a);
-        }
-        MeshData meshData = buffer.build();
-        if (meshData != null) {
-            BufferUploader.drawWithShader(meshData);
+        for (int i = 0; i < OVAL_SEGMENTS; i++) {
+            float angle1 = (float) (i * 2.0 * Math.PI / OVAL_SEGMENTS);
+            float angle2 = (float) ((i + 1) * 2.0 * Math.PI / OVAL_SEGMENTS);
+
+            // Local oval coordinates
+            float lx1 = (float) Math.sin(angle1) * halfWidth;
+            float ly1 = (float) Math.cos(angle1) * halfHeight + halfHeight;
+            float lx2 = (float) Math.sin(angle2) * halfWidth;
+            float ly2 = (float) Math.cos(angle2) * halfHeight + halfHeight;
+
+            // Rotate around Y axis based on facing
+            float x1 = lx1 * cosY;
+            float z1 = lx1 * sinY;
+            float x2 = lx2 * cosY;
+            float z2 = lx2 * sinY;
+
+            // Add line segment
+            builder.addVertex(matrix, x1, ly1, z1).setColor(r, g, b, a).setNormal(0, 1, 0);
+            builder.addVertex(matrix, x2, ly2, z2).setColor(r, g, b, a).setNormal(0, 1, 0);
         }
 
-        // Back face
-        buffer = tesselator.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
-        buffer.addVertex(matrix, 0, halfHeight, 0.005f).setColor(r, g, b, a);
-        for (int i = OVAL_SEGMENTS; i >= 0; i--) {
-            float angle = (float) (i * 2.0 * Math.PI / OVAL_SEGMENTS);
-            float px = (float) Math.sin(angle) * halfWidth;
-            float py = (float) Math.cos(angle) * halfHeight + halfHeight;
-            buffer.addVertex(matrix, px, py, 0.005f).setColor(r, g, b, a);
-        }
-        meshData = buffer.build();
-        if (meshData != null) {
-            BufferUploader.drawWithShader(meshData);
-        }
+        // Also draw some cross lines to make it more visible
+        // Horizontal line through center
+        float cx = 0, cy = halfHeight;
+        builder.addVertex(matrix, -halfWidth * cosY, cy, -halfWidth * sinY).setColor(r, g, b, a).setNormal(0, 1, 0);
+        builder.addVertex(matrix, halfWidth * cosY, cy, halfWidth * sinY).setColor(r, g, b, a).setNormal(0, 1, 0);
+
+        // Vertical line through center
+        builder.addVertex(matrix, 0, 0, 0).setColor(r, g, b, a).setNormal(0, 1, 0);
+        builder.addVertex(matrix, 0, PORTAL_HEIGHT, 0).setColor(r, g, b, a).setNormal(0, 1, 0);
 
         poseStack.popPose();
     }
