@@ -21,11 +21,6 @@ public class Effekseer extends SafeFinalized<EffekseerBackendCore> {
         return DeviceType.fromNativeOrdinal(EffekseerBackendCore.GetDevice().swigValue());
     }
 
-    @Override
-    public void close() {
-        impl.delete();
-    }
-
     public final EffekseerBackendCore getImpl() {
         return impl;
     }

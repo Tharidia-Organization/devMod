@@ -262,9 +262,9 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
         if (slot == 0) {
             // Allow skulls, carved pumpkins, etc.
             return stack.is(Objects.requireNonNull(net.minecraft.tags.ItemTags.HEAD_ARMOR))
-                || stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
+                || (stack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
                     && (blockItem.getBlock() instanceof net.minecraft.world.level.block.SkullBlock
-                        || blockItem.getBlock() instanceof net.minecraft.world.level.block.CarvedPumpkinBlock);
+                        || blockItem.getBlock() instanceof net.minecraft.world.level.block.CarvedPumpkinBlock));
         }
 
         return false;

@@ -8,6 +8,7 @@
 
 package Effekseer.swig;
 
+@SuppressWarnings({"UnusedMethod", "StaticAssignmentInConstructor"})
 public final class EffekseerTextureType {
   public final static EffekseerTextureType Color = new EffekseerTextureType("Color");
   public final static EffekseerTextureType Normal = new EffekseerTextureType("Normal");
@@ -17,6 +18,7 @@ public final class EffekseerTextureType {
     return swigValue;
   }
 
+  @Override
   public String toString() {
     return swigName;
   }
@@ -52,4 +54,3 @@ public final class EffekseerTextureType {
   private final int swigValue;
   private final String swigName;
 }
-

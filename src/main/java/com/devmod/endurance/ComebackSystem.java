@@ -183,10 +183,11 @@ public class ComebackSystem {
      */
     private void notifyComboSystem(ServerPlayer player) {
         // Get active combo session if any
-        ComboSystem.INSTANCE.getSession(player.getUUID()).ifPresent(session -> {
-            // Award bonus combo points for triggering Phoenix
-            session.addBonusPoints(500);
-        });
+        if (com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
+            com.devmod.endurance.combat.ComboSystemFacade.get()
+                .getSession(player.getUUID())
+                .ifPresent(session -> session.addBonusPoints(500));
+        }
     }
 
     /**

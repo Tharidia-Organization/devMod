@@ -145,8 +145,6 @@ public record FoundryFluidContainerModel(FluidStack fluid, boolean flipGas) impl
   }
 
   private static final class ContainedFluidOverrideHandler extends ItemOverrides {
-    private static final ResourceLocation BAKE_LOCATION = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "copper_can_dynamic");
-
     private final Map<FluidStack, BakedModel> cache = Maps.newHashMap();
     private final IGeometryBakingContext context;
     private final ItemOverrides nested;

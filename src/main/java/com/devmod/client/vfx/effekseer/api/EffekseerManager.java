@@ -36,11 +36,6 @@ public class EffekseerManager extends SafeFinalized<EffekseerManagerCore> {
         impl.EndUpdate();
     }
 
-    @Override
-    public void close() {
-        impl.delete();
-    }
-
     public ParticleEmitter createParticle(EffekseerEffect effect) {
         return createParticle(effect, ParticleEmitter.Type.WORLD);
     }

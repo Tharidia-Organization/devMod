@@ -429,9 +429,11 @@ public class ExecutionSystem {
         player.heal(hpRegen);
 
         // Apply style reward via combo session if active
-        ComboSystem.INSTANCE.getSession(playerId).ifPresent(session ->
-            session.registerAction(ComboSystem.ActionType.EXECUTION, 0)
-        );
+        if (com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
+            com.devmod.endurance.combat.ComboSystemFacade.get()
+                .getSession(playerId)
+                .ifPresent(session -> session.registerAction(ComboSystem.ActionType.EXECUTION, 0));
+        }
 
         // Track execution for hidden perk discoveries
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordExecution(player);

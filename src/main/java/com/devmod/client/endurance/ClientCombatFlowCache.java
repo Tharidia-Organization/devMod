@@ -129,7 +129,7 @@ public final class ClientCombatFlowCache {
 
         // Clean expired announcements
         long now = System.currentTimeMillis();
-        announcements.removeIf(a -> now - a.timestamp > ANNOUNCEMENT_DURATION_MS);
+        announcements.removeIf(a -> now - a.timestamp() > ANNOUNCEMENT_DURATION_MS);
     }
 
     private void addAnnouncement(String title, String subtitle, int color, boolean important) {

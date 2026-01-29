@@ -2,6 +2,7 @@ package com.devmod.client.vfx.effekseer.api;
 
 import Effekseer.swig.EffekseerTextureType;
 
+@SuppressWarnings("ImmutableEnumChecker")
 public enum TextureType {
     COLOR(EffekseerTextureType.Color),
     NORMAL(EffekseerTextureType.Normal),

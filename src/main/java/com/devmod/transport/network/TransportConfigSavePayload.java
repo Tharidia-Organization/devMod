@@ -41,7 +41,7 @@ public record TransportConfigSavePayload(
     public static final int MAX_DISPLAY_NAME_LENGTH = TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH;
 
     public static final Type<TransportConfigSavePayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "211")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_config_save")));
 
     public static final StreamCodec<ByteBuf, TransportConfigSavePayload> STREAM_CODEC = StreamCodec.composite(
         Objects.requireNonNull(BlockPos.STREAM_CODEC), TransportConfigSavePayload::nodePos,

@@ -250,7 +250,7 @@ public final class CombatSessionTracker {
 
     public List<TargetStats> getTopTargets(int limit) {
         return targetStats.values().stream()
-            .sorted((a, b) -> Float.compare(b.totalDamage, a.totalDamage))
+            .sorted((a, b) -> Float.compare(b.getTotalDamage(), a.getTotalDamage()))
             .limit(limit)
             .toList();
     }
@@ -262,11 +262,11 @@ public final class CombatSessionTracker {
     // === Inner Classes ===
 
     public static class TargetStats {
-        public final String name;
-        public float totalDamage = 0f;
-        public int hits = 0;
-        public int crits = 0;
-        public final EnumMap<BodyPart, Integer> bodyPartHits = new EnumMap<>(BodyPart.class);
+        private final String name;
+        private float totalDamage = 0f;
+        private int hits = 0;
+        private int crits = 0;
+        private final EnumMap<BodyPart, Integer> bodyPartHits = new EnumMap<>(BodyPart.class);
 
         public TargetStats(String name) {
             this.name = name;
@@ -281,6 +281,12 @@ public final class CombatSessionTracker {
             if (isCrit) crits++;
             bodyPartHits.merge(part, 1, Integer::sum);
         }
+
+        public String getName() { return name; }
+        public float getTotalDamage() { return totalDamage; }
+        public int getHits() { return hits; }
+        public int getCrits() { return crits; }
+        public EnumMap<BodyPart, Integer> getBodyPartHits() { return bodyPartHits; }
 
         public float getCritRate() {
             return hits > 0 ? (float) crits / hits : 0f;

@@ -297,12 +297,12 @@ public class CombatTracker implements QuestLifecycleListener {
          */
         public WaveCombatStats getWaveStats(int waveNumber) {
             // Check if it's the current wave
-            if (currentWaveStats != null && currentWaveStats.waveNumber == waveNumber) {
+            if (currentWaveStats != null && currentWaveStats.getWaveNumber() == waveNumber) {
                 return currentWaveStats;
             }
             // Check completed waves
             for (WaveCombatStats ws : waveStats) {
-                if (ws.waveNumber == waveNumber) {
+                if (ws.getWaveNumber() == waveNumber) {
                     return ws;
                 }
             }
@@ -387,7 +387,7 @@ public class CombatTracker implements QuestLifecycleListener {
      * Stats for a single weapon.
      */
     public static class WeaponStats {
-        public final String weaponId;
+        private final String weaponId;
         public float totalDamage = 0;
         public int hits = 0;
         public int criticalHits = 0;
@@ -396,6 +396,8 @@ public class CombatTracker implements QuestLifecycleListener {
         public WeaponStats(String weaponId) {
             this.weaponId = weaponId;
         }
+
+        public String getWeaponId() { return weaponId; }
 
         public float getAverageDamage() {
             return hits > 0 ? totalDamage / hits : 0;
@@ -410,7 +412,7 @@ public class CombatTracker implements QuestLifecycleListener {
      * Stats for a single wave.
      */
     public static class WaveCombatStats {
-        public final int waveNumber;
+        private final int waveNumber;
         public float damageDealt = 0;
         public float damageTaken = 0;
         public int hitsLanded = 0;
@@ -424,6 +426,8 @@ public class CombatTracker implements QuestLifecycleListener {
         public WaveCombatStats(int waveNumber) {
             this.waveNumber = waveNumber;
         }
+
+        public int getWaveNumber() { return waveNumber; }
 
         /**
          * Finalize this wave's duration.
@@ -440,7 +444,7 @@ public class CombatTracker implements QuestLifecycleListener {
      * Used for party runs to track individual contributions.
      */
     public static class PlayerCombatStats {
-        public final UUID playerId;
+        private final UUID playerId;
         public float totalDamageDealt = 0;
         public float totalDamageTaken = 0;
         public int totalKills = 0;
@@ -456,6 +460,8 @@ public class CombatTracker implements QuestLifecycleListener {
             this.playerId = playerId;
             this.waveStats.put(1, new PlayerWaveCombatStats(1));
         }
+
+        public UUID getPlayerId() { return playerId; }
 
         public void startNewWave(int waveNumber) {
             PlayerWaveCombatStats current = waveStats.get(currentWaveNumber);

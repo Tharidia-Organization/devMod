@@ -127,7 +127,8 @@ public record EntitySpawnPoint(
         // Convert snake_case to Title Case
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = true;
-        for (char c : path.toCharArray()) {
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
             if (c == '_') {
                 result.append(' ');
                 capitalizeNext = true;

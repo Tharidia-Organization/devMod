@@ -81,7 +81,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
      */
     private static void handleRequestSlotListServer(@Nonnull RequestSlotListPayload payload,
                                                      @Nonnull IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var unused = context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) {
                 return;
             }
@@ -126,7 +126,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
      */
     private static void handleSlotListClient(@Nonnull SlotListPayload payload,
                                               @Nonnull IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var unused = context.enqueueWork(() -> {
             NexusClientCache.INSTANCE.updateSlots(Objects.requireNonNull(payload.slots()));
             LOGGER.debug("[Nexus] Updated client cache with {} slots", payload.slots().size());
         });
@@ -137,7 +137,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
      */
     private static void handleHubStatusClient(@Nonnull HubStatusPayload payload,
                                                @Nonnull IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var unused = context.enqueueWork(() -> {
             NexusClientCache.INSTANCE.updateHubStatus(payload);
             LOGGER.debug("[Nexus] Updated client cache: initialized={}, slots={}",
                 payload.initialized(), payload.totalSlots());
@@ -149,7 +149,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
      */
     private static void handleBuildProgressClient(@Nonnull NexusBuildProgressPayload payload,
                                                    @Nonnull IPayloadContext context) {
-        context.enqueueWork(() -> {
+        var unused = context.enqueueWork(() -> {
             NexusClientCache.INSTANCE.updateBuildProgress(payload);
             LOGGER.debug("[Nexus] Build progress: {}/{} step='{}' complete={}",
                 payload.currentStep(), payload.totalSteps(), payload.stepName(), payload.complete());

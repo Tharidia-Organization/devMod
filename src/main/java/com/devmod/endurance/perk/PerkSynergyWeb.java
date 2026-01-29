@@ -51,22 +51,13 @@ public class PerkSynergyWeb {
     /**
      * A hidden perk that must be discovered before it appears in selection.
      */
-    public static class HiddenPerk {
-        public final String perkId;              // ID of the actual perk
-        public final String hintName;            // Cryptic hint name shown before discovery
-        public final String hintDescription;     // Vague hint about how to unlock
-        public final UnlockCondition condition;  // How to unlock this perk
-        public final int discoveryXp;            // XP bonus for discovering
-
-        public HiddenPerk(String perkId, String hintName, String hintDescription,
-                         UnlockCondition condition, int discoveryXp) {
-            this.perkId = perkId;
-            this.hintName = hintName;
-            this.hintDescription = hintDescription;
-            this.condition = condition;
-            this.discoveryXp = discoveryXp;
-        }
-    }
+    public record HiddenPerk(
+        String perkId,              // ID of the actual perk
+        String hintName,            // Cryptic hint name shown before discovery
+        String hintDescription,     // Vague hint about how to unlock
+        UnlockCondition condition,  // How to unlock this perk
+        int discoveryXp             // XP bonus for discovering
+    ) {}
 
     /**
      * Condition to unlock a hidden perk.
@@ -533,7 +524,7 @@ public class PerkSynergyWeb {
     }
 
     private void registerHiddenPerk(HiddenPerk perk) {
-        hiddenPerks.put(perk.perkId, perk);
+        hiddenPerks.put(perk.perkId(), perk);
     }
 
     // ========== Public API ==========
@@ -585,8 +576,8 @@ public class PerkSynergyWeb {
 
         // Still hidden - show hint
         return new HiddenPerkDisplay(
-            hidden.hintName,
-            hidden.hintDescription,
+            hidden.hintName(),
+            hidden.hintDescription(),
             false,
             0.0f,
             "???"
@@ -609,26 +600,26 @@ public class PerkSynergyWeb {
         List<String> newlyDiscovered = new ArrayList<>();
 
         for (HiddenPerk hidden : hiddenPerks.values()) {
-            if (discoveries.hasDiscovered(hidden.perkId)) continue;
+            if (discoveries.hasDiscovered(hidden.perkId())) continue;
 
             // Check additional persistent conditions
-            if (hidden.perkId.equals("executioners_wrath") && discoveries.getExecutionsPerformed() < 10) continue;
-            if (hidden.perkId.equals("ultimate_curse") && discoveries.getCursesAccepted() < 5) continue;
+            if (hidden.perkId().equals("executioners_wrath") && discoveries.getExecutionsPerformed() < 10) continue;
+            if (hidden.perkId().equals("ultimate_curse") && discoveries.getCursesAccepted() < 5) continue;
 
-            if (hidden.condition.isMet(context)) {
-                discoveries.discover(hidden.perkId, hidden.discoveryXp);
-                newlyDiscovered.add(hidden.perkId);
+            if (hidden.condition().isMet(context)) {
+                discoveries.discover(hidden.perkId(), hidden.discoveryXp());
+                newlyDiscovered.add(hidden.perkId());
 
                 // Notify player
                 Component message = Objects.requireNonNull(
-                    Component.literal("§d§l[DISCOVERY] §r§5" + getPerkName(hidden.perkId) +
-                        " §r§7unlocked! §a+" + hidden.discoveryXp + " Discovery XP"),
+                    Component.literal("§d§l[DISCOVERY] §r§5" + getPerkName(hidden.perkId()) +
+                        " §r§7unlocked! §a+" + hidden.discoveryXp() + " Discovery XP"),
                     "discoveryMessage"
                 );
                 player.displayClientMessage(message, false);
 
                 LOGGER.info("[PerkSynergyWeb] {} discovered hidden perk: {} (+{} XP)",
-                    player.getName().getString(), hidden.perkId, hidden.discoveryXp);
+                    player.getName().getString(), hidden.perkId(), hidden.discoveryXp());
             }
         }
 
@@ -711,10 +702,10 @@ public class PerkSynergyWeb {
             simulated.add(perkId);
 
             for (HiddenPerk hidden : hiddenPerks.values()) {
-                if (discoveries.hasDiscovered(hidden.perkId)) continue;
+                if (discoveries.hasDiscovered(hidden.perkId())) continue;
 
                 // Simple hint: if this perk is part of a combo condition
-                if (hidden.condition instanceof PerkCombinationCondition combo) {
+                if (hidden.condition() instanceof PerkCombinationCondition combo) {
                     if (combo.requiredPerks.contains(perkId) && !simulated.containsAll(combo.requiredPerks)) {
                         long have = combo.requiredPerks.stream().filter(simulated::contains).count();
                         long need = combo.requiredPerks.size();
@@ -810,13 +801,13 @@ public class PerkSynergyWeb {
         List<HiddenPerkInfo> result = new ArrayList<>();
 
         for (HiddenPerk hidden : hiddenPerks.values()) {
-            boolean discovered = discoveries != null && discoveries.hasDiscovered(hidden.perkId);
+            boolean discovered = discoveries != null && discoveries.hasDiscovered(hidden.perkId());
             result.add(new HiddenPerkInfo(
-                hidden.perkId,
-                discovered ? getPerkName(hidden.perkId) : hidden.hintName,
-                discovered ? getPerkDescription(hidden.perkId) : hidden.hintDescription,
+                hidden.perkId(),
+                discovered ? getPerkName(hidden.perkId()) : hidden.hintName(),
+                discovered ? getPerkDescription(hidden.perkId()) : hidden.hintDescription(),
                 discovered,
-                hidden.discoveryXp
+                hidden.discoveryXp()
             ));
         }
 

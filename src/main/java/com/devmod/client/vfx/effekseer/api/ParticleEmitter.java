@@ -37,8 +37,12 @@ public class ParticleEmitter {
         this.handle = handle;
         this.manager = manager;
         this.type = type;
-        setVisibility(true);
-        resume();
+        isVisible = true;
+        isPaused = false;
+        if (valid && manager != null) {
+            manager.getImpl().SetShown(handle, true);
+            manager.getImpl().SetPaused(handle, false);
+        }
     }
 
     public void pause() {

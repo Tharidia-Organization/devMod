@@ -1,6 +1,8 @@
 package com.devmod.client.vfx.effekseer.loader;
 
 public class EffekLoadException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public EffekLoadException() {
     }
 

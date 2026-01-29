@@ -316,7 +316,7 @@ public class WaveManager {
          */
         public @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout getZoneLayout() {
             final SpawnContext ctx = spawnContext;
-            return ctx != null ? ctx.zoneLayout : null;
+            return ctx != null ? ctx.zoneLayout() : null;
         }
 
         /**
@@ -587,7 +587,7 @@ public class WaveManager {
 
         SpawnAffix safeAffix = affix != null ? affix : SpawnAffix.BASE;
         SpawnContext spawnContext = waveState.getSpawnContext();
-        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+        if (spawnContext == null || spawnContext.positions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] No spawn positions available for wave {}", waveState.waveNumber);
             EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
             return;
@@ -613,10 +613,10 @@ public class WaveManager {
                 mobReqs.time(), entityType.getDescriptionId(), level.getDayTime() % 24000);
         }
 
-        List<BlockPos> spawnPositions = spawnContext.positions;
+        List<BlockPos> spawnPositions = spawnContext.positions();
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
         boolean allowReuse = spawnPositions.size() < count;
-        SpawnPools pools = spawnContext.pools;
+        SpawnPools pools = spawnContext.pools();
 
         int successfulSpawns = 0;
         int failedSpawns = 0;
@@ -641,13 +641,13 @@ public class WaveManager {
                     candidatePool,
                     i,
                     occupied,
-                    spawnContext.runtimeValidator,
-                    spawnContext.slotMap,
-                    spawnContext.template,
+                    spawnContext.runtimeValidator(),
+                    spawnContext.slotMap(),
+                    spawnContext.template(),
                     level,
                     allowReuse
                 );
-                if (spawnPos == null && candidatePool != pools.all) {
+                if (spawnPos == null && candidatePool != pools.all()) {
                     EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
                         waveState.quest.getQuestId(),
                         waveState.waveNumber,
@@ -656,12 +656,12 @@ public class WaveManager {
                         "pool_exhausted"
                     );
                     spawnPos = pickValidatedSpawnPosition(
-                        pools.all,
+                        pools.all(),
                         i,
                         occupied,
-                        spawnContext.runtimeValidator,
-                        spawnContext.slotMap,
-                        spawnContext.template,
+                        spawnContext.runtimeValidator(),
+                        spawnContext.slotMap(),
+                        spawnContext.template(),
                         level,
                         allowReuse
                     );
@@ -766,13 +766,13 @@ public class WaveManager {
         }
 
         SpawnContext spawnContext = waveState.getSpawnContext();
-        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+        if (spawnContext == null || spawnContext.positions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] No spawn positions available for practice dummies");
             return;
         }
 
         ServerLevel level = arena.getLevel();
-        List<BlockPos> positions = spawnContext.positions;
+        List<BlockPos> positions = spawnContext.positions();
 
         // Limit dummies to avoid overwhelming the player
         int dummyCount = Math.min(count, Math.min(5, positions.size()));
@@ -843,7 +843,7 @@ public class WaveManager {
         }
 
         SpawnContext spawnContext = waveState.getSpawnContext();
-        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+        if (spawnContext == null || spawnContext.positions().isEmpty()) {
             EnduranceTelemetryService.INSTANCE.recordWaveBlocked(waveState.quest.getQuestId());
             return 0;
         }
@@ -853,8 +853,8 @@ public class WaveManager {
         EntityType<?> entityType = mobConfig.entityType;
 
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
-        boolean allowReuse = spawnContext.positions.size() < allowed;
-        SpawnPools pools = spawnContext.pools;
+        boolean allowReuse = spawnContext.positions().size() < allowed;
+        SpawnPools pools = spawnContext.pools();
 
         int successfulRespawns = 0;
         int failedRespawns = 0;
@@ -883,13 +883,13 @@ public class WaveManager {
                 candidatePool,
                 i,
                 occupied,
-                spawnContext.runtimeValidator,
-                spawnContext.slotMap,
-                spawnContext.template,
+                spawnContext.runtimeValidator(),
+                spawnContext.slotMap(),
+                spawnContext.template(),
                 level,
                 allowReuse
             );
-            if (spawnPos == null && candidatePool != pools.all) {
+            if (spawnPos == null && candidatePool != pools.all()) {
                 EnduranceTelemetryService.INSTANCE.recordSpawnFallback(
                     waveState.quest.getQuestId(),
                     waveState.waveNumber,
@@ -898,12 +898,12 @@ public class WaveManager {
                     "pool_exhausted"
                 );
                 spawnPos = pickValidatedSpawnPosition(
-                    pools.all,
+                    pools.all(),
                     i,
                     occupied,
-                    spawnContext.runtimeValidator,
-                    spawnContext.slotMap,
-                    spawnContext.template,
+                    spawnContext.runtimeValidator(),
+                    spawnContext.slotMap(),
+                    spawnContext.template(),
                     level,
                     allowReuse
                 );
@@ -996,13 +996,13 @@ public class WaveManager {
         }
 
         SpawnContext spawnContext = waveState.getSpawnContext();
-        if (spawnContext == null || spawnContext.positions.isEmpty()) {
+        if (spawnContext == null || spawnContext.positions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] No spawn positions available for practice dummy respawn");
             return 0;
         }
 
         ServerLevel level = arena.getLevel();
-        List<BlockPos> positions = spawnContext.positions;
+        List<BlockPos> positions = spawnContext.positions();
         List<UUID> safeDeadMobIds = deadMobIds != null ? deadMobIds : List.of();
         boolean objectiveTarget = waveState.getObjective().getType() == WaveObjectiveState.Type.ELITE_HUNT;
 
@@ -1248,40 +1248,23 @@ public class WaveManager {
         return null;
     }
 
-    public static class SpawnContext {
-        public final List<BlockPos> positions;
-        public final Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap;
-        public final @javax.annotation.Nullable ArenaTemplate template;
-        public final @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator;
-        public final SpawnPools pools;
-        public final @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout zoneLayout;
-        public final @javax.annotation.Nullable com.devmod.arena.zone.ZoneSpawnSlotAllocator zoneAllocator;
-        public final int maxEntities;
-
+    public record SpawnContext(
+        List<BlockPos> positions,
+        Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
+        @javax.annotation.Nullable ArenaTemplate template,
+        @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator,
+        SpawnPools pools,
+        @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout zoneLayout,
+        @javax.annotation.Nullable com.devmod.arena.zone.ZoneSpawnSlotAllocator zoneAllocator,
+        int maxEntities
+    ) {
+        /** Convenience constructor without zone parameters. */
         public SpawnContext(List<BlockPos> positions,
                      Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
                      @javax.annotation.Nullable ArenaTemplate template,
                      @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator,
                      SpawnPools pools) {
             this(positions, slotMap, template, runtimeValidator, pools, null, null, 0);
-        }
-
-        public SpawnContext(List<BlockPos> positions,
-                     Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap,
-                     @javax.annotation.Nullable ArenaTemplate template,
-                     @javax.annotation.Nullable TemplateSpawnValidator runtimeValidator,
-                     SpawnPools pools,
-                     @javax.annotation.Nullable com.devmod.arena.zone.ZoneLayout zoneLayout,
-                     @javax.annotation.Nullable com.devmod.arena.zone.ZoneSpawnSlotAllocator zoneAllocator,
-                     int maxEntities) {
-            this.positions = positions;
-            this.slotMap = slotMap;
-            this.template = template;
-            this.runtimeValidator = runtimeValidator;
-            this.pools = pools;
-            this.zoneLayout = zoneLayout;
-            this.zoneAllocator = zoneAllocator;
-            this.maxEntities = maxEntities;
         }
 
         public boolean hasZones() {
@@ -1293,19 +1276,12 @@ public class WaveManager {
         }
     }
 
-    public static class SpawnPools {
-        public final List<BlockPos> all;
-        public final List<BlockPos> melee;
-        public final List<BlockPos> ranged;
-        public final List<BlockPos> corner;
-
-        public SpawnPools(List<BlockPos> all, List<BlockPos> melee, List<BlockPos> ranged, List<BlockPos> corner) {
-            this.all = all;
-            this.melee = melee;
-            this.ranged = ranged;
-            this.corner = corner;
-        }
-    }
+    public record SpawnPools(
+        List<BlockPos> all,
+        List<BlockPos> melee,
+        List<BlockPos> ranged,
+        List<BlockPos> corner
+    ) {}
 
     private SpawnPools buildSpawnPools(List<BlockPos> positions, Map<BlockPos, ArenaTemplate.SpawnSlot> slotMap) {
         List<BlockPos> melee = new ArrayList<>();
@@ -1354,36 +1330,36 @@ public class WaveManager {
     }
 
     private List<BlockPos> chooseSpawnPool(WaveDirector.SpawnRole role, SpawnPools pools, Mob mob) {
-        if (role == WaveDirector.SpawnRole.RANGED && !pools.ranged.isEmpty()) {
-            return pools.ranged;
+        if (role == WaveDirector.SpawnRole.RANGED && !pools.ranged().isEmpty()) {
+            return pools.ranged();
         }
-        if (role == WaveDirector.SpawnRole.MELEE && !pools.melee.isEmpty()) {
-            return pools.melee;
+        if (role == WaveDirector.SpawnRole.MELEE && !pools.melee().isEmpty()) {
+            return pools.melee();
         }
-        if (role == WaveDirector.SpawnRole.CORNER && !pools.corner.isEmpty()) {
-            return pools.corner;
+        if (role == WaveDirector.SpawnRole.CORNER && !pools.corner().isEmpty()) {
+            return pools.corner();
         }
         boolean isRanged = mob instanceof net.minecraft.world.entity.monster.RangedAttackMob;
-        if (isRanged && !pools.ranged.isEmpty()) {
-            return pools.ranged;
+        if (isRanged && !pools.ranged().isEmpty()) {
+            return pools.ranged();
         }
-        if (!pools.melee.isEmpty()) {
-            return pools.melee;
+        if (!pools.melee().isEmpty()) {
+            return pools.melee();
         }
-        if (!pools.corner.isEmpty()) {
-            return pools.corner;
+        if (!pools.corner().isEmpty()) {
+            return pools.corner();
         }
-        return pools.all;
+        return pools.all();
     }
 
     private String resolvePoolTag(List<BlockPos> candidatePool, SpawnPools pools) {
-        if (candidatePool == pools.ranged) {
+        if (candidatePool == pools.ranged()) {
             return "ranged";
         }
-        if (candidatePool == pools.melee) {
+        if (candidatePool == pools.melee()) {
             return "melee";
         }
-        if (candidatePool == pools.corner) {
+        if (candidatePool == pools.corner()) {
             return "corner";
         }
         return "all";
@@ -1430,7 +1406,7 @@ public class WaveManager {
         return baseY;
     }
 
-    /**
+    /*
      * Apply wave modifiers to a mob.
      */
     private void applyMobModifiers(Mob mob, WaveState waveState) {
@@ -1500,7 +1476,7 @@ public class WaveManager {
         }
     }
 
-    /**
+    /*
      * Apply HP and damage scaling based on player count, quest type, AND mob difficulty preset.
      * This ensures the spawned mobs match what the UI preview shows.
      */
@@ -1605,7 +1581,7 @@ public class WaveManager {
         return Math.min(baseChance, rampChance);
     }
 
-    /**
+    /*
      * Apply elite buffs to a mob (special stronger variant).
      */
     private void applyEliteBuffs(Mob mob, int waveNumber) {
@@ -1641,7 +1617,7 @@ public class WaveManager {
         mob.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), Integer.MAX_VALUE, 0, false, false));
     }
 
-    /**
+    /*
      * Handle mob death in a wave.
      */
     public void handleMobDeath(UUID mobId,
@@ -1675,14 +1651,14 @@ public class WaveManager {
         }
     }
 
-    /**
+    /*
      * Get current wave state for an arena.
      */
     public Optional<WaveState> getWaveState(UUID arenaId) {
         return Optional.ofNullable(activeWaves.get(arenaId));
     }
 
-    /**
+    /*
      * Clean up wave state for an arena.
      */
     public void cleanupWave(UUID arenaId, ServerLevel level) {
@@ -1699,13 +1675,10 @@ public class WaveManager {
         }
     }
 
-    /**
+    /*
      * Clear wave state only if the wave is already complete.
      * This is used when transitioning between waves to allow the next wave to start.
      * Does not despawn mobs (they should already be gone when wave completes).
-     *
-     * @param arenaId The arena ID to clear wave state for
-     * @return true if a completed wave state was removed, false otherwise
      */
     public boolean clearCompletedWaveState(UUID arenaId) {
         WaveState state = activeWaves.get(arenaId);
@@ -1721,7 +1694,7 @@ public class WaveManager {
     // DEPRECATED API ISOLATION
     // =========================================================================
 
-    /**
+    /*
      * Isolates the deprecated finalizeSpawn call.
      * The Mob.finalizeSpawn API is marked deprecated but is still the correct way
      * to initialize mob attributes and equipment for programmatic spawns.
@@ -1732,7 +1705,7 @@ public class WaveManager {
             MobSpawnType.MOB_SUMMONED, null);
     }
 
-    /**
+    /*
      * Awakens AI for a spawned mob, registering custom targeting and attack goals.
      * This ensures mobs actively target and attack players in Endurance Quests.
      */
@@ -1757,10 +1730,12 @@ public class WaveManager {
 
             mob.setAggressive(true);
 
+            int targetGoalCount = mob.targetSelector.getAvailableGoals().size();
+            int behaviorGoalCount = mob.goalSelector.getAvailableGoals().size();
             LOGGER.debug("[EnduranceQuest] Registered EnduranceAI for {} (target goals={}, behavior goals={})",
                 mob.getType().toString(),
-                mob.targetSelector.getAvailableGoals().size(),
-                mob.goalSelector.getAvailableGoals().size());
+                targetGoalCount,
+                behaviorGoalCount);
 
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed to awaken AI for {}: {}",

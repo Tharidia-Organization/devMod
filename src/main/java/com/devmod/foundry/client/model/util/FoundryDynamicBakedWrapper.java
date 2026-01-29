@@ -9,6 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.client.model.BakedModelWrapper;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
@@ -28,7 +30,11 @@ public abstract class FoundryDynamicBakedWrapper<T extends BakedModel> extends B
   /** @deprecated use {@link #getQuads(BlockState, Direction, RandomSource, ModelData, RenderType)} */
   @Override
   @Deprecated
-  public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
+  @InlineMe(
+      replacement = "this.getQuads(state, side, rand, ModelData.EMPTY, null)",
+      imports = "net.neoforged.neoforge.client.model.data.ModelData"
+  )
+  public final List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand) {
     return this.getQuads(state, side, rand, ModelData.EMPTY, null);
   }
 

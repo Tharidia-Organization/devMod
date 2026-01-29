@@ -316,7 +316,7 @@ public final class NexusHubCenterBuilder {
                 // Check if this position is within the corridor bounds
                 // Project position onto corridor axis and perpendicular
                 double alongCorridor = rx * dirX + rz * dirZ;  // Distance along corridor direction
-                double perpDistance = Math.abs(rx * (-dirZ) + rz * dirX);  // Perpendicular distance
+                double perpDistance = Math.abs(rx * -dirZ + rz * dirX);  // Perpendicular distance
 
                 // Skip if outside corridor bounds
                 if (alongCorridor < startDist || alongCorridor > endDist) continue;
@@ -330,7 +330,7 @@ public final class NexusHubCenterBuilder {
                 int nextY = getHeightForDistance(distFromCenter + 1.5);
 
                 // Determine position within corridor width
-                int widthPos = (int) Math.round(rx * (-dirZ) + rz * dirX);
+                int widthPos = (int) Math.round(rx * -dirZ + rz * dirX);
                 boolean isCenter = (Math.abs(widthPos) == 0);
                 boolean isEdge = (Math.abs(widthPos) >= halfWidth);
                 boolean isRising = (targetY > prevY) && distFromCenter > CENTER_RADIUS;

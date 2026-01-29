@@ -4,7 +4,7 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.StateDefinition.Builder;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.core.Direction;
 import com.devmod.foundry.client.model.connected.FoundryConnectedModel;
 
@@ -38,10 +38,10 @@ public interface IMultipartConnectedBlock {
   }
 
   /**
-   * Fills a state container, for use in {@link Block#fillStateContainer(Builder)}
+   * Fills a state container, for use in {@link Block#fillStateContainer(net.minecraft.world.level.block.state.StateDefinition.Builder)}
    * @param builder  State container builder
    */
-  static void fillStateContainer(Builder<Block, BlockState> builder) {
+  static void fillStateContainer(StateDefinition.Builder<Block, BlockState> builder) {
     CONNECTED_DIRECTIONS.values().forEach(builder::add);
   }
 

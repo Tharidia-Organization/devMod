@@ -34,7 +34,7 @@ public record TransportStatePayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportStatePayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "212")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_state")));
 
     public static final StreamCodec<ByteBuf, TransportStatePayload> STREAM_CODEC = StreamCodec.of(
         (buf, payload) -> {

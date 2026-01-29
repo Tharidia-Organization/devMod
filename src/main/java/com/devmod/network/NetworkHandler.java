@@ -73,6 +73,10 @@ import com.devmod.network.handlers.EnduranceNetworkHandler;
 import com.devmod.network.handlers.MobItemNetworkHandler;
 import com.devmod.network.handlers.PartyNetworkHandler;
 import com.devmod.network.handlers.ShieldNetworkHandler;
+import com.devmod.arena.network.ArenaNetworkHandler;
+import com.devmod.portal.network.PortalNetworkHandler;
+import com.devmod.hologram.network.HologramNetworkHandler;
+import com.devmod.clone.network.CloneNetworkHandler;
 import com.devmod.notification.network.NotificationNetworkHandler;
 import com.devmod.notification.network.NotificationPreferencesSyncPayload;
 import com.devmod.notification.network.NotificationPreferencesUpdatePayload;
@@ -312,106 +316,22 @@ public class NetworkHandler {
         com.devmod.debug.DebugNetworkHandler.registerPayloads(event);
 
         // ===================================================================
-        // MOB/ITEM CHANNELS (1-4) - see ChannelId enum
+        // P2: Domain-specific handlers (delegated registration)
         // ===================================================================
-
-        event.registrar(MOB_STATS.asString()).playToServer(
-                nn(UpdateMobStatsPayload.TYPE),
-                nn(UpdateMobStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleMobData, PayloadLimits.EDITOR)
-        );
-        event.registrar(WEAPON_LEGACY.asString()).playToServer(
-                nn(UpdateWeaponPayload.TYPE),
-                nn(UpdateWeaponPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleWeaponData, PayloadLimits.EDITOR)
-        );
-        event.registrar(EQUIP_MOB.asString()).playToServer(
-                nn(EquipMobPayload.TYPE),
-                nn(EquipMobPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleEquipData, PayloadLimits.EDITOR)
-        );
-        event.registrar(MODIFY_ITEM.asString()).playToServer(
-                nn(ModifyItemPayload.TYPE),
-                nn(ModifyItemPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleItemModification, PayloadLimits.EDITOR)
-        );
-        // WEAPON_STATS_NBT removed - uses same payload type as WEAPON_STATS_V2
-        // Use WEAPON_STATS_V2 channel for all weapon stats communication
+        MobItemNetworkHandler.INSTANCE.registerPayloads(event);
+        ConfigNetworkHandler.INSTANCE.registerPayloads(event);
+        EnduranceNetworkHandler.INSTANCE.registerPayloads(event);
+        PartyNetworkHandler.INSTANCE.registerPayloads(event);
+        ShieldNetworkHandler.INSTANCE.registerPayloads(event);
+        ArenaNetworkHandler.INSTANCE.registerPayloads(event);
+        PortalNetworkHandler.INSTANCE.registerPayloads(event);
+        HologramNetworkHandler.INSTANCE.registerPayloads(event);
+        CloneNetworkHandler.INSTANCE.registerPayloads(event);
 
         // ===================================================================
-        // CONFIG/TELEMETRY CHANNELS (36-45) - see ChannelId enum
+        // REMAINING INLINE CHANNELS (not in domain handlers)
         // ===================================================================
 
-        event.registrar(UPDATE_ARMOR.asString()).playToServer(
-                nn(UpdateArmorPayload.TYPE),
-                nn(UpdateArmorPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleArmorData, PayloadLimits.EDITOR)
-        );
-        event.registrar(RANGED_WEAPON_STATS.asString()).playToServer(
-                nn(RangedWeaponStatsPayload.TYPE),
-                nn(RangedWeaponStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleRangedWeaponData, PayloadLimits.EDITOR)
-        );
-        event.registrar(ARMOR_STATS.asString()).playToServer(
-                nn(ArmorStatsPayload.TYPE),
-                nn(ArmorStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleArmorStatsDataV2, PayloadLimits.EDITOR)
-        );
-        event.registrar(GLOBAL_CONFIG_SYNC.asString()).playToClient(
-                nn(GlobalConfigSyncPayload.TYPE),
-                nn(GlobalConfigSyncPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, payload::applyToClientConfigs);
-                    }
-                }, PayloadLimits.SYNC_LARGE)
-        );
-        event.registrar(RECIPE_SYNC.asString()).playToServer(
-                nn(RecipeSyncPayload.TYPE),
-                nn(RecipeSyncPayload.STREAM_CODEC),
-                validated(ConfigNetworkHandler::handleRecipeSync, PayloadLimits.XLARGE)
-        );
-        event.registrar(RECIPE_CLIENT_SYNC.asString()).playToClient(
-                nn(RecipeClientSyncPayload.TYPE),
-                nn(RecipeClientSyncPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () -> {
-                            var operation = payload.operation();
-                            var recipes = payload.recipes();
-                            boolean firstSyncAll = true;
-                            for (var recipe : recipes) {
-                                switch (operation) {
-                                    case ADD -> com.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
-                                    case DELETE -> com.devmod.recipe.RecipeConfigManager.removeRecipeClientOnly(recipe.id());
-                                    case SYNC_ALL -> {
-                                        if (firstSyncAll) {
-                                            com.devmod.recipe.RecipeConfigManager.clearClientRecipes();
-                                            firstSyncAll = false;
-                                        }
-                                        com.devmod.recipe.RecipeConfigManager.addRecipeClientOnly(recipe);
-                                    }
-                                }
-                            }
-                        });
-                    }
-                }, PayloadLimits.SYNC_LARGE)
-        );
-        event.registrar(TELEMETRY_BATCH.asString()).playToServer(
-                nn(TelemetryBatchPayload.TYPE),
-                nn(TelemetryBatchPayload.STREAM_CODEC),
-                validated(ConfigNetworkHandler::handleTelemetryBatch, PayloadLimits.TELEMETRY)
-        );
-        event.registrar(EDITOR_APPLY_CONFIRM.asString()).playToClient(
-                nn(EditorApplyConfirmPayload.TYPE),
-                nn(EditorApplyConfirmPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleEditorApplyConfirm(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
         event.registrar(CONTRACT_SYNC.asString()).playToClient(
                 nn(com.devmod.endurance.contracts.ContractSyncPayload.TYPE),
                 nn(com.devmod.endurance.contracts.ContractSyncPayload.STREAM_CODEC),
@@ -431,153 +351,6 @@ public class NetworkHandler {
                     }
                 }, PayloadLimits.LARGE)
         );
-
-        // ===================================================================
-        // ITEM STATS CHANNELS (46-55) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(USABLE_STATS.asString()).playToServer(
-                nn(UsableStatsPayload.TYPE),
-                nn(UsableStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleUsableStatsData, PayloadLimits.EDITOR)
-        );
-        event.registrar(FOOD_STATS.asString()).playToServer(
-                nn(FoodStatsPayload.TYPE),
-                nn(FoodStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleFoodStatsData, PayloadLimits.EDITOR)
-        );
-        event.registrar(FUEL_STATS.asString()).playToServer(
-                nn(FuelStatsPayload.TYPE),
-                nn(FuelStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleFuelStatsData, PayloadLimits.EDITOR)
-        );
-        event.registrar(WEAPON_STATS_V2.asString()).playToServer(
-                nn(WeaponStatsPayload.TYPE),
-                nn(WeaponStatsPayload.STREAM_CODEC),
-                validated(MobItemNetworkHandler::handleWeaponStatsDataV2, PayloadLimits.EDITOR)
-        );
-
-        // ===================================================================
-        // ENDURANCE QUEST CHANNELS (5-25) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(START_QUEST.asString()).playToServer(
-                nn(StartQuestPayload.TYPE),
-                nn(StartQuestPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleStartEnduranceQuest, PayloadLimits.SMALL)
-        );
-        event.registrar(KIT_SYNC.asString()).playToServer(
-                nn(KitSyncPayload.TYPE),
-                nn(KitSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleKitSync, PayloadLimits.XLARGE)
-        );
-        event.registrar(KIT_SYNC_CONFIRM.asString()).playToClient(
-                nn(KitSyncConfirmPayload.TYPE),
-                nn(KitSyncConfirmPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleKitSyncConfirm(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-        event.registrar(QUEST_ACTION.asString()).playToServer(
-                nn(QuestActionPayload.TYPE),
-                nn(QuestActionPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleQuestAction, PayloadLimits.QUEST_ACTION)
-        );
-        event.registrar(QUEST_SYNC.asString()).playToClient(
-                nn(QuestSyncPayload.TYPE),
-                nn(QuestSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleQuestSync, PayloadLimits.LARGE)
-        );
-        event.registrar(SHOP_PURCHASE.asString()).playToServer(
-                nn(ShopPurchasePayload.TYPE),
-                nn(ShopPurchasePayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleShopPurchase, PayloadLimits.SMALL)
-        );
-        event.registrar(SHOP_SYNC.asString()).playToClient(
-                nn(ShopSyncPayload.TYPE),
-                nn(ShopSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleShopSync, PayloadLimits.SYNC_MEDIUM)
-        );
-        event.registrar(REQUEST_SHOP_SYNC.asString()).playToServer(
-                nn(RequestShopSyncPayload.TYPE),
-                nn(RequestShopSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleRequestShopSync, PayloadLimits.SMALL)
-        );
-        event.registrar(MOB_CONFIG_CONFIRM.asString()).playToClient(
-                nn(MobConfigConfirmPayload.TYPE),
-                nn(MobConfigConfirmPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleMobConfigConfirm(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-        event.registrar(QUEST_DEATH.asString()).playToClient(
-                nn(QuestDeathPayload.TYPE),
-                nn(QuestDeathPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleQuestDeath, PayloadLimits.SMALL)
-        );
-        event.registrar(PERK_CHOICES.asString()).playToClient(
-                nn(PerkChoicesPayload.TYPE),
-                nn(PerkChoicesPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handlePerkChoices, PayloadLimits.SMALL)
-        );
-        event.registrar(PERK_SELECTION.asString()).playToServer(
-                nn(PerkSelectionPayload.TYPE),
-                nn(PerkSelectionPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handlePerkSelection, PayloadLimits.SMALL)
-        );
-        event.registrar(QUEST_COMPLETION.asString()).playToClient(
-                nn(QuestCompletionPayload.TYPE),
-                nn(QuestCompletionPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleQuestCompletion, PayloadLimits.MEDIUM)
-        );
-        event.registrar(PERSONAL_RECORDS_SYNC.asString()).playToClient(
-                nn(PersonalRecordsSyncPayload.TYPE),
-                nn(PersonalRecordsSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handlePersonalRecordsSync, PayloadLimits.MEDIUM)
-        );
-        event.registrar(REQUEST_PERSONAL_RECORDS.asString()).playToServer(
-                nn(RequestPersonalRecordsPayload.TYPE),
-                nn(RequestPersonalRecordsPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleRequestPersonalRecords, PayloadLimits.SMALL)
-        );
-        event.registrar(BOSS_ALERT.asString()).playToClient(
-                nn(BossAlertPayload.TYPE),
-                nn(BossAlertPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleBossAlert(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-        // REQUEST_ARENA_SUGGESTIONS (19): Client -> Server request for arena suggestions
-        event.registrar(REQUEST_ARENA_SUGGESTIONS.asString()).playToServer(
-                nn(RequestArenaSuggestionsPayload.TYPE),
-                nn(RequestArenaSuggestionsPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleRequestArenaSuggestions, PayloadLimits.SMALL)
-        );
-        // ARENA_SUGGESTIONS (20): Server -> Client arena suggestions response
-        event.registrar(ARENA_SUGGESTIONS.asString()).playToClient(
-                nn(ArenaSuggestionsPayload.TYPE),
-                nn(ArenaSuggestionsPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleArenaSuggestions, PayloadLimits.SYNC_MEDIUM)
-        );
-        event.registrar(TENSION_UPDATE.asString()).playToClient(
-                nn(TensionUpdatePayload.TYPE),
-                nn(TensionUpdatePayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleTensionUpdate(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
         event.registrar(COMBAT_FLOW_SYNC.asString()).playToClient(
                 nn(CombatFlowSyncPayload.TYPE),
                 nn(CombatFlowSyncPayload.STREAM_CODEC),
@@ -587,99 +360,6 @@ public class NetworkHandler {
                             withClientHooks(hooks -> hooks.handleCombatFlowSync(payload)));
                     }
                 }, PayloadLimits.SMALL)
-        );
-        event.registrar(INSTANCE_LOADING.asString()).playToClient(
-                nn(InstanceLoadingPayload.TYPE),
-                nn(InstanceLoadingPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleInstanceLoading, PayloadLimits.SMALL)
-        );
-        event.registrar(WAVE_DIRECTIVE_CHOICES.asString()).playToClient(
-                nn(WaveDirectiveChoicesPayload.TYPE),
-                nn(WaveDirectiveChoicesPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleWaveDirectiveChoices, PayloadLimits.SMALL)
-        );
-        event.registrar(WAVE_DIRECTIVE_SELECTION.asString()).playToServer(
-                nn(WaveDirectiveSelectionPayload.TYPE),
-                nn(WaveDirectiveSelectionPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleWaveDirectiveSelection, PayloadLimits.SMALL)
-        );
-        // ENDURANCE_MOB_CONFIG_SYNC (53): Client -> Server mob pool config changes
-        event.registrar(ENDURANCE_MOB_CONFIG_SYNC.asString()).playToServer(
-                nn(EnduranceMobConfigSyncPayload.TYPE),
-                nn(EnduranceMobConfigSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleMobConfigSync, PayloadLimits.MEDIUM)
-        );
-        // REQUEST_MOB_POOL_CONFIG (131): Client -> Server request for mob pool config
-        event.registrar(REQUEST_MOB_POOL_CONFIG.asString()).playToServer(
-                nn(RequestMobPoolConfigPayload.TYPE),
-                nn(RequestMobPoolConfigPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleRequestMobPoolConfig, PayloadLimits.SMALL)
-        );
-        // MOB_POOL_CONFIG_SYNC (132): Server -> Client mob pool config response
-        event.registrar(MOB_POOL_CONFIG_SYNC.asString()).playToClient(
-                nn(MobPoolConfigSyncPayload.TYPE),
-                nn(MobPoolConfigSyncPayload.STREAM_CODEC),
-                validated(EnduranceNetworkHandler::handleMobPoolConfigSync, PayloadLimits.SYNC_MEDIUM)
-        );
-
-        // ===================================================================
-        // PARTY SYSTEM CHANNELS (26-33) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(PARTY_ACTION.asString()).playToServer(
-                nn(PartyActionPayload.TYPE),
-                nn(PartyActionPayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handlePartyAction, PayloadLimits.SMALL)
-        );
-        event.registrar(PARTY_SYNC.asString()).playToClient(
-                nn(PartySyncPayload.TYPE),
-                nn(PartySyncPayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handlePartySync, PayloadLimits.SMALL)
-        );
-        event.registrar(QUEST_SEQUENCE.asString()).playToClient(
-                nn(QuestSequencePayload.TYPE),
-                nn(QuestSequencePayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handleQuestSequence, PayloadLimits.SMALL)
-        );
-        event.registrar(NAMED_INVITE.asString()).playToServer(
-                nn(NamedInvitePayload.TYPE),
-                nn(NamedInvitePayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handleNamedInvite, PayloadLimits.SMALL)
-        );
-        event.registrar(ARRIVAL_CONFIRM.asString()).playToServer(
-                nn(ArrivalConfirmPayload.TYPE),
-                nn(ArrivalConfirmPayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handleArrivalConfirm, PayloadLimits.SMALL)
-        );
-        event.registrar(CANCEL_SEQUENCE.asString()).playToServer(
-                nn(CancelSequencePayload.TYPE),
-                nn(CancelSequencePayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handleCancelSequence, PayloadLimits.SMALL)
-        );
-        event.registrar(INVITE_RESPONSE.asString()).playToServer(
-                nn(InviteResponsePayload.TYPE),
-                nn(InviteResponsePayload.STREAM_CODEC),
-                validated(PartyNetworkHandler::handleInviteResponse, PayloadLimits.SMALL)
-        );
-
-        // ===================================================================
-        // SHIELD VISUAL EFFECTS CHANNELS (56-58) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(SHIELD_STATE.asString()).playToClient(
-                nn(ShieldStatePayload.TYPE),
-                nn(ShieldStatePayload.STREAM_CODEC),
-                validated(ShieldNetworkHandler::handleShieldState, PayloadLimits.SMALL)
-        );
-        event.registrar(SHIELD_IMPACT.asString()).playToClient(
-                nn(ShieldImpactPayload.TYPE),
-                nn(ShieldImpactPayload.STREAM_CODEC),
-                validated(ShieldNetworkHandler::handleShieldImpact, PayloadLimits.SMALL)
-        );
-        event.registrar(SHIELD_SHATTER.asString()).playToClient(
-                nn(ShieldShatterPayload.TYPE),
-                nn(ShieldShatterPayload.STREAM_CODEC),
-                validated(ShieldNetworkHandler::handleShieldShatter, PayloadLimits.SMALL)
         );
         event.registrar(IMPACT_SYNC.asString()).playToClient(
                 nn(ImpactSyncPayload.TYPE),
@@ -706,41 +386,6 @@ public class NetworkHandler {
                             withClientHooks(hooks -> hooks.handleLvcSync(payload)));
                     }
                 }, PayloadLimits.SMALL)
-        );
-
-        // ===================================================================
-        // ARENA CHANNELS (76-85) - see ChannelId enum
-        // ===================================================================
-
-        event.registrar(BUILD_PROGRESS.asString()).playToClient(
-                nn(BuildProgressPayload.TYPE),
-                nn(BuildProgressPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleBuildProgress(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-        event.registrar(ENVIRONMENT_SYNC.asString()).playToClient(
-                nn(EnvironmentSyncPayload.TYPE),
-                nn(EnvironmentSyncPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleEnvironmentSync(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-        event.registrar(ZONE_DEBUG.asString()).playToClient(
-                nn(ZoneDebugPayload.TYPE),
-                nn(ZoneDebugPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleZoneDebug(payload)));
-                    }
-                }, PayloadLimits.LARGE)
         );
 
         // ===================================================================
@@ -925,167 +570,6 @@ public class NetworkHandler {
         com.devmod.runtime.network.NexusNetworkHandler.INSTANCE.registerPayloads(event);
 
         // ===================================================================
-        // PORTAL CHANNELS (150-159)
-        // ===================================================================
-        event.registrar(PORTAL_STATE.asString()).playToClient(
-                nn(PortalStatePayload.TYPE),
-                nn(PortalStatePayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handlePortalState(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Portal preview request (client -> server)
-        event.registrar(PORTAL_PREVIEW_REQUEST.asString()).playToServer(
-                nn(PortalPreviewRequestPayload.TYPE),
-                nn(PortalPreviewRequestPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handlePortalPreviewRequest(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Portal preview response (server -> client)
-        event.registrar(PORTAL_PREVIEW.asString()).playToClient(
-                nn(PortalPreviewPayload.TYPE),
-                nn(PortalPreviewPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handlePortalPreview(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // ===================================================================
-        // HOLOGRAM CHANNELS (160-169)
-        // ===================================================================
-
-        // Hologram config (client -> server)
-        event.registrar(HOLOGRAM_CONFIG.asString()).playToServer(
-                nn(HologramConfigPayload.TYPE),
-                nn(HologramConfigPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleHologramConfig(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Hologram open screen (server -> client) - 3D Projector
-        event.registrar(HOLOGRAM_OPEN_SCREEN.asString()).playToClient(
-                nn(HologramOpenScreenPayload.TYPE),
-                nn(HologramOpenScreenPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleHologramOpenScreen(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Hologram Editor (TextDisplay Builder System) - Channels 162-165
-
-        // Open hologram editor (server -> client)
-        event.registrar(HOLOGRAM_EDITOR_OPEN.asString()).playToClient(
-                nn(OpenHologramEditorPayload.TYPE),
-                nn(OpenHologramEditorPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            com.devmod.client.hologram.HologramClientHandler.handleOpenEditor(payload));
-                    }
-                }, PayloadLimits.MEDIUM)
-        );
-
-        // Save hologram (client -> server)
-        event.registrar(HOLOGRAM_SAVE.asString()).playToServer(
-                nn(SaveHologramPayload.TYPE),
-                nn(SaveHologramPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleHologramSave(player, payload);
-                    }
-                }, PayloadLimits.MEDIUM)
-        );
-
-        // Delete hologram (client -> server)
-        event.registrar(HOLOGRAM_DELETE.asString()).playToServer(
-                nn(DeleteHologramPayload.TYPE),
-                nn(DeleteHologramPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleHologramDelete(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Hologram sync (server -> client) - broadcast updates
-        event.registrar(HOLOGRAM_SYNC.asString()).playToClient(
-                nn(HologramSyncPayload.TYPE),
-                nn(HologramSyncPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            com.devmod.client.hologram.HologramClientHandler.handleSync(payload));
-                    }
-                }, PayloadLimits.MEDIUM)
-        );
-
-        // ===================================================================
-        // CLONE MODULE CHANNELS (170-179)
-        // ===================================================================
-
-        // Telepad config (client -> server)
-        event.registrar(TELEPAD_CONFIG.asString()).playToServer(
-                nn(TelepadConfigPayload.TYPE),
-                nn(TelepadConfigPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleTelepadConfig(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Telepad open screen (server -> client)
-        event.registrar(TELEPAD_OPEN_SCREEN.asString()).playToClient(
-                nn(TelepadOpenScreenPayload.TYPE),
-                nn(TelepadOpenScreenPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (FMLEnvironment.dist == Dist.CLIENT) {
-                        enqueueWork(context, () ->
-                            withClientHooks(hooks -> hooks.handleTelepadOpenScreen(payload)));
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Mannequin rotation (client -> server)
-        event.registrar(MANNEQUIN_ROTATION.asString()).playToServer(
-                nn(MannequinRotationPayload.TYPE),
-                nn(MannequinRotationPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleMannequinRotation(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // Mannequin skin (client -> server)
-        event.registrar(MANNEQUIN_SKIN.asString()).playToServer(
-                nn(MannequinSkinPayload.TYPE),
-                nn(MannequinSkinPayload.STREAM_CODEC),
-                validated((payload, context) -> {
-                    if (context.player() instanceof ServerPlayer player) {
-                        handleMannequinSkin(player, payload);
-                    }
-                }, PayloadLimits.SMALL)
-        );
-
-        // ===================================================================
         // NPC SYSTEM CHANNELS (180-189) - Delegated to domain registrar
         // ===================================================================
         com.devmod.npc.network.NpcNetworkHandler.INSTANCE.registerPayloads(event);
@@ -1194,28 +678,28 @@ public class NetworkHandler {
         EnduranceNetworkHandler.sendInstanceLoadingHide(player);
     }
 
-    /**
+    /*
      * Send party sync to a specific player.
      */
     public static void sendPartySyncToPlayer(ServerPlayer player) {
         PartyNetworkHandler.sendPartySyncToPlayer(player);
     }
 
-    /**
+    /*
      * Sync party state to all members.
      */
     public static void syncPartyToAllMembers(MinecraftServer server, UUID partyId) {
         PartyNetworkHandler.syncPartyToAllMembers(server, partyId);
     }
 
-    /**
+    /*
      * Send stamina sync to a player.
      */
     public static void sendStaminaSync(ServerPlayer player, float currentStamina, float maxStamina) {
         AbilityNetworkHandler.sendStaminaSync(player, currentStamina, maxStamina);
     }
 
-    /**
+    /*
      * Send LVC (Last Value Cache) telemetry sync to a player.
      * Contains real-time combat stats for HUD display.
      */
@@ -1224,167 +708,39 @@ public class NetworkHandler {
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
-    /**
+    /*
      * Send environment sync to a player.
      * Used to sync frozen time and biome overrides for arena dimensions.
      */
     public static void sendEnvironmentSync(ServerPlayer player, EnvironmentSyncPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+        ArenaNetworkHandler.sendEnvironmentSync(player, payload);
     }
 
-    /**
+    /*
      * Send zone debug data to a player.
      * Used to enable/disable zone boundary visualization on client.
      */
     public static void sendZoneDebug(ServerPlayer player, ZoneDebugPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+        ArenaNetworkHandler.sendZoneDebug(player, payload);
     }
 
-    /**
+    /*
      * Send portal state sync to a player.
      * Used to sync portal teleportation overlay state.
      */
     public static void sendPortalState(ServerPlayer player, PortalStatePayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+        PortalNetworkHandler.sendPortalState(player, payload);
     }
 
-    /**
+    /*
      * Send portal preview to a player.
      * Used to show destination info when looking at a portal.
      */
     public static void sendPortalPreview(ServerPlayer player, PortalPreviewPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
-    }
-
-    /**
-     * Handle portal preview request from a client.
-     * Looks up the portal data and sends back destination information.
-     */
-    private static void handlePortalPreviewRequest(ServerPlayer player, PortalPreviewRequestPayload request) {
-        var level = Objects.requireNonNull(player.serverLevel(), "serverLevel");
-        var registry = com.devmod.portal.PortalRegistry.get(level);
-        var blockState = level.getBlockState(request.portalPos());
-
-        // Verify the block is actually a portal
-        if (!(blockState.getBlock() instanceof com.devmod.portal.block.CustomPortalBlock)) {
-            return;
-        }
-
-        var color = Objects.requireNonNull(
-            blockState.getValue(Objects.requireNonNull(com.devmod.portal.block.CustomPortalBlock.COLOR)),
-            "portal color"
-        );
-
-        // Find the portal data
-        var portalOpt = registry.findPortalContaining(level, request.portalPos(), color);
-        if (portalOpt.isEmpty()) {
-            return;
-        }
-
-        var portal = portalOpt.get();
-
-        // Build the preview response
-        PortalPreviewPayload response;
-
-        if (portal.hasFixedDestination()) {
-            // Fixed destination (Nexus zone portal)
-            String zoneName = Objects.requireNonNull(
-                getFixedDestinationName(player.getServer(), portal), "zoneName");
-            String dimName = Objects.requireNonNull(
-                getDimensionDisplayName(portal.fixedDestinationDimension().orElse(null)), "dimName");
-            response = PortalPreviewPayload.forFixedDestination(
-                request.portalPos(), zoneName, dimName, color);
-        } else if (portal.isLinked()) {
-            // Linked portal
-            var linkedOpt = portal.linkedPortalId().flatMap(registry::get);
-            if (linkedOpt.isEmpty()) {
-                return;
-            }
-            var linked = linkedOpt.get();
-            String ownerName = Objects.requireNonNull(getLinkedPortalName(linked), "ownerName");
-            String dimName = Objects.requireNonNull(
-                getDimensionDisplayName(linked.dimension().orElse(null)), "dimName");
-            int distance = calculateDistance(portal, linked);
-            response = PortalPreviewPayload.forLinkedPortal(
-                request.portalPos(), ownerName, dimName, distance, color);
-        } else {
-            // Unlinked portal - no preview
-            return;
-        }
-
-        sendPortalPreview(player, response);
-    }
-
-    /**
-     * Get display name for a fixed destination portal (Nexus zone).
-     */
-    private static String getFixedDestinationName(@Nullable MinecraftServer server,
-                                                  com.devmod.portal.PortalData portal) {
-        // Try to determine zone from destination position
-        var destPos = portal.fixedDestination().orElse(null);
-        if (server != null && destPos != null) {
-            var hubOrigin = Objects.requireNonNull(
-                com.devmod.runtime.NexusDimensionManager.getHubOrigin(), "hubOrigin");
-            var zone = com.devmod.runtime.NexusPortalManager.INSTANCE.getZoneAtPosition(
-                server, hubOrigin, destPos);
-            if (zone != null) {
-                return zone.displayName();
-            }
-        }
-        return "Portal Destination";
+        PortalNetworkHandler.sendPortalPreview(player, payload);
     }
 
     /*
-     * Get display name for a linked portal.
-     */
-    private static String getLinkedPortalName(com.devmod.portal.PortalData portal) {
-        var creatorOpt = portal.creator();
-        if (creatorOpt.isPresent()) {
-            // Try to get player name - for now just show "Linked Portal"
-            return "Linked Portal";
-        }
-        return "Linked Portal";
-    }
-
-    /*
-     * Get display name for a dimension.
-     */
-    private static String getDimensionDisplayName(@Nullable net.minecraft.resources.ResourceLocation dim) {
-        if (dim == null) {
-            return "Unknown";
-        }
-        // Format dimension ID nicely
-        String path = dim.getPath();
-        if (path.equals("overworld")) return "Overworld";
-        if (path.equals("the_nether")) return "Nether";
-        if (path.equals("the_end")) return "The End";
-        if (path.equals("nexus")) return "Nexus";
-        // Capitalize first letter
-        return path.substring(0, 1).toUpperCase(Locale.ROOT) + path.substring(1).replace("_", " ");
-    }
-
-    /*
-     * Calculate distance between two portals.
-     * Returns -1 if cross-dimension.
-     */
-    private static int calculateDistance(com.devmod.portal.PortalData from, com.devmod.portal.PortalData to) {
-        Objects.requireNonNull(to, "to");
-        if (from.isInterDimensional(to)) {
-            return -1;
-        }
-        var fromPos = from.position().orElse(null);
-        var toPos = to.position().orElse(null);
-        if (fromPos == null || toPos == null) {
-            return -1;
-        }
-        return (int) Math.sqrt(fromPos.distSqr(toPos));
-    }
-
-    /**
      * Send impact sync data to a player for HUD display.
      * Called from DamageHandler when a player deals damage.
      */
@@ -1393,7 +749,7 @@ public class NetworkHandler {
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
     }
 
-    /**
+    /*
      * Send season pass data to a player.
      */
     public static void sendSeasonPassSync(ServerPlayer player) {
@@ -1416,250 +772,18 @@ public class NetworkHandler {
         });
     }
 
-    /**
+    /*
      * Send hologram open screen payload to a player.
      */
     public static void sendHologramOpenScreen(ServerPlayer player, HologramOpenScreenPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
+        HologramNetworkHandler.sendHologramOpenScreen(player, payload);
     }
 
     /*
-     * Handle hologram configuration from client.
-     */
-    private static void handleHologramConfig(ServerPlayer player, HologramConfigPayload payload) {
-        var level = player.serverLevel();
-        var pos = Objects.requireNonNull(payload.pos(), "pos");
-
-        // Validate distance (max 8 blocks)
-        if (player.blockPosition().distManhattan(pos) > 8) {
-            return;
-        }
-
-        var blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof com.devmod.hologram.block.entity.HologramProjectorBlockEntity projector) {
-            // Apply settings
-            if (projector.getScanSize() != payload.scanSize()) {
-                projector.setScanSize(payload.scanSize());
-            }
-            if (projector.getBlockSize() != payload.blockSize()) {
-                projector.setBlockSize(payload.blockSize());
-            }
-            if (projector.isRotationEnabled() != payload.rotationEnabled()) {
-                projector.toggleRotation();
-            }
-            if (projector.isTransparentMode() != payload.transparentMode()) {
-                projector.toggleTransparency();
-            }
-
-            // Force rescan if requested
-            if (payload.rescan()) {
-                projector.setupScanRegion();
-            }
-        }
-    }
-
-    /**
      * Send telepad open screen payload to a player.
      */
     public static void sendTelepadOpenScreen(ServerPlayer player, TelepadOpenScreenPayload payload) {
-        net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
-            Objects.requireNonNull(player), Objects.requireNonNull(payload));
-    }
-
-    /*
-     * Handle hologram save from client.
-     */
-    private static void handleHologramSave(ServerPlayer player, SaveHologramPayload payload) {
-        var server = player.getServer();
-        if (server == null) return;
-
-        // Permission check
-        if (!player.hasPermissions(2)) {
-            return;
-        }
-
-        var registry = com.devmod.hologram.data.HologramRegistry.get(server);
-        var existingOpt = registry.getHologram(payload.hologramId());
-        if (existingOpt.isEmpty()) {
-            return;
-        }
-
-        var existing = existingOpt.get();
-
-        // Optimistic locking check
-        if (existing.revision() != payload.expectedRevision()) {
-            player.displayClientMessage(
-                Objects.requireNonNull(
-                    net.minecraft.network.chat.Component.translatable("message.devmod.hologram.error.revision_conflict")),
-                true
-            );
-            return;
-        }
-
-        // Update hologram using the withUpdate method
-        var updated = Objects.requireNonNull(
-            existing.withUpdate(payload.lines(), payload.style(), payload.options()), "updated");
-
-        var hologramId = Objects.requireNonNull(existing.id(), "hologramId");
-        registry.updateHologram(hologramId, updated, payload.expectedRevision());
-
-        // Update entity: despawn and respawn
-        var serverLevel = Objects.requireNonNull(player.serverLevel(), "serverLevel");
-        com.devmod.hologram.runtime.HologramManager.INSTANCE.despawnHologram(serverLevel, hologramId);
-        com.devmod.hologram.runtime.HologramManager.INSTANCE.spawnHologram(serverLevel, updated);
-
-        // Feedback
-        player.displayClientMessage(
-            Objects.requireNonNull(
-                net.minecraft.network.chat.Component.translatable("message.devmod.hologram.saved")),
-            true
-        );
-    }
-
-    /*
-     * Handle hologram delete from client.
-     */
-    private static void handleHologramDelete(ServerPlayer player, DeleteHologramPayload payload) {
-        var server = player.getServer();
-        if (server == null) return;
-
-        // Permission check
-        if (!player.hasPermissions(2)) {
-            return;
-        }
-
-        var registry = com.devmod.hologram.data.HologramRegistry.get(server);
-        var existingOpt = registry.getHologram(payload.hologramId());
-        if (existingOpt.isEmpty()) {
-            return;
-        }
-
-        var existing = existingOpt.get();
-
-        // Check if locked
-        if (existing.options().locked()) {
-            player.displayClientMessage(
-                Objects.requireNonNull(
-                    net.minecraft.network.chat.Component.translatable("message.devmod.hologram.error.locked")),
-                true
-            );
-            return;
-        }
-
-        // Despawn entity
-        var serverLevel = Objects.requireNonNull(player.serverLevel(), "serverLevel");
-        com.devmod.hologram.runtime.HologramManager.INSTANCE.despawnHologram(serverLevel, payload.hologramId());
-
-        // Remove from registry
-        registry.deleteHologram(payload.hologramId());
-
-        // Feedback
-        player.displayClientMessage(
-            Objects.requireNonNull(
-                net.minecraft.network.chat.Component.translatable("message.devmod.hologram.removed")),
-            true
-        );
-    }
-
-    /*
-     * Handle telepad configuration from client.
-     */
-    private static void handleTelepadConfig(ServerPlayer player, TelepadConfigPayload payload) {
-        var level = player.serverLevel();
-        var pos = Objects.requireNonNull(payload.pos(), "pos");
-
-        // Validate distance (max 8 blocks)
-        if (player.blockPosition().distManhattan(pos) > 8) {
-            return;
-        }
-
-        var blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof com.devmod.clone.block.entity.TelepadBlockEntity telepad) {
-            telepad.setTelepadName(payload.telepadName());
-        }
-    }
-
-    /*
-     * Handle neurocell rotation from client.
-     * Updates the rotation angle when player scrolls while looking at a Neurocell in MANUAL mode.
-     * Supports all Neurocell types: Mannequin, Standard, Large, and Item.
-     */
-    private static void handleMannequinRotation(ServerPlayer player, MannequinRotationPayload payload) {
-        var level = player.serverLevel();
-        var pos = Objects.requireNonNull(payload.pos(), "pos");
-
-        // Validate distance (max 8 blocks)
-        if (player.blockPosition().distManhattan(pos) > 8) {
-            return;
-        }
-
-        var blockEntity = level.getBlockEntity(pos);
-
-        // Handle NeurocellMannequin
-        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellMannequinBlockEntity mannequin) {
-            if (mannequin.getRotationMode() == com.devmod.clone.block.entity.NeurocellMannequinBlockEntity.RotationMode.MANUAL) {
-                float newAngle = normalizeAngle(mannequin.getRotationAngle() + payload.rotationDelta());
-                mannequin.setRotationAngle(newAngle);
-            }
-            return;
-        }
-
-        // Handle standard Neurocell
-        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellBlockEntity neurocell) {
-            if (neurocell.getRotationMode() == com.devmod.clone.block.entity.NeurocellBlockEntity.RotationMode.MANUAL) {
-                float newAngle = normalizeAngle(neurocell.getRotationAngle() + payload.rotationDelta());
-                neurocell.setRotationAngle(newAngle);
-            }
-            return;
-        }
-
-        // Handle large Neurocell (NeurocellL)
-        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellLBlockEntity neurocellL) {
-            if (neurocellL.getRotationMode() == com.devmod.clone.block.entity.NeurocellLBlockEntity.RotationMode.MANUAL) {
-                float newAngle = normalizeAngle(neurocellL.getRotationAngle() + payload.rotationDelta());
-                neurocellL.setRotationAngle(newAngle);
-            }
-            return;
-        }
-
-        // Handle NeurocellItem
-        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellItemBlockEntity neurocellItem) {
-            if (neurocellItem.getRotationMode() == com.devmod.clone.block.entity.NeurocellItemBlockEntity.RotationMode.MANUAL) {
-                float newAngle = normalizeAngle(neurocellItem.getRotationAngle() + payload.rotationDelta());
-                neurocellItem.setRotationAngle(newAngle);
-            }
-        }
-    }
-
-    /**
-     * Normalize angle to 0-360 range.
-     */
-    private static float normalizeAngle(float angle) {
-        angle = angle % 360.0f;
-        if (angle < 0) {
-            angle += 360.0f;
-        }
-        return angle;
-    }
-
-    /*
-     * Handle mannequin skin update from client.
-     * Updates the skin UUID for the mannequin.
-     */
-    private static void handleMannequinSkin(ServerPlayer player, MannequinSkinPayload payload) {
-        var level = player.serverLevel();
-        var pos = Objects.requireNonNull(payload.pos(), "pos");
-
-        // Validate distance (max 8 blocks)
-        if (player.blockPosition().distManhattan(pos) > 8) {
-            return;
-        }
-
-        var blockEntity = level.getBlockEntity(pos);
-        if (blockEntity instanceof com.devmod.clone.block.entity.NeurocellMannequinBlockEntity mannequin) {
-            mannequin.setSkinUUID(payload.skinUUID());
-        }
+        CloneNetworkHandler.sendTelepadOpenScreen(player, payload);
     }
 
     private static void enqueueWork(IPayloadContext context, Runnable work) {

@@ -23,7 +23,8 @@ public class FoundryConnectedModelRegistry {
   /* Predicates */
 
   /** Default state predicate, compares the blocks for equality */
-  private static final BiPredicate<BlockState,BlockState> BLOCK_CONNECTION_PREDICATE = (s1, s2) -> s1.getBlock() == s2.getBlock();
+  private static final BiPredicate<BlockState,BlockState> BLOCK_CONNECTION_PREDICATE =
+      FoundryConnectedModelRegistry::blockConnectionPredicate;
   /** Map of name to connection type. Allows registering custom logic to connect two blocks together, used for glass panes for instance */
   private static final Map<String,BiPredicate<BlockState,BlockState>> CONNECTION_PREDICATES = new HashMap<>();
 
@@ -68,6 +69,10 @@ public class FoundryConnectedModelRegistry {
    */
   private static boolean safeGet(BlockState state, BooleanProperty prop) {
     return state.hasProperty(prop) && state.getValue(prop);
+  }
+
+  private static boolean blockConnectionPredicate(BlockState state, BlockState neighbor) {
+    return state.getBlock() == neighbor.getBlock();
   }
 
   static {

@@ -21,9 +21,13 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 
 import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
-public class MutatorSystem {
+public class MutatorSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutatorSystem.class);
 
     public static final MutatorSystem INSTANCE = new MutatorSystem();
@@ -647,5 +651,46 @@ public class MutatorSystem {
         return allMutators.values().stream()
             .filter(m -> m.getCategory() == category)
             .toList();
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        UUID questId = ctx.questId();
+
+        // Only create session if not already exists (shared per questId)
+        if (getSession(questId).isEmpty()) {
+            MutatorSession session = createSession(questId, 3, 1, ctx.policy());
+            EnduranceEventCombat.putMutatorSession(questId, session);
+            LOGGER.debug("[MutatorSystem] Created session for quest {} via event bus", questId);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        if (!event.cleanupShared()) {
+            return; // Only cleanup on last player
+        }
+
+        UUID questId = event.questId();
+        MutatorSession session = endSession(questId);
+        EnduranceEventCombat.removeMutatorSession(questId);
+
+        if (session != null) {
+            LOGGER.debug("[MutatorSystem] Ended session for quest {} via event bus ({} mutators)",
+                questId, session.getActiveMutatorCount());
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 500; // Medium priority - after core tracking, before rewards
+    }
+
+    @Override
+    public String getListenerName() {
+        return "MutatorSystem";
     }
 }

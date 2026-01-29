@@ -35,12 +35,6 @@ import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 public class EnduranceEventCombat {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventCombat.class);
 
-    /**
-     * @deprecated Use ComboSystemFacade.get().getSession() instead
-     */
-    @Deprecated
-    static final Map<UUID, ComboSystem.ComboSession> comboSessions = new ConcurrentHashMap<>();
-
     // Track mutator sessions per quest (shared with EnduranceEventHandler)
     static final Map<UUID, MutatorSystem.MutatorSession> mutatorSessions = new ConcurrentHashMap<>();
 
@@ -192,30 +186,14 @@ public class EnduranceEventCombat {
                 UUID questId = session.get().getQuest().getQuestId();
                 TensionSystem.INSTANCE.onPlayerDamaged(questId);
 
-                // Combo penalty on getting hit
+                // Combo penalty on getting hit (notifications handled via NotificationComboListener)
                 IComboSession comboSession = ComboSystemFacade.isInitialized()
                     ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
                 if (comboSession != null) {
                     comboSession.onDamageTaken(damage);
-                    handleLegacyComboDecayNotification(player, comboSession);
                 }
             }
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    private static void handleLegacyComboDecayNotification(ServerPlayer player, IComboSession comboSession) {
-        if (!comboSession.hasPendingDecayNotification()) {
-            return;
-        }
-
-        int lostCombo = comboSession.consumePendingComboLost();
-        ComboSystem.StyleRank[] rankChange = comboSession.consumePendingRankChange();
-        int prevRank = rankChange != null ? rankChange[0].ordinal() : comboSession.getCurrentRank().ordinal();
-        int newRank = rankChange != null ? rankChange[1].ordinal() : comboSession.getCurrentRank().ordinal();
-
-        com.devmod.notification.NotificationService.INSTANCE.notifyComboDecay(
-            player.getUUID(), lostCombo, prevRank, newRank);
     }
 
     /**
@@ -645,32 +623,8 @@ public class EnduranceEventCombat {
     // SESSION ACCESSORS
     // ===============================================================
 
-    /*
-     * Deprecated: Use ComboSystemFacade.get().getSession() instead.
-     */
-    @Deprecated
-    public static ComboSystem.ComboSession getComboSession(UUID playerId) {
-        return comboSessions.get(playerId);
-    }
-
     public static MutatorSystem.MutatorSession getMutatorSession(UUID questId) {
         return mutatorSessions.get(questId);
-    }
-
-    /*
-     * Deprecated: Use ComboSystemFacade.get().startSession() instead.
-     */
-    @Deprecated
-    static void putComboSession(UUID playerId, ComboSystem.ComboSession session) {
-        comboSessions.put(playerId, session);
-    }
-
-    /*
-     * Deprecated: Use ComboSystemFacade.get().endSession() instead.
-     */
-    @Deprecated
-    static ComboSystem.ComboSession removeComboSession(UUID playerId) {
-        return comboSessions.remove(playerId);
     }
 
     static void putMutatorSession(UUID questId, MutatorSystem.MutatorSession session) {

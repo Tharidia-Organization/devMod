@@ -20,14 +20,14 @@ import com.devmod.network.PayloadValidation;
  * Client → Server payload to cancel a party teleport in progress.
  * Sent when player clicks Cancel during party teleport countdown.
  *
- * <p>Channel ID: 219 (TRANSPORT_CANCEL_PARTY)
+ * <p>Channel: transport_cancel_party
  */
 public record TransportCancelPartyPayload(
     UUID partyId
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportCancelPartyPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "219")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_cancel_party")));
 
     public static final StreamCodec<ByteBuf, TransportCancelPartyPayload> STREAM_CODEC =
         StreamCodec.composite(

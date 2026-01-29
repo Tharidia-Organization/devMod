@@ -3369,7 +3369,6 @@ public class EnduranceQuestManager {
             if (cleanupShared) {
                 CombatTracker.INSTANCE.stopTracking(questId);
             }
-            ComboSystem.INSTANCE.endSession(playerId);
             if (ComboSystemFacade.isInitialized()) {
                 ComboSystemFacade.get().endSession(playerId);
             }

@@ -20,7 +20,7 @@ import com.devmod.network.PayloadValidation;
  * Client → Server payload to select a waypoint destination from the network list.
  * Sent when player chooses a destination from TransportNetworkListPayload options.
  *
- * <p>Channel ID: 214 (TRANSPORT_WAYPOINT_SELECT)
+ * <p>Channel: transport_waypoint_select
  */
 public record TransportWaypointSelectPayload(
     UUID sourceNodeId,
@@ -28,7 +28,7 @@ public record TransportWaypointSelectPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportWaypointSelectPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "214")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_waypoint_select")));
 
     public static final StreamCodec<ByteBuf, TransportWaypointSelectPayload> STREAM_CODEC =
         StreamCodec.composite(

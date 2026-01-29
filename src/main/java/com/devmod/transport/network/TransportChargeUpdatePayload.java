@@ -19,7 +19,7 @@ import com.devmod.network.PayloadValidation;
  * Server → Client payload to update charge progress during charging.
  * Sent every few ticks while a player is charging at a transport node.
  *
- * <p>Channel ID: 213 (TRANSPORT_CHARGE_UPDATE)
+ * <p>Channel: transport_charge_update
  */
 public record TransportChargeUpdatePayload(
     int currentCharge,
@@ -28,7 +28,7 @@ public record TransportChargeUpdatePayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportChargeUpdatePayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "213")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_charge_update")));
 
     public static final StreamCodec<ByteBuf, TransportChargeUpdatePayload> STREAM_CODEC = StreamCodec.composite(
         Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportChargeUpdatePayload::currentCharge,

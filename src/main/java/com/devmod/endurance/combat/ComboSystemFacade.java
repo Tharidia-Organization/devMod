@@ -23,6 +23,7 @@ import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.combat.core.ComboSessionImpl;
 import com.devmod.endurance.combat.events.ChallengeComboListener;
 import com.devmod.endurance.combat.events.ComboEventDispatcher;
+import com.devmod.endurance.combat.events.NotificationComboListener;
 import com.devmod.endurance.combat.events.TelemetryComboListener;
 
 /**
@@ -40,14 +41,10 @@ import com.devmod.endurance.combat.events.TelemetryComboListener;
  *   <li>Testable via interface abstraction</li>
  * </ul>
  *
- * <h2>Migration Note</h2>
- * <p>This facade replaces the scattered session management in:
- * <ul>
- *   <li>{@code ComboSystem.INSTANCE.activeSessions}</li>
- *   <li>{@code EnduranceEventCombat.comboSessions}</li>
- * </ul>
- * During migration, both systems can coexist with this facade being
- * the authoritative source.</p>
+ * <h2>Architecture</h2>
+ * <p>This facade is the single source of truth for combo sessions,
+ * replacing the previous scattered session management. All combo
+ * operations should go through this facade.</p>
  *
  * @see IComboSession for session interface
  * @see IComboEventListener for event handling
@@ -73,7 +70,8 @@ public final class ComboSystemFacade {
         // Register default listeners
         eventDispatcher.addListener(new TelemetryComboListener());
         eventDispatcher.addListener(new ChallengeComboListener());
-        LOGGER.debug("[ComboSystem] Registered default listeners: Telemetry, Challenge");
+        eventDispatcher.addListener(new NotificationComboListener());
+        LOGGER.debug("[ComboSystem] Registered default listeners: Telemetry, Challenge, Notification");
     }
 
     /**

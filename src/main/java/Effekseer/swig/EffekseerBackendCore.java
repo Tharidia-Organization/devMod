@@ -8,6 +8,7 @@
 
 package Effekseer.swig;
 
+@SuppressWarnings({"removal", "Finalize", "UnsafeFinalization"})
 public class EffekseerBackendCore {
   private transient long swigCPtr;
   protected transient boolean swigCMemOwn;
@@ -33,7 +34,7 @@ public class EffekseerBackendCore {
     return ptr;
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"deprecation", "removal"})
   protected void finalize() {
     delete();
   }

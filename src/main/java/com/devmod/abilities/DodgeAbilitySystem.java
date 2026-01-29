@@ -205,9 +205,11 @@ public class DodgeAbilitySystem {
                 data.perfectDodgeCount++;
 
                 // Register perfect dodge with combo system
-                ComboSystem.INSTANCE.getSession(playerId).ifPresent(session -> {
-                    session.registerAction(ComboSystem.ActionType.PERFECT_DODGE, 0);
-                });
+                if (com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
+                    com.devmod.endurance.combat.ComboSystemFacade.get()
+                        .getSession(playerId)
+                        .ifPresent(session -> session.registerAction(ComboSystem.ActionType.PERFECT_DODGE, 0));
+                }
 
                 // Play perfect dodge sound
                 player.level().playSound(null, player.getX(), player.getY(), player.getZ(),

@@ -415,9 +415,9 @@ public class CombatRecapScreen extends Screen {
         for (int i = 0; i < targets.size(); i++) {
             var target = targets.get(i);
             String rank = String.format("%d.", i + 1);
-            String name = target.name;
+            String name = target.getName();
             String stats = String.format("%.1f dmg | %d hits | %.0f%% crit",
-                target.totalDamage, target.hits, target.getCritRate() * 100);
+                target.getTotalDamage(), target.getHits(), target.getCritRate() * 100);
 
             int rankColor = i == 0 ? TEXT_HIGHLIGHT : TEXT_PRIMARY;
             graphics.drawString(font, rank, x, y, withAlpha(rankColor, alpha), false);

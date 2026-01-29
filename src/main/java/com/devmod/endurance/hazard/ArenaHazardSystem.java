@@ -16,6 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.ArenaContext;
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
@@ -39,7 +45,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.endurance.EnduranceColors;
 
-public class ArenaHazardSystem {
+public class ArenaHazardSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHazardSystem.class);
 
     public static final ArenaHazardSystem INSTANCE = new ArenaHazardSystem();
@@ -137,11 +143,11 @@ public class ArenaHazardSystem {
      * An active hazard instance.
      */
     public static class ActiveHazard {
-        public final HazardType type;
+        private final HazardType type;
         public HazardState state;
         public int ticksRemaining;
         public int warningTicks;
-        public final List<BlockPos> affectedBlocks = new ArrayList<>();
+        private final List<BlockPos> affectedBlocks = new ArrayList<>();
         public AABB shrinkBounds;
 
         public ActiveHazard(HazardType type) {
@@ -150,6 +156,9 @@ public class ArenaHazardSystem {
             this.warningTicks = 60; // 3 second warning
             this.ticksRemaining = type.getDurationTicks();
         }
+
+        public HazardType getType() { return type; }
+        public List<BlockPos> getAffectedBlocks() { return affectedBlocks; }
 
         public float getProgress() {
             return 1.0f - ((float) ticksRemaining / type.getDurationTicks());
@@ -189,12 +198,12 @@ public class ArenaHazardSystem {
 
         public boolean hasActiveHazard(HazardType type) {
             return activeHazards.stream()
-                .anyMatch(h -> h.type == type && h.state != HazardState.INACTIVE);
+                .anyMatch(h -> h.getType() == type && h.state != HazardState.INACTIVE);
         }
 
         public Optional<ActiveHazard> getHazard(HazardType type) {
             return activeHazards.stream()
-                .filter(h -> h.type == type)
+                .filter(h -> h.getType() == type)
                 .findFirst();
         }
     }
@@ -303,7 +312,7 @@ public class ArenaHazardSystem {
         // Warning effects
         if (hazard.warningTicks == 60) {
             // Initial warning
-            displayClientMessage(player, "§c§l⚠ " + hazard.type.getWarningText(), true);
+            displayClientMessage(player, "§c§l⚠ " + hazard.getType().getWarningText(), true);
             playSound(level, resolveBlockPos(player), SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.0f, 0.8f);
         }
 
@@ -311,7 +320,7 @@ public class ArenaHazardSystem {
 
         if (hazard.warningTicks <= 0) {
             hazard.state = HazardState.ACTIVE;
-            displayClientMessage(player, "§4§l" + hazard.type.getDisplayName().toUpperCase(Locale.ROOT) + "!", true);
+            displayClientMessage(player, "§4§l" + hazard.getType().getDisplayName().toUpperCase(Locale.ROOT) + "!", true);
             playSound(level, resolveBlockPos(player), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.AMBIENT, 0.8f, 1.2f);
 
             // Initialize hazard-specific state
@@ -322,7 +331,7 @@ public class ArenaHazardSystem {
     private void tickActive(ServerLevel level, ServerPlayer player, HazardSession session, ActiveHazard hazard) {
         hazard.ticksRemaining--;
 
-        switch (hazard.type) {
+        switch (hazard.getType()) {
             case FLOOR_CRUMBLE -> tickFloorCrumble(level, player, hazard);
             case BLOOD_MOON -> tickBloodMoon(level, player, hazard);
             case ARENA_SHRINK -> tickArenaShrink(level, player, session, hazard);
@@ -343,14 +352,14 @@ public class ArenaHazardSystem {
         if (hazard.ticksRemaining <= 0) {
             cleanupHazard(hazard);
             hazard.state = HazardState.INACTIVE;
-            displayClientMessage(player, "§a" + hazard.type.getDisplayName() + " subsides...", true);
+            displayClientMessage(player, "§a" + hazard.getType().getDisplayName() + " subsides...", true);
         }
     }
 
     // ========== Hazard Implementations ==========
 
     private void initializeHazard(ServerLevel level, HazardSession session, ActiveHazard hazard) {
-        switch (hazard.type) {
+        switch (hazard.getType()) {
             case FLOOR_CRUMBLE -> initFloorCrumble(level, session, hazard);
             case ARENA_SHRINK -> initArenaShrink(session, hazard);
             default -> {}
@@ -358,7 +367,7 @@ public class ArenaHazardSystem {
     }
 
     private void cleanupHazard(ActiveHazard hazard) {
-        switch (hazard.type) {
+        switch (hazard.getType()) {
             case FLOOR_CRUMBLE -> cleanupFloorCrumble(hazard);
             case BLOOD_MOON -> cleanupBloodMoon();
             case ARENA_SHRINK -> {}  // Shrink doesn't revert
@@ -388,7 +397,7 @@ public class ArenaHazardSystem {
             }
 
             if (!state.isAir()) {
-                hazard.affectedBlocks.add(pos);
+                hazard.getAffectedBlocks().add(pos);
             }
         }
     }
@@ -398,7 +407,7 @@ public class ArenaHazardSystem {
         SimpleParticleType smokeParticles = ParticleTypes.SMOKE;
 
         // Crack particles on affected blocks
-        for (BlockPos pos : hazard.affectedBlocks) {
+        for (BlockPos pos : hazard.getAffectedBlocks()) {
             if (random.nextFloat() < 0.3f) {
                 sendParticles(level, smokeParticles,
                     pos.getX() + 0.5, pos.getY() + 1.1, pos.getZ() + 0.5,
@@ -407,8 +416,8 @@ public class ArenaHazardSystem {
         }
 
         // Periodically collapse blocks
-        if (hazard.ticksRemaining % 20 == 0 && !hazard.affectedBlocks.isEmpty()) {
-            BlockPos collapsing = hazard.affectedBlocks.remove(random.nextInt(hazard.affectedBlocks.size()));
+        if (hazard.ticksRemaining % 20 == 0 && !hazard.getAffectedBlocks().isEmpty()) {
+            BlockPos collapsing = hazard.getAffectedBlocks().remove(random.nextInt(hazard.getAffectedBlocks().size()));
             BlockPos playerPos = resolveBlockPos(player);
 
             // Check if player is on this block
@@ -438,7 +447,7 @@ public class ArenaHazardSystem {
 
     private void cleanupFloorCrumble(ActiveHazard hazard) {
         // Restore any remaining affected blocks would be handled by arena reset
-        hazard.affectedBlocks.clear();
+        hazard.getAffectedBlocks().clear();
     }
 
     // --- BLOOD MOON ---
@@ -655,9 +664,9 @@ public class ArenaHazardSystem {
         return session.activeHazards.stream()
             .filter(h -> h.state != HazardState.INACTIVE)
             .map(h -> new HazardInfo(
-                h.type.getDisplayName(),
-                h.type.getDescription(),
-                h.type.getColor(),
+                h.getType().getDisplayName(),
+                h.getType().getDescription(),
+                h.getType().getColor(),
                 h.state,
                 h.getProgress()
             ))
@@ -732,4 +741,51 @@ public class ArenaHazardSystem {
     }
 
     private ArenaHazardSystem() {}
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        UUID questId = ctx.questId();
+
+        // Only create session if not already exists (quest-scoped)
+        if (getSession(questId).isEmpty()) {
+            // Get arena info from context
+            BlockPos arenaCenter = ctx.player().blockPosition();
+            int arenaRadius = 30; // Default
+            ArenaContext arena = ctx.arena();
+            if (arena != null) {
+                arenaCenter = arena.getCenter();
+                arenaRadius = arena.getSize() / 2;
+            }
+
+            startSession(questId, arenaCenter, arenaRadius);
+            LOGGER.debug("[ArenaHazardSystem] Created session for quest {} via event bus (center: {}, radius: {})",
+                questId, arenaCenter, arenaRadius);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        // Only cleanup shared resources (quest-scoped sessions) when cleanupShared is true
+        if (!event.cleanupShared()) return;
+
+        UUID questId = event.questId();
+        HazardSession session = endSession(questId);
+        if (session != null) {
+            LOGGER.debug("[ArenaHazardSystem] Ended session for quest {} via event bus ({} hazards triggered)",
+                questId, session.triggeredHazards.size());
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 200; // After bargain system
+    }
+
+    @Override
+    public String getListenerName() {
+        return "ArenaHazardSystem";
+    }
 }

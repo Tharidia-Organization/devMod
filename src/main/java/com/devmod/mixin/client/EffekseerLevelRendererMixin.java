@@ -18,6 +18,7 @@ import com.devmod.client.vfx.effekseer.render.EffekRenderer;
 public class EffekseerLevelRendererMixin {
 
     @Inject(method = "renderLevel", at = @At("RETURN"))
+    @SuppressWarnings({"UnusedMethod", "UnusedVariable"})
     private void devmod$renderEffekseer(DeltaTracker deltaTracker, boolean drawBlockOutline,
             Camera camera, GameRenderer gameRenderer, LightTexture lightTexture,
             Matrix4f viewMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {

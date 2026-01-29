@@ -150,7 +150,7 @@ public final class TelepadEffekseerController {
         // Back emitter only - behind portal
         back.setPosition(x - offsetX, y, z - offsetZ);
         back.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
-        back.setRotation(flatTilt, facingYaw + (float) Math.PI, 0);
+        back.setRotation(flatTilt, facingYaw + (float) Math.PI, vortexRotation);
 
         // Dynamic inputs to control transparency
         float dynamicInput = Mth.clamp(intensity, MIN_DYNAMIC_INPUT, MAX_DYNAMIC_INPUT);
@@ -203,9 +203,6 @@ public final class TelepadEffekseerController {
             if (emitterBack != null) emitterBack.stop();
         }
 
-        private boolean exists() {
-            return emitterBack != null && emitterBack.exists();
-        }
     }
 
     private static final class Long2ObjectMap {

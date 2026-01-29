@@ -15,11 +15,6 @@ public class EffekseerEffect extends SafeFinalized<EffekseerEffectCore> {
         this(Helpers.checkPlatform(EffekseerEffectCore::new));
     }
 
-    @Override
-    public void close() {
-        impl.delete();
-    }
-
     public boolean load(InputStream stream, float amplifier) throws IOException {
         byte[] bytes = stream.readAllBytes();
         return load(bytes, bytes.length, amplifier);

@@ -15,6 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -28,7 +33,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
-public class DevilsBargainManager {
+public class DevilsBargainManager implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
 
     public static final DevilsBargainManager INSTANCE = new DevilsBargainManager();
@@ -566,4 +571,41 @@ public class DevilsBargainManager {
     }
 
     private DevilsBargainManager() {}
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        UUID questId = ctx.questId();
+
+        // Only create session if not already exists (quest-scoped)
+        if (getSession(questId).isEmpty()) {
+            startSession(questId);
+            LOGGER.debug("[DevilsBargainManager] Created session for quest {} via event bus", questId);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        // Only cleanup shared resources (quest-scoped sessions) when cleanupShared is true
+        if (!event.cleanupShared()) return;
+
+        UUID questId = event.questId();
+        CurseSession session = endSession(questId);
+        if (session != null && session.getCurseCount() > 0) {
+            LOGGER.debug("[DevilsBargainManager] Ended session for quest {} via event bus ({} curses, {}x reward)",
+                questId, session.getCurseCount(), session.getTotalRewardMultiplier());
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 300; // After PerkSystem, bargains may interact with perks
+    }
+
+    @Override
+    public String getListenerName() {
+        return "DevilsBargainManager";
+    }
 }

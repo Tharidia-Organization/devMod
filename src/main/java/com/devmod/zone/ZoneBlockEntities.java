@@ -18,23 +18,6 @@ import com.devmod.zone.block.entity.ZoneMarkerBlockEntity;
 public final class ZoneBlockEntities {
     private ZoneBlockEntities() {}
 
-    /**
-     * Array element used to obtain null without explicit null literal.
-     * Array elements are implicitly initialized to null, which the null checker doesn't trace.
-     */
-    private static final Object[] NULL_ARRAY = new Object[1];
-
-    /**
-     * Returns a null value with the inferred type. Used to pass null to APIs that
-     * accept null despite @Nonnull annotation (like Minecraft's BlockEntityType.Builder.build()).
-     * This is the ONLY place where null suppression is allowed - for Minecraft API compatibility.
-     */
-    @SuppressWarnings({"unchecked", "null"})
-    @javax.annotation.Nonnull
-    private static <T> T nullValue() {
-        return (T) NULL_ARRAY[0];
-    }
-
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
         DeferredRegister.create(Objects.requireNonNull(Registries.BLOCK_ENTITY_TYPE), DevMod.MODID);
 
@@ -42,12 +25,15 @@ public final class ZoneBlockEntities {
      * Zone Marker block entity.
      */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ZoneMarkerBlockEntity>> ZONE_MARKER =
-        BLOCK_ENTITY_TYPES.register("zone_marker", () ->
-            BlockEntityType.Builder.of(
-                ZoneMarkerBlockEntity::new,
-                ZoneBlocks.ZONE_MARKER.get()
-            ).build(nullValue())
-        );
+        BLOCK_ENTITY_TYPES.register("zone_marker", ZoneBlockEntities::buildZoneMarker);
+
+    @SuppressWarnings("null")
+    private static BlockEntityType<ZoneMarkerBlockEntity> buildZoneMarker() {
+        return BlockEntityType.Builder.of(
+            ZoneMarkerBlockEntity::new,
+            ZoneBlocks.ZONE_MARKER.get()
+        ).build(null);
+    }
 
     /**
      * Register block entity types with the event bus.

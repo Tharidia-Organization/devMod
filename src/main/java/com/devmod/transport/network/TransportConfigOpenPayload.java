@@ -39,7 +39,7 @@ public record TransportConfigOpenPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportConfigOpenPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "210")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_config_open")));
 
     public static final StreamCodec<ByteBuf, TransportConfigOpenPayload> STREAM_CODEC = StreamCodec.of(
         (buf, payload) -> {

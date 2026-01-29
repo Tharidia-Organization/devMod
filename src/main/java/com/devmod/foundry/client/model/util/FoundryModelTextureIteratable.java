@@ -33,7 +33,7 @@ public class FoundryModelTextureIteratable implements Iterable<Map<String,Either
   }
 
   /**
-   *
+   * Returns an iterable over block model texture maps.
    * @param owner     Model configuration owner
    * @param fallback  Fallback in case the owner does not contain a block model
    * @return  Iteratable over block model texture maps

@@ -452,10 +452,17 @@ public class PlayerAttributeTelemetryService {
     }
 
     /**
-     * Populate combat state from ComboSystem.
+     * Populate combat state from ComboSystemFacade.
      */
     private void populateComboState(ServerPlayer player, PlayerAttributeSnapshot snapshot) {
-        var comboSessionOpt = ComboSystem.INSTANCE.getSession(player.getUUID());
+        if (!com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
+            snapshot.currentCombo = 0;
+            snapshot.styleRank = null;
+            snapshot.styleScore = 0;
+            return;
+        }
+        var comboSessionOpt = com.devmod.endurance.combat.ComboSystemFacade.get()
+            .getSession(player.getUUID());
         if (comboSessionOpt.isPresent()) {
             var comboSession = comboSessionOpt.get();
             snapshot.currentCombo = comboSession.getCurrentCombo();

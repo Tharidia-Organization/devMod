@@ -24,7 +24,7 @@ import com.devmod.network.PayloadValidation;
  * Server → Client payload to sync network list for selection GUI.
  * Contains information about available transport nodes in a network.
  *
- * <p>Channel ID: 215 (TRANSPORT_NETWORK_LIST)
+ * <p>Channel: transport_network_list
  */
 public record TransportNetworkListPayload(
     String networkName,
@@ -32,7 +32,7 @@ public record TransportNetworkListPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportNetworkListPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "215")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_network_list")));
 
     public static final StreamCodec<ByteBuf, TransportNetworkListPayload> STREAM_CODEC =
         StreamCodec.of(TransportNetworkListPayload::encode, TransportNetworkListPayload::decode);

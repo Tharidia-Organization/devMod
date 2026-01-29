@@ -22,7 +22,7 @@ import com.devmod.network.PayloadValidation;
  * Server → Client payload to sync party teleport status.
  * Shows which party members are ready/arrived.
  *
- * <p>Channel ID: 217 (TRANSPORT_PARTY_STATUS)
+ * <p>Channel: transport_party_status
  */
 public record TransportPartyStatusPayload(
     UUID partyId,
@@ -33,7 +33,7 @@ public record TransportPartyStatusPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportPartyStatusPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "217")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_party_status")));
 
     public static final StreamCodec<ByteBuf, TransportPartyStatusPayload> STREAM_CODEC =
         StreamCodec.of(TransportPartyStatusPayload::encode, TransportPartyStatusPayload::decode);

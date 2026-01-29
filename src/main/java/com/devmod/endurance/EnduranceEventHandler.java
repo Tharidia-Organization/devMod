@@ -69,17 +69,10 @@ public class EnduranceEventHandler {
         QuestContext questContext = QuestContext.from(player, session, policy);
         QuestEventBus.INSTANCE.publish(QuestLifecycleEvent.QuestStarted.of(questContext));
 
-        // Create mutator session with random mutators (shared per questId)
-        // NOTE: MutatorSystem not yet migrated to event bus
+        // Get mutator session (created by MutatorSystem listener via event bus)
         MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.getSession(questId).orElse(null);
-        if (mutatorSession == null) {
-            mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
-        }
-        EnduranceEventCombat.putMutatorSession(questId, mutatorSession);
 
-        // Create perk session for roguelike upgrades
-        // NOTE: PerkSystem not yet migrated to event bus
-        PerkSystem.INSTANCE.startSession(playerId, questId, policy);
+        // NOTE: PerkSystem session created by listener via event bus
 
         // Reset comeback cooldown for fresh quest
         ComebackSystem.INSTANCE.resetCooldown(playerId);
@@ -89,25 +82,12 @@ public class EnduranceEventHandler {
             LiveAnalyticsHookManager.INSTANCE.onQuestStart(questId, playerId);
         }
 
-        // Start Devil's Bargain curse session for mid-run risk/reward (shared per questId)
-        if (com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.getSession(questId).isEmpty()) {
-            com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.startSession(questId);
-        }
+        // NOTE: DevilsBargainManager session created by listener via event bus
 
         // Load Perk Synergy Web discoveries for hidden perk tracking
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerJoin(player);
 
-        // Start Arena Hazard session for dynamic environmental effects (shared per questId)
-        net.minecraft.core.BlockPos arenaCenter = player.blockPosition();
-        int arenaRadius = 30; // Default radius
-        ArenaContext arena = session.getArena();
-        if (arena != null) {
-            arenaCenter = arena.getCenter();
-            arenaRadius = arena.getSize() / 2;
-        }
-        if (com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.getSession(questId).isEmpty()) {
-            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.startSession(questId, arenaCenter, arenaRadius);
-        }
+        // NOTE: ArenaHazardSystem session created by listener via event bus
 
         // Start nutrition tracking session for Easy-Diet integration
         if (EasyDietCompat.isAvailable()) {
@@ -212,35 +192,16 @@ public class EnduranceEventHandler {
             new QuestLifecycleEvent.QuestEnded(questId, System.currentTimeMillis(), questContext, completed, endReason, cleanupShared)
         );
 
-        // Cleanup mutator system (shared per questId)
-        // NOTE: MutatorSystem not yet migrated to event bus
-        if (cleanupShared) {
-            MutatorSystem.INSTANCE.endSession(questId);
-        }
-
-        // Cleanup perk system (removes applied attribute modifiers)
-        // NOTE: PerkSystem not yet migrated to event bus
-        PerkSystem.INSTANCE.endSession(player);
-
-        // End Devil's Bargain session and get final reward multiplier
-        if (cleanupShared) {
-            var bargainSession = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.endSession(questId);
-            if (bargainSession != null && bargainSession.getCurseCount() > 0) {
-                LOGGER.info("[EnduranceQuest] Bargain session ended: {} curses, {}x reward multiplier",
-                    bargainSession.getCurseCount(), bargainSession.getTotalRewardMultiplier());
-            }
-        }
+        // NOTE: MutatorSystem cleanup handled by listener via event bus
+        // NOTE: PerkSystem cleanup handled by listener via event bus
+        // NOTE: DevilsBargainManager cleanup handled by listener via event bus
+        // NOTE: ArenaHazardSystem cleanup handled by listener via event bus
 
         // Cleanup execution system state
         com.devmod.combat.ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
 
         // Save Perk Synergy Web discoveries and cleanup
         com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerLeave(player);
-
-        // End Arena Hazard session (shared per questId)
-        if (cleanupShared) {
-            com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.endSession(questId);
-        }
 
         // End nutrition tracking session and remove attribute modifiers
         if (EasyDietCompat.isAvailable()) {
@@ -307,7 +268,7 @@ public class EnduranceEventHandler {
             // Update weekly challenge progress for quest completion
             int bossesKilledThisRun = combatSessionData != null ?
                 (int) combatSessionData.getWaveStats().stream()
-                    .filter(w -> BossWaveSystem.INSTANCE.isBossWave(w.waveNumber, questId))
+                    .filter(w -> BossWaveSystem.INSTANCE.isBossWave(w.getWaveNumber(), questId))
                     .count() : 0;
             com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
                 playerId, session.getQuest(), bossesKilledThisRun);
@@ -1376,7 +1337,7 @@ public class EnduranceEventHandler {
         if (combatSession != null) {
             for (CombatTracker.WaveCombatStats ws : combatSession.getWaveStats()) {
                 waveTimes.add(ws.duration);
-                waveSummaries.add(buildWaveSummary(ws.waveNumber, ws, comboSession));
+                waveSummaries.add(buildWaveSummary(ws.getWaveNumber(), ws, comboSession));
             }
         }
 

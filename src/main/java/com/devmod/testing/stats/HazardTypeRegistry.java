@@ -52,25 +52,24 @@ public class HazardTypeRegistry {
     }
 
     // === Config Entry ===
-    public static class HazardPattern {
-        public final HazardType type;
-        public final List<String> patterns;
-        public final boolean triggerAchievement;
-        public final String achievementId;
-
-        public HazardPattern(HazardType type, List<String> patterns,
-                           boolean triggerAchievement, @Nullable String achievementId) {
-            this.type = Objects.requireNonNull(type, "HazardType cannot be null");
-            this.patterns = Collections.unmodifiableList(new ArrayList<>(
-                Objects.requireNonNull(patterns, "Patterns list cannot be null")));
-            this.triggerAchievement = triggerAchievement;
-            this.achievementId = achievementId;
+    public record HazardPattern(
+        HazardType type,
+        List<String> patterns,
+        boolean triggerAchievement,
+        @Nullable String achievementId
+    ) {
+        public HazardPattern {
+            Objects.requireNonNull(type, "HazardType cannot be null");
+            Objects.requireNonNull(patterns, "Patterns list cannot be null");
 
             // Fail-fast: patterns list cannot be empty
             if (patterns.isEmpty()) {
                 throw new IllegalArgumentException(
                     "HazardPattern for " + type + " must have at least one pattern");
             }
+
+            // Make defensive copy
+            patterns = List.copyOf(patterns);
         }
 
         /**
@@ -278,18 +277,18 @@ public class HazardTypeRegistry {
             JsonArray hazards = new JsonArray();
             for (HazardPattern pattern : registeredPatterns) {
                 JsonObject hazardObj = new JsonObject();
-                hazardObj.addProperty("type", pattern.type.name());
+                hazardObj.addProperty("type", pattern.type().name());
 
                 JsonArray patternsArray = new JsonArray();
-                for (String p : pattern.patterns) {
+                for (String p : pattern.patterns()) {
                     patternsArray.add(p);
                 }
                 hazardObj.add("patterns", patternsArray);
 
-                if (pattern.triggerAchievement) {
+                if (pattern.triggerAchievement()) {
                     hazardObj.addProperty("triggerAchievement", true);
-                    if (pattern.achievementId != null) {
-                        hazardObj.addProperty("achievementId", pattern.achievementId);
+                    if (pattern.achievementId() != null) {
+                        hazardObj.addProperty("achievementId", pattern.achievementId());
                     }
                 }
 
@@ -345,7 +344,7 @@ public class HazardTypeRegistry {
         // First matching pattern wins (order matters!)
         for (HazardPattern pattern : registeredPatterns) {
             if (pattern.matches(sourceType)) {
-                return pattern.type;
+                return pattern.type();
             }
         }
 
@@ -359,7 +358,7 @@ public class HazardTypeRegistry {
     @Nullable
     public HazardPattern getPattern(HazardType type) {
         for (HazardPattern pattern : registeredPatterns) {
-            if (pattern.type == type) {
+            if (pattern.type() == type) {
                 return pattern;
             }
         }
@@ -385,8 +384,8 @@ public class HazardTypeRegistry {
         }
 
         for (HazardPattern pattern : registeredPatterns) {
-            if (pattern.matches(sourceType) && pattern.triggerAchievement) {
-                return pattern.achievementId;
+            if (pattern.matches(sourceType) && pattern.triggerAchievement()) {
+                return pattern.achievementId();
             }
         }
 

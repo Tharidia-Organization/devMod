@@ -33,13 +33,13 @@ public class FoundryReversedListBuilder<E> {
   }
 
   /** Gets the number of elements after flattening the builder */
-  public static int size(FoundryReversedListBuilder<? extends Collection<?>> builder) {
+  public static int flattenedSize(FoundryReversedListBuilder<? extends Collection<?>> builder) {
     return builder.unpacked.stream().mapToInt(Collection::size).sum();
   }
 
   /** Builds a list out of a collection builder */
   public static <E> List<E> buildList(FoundryReversedListBuilder<? extends Collection<E>> builder) {
-    int size = size(builder);
+    int size = flattenedSize(builder);
     if (size == 0) {
       return List.of();
     }

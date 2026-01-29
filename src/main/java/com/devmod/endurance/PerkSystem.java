@@ -29,9 +29,13 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
-public class PerkSystem {
+public class PerkSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 
     public static final PerkSystem INSTANCE = new PerkSystem();
@@ -214,9 +218,9 @@ public class PerkSystem {
      * Context passed to perk effects.
      */
     public static class PerkContext {
-        public final ServerPlayer player;
-        public final PerkSession session;
-        public final int stackCount;
+        private final ServerPlayer player;
+        private final PerkSession session;
+        private final int stackCount;
 
         // Event-specific data
         private float damage;
@@ -227,6 +231,10 @@ public class PerkSystem {
             this.session = session;
             this.stackCount = stackCount;
         }
+
+        public ServerPlayer getPlayer() { return player; }
+        public PerkSession getSession() { return session; }
+        public int getStackCount() { return stackCount; }
 
         public float getDamage() {
             return damage;
@@ -429,16 +437,16 @@ public class PerkSystem {
         // because the callback is called each time the perk is acquired, not once for all stacks
 
         registerPerk(new Perk("sharp_blades", "Sharp Blades", "+15% damage per stack", PerkTier.COMMON, PerkCategory.OFFENSE,
-            true, 5, ctx -> ctx.session.addDamageMultiplier(0.15f)));
+            true, 5, ctx -> ctx.getSession().addDamageMultiplier(0.15f)));
 
         registerPerk(new Perk("fury", "Fury", "+10% attack speed per stack", PerkTier.COMMON, PerkCategory.OFFENSE,
-            true, 5, ctx -> ctx.session.addAttackSpeedMultiplier(0.10f)));
+            true, 5, ctx -> ctx.getSession().addAttackSpeedMultiplier(0.10f)));
 
         registerPerk(new Perk("critical_eye", "Critical Eye", "+10% crit chance per stack", PerkTier.UNCOMMON, PerkCategory.OFFENSE,
-            true, 3, ctx -> ctx.session.addCritChance(0.10f)));
+            true, 3, ctx -> ctx.getSession().addCritChance(0.10f)));
 
         registerPerk(new Perk("executioner", "Executioner", "+50% crit damage per stack", PerkTier.RARE, PerkCategory.OFFENSE,
-            true, 2, ctx -> ctx.session.addCritDamage(0.50f)));
+            true, 2, ctx -> ctx.getSession().addCritDamage(0.50f)));
 
         registerPerk(new Perk("berserker", "Berserker", "+5% damage per 10% missing HP", PerkTier.EPIC, PerkCategory.OFFENSE,
             false, 1, ctx -> {
@@ -447,23 +455,23 @@ public class PerkSystem {
 
         registerPerk(new Perk("glass_cannon", "Glass Cannon", "+100% damage, +50% damage taken", PerkTier.LEGENDARY, PerkCategory.OFFENSE,
             false, 1, ctx -> {
-                ctx.session.addDamageMultiplier(1.0f);
-                ctx.session.addDamageReduction(-0.5f); // More damage taken
+                ctx.getSession().addDamageMultiplier(1.0f);
+                ctx.getSession().addDamageReduction(-0.5f); // More damage taken
             }));
 
         // === DEFENSE PERKS ===
 
         registerPerk(new Perk("tough_skin", "Tough Skin", "-10% damage taken per stack", PerkTier.COMMON, PerkCategory.DEFENSE,
-            true, 5, ctx -> ctx.session.addDamageReduction(0.10f)));
+            true, 5, ctx -> ctx.getSession().addDamageReduction(0.10f)));
 
         registerPerk(new Perk("vitality", "Vitality", "+2 max hearts", PerkTier.UNCOMMON, PerkCategory.DEFENSE,
             true, 5, ctx -> {
-                var attr = ctx.player.getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
+                var attr = ctx.getPlayer().getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
                 if (attr != null) {
                     // Each stack uses a unique modifier ID so they don't conflict
                     // Only add the INCREMENTAL bonus (4.0 HP per new stack, not cumulative)
                     ResourceLocation modId = requireNonNull(
-                        ResourceLocation.fromNamespaceAndPath("devmod", "vitality_stack_" + ctx.stackCount),
+                        ResourceLocation.fromNamespaceAndPath("devmod", "vitality_stack_" + ctx.getStackCount()),
                         "vitalityModifierId"
                     );
                     AttributeModifier mod = new AttributeModifier(
@@ -472,8 +480,8 @@ public class PerkSystem {
                         AttributeModifier.Operation.ADD_VALUE
                     );
                     attr.addTransientModifier(mod);
-                    ctx.session.addAppliedModifier(mod);
-                    ctx.player.setHealth(ctx.player.getHealth() + 4.0f);
+                    ctx.getSession().addAppliedModifier(mod);
+                    ctx.getPlayer().setHealth(ctx.getPlayer().getHealth() + 4.0f);
                 }
             }));
 
@@ -493,7 +501,7 @@ public class PerkSystem {
         // === UTILITY PERKS ===
 
         registerPerk(new Perk("swift_feet", "Swift Feet", "+15% movement speed per stack", PerkTier.COMMON, PerkCategory.UTILITY,
-            true, 3, ctx -> ctx.session.addMovementSpeedMultiplier(0.15f)));
+            true, 3, ctx -> ctx.getSession().addMovementSpeedMultiplier(0.15f)));
 
         registerPerk(new Perk("treasure_hunter", "Treasure Hunter", "+25% reward points", PerkTier.UNCOMMON, PerkCategory.UTILITY,
             true, 3, ctx -> {
@@ -501,12 +509,12 @@ public class PerkSystem {
             }));
 
         registerPerk(new Perk("combo_master", "Combo Master", "-25% combo decay rate per stack", PerkTier.RARE, PerkCategory.COMBO,
-            true, 3, ctx -> ctx.session.addComboDecayReduction(0.25f)));
+            true, 3, ctx -> ctx.getSession().addComboDecayReduction(0.25f)));
 
         // === VAMPIRIC PERKS ===
 
         registerPerk(new Perk("lifesteal", "Lifesteal", "Heal for 5% of damage dealt per stack", PerkTier.UNCOMMON, PerkCategory.VAMPIRIC,
-            true, 4, ctx -> ctx.session.addLifesteal(0.05f)));
+            true, 4, ctx -> ctx.getSession().addLifesteal(0.05f)));
 
         registerPerk(new Perk("blood_frenzy", "Blood Frenzy", "Killing enemies heals 2 HP", PerkTier.RARE, PerkCategory.VAMPIRIC,
             true, 3, null)); // Applied on kill
@@ -517,25 +525,25 @@ public class PerkSystem {
         // === ELEMENTAL PERKS ===
 
         registerPerk(new Perk("fire_aspect", "Blazing Strikes", "20% chance to ignite enemies per stack", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
-            true, 3, ctx -> ctx.session.addFireChance(0.20f)));
+            true, 3, ctx -> ctx.getSession().addFireChance(0.20f)));
 
         registerPerk(new Perk("frost_touch", "Frost Touch", "20% chance to slow enemies per stack", PerkTier.UNCOMMON, PerkCategory.ELEMENTAL,
-            true, 3, ctx -> ctx.session.addFreezeChance(0.20f)));
+            true, 3, ctx -> ctx.getSession().addFreezeChance(0.20f)));
 
         registerPerk(new Perk("lightning_strike", "Lightning Strike", "10% chance to chain lightning per stack", PerkTier.RARE, PerkCategory.ELEMENTAL,
-            true, 2, ctx -> ctx.session.addLightningChance(0.10f)));
+            true, 2, ctx -> ctx.getSession().addLightningChance(0.10f)));
 
         registerPerk(new Perk("elemental_mastery", "Elemental Mastery", "All elemental effects +50%", PerkTier.EPIC, PerkCategory.ELEMENTAL,
             false, 1, ctx -> {
-                ctx.session.addFireChance(ctx.session.getFireChance() * 0.5f);
-                ctx.session.addFreezeChance(ctx.session.getFreezeChance() * 0.5f);
-                ctx.session.addLightningChance(ctx.session.getLightningChance() * 0.5f);
+                ctx.getSession().addFireChance(ctx.getSession().getFireChance() * 0.5f);
+                ctx.getSession().addFreezeChance(ctx.getSession().getFreezeChance() * 0.5f);
+                ctx.getSession().addLightningChance(ctx.getSession().getLightningChance() * 0.5f);
             }));
 
         // === COMBO/STYLE PERKS ===
 
         registerPerk(new Perk("showoff", "Showoff", "+25% style points per stack", PerkTier.COMMON, PerkCategory.COMBO,
-            true, 4, ctx -> ctx.session.addStyleMultiplier(0.25f)));
+            true, 4, ctx -> ctx.getSession().addStyleMultiplier(0.25f)));
 
         registerPerk(new Perk("momentum", "Momentum", "Combo hits increase damage (max +50%)", PerkTier.RARE, PerkCategory.COMBO,
             false, 1, ctx -> {
@@ -551,28 +559,28 @@ public class PerkSystem {
 
         registerPerk(new Perk("curse_fragility", "Curse: Fragility", "+50% damage taken per stack, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
             true, 2, ctx -> {
-                ctx.session.addDamageReduction(-0.5f);
-                ctx.session.addCurse(1);
+                ctx.getSession().addDamageReduction(-0.5f);
+                ctx.getSession().addCurse(1);
             }));
 
         registerPerk(new Perk("curse_weakness", "Curse: Weakness", "-25% damage per stack, +50% rewards", PerkTier.UNCOMMON, PerkCategory.CURSE,
             true, 2, ctx -> {
-                ctx.session.addDamageMultiplier(-0.25f);
-                ctx.session.addCurse(1);
+                ctx.getSession().addDamageMultiplier(-0.25f);
+                ctx.getSession().addCurse(1);
             }));
 
         registerPerk(new Perk("curse_doom", "Curse: Doom", "Take 1 damage/second, +100% rewards", PerkTier.RARE, PerkCategory.CURSE,
             false, 1, ctx -> {
-                ctx.session.addCurse(2);
+                ctx.getSession().addCurse(2);
             })); // Damage applied via tick
 
         registerPerk(new Perk("ultimate_curse", "Pact with Death", "Die in one hit, +300% rewards", PerkTier.LEGENDARY, PerkCategory.CURSE,
             false, 1, ctx -> {
-                var attr = ctx.player.getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
+                var attr = ctx.getPlayer().getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
                 if (attr != null) {
-                    ctx.player.setHealth(1.0f);
+                    ctx.getPlayer().setHealth(1.0f);
                 }
-                ctx.session.addCurse(6);
+                ctx.getSession().addCurse(6);
             }));
 
         // === LEGENDARY SYNERGY PERKS ===
@@ -581,7 +589,7 @@ public class PerkSystem {
             "Requires 5+ offense perks. +100% damage, attacks cause explosions",
             PerkTier.LEGENDARY, PerkCategory.OFFENSE, null, false, 1,
             Set.of(), Set.of(), // Requires offense perks (checked separately)
-            ctx -> ctx.session.addDamageMultiplier(1.0f),
+            ctx -> ctx.getSession().addDamageMultiplier(1.0f),
             null, null, null, null));
 
         registerPerk(new Perk("unkillable", "Unkillable",
@@ -589,10 +597,10 @@ public class PerkSystem {
             PerkTier.LEGENDARY, PerkCategory.DEFENSE, null, false, 1,
             Set.of(), Set.of(),
             ctx -> {
-                var attr = ctx.player.getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
+                var attr = ctx.getPlayer().getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
                 if (attr != null) {
-                    float bonus = ctx.player.getMaxHealth() * 0.5f;
-                    ctx.player.setHealth(ctx.player.getHealth() + bonus);
+                    float bonus = ctx.getPlayer().getMaxHealth() * 0.5f;
+                    ctx.getPlayer().setHealth(ctx.getPlayer().getHealth() + bonus);
                 }
             },
             null, null, null, null));
@@ -624,13 +632,13 @@ public class PerkSystem {
             Set.of(), Set.of(),
             ctx -> {
                 // Remove knockback vulnerability
-                var attr = ctx.player.getAttribute(requireNonNull(Attributes.KNOCKBACK_RESISTANCE, "KNOCKBACK_RESISTANCE"));
+                var attr = ctx.getPlayer().getAttribute(requireNonNull(Attributes.KNOCKBACK_RESISTANCE, "KNOCKBACK_RESISTANCE"));
                 if (attr != null) {
                     ResourceLocation modId = ResourceLocation.fromNamespaceAndPath("devmod", "unstoppable_force");
                     if (modId != null) {
                         AttributeModifier modifier = new AttributeModifier(modId, 1.0, AttributeModifier.Operation.ADD_VALUE);
                         attr.addTransientModifier(modifier);
-                        ctx.session.addAppliedModifier(modifier);
+                        ctx.getSession().addAppliedModifier(modifier);
                     }
                 }
             },
@@ -1120,5 +1128,43 @@ public class PerkSystem {
 
     public Optional<Perk> getPerk(String id) {
         return Optional.ofNullable(allPerks.get(id));
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        UUID playerId = ctx.playerId();
+        UUID questId = ctx.questId();
+
+        // Only create session if not already exists
+        if (getSession(playerId).isEmpty()) {
+            startSession(playerId, questId, ctx.policy());
+            LOGGER.debug("[PerkSystem] Created session for player {} via event bus", playerId);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        QuestContext ctx = event.context();
+        ServerPlayer player = ctx.player();
+
+        // End session and remove attribute modifiers
+        PerkSession session = endSession(player);
+        if (session != null) {
+            LOGGER.debug("[PerkSystem] Ended session for player {} via event bus ({} perks)",
+                player.getUUID(), session.getTotalPerksAcquired());
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 400; // After MutatorSystem, perks may depend on mutators
+    }
+
+    @Override
+    public String getListenerName() {
+        return "PerkSystem";
     }
 }

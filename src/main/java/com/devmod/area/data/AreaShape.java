@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 
 import io.netty.buffer.ByteBuf;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import com.mojang.serialization.Codec;
 
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -103,7 +105,8 @@ public enum AreaShape implements StringRepresentable {
      *             Check shape-specific documentation instead.
      */
     @Deprecated
-    public boolean usesBothDimensions() {
+    @InlineMe(replacement = "true")
+    public final boolean usesBothDimensions() {
         // HIGH-03 fix: All shapes now use both width and length
         return true;
     }
@@ -119,7 +122,8 @@ public enum AreaShape implements StringRepresentable {
      *             For symmetrical shapes, set width == length.
      */
     @Deprecated
-    public boolean usesWidthOnly() {
+    @InlineMe(replacement = "false")
+    public final boolean usesWidthOnly() {
         // HIGH-03 fix: All shapes now use both width and length
         return false;
     }

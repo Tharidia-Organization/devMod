@@ -20,14 +20,14 @@ import com.devmod.network.PayloadValidation;
  * Client → Server payload to delete a waypoint from the transport network.
  * Sent when player clicks Delete on a waypoint in the selection screen.
  *
- * <p>Channel ID: 220 (TRANSPORT_DELETE_WAYPOINT)
+ * <p>Channel: transport_delete_waypoint
  */
 public record TransportDeleteWaypointPayload(
     UUID waypointId
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportDeleteWaypointPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "220")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_delete_waypoint")));
 
     public static final StreamCodec<ByteBuf, TransportDeleteWaypointPayload> STREAM_CODEC =
         StreamCodec.composite(

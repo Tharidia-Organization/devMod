@@ -559,7 +559,7 @@ public class MultiEditPanel {
 
                 for (int i = startIdx; i < endIdx; i++) {
                     BatchEditResult.FailureDetail d = details.get(i);
-                    String line = "slot#" + d.slot + " " + (d.itemId == null ? "<unknown-id>" : d.itemId) + " - " + d.message;
+                    String line = "slot#" + d.slot() + " " + (d.itemId() == null ? "<unknown-id>" : d.itemId()) + " - " + d.message();
                     if (line.length() > FAILURE_LINE_MAX_LENGTH) {
                         line = line.substring(0, FAILURE_LINE_TRUNCATE_LENGTH) + ELLIPSIS;
                     }
@@ -808,8 +808,8 @@ public class MultiEditPanel {
             StringBuilder sb = new StringBuilder();
             for (BatchEditResult.FailureDetail d : result.failureDetails()) {
                 sb.append(java.util.Objects.requireNonNull(d.toString(), "failure detail cannot be null")).append("\n");
-                if (d.stackTrace != null) {
-                    sb.append(d.stackTrace).append("\n");
+                if (d.stackTrace() != null) {
+                    sb.append(d.stackTrace()).append("\n");
                 }
             }
             String payload = sb.toString();
@@ -831,8 +831,8 @@ public class MultiEditPanel {
             try (java.io.BufferedWriter w = java.nio.file.Files.newBufferedWriter(out)) {
                 for (BatchEditResult.FailureDetail d : result.failureDetails()) {
                     w.write(d.toString()); w.newLine();
-                    if (d.stackTrace != null) {
-                        w.write(d.stackTrace); w.newLine();
+                    if (d.stackTrace() != null) {
+                        w.write(d.stackTrace()); w.newLine();
                     }
                 }
             }

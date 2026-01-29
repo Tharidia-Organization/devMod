@@ -132,36 +132,6 @@ public interface IComboSession {
      */
     void addBonusPoints(int points);
 
-    // === Pending Notifications (for backward compatibility) ===
-
-    /**
-     * Check if there's a pending decay notification.
-     * @deprecated Use event-driven notifications instead
-     */
-    @Deprecated
-    default boolean hasPendingDecayNotification() {
-        return false;
-    }
-
-    /**
-     * Consume the pending combo lost count.
-     * @deprecated Use event-driven notifications instead
-     */
-    @Deprecated
-    default int consumePendingComboLost() {
-        return 0;
-    }
-
-    /**
-     * Consume the pending rank change.
-     * @return Array of [previousRank, newRank] or null if no change
-     * @deprecated Use event-driven notifications instead
-     */
-    @Deprecated
-    default StyleRank[] consumePendingRankChange() {
-        return null;
-    }
-
     // === Lifecycle ===
 
     /**

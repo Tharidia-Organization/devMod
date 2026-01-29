@@ -107,9 +107,11 @@ public class DashAbilitySystem {
         data.dashCount++;
 
         // Register with combo system for style points
-        ComboSystem.INSTANCE.getSession(playerId).ifPresent(session -> {
-            session.registerAction(ComboSystem.ActionType.PERFECT_DODGE, 0); // Use dodge action for style
-        });
+        if (com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
+            com.devmod.endurance.combat.ComboSystemFacade.get()
+                .getSession(playerId)
+                .ifPresent(session -> session.registerAction(ComboSystem.ActionType.PERFECT_DODGE, 0));
+        }
 
         // Record telemetry
         AbilityTelemetryService.INSTANCE.recordDashAttempt(playerId, true, staminaBefore, staminaAfter);

@@ -264,8 +264,8 @@ public class EnduranceAnalytics {
 
         for (CombatTracker.WeaponStats weaponStats : combatSession.getWeaponStats().values()) {
             WeaponUsageRecord weaponRecord = new WeaponUsageRecord();
-            weaponRecord.weaponId = weaponStats.weaponId;
-            weaponRecord.weaponName = getWeaponDisplayName(weaponStats.weaponId);
+            weaponRecord.weaponId = weaponStats.getWeaponId();
+            weaponRecord.weaponName = getWeaponDisplayName(weaponStats.getWeaponId());
             weaponRecord.totalDamage = weaponStats.totalDamage;
             weaponRecord.hits = weaponStats.hits;
             weaponRecord.criticalHits = weaponStats.criticalHits;
@@ -279,7 +279,7 @@ public class EnduranceAnalytics {
         // Wave breakdown
         for (CombatTracker.WaveCombatStats waveStats : combatSession.getWaveStats()) {
             WaveRecord waveRecord = new WaveRecord();
-            waveRecord.waveNumber = waveStats.waveNumber;
+            waveRecord.waveNumber = waveStats.getWaveNumber();
             waveRecord.damageDealt = waveStats.damageDealt;
             waveRecord.damageTaken = waveStats.damageTaken;
             waveRecord.kills = waveStats.kills;

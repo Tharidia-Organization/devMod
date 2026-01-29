@@ -27,6 +27,7 @@ public enum FoundryModifierSlot {
     }
 
     /**
+     * Returns true if this slot type consumes slots.
      * @return true if this slot type consumes slots
      */
     public boolean consumesSlots() {

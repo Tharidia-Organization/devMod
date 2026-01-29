@@ -19,7 +19,7 @@ import com.devmod.network.PayloadValidation;
  * Server → Client payload to sync countdown state for BossBar display.
  * Sent during charging or party teleport countdowns.
  *
- * <p>Channel ID: 216 (TRANSPORT_COUNTDOWN)
+ * <p>Channel: transport_countdown
  */
 public record TransportCountdownPayload(
     int secondsRemaining,
@@ -29,7 +29,7 @@ public record TransportCountdownPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportCountdownPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "216")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_countdown")));
 
     public static final StreamCodec<ByteBuf, TransportCountdownPayload> STREAM_CODEC = StreamCodec.composite(
         Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportCountdownPayload::secondsRemaining,

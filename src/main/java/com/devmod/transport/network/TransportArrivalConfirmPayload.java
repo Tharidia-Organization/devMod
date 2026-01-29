@@ -20,14 +20,14 @@ import com.devmod.network.PayloadValidation;
  * Client → Server payload to confirm arrival at transport destination.
  * Sent by client when player enters the arrival zone.
  *
- * <p>Channel ID: 218 (TRANSPORT_ARRIVAL_CONFIRM)
+ * <p>Channel: transport_arrival_confirm
  */
 public record TransportArrivalConfirmPayload(
     UUID sessionId
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<TransportArrivalConfirmPayload> TYPE =
-        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "218")));
+        new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "transport_arrival_confirm")));
 
     public static final StreamCodec<ByteBuf, TransportArrivalConfirmPayload> STREAM_CODEC =
         StreamCodec.composite(

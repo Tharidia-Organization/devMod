@@ -6,24 +6,13 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 public class BatchEditResult {
-    public static class FailureDetail {
-        public final String itemName;
-        @Nullable
-        public final String itemId; // registry id if available
-        public final int slot;
-        @Nullable
-        public final String message;
-        @Nullable
-        public final String stackTrace; // optional
-
-        public FailureDetail(String itemName, @Nullable String itemId, int slot, @Nullable String message, @Nullable String stackTrace) {
-            this.itemName = itemName;
-            this.itemId = itemId;
-            this.slot = slot;
-            this.message = message;
-            this.stackTrace = stackTrace;
-        }
-
+    public record FailureDetail(
+        String itemName,
+        @Nullable String itemId,
+        int slot,
+        @Nullable String message,
+        @Nullable String stackTrace
+    ) {
         @Override
         public String toString() {
             String idPart = itemId == null ? "<unknown-id>" : itemId;
@@ -92,8 +81,8 @@ public class BatchEditResult {
         for (int i = 0; i < failureDetails.size(); i++) {
             FailureDetail detail = failureDetails.get(i);
             sb.append(String.format("%d. %s\n", i + 1, detail.toString()));
-            if (detail.stackTrace != null && !detail.stackTrace.trim().isEmpty()) {
-                String stackTrace = detail.stackTrace;
+            if (detail.stackTrace() != null && !detail.stackTrace().trim().isEmpty()) {
+                String stackTrace = detail.stackTrace();
                 int newlineIndex = stackTrace.indexOf('\n');
                 String firstLine = newlineIndex < 0 ? stackTrace : stackTrace.substring(0, newlineIndex);
                 sb.append("   Stack trace: ").append(firstLine).append("\n");

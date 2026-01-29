@@ -9,6 +9,7 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import com.devmod.DevMod;
 import com.devmod.client.vfx.effekseer.loader.EffekAssetLoader;
 
+@SuppressWarnings("removal")
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class EffekseerClientSetup {
     private EffekseerClientSetup() {

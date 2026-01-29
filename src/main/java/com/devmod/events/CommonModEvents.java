@@ -137,14 +137,18 @@ public class CommonModEvents {
         }
 
         // Register QuestEventBus listeners for decoupled subsystems
+        // NOTE: ComboSystem now uses ComboSystemFacade (initialized in DevMod.java)
         try {
             var eventBus = com.devmod.endurance.lifecycle.QuestEventBus.INSTANCE;
             // Critical systems (priority 1000)
-            eventBus.register(com.devmod.endurance.ComboSystem.INSTANCE);
             eventBus.register(com.devmod.endurance.CombatTracker.INSTANCE);
-            // Core gameplay systems (priority 800-900)
+            // Core gameplay systems (priority 500-900)
             eventBus.register(com.devmod.endurance.MomentumTracker.INSTANCE);
             eventBus.register(com.devmod.endurance.TensionSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.MutatorSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.PerkSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE);
+            eventBus.register(com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE);
             // Post-processing (negative priority)
             eventBus.register(com.devmod.endurance.lifecycle.PartyStatsCoordinator.INSTANCE);
             LOGGER.info("[DevMod] QuestEventBus initialized with {} listeners: {}",

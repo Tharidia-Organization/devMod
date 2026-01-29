@@ -8,6 +8,7 @@
 
 package Effekseer.swig;
 
+@SuppressWarnings({"UnusedMethod", "StaticAssignmentInConstructor"})
 public final class EffekseerCoreDeviceType {
   public final static EffekseerCoreDeviceType Unknown = new EffekseerCoreDeviceType("Unknown");
   public final static EffekseerCoreDeviceType OpenGL = new EffekseerCoreDeviceType("OpenGL");
@@ -18,6 +19,7 @@ public final class EffekseerCoreDeviceType {
     return swigValue;
   }
 
+  @Override
   public String toString() {
     return swigName;
   }
@@ -53,4 +55,3 @@ public final class EffekseerCoreDeviceType {
   private final int swigValue;
   private final String swigName;
 }
-
