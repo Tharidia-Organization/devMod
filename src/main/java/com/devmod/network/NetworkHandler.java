@@ -29,6 +29,7 @@ import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceMobConfigSyncPayload;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.InstanceLoadingPayload;
 import com.devmod.endurance.KitSyncConfirmPayload;
@@ -1153,7 +1154,7 @@ public class NetworkHandler {
     public static void sendQuestCompletionScreen(ServerPlayer player,
                                                  EnduranceQuestManager.ActiveQuestSession session,
                                                  RewardSystem.QuestRewards rewards,
-                                                 ComboSystem.ComboSession comboSession,
+                                                 IComboSession comboSession,
                                                  int maxCombo) {
         EnduranceNetworkHandler.sendQuestCompletionScreen(player, session, rewards, comboSession, maxCombo);
     }

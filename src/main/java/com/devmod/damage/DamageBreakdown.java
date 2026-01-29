@@ -17,13 +17,13 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import com.devmod.integration.ModIntegrationManager;
 
 public class DamageBreakdown {
-    public final float baseWeaponDamage;
-    public final List<EnchantBonus> enchantBonuses;
-    public final float pehkuiSizeBonus;
-    public final float pehkuiScale;
-    public final float bodyPartMultiplier;
-    public final float armorPenetrationBonus;
-    public final float finalDamage;
+    private final float baseWeaponDamage;
+    private final List<EnchantBonus> enchantBonuses;
+    private final float pehkuiSizeBonus;
+    private final float pehkuiScale;
+    private final float bodyPartMultiplier;
+    private final float armorPenetrationBonus;
+    private final float finalDamage;
 
     // Cached formula strings (computed once at construction)
     private final String cachedFormulaString;
@@ -150,6 +150,14 @@ public class DamageBreakdown {
     public float getTotalEnchantBonus() {
         return (float) enchantBonuses.stream().mapToDouble(EnchantBonus::bonus).sum();
     }
+
+    public float getBaseWeaponDamage() { return baseWeaponDamage; }
+    public List<EnchantBonus> getEnchantBonuses() { return enchantBonuses; }
+    public float getPehkuiSizeBonus() { return pehkuiSizeBonus; }
+    public float getPehkuiScale() { return pehkuiScale; }
+    public float getBodyPartMultiplier() { return bodyPartMultiplier; }
+    public float getArmorPenetrationBonus() { return armorPenetrationBonus; }
+    public float getFinalDamage() { return finalDamage; }
 
     private static String toRoman(int num) {
         return switch(num) {

@@ -938,7 +938,8 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                     }
                 }
 
-                sendPacket(player, new SaveAreaResultPayload(requestId, areaId, definition.revision(), true, true));
+                // Use areaId as fallback if requestId is null (shouldn't happen in normal flow)
+                sendPacket(player, new SaveAreaResultPayload(requestId != null ? requestId : areaId, areaId, definition.revision(), true, true));
             } else {
                 // Updating existing area
                 UUID existingId = payload.existingAreaId();
@@ -1049,7 +1050,8 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
                                 existingId, e.getMessage());
                         }
                     }
-                    sendPacket(player, new SaveAreaResultPayload(requestId, existingId, definition.revision(), false, true));
+                    // Use existingId as fallback if requestId is null (shouldn't happen in normal flow)
+                    sendPacket(player, new SaveAreaResultPayload(requestId != null ? requestId : existingId, existingId, definition.revision(), false, true));
                 } else {
                     player.displayClientMessage(
                         Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_revision_mismatch")), true);

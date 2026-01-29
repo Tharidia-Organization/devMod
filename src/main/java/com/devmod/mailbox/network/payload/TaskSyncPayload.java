@@ -1,6 +1,5 @@
 package com.devmod.mailbox.network.payload;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -15,6 +14,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.task.TestTask;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -23,12 +23,6 @@ import com.devmod.network.PayloadValidation;
 public record TaskSyncPayload(
     List<TaskData> tasks
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
-
-    private static final int MAX_TASKS = 100;
-    private static final int MAX_TITLE_LENGTH = 256;
-    private static final int MAX_DESC_LENGTH = 2000;
-    private static final int MAX_NOTES_LENGTH = 1000;
-    private static final int MAX_NAME_LENGTH = 64;
 
     public static final Type<TaskSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "task_sync"))
@@ -40,17 +34,17 @@ public record TaskSyncPayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, TaskSyncPayload payload) {
-        buf.writeVarInt(payload.tasks.size());
-        for (TaskData task : payload.tasks) {
+        int taskCount = MailboxPayloadLimits.clampCount(payload.tasks.size(), MailboxPayloadLimits.MAX_TASKS);
+        buf.writeVarInt(taskCount);
+        for (int i = 0; i < taskCount; i++) {
+            TaskData task = payload.tasks.get(i);
             encodeTask(buf, task);
         }
     }
 
     private static TaskSyncPayload decode(RegistryFriendlyByteBuf buf) {
         int taskCount = buf.readVarInt();
-        if (taskCount < 0 || taskCount > MAX_TASKS) {
-            taskCount = 0;
-        }
+        taskCount = MailboxPayloadLimits.clampCount(taskCount, MailboxPayloadLimits.MAX_TASKS);
 
         List<TaskData> tasks = new ArrayList<>(taskCount);
         for (int i = 0; i < taskCount; i++) {
@@ -62,28 +56,43 @@ public record TaskSyncPayload(
 
     private static void encodeTask(RegistryFriendlyByteBuf buf, TaskData task) {
         buf.writeUUID(Objects.requireNonNull(task.id));
-        buf.writeUtf(Objects.requireNonNull(task.title));
-        buf.writeUtf(task.description != null ? task.description : "");
-        buf.writeUtf(task.assignedByName != null ? task.assignedByName : "");
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(task.title, MailboxPayloadLimits.MAX_TASK_TITLE_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_TITLE_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(task.description, MailboxPayloadLimits.MAX_TASK_DESC_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_DESC_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(task.assignedByName, MailboxPayloadLimits.MAX_TASK_NAME_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_NAME_LENGTH
+        );
         buf.writeVarInt(task.priority);
-        buf.writeUtf(task.statusId);
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(task.statusId, MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH
+        );
         buf.writeLong(task.createdAt);
         buf.writeLong(task.dueAt != null ? task.dueAt : 0L);
         buf.writeLong(task.completedAt != null ? task.completedAt : 0L);
-        buf.writeUtf(task.notes != null ? task.notes : "");
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(task.notes, MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH
+        );
     }
 
     private static TaskData decodeTask(RegistryFriendlyByteBuf buf) {
         UUID id = buf.readUUID();
-        String title = buf.readUtf(MAX_TITLE_LENGTH);
-        String description = buf.readUtf(MAX_DESC_LENGTH);
-        String assignedByName = buf.readUtf(MAX_NAME_LENGTH);
+        String title = buf.readUtf(MailboxPayloadLimits.MAX_TASK_TITLE_LENGTH);
+        String description = buf.readUtf(MailboxPayloadLimits.MAX_TASK_DESC_LENGTH);
+        String assignedByName = buf.readUtf(MailboxPayloadLimits.MAX_TASK_NAME_LENGTH);
         int priority = buf.readVarInt();
-        String statusId = buf.readUtf(32);
+        String statusId = buf.readUtf(MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH);
         long createdAt = buf.readLong();
         long dueAt = buf.readLong();
         long completedAt = buf.readLong();
-        String notes = buf.readUtf(MAX_NOTES_LENGTH);
+        String notes = buf.readUtf(MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH);
 
         return new TaskData(
             id,
@@ -106,8 +115,10 @@ public record TaskSyncPayload(
 
     @Override
     public int estimatedSize() {
-        int size = varIntSize(tasks.size());
-        for (TaskData task : tasks) {
+        int count = MailboxPayloadLimits.clampCount(tasks.size(), MailboxPayloadLimits.MAX_TASKS);
+        int size = PayloadSizeUtil.varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            TaskData task = tasks.get(i);
             size += estimateTaskSize(task);
         }
         return size;
@@ -115,34 +126,20 @@ public record TaskSyncPayload(
 
     private static int estimateTaskSize(TaskData task) {
         int size = 16; // UUID
-        size += estimatedUtfSize(task.title);
-        size += estimatedUtfSize(task.description);
-        size += estimatedUtfSize(task.assignedByName);
-        size += varIntSize(task.priority);
-        size += estimatedUtfSize(task.statusId);
+        size += estimatedUtfSize(task.title, MailboxPayloadLimits.MAX_TASK_TITLE_LENGTH);
+        size += estimatedUtfSize(task.description, MailboxPayloadLimits.MAX_TASK_DESC_LENGTH);
+        size += estimatedUtfSize(task.assignedByName, MailboxPayloadLimits.MAX_TASK_NAME_LENGTH);
+        size += PayloadSizeUtil.varIntSize(task.priority);
+        size += estimatedUtfSize(task.statusId, MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH);
         size += 8; // createdAt
         size += 8; // dueAt
         size += 8; // completedAt
-        size += estimatedUtfSize(task.notes);
+        size += estimatedUtfSize(task.notes, MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH);
         return size;
     }
 
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null || value.isEmpty()) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
-        return size;
+    private static int estimatedUtfSize(@Nullable String value, int maxLength) {
+        return PayloadSizeUtil.estimatedUtfSize(MailboxPayloadLimits.truncateNullable(value, maxLength));
     }
 
     /**

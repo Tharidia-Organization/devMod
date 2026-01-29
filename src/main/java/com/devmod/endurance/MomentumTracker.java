@@ -7,7 +7,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MomentumTracker {
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+
+/**
+ * Momentum pacing system for Endurance mode.
+ *
+ * <p>Implements {@link QuestLifecycleListener} to receive quest lifecycle events
+ * and automatically manage momentum sessions.</p>
+ *
+ * <h2>Priority: 900 (Core gameplay)</h2>
+ */
+public class MomentumTracker implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentumTracker.class);
 
     public static final MomentumTracker INSTANCE = new MomentumTracker();
@@ -284,6 +296,28 @@ public class MomentumTracker {
                 playerId, session.overdriveCount, session.stagnantCount, session.totalOverdriveTime);
         }
         return session;
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        startSession(event.context().playerId());
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        endSession(event.context().playerId());
+    }
+
+    @Override
+    public int getPriority() {
+        return 900; // Core gameplay - runs after ComboSystem
+    }
+
+    @Override
+    public String getListenerName() {
+        return "MomentumTracker";
     }
 
     /**

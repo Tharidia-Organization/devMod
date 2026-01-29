@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 
 import com.devmod.TestBootstrap;
+import com.devmod.endurance.combat.api.IComboSession;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,9 +52,8 @@ class RewardSystemDirectTest {
     void styleMultiplierAffectsWaveRewards() {
         RewardSystem system = RewardSystem.INSTANCE;
         EnduranceQuest quest = newQuest();
-        ComboSystem.ComboSession session = new ComboSystem.ComboSession(UUID.randomUUID(), null);
-
-        session.addBonusPoints(7000);
+        IComboSession session = mock(IComboSession.class);
+        when(session.getCurrentRank()).thenReturn(ComboSystem.StyleRank.S);
 
         RewardSystem.WaveReward reward = system.calculateWaveReward(3, quest, session, null);
         assertEquals(1.75f, reward.styleMultiplier(), 0.0001f);
@@ -77,7 +77,7 @@ class RewardSystemDirectTest {
         quest.completeWave();
 
         Method method = RewardSystem.class.getDeclaredMethod(
-            "checkAchievements", ServerPlayer.class, EnduranceQuest.class, ComboSystem.ComboSession.class);
+            "checkAchievements", ServerPlayer.class, EnduranceQuest.class, IComboSession.class);
         method.setAccessible(true);
 
         Object result = method.invoke(system, player, quest, null);

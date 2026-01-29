@@ -165,7 +165,7 @@ public class TransportEffectManager {
      */
     public void spawnDepartureParticles(@Nonnull ServerLevel level, @Nonnull Vec3 pos) {
         // REVERSE_PORTAL + END_ROD burst
-        level.sendParticles(Objects.requireNonNull(ParticleTypes.PORTAL), pos.x, pos.y + 0.5, pos.z, 50, 0.3, 0.5, 0.3, 0.5);
+        level.sendParticles(Objects.requireNonNull(ParticleTypes.REVERSE_PORTAL), pos.x, pos.y + 0.5, pos.z, 50, 0.3, 0.5, 0.3, 0.5);
         level.sendParticles(Objects.requireNonNull(ParticleTypes.END_ROD), pos.x, pos.y + 0.5, pos.z, 20, 0.2, 0.3, 0.2, 0.1);
     }
 

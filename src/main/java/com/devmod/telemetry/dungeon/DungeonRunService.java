@@ -217,7 +217,7 @@ public class DungeonRunService {
         logRunResult(result);
 
         LOGGER.info("[DungeonRunService] RUN END: player='{}' dungeonId='{}' outcome={} duration={}s deaths={} kills={} reason='{}'",
-            run.playerName, run.dungeonId, outcome.name(), result.durationSeconds, run.deaths, run.kills, reason);
+            run.playerName, run.dungeonId, outcome.name(), result.getDurationSeconds(), run.deaths, run.kills, reason);
     }
 
     /**
@@ -225,11 +225,11 @@ public class DungeonRunService {
      */
     private void logRunResult(DungeonRunResult result) {
         // Calculate timestamps for DuckDB
-        Instant startTs = Instant.ofEpochMilli(result.lastDeathTime > 0
-            ? result.lastDeathTime - (result.durationSeconds * 1000)
-            : System.currentTimeMillis() - (result.durationSeconds * 1000));
+        Instant startTs = Instant.ofEpochMilli(result.getLastDeathTime() > 0
+            ? result.getLastDeathTime() - (result.getDurationSeconds() * 1000)
+            : System.currentTimeMillis() - (result.getDurationSeconds() * 1000));
         Instant endTs = Instant.now();
-        long durationMs = result.durationSeconds * 1000;
+        long durationMs = result.getDurationSeconds() * 1000;
 
         // Build rooms list as comma-separated string (placeholder - actual rooms tracking would need enhancement)
         String roomsList = ""; // Room list not currently tracked in DungeonRunResult
@@ -243,31 +243,31 @@ public class DungeonRunService {
         // P2-B: Primary write to DuckDB
         DuckDBTelemetryService.INSTANCE.logDungeonRun(
             startTs, endTs, durationMs,
-            result.playerId.toString(), result.playerName, result.dungeonId,
-            result.outcome.name(), result.roomsVisited, roomsList,
-            result.deaths, result.kills, enemiesKilled,
-            result.damageDealt, result.damageTaken,
-            result.lootItems, lootCollected,  // reward_count = lootItems
-            result.lastDeathRoom != null ? result.lastDeathRoom : ""
+            result.getPlayerId().toString(), result.getPlayerName(), result.getDungeonId(),
+            result.getOutcome().name(), result.getRoomsVisited(), roomsList,
+            result.getDeaths(), result.getKills(), enemiesKilled,
+            result.getDamageDealt(), result.getDamageTaken(),
+            result.getLootItems(), lootCollected,  // reward_count = lootItems
+            result.getLastDeathRoom() != null ? result.getLastDeathRoom() : ""
         );
 
         // P2-B: NDJSON fallback (only if enabled or DuckDB unavailable)
         if (DuckDBConfig.isNdjsonFallbackEnabled() || !DuckDBTelemetryService.INSTANCE.isEnabled()) {
             StringBuilder json = new StringBuilder();
             json.append("{\"ts\":\"").append(Instant.now()).append("\",");
-            json.append("\"player_id\":\"").append(result.playerId).append("\",");
-            json.append("\"player\":\"").append(result.playerName).append("\",");
-            json.append("\"dungeon\":\"").append(result.dungeonId).append("\",");
-            json.append("\"outcome\":\"").append(result.outcome).append("\",");
-            json.append("\"duration_sec\":").append(result.durationSeconds).append(",");
-            json.append("\"deaths\":").append(result.deaths).append(",");
-            json.append("\"kills\":").append(result.kills).append(",");
-            json.append("\"rooms_visited\":").append(result.roomsVisited).append(",");
-            json.append("\"damage_dealt\":").append(String.format("%.1f", result.damageDealt)).append(",");
-            json.append("\"damage_taken\":").append(String.format("%.1f", result.damageTaken)).append(",");
-            json.append("\"loot_value\":").append(result.totalLootValue).append(",");
-            json.append("\"loot_items\":").append(result.lootItems).append(",");
-            json.append("\"last_death_room\":\"").append(result.lastDeathRoom != null ? result.lastDeathRoom : "").append("\"");
+            json.append("\"player_id\":\"").append(result.getPlayerId()).append("\",");
+            json.append("\"player\":\"").append(result.getPlayerName()).append("\",");
+            json.append("\"dungeon\":\"").append(result.getDungeonId()).append("\",");
+            json.append("\"outcome\":\"").append(result.getOutcome()).append("\",");
+            json.append("\"duration_sec\":").append(result.getDurationSeconds()).append(",");
+            json.append("\"deaths\":").append(result.getDeaths()).append(",");
+            json.append("\"kills\":").append(result.getKills()).append(",");
+            json.append("\"rooms_visited\":").append(result.getRoomsVisited()).append(",");
+            json.append("\"damage_dealt\":").append(String.format("%.1f", result.getDamageDealt())).append(",");
+            json.append("\"damage_taken\":").append(String.format("%.1f", result.getDamageTaken())).append(",");
+            json.append("\"loot_value\":").append(result.getTotalLootValue()).append(",");
+            json.append("\"loot_items\":").append(result.getLootItems()).append(",");
+            json.append("\"last_death_room\":\"").append(result.getLastDeathRoom() != null ? result.getLastDeathRoom() : "").append("\"");
             json.append("}");
 
             TelemetryService.INSTANCE.appendDungeonRun(json.toString());
@@ -501,20 +501,20 @@ public class DungeonRunService {
      * Completed run result for analysis.
      */
     public static class DungeonRunResult {
-        public final UUID playerId;
-        public final String playerName;
-        public final String dungeonId;
-        public final RunOutcome outcome;
-        public final long durationSeconds;
-        public final int roomsVisited;
-        public final int deaths;
-        public final int kills;
-        public final float damageTaken;
-        public final float damageDealt;
-        public final int totalLootValue;
-        public final int lootItems;
-        public final String lastDeathRoom;
-        public final long lastDeathTime;
+        private final UUID playerId;
+        private final String playerName;
+        private final String dungeonId;
+        private final RunOutcome outcome;
+        private final long durationSeconds;
+        private final int roomsVisited;
+        private final int deaths;
+        private final int kills;
+        private final float damageTaken;
+        private final float damageDealt;
+        private final int totalLootValue;
+        private final int lootItems;
+        private final String lastDeathRoom;
+        private final long lastDeathTime;
 
         DungeonRunResult(DungeonRun run) {
             this.playerId = run.getPlayerId();
@@ -532,6 +532,21 @@ public class DungeonRunService {
             this.lastDeathRoom = run.getLastDeathRoom();
             this.lastDeathTime = run.getLastDeathTime();
         }
+
+        public UUID getPlayerId() { return playerId; }
+        public String getPlayerName() { return playerName; }
+        public String getDungeonId() { return dungeonId; }
+        public RunOutcome getOutcome() { return outcome; }
+        public long getDurationSeconds() { return durationSeconds; }
+        public int getRoomsVisited() { return roomsVisited; }
+        public int getDeaths() { return deaths; }
+        public int getKills() { return kills; }
+        public float getDamageTaken() { return damageTaken; }
+        public float getDamageDealt() { return damageDealt; }
+        public int getTotalLootValue() { return totalLootValue; }
+        public int getLootItems() { return lootItems; }
+        public String getLastDeathRoom() { return lastDeathRoom; }
+        public long getLastDeathTime() { return lastDeathTime; }
     }
 
     /**

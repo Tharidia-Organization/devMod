@@ -107,8 +107,8 @@ public final class ClientImpactHandlers {
             // Trigger damage shake
             java.lang.reflect.Method shakeMethod = hudServiceClass.getMethod("triggerDamageShakeIfApplicable",
                 LivingEntity.class, HitHelper.BodyPart.class, float.class, float.class, Vec3.class);
-            shakeMethod.invoke(null, victim, impactData.bodyPart, impactData.bodyPartMultiplier,
-                impactData.breakdown.finalDamage, hitPoint);
+            shakeMethod.invoke(null, victim, impactData.getBodyPart(), impactData.getBodyPartMultiplier(),
+                impactData.getBreakdown().getFinalDamage(), hitPoint);
         } catch (Exception e) {
             // VFX failed, but impact data is still stored
         }

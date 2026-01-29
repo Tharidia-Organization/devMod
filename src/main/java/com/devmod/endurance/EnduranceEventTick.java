@@ -22,6 +22,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
@@ -55,8 +57,10 @@ public class EnduranceEventTick {
     public static void onServerTick() {
         tickCounter++;
 
-        // Update combo decay every tick
-        EnduranceEventCombat.comboSessions.values().forEach(ComboSystem.ComboSession::tick);
+        // Update combo decay every tick (via facade)
+        if (ComboSystemFacade.isInitialized()) {
+            ComboSystemFacade.get().tick();
+        }
 
         // Update momentum decay every tick
         MomentumTracker.INSTANCE.tick();
@@ -511,8 +515,10 @@ public class EnduranceEventTick {
                 }
             }
 
-            // Get combo session data
-            ComboSystem.ComboSession comboSession = EnduranceEventCombat.comboSessions.get(playerId);
+            // Get combo session data (via facade)
+            IComboSession comboSession = ComboSystemFacade.isInitialized()
+                ? ComboSystemFacade.get().getSession(playerId).orElse(null)
+                : null;
             int currentCombo = comboSession != null ? comboSession.getCurrentCombo() : 0;
             int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
             int styleScore = comboSession != null ? comboSession.getStyleScore() : 0;

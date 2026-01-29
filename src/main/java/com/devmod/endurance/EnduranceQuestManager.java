@@ -38,6 +38,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
 import com.devmod.arena.builder.AsyncArenaBuilder;
@@ -3369,7 +3370,9 @@ public class EnduranceQuestManager {
                 CombatTracker.INSTANCE.stopTracking(questId);
             }
             ComboSystem.INSTANCE.endSession(playerId);
-            EnduranceEventCombat.removeComboSession(playerId);
+            if (ComboSystemFacade.isInitialized()) {
+                ComboSystemFacade.get().endSession(playerId);
+            }
             if (cleanupShared) {
                 MutatorSystem.INSTANCE.endSession(questId);
                 EnduranceEventCombat.removeMutatorSession(questId);

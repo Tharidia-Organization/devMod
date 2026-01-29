@@ -215,16 +215,16 @@ public final class BillboardBatcher {
 
         // Add quad vertices (counter-clockwise)
         builder.addVertex(pose, x + dx1, y + dy1, z + dz1)
-               .setUv(uv.u0, uv.v1)
+               .setUv(uv.u0(), uv.v1())
                .setColor(r, g, b, a);
         builder.addVertex(pose, x + dx2, y + dy1, z + dz2)
-               .setUv(uv.u1, uv.v1)
+               .setUv(uv.u1(), uv.v1())
                .setColor(r, g, b, a);
         builder.addVertex(pose, x + dx2, y + dy2, z + dz2)
-               .setUv(uv.u1, uv.v0)
+               .setUv(uv.u1(), uv.v0())
                .setColor(r, g, b, a);
         builder.addVertex(pose, x + dx1, y + dy2, z + dz1)
-               .setUv(uv.u0, uv.v0)
+               .setUv(uv.u0(), uv.v0())
                .setColor(r, g, b, a);
     }
 

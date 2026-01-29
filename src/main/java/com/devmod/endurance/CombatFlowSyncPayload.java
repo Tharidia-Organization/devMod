@@ -10,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -131,7 +132,7 @@ public record CombatFlowSyncPayload(
      * Create payload from current server-side session state.
      */
     public static CombatFlowSyncPayload fromSession(
-            ComboSystem.ComboSession comboSession,
+            IComboSession comboSession,
             MomentumTracker.MomentumSession momentumSession,
             String lastAction,
             int lastPoints) {

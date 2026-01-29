@@ -27,6 +27,7 @@ import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceColors;
+import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 
@@ -282,18 +283,20 @@ public final class ResonanceChainSystem {
                                         LivingEntity target, @Nullable UUID questId) {
         for (UUID playerId : participants) {
             // Add style bonus to combo session (using config value, not tier default)
-            ComboSystem.INSTANCE.getSession(playerId).ifPresent(session -> {
-                session.addBonusPoints(styleBonus);
+            if (ComboSystemFacade.isInitialized()) {
+                ComboSystemFacade.get().getSession(playerId).ifPresent(session -> {
+                    session.addBonusPoints(styleBonus);
 
-                // Instant SSS for APOCALYPSE
-                if (tier == ResonanceTier.APOCALYPSE) {
-                    // Add enough points to reach SSS threshold
-                    int sssThreshold = ComboSystem.StyleRank.SSS.getThreshold();
-                    if (session.getStyleScore() < sssThreshold) {
-                        session.addBonusPoints(sssThreshold - session.getStyleScore() + 1);
+                    // Instant SSS for APOCALYPSE
+                    if (tier == ResonanceTier.APOCALYPSE) {
+                        // Add enough points to reach SSS threshold
+                        int sssThreshold = ComboSystem.StyleRank.SSS.getThreshold();
+                        if (session.getStyleScore() < sssThreshold) {
+                            session.addBonusPoints(sssThreshold - session.getStyleScore() + 1);
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Get player and apply visual/audio feedback
             if (target.level() instanceof ServerLevel serverLevel) {

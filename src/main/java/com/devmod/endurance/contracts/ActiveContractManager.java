@@ -23,8 +23,8 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceEventCombat;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public final class ActiveContractManager {
@@ -124,7 +124,9 @@ public final class ActiveContractManager {
 
             // Get current style rank
             int styleRank = 0;
-            ComboSystem.ComboSession comboSession = EnduranceEventCombat.getComboSession(playerId);
+            IComboSession comboSession = ComboSystemFacade.isInitialized()
+                ? ComboSystemFacade.get().getSession(playerId).orElse(null)
+                : null;
             if (comboSession != null) {
                 styleRank = comboSession.getCurrentRank().ordinal();
             }

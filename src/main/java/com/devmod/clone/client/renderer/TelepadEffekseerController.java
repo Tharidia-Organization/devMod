@@ -103,11 +103,13 @@ public final class TelepadEffekseerController {
         }
 
         // Respawn if back effect died
-        if (!state.emitterBack.exists()) {
+        ParticleEmitter back = state.emitterBack;
+        if (back == null || !back.exists()) {
             ResourceLocation backName = ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_spiral_back_" + key);
-            state.emitterBack = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
-            state.emitterBack.setVisibility(true);
-            state.emitterBack.resume();
+            back = EffekseerClient.play(EFFECT_SPIRAL, ParticleEmitter.Type.WORLD, backName);
+            state.emitterBack = back;
+            back.setVisibility(true);
+            back.resume();
         }
 
         state.lastSeenTick = now;
@@ -116,6 +118,11 @@ public final class TelepadEffekseerController {
     }
 
     private static void updateEmitter(TelepadBlockEntity be, EmitterState state, float intensity, float vortexRotation) {
+        ParticleEmitter back = state.emitterBack;
+        if (back == null) {
+            return;
+        }
+
         BlockPos pos = be.getBlockPos();
 
         // Base position: center of block, elevated above telepad
@@ -141,16 +148,16 @@ public final class TelepadEffekseerController {
         float offsetZ = facing.getStepZ() * depthOffset;
 
         // Back emitter only - behind portal
-        state.emitterBack.setPosition(x - offsetX, y, z - offsetZ);
-        state.emitterBack.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
-        state.emitterBack.setRotation(flatTilt, facingYaw + (float) Math.PI, 0);
+        back.setPosition(x - offsetX, y, z - offsetZ);
+        back.setScale(SCALE, SCALE, SCALE * ASPECT_RATIO);
+        back.setRotation(flatTilt, facingYaw + (float) Math.PI, 0);
 
         // Dynamic inputs to control transparency
         float dynamicInput = Mth.clamp(intensity, MIN_DYNAMIC_INPUT, MAX_DYNAMIC_INPUT);
-        state.emitterBack.setDynamicInput(0, dynamicInput);
-        state.emitterBack.setDynamicInput(1, dynamicInput);
-        state.emitterBack.setDynamicInput(2, dynamicInput);
-        state.emitterBack.setDynamicInput(3, dynamicInput);
+        back.setDynamicInput(0, dynamicInput);
+        back.setDynamicInput(1, dynamicInput);
+        back.setDynamicInput(2, dynamicInput);
+        back.setDynamicInput(3, dynamicInput);
     }
 
     /**
@@ -181,12 +188,12 @@ public final class TelepadEffekseerController {
     }
 
     private static final class EmitterState {
-        private ParticleEmitter emitterFront;
-        private ParticleEmitter emitterBack;
+        @Nullable private ParticleEmitter emitterFront;
+        @Nullable private ParticleEmitter emitterBack;
         private long lastSeenTick;
         private long lastSpawnTick;
 
-        private EmitterState(ParticleEmitter front, ParticleEmitter back) {
+        private EmitterState(@Nullable ParticleEmitter front, @Nullable ParticleEmitter back) {
             this.emitterFront = front;
             this.emitterBack = back;
         }

@@ -69,34 +69,34 @@ public final class CombatSessionTracker {
 
         lastDamageTime = now;
 
-        float damage = data.hasActualDamage() ? data.getActualDamageDealt() : data.breakdown.finalDamage;
+        float damage = data.hasActualDamage() ? data.getActualDamageDealt() : data.getBreakdown().getFinalDamage();
         if (damage <= 0) return;
 
         // Update aggregated stats
         totalDamageDealt += damage;
         totalHits++;
 
-        if (data.bodyPartMultiplier > 1.5f) {
+        if (data.getBodyPartMultiplier() > 1.5f) {
             criticalHits++;
         }
 
-        if (data.bodyPart == BodyPart.HEAD) {
+        if (data.getBodyPart() == BodyPart.HEAD) {
             headshots++;
         }
 
         if (damage > highestSingleHit) {
             highestSingleHit = damage;
-            highestHitTarget = data.targetName;
+            highestHitTarget = data.getTargetName();
         }
 
         // Update body part distribution
-        bodyPartHits.merge(data.bodyPart, 1, Integer::sum);
+        bodyPartHits.merge(data.getBodyPart(), 1, Integer::sum);
 
         // Update per-target stats
         var target = data.getTarget();
         if (target != null) {
-            targetStats.computeIfAbsent(target.getUUID(), id -> new TargetStats(data.targetName))
-                .addHit(damage, data.bodyPart, data.bodyPartMultiplier > 1.5f);
+            targetStats.computeIfAbsent(target.getUUID(), id -> new TargetStats(data.getTargetName()))
+                .addHit(damage, data.getBodyPart(), data.getBodyPartMultiplier() > 1.5f);
         }
 
         // Update DPS timeline

@@ -43,12 +43,12 @@ public class CombatPanel extends FloatingPanel {
         this.hitPoint = hitPoint;
 
         // Estrai dati per rendering veloce
-        this.partHit = data.bodyPart != null ? data.bodyPart.name() : "BODY";
-        this.partMultiplier = data.bodyPartMultiplier;
+        this.partHit = data.getBodyPart() != null ? data.getBodyPart().name() : "BODY";
+        this.partMultiplier = data.getBodyPartMultiplier();
 
-        DamageBreakdown bd = data.breakdown;
-        this.baseDamage = bd != null ? bd.baseWeaponDamage : 0;
-        this.finalDamage = bd != null ? bd.finalDamage : 0;
+        DamageBreakdown bd = data.getBreakdown();
+        this.baseDamage = bd != null ? bd.getBaseWeaponDamage() : 0;
+        this.finalDamage = bd != null ? bd.getFinalDamage() : 0;
 
         this.hasActualDamage = data.hasActualDamage();
         this.actualDamage = hasActualDamage ? data.getActualDamageDealt() : finalDamage;

@@ -31,9 +31,6 @@ public record TransportNetworkListPayload(
     List<NetworkNodeInfo> nodes
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
-    /** Maximum nodes per network list to prevent DoS via unbounded allocation */
-    private static final int MAX_NODES = 200;
-
     public static final Type<TransportNetworkListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "215")));
 
@@ -41,17 +38,28 @@ public record TransportNetworkListPayload(
         StreamCodec.of(TransportNetworkListPayload::encode, TransportNetworkListPayload::decode);
 
     private static void encode(ByteBuf buf, TransportNetworkListPayload payload) {
-        ByteBufCodecs.STRING_UTF8.encode(Objects.requireNonNull(buf), Objects.requireNonNull(payload.networkName));
-        buf.writeShort(payload.nodes.size());
-        for (NetworkNodeInfo node : payload.nodes) {
+        ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH).encode(
+            Objects.requireNonNull(buf),
+            TransportPayloadLimits.truncate(payload.networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
+        );
+        int nodeCount = TransportPayloadLimits.clampCount(payload.nodes.size(), TransportPayloadLimits.MAX_NODES);
+        buf.writeShort(nodeCount);
+        for (int i = 0; i < nodeCount; i++) {
+            NetworkNodeInfo node = payload.nodes.get(i);
             encodeNode(buf, node);
         }
     }
 
     private static void encodeNode(ByteBuf buf, NetworkNodeInfo node) {
         UUIDUtil.STREAM_CODEC.encode(Objects.requireNonNull(buf), Objects.requireNonNull(node.nodeId));
-        ByteBufCodecs.STRING_UTF8.encode(Objects.requireNonNull(buf), Objects.requireNonNull(node.displayName));
-        ByteBufCodecs.STRING_UTF8.encode(Objects.requireNonNull(buf), Objects.requireNonNull(node.dimension));
+        ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH).encode(
+            Objects.requireNonNull(buf),
+            TransportPayloadLimits.truncate(node.displayName, TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH)
+        );
+        ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DIMENSION_LENGTH).encode(
+            Objects.requireNonNull(buf),
+            TransportPayloadLimits.truncate(node.dimension, TransportPayloadLimits.MAX_DIMENSION_LENGTH)
+        );
         buf.writeInt(node.x);
         buf.writeInt(node.y);
         buf.writeInt(node.z);
@@ -60,23 +68,30 @@ public record TransportNetworkListPayload(
     }
 
     private static TransportNetworkListPayload decode(ByteBuf buf) {
-        String networkName = ByteBufCodecs.STRING_UTF8.decode(Objects.requireNonNull(buf));
-        int count = Math.min(buf.readShort() & 0xFFFF, MAX_NODES); // Use unsigned short and clamp to max
-        List<NetworkNodeInfo> nodes = new ArrayList<>(count);
-        for (int i = 0; i < count; i++) {
-            nodes.add(decodeNode(buf));
+        String networkName = ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
+            .decode(Objects.requireNonNull(buf));
+        int rawCount = buf.readShort() & 0xFFFF; // unsigned short
+        int safeCount = TransportPayloadLimits.clampCount(rawCount, TransportPayloadLimits.MAX_NODES);
+        List<NetworkNodeInfo> nodes = new ArrayList<>(safeCount);
+        for (int i = 0; i < rawCount; i++) {
+            NetworkNodeInfo node = decodeNode(buf);
+            if (i < safeCount) {
+                nodes.add(node);
+            }
         }
         return new TransportNetworkListPayload(networkName, nodes);
     }
 
     private static NetworkNodeInfo decodeNode(ByteBuf buf) {
         UUID nodeId = UUIDUtil.STREAM_CODEC.decode(Objects.requireNonNull(buf));
-        String displayName = ByteBufCodecs.STRING_UTF8.decode(Objects.requireNonNull(buf));
-        String dimension = ByteBufCodecs.STRING_UTF8.decode(Objects.requireNonNull(buf));
+        String displayName = ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH)
+            .decode(Objects.requireNonNull(buf));
+        String dimension = ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DIMENSION_LENGTH)
+            .decode(Objects.requireNonNull(buf));
         int x = buf.readInt();
         int y = buf.readInt();
         int z = buf.readInt();
-        int colorIndex = buf.readByte();
+        int colorIndex = buf.readUnsignedByte();
         boolean available = buf.readBoolean();
         return new NetworkNodeInfo(nodeId, displayName, dimension, x, y, z, colorIndex, available);
     }
@@ -89,12 +104,20 @@ public record TransportNetworkListPayload(
 
     @Override
     public int estimatedSize() {
-        long size = PayloadSizeUtil.estimatedUtfSize(networkName);
+        int nodeCount = TransportPayloadLimits.clampCount(nodes.size(), TransportPayloadLimits.MAX_NODES);
+        long size = PayloadSizeUtil.estimatedUtfSize(
+            TransportPayloadLimits.truncateNullable(networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
+        );
         size += 2; // node count (short)
-        for (NetworkNodeInfo node : nodes) {
+        for (int i = 0; i < nodeCount; i++) {
+            NetworkNodeInfo node = nodes.get(i);
             size += 16; // UUID
-            size += PayloadSizeUtil.estimatedUtfSize(node.displayName);
-            size += PayloadSizeUtil.estimatedUtfSize(node.dimension);
+            size += PayloadSizeUtil.estimatedUtfSize(
+                TransportPayloadLimits.truncateNullable(node.displayName, TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH)
+            );
+            size += PayloadSizeUtil.estimatedUtfSize(
+                TransportPayloadLimits.truncateNullable(node.dimension, TransportPayloadLimits.MAX_DIMENSION_LENGTH)
+            );
             size += 4L * 3; // x/y/z
             size += 1; // colorIndex
             size += 1; // available

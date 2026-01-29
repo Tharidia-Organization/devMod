@@ -205,21 +205,21 @@ public class MobConfigScreenRenderer {
             case 0 -> { // Stats
                 labels = new String[]{"Max Health", "Armor", "Speed"};
                 values = new double[]{state.health, state.armor, state.speed * 100};
-                originals = new double[]{state.origHealth, state.origArmor, state.origSpeed * 100};
+                originals = new double[]{state.getOrigHealth(), state.getOrigArmor(), state.getOrigSpeed() * 100};
                 maxValues = new double[]{MobConfigScreenState.MAX_HEALTH, MobConfigScreenState.MAX_ARMOR, MobConfigScreenState.MAX_SPEED * 100};
                 colors = new int[]{DesignTokens.Accent.RED(), DesignTokens.Accent.CYAN(), DesignTokens.Accent.GREEN()};
             }
             case 1 -> { // Combat
                 labels = new String[]{"Attack Damage", "Attack Reach", "Knockback Resist"};
                 values = new double[]{state.damage, state.attackRange, state.knockbackResist * 100};
-                originals = new double[]{state.origDamage, state.origAttackRange, state.origKnockbackResist * 100};
+                originals = new double[]{state.getOrigDamage(), state.getOrigAttackRange(), state.getOrigKnockbackResist() * 100};
                 maxValues = new double[]{MobConfigScreenState.MAX_DAMAGE, MobConfigScreenState.MAX_ATTACK_RANGE, MobConfigScreenState.MAX_KNOCKBACK_RES * 100};
                 colors = new int[]{DesignTokens.Accent.ORANGE(), DesignTokens.Accent.YELLOW(), DesignTokens.Accent.PURPLE()};
             }
             case 2 -> { // AI
                 labels = new String[]{"Follow Range"};
                 values = new double[]{state.followRange};
-                originals = new double[]{state.origFollowRange};
+                originals = new double[]{state.getOrigFollowRange()};
                 maxValues = new double[]{MobConfigScreenState.MAX_FOLLOW_RANGE};
                 colors = new int[]{DesignTokens.Accent.BLUE()};
             }

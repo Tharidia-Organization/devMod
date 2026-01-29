@@ -21,6 +21,8 @@ import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.endurance.EnduranceEventHandler;
+import com.devmod.endurance.combat.api.IComboSession;
+import com.devmod.endurance.combat.core.ComboSessionImpl;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
@@ -211,9 +213,10 @@ public final class ShieldBlockHandler {
             return;
         }
 
-        ComboSystem.ComboSession comboSession = EnduranceEventHandler.getComboSession(serverPlayer.getUUID());
+        IComboSession comboSession = EnduranceEventHandler.getComboSession(serverPlayer.getUUID());
         if (comboSession != null) {
-            ComboSystem.ActionResult actionResult = comboSession.registerParry();
+            // Use registerAction with PARRY type (registerParry is a convenience method)
+            IComboSession.ActionResult actionResult = comboSession.registerAction(ComboSystem.ActionType.PARRY, 0);
             EnduranceEventCombat.syncCombatFlowToClient(
                 serverPlayer,
                 ComboSystem.ActionType.PARRY.getDisplayName(),

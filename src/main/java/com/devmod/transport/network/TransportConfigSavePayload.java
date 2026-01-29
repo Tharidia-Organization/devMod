@@ -35,10 +35,10 @@ public record TransportConfigSavePayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     /** Maximum length for network name. */
-    public static final int MAX_NETWORK_NAME_LENGTH = 64;
+    public static final int MAX_NETWORK_NAME_LENGTH = TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH;
 
     /** Maximum length for display name. */
-    public static final int MAX_DISPLAY_NAME_LENGTH = 48;
+    public static final int MAX_DISPLAY_NAME_LENGTH = TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH;
 
     public static final Type<TransportConfigSavePayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "211")));
@@ -47,9 +47,9 @@ public record TransportConfigSavePayload(
         Objects.requireNonNull(BlockPos.STREAM_CODEC), TransportConfigSavePayload::nodePos,
         Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::modeIndex,
         Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::colorIndex,
-        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), TransportConfigSavePayload::networkName,
+        Objects.requireNonNull(ByteBufCodecs.stringUtf8(MAX_NETWORK_NAME_LENGTH)), TransportConfigSavePayload::getSanitizedNetworkName,
         Objects.requireNonNull(ByteBufCodecs.VAR_INT), TransportConfigSavePayload::selectionModeIndex,
-        Objects.requireNonNull(ByteBufCodecs.STRING_UTF8), TransportConfigSavePayload::displayName,
+        Objects.requireNonNull(ByteBufCodecs.stringUtf8(MAX_DISPLAY_NAME_LENGTH)), TransportConfigSavePayload::getSanitizedDisplayName,
         (pos, mode, color, network, selection, display) -> new TransportConfigSavePayload(
             Objects.requireNonNull(pos),
             Objects.requireNonNull(mode),
@@ -71,9 +71,9 @@ public record TransportConfigSavePayload(
         long size = PayloadSizeUtil.varLongSize(nodePos.asLong());
         size += PayloadSizeUtil.varIntSize(modeIndex);
         size += PayloadSizeUtil.varIntSize(colorIndex);
-        size += PayloadSizeUtil.estimatedUtfSize(networkName);
+        size += PayloadSizeUtil.estimatedUtfSize(getSanitizedNetworkName());
         size += PayloadSizeUtil.varIntSize(selectionModeIndex);
-        size += PayloadSizeUtil.estimatedUtfSize(displayName);
+        size += PayloadSizeUtil.estimatedUtfSize(getSanitizedDisplayName());
         return PayloadSizeUtil.clampToInt(size);
     }
 
@@ -98,7 +98,7 @@ public record TransportConfigSavePayload(
      */
     @Nonnull
     public NetworkSelectionMode getSelectionMode() {
-        return Objects.requireNonNull(NetworkSelectionMode.byIndex(selectionModeIndex));
+        return NetworkSelectionMode.byIndex(selectionModeIndex);
     }
 
     /**
@@ -108,10 +108,7 @@ public record TransportConfigSavePayload(
      */
     @Nonnull
     public String getSanitizedNetworkName() {
-        if (networkName.length() > MAX_NETWORK_NAME_LENGTH) {
-            return Objects.requireNonNull(networkName.substring(0, MAX_NETWORK_NAME_LENGTH));
-        }
-        return networkName;
+        return TransportPayloadLimits.truncate(networkName, MAX_NETWORK_NAME_LENGTH);
     }
 
     /**
@@ -121,9 +118,6 @@ public record TransportConfigSavePayload(
      */
     @Nonnull
     public String getSanitizedDisplayName() {
-        if (displayName.length() > MAX_DISPLAY_NAME_LENGTH) {
-            return Objects.requireNonNull(displayName.substring(0, MAX_DISPLAY_NAME_LENGTH));
-        }
-        return displayName;
+        return TransportPayloadLimits.truncate(displayName, MAX_DISPLAY_NAME_LENGTH);
     }
 }

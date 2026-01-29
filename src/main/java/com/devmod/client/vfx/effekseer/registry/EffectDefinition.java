@@ -44,20 +44,22 @@ public class EffectDefinition implements Closeable {
     }
 
     public ParticleEmitter play(ParticleEmitter.Type type) {
-        if (RenderUtil.isReloadingResourcePacks()) {
+        EffekseerEffect eff = getEffect();
+        if (RenderUtil.isReloadingResourcePacks() || eff == null) {
             return ParticleEmitter.dummy(type);
         }
-        ParticleEmitter emitter = getManager(type).createParticle(getEffect(), type);
+        ParticleEmitter emitter = getManager(type).createParticle(eff, type);
         Set<ParticleEmitter> collection = Objects.requireNonNull(oneShotEmitters.get(type));
         collection.add(emitter);
         return emitter;
     }
 
     public ParticleEmitter play(ParticleEmitter.Type type, ResourceLocation emitterName) {
-        if (RenderUtil.isReloadingResourcePacks()) {
+        EffekseerEffect eff = getEffect();
+        if (RenderUtil.isReloadingResourcePacks() || eff == null) {
             return ParticleEmitter.dummy(type);
         }
-        ParticleEmitter emitter = getManager(type).createParticle(getEffect(), type);
+        ParticleEmitter emitter = getManager(type).createParticle(eff, type);
         Map<ResourceLocation, ParticleEmitter> collection = Objects.requireNonNull(namedEmitters.get(type));
         ParticleEmitter old = collection.put(emitterName, emitter);
         if (old != null) {
@@ -96,6 +98,7 @@ public class EffectDefinition implements Closeable {
         return Stream.of(oneshot, named);
     }
 
+    @Nullable
     public EffekseerEffect getEffect() {
         return effect;
     }
@@ -192,7 +195,12 @@ public class EffectDefinition implements Closeable {
     }
 
     private void unsetBackgrounds(ParticleEmitter.Type type) {
-        unsetBackgrounds(managers.get(type), backgroundColorIds.get(type), backgroundDepthIds.get(type));
+        EffekseerManager manager = managers.get(type);
+        IntRef colorId = backgroundColorIds.get(type);
+        IntRef depthId = backgroundDepthIds.get(type);
+        if (manager != null && colorId != null && depthId != null) {
+            unsetBackgrounds(manager, colorId, depthId);
+        }
     }
 
     private void initManager() {

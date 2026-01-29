@@ -153,7 +153,7 @@ public class Impact3DRenderer {
         // === DPS DISPLAY (in DETAILED/ANALYSIS mode) ===
         ImpactDisplayMode mode = ImpactHudController.INSTANCE.getDisplayMode();
         if (mode == ImpactDisplayMode.DETAILED || mode == ImpactDisplayMode.ANALYSIS) {
-            float currentDps = ImpactDpsTracker.getCurrentDps(data.attackerUUID);
+            float currentDps = ImpactDpsTracker.getCurrentDps(data.getAttackerUUID());
             if (currentDps > 0.1f) {
                 textY += LINE_HEIGHT;
                 String dpsText = String.format("DPS: %.1f/s", currentDps);

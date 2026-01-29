@@ -234,14 +234,14 @@ public final class NexusTransportBridge {
             MinecraftServer server) {
 
         if (!isAvailable()) {
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         NexusHubManager.INSTANCE.initialize(server);
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolveByNameOrAlias(server, zoneId);
         if (zoneOpt.isEmpty()) {
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         com.devmod.zone.data.ZoneDefinition zone = zoneOpt.get();
@@ -253,13 +253,13 @@ public final class NexusTransportBridge {
         ResourceLocation nexusDim = getNexusDimension();
 
         TransportData nodeData = TransportData.createRecoveryPoint(
-            Objects.requireNonNull(UUID.randomUUID()), nexusDim, Objects.requireNonNull(zonePos)
+            UUID.randomUUID(), nexusDim, zonePos
         ).withDisplayName("Return from " + zone.displayName())
          .withColor(getZoneColorFromDefinition(zone));
 
-        registry.register(Objects.requireNonNull(nodeData));
+        registry.register(nodeData);
 
-        return Objects.requireNonNull(Optional.of(nodeData));
+        return Optional.of(nodeData);
     }
 
     /**

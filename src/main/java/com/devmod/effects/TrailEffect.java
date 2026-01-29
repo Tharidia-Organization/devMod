@@ -62,7 +62,7 @@ public class TrailEffect {
 
         // Remove fully faded points
         long fadeMs = (long) (fadeTime * 50); // Convert ticks to ms
-        points.removeIf(p -> (now - p.timestamp) > fadeMs);
+        points.removeIf(p -> (now - p.timestamp()) > fadeMs);
 
         // Mark finished if no points left
         if (points.isEmpty() && now - lastUpdateTime > 500) {
@@ -81,7 +81,7 @@ public class TrailEffect {
      * Gets the alpha for a point based on its age.
      */
     public float getPointAlpha(TrailPoint point) {
-        long age = System.currentTimeMillis() - point.timestamp;
+        long age = System.currentTimeMillis() - point.timestamp();
         long fadeMs = (long) (fadeTime * 50);
         if (age >= fadeMs) return 0f;
         return 1f - (float) age / fadeMs;
@@ -110,13 +110,9 @@ public class TrailEffect {
     /**
      * Represents a single point in the trail.
      */
-    public static class TrailPoint {
-        @Nonnull public final Vec3 position;
-        public final long timestamp;
-
-        public TrailPoint(@Nonnull Vec3 position, long timestamp) {
-            this.position = Objects.requireNonNull(position);
-            this.timestamp = timestamp;
+    public record TrailPoint(@Nonnull Vec3 position, long timestamp) {
+        public TrailPoint {
+            Objects.requireNonNull(position);
         }
     }
 }

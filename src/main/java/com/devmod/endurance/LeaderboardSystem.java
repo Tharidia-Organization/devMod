@@ -28,6 +28,8 @@ import com.google.gson.stream.JsonWriter;
 
 import net.minecraft.server.level.ServerPlayer;
 
+import com.devmod.endurance.combat.api.IComboSession;
+
 public class LeaderboardSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LeaderboardSystem.class);
@@ -154,7 +156,7 @@ public class LeaderboardSystem {
      * Submit a score for a completed quest.
      */
     public void submitQuestResult(ServerPlayer player, EnduranceQuest quest,
-                                   ComboSystem.ComboSession comboSession,
+                                   IComboSession comboSession,
                                    String arenaId) {
         UUID playerId = player.getUUID();
         String playerName = player.getName().getString();

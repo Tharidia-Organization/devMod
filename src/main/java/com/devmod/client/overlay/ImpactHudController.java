@@ -160,17 +160,17 @@ public final class ImpactHudController {
 
         // DPS tracking (always, for recap on demand)
         if (impactData.hasActualDamage()) {
-            ImpactDpsTracker.recordDamage(impactData.attackerUUID, impactData.getActualDamageDealt());
+            ImpactDpsTracker.recordDamage(impactData.getAttackerUUID(), impactData.getActualDamageDealt());
         } else {
             // Use calculated damage as fallback
-            ImpactDpsTracker.recordDamage(impactData.attackerUUID, impactData.breakdown.finalDamage);
+            ImpactDpsTracker.recordDamage(impactData.getAttackerUUID(), impactData.getBreakdown().getFinalDamage());
         }
 
         // Combat session tracking (for recap feature)
         CombatSessionTracker.INSTANCE.recordHit(impactData);
 
         LOGGER.debug("Impact routed: mode={}, target={}, damage={}",
-            mode, impactData.targetName, impactData.breakdown.finalDamage);
+            mode, impactData.getTargetName(), impactData.getBreakdown().getFinalDamage());
     }
 
     /**

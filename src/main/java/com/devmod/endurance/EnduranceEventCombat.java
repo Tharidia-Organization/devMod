@@ -27,13 +27,18 @@ import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.challenges.DailyChallengeManager;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
 public class EnduranceEventCombat {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventCombat.class);
 
-    // Track combo sessions per player (shared with EnduranceEventHandler)
+    /**
+     * @deprecated Use ComboSystemFacade.get().getSession() instead
+     */
+    @Deprecated
     static final Map<UUID, ComboSystem.ComboSession> comboSessions = new ConcurrentHashMap<>();
 
     // Track mutator sessions per quest (shared with EnduranceEventHandler)
@@ -42,9 +47,9 @@ public class EnduranceEventCombat {
     private static final long CRITICAL_KILL_WINDOW_MS = 3000L;
     private static final Map<UUID, CriticalHitMarker> lastCriticalHits = new ConcurrentHashMap<>();
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // DAMAGE HANDLING
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
     /**
      * Handle damage dealt by players to mobs in quests (Post event for tracking).
@@ -81,12 +86,13 @@ public class EnduranceEventCombat {
                 }
 
                 // Process combo system - record hit
-                ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+                IComboSession comboSession = ComboSystemFacade.isInitialized()
+                    ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
                 if (comboSession != null) {
                     // Determine action type based on damage
                     ComboSystem.ActionType actionType =
                         damage >= 20 ? ComboSystem.ActionType.HEAVY_ATTACK : ComboSystem.ActionType.LIGHT_ATTACK;
-                    ComboSystem.ActionResult result = comboSession.registerAction(actionType, damage);
+                    IComboSession.ActionResult result = comboSession.registerAction(actionType, damage);
 
                     // Sync combat flow state to client
                     syncCombatFlowToClient(player, actionType.getDisplayName(), result.styleEarned());
@@ -187,23 +193,29 @@ public class EnduranceEventCombat {
                 TensionSystem.INSTANCE.onPlayerDamaged(questId);
 
                 // Combo penalty on getting hit
-                ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+                IComboSession comboSession = ComboSystemFacade.isInitialized()
+                    ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
                 if (comboSession != null) {
                     comboSession.onDamageTaken(damage);
-
-                    // Check for pending combo decay notification
-                    if (comboSession.hasPendingDecayNotification()) {
-                        int lostCombo = comboSession.consumePendingComboLost();
-                        ComboSystem.StyleRank[] rankChange = comboSession.consumePendingRankChange();
-                        int prevRank = rankChange != null ? rankChange[0].ordinal() : comboSession.getCurrentRank().ordinal();
-                        int newRank = rankChange != null ? rankChange[1].ordinal() : comboSession.getCurrentRank().ordinal();
-
-                        com.devmod.notification.NotificationService.INSTANCE.notifyComboDecay(
-                            player.getUUID(), lostCombo, prevRank, newRank);
-                    }
+                    handleLegacyComboDecayNotification(player, comboSession);
                 }
             }
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void handleLegacyComboDecayNotification(ServerPlayer player, IComboSession comboSession) {
+        if (!comboSession.hasPendingDecayNotification()) {
+            return;
+        }
+
+        int lostCombo = comboSession.consumePendingComboLost();
+        ComboSystem.StyleRank[] rankChange = comboSession.consumePendingRankChange();
+        int prevRank = rankChange != null ? rankChange[0].ordinal() : comboSession.getCurrentRank().ordinal();
+        int newRank = rankChange != null ? rankChange[1].ordinal() : comboSession.getCurrentRank().ordinal();
+
+        com.devmod.notification.NotificationService.INSTANCE.notifyComboDecay(
+            player.getUUID(), lostCombo, prevRank, newRank);
     }
 
     /**
@@ -244,9 +256,9 @@ public class EnduranceEventCombat {
         return originalDamage;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // CRITICAL HITS
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
     /**
      * Handle critical hits.
@@ -266,16 +278,17 @@ public class EnduranceEventCombat {
             lastCriticalHits.put(playerId, new CriticalHitMarker(target.getId(), System.currentTimeMillis()));
 
             // Bonus combo points for critical hits
-            ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+            IComboSession comboSession = ComboSystemFacade.isInitialized()
+                ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
             if (comboSession != null) {
                 comboSession.registerAction(ComboSystem.ActionType.CRITICAL_HIT, damage);
             }
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // DEATH HANDLING
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
     /**
      * Handle mob deaths in quests.
@@ -362,8 +375,9 @@ public class EnduranceEventCombat {
             }
 
             // Record kill in combo system
-            ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
-            ComboSystem.ActionResult killResult = null;
+            IComboSession comboSession = ComboSystemFacade.isInitialized()
+                ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
+            IComboSession.ActionResult killResult = null;
             if (comboSession != null) {
                 killResult = comboSession.registerKill(false, 0); // Basic kill
             }
@@ -377,7 +391,7 @@ public class EnduranceEventCombat {
 
             // Sync combat flow state after kill (includes momentum update)
             String killAction = killResult != null && killResult.announcement() != null
-                ? killResult.announcement().action.getDisplayName() : "Kill";
+                ? killResult.announcement().action().getDisplayName() : "Kill";
             int killPoints = killResult != null ? killResult.styleEarned() : 0;
             syncCombatFlowToClient(player, killAction, killPoints);
 
@@ -494,9 +508,9 @@ public class EnduranceEventCombat {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // UTILITY METHODS
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
     /**
      * Check if an entity is a quest mob.
@@ -627,10 +641,14 @@ public class EnduranceEventCombat {
         return false;
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // SESSION ACCESSORS
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
+    /*
+     * Deprecated: Use ComboSystemFacade.get().getSession() instead.
+     */
+    @Deprecated
     public static ComboSystem.ComboSession getComboSession(UUID playerId) {
         return comboSessions.get(playerId);
     }
@@ -639,10 +657,18 @@ public class EnduranceEventCombat {
         return mutatorSessions.get(questId);
     }
 
+    /*
+     * Deprecated: Use ComboSystemFacade.get().startSession() instead.
+     */
+    @Deprecated
     static void putComboSession(UUID playerId, ComboSystem.ComboSession session) {
         comboSessions.put(playerId, session);
     }
 
+    /*
+     * Deprecated: Use ComboSystemFacade.get().endSession() instead.
+     */
+    @Deprecated
     static ComboSystem.ComboSession removeComboSession(UUID playerId) {
         return comboSessions.remove(playerId);
     }
@@ -657,9 +683,9 @@ public class EnduranceEventCombat {
 
     private record CriticalHitMarker(int targetId, long timestamp) {}
 
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
     // COMBAT FLOW SYNC
-    // ═══════════════════════════════════════════════════════════════
+    // ===============================================================
 
     /**
      * Syncs combat flow state (combo, style, momentum) to the client.
@@ -669,7 +695,8 @@ public class EnduranceEventCombat {
         if (player == null) return;
 
         UUID playerId = player.getUUID();
-        ComboSystem.ComboSession comboSession = comboSessions.get(playerId);
+        IComboSession comboSession = ComboSystemFacade.isInitialized()
+            ? ComboSystemFacade.get().getSession(playerId).orElse(null) : null;
         MomentumTracker.MomentumSession momentumSession = MomentumTracker.INSTANCE.getSession(playerId);
 
         CombatFlowSyncPayload payload = CombatFlowSyncPayload.fromSession(

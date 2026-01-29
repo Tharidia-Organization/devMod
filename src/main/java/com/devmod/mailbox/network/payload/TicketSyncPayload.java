@@ -1,6 +1,5 @@
 package com.devmod.mailbox.network.payload;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketPriority;
 import com.devmod.mailbox.ticket.TicketStatus;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -26,11 +26,6 @@ import com.devmod.network.PayloadValidation;
 public record TicketSyncPayload(
     List<TicketData> tickets
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
-
-    // Security limits
-    private static final int MAX_TICKETS = 100;
-    private static final int MAX_SUBJECT_LENGTH = 256;
-    private static final int MAX_DESCRIPTION_LENGTH = 4000;
 
     public static final Type<TicketSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "ticket_sync"))
@@ -46,8 +41,10 @@ public record TicketSyncPayload(
     }
 
     private static void encode(RegistryFriendlyByteBuf buf, TicketSyncPayload payload) {
-        buf.writeVarInt(payload.tickets.size());
-        for (TicketData ticket : payload.tickets) {
+        int ticketCount = MailboxPayloadLimits.clampCount(payload.tickets.size(), MailboxPayloadLimits.MAX_TICKETS);
+        buf.writeVarInt(ticketCount);
+        for (int i = 0; i < ticketCount; i++) {
+            TicketData ticket = payload.tickets.get(i);
             encodeTicket(buf, ticket);
         }
     }
@@ -57,10 +54,16 @@ public record TicketSyncPayload(
         buf.writeEnum(ticket.category);
         buf.writeEnum(ticket.priority);
         buf.writeEnum(ticket.status);
-        buf.writeUtf(ticket.subject);
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(ticket.subject, MailboxPayloadLimits.MAX_TICKET_SUBJECT_LENGTH),
+            MailboxPayloadLimits.MAX_TICKET_SUBJECT_LENGTH
+        );
         buf.writeBoolean(ticket.description != null);
         if (ticket.description != null) {
-            buf.writeUtf(ticket.description);
+            buf.writeUtf(
+                MailboxPayloadLimits.truncate(ticket.description, MailboxPayloadLimits.MAX_TICKET_DESCRIPTION_LENGTH),
+                MailboxPayloadLimits.MAX_TICKET_DESCRIPTION_LENGTH
+            );
         }
         buf.writeLong(ticket.createdAt.toEpochMilli());
         buf.writeBoolean(ticket.updatedAt != null);
@@ -71,7 +74,7 @@ public record TicketSyncPayload(
     }
 
     private static TicketSyncPayload decode(RegistryFriendlyByteBuf buf) {
-        int count = Math.min(buf.readVarInt(), MAX_TICKETS);
+        int count = MailboxPayloadLimits.clampCount(buf.readVarInt(), MailboxPayloadLimits.MAX_TICKETS);
         List<TicketData> tickets = new ArrayList<>(count);
 
         for (int i = 0; i < count; i++) {
@@ -86,8 +89,10 @@ public record TicketSyncPayload(
         TicketCategory category = buf.readEnum(TicketCategory.class);
         TicketPriority priority = buf.readEnum(TicketPriority.class);
         TicketStatus status = buf.readEnum(TicketStatus.class);
-        String subject = buf.readUtf(MAX_SUBJECT_LENGTH);
-        @Nullable String description = buf.readBoolean() ? buf.readUtf(MAX_DESCRIPTION_LENGTH) : null;
+        String subject = buf.readUtf(MailboxPayloadLimits.MAX_TICKET_SUBJECT_LENGTH);
+        @Nullable String description = buf.readBoolean()
+            ? buf.readUtf(MailboxPayloadLimits.MAX_TICKET_DESCRIPTION_LENGTH)
+            : null;
         Instant createdAt = Instant.ofEpochMilli(buf.readLong());
         @Nullable Instant updatedAt = buf.readBoolean() ? Instant.ofEpochMilli(buf.readLong()) : null;
         int commentCount = buf.readVarInt();
@@ -102,8 +107,10 @@ public record TicketSyncPayload(
 
     @Override
     public int estimatedSize() {
-        int size = varIntSize(tickets.size());
-        for (TicketData ticket : tickets) {
+        int count = MailboxPayloadLimits.clampCount(tickets.size(), MailboxPayloadLimits.MAX_TICKETS);
+        int size = PayloadSizeUtil.varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            TicketData ticket = tickets.get(i);
             size += estimateTicketSize(ticket);
         }
         return size;
@@ -111,35 +118,24 @@ public record TicketSyncPayload(
 
     private static int estimateTicketSize(TicketData ticket) {
         int size = 16; // UUID
-        size += varIntSize(ticket.category.ordinal());
-        size += varIntSize(ticket.priority.ordinal());
-        size += varIntSize(ticket.status.ordinal());
-        size += estimatedUtfSize(ticket.subject);
+        size += PayloadSizeUtil.varIntSize(ticket.category.ordinal());
+        size += PayloadSizeUtil.varIntSize(ticket.priority.ordinal());
+        size += PayloadSizeUtil.varIntSize(ticket.status.ordinal());
+        size += PayloadSizeUtil.estimatedUtfSize(
+            MailboxPayloadLimits.truncateNullable(ticket.subject, MailboxPayloadLimits.MAX_TICKET_SUBJECT_LENGTH)
+        );
         size += 1; // description present flag
         if (ticket.description != null) {
-            size += estimatedUtfSize(ticket.description);
+            size += PayloadSizeUtil.estimatedUtfSize(
+                MailboxPayloadLimits.truncateNullable(ticket.description, MailboxPayloadLimits.MAX_TICKET_DESCRIPTION_LENGTH)
+            );
         }
         size += 8; // createdAt
         size += 1; // updatedAt present flag
         if (ticket.updatedAt != null) {
             size += 8; // updatedAt
         }
-        size += varIntSize(ticket.commentCount);
-        return size;
-    }
-
-    private static int estimatedUtfSize(@Nonnull String value) {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
+        size += PayloadSizeUtil.varIntSize(ticket.commentCount);
         return size;
     }
 

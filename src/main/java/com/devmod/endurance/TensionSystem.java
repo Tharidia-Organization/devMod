@@ -9,8 +9,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 
-public class TensionSystem {
+/*
+ * Dynamic boss spawning system based on player performance.
+ *
+ * Implements QuestLifecycleListener to receive quest lifecycle events.
+ * Note: TensionSystem is quest-scoped (shared between party members).
+ *
+ * Priority: 800 (Core gameplay)
+ */
+public class TensionSystem implements QuestLifecycleListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TensionSystem.class);
 
@@ -33,7 +44,7 @@ public class TensionSystem {
     // Per-quest tension state
     private final Map<UUID, TensionState> questStates = new ConcurrentHashMap<>();
 
-    /**
+    /*
      * Tension state for a single quest.
      */
     public static class TensionState {
@@ -60,14 +71,14 @@ public class TensionSystem {
         public int getTotalBossesSpawned() { return totalBossesSpawned; }
         public boolean isBossWavePending() { return bossWavePending; }
 
-        /**
+        /*
          * Get tension as a percentage of threshold (for UI).
          */
         public float getTensionPercent() {
             return Math.min(1.0f, currentTension / bossThreshold);
         }
 
-        /**
+        /*
          * Get visual tension level (0-4 for UI intensity).
          */
         public int getTensionLevel() {
@@ -84,7 +95,7 @@ public class TensionSystem {
 
     // ========== Session Management ==========
 
-    /**
+    /*
      * Start tension tracking for a quest.
      */
     public TensionState startSession(UUID questId) {
@@ -95,26 +106,59 @@ public class TensionSystem {
         return state;
     }
 
-    /**
+    /*
      * End tension tracking for a quest.
      */
     public TensionState endSession(UUID questId) {
         return questStates.remove(questId);
     }
 
-    /**
+    /*
      * Get tension state for a quest.
      */
     public TensionState getState(UUID questId) {
         return questStates.get(questId);
     }
 
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        UUID questId = event.questId();
+        // Only create session if none exists (shared per quest)
+        if (getState(questId) == null) {
+            startSession(questId);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        // Only end if cleanupShared is true (last player leaving)
+        if (event.cleanupShared()) {
+            endSession(event.questId());
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 800; // Core gameplay
+    }
+
+    @Override
+    public String getListenerName() {
+        return "TensionSystem";
+    }
+
+    @Override
+    public boolean receivePracticeModeEvents() {
+        return false; // Tension/boss system disabled in practice mode
+    }
+
     // ========== Tension Accumulation ==========
 
-    /**
+    /*
      * Called when a wave is completed. Accumulates tension and checks for boss trigger.
-     *
-     * @return true if next wave should be a boss wave
+     * Returns true if the next wave should be a boss wave.
      */
     public boolean onWaveComplete(UUID questId, int waveNumber) {
         TensionState state = questStates.get(questId);
@@ -171,7 +215,7 @@ public class TensionSystem {
         return shouldSpawnBoss;
     }
 
-    /**
+    /*
      * Called when a boss wave is completed. Resets tension.
      * Thread-safe: Synchronized to prevent race conditions during multi-field reset.
      */
@@ -192,7 +236,7 @@ public class TensionSystem {
             newThreshold);
     }
 
-    /**
+    /*
      * Check if boss should spawn.
      */
     private boolean checkBossTrigger(TensionState state, int waveNumber, UUID questId) {
@@ -223,7 +267,7 @@ public class TensionSystem {
 
     // ========== Event Tracking ==========
 
-    /**
+    /*
      * Called when player takes damage in current wave.
      * Thread-safe: Synchronized to prevent race with wave tracking reads.
      */
@@ -236,7 +280,7 @@ public class TensionSystem {
         }
     }
 
-    /**
+    /*
      * Called when combo is updated.
      * Thread-safe: Synchronized to prevent race with wave completion reads.
      */
@@ -254,7 +298,7 @@ public class TensionSystem {
         }
     }
 
-    /**
+    /*
      * Called when player kills a mob. Tracks rapid kill streaks.
      * Thread-safe: Synchronized to prevent race with wave completion reads.
      */
@@ -274,7 +318,7 @@ public class TensionSystem {
         }
     }
 
-    /**
+    /*
      * Reset wave-specific tracking.
      */
     private void resetWaveTracking(TensionState state) {
@@ -287,14 +331,14 @@ public class TensionSystem {
 
     // ========== Utility ==========
 
-    /**
+    /*
      * Generate a random boss threshold using default values.
      */
     private float randomThreshold() {
         return DEFAULT_MIN_THRESHOLD + random.nextFloat() * (DEFAULT_MAX_THRESHOLD - DEFAULT_MIN_THRESHOLD);
     }
 
-    /**
+    /*
      * Generate a random boss threshold using config values for a specific quest.
      */
     private float randomThreshold(UUID questId) {
@@ -303,7 +347,7 @@ public class TensionSystem {
         return minThreshold + random.nextFloat() * (maxThreshold - minThreshold);
     }
 
-    /**
+    /*
      * Manually add tension (for special events, mutators, etc).
      */
     public void addTension(UUID questId, float amount, String reason) {
@@ -315,7 +359,7 @@ public class TensionSystem {
         }
     }
 
-    /**
+    /*
      * Get tension info for UI display.
      */
     public TensionInfo getTensionInfo(UUID questId) {
@@ -330,7 +374,7 @@ public class TensionSystem {
         );
     }
 
-    /**
+    /*
      * Tension info for UI/network sync.
      */
     public record TensionInfo(

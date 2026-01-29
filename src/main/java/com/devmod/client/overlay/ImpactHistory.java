@@ -18,11 +18,11 @@ public final class ImpactHistory {
     private ImpactHistory() {}
 
     public static void record(ImpactData data) {
-        if (data == null || data.attackerUUID == null) {
+        if (data == null || data.getAttackerUUID() == null) {
             return;
         }
 
-        Deque<ImpactData> history = HISTORY_BY_PLAYER.computeIfAbsent(data.attackerUUID, id -> new ArrayDeque<>());
+        Deque<ImpactData> history = HISTORY_BY_PLAYER.computeIfAbsent(data.getAttackerUUID(), id -> new ArrayDeque<>());
         synchronized (history) {
             history.addFirst(data);
             int limit = getMaxEntries();

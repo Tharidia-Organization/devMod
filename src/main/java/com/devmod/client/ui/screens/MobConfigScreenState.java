@@ -66,12 +66,22 @@ public class MobConfigScreenState {
     public double speed, knockbackResist;
 
     // Original values (for comparison)
-    public final double origHealth, origArmor, origDamage, origFollowRange, origAttackRange;
-    public final double origSpeed, origKnockbackResist;
+    private final double origHealth, origArmor, origDamage, origFollowRange, origAttackRange;
+    private final double origSpeed, origKnockbackResist;
 
     // Mode
     public boolean isGlobalMode = lastGlobalMode;
-    public final boolean origGlobalMode;
+    private final boolean origGlobalMode;
+
+    // Getters for original values
+    public double getOrigHealth() { return origHealth; }
+    public double getOrigArmor() { return origArmor; }
+    public double getOrigDamage() { return origDamage; }
+    public double getOrigFollowRange() { return origFollowRange; }
+    public double getOrigAttackRange() { return origAttackRange; }
+    public double getOrigSpeed() { return origSpeed; }
+    public double getOrigKnockbackResist() { return origKnockbackResist; }
+    public boolean isOrigGlobalMode() { return origGlobalMode; }
 
     // UI State
     public int selectedTab = 0;

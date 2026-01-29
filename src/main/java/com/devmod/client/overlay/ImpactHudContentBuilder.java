@@ -107,7 +107,7 @@ public final class ImpactHudContentBuilder {
     }
 
     public static Optional<HudSection> buildHistorySection(ImpactData data, NumberFormat format) {
-        if (data == null || data.attackerUUID == null) {
+        if (data == null || data.getAttackerUUID() == null) {
             return Optional.empty();
         }
 
@@ -118,9 +118,9 @@ public final class ImpactHudContentBuilder {
         }
 
         List<ImpactData> recent = showHistory
-            ? ImpactHistory.getRecent(data.attackerUUID, ImpactHistory.getMaxEntries())
+            ? ImpactHistory.getRecent(data.getAttackerUUID(), ImpactHistory.getMaxEntries())
             : List.of();
-        float dps = showDps ? ImpactDpsTracker.getCurrentDps(data.attackerUUID) : 0f;
+        float dps = showDps ? ImpactDpsTracker.getCurrentDps(data.getAttackerUUID()) : 0f;
 
         List<HudLine> historyLines = new ArrayList<>();
         if (showHistory) {
@@ -132,10 +132,10 @@ public final class ImpactHudContentBuilder {
                 if (impact == data && recent.size() > 1) {
                     continue;
                 }
-                float damage = impact.hasActualDamage() ? impact.getActualDamageDealt() : impact.breakdown.finalDamage;
-                String partKey = "devmod.bodypart." + impact.bodyPart.name().toLowerCase(Locale.ROOT);
+                float damage = impact.hasActualDamage() ? impact.getActualDamageDealt() : impact.getBreakdown().getFinalDamage();
+                String partKey = "devmod.bodypart." + impact.getBodyPart().name().toLowerCase(Locale.ROOT);
                 Component line = I18n.translate("devmod.hud.history_line",
-                    impact.targetName,
+                    impact.getTargetName(),
                     I18n.translate(partKey),
                     format.formatValue(damage));
                 historyLines.add(new HudLine(line, Colors.MUTED, LineType.MUTED, Spacing.NONE));
@@ -199,14 +199,14 @@ public final class ImpactHudContentBuilder {
         Component partHit = Objects.requireNonNull(I18n.translate("devmod.hud.part_hit"), "partHitLabel")
             .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
             .append(Objects.requireNonNull(
-                Objects.requireNonNull(I18n.literal(data.bodyPart.name()), "partHitName")
+                Objects.requireNonNull(I18n.literal(data.getBodyPart().name()), "partHitName")
                     .withStyle(style -> style.withColor(data.getBodyPartColor() & DesignTokens.Mask.RGB)),
                 "partHitNameStyled"))
             .append(Objects.requireNonNull(I18n.literal(" ("), "partHitOpen"))
             .append(Objects.requireNonNull(I18n.translate("devmod.hud.modifier"), "partHitModifier"))
             .append(Objects.requireNonNull(I18n.literal(": "), "partHitModifierSeparator"))
             .append(Objects.requireNonNull(
-                Objects.requireNonNull(I18n.literal("x" + format.formatMultiplier(data.bodyPartMultiplier)),
+                Objects.requireNonNull(I18n.literal("x" + format.formatMultiplier(data.getBodyPartMultiplier())),
                     "partHitMultiplier")
                     .withStyle(style -> style.withColor(Colors.VALUE & DesignTokens.Mask.RGB)),
                 "partHitMultiplierStyled"))
@@ -220,7 +220,7 @@ public final class ImpactHudContentBuilder {
             Spacing.SECTION
         ));
 
-        DamageBreakdown bd = data.breakdown;
+        DamageBreakdown bd = data.getBreakdown();
         // P2: Use pooled list for breakdown lines
         ArrayList<HudLine> breakdownLines = LINE_LIST_POOL.acquire();
         try {
@@ -280,7 +280,7 @@ public final class ImpactHudContentBuilder {
             }
         } else {
             lines.add(new HudLine(
-                I18n.translate("devmod.hud.calculated_damage", format.formatValue(bd.finalDamage)),
+                I18n.translate("devmod.hud.calculated_damage", format.formatValue(bd.getFinalDamage())),
                 Colors.VALUE,
                 LineType.HIGHLIGHT,
                 Spacing.NONE,
@@ -323,7 +323,7 @@ public final class ImpactHudContentBuilder {
         }
 
         if (data.hasPehkuiModification()) {
-            float scale = data.pehkuiVisualScale != null ? data.pehkuiVisualScale : 1.0f;
+            float scale = data.getPehkuiVisualScale() != null ? data.getPehkuiVisualScale() : 1.0f;
             lines.add(new HudLine(
                 I18n.translate("devmod.hud.pehkui_scale", format.formatValue(scale)),
                 Colors.MUTED,
@@ -350,13 +350,13 @@ public final class ImpactHudContentBuilder {
      */
     private static void buildBreakdownLines(List<HudLine> breakdownLines, DamageBreakdown bd, NumberFormat format) {
         breakdownLines.add(new HudLine(
-            I18n.translate("devmod.hud.base_weapon_damage", format.formatValue(bd.baseWeaponDamage)),
+            I18n.translate("devmod.hud.base_weapon_damage", format.formatValue(bd.getBaseWeaponDamage())),
             Colors.NORMAL,
             LineType.NORMAL,
             Spacing.NONE
         ));
 
-        for (DamageBreakdown.EnchantBonus eb : bd.enchantBonuses) {
+        for (DamageBreakdown.EnchantBonus eb : bd.getEnchantBonuses()) {
             if (eb.bonus() > 0) {
                 breakdownLines.add(new HudLine(
                     I18n.translate("devmod.hud.enchant", eb.name(), format.formatValue(eb.bonus())),
@@ -367,9 +367,9 @@ public final class ImpactHudContentBuilder {
             }
         }
 
-        if (bd.pehkuiSizeBonus > 0) {
+        if (bd.getPehkuiSizeBonus() > 0) {
             breakdownLines.add(new HudLine(
-                I18n.translate("devmod.hud.pehkui_size_bonus", format.formatValue(bd.pehkuiSizeBonus)),
+                I18n.translate("devmod.hud.pehkui_size_bonus", format.formatValue(bd.getPehkuiSizeBonus())),
                 Colors.VALUE,
                 LineType.VALUE,
                 Spacing.NONE

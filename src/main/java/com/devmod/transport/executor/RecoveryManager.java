@@ -98,7 +98,7 @@ public final class RecoveryManager {
      */
     @Nonnull
     public Optional<RecoveryPoint> getRecoveryPoint(@Nonnull UUID playerId) {
-        return Objects.requireNonNull(Optional.ofNullable(playerRecoveryPoints.get(playerId)));
+        return Optional.ofNullable(playerRecoveryPoints.get(playerId));
     }
 
     /**
@@ -294,7 +294,7 @@ public final class RecoveryManager {
      */
     @Nonnull
     public Optional<AreaSnapshot> getSnapshot(@Nonnull UUID snapshotId) {
-        return Objects.requireNonNull(Optional.ofNullable(areaSnapshots.get(snapshotId)));
+        return Optional.ofNullable(areaSnapshots.get(snapshotId));
     }
 
     // =========================================================================

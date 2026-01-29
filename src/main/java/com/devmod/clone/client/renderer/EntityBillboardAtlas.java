@@ -249,14 +249,5 @@ public final class EntityBillboardAtlas {
     /**
      * UV region within the atlas texture.
      */
-    public static class UVRegion {
-        public final float u0, v0, u1, v1;
-
-        public UVRegion(float u0, float v0, float u1, float v1) {
-            this.u0 = u0;
-            this.v0 = v0;
-            this.u1 = u1;
-            this.v1 = v1;
-        }
-    }
+    public record UVRegion(float u0, float v0, float u1, float v1) {}
 }

@@ -32,8 +32,9 @@ import javax.annotation.Nullable;
 
 public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetLoader.Preparations> {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static EffekAssetLoader INSTANCE;
+    @Nullable private static EffekAssetLoader INSTANCE;
 
+    @Nullable
     public static EffekAssetLoader get() {
         return INSTANCE;
     }

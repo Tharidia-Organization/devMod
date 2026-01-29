@@ -47,6 +47,7 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.DevMod;
 import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.notification.NotificationService;
@@ -164,7 +165,7 @@ public class RewardSystem {
      * Calculate and award rewards for a completed quest.
      */
     public QuestRewards calculateQuestRewards(ServerPlayer player, EnduranceQuest quest,
-                                               ComboSystem.ComboSession comboSession,
+                                               IComboSession comboSession,
                                                MutatorSystem.MutatorSession mutatorSession,
                                                @javax.annotation.Nullable ArenaPolicy policy,
                                                @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
@@ -339,7 +340,7 @@ public class RewardSystem {
      * Generate loot drops based on performance.
      */
     private List<ItemStack> generateLootDrops(ServerPlayer player, EnduranceQuest quest,
-                                               ComboSystem.ComboSession comboSession) {
+                                               IComboSession comboSession) {
         List<ItemStack> drops = new ArrayList<>();
         RegistryAccess registryAccess = player.level().registryAccess();
 
@@ -637,7 +638,7 @@ public class RewardSystem {
      * Check and unlock any earned achievements.
      */
     private List<Achievement> checkAchievements(ServerPlayer player, EnduranceQuest quest,
-                                                 ComboSystem.ComboSession comboSession) {
+                                                 IComboSession comboSession) {
         List<Achievement> unlocked = new ArrayList<>();
         PlayerWallet wallet = getWallet(player.getUUID());
 
@@ -1256,13 +1257,13 @@ public class RewardSystem {
      * @return WaveReward with calculated token amounts
      */
     public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
-                                           ComboSystem.ComboSession comboSession,
+                                           IComboSession comboSession,
                                            MutatorSystem.MutatorSession mutatorSession) {
         return calculateWaveReward(waveNumber, quest, comboSession, mutatorSession, 1.0f);
     }
 
     public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
-                                          ComboSystem.ComboSession comboSession,
+                                          IComboSession comboSession,
                                           MutatorSystem.MutatorSession mutatorSession,
                                           float directiveMultiplier) {
         // Base tokens per wave (scales with wave number)

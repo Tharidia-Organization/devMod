@@ -86,10 +86,10 @@ public final class QuestTransportBridge {
             return false;
         }
 
-        List<ServerPlayer> members = Objects.requireNonNull(party.getMembers().stream()
-            .map(uuid -> server.getPlayerList().getPlayer(Objects.requireNonNull(uuid)))
+        List<ServerPlayer> members = party.getMembers().stream()
+            .map(uuid -> server.getPlayerList().getPlayer(uuid))
             .filter(Objects::nonNull)
-            .toList());
+            .toList();
 
         if (members.isEmpty()) {
             LOGGER.warn("[QuestBridge] No online members in party {}", partyId);
@@ -134,8 +134,7 @@ public final class QuestTransportBridge {
         }
 
         ServerLevel destLevel = server.getLevel(
-            Objects.requireNonNull(ResourceKey.create(
-                Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDim))
+            ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, destDim)
         );
 
         if (destLevel == null) {
@@ -144,8 +143,8 @@ public final class QuestTransportBridge {
         }
 
         // Save recovery points for all members
-        for (ServerPlayer member : Objects.requireNonNull(players)) {
-            RecoveryManager.INSTANCE.saveRecoveryPoint(Objects.requireNonNull(member));
+        for (ServerPlayer member : players) {
+            RecoveryManager.INSTANCE.saveRecoveryPoint(member);
         }
 
         // Start countdown for all members
@@ -154,26 +153,26 @@ public final class QuestTransportBridge {
 
         // Start countdown with BossBar
         CountdownManager.INSTANCE.startCountdown(
-            Objects.requireNonNull(countdownId),
-            Objects.requireNonNull(server.overworld()),
-            Objects.requireNonNull(players.get(0).blockPosition()),
+            countdownId,
+            server.overworld(),
+            players.get(0).blockPosition(),
             PARTY_COUNTDOWN_TICKS,
             "devmod.transport.party_countdown",
             destination.color(),
             () -> {
                 // Countdown complete - teleport all members
-                executeGroupTeleport(players, finalDestLevel, Objects.requireNonNull(destPos));
+                executeGroupTeleport(players, finalDestLevel, destPos);
 
                 // Start arrival tracking
-                List<UUID> memberIds = Objects.requireNonNull(players.stream()
+                List<UUID> memberIds = players.stream()
                     .map(ServerPlayer::getUUID)
-                    .toList());
+                    .toList();
 
                 ArrivalManager.INSTANCE.startArrivalTracking(
-                    Objects.requireNonNull(countdownId),
-                    Objects.requireNonNull(memberIds),
+                    countdownId,
+                    memberIds,
                     finalDestLevel,
-                    Objects.requireNonNull(destPos),
+                    destPos,
                     5.0,
                     result -> {
                         if (result.success() && onAllArrived != null) {
@@ -225,13 +224,9 @@ public final class QuestTransportBridge {
      * Confirms a player's arrival at the quest destination.
      */
     public boolean confirmArrival(ServerPlayer player, MinecraftServer server) {
-        Optional<UUID> partyOpt = getPlayerPartyId(Objects.requireNonNull(player.getUUID()));
-        if (partyOpt.isEmpty()) {
-            return false;
-        }
-
-        return ArrivalManager.INSTANCE.confirmArrival(
-            Objects.requireNonNull(partyOpt.get()), Objects.requireNonNull(player.getUUID()), server);
+        return getPlayerPartyId(player.getUUID())
+            .map(partyId -> ArrivalManager.INSTANCE.confirmArrival(partyId, player.getUUID(), server))
+            .orElse(false);
     }
 
     /**
@@ -281,15 +276,15 @@ public final class QuestTransportBridge {
 
         TransportData nodeData = TransportData.createZone(
             TransportColor.RED,
-            Objects.requireNonNull(destDim), destPos,
-            Objects.requireNonNull(destDim), destPos,
+            destDim, destPos,
+            destDim, destPos,
             questName
         );
 
-        registry.register(Objects.requireNonNull(nodeData));
+        registry.register(nodeData);
         LOGGER.info("[QuestBridge] Created quest entry node: {}", questName);
 
-        return Objects.requireNonNull(Optional.of(nodeData));
+        return Optional.of(nodeData);
     }
 
     /**

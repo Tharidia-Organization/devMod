@@ -1,6 +1,5 @@
 package com.devmod.mailbox.network.payload;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -14,6 +13,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -23,12 +23,6 @@ public record NewsSyncPayload(
     List<NewsArticleData> articles,
     int unreadCount
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
-
-    // Security limits
-    private static final int MAX_ARTICLES = 100;
-    private static final int MAX_TITLE_LENGTH = 256;
-    private static final int MAX_CONTENT_LENGTH = 10000;
-    private static final int MAX_NAME_LENGTH = 64;
 
     public static final Type<NewsSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "news_sync"))
@@ -40,8 +34,10 @@ public record NewsSyncPayload(
     );
 
     private static void encode(RegistryFriendlyByteBuf buf, NewsSyncPayload payload) {
-        buf.writeVarInt(payload.articles.size());
-        for (NewsArticleData article : payload.articles) {
+        int articleCount = MailboxPayloadLimits.clampCount(payload.articles.size(), MailboxPayloadLimits.MAX_NEWS_ARTICLES);
+        buf.writeVarInt(articleCount);
+        for (int i = 0; i < articleCount; i++) {
+            NewsArticleData article = payload.articles.get(i);
             encodeArticle(buf, article);
         }
         buf.writeVarInt(payload.unreadCount);
@@ -49,9 +45,7 @@ public record NewsSyncPayload(
 
     private static NewsSyncPayload decode(RegistryFriendlyByteBuf buf) {
         int articleCount = buf.readVarInt();
-        if (articleCount < 0 || articleCount > MAX_ARTICLES) {
-            articleCount = 0;
-        }
+        articleCount = MailboxPayloadLimits.clampCount(articleCount, MailboxPayloadLimits.MAX_NEWS_ARTICLES);
 
         List<NewsArticleData> articles = new ArrayList<>(articleCount);
         for (int i = 0; i < articleCount; i++) {
@@ -65,10 +59,19 @@ public record NewsSyncPayload(
 
     private static void encodeArticle(RegistryFriendlyByteBuf buf, NewsArticleData article) {
         buf.writeUUID(Objects.requireNonNull(article.id));
-        buf.writeUtf(Objects.requireNonNull(article.title));
-        buf.writeUtf(Objects.requireNonNull(article.content));
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(article.title, MailboxPayloadLimits.MAX_NEWS_TITLE_LENGTH),
+            MailboxPayloadLimits.MAX_NEWS_TITLE_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(article.content, MailboxPayloadLimits.MAX_NEWS_CONTENT_LENGTH),
+            MailboxPayloadLimits.MAX_NEWS_CONTENT_LENGTH
+        );
         buf.writeVarInt(article.categoryOrdinal);
-        buf.writeUtf(article.authorName != null ? article.authorName : "");
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(article.authorName, MailboxPayloadLimits.MAX_NEWS_AUTHOR_LENGTH),
+            MailboxPayloadLimits.MAX_NEWS_AUTHOR_LENGTH
+        );
         buf.writeLong(article.publishedAtMillis);
         buf.writeVarInt(article.priority);
         buf.writeBoolean(article.isRead);
@@ -76,10 +79,10 @@ public record NewsSyncPayload(
 
     private static NewsArticleData decodeArticle(RegistryFriendlyByteBuf buf) {
         UUID id = buf.readUUID();
-        String title = buf.readUtf(MAX_TITLE_LENGTH);
-        String content = buf.readUtf(MAX_CONTENT_LENGTH);
+        String title = buf.readUtf(MailboxPayloadLimits.MAX_NEWS_TITLE_LENGTH);
+        String content = buf.readUtf(MailboxPayloadLimits.MAX_NEWS_CONTENT_LENGTH);
         int categoryOrdinal = buf.readVarInt();
-        String authorName = buf.readUtf(MAX_NAME_LENGTH);
+        String authorName = buf.readUtf(MailboxPayloadLimits.MAX_NEWS_AUTHOR_LENGTH);
         long publishedAtMillis = buf.readLong();
         int priority = buf.readVarInt();
         boolean isRead = buf.readBoolean();
@@ -97,42 +100,30 @@ public record NewsSyncPayload(
 
     @Override
     public int estimatedSize() {
-        int size = varIntSize(articles.size());
-        for (NewsArticleData article : articles) {
+        int count = MailboxPayloadLimits.clampCount(articles.size(), MailboxPayloadLimits.MAX_NEWS_ARTICLES);
+        int size = PayloadSizeUtil.varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            NewsArticleData article = articles.get(i);
             size += estimateArticleSize(article);
         }
-        size += varIntSize(unreadCount);
+        size += PayloadSizeUtil.varIntSize(unreadCount);
         return size;
     }
 
     private static int estimateArticleSize(NewsArticleData article) {
         int size = 16; // UUID
-        size += estimatedUtfSize(article.title);
-        size += estimatedUtfSize(article.content);
-        size += varIntSize(article.categoryOrdinal);
-        size += estimatedUtfSize(article.authorName);
+        size += estimatedUtfSize(article.title, MailboxPayloadLimits.MAX_NEWS_TITLE_LENGTH);
+        size += estimatedUtfSize(article.content, MailboxPayloadLimits.MAX_NEWS_CONTENT_LENGTH);
+        size += PayloadSizeUtil.varIntSize(article.categoryOrdinal);
+        size += estimatedUtfSize(article.authorName, MailboxPayloadLimits.MAX_NEWS_AUTHOR_LENGTH);
         size += 8; // publishedAtMillis
-        size += varIntSize(article.priority);
+        size += PayloadSizeUtil.varIntSize(article.priority);
         size += 1; // isRead
         return size;
     }
 
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null || value.isEmpty()) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
-        return size;
+    private static int estimatedUtfSize(@Nullable String value, int maxLength) {
+        return PayloadSizeUtil.estimatedUtfSize(MailboxPayloadLimits.truncateNullable(value, maxLength));
     }
 
     /**

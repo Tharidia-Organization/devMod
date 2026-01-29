@@ -258,7 +258,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
             mode,
             payload.getColor(),
             payload.getSanitizedNetworkName(),
-            java.util.Objects.requireNonNull(TransportData.NetworkSelectionMode.byIndex(payload.selectionModeIndex())),
+            TransportData.NetworkSelectionMode.byIndex(payload.selectionModeIndex()),
             payload.getSanitizedDisplayName()
         );
 
@@ -277,10 +277,10 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
         java.util.UUID destId = payload.destinationNodeId();
 
         // Get transport registry
-        com.devmod.transport.TransportRegistry registry = com.devmod.transport.TransportRegistry.get(java.util.Objects.requireNonNull(level));
+        com.devmod.transport.TransportRegistry registry = com.devmod.transport.TransportRegistry.get(level);
 
         // Validate source node exists and player is near it
-        java.util.Optional<TransportData> sourceOpt = registry.get(java.util.Objects.requireNonNull(sourceId));
+        java.util.Optional<TransportData> sourceOpt = registry.get(sourceId);
         if (sourceOpt.isEmpty()) {
             LOGGER.warn("Player {} selected waypoint with invalid source node {}",
                 player.getName().getString(), sourceId);
@@ -308,7 +308,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
         }
 
         // Validate destination node
-        java.util.Optional<TransportData> destOpt = registry.get(java.util.Objects.requireNonNull(destId));
+        java.util.Optional<TransportData> destOpt = registry.get(destId);
         if (destOpt.isEmpty()) {
             LOGGER.warn("Player {} selected invalid destination node {}",
                 player.getName().getString(), destId);
@@ -316,7 +316,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
         }
 
         // Execute teleport via executor
-        com.devmod.transport.executor.TransportExecutor.INSTANCE.executeTeleport(player, java.util.Objects.requireNonNull(destOpt.get()));
+        com.devmod.transport.executor.TransportExecutor.INSTANCE.executeTeleport(player, destOpt.get());
 
         LOGGER.debug("Player {} teleported from {} to {}", player.getName().getString(), sourceId, destId);
     }
@@ -337,8 +337,8 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
 
         // Try to confirm arrival via ArrivalManager
         boolean confirmed = com.devmod.transport.executor.ArrivalManager.INSTANCE.confirmArrival(
-            java.util.Objects.requireNonNull(sessionId),
-            java.util.Objects.requireNonNull(player.getUUID()),
+            sessionId,
+            player.getUUID(),
             server
         );
 
@@ -356,7 +356,10 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
     private static void handleCancelPartyServer(TransportCancelPartyPayload payload, IPayloadContext ctx) {
         ServerPlayer player = (ServerPlayer) ctx.player();
 
-        java.util.UUID sessionId = java.util.Objects.requireNonNull(payload.partyId(), "sessionId");
+        java.util.UUID sessionId = payload.partyId();
+        if (sessionId == null) {
+            return;
+        }
 
         // Cancel via ArrivalManager (partyId is actually the session ID)
         boolean cancelled = com.devmod.transport.executor.ArrivalManager.INSTANCE.cancelSession(

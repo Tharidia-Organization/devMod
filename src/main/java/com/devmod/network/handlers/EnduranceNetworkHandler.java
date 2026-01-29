@@ -23,8 +23,8 @@ import com.devmod.arena.policy.PolicyResolver;
 import com.devmod.arena.policy.TemplateSuggestion;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
-import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.CustomKit;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.EnduranceConfigSyncPayload;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -1020,7 +1020,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
     public static void sendQuestCompletionScreen(ServerPlayer player,
             EnduranceQuestManager.ActiveQuestSession session,
             RewardSystem.QuestRewards rewards,
-            ComboSystem.ComboSession comboSession,
+            IComboSession comboSession,
             int maxCombo) {
         EnduranceQuest quest = session.getQuest();
 

@@ -27,6 +27,12 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestEventBus;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent;
+import com.devmod.endurance.lifecycle.WaveContext;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.endurance.analytics.QuestResult;
 import com.devmod.endurance.analytics.WaveSummary;
@@ -57,14 +63,14 @@ public class EnduranceEventHandler {
         boolean practice = session.isPracticeMode();
         ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
 
-        // Create combo session for DMC-style scoring
-        ComboSystem.ComboSession comboSession = ComboSystem.INSTANCE.startSession(playerId, questId);
-        EnduranceEventCombat.putComboSession(playerId, comboSession);
-
-        // Create momentum session for pacing enforcement
-        MomentumTracker.INSTANCE.startSession(playerId);
+        // === PUBLISH QUEST START EVENT ===
+        // This notifies all registered QuestLifecycleListeners (ComboSystem, MomentumTracker,
+        // CombatTracker, TensionSystem, etc.) to initialize their sessions.
+        QuestContext questContext = QuestContext.from(player, session, policy);
+        QuestEventBus.INSTANCE.publish(QuestLifecycleEvent.QuestStarted.of(questContext));
 
         // Create mutator session with random mutators (shared per questId)
+        // NOTE: MutatorSystem not yet migrated to event bus
         MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.getSession(questId).orElse(null);
         if (mutatorSession == null) {
             mutatorSession = MutatorSystem.INSTANCE.createSession(questId, 3, 1, policy);
@@ -72,17 +78,8 @@ public class EnduranceEventHandler {
         EnduranceEventCombat.putMutatorSession(questId, mutatorSession);
 
         // Create perk session for roguelike upgrades
+        // NOTE: PerkSystem not yet migrated to event bus
         PerkSystem.INSTANCE.startSession(playerId, questId, policy);
-
-        // Create combat tracking session (shared per questId)
-        if (CombatTracker.INSTANCE.getSession(questId).isEmpty()) {
-            CombatTracker.INSTANCE.startTracking(questId, playerId, session.getQuest().getMobConfig().mobId);
-        }
-
-        // Start tension system for dynamic boss spawning (shared per questId)
-        if (TensionSystem.INSTANCE.getState(questId) == null) {
-            TensionSystem.INSTANCE.startSession(questId);
-        }
 
         // Reset comeback cooldown for fresh quest
         ComebackSystem.INSTANCE.resetCooldown(playerId);
@@ -169,8 +166,8 @@ public class EnduranceEventHandler {
         boolean tideEnabled = isTideEnabled(session);
         UUID tideScopeId = resolveDesignScopeId(session);
 
-        // Get sessions before cleanup
-        ComboSystem.ComboSession comboSession = EnduranceEventCombat.removeComboSession(playerId);
+        // Get combo session from Facade (single source of truth)
+        IComboSession comboSession = ComboSystemFacade.get().getSession(playerId).orElse(null);
         MutatorSystem.MutatorSession mutatorSession = cleanupShared
             ? EnduranceEventCombat.removeMutatorSession(questId)
             : EnduranceEventCombat.getMutatorSession(questId);
@@ -201,30 +198,29 @@ public class EnduranceEventHandler {
             }
         }
 
-        // Cleanup combo system
-        ComboSystem.INSTANCE.endSession(playerId);
+        // Get combat session data before cleanup (needed for analytics)
+        CombatTracker.QuestCombatSession combatSessionData = CombatTracker.INSTANCE.getSession(questId).orElse(null);
 
-        // Cleanup momentum system
-        MomentumTracker.INSTANCE.endSession(playerId);
+        // === PUBLISH QUEST END EVENT ===
+        // This notifies all registered QuestLifecycleListeners to cleanup their sessions.
+        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
+        QuestContext questContext = QuestContext.from(player, session, policy);
+        QuestLifecycleEvent.QuestEnded.EndReason endReason = completed
+            ? QuestLifecycleEvent.QuestEnded.EndReason.COMPLETED
+            : QuestLifecycleEvent.QuestEnded.EndReason.FAILED;
+        QuestEventBus.INSTANCE.publish(
+            new QuestLifecycleEvent.QuestEnded(questId, System.currentTimeMillis(), questContext, completed, endReason, cleanupShared)
+        );
 
         // Cleanup mutator system (shared per questId)
+        // NOTE: MutatorSystem not yet migrated to event bus
         if (cleanupShared) {
             MutatorSystem.INSTANCE.endSession(questId);
         }
 
         // Cleanup perk system (removes applied attribute modifiers)
+        // NOTE: PerkSystem not yet migrated to event bus
         PerkSystem.INSTANCE.endSession(player);
-
-        // Finalize and stop combat tracking
-        CombatTracker.QuestCombatSession combatSessionData = CombatTracker.INSTANCE.getSession(questId).orElse(null);
-        if (cleanupShared) {
-            CombatTracker.INSTANCE.stopTracking(questId);
-        }
-
-        // End tension system session
-        if (cleanupShared) {
-            TensionSystem.INSTANCE.endSession(questId);
-        }
 
         // End Devil's Bargain session and get final reward multiplier
         if (cleanupShared) {
@@ -412,8 +408,8 @@ public class EnduranceEventHandler {
         UUID playerId = player.getUUID();
         EnduranceQuest quest = session.getQuest();
 
-        // Reset combo for new wave
-        ComboSystem.ComboSession comboSession = EnduranceEventCombat.getComboSession(playerId);
+        // Reset combo for new wave (using Facade)
+        IComboSession comboSession = ComboSystemFacade.get().getSession(playerId).orElse(null);
         if (comboSession != null) {
             comboSession.startNewWave();
         }
@@ -479,6 +475,14 @@ public class EnduranceEventHandler {
             isBossWave, objective, directive
         );
 
+        // === PUBLISH WAVE START EVENT ===
+        // This notifies all registered QuestLifecycleListeners of the wave start.
+        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
+        QuestContext questContext = QuestContext.from(player, session, policy);
+        WaveContext waveContext = WaveContext.forWaveStart(
+            questContext, waveNumber, isBossWave, mobCount, enemyType, comboSession);
+        QuestEventBus.INSTANCE.publish(QuestLifecycleEvent.WaveStarted.of(waveContext, applyShared));
+
         LOGGER.debug("[EnduranceQuest] Wave {} started for {} (boss: {})",
             waveNumber, player.getName().getString(), isBossWave);
     }
@@ -500,8 +504,8 @@ public class EnduranceEventHandler {
         boolean tideEnabled = isTideEnabled(session);
         UUID tideScopeId = resolveDesignScopeId(session);
 
-        // Get tracking sessions
-        ComboSystem.ComboSession comboSession = EnduranceEventCombat.getComboSession(playerId);
+        // Get tracking sessions (using Facade for combo)
+        IComboSession comboSession = ComboSystemFacade.get().getSession(playerId).orElse(null);
         MutatorSystem.MutatorSession mutatorSession = EnduranceEventCombat.getMutatorSession(questId);
 
         // Get combat stats for this wave
@@ -786,6 +790,17 @@ public class EnduranceEventHandler {
             waveDamageTaken,
             practice ? null : waveReward
         );
+
+        // === PUBLISH WAVE COMPLETE EVENT ===
+        // This notifies all registered QuestLifecycleListeners of the wave completion.
+        ArenaPolicy policy = EnduranceQuestManager.INSTANCE.getPolicyForSession(session);
+        QuestContext questContext = QuestContext.from(player, session, policy);
+        WaveManager.WaveState waveState = arena != null
+            ? WaveManager.INSTANCE.getWaveState(arena.getId()).orElse(null)
+            : null;
+        WaveContext waveContext = WaveContext.forWaveComplete(
+            questContext, waveNumber, comboSession, mutatorSession, waveStats, waveState);
+        QuestEventBus.INSTANCE.publish(QuestLifecycleEvent.WaveCompleted.of(waveContext, applyShared));
 
         // === PARTY STATS SYNC (for debrief Party tab) ===
         if (applyShared) {
@@ -1199,8 +1214,8 @@ public class EnduranceEventHandler {
     // PUBLIC GETTERS FOR UI
     // ═══════════════════════════════════════════════════════════════
 
-    public static ComboSystem.ComboSession getComboSession(UUID playerId) {
-        return EnduranceEventCombat.getComboSession(playerId);
+    public static IComboSession getComboSession(UUID playerId) {
+        return ComboSystemFacade.get().getSession(playerId).orElse(null);
     }
 
     public static MutatorSystem.MutatorSession getMutatorSession(UUID questId) {
@@ -1290,7 +1305,7 @@ public class EnduranceEventHandler {
      */
     private static WaveSummary buildWaveSummary(int waveNumber,
             CombatTracker.WaveCombatStats waveStats,
-            ComboSystem.ComboSession comboSession) {
+            IComboSession comboSession) {
 
         if (waveStats == null) {
             return WaveSummary.empty(waveNumber);
@@ -1318,7 +1333,7 @@ public class EnduranceEventHandler {
     private static QuestResult buildQuestResult(UUID questId, UUID playerId,
             EnduranceQuest quest,
             CombatTracker.QuestCombatSession combatSession,
-            ComboSystem.ComboSession comboSession,
+            IComboSession comboSession,
             boolean completed) {
 
         // Extract data with null safety

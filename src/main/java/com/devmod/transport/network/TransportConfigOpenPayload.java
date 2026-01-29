@@ -47,8 +47,14 @@ public record TransportConfigOpenPayload(
             ByteBufCodecs.VAR_INT.encode(buf, payload.nodeTypeIndex);
             ByteBufCodecs.VAR_INT.encode(buf, payload.modeIndex);
             ByteBufCodecs.VAR_INT.encode(buf, payload.colorIndex);
-            ByteBufCodecs.STRING_UTF8.encode(buf, payload.networkName);
-            ByteBufCodecs.STRING_UTF8.encode(buf, payload.displayName);
+            ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH).encode(
+                buf,
+                TransportPayloadLimits.truncate(payload.networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
+            );
+            ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH).encode(
+                buf,
+                TransportPayloadLimits.truncate(payload.displayName, TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH)
+            );
             ByteBufCodecs.VAR_INT.encode(buf, payload.chargeTime);
             ByteBufCodecs.VAR_INT.encode(buf, payload.cooldownTime);
             ByteBufCodecs.BOOL.encode(buf, payload.hasLinkedNode);
@@ -59,8 +65,8 @@ public record TransportConfigOpenPayload(
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
-            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
-            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
+            Objects.requireNonNull(ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH).decode(buf)),
+            Objects.requireNonNull(ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH).decode(buf)),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.BOOL.decode(buf),
@@ -80,8 +86,12 @@ public record TransportConfigOpenPayload(
         size += PayloadSizeUtil.varIntSize(nodeTypeIndex);
         size += PayloadSizeUtil.varIntSize(modeIndex);
         size += PayloadSizeUtil.varIntSize(colorIndex);
-        size += PayloadSizeUtil.estimatedUtfSize(networkName);
-        size += PayloadSizeUtil.estimatedUtfSize(displayName);
+        size += PayloadSizeUtil.estimatedUtfSize(
+            TransportPayloadLimits.truncateNullable(networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
+        );
+        size += PayloadSizeUtil.estimatedUtfSize(
+            TransportPayloadLimits.truncateNullable(displayName, TransportPayloadLimits.MAX_DISPLAY_NAME_LENGTH)
+        );
         size += PayloadSizeUtil.varIntSize(chargeTime);
         size += PayloadSizeUtil.varIntSize(cooldownTime);
         size += 1; // hasLinkedNode

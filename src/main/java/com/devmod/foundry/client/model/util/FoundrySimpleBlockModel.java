@@ -58,7 +58,7 @@ public class FoundrySimpleBlockModel implements IUnbakedGeometry<FoundrySimpleBl
   private final List<BlockElement> parts;
   /** Fallback textures in case the owner does not contain a block model */
   private final Map<String,Either<Material, String>> textures;
-  private BlockModel parent;
+  @Nullable private BlockModel parent;
 
   /**
    * Creates a new simple block model
@@ -88,6 +88,7 @@ public class FoundrySimpleBlockModel implements IUnbakedGeometry<FoundrySimpleBl
     return textures;
   }
 
+  @Nullable
   public BlockModel getParent() {
     return parent;
   }

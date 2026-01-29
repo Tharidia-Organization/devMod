@@ -27,6 +27,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.arena.policy.ArenaPolicy;
+import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
@@ -1051,8 +1052,8 @@ public class PerkSystem {
         }
 
         // Momentum perk - bonus damage based on combo count
-        if (session.hasPerk("momentum")) {
-            var comboOpt = ComboSystem.INSTANCE.getSession(player.getUUID());
+        if (session.hasPerk("momentum") && ComboSystemFacade.isInitialized()) {
+            var comboOpt = ComboSystemFacade.get().getSession(player.getUUID());
             if (comboOpt.isPresent()) {
                 float comboBonus = Math.min(0.5f, comboOpt.get().getCurrentCombo() * 0.01f);
                 finalDamage *= 1.0f + comboBonus;

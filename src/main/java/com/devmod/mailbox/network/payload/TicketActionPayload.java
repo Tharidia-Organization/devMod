@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.ticket.TicketStatus;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -45,15 +46,21 @@ public record TicketActionPayload(
     private static void encode(RegistryFriendlyByteBuf buf, TicketActionPayload payload) {
         buf.writeEnum(Objects.requireNonNull(payload.action));
         buf.writeUUID(Objects.requireNonNull(payload.ticketId));
-        buf.writeUtf(payload.statusId != null ? payload.statusId : "");
-        buf.writeUtf(payload.comment != null ? payload.comment : "");
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.statusId, MailboxPayloadLimits.MAX_TICKET_STATUS_ID_LENGTH),
+            MailboxPayloadLimits.MAX_TICKET_STATUS_ID_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.comment, MailboxPayloadLimits.MAX_TICKET_COMMENT_LENGTH),
+            MailboxPayloadLimits.MAX_TICKET_COMMENT_LENGTH
+        );
     }
 
     private static TicketActionPayload decode(RegistryFriendlyByteBuf buf) {
         Action action = buf.readEnum(Action.class);
         UUID ticketId = buf.readUUID();
-        String statusId = buf.readUtf(64);
-        String comment = buf.readUtf(1000);
+        String statusId = buf.readUtf(MailboxPayloadLimits.MAX_TICKET_STATUS_ID_LENGTH);
+        String comment = buf.readUtf(MailboxPayloadLimits.MAX_TICKET_COMMENT_LENGTH);
 
         return new TicketActionPayload(
             action,
@@ -70,28 +77,14 @@ public record TicketActionPayload(
 
     @Override
     public int estimatedSize() {
-        int size = varIntSize(action.ordinal());
+        int size = PayloadSizeUtil.varIntSize(action.ordinal());
         size += 16; // UUID
-        size += estimatedUtfSize(statusId);
-        size += estimatedUtfSize(comment);
-        return size;
-    }
-
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
+        size += PayloadSizeUtil.estimatedUtfSize(
+            MailboxPayloadLimits.truncateNullable(statusId, MailboxPayloadLimits.MAX_TICKET_STATUS_ID_LENGTH)
+        );
+        size += PayloadSizeUtil.estimatedUtfSize(
+            MailboxPayloadLimits.truncateNullable(comment, MailboxPayloadLimits.MAX_TICKET_COMMENT_LENGTH)
+        );
         return size;
     }
 

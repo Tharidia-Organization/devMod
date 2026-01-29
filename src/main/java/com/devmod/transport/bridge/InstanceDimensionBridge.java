@@ -146,7 +146,7 @@ public final class InstanceDimensionBridge {
      * @return Instance UUID, or empty if not in an instance
      */
     public Optional<UUID> getPlayerInstance(ServerPlayer player) {
-        return Objects.requireNonNull(Optional.ofNullable(InstanceRegistry.INSTANCE.getPlayerInstanceId(player.getUUID())));
+        return Optional.ofNullable(InstanceRegistry.INSTANCE.getPlayerInstanceId(player.getUUID()));
     }
 
     /**
@@ -165,14 +165,14 @@ public final class InstanceDimensionBridge {
         Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
         if (instanceOpt.isEmpty()) {
             LOGGER.warn("[InstanceBridge] Cannot create instance node - instance {} not found", instanceId);
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         InstanceData instance = instanceOpt.get();
         ResourceKey<Level> dimensionKey = instance.getDimensionKey();
         if (dimensionKey == null) {
             LOGGER.warn("[InstanceBridge] Cannot create instance node - instance {} has no dimension", instanceId);
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         // Get arena center as spawn position
@@ -186,15 +186,15 @@ public final class InstanceDimensionBridge {
         // Create transport node for the instance
         TransportData nodeData = TransportData.createZone(
             TransportColor.PURPLE,
-            Objects.requireNonNull(dimLoc), Objects.requireNonNull(spawnPos),
-            Objects.requireNonNull(dimLoc), Objects.requireNonNull(spawnPos),
+            dimLoc, spawnPos,
+            dimLoc, spawnPos,
             displayName
         );
 
-        registry.register(Objects.requireNonNull(nodeData));
+        registry.register(nodeData);
         LOGGER.info("[InstanceBridge] Created transport node for instance {}: {}", instanceId, displayName);
 
-        return Objects.requireNonNull(Optional.of(nodeData));
+        return Optional.of(nodeData);
     }
 
     /**
@@ -208,7 +208,7 @@ public final class InstanceDimensionBridge {
 
         // Get transport registry and clean up any nodes associated with this instance
         ServerLevel overworld = server.overworld();
-        TransportRegistry registry = TransportRegistry.get(Objects.requireNonNull(overworld));
+        TransportRegistry registry = TransportRegistry.get(overworld);
 
         // Find and remove transport nodes that were created for this instance
         // Instance nodes use PURPLE color by convention

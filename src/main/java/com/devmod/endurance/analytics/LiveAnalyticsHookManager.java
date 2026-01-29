@@ -9,7 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.devmod.endurance.CombatTracker;
-import com.devmod.endurance.ComboSystem;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 
 public class LiveAnalyticsHookManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LiveAnalyticsHookManager.class);
@@ -195,10 +196,10 @@ public class LiveAnalyticsHookManager {
             combatSession = CombatTracker.INSTANCE.getSession(activeQuestId).orElse(null);
         }
 
-        // Get combo state if available (Optional unwrap)
-        ComboSystem.ComboSession comboSession = null;
-        if (activePlayerId != null) {
-            comboSession = ComboSystem.INSTANCE.getSession(activePlayerId).orElse(null);
+        // Get combo state if available (Optional unwrap) - via facade
+        IComboSession comboSession = null;
+        if (activePlayerId != null && ComboSystemFacade.isInitialized()) {
+            comboSession = ComboSystemFacade.get().getSession(activePlayerId).orElse(null);
         }
 
         // Build metrics from available data

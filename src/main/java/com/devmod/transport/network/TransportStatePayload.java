@@ -43,7 +43,10 @@ public record TransportStatePayload(
             ByteBufCodecs.VAR_INT.encode(buf, payload.colorIndex);
             ByteBufCodecs.VAR_INT.encode(buf, payload.currentCharge);
             ByteBufCodecs.VAR_INT.encode(buf, payload.requiredCharge);
-            ByteBufCodecs.STRING_UTF8.encode(buf, payload.destinationName);
+            ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DESTINATION_NAME_LENGTH).encode(
+                buf,
+                TransportPayloadLimits.truncate(payload.destinationName, TransportPayloadLimits.MAX_DESTINATION_NAME_LENGTH)
+            );
             ByteBufCodecs.VAR_INT.encode(buf, payload.distance);
         },
         buf -> new TransportStatePayload(
@@ -52,7 +55,7 @@ public record TransportStatePayload(
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
             ByteBufCodecs.VAR_INT.decode(buf),
-            Objects.requireNonNull(ByteBufCodecs.STRING_UTF8.decode(buf)),
+            Objects.requireNonNull(ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_DESTINATION_NAME_LENGTH).decode(buf)),
             ByteBufCodecs.VAR_INT.decode(buf)
         )
     );
@@ -70,7 +73,9 @@ public record TransportStatePayload(
         size += PayloadSizeUtil.varIntSize(colorIndex);
         size += PayloadSizeUtil.varIntSize(currentCharge);
         size += PayloadSizeUtil.varIntSize(requiredCharge);
-        size += PayloadSizeUtil.estimatedUtfSize(destinationName);
+        size += PayloadSizeUtil.estimatedUtfSize(
+            TransportPayloadLimits.truncateNullable(destinationName, TransportPayloadLimits.MAX_DESTINATION_NAME_LENGTH)
+        );
         size += PayloadSizeUtil.varIntSize(distance);
         return PayloadSizeUtil.clampToInt(size);
     }

@@ -40,26 +40,38 @@ public record TransportPartyStatusPayload(
 
     private static void encode(ByteBuf buf, TransportPartyStatusPayload payload) {
         UUIDUtil.STREAM_CODEC.encode(Objects.requireNonNull(buf), Objects.requireNonNull(payload.partyId));
-        buf.writeByte(payload.phase);
-        buf.writeByte(payload.arrivedCount);
-        buf.writeByte(payload.expectedCount);
-        buf.writeByte(payload.arrivedMembers.size());
-        for (UUID member : payload.arrivedMembers) {
+        int safePhase = TransportPayloadLimits.clampRange(payload.phase, PHASE_COUNTDOWN, PHASE_CANCELLED);
+        int safeArrived = TransportPayloadLimits.clampCount(payload.arrivedCount, TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        int safeExpected = TransportPayloadLimits.clampCount(payload.expectedCount, TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        int memberCount = TransportPayloadLimits.clampCount(payload.arrivedMembers.size(), TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        buf.writeByte(safePhase);
+        buf.writeByte(safeArrived);
+        buf.writeByte(safeExpected);
+        buf.writeByte(memberCount);
+        for (int i = 0; i < memberCount; i++) {
+            UUID member = payload.arrivedMembers.get(i);
             UUIDUtil.STREAM_CODEC.encode(buf, Objects.requireNonNull(member));
         }
     }
 
     private static TransportPartyStatusPayload decode(ByteBuf buf) {
         UUID partyId = UUIDUtil.STREAM_CODEC.decode(Objects.requireNonNull(buf));
-        int phase = buf.readByte();
-        int arrivedCount = buf.readByte();
-        int expectedCount = buf.readByte();
-        int memberCount = buf.readByte();
-        List<UUID> arrivedMembers = new ArrayList<>(memberCount);
-        for (int i = 0; i < memberCount; i++) {
-            arrivedMembers.add(UUIDUtil.STREAM_CODEC.decode(buf));
+        int phase = buf.readUnsignedByte();
+        int arrivedCount = buf.readUnsignedByte();
+        int expectedCount = buf.readUnsignedByte();
+        int rawMemberCount = buf.readUnsignedByte();
+        int safeMemberCount = TransportPayloadLimits.clampCount(rawMemberCount, TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        List<UUID> arrivedMembers = new ArrayList<>(safeMemberCount);
+        for (int i = 0; i < rawMemberCount; i++) {
+            UUID member = UUIDUtil.STREAM_CODEC.decode(buf);
+            if (i < safeMemberCount) {
+                arrivedMembers.add(member);
+            }
         }
-        return new TransportPartyStatusPayload(partyId, phase, arrivedCount, expectedCount, arrivedMembers);
+        int safePhase = TransportPayloadLimits.clampRange(phase, PHASE_COUNTDOWN, PHASE_CANCELLED);
+        int safeArrived = TransportPayloadLimits.clampCount(arrivedCount, TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        int safeExpected = TransportPayloadLimits.clampCount(expectedCount, TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        return new TransportPartyStatusPayload(partyId, safePhase, safeArrived, safeExpected, arrivedMembers);
     }
 
     @Override
@@ -72,7 +84,8 @@ public record TransportPartyStatusPayload(
     public int estimatedSize() {
         long size = 16; // partyId
         size += 4; // phase + arrivedCount + expectedCount + memberCount (bytes)
-        size += 16L * arrivedMembers.size();
+        int memberCount = TransportPayloadLimits.clampCount(arrivedMembers.size(), TransportPayloadLimits.MAX_PARTY_MEMBERS);
+        size += 16L * memberCount;
         return PayloadSizeUtil.clampToInt(size);
     }
 

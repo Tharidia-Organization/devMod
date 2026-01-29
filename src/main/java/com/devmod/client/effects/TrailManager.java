@@ -183,8 +183,8 @@ public class TrailManager {
             if (alpha1 < 0.01f && alpha2 < 0.01f) continue;
 
             // Convert to camera-relative coordinates
-            Vec3 p1Pos = Objects.requireNonNull(p1.position);
-            Vec3 p2Pos = Objects.requireNonNull(p2.position);
+            Vec3 p1Pos = Objects.requireNonNull(p1.position());
+            Vec3 p2Pos = Objects.requireNonNull(p2.position());
             Vec3 rel1 = Objects.requireNonNull(p1Pos.subtract(cam));
             Vec3 rel2 = Objects.requireNonNull(p2Pos.subtract(cam));
 

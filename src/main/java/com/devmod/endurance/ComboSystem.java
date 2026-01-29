@@ -18,9 +18,23 @@ import net.minecraft.world.entity.LivingEntity;
 
 import com.devmod.endurance.challenges.DailyChallengeManager;
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 
-public class ComboSystem {
+/**
+ * DMC-style combo and style ranking system.
+ *
+ * <p>Implements {@link QuestLifecycleListener} to receive quest lifecycle events
+ * and automatically manage combo sessions without direct coupling to
+ * EnduranceEventHandler.</p>
+ *
+ * <h2>Priority: 1000 (Critical)</h2>
+ * <p>Runs early in the event chain as other systems may depend on combo state.</p>
+ */
+public class ComboSystem implements QuestLifecycleListener {
     public static final ComboSystem INSTANCE = new ComboSystem();
 
     // Active combo sessions per player
@@ -686,6 +700,39 @@ public class ComboSystem {
      */
     public ComboSession endSession(UUID playerId) {
         return activeSessions.remove(playerId);
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        UUID playerId = event.context().playerId();
+        UUID questId = event.questId();
+        startSession(playerId, questId);
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        UUID playerId = event.context().playerId();
+        endSession(playerId);
+    }
+
+    @Override
+    public void onWaveStarted(WaveStarted event) {
+        ComboSession session = activeSessions.get(event.context().playerId());
+        if (session != null) {
+            session.startNewWave();
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 1000; // Critical - runs early as other systems depend on combo state
+    }
+
+    @Override
+    public String getListenerName() {
+        return "ComboSystem";
     }
 
     /**

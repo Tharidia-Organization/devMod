@@ -153,9 +153,10 @@ public class TransportRegistry extends SavedData {
         // Unlink connected node if linked
         node.getLinkedNodeId().ifPresent(linkedId -> {
             TransportData linked = nodes.get(linkedId);
-            if (linked != null && linked.getLinkedNodeId().orElse(null) != null
-                && linked.getLinkedNodeId().get().equals(nodeId)) {
-                nodes.put(linkedId, linked.unlink());
+            if (linked != null) {
+                linked.getLinkedNodeId()
+                    .filter(nodeId::equals)
+                    .ifPresent(id -> nodes.put(linkedId, linked.unlink()));
             }
         });
 
@@ -195,7 +196,7 @@ public class TransportRegistry extends SavedData {
      */
     @Nonnull
     public Optional<TransportData> get(@Nonnull UUID nodeId) {
-        return Objects.requireNonNull(Optional.ofNullable(nodes.get(nodeId)));
+        return Optional.ofNullable(nodes.get(nodeId));
     }
 
     /**
@@ -204,7 +205,7 @@ public class TransportRegistry extends SavedData {
     @Nonnull
     public Optional<TransportData> getByPosition(@Nonnull BlockPos pos) {
         UUID id = positionIndex.get(pos);
-        return id != null ? get(id) : Objects.requireNonNull(Optional.empty());
+        return id != null ? get(id) : Optional.empty();
     }
 
     /**
@@ -212,7 +213,7 @@ public class TransportRegistry extends SavedData {
      */
     @Nonnull
     public java.util.Collection<TransportData> getAll() {
-        return Objects.requireNonNull(java.util.Collections.unmodifiableCollection(nodes.values()));
+        return java.util.Collections.unmodifiableCollection(nodes.values());
     }
 
     /**
@@ -247,11 +248,11 @@ public class TransportRegistry extends SavedData {
             int dz = Math.abs(pos.getZ() - center.getZ());
 
             if (dx <= 12 && dy <= 12 && dz <= 12) {
-                return Objects.requireNonNull(Optional.of(node));
+                return Optional.of(node);
             }
         }
 
-        return Objects.requireNonNull(Optional.empty());
+        return Optional.empty();
     }
 
     // ============================================================================
@@ -349,36 +350,44 @@ public class TransportRegistry extends SavedData {
         if (!PortalConfig.isPrivatePortals()) {
             return true;
         }
-        if (source.getCreatorId().isEmpty() || target.getCreatorId().isEmpty()) {
+        Optional<UUID> sourceCreator = source.getCreatorId();
+        Optional<UUID> targetCreator = target.getCreatorId();
+        if (sourceCreator.isEmpty() || targetCreator.isEmpty()) {
             return false;
         }
-        return source.getCreatorId().get().equals(target.getCreatorId().get());
+        return sourceCreator.get().equals(targetCreator.get());
     }
 
     private void updateNodeBlockState(@Nullable TransportData node, boolean linked, @Nonnull MinecraftServer server) {
-        if (node == null || node.getPosition().isEmpty() || node.getDimension().isEmpty()) {
+        if (node == null) {
             return;
         }
 
-        ResourceLocation dimension = node.getDimension().get();
-        ResourceKey<Level> levelKey = Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), Objects.requireNonNull(dimension)));
-        ServerLevel level = server.getLevel(Objects.requireNonNull(levelKey));
+        Optional<ResourceLocation> dimensionOpt = node.getDimension();
+        Optional<BlockPos> posOpt = node.getPosition();
+        if (dimensionOpt.isEmpty() || posOpt.isEmpty()) {
+            return;
+        }
+
+        ResourceLocation dimension = dimensionOpt.get();
+        ResourceKey<Level> levelKey = ResourceKey.create(Registries.DIMENSION, dimension);
+        ServerLevel level = server.getLevel(levelKey);
         if (level == null) {
             return;
         }
 
-        BlockPos pos = Objects.requireNonNull(node.getPosition().get());
+        BlockPos pos = posOpt.get();
         BlockEntity be = level.getBlockEntity(pos);
         if (be instanceof TransportCoreBlockEntity coreBe) {
             coreBe.setLinkedNodeId(linked ? node.getLinkedNodeId().orElse(null) : null);
             coreBe.setChanged();
         }
 
-        BlockState state = Objects.requireNonNull(level.getBlockState(Objects.requireNonNull(pos)));
-        if (state.getBlock() instanceof TransportCoreBlock && state.hasProperty(Objects.requireNonNull(TransportCoreBlock.ACTIVE))) {
-            BlockState updated = state.setValue(Objects.requireNonNull(TransportCoreBlock.ACTIVE), linked);
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof TransportCoreBlock && state.hasProperty(TransportCoreBlock.ACTIVE)) {
+            BlockState updated = state.setValue(TransportCoreBlock.ACTIVE, linked);
             if (!state.equals(updated)) {
-                level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(updated), Block.UPDATE_ALL);
+                level.setBlock(pos, updated, Block.UPDATE_ALL);
             }
         }
     }
@@ -424,7 +433,7 @@ public class TransportRegistry extends SavedData {
         Set<UUID> networkNodes = networkIndex.get(networkName);
 
         if (networkNodes == null || networkNodes.isEmpty()) {
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         for (UUID id : networkNodes) {
@@ -438,12 +447,12 @@ public class TransportRegistry extends SavedData {
         }
 
         if (candidates.isEmpty()) {
-            return Objects.requireNonNull(Optional.empty());
+            return Optional.empty();
         }
 
         NetworkSelectionMode selectionMode = mode != null ? mode : NetworkSelectionMode.RANDOM;
 
-        return Objects.requireNonNull(switch (selectionMode) {
+        return switch (selectionMode) {
             case RANDOM -> {
                 int index = ThreadLocalRandom.current().nextInt(candidates.size());
                 yield Optional.of(candidates.get(index));
@@ -454,7 +463,7 @@ public class TransportRegistry extends SavedData {
             }
             case NEAREST -> Optional.of(candidates.get(0)); // Would need source position for actual nearest
             case MANUAL -> Optional.empty(); // Requires GUI selection
-        });
+        };
     }
 
     /**
@@ -568,8 +577,7 @@ public class TransportRegistry extends SavedData {
     public List<TransportData> getByDimension(@Nonnull ResourceLocation dimension) {
         List<TransportData> result = new ArrayList<>();
         for (TransportData node : nodes.values()) {
-            if (node.getDimension().orElse(null) != null
-                && node.getDimension().get().equals(dimension)) {
+            if (node.getDimension().map(dimension::equals).orElse(false)) {
                 result.add(node);
             }
         }
@@ -652,7 +660,7 @@ public class TransportRegistry extends SavedData {
         }
 
         for (UUID id : toRemove) {
-            unregister(Objects.requireNonNull(id));
+            unregister(id);
         }
     }
 
@@ -682,7 +690,7 @@ public class TransportRegistry extends SavedData {
     @Nonnull
     public Optional<TransportData> getReturnPoint(@Nonnull UUID playerId) {
         UUID returnId = playerReturnPoints.get(playerId);
-        return returnId != null ? get(returnId) : Objects.requireNonNull(Optional.empty());
+        return returnId != null ? get(returnId) : Optional.empty();
     }
 
     /**
@@ -816,7 +824,7 @@ public class TransportRegistry extends SavedData {
         // Save return points
         CompoundTag returnPointsTag = new CompoundTag();
         for (Map.Entry<UUID, UUID> entry : playerReturnPoints.entrySet()) {
-            returnPointsTag.putUUID(Objects.requireNonNull(entry.getKey().toString()), Objects.requireNonNull(entry.getValue()));
+            returnPointsTag.putUUID(entry.getKey().toString(), entry.getValue());
         }
         tag.put(TAG_RETURN_POINTS, returnPointsTag);
 
@@ -851,7 +859,7 @@ public class TransportRegistry extends SavedData {
         if (tag.contains(TAG_RETURN_POINTS, Tag.TAG_COMPOUND)) {
             CompoundTag returnPointsTag = tag.getCompound(TAG_RETURN_POINTS);
             for (String key : returnPointsTag.getAllKeys()) {
-                UUID playerId = UUID.fromString(Objects.requireNonNull(key));
+                UUID playerId = UUID.fromString(key);
                 UUID returnId = returnPointsTag.getUUID(key);
                 registry.playerReturnPoints.put(playerId, returnId);
             }

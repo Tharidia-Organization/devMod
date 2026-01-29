@@ -45,6 +45,7 @@ import com.devmod.config.GameMechanicsConfig;
 import com.devmod.config.GameplayOverridesManager;
 import com.devmod.core.Services;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.entity.ModEntities;
 import com.devmod.hologram.HologramModule;
 import com.devmod.integration.ModIntegrationManager;
@@ -168,6 +169,9 @@ public class DevMod {
 
         // Initialize service registry for dependency injection
         Services.initialize();
+
+        // Initialize ComboSystem facade (event-driven combo tracking)
+        ComboSystemFacade.initialize();
 
         // Initialize PresetRegistry (hierarchical preset system) - client only
         if (FMLEnvironment.dist.isClient()) {

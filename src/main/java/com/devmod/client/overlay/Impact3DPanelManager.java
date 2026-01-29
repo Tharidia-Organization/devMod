@@ -41,7 +41,7 @@ public class Impact3DPanelManager {
         if (data == null) return;
 
         // Verify there's a valid hit point
-        Vec3 hitPoint = data.hitPoint;
+        Vec3 hitPoint = data.getHitPoint();
         if (hitPoint == null) {
             // If no hit point, try using target position
             // NOTE: For teleporting entities (Enderman), target might

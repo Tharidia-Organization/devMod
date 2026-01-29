@@ -194,12 +194,12 @@ public class ExecutionSystem {
      */
     public static class ExecutionState {
         @Nonnull
-        public final UUID playerId;
+        private final UUID playerId;
         @Nonnull
-        public final UUID targetId;
-        public final long startTime;
-        public final int durationTicks;
-        public int ticksRemaining;
+        private final UUID targetId;
+        private final long startTime;
+        private final int durationTicks;
+        private int ticksRemaining;
 
         public ExecutionState(@Nonnull UUID playerId, @Nonnull UUID targetId, int durationTicks) {
             this.playerId = requireNonNull(playerId, "playerId");
@@ -208,6 +208,13 @@ public class ExecutionSystem {
             this.durationTicks = durationTicks;
             this.ticksRemaining = durationTicks;
         }
+
+        @Nonnull public UUID getPlayerId() { return playerId; }
+        @Nonnull public UUID getTargetId() { return targetId; }
+        public long getStartTime() { return startTime; }
+        public int getDurationTicks() { return durationTicks; }
+        public int getTicksRemaining() { return ticksRemaining; }
+        public void decrementTicksRemaining() { ticksRemaining--; }
 
         public float getProgress() {
             return 1.0f - ((float) ticksRemaining / durationTicks);
@@ -359,7 +366,7 @@ public class ExecutionSystem {
             Map.Entry<UUID, ExecutionState> entry = iterator.next();
             ExecutionState state = entry.getValue();
 
-            state.ticksRemaining--;
+            state.decrementTicksRemaining();
 
             // Find player and target
             // This is called from server tick, need to find the entities
@@ -378,11 +385,11 @@ public class ExecutionSystem {
 
         if (state == null) return;
 
-        state.ticksRemaining--;
+        state.decrementTicksRemaining();
 
         // Get target
         if (player.level() instanceof ServerLevel level) {
-            Entity entity = level.getEntity(state.targetId);
+            Entity entity = level.getEntity(state.getTargetId());
             Mob target = entity instanceof Mob mob ? mob : null;
 
             if (target == null || !target.isAlive()) {
@@ -392,12 +399,12 @@ public class ExecutionSystem {
             }
 
             // Tick visual effects
-            if (state.ticksRemaining % 5 == 0) {
+            if (state.getTicksRemaining() % 5 == 0) {
                 spawnParticles(level, target, ParticleTypes.ENCHANTED_HIT, 5, 1.5, target.getBbHeight(), 0);
             }
 
             // Check completion
-            if (state.ticksRemaining <= 0) {
+            if (state.getTicksRemaining() <= 0) {
                 completeExecution(player, target);
             }
         }
@@ -492,7 +499,7 @@ public class ExecutionSystem {
 
         // Restore target AI
         if (player.level() instanceof ServerLevel level) {
-            Entity entity = level.getEntity(state.targetId);
+            Entity entity = level.getEntity(state.getTargetId());
             Mob target = entity instanceof Mob mob ? mob : null;
             if (target != null) {
                 target.setNoAi(false);

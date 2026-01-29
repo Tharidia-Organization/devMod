@@ -429,7 +429,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
         }
 
         if (nodeData.isPresent()) {
-            TransportExecutor.INSTANCE.startCharging(player, Objects.requireNonNull(nodeData.get()));
+            TransportExecutor.INSTANCE.startCharging(player, nodeData.get());
         }
     }
 

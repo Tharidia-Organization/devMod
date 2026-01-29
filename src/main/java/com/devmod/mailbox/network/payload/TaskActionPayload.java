@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.mailbox.task.TestTask;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -46,15 +47,21 @@ public record TaskActionPayload(
     private static void encode(RegistryFriendlyByteBuf buf, TaskActionPayload payload) {
         buf.writeEnum(Objects.requireNonNull(payload.action));
         buf.writeUUID(Objects.requireNonNull(payload.taskId));
-        buf.writeUtf(payload.statusId != null ? payload.statusId : "");
-        buf.writeUtf(payload.notes != null ? payload.notes : "");
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.statusId, MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.notes, MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH),
+            MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH
+        );
     }
 
     private static TaskActionPayload decode(RegistryFriendlyByteBuf buf) {
         Action action = buf.readEnum(Action.class);
         UUID taskId = buf.readUUID();
-        String statusId = buf.readUtf(64);
-        String notes = buf.readUtf(1000);
+        String statusId = buf.readUtf(MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH);
+        String notes = buf.readUtf(MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH);
 
         return new TaskActionPayload(
             action,
@@ -87,17 +94,12 @@ public record TaskActionPayload(
     public int estimatedSize() {
         int size = 1; // action enum
         size += 16; // UUID
-        size += varIntSize(statusId != null ? statusId.length() : 0) + (statusId != null ? statusId.length() : 0);
-        size += varIntSize(notes != null ? notes.length() : 0) + (notes != null ? notes.length() : 0);
-        return size;
-    }
-
-    private static int varIntSize(int value) {
-        int size = 1;
-        while ((value & ~0x7F) != 0) {
-            value >>>= 7;
-            size++;
-        }
+        size += PayloadSizeUtil.estimatedUtfSize(
+            MailboxPayloadLimits.truncateNullable(statusId, MailboxPayloadLimits.MAX_TASK_STATUS_ID_LENGTH)
+        );
+        size += PayloadSizeUtil.estimatedUtfSize(
+            MailboxPayloadLimits.truncateNullable(notes, MailboxPayloadLimits.MAX_TASK_NOTES_LENGTH)
+        );
         return size;
     }
 }

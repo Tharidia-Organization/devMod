@@ -20,7 +20,22 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-public class CombatTracker {
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveCompleted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+
+/**
+ * Combat statistics tracker for Endurance quests.
+ *
+ * <p>Implements {@link QuestLifecycleListener} to receive quest lifecycle events.
+ * Note: CombatTracker is quest-scoped (shared between party members), so it only
+ * creates one session per questId and only cleans up when cleanupShared is true.</p>
+ *
+ * <h2>Priority: 1000 (Critical)</h2>
+ * <p>Runs early as other systems depend on combat stats.</p>
+ */
+public class CombatTracker implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(CombatTracker.class);
 
     public static final CombatTracker INSTANCE = new CombatTracker();
@@ -523,6 +538,48 @@ public class CombatTracker {
      */
     public Optional<QuestCombatSession> getSession(UUID questId) {
         return Optional.ofNullable(activeSessions.get(questId));
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        UUID questId = event.questId();
+        // Only create session if none exists (shared per quest)
+        if (getSession(questId).isEmpty()) {
+            UUID playerId = event.context().playerId();
+            ResourceLocation mobType = event.context().quest().getMobConfig().mobId;
+            startTracking(questId, playerId, mobType);
+        }
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        // Only stop if cleanupShared is true (last player leaving)
+        if (event.cleanupShared()) {
+            stopTracking(event.questId());
+        }
+    }
+
+    @Override
+    public void onWaveCompleted(WaveCompleted event) {
+        // Advance to next wave in combat tracker
+        if (event.applyShared()) {
+            QuestCombatSession session = activeSessions.get(event.questId());
+            if (session != null) {
+                session.startNewWave(event.context().waveNumber() + 1);
+            }
+        }
+    }
+
+    @Override
+    public int getPriority() {
+        return 1000; // Critical - runs early as other systems depend on combat stats
+    }
+
+    @Override
+    public String getListenerName() {
+        return "CombatTracker";
     }
 
     // ========== Event Handlers ==========

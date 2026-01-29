@@ -43,27 +43,43 @@ public class ImpactData {
     private volatile boolean isBeingObserved = false;
 
     // === Impact data ===
-    public final long timestamp;
-    public final UUID attackerUUID; // Attacker UUID for multiplayer isolation
-    public final WeakReference<LivingEntity> targetRef; // WeakRef to prevent memory leak
-    public final String targetName;
-    public final BodyPart bodyPart;
-    public final float bodyPartMultiplier;
-    public final DamageBreakdown breakdown;
-    @Nonnull public final String attackSource;
-    public final boolean isRanged;
+    private final long timestamp;
+    private final UUID attackerUUID; // Attacker UUID for multiplayer isolation
+    private final WeakReference<LivingEntity> targetRef; // WeakRef to prevent memory leak
+    private final String targetName;
+    private final BodyPart bodyPart;
+    private final float bodyPartMultiplier;
+    private final DamageBreakdown breakdown;
+    @Nonnull private final String attackSource;
+    private final boolean isRanged;
 
     // === 3D Impact Position ===
-    @Nullable public final Vec3 hitPoint;       // Exact collision point
-    @Nullable public final Vec3 slashDirection; // Slash direction (for animation)
+    @Nullable private final Vec3 hitPoint;       // Exact collision point
+    @Nullable private final Vec3 slashDirection; // Slash direction (for animation)
 
     // === Pehkui Data (nullable if not present) ===
-    @Nullable public final Float pehkuiVisualScale;
-    @Nullable public final Float pehkuiHitboxScale;
+    @Nullable private final Float pehkuiVisualScale;
+    @Nullable private final Float pehkuiHitboxScale;
 
     // === Epic Fight Data (nullable if not present) ===
-    @Nullable public final String epicFightAnimationName;
-    public final boolean epicFightCombatActive;
+    @Nullable private final String epicFightAnimationName;
+    private final boolean epicFightCombatActive;
+
+    // Getters
+    public long getTimestamp() { return timestamp; }
+    public UUID getAttackerUUID() { return attackerUUID; }
+    public WeakReference<LivingEntity> getTargetRef() { return targetRef; }
+    public String getTargetName() { return targetName; }
+    public BodyPart getBodyPart() { return bodyPart; }
+    public float getBodyPartMultiplier() { return bodyPartMultiplier; }
+    public DamageBreakdown getBreakdown() { return breakdown; }
+    @Nonnull public String getAttackSource() { return attackSource; }
+    public boolean isRanged() { return isRanged; }
+    @Nullable public Vec3 getHitPoint() { return hitPoint; }
+    @Nullable public Vec3 getSlashDirection() { return slashDirection; }
+    @Nullable public Float getPehkuiVisualScale() { return pehkuiVisualScale; }
+    @Nullable public Float getPehkuiHitboxScale() { return pehkuiHitboxScale; }
+    public boolean isEpicFightCombatActive() { return epicFightCombatActive; }
 
     // === Actual Damage (updated post-armor/enchants) ===
     private volatile float actualDamageDealt = -1f;  // -1 = not yet available
@@ -133,8 +149,8 @@ public class ImpactData {
      * In multiplayer, each player has their own isolated data.
      */
     public static void store(ImpactData data) {
-        if (data == null || data.attackerUUID == null) return;
-        IMPACTS_BY_PLAYER.put(data.attackerUUID, data);
+        if (data == null || data.getAttackerUUID() == null) return;
+        IMPACTS_BY_PLAYER.put(data.getAttackerUUID(), data);
         maybeCleanup();
     }
 
@@ -487,13 +503,13 @@ public class ImpactData {
      */
     public float getDamageReduction() {
         if (!hasActualDamage()) return 0;
-        return breakdown.finalDamage - actualDamageDealt;
+        return breakdown.getFinalDamage() - actualDamageDealt;
     }
 
     @Override
     public String toString() {
         String actualStr = hasActualDamage() ? String.format(", actual=%.1f", actualDamageDealt) : "";
         return String.format("ImpactData[target=%s, part=%s, mult=%.2f, dmg=%.1f%s, source=%s]",
-            targetName, bodyPart, bodyPartMultiplier, breakdown.finalDamage, actualStr, attackSource);
+            targetName, bodyPart, bodyPartMultiplier, breakdown.getFinalDamage(), actualStr, attackSource);
     }
 }

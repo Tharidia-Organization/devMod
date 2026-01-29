@@ -203,19 +203,19 @@ public final class TransportExecutor {
         }
 
         // Safe Optional handling to prevent NoSuchElementException
-        Optional<UUID> linkedIdOpt = source.getLinkedNodeId();
-        if (linkedIdOpt.isEmpty()) {
+        UUID linkedId = source.getLinkedNodeId().orElse(null);
+        if (linkedId == null) {
             playErrorEffect(sourceLevel, source);
             return false;
         }
 
-        Optional<TransportData> destOpt = registry.get(Objects.requireNonNull(linkedIdOpt.get()));
-        if (destOpt.isEmpty() || destOpt.get().getPosition().isEmpty()) {
+        Optional<TransportData> destOpt = registry.get(linkedId);
+        TransportData dest = destOpt.orElse(null);
+        if (dest == null || dest.getPosition().isEmpty()) {
             playErrorEffect(sourceLevel, source);
             return false;
         }
 
-        TransportData dest = Objects.requireNonNull(destOpt.get());
         return performTeleport(entity, source, dest, sourceLevel);
     }
 
@@ -231,15 +231,15 @@ public final class TransportExecutor {
         }
 
         // Safe Optional handling to prevent NoSuchElementException
-        Optional<String> networkNameOpt = source.getNetworkName();
-        if (networkNameOpt.isEmpty()) {
+        String networkName = source.getNetworkName().orElse(null);
+        if (networkName == null) {
             playErrorEffect(sourceLevel, source);
             return false;
         }
 
         Optional<TransportData> destOpt = registry.getNetworkDestination(
-            Objects.requireNonNull(networkNameOpt.get()),
-            Objects.requireNonNull(source.id()),
+            networkName,
+            source.id(),
             source.selectionMode()
         );
 
@@ -248,7 +248,7 @@ public final class TransportExecutor {
             return false;
         }
 
-        return performTeleport(entity, source, Objects.requireNonNull(destOpt.get()), sourceLevel);
+        return performTeleport(entity, source, destOpt.get(), sourceLevel);
     }
 
     private boolean executeFixedTeleport(
@@ -279,12 +279,12 @@ public final class TransportExecutor {
             return false;
         }
 
-        Optional<TransportData> returnOpt = registry.getReturnPoint(Objects.requireNonNull(player.getUUID()));
-        if (returnOpt.isEmpty() || Objects.requireNonNull(returnOpt.get()).getPosition().isEmpty()) {
+        Optional<TransportData> returnOpt = registry.getReturnPoint(player.getUUID());
+        TransportData returnNode = returnOpt.orElse(null);
+        if (returnNode == null || returnNode.getPosition().isEmpty()) {
             return false;
         }
 
-        TransportData returnNode = Objects.requireNonNull(returnOpt.get());
         boolean success = performTeleportToPosition(
             entity,
             null, // No source node for return
@@ -330,9 +330,7 @@ public final class TransportExecutor {
         MinecraftServer server = sourceLevel.getServer();
 
         // Get destination level
-        ServerLevel destLevel = server.getLevel(
-            Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(Registries.DIMENSION), destDim))
-        );
+        ServerLevel destLevel = server.getLevel(ResourceKey.create(Registries.DIMENSION, destDim));
         if (destLevel == null) {
             return false;
         }
@@ -343,7 +341,7 @@ public final class TransportExecutor {
         // Play departure effects
         if (source != null) {
             source.getPosition().ifPresent(pos -> {
-                Vec3 posVec = Objects.requireNonNull(Vec3.atCenterOf(Objects.requireNonNull(pos)));
+                Vec3 posVec = Vec3.atCenterOf(pos);
                 effectManager.spawnDepartureParticles(sourceLevel, posVec);
                 effectManager.playPhaseSound(sourceLevel, pos, TransportPhase.TELEPORT_DEPART);
             });
@@ -368,9 +366,9 @@ public final class TransportExecutor {
         }
 
         // Play arrival effects
-        Vec3 destPosVec = Objects.requireNonNull(Vec3.atCenterOf(destPos));
+        Vec3 destPosVec = Vec3.atCenterOf(destPos);
         effectManager.spawnArrivalParticles(destLevel, destPosVec);
-        effectManager.playPhaseSound(destLevel, Objects.requireNonNull(destPos), TransportPhase.TELEPORT_ARRIVE);
+        effectManager.playPhaseSound(destLevel, destPos, TransportPhase.TELEPORT_ARRIVE);
 
         // Set arrival cooldown
         long currentTick = destLevel.getGameTime();
@@ -402,7 +400,7 @@ public final class TransportExecutor {
             node.color(),
             state.currentTicks(),
             state.requiredTicks(),
-            Objects.requireNonNull(info.name()),
+            info.name(),
             info.distance()
         );
         TransportNetworkHandler.sendStateUpdate(player, payload);
@@ -451,29 +449,28 @@ public final class TransportExecutor {
 
         switch (source.mode()) {
             case LINKED -> {
-                Optional<UUID> linkedIdOpt = source.getLinkedNodeId();
-                if (linkedIdOpt.isPresent()) {
-                    Optional<TransportData> destOpt = registry.get(Objects.requireNonNull(linkedIdOpt.get()));
-                    if (destOpt.isPresent()) {
-                        TransportData dest = Objects.requireNonNull(destOpt.get());
-                        name = resolveNodeName(dest);
-                        distance = computeDistance(
-                            source.dimension(),
-                            source.position(),
-                            dest.dimension(),
-                            dest.position()
-                        );
-                    }
+                var destOpt = source.getLinkedNodeId().flatMap(registry::get);
+                if (destOpt.isPresent()) {
+                    var dest = destOpt.get();
+                    name = resolveNodeName(dest);
+                    distance = computeDistance(
+                        source.dimension(),
+                        source.position(),
+                        dest.dimension(),
+                        dest.position()
+                    );
                 }
             }
             case NETWORK -> {
-                if (source.networkName() != null && !Objects.requireNonNull(source.networkName()).isEmpty()) {
-                    name = Objects.requireNonNull(source.networkName());
+                String networkName = source.networkName();
+                if (networkName != null && !networkName.isEmpty()) {
+                    name = networkName;
                 }
             }
             case FIXED, ZONE -> {
-                if (source.displayName() != null && !Objects.requireNonNull(source.displayName()).isEmpty()) {
-                    name = Objects.requireNonNull(source.displayName());
+                String displayName = source.displayName();
+                if (displayName != null && !displayName.isEmpty()) {
+                    name = displayName;
                 } else {
                     name = source.mode() == TransportMode.ZONE
                         ? "Zone"
@@ -497,11 +494,13 @@ public final class TransportExecutor {
 
     @Nonnull
     private static String resolveNodeName(@Nonnull TransportData node) {
-        if (node.displayName() != null && !Objects.requireNonNull(node.displayName()).isEmpty()) {
-            return Objects.requireNonNull(node.displayName());
+        String displayName = node.displayName();
+        if (displayName != null && !displayName.isEmpty()) {
+            return displayName;
         }
-        if (node.networkName() != null && !Objects.requireNonNull(node.networkName()).isEmpty()) {
-            return Objects.requireNonNull(node.networkName());
+        String networkName = node.networkName();
+        if (networkName != null && !networkName.isEmpty()) {
+            return networkName;
         }
         return node.nodeType().getSerializedName();
     }
@@ -574,7 +573,7 @@ public final class TransportExecutor {
 
         // Tick charging for all levels
         for (ServerLevel level : server.getAllLevels()) {
-            tickChargingForLevel(Objects.requireNonNull(level));
+            tickChargingForLevel(level);
         }
 
         // Process temporal node expirations
@@ -595,31 +594,31 @@ public final class TransportExecutor {
         long currentTick = level.getGameTime();
 
         // Process charging completions
-        List<ChargeCompleteEvent> completions = chargeManager.tick(level, Objects.requireNonNull(ChargeManager.DEFAULT_POSITION_CHECKER));
+        List<ChargeCompleteEvent> completions = chargeManager.tick(level, ChargeManager.DEFAULT_POSITION_CHECKER);
 
         for (ChargeCompleteEvent event : completions) {
-            Player player = level.getPlayerByUUID(Objects.requireNonNull(event.playerId()));
+            Player player = level.getPlayerByUUID(event.playerId());
             if (player instanceof ServerPlayer serverPlayer) {
-                Optional<TransportData> nodeOpt = registry.get(Objects.requireNonNull(event.nodeId()));
+                Optional<TransportData> nodeOpt = registry.get(event.nodeId());
 
                 if (nodeOpt.isPresent()) {
-                    sendChargeCompleteUpdate(serverPlayer, Objects.requireNonNull(nodeOpt.get()));
+                    sendChargeCompleteUpdate(serverPlayer, nodeOpt.get());
 
                     // Play completion sound
                     effectManager.playPhaseSound(level, Objects.requireNonNull(event.nodePos()), TransportPhase.CHARGE_COMPLETE);
 
                     // Execute teleport
-                    executeTeleport(serverPlayer, Objects.requireNonNull(nodeOpt.get()));
+                    executeTeleport(serverPlayer, nodeOpt.get());
                 }
             }
         }
 
         // Tick charging effects for all charging players
         for (ServerPlayer player : level.players()) {
-            chargeManager.getState(Objects.requireNonNull(player.getUUID())).ifPresent(state -> {
-                sendChargeUpdate(player, Objects.requireNonNull(state), currentTick);
-                registry.get(Objects.requireNonNull(state.nodeId())).ifPresent(node -> {
-                    Vec3 pos = Objects.requireNonNull(Vec3.atCenterOf(Objects.requireNonNull(state.nodePos())));
+            chargeManager.getState(player.getUUID()).ifPresent(state -> {
+                sendChargeUpdate(player, state, currentTick);
+                registry.get(state.nodeId()).ifPresent(node -> {
+                    Vec3 pos = Vec3.atCenterOf(state.nodePos());
                     effectManager.tickChargingEffects(level, pos, state.color(), state.currentTicks(), state.requiredTicks());
                 });
             });
@@ -629,18 +628,18 @@ public final class TransportExecutor {
     private void syncChargingOverlay(@Nonnull MinecraftServer server) {
         Set<UUID> currentCharging = new HashSet<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (chargeManager.isCharging(Objects.requireNonNull(player.getUUID()))) {
-                currentCharging.add(Objects.requireNonNull(player.getUUID()));
+            if (chargeManager.isCharging(player.getUUID())) {
+                currentCharging.add(player.getUUID());
             }
         }
 
         for (UUID previous : new HashSet<>(chargingPlayersLastTick)) {
-            if (!currentCharging.contains(Objects.requireNonNull(previous))) {
-                ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(previous));
+            if (!currentCharging.contains(previous)) {
+                ServerPlayer player = server.getPlayerList().getPlayer(previous);
                 if (player != null) {
                     sendChargeExit(player);
                 } else {
-                    lastChargeSync.remove(Objects.requireNonNull(previous));
+                    lastChargeSync.remove(previous);
                 }
             }
         }

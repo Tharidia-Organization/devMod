@@ -290,7 +290,7 @@ public final class ArrivalManager {
     public List<UUID> getArrivedPlayers(@Nonnull UUID sessionId) {
         ArrivalSession session = activeSessions.get(sessionId);
         if (session == null) {
-            return Objects.requireNonNull(List.of());
+            return List.of();
         }
         return new ArrayList<>(session.arrivedPlayers);
     }
@@ -510,7 +510,10 @@ public final class ArrivalManager {
         );
 
         for (UUID playerId : session.expectedPlayers) {
-            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
+            if (playerId == null) {
+                continue;
+            }
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player != null) {
                 TransportNetworkHandler.sendPartyStatus(player, payload);
             }
