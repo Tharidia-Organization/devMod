@@ -67,7 +67,8 @@ public class EffectDefinition implements Closeable {
     }
 
     public Optional<ParticleEmitter> getNamedEmitter(ParticleEmitter.Type type, ResourceLocation emitterName) {
-        return Optional.ofNullable(namedEmitters.get(type).get(emitterName));
+        Map<ResourceLocation, ParticleEmitter> emitters = namedEmitters.get(type);
+        return emitters != null ? Optional.ofNullable(emitters.get(emitterName)) : Optional.empty();
     }
 
     public EffekseerManager getManager(ParticleEmitter.Type type) {
@@ -104,10 +105,11 @@ public class EffectDefinition implements Closeable {
         if (this.effect == effect) {
             return this;
         }
-        if (this.effect != null) {
+        EffekseerEffect oldEffect = this.effect;
+        if (oldEffect != null) {
             emitters().forEach(ParticleEmitter::stop);
             managers().forEach(EffekseerManager::close);
-            this.effect.close();
+            oldEffect.close();
             this.managers.clear();
         }
         this.effect = effect;
@@ -119,7 +121,7 @@ public class EffectDefinition implements Closeable {
         return managers.values().stream();
     }
 
-    private EffekseerEffect effect;
+    @Nullable private EffekseerEffect effect;
     private final EnumMap<ParticleEmitter.Type, EffekseerManager> managers = new EnumMap<>(ParticleEmitter.Type.class);
     private final EnumMap<ParticleEmitter.Type, Set<ParticleEmitter>> oneShotEmitters = new EnumMap<>(ParticleEmitter.Type.class);
     private final EnumMap<ParticleEmitter.Type, Map<ResourceLocation, ParticleEmitter>> namedEmitters = new EnumMap<>(ParticleEmitter.Type.class);
@@ -148,6 +150,9 @@ public class EffectDefinition implements Closeable {
 
         IntRef backgroundColorId = backgroundColorIds.get(type);
         IntRef backgroundDepthId = backgroundDepthIds.get(type);
+        if (backgroundColorId == null || backgroundDepthId == null) {
+            return; // Not initialized yet
+        }
 
         if (background == null) {
             unsetBackgrounds(manager, backgroundColorId, backgroundDepthId);
@@ -218,7 +223,9 @@ public class EffectDefinition implements Closeable {
     public void close() {
         Arrays.stream(ParticleEmitter.Type.values()).forEach(this::unsetBackgrounds);
         managers.values().forEach(EffekseerManager::close);
-        effect.close();
+        if (effect != null) {
+            effect.close();
+        }
     }
 
     private static final class IntRef {

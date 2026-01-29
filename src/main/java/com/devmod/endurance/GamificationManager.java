@@ -78,8 +78,8 @@ public class GamificationManager {
 
     private Path dataDirectory;
 
-    // Player profiles
-    private final Map<UUID, PlayerProfile> playerProfiles = new HashMap<>();
+    // Player profiles - thread-safe for concurrent access
+    private final Map<UUID, PlayerProfile> playerProfiles = new java.util.concurrent.ConcurrentHashMap<>();
 
     // Global leaderboards
     private final Leaderboard allTimeLeaderboard = new Leaderboard("All Time");
@@ -185,21 +185,24 @@ public class GamificationManager {
         EPIC(EnduranceColors.PerkRarity.EPIC, "Epic"),
         LEGENDARY(EnduranceColors.PerkRarity.LEGENDARY, "Legendary");
 
-        public final int color;
-        public final String displayName;
+        private final int color;
+        private final String displayName;
 
         BadgeRarity(int color, String displayName) {
             this.color = color;
             this.displayName = displayName;
         }
+
+        public int getColor() { return color; }
+        public String getDisplayName() { return displayName; }
     }
 
     public static class Badge {
-        public final String id;
-        public final String name;
-        public final String description;
-        public final int bonusPoints;
-        public final BadgeRarity rarity;
+        private final String id;
+        private final String name;
+        private final String description;
+        private final int bonusPoints;
+        private final BadgeRarity rarity;
 
         public Badge(String id, String name, String description, int bonusPoints, BadgeRarity rarity) {
             this.id = id;
@@ -208,40 +211,53 @@ public class GamificationManager {
             this.bonusPoints = bonusPoints;
             this.rarity = rarity;
         }
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public int getBonusPoints() { return bonusPoints; }
+        public BadgeRarity getRarity() { return rarity; }
     }
 
     // ========== Player Profiles ==========
 
+    /**
+     * Thread-safe player profile with volatile primitives and ConcurrentHashMap-backed sets.
+     * Uses statsLock for atomic compound operations on counters.
+     */
     public static class PlayerProfile {
-        public UUID playerId;
-        public String playerName;
+        public volatile UUID playerId;
+        public volatile String playerName;
 
-        // Points
-        public int totalPoints = 0;
-        public int weeklyPoints = 0;
-        public int dailyPoints = 0;
+        // Lock for atomic compound operations on stats counters
+        public final Object statsLock = new Object();
 
-        // Stats
-        public int totalQuestsCompleted = 0;
-        public int totalMobsKilled = 0;
-        public int highestWaveReached = 0;
-        public int currentStreak = 0;
-        public int longestStreak = 0;
-        public LocalDate lastPlayDate;
+        // Points - volatile for visibility across threads
+        public volatile int totalPoints = 0;
+        public volatile int weeklyPoints = 0;
+        public volatile int dailyPoints = 0;
 
-        // Badges earned
-        public Set<String> earnedBadges = new HashSet<>();
+        // Stats - volatile for visibility across threads
+        public volatile int totalQuestsCompleted = 0;
+        public volatile int totalMobsKilled = 0;
+        public volatile int highestWaveReached = 0;
+        public volatile int currentStreak = 0;
+        public volatile int longestStreak = 0;
+        public volatile LocalDate lastPlayDate;
 
-        // Completed challenges
-        public Set<String> completedDailyChallenges = new HashSet<>();
-        public Set<String> completedWeeklyChallenges = new HashSet<>();
+        // Badges earned - thread-safe set
+        public Set<String> earnedBadges = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-        // Mobs defeated (for variety tracking)
-        public Set<String> defeatedMobTypes = new HashSet<>();
+        // Completed challenges - thread-safe sets
+        public Set<String> completedDailyChallenges = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        public Set<String> completedWeeklyChallenges = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-        // Templates completed (for template coverage)
-        public Set<String> completedTemplates = new HashSet<>();
-        public Set<String> completedTemplateVersions = new HashSet<>();
+        // Mobs defeated (for variety tracking) - thread-safe set
+        public Set<String> defeatedMobTypes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // Templates completed (for template coverage) - thread-safe sets
+        public Set<String> completedTemplates = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        public Set<String> completedTemplateVersions = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         public PlayerProfile() {}
 
@@ -406,17 +422,24 @@ public class GamificationManager {
 
     /**
      * Award points to a player.
+     * Thread-safe: Uses synchronized block for atomic point updates.
      */
     public void awardPoints(UUID playerId, String playerName, int points, String reason) {
         PlayerProfile profile = getProfile(playerId, playerName);
-        profile.totalPoints += points;
-        profile.weeklyPoints += points;
-        profile.dailyPoints += points;
+        int newTotal, newWeekly, newDaily;
+        synchronized (profile.statsLock) {
+            profile.totalPoints += points;
+            profile.weeklyPoints += points;
+            profile.dailyPoints += points;
+            newTotal = profile.totalPoints;
+            newWeekly = profile.weeklyPoints;
+            newDaily = profile.dailyPoints;
+        }
 
         // Update leaderboards
-        allTimeLeaderboard.updateEntry(playerId, playerName, profile.totalPoints);
-        weeklyLeaderboard.updateEntry(playerId, playerName, profile.weeklyPoints);
-        dailyLeaderboard.updateEntry(playerId, playerName, profile.dailyPoints);
+        allTimeLeaderboard.updateEntry(playerId, playerName, newTotal);
+        weeklyLeaderboard.updateEntry(playerId, playerName, newWeekly);
+        dailyLeaderboard.updateEntry(playerId, playerName, newDaily);
 
         LOGGER.debug("[Gamification] Awarded {} points to {} for: {}", points, playerName, reason);
 
@@ -452,21 +475,30 @@ public class GamificationManager {
         return recordQuestCompletion(playerId, playerName, quest, combatSession, null);
     }
 
+    /**
+     * Thread-safe: Uses synchronized block for atomic stats updates.
+     */
     public QuestCompletionResult recordQuestCompletion(UUID playerId, String playerName, EnduranceQuest quest,
                                       CombatTracker.QuestCombatSession combatSession,
                                       @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session) {
         PlayerProfile profile = getProfile(playerId, playerName);
 
         // Track previous records for notification
-        int previousHighScore = profile.totalPoints;
-        int previousHighWave = profile.highestWaveReached;
+        int previousHighScore;
+        int previousHighWave;
+        boolean isNewWaveRecord;
 
-        // Update stats
-        profile.totalQuestsCompleted++;
-        profile.totalMobsKilled += combatSession.getKills();
-        boolean isNewWaveRecord = quest.getCurrentWave() > profile.highestWaveReached;
-        if (isNewWaveRecord) {
-            profile.highestWaveReached = quest.getCurrentWave();
+        // Update stats atomically
+        synchronized (profile.statsLock) {
+            previousHighScore = profile.totalPoints;
+            previousHighWave = profile.highestWaveReached;
+
+            profile.totalQuestsCompleted++;
+            profile.totalMobsKilled += combatSession.getKills();
+            isNewWaveRecord = quest.getCurrentWave() > profile.highestWaveReached;
+            if (isNewWaveRecord) {
+                profile.highestWaveReached = quest.getCurrentWave();
+            }
         }
         profile.defeatedMobTypes.add(quest.getMobId().toString());
 
@@ -482,17 +514,19 @@ public class GamificationManager {
             }
         }
 
-        // Update streak
+        // Update streak atomically
         LocalDate today = LocalDate.now(ZoneId.systemDefault());
-        if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today.minusDays(1))) {
-            if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today)) {
-                profile.currentStreak = 1;
+        synchronized (profile.statsLock) {
+            if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today.minusDays(1))) {
+                if (profile.lastPlayDate == null || !profile.lastPlayDate.equals(today)) {
+                    profile.currentStreak = 1;
+                }
+            } else {
+                profile.currentStreak++;
             }
-        } else {
-            profile.currentStreak++;
-        }
-        if (profile.currentStreak > profile.longestStreak) {
-            profile.longestStreak = profile.currentStreak;
+            if (profile.currentStreak > profile.longestStreak) {
+                profile.longestStreak = profile.currentStreak;
+            }
         }
         profile.lastPlayDate = today;
 
@@ -548,6 +582,7 @@ public class GamificationManager {
 
     /**
      * Award a badge to a player.
+     * Thread-safe: Uses synchronized block for atomic point updates.
      */
     public boolean awardBadge(PlayerProfile profile, String badgeId) {
         if (profile.earnedBadges.contains(badgeId)) {
@@ -560,17 +595,19 @@ public class GamificationManager {
         }
 
         profile.earnedBadges.add(badgeId);
-        profile.totalPoints += badge.bonusPoints;
-        profile.weeklyPoints += badge.bonusPoints;
-        profile.dailyPoints += badge.bonusPoints;
+        synchronized (profile.statsLock) {
+            profile.totalPoints += badge.getBonusPoints();
+            profile.weeklyPoints += badge.getBonusPoints();
+            profile.dailyPoints += badge.getBonusPoints();
+        }
 
         // Telemetry: record badge unlocked
         EnduranceTelemetryService.INSTANCE.recordBadgeUnlocked(
-            profile.playerId, badgeId, badge.name, badge.bonusPoints
+            profile.playerId, badgeId, badge.getName(), badge.getBonusPoints()
         );
 
         LOGGER.info("[Gamification] {} earned badge: {} (+{} points)",
-            profile.playerName, badge.name, badge.bonusPoints);
+            profile.playerName, badge.getName(), badge.getBonusPoints());
 
         return true;
     }

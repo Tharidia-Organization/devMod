@@ -70,6 +70,7 @@ class AreaPaletteTest {
 
         @Test
         @DisplayName("throws on null materials")
+        @SuppressWarnings("NullAway")
         void constructor_nullMaterialsThrows() {
             assertThrows(NullPointerException.class, () -> {
                 new AreaPalette(null, "test", false);
@@ -78,6 +79,7 @@ class AreaPaletteTest {
 
         @Test
         @DisplayName("throws on null presetId")
+        @SuppressWarnings("NullAway")
         void constructor_nullPresetIdThrows() {
             assertThrows(NullPointerException.class, () -> {
                 new AreaPalette(new HashMap<>(), null, false);

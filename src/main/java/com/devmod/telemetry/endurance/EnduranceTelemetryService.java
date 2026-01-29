@@ -571,7 +571,7 @@ public class EnduranceTelemetryService {
         }
 
         LOGGER.debug("[Endurance] Perk selected: {} ({}) - stack {} on wave {}",
-            perkName, tier.displayName, stackCount, waveNumber);
+            perkName, tier.getDisplayName(), stackCount, waveNumber);
 
         getOrCreateStats(questId).perkSelected(tier);
     }
@@ -586,8 +586,8 @@ public class EnduranceTelemetryService {
         for (int i = 0; i < choices.size(); i++) {
             PerkSystem.Perk perk = choices.get(i);
             if (i > 0) choicesJson.append(",");
-            choicesJson.append("{\"id\":\"").append(escape(perk.id))
-                       .append("\",\"tier\":\"").append(perk.tier.name()).append("\"}");
+            choicesJson.append("{\"id\":\"").append(escape(perk.getId()))
+                       .append("\",\"tier\":\"").append(perk.getTier().name()).append("\"}");
         }
         choicesJson.append("]");
 
@@ -627,8 +627,8 @@ public class EnduranceTelemetryService {
         for (int i = 0; i < mutators.size(); i++) {
             MutatorSystem.Mutator m = mutators.get(i);
             if (i > 0) mutatorJson.append(",");
-            mutatorJson.append("{\"id\":\"").append(escape(m.id))
-                       .append("\",\"category\":\"").append(m.category.name()).append("\"}");
+            mutatorJson.append("{\"id\":\"").append(escape(m.getId()))
+                       .append("\",\"category\":\"").append(m.getCategory().name()).append("\"}");
         }
         mutatorJson.append("]");
 
@@ -668,14 +668,14 @@ public class EnduranceTelemetryService {
         json.append("{\"ts\":\"").append(Instant.now()).append("\",");
         json.append("\"type\":\"mutator_added\",");
         json.append("\"questId\":\"").append(questId).append("\",");
-        json.append("\"mutatorId\":\"").append(escape(mutator.id)).append("\",");
-        json.append("\"category\":\"").append(mutator.category.name()).append("\",");
+        json.append("\"mutatorId\":\"").append(escape(mutator.getId())).append("\",");
+        json.append("\"category\":\"").append(mutator.getCategory().name()).append("\",");
         json.append("\"wave\":").append(waveNumber);
         appendContext(json, stats);
         json.append("}");
 
         // DuckDB: Primary storage
-        DuckDBTelemetryService.INSTANCE.logMutatorAdded(questId, mutator.id, mutator.category.name(), waveNumber,
+        DuckDBTelemetryService.INSTANCE.logMutatorAdded(questId, mutator.getId(), mutator.getCategory().name(), waveNumber,
             stats != null ? stats.templateId : null,
             stats != null ? stats.templateVersion : null,
             stats != null ? stats.policyId : null,

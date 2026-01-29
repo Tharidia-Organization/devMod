@@ -152,9 +152,9 @@ public record EnduranceMobConfig(
      * Applies preset multipliers to stats.
      */
     public EnduranceMobConfig withPreset(MobDifficultyPreset preset) {
-        float adjustedHealth = baseHealth * preset.hpMultiplier;
-        float adjustedDamage = baseDamage * preset.damageMultiplier;
-        int adjustedCount = (int) Math.ceil(baseCountPerWave * preset.countMultiplier);
+        float adjustedHealth = baseHealth * preset.getHpMultiplier();
+        float adjustedDamage = baseDamage * preset.getDamageMultiplier();
+        int adjustedCount = (int) Math.ceil(baseCountPerWave * preset.getCountMultiplier());
 
         return new EnduranceMobConfig(
             mobId, enabled, adjustedHealth, adjustedDamage, baseSpeed, baseArmor,
@@ -202,7 +202,7 @@ public record EnduranceMobConfig(
         return String.format("%s [%s] HP:%.0f DMG:%.1f SPD:%.2f %s%s",
             mobId, tier.name(),
             baseHealth, baseDamage, baseSpeed,
-            difficultyPreset.displayName,
+            difficultyPreset.getDisplayName(),
             enabled ? "" : " (DISABLED)");
     }
 }

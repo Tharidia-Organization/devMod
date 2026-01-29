@@ -140,16 +140,18 @@ public record TelemetryBatchPayload(
         UI_SCREEN_CLOSE(61),
         UI_ACTION(62);
 
-        public final byte id;
+        private final byte id;
 
         EventType(int id) {
             this.id = (byte) id;
         }
 
+        public byte getId() { return id; }
+
         @Nullable
         public static EventType fromId(byte id) {
             for (EventType type : values()) {
-                if (type.id == id) {
+                if (type.getId() == id) {
                     return type;
                 }
             }
@@ -185,7 +187,7 @@ public record TelemetryBatchPayload(
          */
         public static CompressedEvent fromString(EventType type, int deltaMs, String jsonData) {
             return new CompressedEvent(
-                type.id,
+                type.getId(),
                 deltaMs,
                 jsonData.getBytes(java.nio.charset.StandardCharsets.UTF_8)
             );

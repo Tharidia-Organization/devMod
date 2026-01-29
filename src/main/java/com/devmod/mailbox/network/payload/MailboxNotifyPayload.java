@@ -1,6 +1,5 @@
 package com.devmod.mailbox.network.payload;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -12,6 +11,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -32,10 +32,6 @@ public record MailboxNotifyPayload(
         Objects.requireNonNull(subject, "subject");
     }
 
-    // Security limits
-    private static final int MAX_SUBJECT_LENGTH = 128;
-    private static final int MAX_NAME_LENGTH = 64;
-
     public static final Type<MailboxNotifyPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mailbox_notify"))
     );
@@ -47,8 +43,14 @@ public record MailboxNotifyPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, MailboxNotifyPayload payload) {
         buf.writeUUID(Objects.requireNonNull(payload.messageId));
-        buf.writeUtf(payload.senderName != null ? payload.senderName : "");
-        buf.writeUtf(Objects.requireNonNull(payload.subject));
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.senderName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH),
+            MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH
+        );
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.subject, MailboxPayloadLimits.MAX_NOTIFY_SUBJECT_LENGTH),
+            MailboxPayloadLimits.MAX_NOTIFY_SUBJECT_LENGTH
+        );
         buf.writeVarInt(payload.messageTypeOrdinal);
         buf.writeBoolean(payload.hasAttachment);
         buf.writeVarInt(payload.totalUnread);
@@ -56,8 +58,8 @@ public record MailboxNotifyPayload(
 
     private static MailboxNotifyPayload decode(RegistryFriendlyByteBuf buf) {
         UUID messageId = buf.readUUID();
-        String senderName = buf.readUtf(MAX_NAME_LENGTH);
-        String subject = buf.readUtf(MAX_SUBJECT_LENGTH);
+        String senderName = buf.readUtf(MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        String subject = buf.readUtf(MailboxPayloadLimits.MAX_NOTIFY_SUBJECT_LENGTH);
         int messageTypeOrdinal = buf.readVarInt();
         boolean hasAttachment = buf.readBoolean();
         int totalUnread = buf.readVarInt();
@@ -76,30 +78,16 @@ public record MailboxNotifyPayload(
     @Override
     public int estimatedSize() {
         int size = 16; // UUID
-        size += estimatedUtfSize(senderName);
-        size += estimatedUtfSize(subject);
-        size += varIntSize(messageTypeOrdinal);
+        size += estimatedUtfSize(senderName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        size += estimatedUtfSize(subject, MailboxPayloadLimits.MAX_NOTIFY_SUBJECT_LENGTH);
+        size += PayloadSizeUtil.varIntSize(messageTypeOrdinal);
         size += 1; // hasAttachment
-        size += varIntSize(totalUnread);
+        size += PayloadSizeUtil.varIntSize(totalUnread);
         return size;
     }
 
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null || value.isEmpty()) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
-        return size;
+    private static int estimatedUtfSize(@Nullable String value, int maxLength) {
+        return PayloadSizeUtil.estimatedUtfSize(MailboxPayloadLimits.truncateNullable(value, maxLength));
     }
 
     /**

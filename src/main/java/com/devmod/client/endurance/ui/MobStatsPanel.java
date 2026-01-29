@@ -190,9 +190,9 @@ public class MobStatsPanel {
         // Apply preset multipliers to original values
         EnduranceMobConfig config = originalConfig;
         if (config != null) {
-            health = config.baseHealth() * newPreset.hpMultiplier;
-            damage = config.baseDamage() * newPreset.damageMultiplier;
-            countPerWave = (int) Math.ceil(config.baseCountPerWave() * newPreset.countMultiplier);
+            health = config.baseHealth() * newPreset.getHpMultiplier();
+            damage = config.baseDamage() * newPreset.getDamageMultiplier();
+            countPerWave = (int) Math.ceil(config.baseCountPerWave() * newPreset.getCountMultiplier());
         }
 
         notifyChange();

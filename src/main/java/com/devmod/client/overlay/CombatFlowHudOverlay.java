@@ -166,7 +166,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
 
         // Combo number with rank color
         int color = combo > 0
-            ? OverlayTheme.withAlpha(rank.color, DesignTokens.Alpha.A100)
+            ? OverlayTheme.withAlpha(rank.getColor(), DesignTokens.Alpha.A100)
             : OverlayTheme.Neutral.N650;
         graphics.drawString(font, comboText, 0, 0, color, true);
 
@@ -192,7 +192,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
 
         // Rank letter/name
         String rankText = rank.name();
-        int rankColor = OverlayTheme.withAlpha(rank.color, DesignTokens.Alpha.A100);
+        int rankColor = OverlayTheme.withAlpha(rank.getColor(), DesignTokens.Alpha.A100);
 
         // Flash effect on rank up
         if (flashAlpha > 0) {
@@ -203,7 +203,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         }
 
         // Rank name
-        graphics.drawString(font, rank.displayName, x + 30, y, OverlayTheme.Neutral.N450, false);
+        graphics.drawString(font, rank.getDisplayName(), x + 30, y, OverlayTheme.Neutral.N450, false);
 
         // Progress bar to next rank
         int barX = x + 6;
@@ -244,8 +244,8 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         }
 
         // Flow state indicator
-        int color = OverlayTheme.withAlpha(flow.color, DesignTokens.Alpha.A100);
-        String text = flow.displayName;
+        int color = OverlayTheme.withAlpha(flow.getColor(), DesignTokens.Alpha.A100);
+        String text = flow.getDisplayName();
 
         // Pulsing effect for STALE (warning)
         if (flow == FlowState.STALE) {
@@ -284,7 +284,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
 
         // Label
         String label = overdrive ? "OVERDRIVE" : "Momentum";
-        int labelColor = OverlayTheme.withAlpha(state.color, DesignTokens.Alpha.A100);
+        int labelColor = OverlayTheme.withAlpha(state.getColor(), DesignTokens.Alpha.A100);
 
         if (overdrive) {
             // Pulsing overdrive text
@@ -305,7 +305,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
 
         // Fill
         int fillWidth = (int) (barWidth * (momentum / 100f));
-        int fillColor = OverlayTheme.withAlpha(state.color, DesignTokens.Alpha.A100);
+        int fillColor = OverlayTheme.withAlpha(state.getColor(), DesignTokens.Alpha.A100);
 
         if (overdrive) {
             // Animated rainbow fill during overdrive

@@ -39,15 +39,19 @@ public class MomentumTracker {
         HEATED("HEATED!", EnduranceColors.Momentum.HEATED, "Keep it up!"),
         OVERDRIVE("OVERDRIVE!", EnduranceColors.Momentum.OVERDRIVE, "MAXIMUM POWER!");
 
-        public final String displayName;
-        public final int color;
-        public final String message;
+        private final String displayName;
+        private final int color;
+        private final String message;
 
         MomentumState(String displayName, int color, String message) {
             this.displayName = displayName;
             this.color = color;
             this.message = message;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public String getMessage() { return message; }
     }
 
     /**

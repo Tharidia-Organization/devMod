@@ -281,7 +281,7 @@ public class ClientModEvents {
         // Clear 3D impact panels (may hold entity references)
         Impact3DPanelManager.INSTANCE.clear();
 
-        // Clear telepad depth renderer tracking
+        // Clear telepad occlusion tracking
         com.devmod.clone.client.renderer.TelepadDepthRenderer.clearAll();
 
         // Clear notifications

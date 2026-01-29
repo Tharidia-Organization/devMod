@@ -80,8 +80,12 @@ public record ZoneSyncPayload(
         buf.writeLong(payload.registryVersion);
     }
 
+    /** Maximum zones to sync per payload to prevent DoS via unbounded allocation */
+    private static final int MAX_ZONES = 500;
+
     private static ZoneSyncPayload decode(RegistryFriendlyByteBuf buf) {
-        int count = buf.readVarInt();
+        int count = Math.min(buf.readVarInt(), MAX_ZONES);
+        if (count < 0) count = 0; // Guard against negative values
         List<ZoneSummary> zones = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             zones.add(ZoneSummary.STREAM_CODEC.decode(buf));

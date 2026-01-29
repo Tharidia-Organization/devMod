@@ -221,6 +221,7 @@ public class PrebuildPoolManager {
     /**
      * Tries to acquire a pooled arena for a template.
      * DD65: Records hit/miss.
+     * Thread-safe: Uses atomic CAS operation to prevent double-acquisition.
      *
      * @param templateId the template ID
      * @param partyId    the party requesting the arena
@@ -231,32 +232,37 @@ public class PrebuildPoolManager {
             return Optional.empty();
         }
 
-        Optional<PooledArena> match = pool.values().stream()
-            .filter(a -> a.templateId().equals(templateId))
-            .filter(a -> a.state() == PoolState.READY)
-            .findFirst();
+        // Thread-safe acquisition: iterate through candidates and attempt atomic reservation
+        for (PooledArena candidate : pool.values()) {
+            if (!candidate.templateId().equals(templateId) || candidate.state() != PoolState.READY) {
+                continue;
+            }
 
-        if (match.isPresent()) {
-            PooledArena arena = match.get();
-            PooledArena reserved = arena.withReservation(partyId);
-            pool.put(arena.arenaId(), reserved);
-            hits.incrementAndGet();
+            // Atomic compare-and-swap: only succeed if arena is still in READY state
+            PooledArena reserved = candidate.withReservation(partyId);
+            boolean acquired = pool.replace(candidate.arenaId(), candidate, reserved);
 
-            LOGGER.debug("Pool hit for template {}, arena {}", templateId, arena.arenaId());
-            emitTelemetry("arena.pool.hit", Map.of(
-                "templateId", templateId,
-                "arenaId", arena.arenaId().toString()
-            ));
+            if (acquired) {
+                hits.incrementAndGet();
 
-            return Optional.of(reserved);
-        } else {
-            misses.incrementAndGet();
+                LOGGER.debug("Pool hit for template {}, arena {}", templateId, candidate.arenaId());
+                emitTelemetry("arena.pool.hit", Map.of(
+                    "templateId", templateId,
+                    "arenaId", candidate.arenaId().toString()
+                ));
 
-            LOGGER.debug("Pool miss for template {}", templateId);
-            emitTelemetry("arena.pool.miss", Map.of("templateId", templateId));
-
-            return Optional.empty();
+                return Optional.of(reserved);
+            }
+            // CAS failed - another thread modified this arena, try next candidate
         }
+
+        // No arena acquired
+        misses.incrementAndGet();
+
+        LOGGER.debug("Pool miss for template {}", templateId);
+        emitTelemetry("arena.pool.miss", Map.of("templateId", templateId));
+
+        return Optional.empty();
     }
 
     /**
@@ -285,27 +291,23 @@ public class PrebuildPoolManager {
 
     /**
      * Marks an arena as in use.
+     * Thread-safe: Uses atomic computeIfPresent to prevent race conditions.
      *
      * @param arenaId the arena ID
      */
     public void markInUse(UUID arenaId) {
-        PooledArena arena = pool.get(arenaId);
-        if (arena != null) {
-            pool.put(arenaId, arena.withState(PoolState.IN_USE));
-        }
+        pool.computeIfPresent(arenaId, (id, arena) -> arena.withState(PoolState.IN_USE));
     }
 
     /**
      * Releases an arena back to the pool or for cleanup.
+     * Thread-safe: Uses atomic computeIfPresent to prevent race conditions.
      *
      * @param arenaId the arena ID
      */
     public void release(UUID arenaId) {
-        PooledArena arena = pool.get(arenaId);
-        if (arena != null) {
-            pool.put(arenaId, arena.withState(PoolState.CLEANUP));
-            // In real implementation, trigger actual cleanup
-        }
+        pool.computeIfPresent(arenaId, (id, arena) -> arena.withState(PoolState.CLEANUP));
+        // In real implementation, trigger actual cleanup
     }
 
     /**
@@ -392,6 +394,7 @@ public class PrebuildPoolManager {
     /**
      * Cleans up unused arenas.
      * DD64: Unused = no assignment for 10 min AND state READY.
+     * Thread-safe: Uses atomic remove(key, value) to prevent race conditions.
      */
     private void cleanupUnusedArenas() {
         Instant now = Instant.now();
@@ -402,15 +405,19 @@ public class PrebuildPoolManager {
 
             // DD64: Double-check before eviction
             if (arena.isUnused(now) && arena.canBeEvicted()) {
-                pool.remove(entry.getKey());
-                cleaned++;
+                // Atomic remove: only removes if value hasn't changed since we checked
+                boolean removed = pool.remove(entry.getKey(), arena);
+                if (removed) {
+                    cleaned++;
 
-                LOGGER.debug("Cleaned up unused arena: {}", entry.getKey());
-                emitTelemetry("arena.pool.evicted", Map.of(
-                    "arenaId", entry.getKey().toString(),
-                    "templateId", arena.templateId(),
-                    "ageMinutes", Duration.between(arena.createdAt(), now).toMinutes()
-                ));
+                    LOGGER.debug("Cleaned up unused arena: {}", entry.getKey());
+                    emitTelemetry("arena.pool.evicted", Map.of(
+                        "arenaId", entry.getKey().toString(),
+                        "templateId", arena.templateId(),
+                        "ageMinutes", Duration.between(arena.createdAt(), now).toMinutes()
+                    ));
+                }
+                // If remove returned false, arena state changed concurrently - skip it
             }
         }
 

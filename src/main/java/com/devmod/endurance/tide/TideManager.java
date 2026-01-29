@@ -87,7 +87,7 @@ public class TideManager {
 
         if (currentTide != oldTide) {
             LOGGER.debug("[Tide] {} {} (now {}, level: {})",
-                amount > 0 ? "+" : "", amount, currentTide, currentLevel.displayName);
+                amount > 0 ? "+" : "", amount, currentTide, currentLevel.getDisplayName());
 
             // Check for level change
             if (currentLevel != oldLevel) {
@@ -276,23 +276,23 @@ public class TideManager {
      * Get the mob stat multiplier for current tide level.
      */
     public float getMobStatMultiplier() {
-        return 1f + currentLevel.statBonus;
+        return 1f + currentLevel.getStatBonus();
     }
 
     /**
      * Check if curse mutators should be enabled.
      */
     public boolean shouldEnableCurseMutators() {
-        return currentLevel.curseMutators;
+        return currentLevel.isCurseMutators();
     }
 
     /**
      * Check if this wave should force a boss.
      */
     public boolean shouldForceBooss(int waveNumber) {
-        if (!currentLevel.forcedBosses) return false;
-        if (currentLevel.bossWaveInterval <= 0) return false;
-        return waveNumber % currentLevel.bossWaveInterval == 0;
+        if (!currentLevel.isForcedBosses()) return false;
+        if (currentLevel.getBossWaveInterval() <= 0) return false;
+        return waveNumber % currentLevel.getBossWaveInterval() == 0;
     }
 
     // ========== Event System ==========
@@ -374,7 +374,7 @@ public class TideManager {
         }
 
         LOGGER.info("[Tide] Loaded tide state: {} ({})",
-            currentTide, currentLevel.displayName);
+            currentTide, currentLevel.getDisplayName());
     }
 
     /**

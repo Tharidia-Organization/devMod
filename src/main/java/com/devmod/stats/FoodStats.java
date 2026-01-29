@@ -302,14 +302,14 @@ public class FoodStats implements IItemStats {
             for (Map.Entry<NutritionCategory, Float> entry : nutritionProfile.entrySet()) {
                 NutritionCategory category = entry.getKey();
                 if (category != null) {
-                    dietTag.putFloat(category.key, entry.getValue());
+                    dietTag.putFloat(category.getKey(), entry.getValue());
                 }
             }
             tag.put("nutritionProfile", dietTag);
         }
         NutritionCategory primary = primaryCategory;
         if (primary != null) {
-            tag.putString("primaryCategory", primary.key);
+            tag.putString("primaryCategory", primary.getKey());
         }
     }
 
@@ -336,7 +336,7 @@ public class FoodStats implements IItemStats {
         if (tag.contains("nutritionProfile", Tag.TAG_COMPOUND)) {
             CompoundTag dietTag = tag.getCompound("nutritionProfile");
             for (NutritionCategory cat : NutritionCategory.ALL) {
-                String catKey = cat.key;
+                String catKey = cat.getKey();
                 if (dietTag.contains(catKey)) {
                     float value = dietTag.getFloat(catKey);
                     if (value > 0f) {

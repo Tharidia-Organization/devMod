@@ -287,7 +287,7 @@ public class NemesisEvolutionManager {
             adaptationList.add(adaptTag);
         }
         bossData.put("nemesis_adaptations", adaptationList);
-        bossData.putInt("nemesis_scar_level", profile.getScarLevel().level);
+        bossData.putInt("nemesis_scar_level", profile.getScarLevel().getLevel());
         bossData.putInt("nemesis_defeat_count", profile.getDefeatCount());
 
         // Store dominant weapon type for damage resistance

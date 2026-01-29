@@ -81,13 +81,16 @@ public class SoulImprint {
         MULTI_KILLS("Multi-Kills", 50),
         PARRY_KILLS("Parry Counter Kills", 20);
 
-        public final String displayName;
-        public final int traitThreshold;
+        private final String displayName;
+        private final int traitThreshold;
 
         ImprintStat(String displayName, int traitThreshold) {
             this.displayName = displayName;
             this.traitThreshold = traitThreshold;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getTraitThreshold() { return traitThreshold; }
     }
 
     public SoulImprint() {
@@ -120,14 +123,14 @@ public class SoulImprint {
 
         // Check for trait unlock
         boolean unlockedNew = false;
-        if (oldValue < stat.traitThreshold && newValue >= stat.traitThreshold) {
+        if (oldValue < stat.getTraitThreshold() && newValue >= stat.getTraitThreshold()) {
             WeaponTrait trait = WeaponTraitRegistry.INSTANCE.getTraitForStat(stat);
             if (trait != null && !unlockedTraits.contains(trait)) {
                 unlockedTraits.add(trait);
                 unlockedNew = true;
                 checkEvolutionStage();
                 LOGGER.info("[SoulImprint] Weapon unlocked trait: {} ({}={}/{})",
-                    trait.getId(), stat.name(), newValue, stat.traitThreshold);
+                    trait.getId(), stat.name(), newValue, stat.getTraitThreshold());
             }
         }
 
@@ -151,7 +154,7 @@ public class SoulImprint {
         if (stat == null) {
             return 0.0f;
         }
-        return (float) getStat(stat) / stat.traitThreshold;
+        return (float) getStat(stat) / stat.getTraitThreshold();
     }
 
     // ========== Evolution ==========

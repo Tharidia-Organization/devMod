@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,9 +33,10 @@ class FoundryModifierRootCoverageTest {
         }
 
         Set<String> roots = new HashSet<>();
-        Files.walk(ASSETS_ROOT)
-            .filter(path -> path.toString().endsWith(".json"))
-            .forEach(path -> collectModifierRoots(path, roots));
+        try (var stream = Files.walk(ASSETS_ROOT)) {
+            stream.filter(path -> path.toString().endsWith(".json"))
+                .forEach(path -> collectModifierRoots(path, roots));
+        }
 
         List<String> missing = new ArrayList<>();
         List<String> empty = new ArrayList<>();
@@ -88,6 +91,7 @@ class FoundryModifierRootCoverageTest {
         }
     }
 
+    @Nullable
     private static Path resolveTextureDir(String resource) {
         String[] parts = resource.split(":", 2);
         if (parts.length != 2) {
@@ -102,8 +106,8 @@ class FoundryModifierRootCoverageTest {
     }
 
     private static boolean containsPng(Path dir) {
-        try {
-            return Files.walk(dir).anyMatch(path -> path.toString().endsWith(".png"));
+        try (var stream = Files.walk(dir)) {
+            return stream.anyMatch(path -> path.toString().endsWith(".png"));
         } catch (IOException e) {
             return false;
         }

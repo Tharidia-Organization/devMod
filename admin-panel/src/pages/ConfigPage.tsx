@@ -109,6 +109,17 @@ export default function ConfigPage() {
       }
       return value;
     };
+    const readFloat = (name: string, min: number, max: number) => {
+      const value = Number(formData.get(name));
+      if (!Number.isFinite(value)) {
+        nextErrors[name] = 'Required';
+        return value;
+      }
+      if (value < min || value > max) {
+        nextErrors[name] = `Must be between ${min} and ${max}`;
+      }
+      return value;
+    };
 
     const readBoolean = (name: string) => formData.get(name) === 'on';
     const parseList = (value: FormDataEntryValue | null) => {
@@ -154,6 +165,9 @@ export default function ConfigPage() {
       contentFilterEnabled: readBoolean('contentFilterEnabled'),
       broadcastQueueEnabled: readBoolean('broadcastQueueEnabled'),
       itemAttachmentWhitelistEnabled: readBoolean('itemAttachmentWhitelistEnabled'),
+      deliveryDispatchEnabled: readBoolean('deliveryDispatchEnabled'),
+      deliveryImmediateDispatchEnabled: readBoolean('deliveryImmediateDispatchEnabled'),
+      deliveryRecallEnabled: readBoolean('deliveryRecallEnabled'),
       maxMessagesPerPlayer: readNumber('maxMessagesPerPlayer', 10, 500),
       maxSubjectLength: readNumber('maxSubjectLength', 32, 256),
       maxBodyLength: readNumber('maxBodyLength', 100, 10000),
@@ -165,6 +179,13 @@ export default function ConfigPage() {
       broadcastBatchSize: readNumber('broadcastBatchSize', 1, 5000),
       broadcastBatchDelayMs: readNumber('broadcastBatchDelayMs', 0, 60000),
       broadcastQueueThreshold: readNumber('broadcastQueueThreshold', 1, 1_000_000),
+      deliveryDispatchIntervalSeconds: readNumber('deliveryDispatchIntervalSeconds', 1, 300),
+      deliveryDispatchBatchSize: readNumber('deliveryDispatchBatchSize', 1, 5000),
+      deliveryMaxAttempts: readNumber('deliveryMaxAttempts', 1, 20),
+      deliveryRetryDelaySeconds: readNumber('deliveryRetryDelaySeconds', 1, 3600),
+      deliveryRetryMaxDelaySeconds: readNumber('deliveryRetryMaxDelaySeconds', 1, 86400),
+      deliveryRetryBackoffMultiplier: readFloat('deliveryRetryBackoffMultiplier', 1, 10),
+      deliveryRetryJitterRatio: readFloat('deliveryRetryJitterRatio', 0, 0.5),
       minLevelToSend: readNumber('minLevelToSend', 0, 1000),
       maxAttachmentsPerMessage: readNumber('maxAttachmentsPerMessage', 0, 10),
       messageRetentionDays: readNumber('messageRetentionDays', 1, 365),
@@ -513,6 +534,185 @@ export default function ConfigPage() {
                 className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700">Allow currency attachments</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <Settings className="h-5 w-5 text-primary-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">Delivery & Dispatch</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dispatch Interval (seconds)
+              </label>
+              <input
+                name="deliveryDispatchIntervalSeconds"
+                type="number"
+                min="1"
+                max="300"
+                defaultValue={config?.deliveryDispatchIntervalSeconds ?? 5}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryDispatchIntervalSeconds')}
+              />
+              {helperText(
+                'deliveryDispatchIntervalSeconds',
+                'How often the dispatcher checks for pending deliveries'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Dispatch Batch Size
+              </label>
+              <input
+                name="deliveryDispatchBatchSize"
+                type="number"
+                min="1"
+                max="5000"
+                defaultValue={config?.deliveryDispatchBatchSize ?? 50}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryDispatchBatchSize')}
+              />
+              {helperText(
+                'deliveryDispatchBatchSize',
+                'Max deliveries processed per dispatch pass'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Delivery Attempts
+              </label>
+              <input
+                name="deliveryMaxAttempts"
+                type="number"
+                min="1"
+                max="20"
+                defaultValue={config?.deliveryMaxAttempts ?? 3}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryMaxAttempts')}
+              />
+              {helperText(
+                'deliveryMaxAttempts',
+                'How many retries before a delivery is marked failed'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Retry Delay (seconds)
+              </label>
+              <input
+                name="deliveryRetryDelaySeconds"
+                type="number"
+                min="1"
+                max="3600"
+                defaultValue={config?.deliveryRetryDelaySeconds ?? 30}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryRetryDelaySeconds')}
+              />
+              {helperText(
+                'deliveryRetryDelaySeconds',
+                'Base delay before retrying a failed delivery'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Max Retry Delay (seconds)
+              </label>
+              <input
+                name="deliveryRetryMaxDelaySeconds"
+                type="number"
+                min="1"
+                max="86400"
+                defaultValue={config?.deliveryRetryMaxDelaySeconds ?? 3600}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryRetryMaxDelaySeconds')}
+              />
+              {helperText(
+                'deliveryRetryMaxDelaySeconds',
+                'Maximum delay between retries'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Retry Backoff Multiplier
+              </label>
+              <input
+                name="deliveryRetryBackoffMultiplier"
+                type="number"
+                min="1"
+                max="10"
+                step="0.1"
+                defaultValue={config?.deliveryRetryBackoffMultiplier ?? 2}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryRetryBackoffMultiplier')}
+              />
+              {helperText(
+                'deliveryRetryBackoffMultiplier',
+                'Exponential multiplier applied to retry delays'
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Retry Jitter Ratio
+              </label>
+              <input
+                name="deliveryRetryJitterRatio"
+                type="number"
+                min="0"
+                max="0.5"
+                step="0.05"
+                defaultValue={config?.deliveryRetryJitterRatio ?? 0.2}
+                onChange={handleFieldChange}
+                className={inputClass('deliveryRetryJitterRatio')}
+              />
+              {helperText(
+                'deliveryRetryJitterRatio',
+                'Random jitter applied to retry delays (0.0 - 0.5)'
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="deliveryDispatchEnabled"
+                defaultChecked={config?.deliveryDispatchEnabled ?? true}
+                onChange={handleFieldChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Enable delivery dispatcher</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="deliveryImmediateDispatchEnabled"
+                defaultChecked={config?.deliveryImmediateDispatchEnabled ?? true}
+                onChange={handleFieldChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Attempt immediate dispatch on enqueue</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="deliveryRecallEnabled"
+                defaultChecked={config?.deliveryRecallEnabled ?? true}
+                onChange={handleFieldChange}
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-gray-700">Send recall messages on failure</span>
             </label>
           </div>
         </div>

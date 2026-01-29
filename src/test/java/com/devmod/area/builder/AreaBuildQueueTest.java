@@ -105,6 +105,7 @@ class AreaBuildQueueTest {
 
         @Test
         @DisplayName("constructor rejects null areaId")
+        @SuppressWarnings("NullAway")
         void constructor_rejectsNullAreaId() {
             AreaDefinition definition = createTestArea("Test Area");
             ResourceLocation levelId = ResourceLocation.withDefaultNamespace("overworld");
@@ -115,6 +116,7 @@ class AreaBuildQueueTest {
 
         @Test
         @DisplayName("constructor rejects null definition")
+        @SuppressWarnings("NullAway")
         void constructor_rejectsNullDefinition() {
             UUID areaId = UUID.randomUUID();
             ResourceLocation levelId = ResourceLocation.withDefaultNamespace("overworld");
@@ -125,6 +127,7 @@ class AreaBuildQueueTest {
 
         @Test
         @DisplayName("constructor rejects null levelId")
+        @SuppressWarnings("NullAway")
         void constructor_rejectsNullLevelId() {
             UUID areaId = UUID.randomUUID();
             AreaDefinition definition = createTestArea("Test Area");

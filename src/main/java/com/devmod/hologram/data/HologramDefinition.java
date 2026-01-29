@@ -17,6 +17,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.hologram.runtime.HologramNaming;
+
 /**
  * Complete definition of a hologram, including content, style, position, and metadata.
  * This is the primary data structure for the Hologram Builder system.
@@ -34,16 +36,6 @@ public record HologramDefinition(
     long updatedAt,
     int revision
 ) {
-    /**
-     * Maximum number of lines per hologram.
-     */
-    public static final int MAX_LINES = 16;
-
-    /**
-     * Maximum characters per line.
-     */
-    public static final int MAX_LINE_LENGTH = 128;
-
     public static final Codec<HologramDefinition> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
             UUIDUtil.CODEC.fieldOf("id").forGetter(HologramDefinition::id),
@@ -66,12 +58,15 @@ public record HologramDefinition(
         @Override
         public HologramDefinition decode(FriendlyByteBuf buf) {
             UUID id = buf.readUUID();
-            String label = buf.readUtf();
+            String label = buf.readUtf(HologramNaming.MAX_LABEL_LENGTH);
             HologramType type = buf.readEnum(HologramType.class);
             int lineCount = buf.readVarInt();
+            if (lineCount < 0 || lineCount > HologramNaming.MAX_LINES) {
+                throw new IllegalArgumentException("Invalid hologram line count: " + lineCount);
+            }
             List<String> lines = new ArrayList<>(lineCount);
             for (int i = 0; i < lineCount; i++) {
-                lines.add(buf.readUtf());
+                lines.add(buf.readUtf(HologramNaming.MAX_LINE_LENGTH));
             }
             HologramStyle style = HologramStyle.STREAM_CODEC.decode(buf);
             HologramPosition position = HologramPosition.STREAM_CODEC.decode(buf);
@@ -87,11 +82,17 @@ public record HologramDefinition(
         @Override
         public void encode(FriendlyByteBuf buf, HologramDefinition def) {
             buf.writeUUID(def.id);
-            buf.writeUtf(def.label);
+            buf.writeUtf(HologramNaming.truncateLabel(def.label), HologramNaming.MAX_LABEL_LENGTH);
             buf.writeEnum(def.type);
-            buf.writeVarInt(def.lines.size());
+            int lineCount = Math.min(def.lines.size(), HologramNaming.MAX_LINES);
+            buf.writeVarInt(lineCount);
+            int written = 0;
             for (String line : def.lines) {
-                buf.writeUtf(line);
+                if (written >= lineCount) {
+                    break;
+                }
+                buf.writeUtf(HologramNaming.truncateLine(line), HologramNaming.MAX_LINE_LENGTH);
+                written++;
             }
             HologramStyle.STREAM_CODEC.encode(buf, def.style);
             HologramPosition.STREAM_CODEC.encode(buf, def.position);
@@ -115,10 +116,15 @@ public record HologramDefinition(
         Objects.requireNonNull(position, "position");
         Objects.requireNonNull(options, "options");
 
-        // Enforce line limits
-        if (lines.size() > MAX_LINES) {
-            lines = new ArrayList<>(lines.subList(0, MAX_LINES));
+        label = HologramNaming.truncateLabel(label);
+        if (lines.size() > HologramNaming.MAX_LINES) {
+            lines = new ArrayList<>(lines.subList(0, HologramNaming.MAX_LINES));
         }
+        List<String> normalized = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            normalized.add(HologramNaming.truncateLine(line));
+        }
+        lines = List.copyOf(normalized);
     }
 
     /**

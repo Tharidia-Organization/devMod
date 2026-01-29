@@ -15,6 +15,9 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
+import com.devmod.npc.dialog.DialogLimits;
+import com.devmod.npc.dialog.condition.DialogCondition;
+
 /**
  * Immutable record representing a complete dialog set with multiple nodes.
  * Dialog sets can be presets (built-in, non-modifiable) or custom (user-created).
@@ -50,14 +53,20 @@ public record DialogSet(
 
     public static final StreamCodec<FriendlyByteBuf, DialogSet> STREAM_CODEC = StreamCodec.of(
         (buf, data) -> {
-            buf.writeUtf(data.id);
-            buf.writeUtf(data.name);
-            buf.writeVarInt(data.nodes.size());
+            buf.writeUtf(DialogLimits.truncate(data.id, DialogLimits.MAX_DIALOG_ID_LENGTH), DialogLimits.MAX_DIALOG_ID_LENGTH);
+            buf.writeUtf(DialogLimits.truncate(data.name, DialogLimits.MAX_DIALOG_NAME_LENGTH), DialogLimits.MAX_DIALOG_NAME_LENGTH);
+            int nodeCount = Math.min(data.nodes.size(), DialogLimits.MAX_NODES);
+            buf.writeVarInt(nodeCount);
+            int written = 0;
             for (var entry : data.nodes.entrySet()) {
-                buf.writeUtf(entry.getKey());
+                if (written >= nodeCount) {
+                    break;
+                }
+                buf.writeUtf(DialogLimits.truncate(entry.getKey(), DialogLimits.MAX_NODE_ID_LENGTH), DialogLimits.MAX_NODE_ID_LENGTH);
                 writeNode(buf, entry.getValue());
+                written++;
             }
-            buf.writeUtf(data.entryNodeId);
+            buf.writeUtf(DialogLimits.truncate(data.entryNodeId, DialogLimits.MAX_NODE_ID_LENGTH), DialogLimits.MAX_NODE_ID_LENGTH);
             buf.writeLong(data.updatedAt);
             buf.writeVarInt(data.revision);
             buf.writeBoolean(data.isPreset);
@@ -71,16 +80,19 @@ public record DialogSet(
             }
         },
         buf -> {
-            String id = buf.readUtf();
-            String name = buf.readUtf();
+            String id = buf.readUtf(DialogLimits.MAX_DIALOG_ID_LENGTH);
+            String name = buf.readUtf(DialogLimits.MAX_DIALOG_NAME_LENGTH);
             int nodeCount = buf.readVarInt();
+            if (nodeCount < 0 || nodeCount > DialogLimits.MAX_NODES) {
+                throw new IllegalArgumentException("Invalid dialog node count: " + nodeCount);
+            }
             Map<String, DialogNode> nodes = new HashMap<>();
             for (int i = 0; i < nodeCount; i++) {
-                String nodeId = buf.readUtf();
+                String nodeId = buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH);
                 DialogNode node = readNode(buf, nodeId);
                 nodes.put(nodeId, node);
             }
-            String entryNodeId = buf.readUtf();
+            String entryNodeId = buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH);
             long updatedAt = buf.readLong();
             int revision = buf.readVarInt();
             boolean isPreset = buf.readBoolean();
@@ -91,28 +103,51 @@ public record DialogSet(
     );
 
     private static void writeNode(FriendlyByteBuf buf, DialogNode node) {
-        buf.writeVarInt(node.lines().size());
+        int lineCount = Math.min(node.lines().size(), DialogLimits.MAX_LINES_PER_NODE);
+        buf.writeVarInt(lineCount);
+        int writtenLines = 0;
         for (String line : node.lines()) {
-            buf.writeUtf(line);
+            if (writtenLines >= lineCount) {
+                break;
+            }
+            buf.writeUtf(DialogLimits.truncate(line, DialogLimits.MAX_LINE_LENGTH), DialogLimits.MAX_LINE_LENGTH);
+            writtenLines++;
         }
-        buf.writeVarInt(node.options().size());
+        int optionCount = Math.min(node.options().size(), DialogLimits.MAX_OPTIONS_PER_NODE);
+        buf.writeVarInt(optionCount);
+        int writtenOptions = 0;
         for (DialogOption option : node.options()) {
+            if (writtenOptions >= optionCount) {
+                break;
+            }
             DialogOption.STREAM_CODEC.encode(buf, option);
+            writtenOptions++;
+        }
+        buf.writeBoolean(node.showCondition() != null);
+        if (node.showCondition() != null) {
+            DialogCondition.STREAM_CODEC.encode(buf, node.showCondition());
         }
     }
 
     private static DialogNode readNode(FriendlyByteBuf buf, String id) {
         int lineCount = buf.readVarInt();
-        var lines = new java.util.ArrayList<String>();
+        if (lineCount < 0 || lineCount > DialogLimits.MAX_LINES_PER_NODE) {
+            throw new IllegalArgumentException("Invalid dialog line count: " + lineCount);
+        }
+        var lines = new java.util.ArrayList<String>(lineCount);
         for (int i = 0; i < lineCount; i++) {
-            lines.add(buf.readUtf());
+            lines.add(buf.readUtf(DialogLimits.MAX_LINE_LENGTH));
         }
         int optionCount = buf.readVarInt();
-        var options = new java.util.ArrayList<DialogOption>();
+        if (optionCount < 0 || optionCount > DialogLimits.MAX_OPTIONS_PER_NODE) {
+            throw new IllegalArgumentException("Invalid dialog option count: " + optionCount);
+        }
+        var options = new java.util.ArrayList<DialogOption>(optionCount);
         for (int i = 0; i < optionCount; i++) {
             options.add(DialogOption.STREAM_CODEC.decode(buf));
         }
-        return new DialogNode(id, lines, options, null);
+        DialogCondition condition = buf.readBoolean() ? DialogCondition.STREAM_CODEC.decode(buf) : null;
+        return new DialogNode(id, lines, options, condition);
     }
 
     /**
@@ -320,6 +355,19 @@ public record DialogSet(
     public java.util.List<String> validate() {
         var errors = new java.util.ArrayList<String>();
 
+        if (id.length() > DialogLimits.MAX_DIALOG_ID_LENGTH) {
+            errors.add("Dialog ID too long (max " + DialogLimits.MAX_DIALOG_ID_LENGTH + " chars)");
+        }
+        if (name.length() > DialogLimits.MAX_DIALOG_NAME_LENGTH) {
+            errors.add("Dialog name too long (max " + DialogLimits.MAX_DIALOG_NAME_LENGTH + " chars)");
+        }
+        if (nodes.size() > DialogLimits.MAX_NODES) {
+            errors.add("Too many dialog nodes (max " + DialogLimits.MAX_NODES + ")");
+        }
+        if (entryNodeId.length() > DialogLimits.MAX_NODE_ID_LENGTH) {
+            errors.add("Entry node ID too long (max " + DialogLimits.MAX_NODE_ID_LENGTH + " chars)");
+        }
+
         if (entryNodeId.isEmpty()) {
             errors.add("Entry node ID is not set");
         } else if (!nodes.containsKey(entryNodeId)) {
@@ -328,7 +376,30 @@ public record DialogSet(
 
         // Check for orphan goto actions
         for (DialogNode node : nodes.values()) {
+            if (node.id().length() > DialogLimits.MAX_NODE_ID_LENGTH) {
+                errors.add("Node ID too long: " + node.id());
+            }
+            if (node.lines().size() > DialogLimits.MAX_LINES_PER_NODE) {
+                errors.add("Node '" + node.id() + "' has too many lines (max " + DialogLimits.MAX_LINES_PER_NODE + ")");
+            }
+            for (String line : node.lines()) {
+                if (line.length() > DialogLimits.MAX_LINE_LENGTH) {
+                    errors.add("Line too long in node '" + node.id() + "' (max " + DialogLimits.MAX_LINE_LENGTH + " chars)");
+                }
+            }
+            if (node.options().size() > DialogLimits.MAX_OPTIONS_PER_NODE) {
+                errors.add("Node '" + node.id() + "' has too many options (max " + DialogLimits.MAX_OPTIONS_PER_NODE + ")");
+            }
             for (DialogOption option : node.options()) {
+                if (option.id().length() > DialogLimits.MAX_OPTION_ID_LENGTH) {
+                    errors.add("Option ID too long in node '" + node.id() + "'");
+                }
+                if (option.label().length() > DialogLimits.MAX_OPTION_LABEL_LENGTH) {
+                    errors.add("Option label too long in node '" + node.id() + "'");
+                }
+                if (option.icon().length() > DialogLimits.MAX_OPTION_ICON_LENGTH) {
+                    errors.add("Option icon too long in node '" + node.id() + "'");
+                }
                 if (option.action() instanceof com.devmod.npc.dialog.action.DialogAction.GoToNode goTo) {
                     if (!nodes.containsKey(goTo.nodeId())) {
                         errors.add("Node '" + node.id() + "' option '" + option.id() + "' references non-existent node '" + goTo.nodeId() + "'");

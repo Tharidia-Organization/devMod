@@ -133,7 +133,7 @@ public class PartyScreenRenderer {
             PartyData.PartyState partyState = screen.getPartyState();
             QuestType questType = screen.getQuestType();
             List<PartySyncPayload.PartyMemberInfo> members = screen.getMembers();
-            String subtitle = partyState.name() + " - " + members.size() + "/" + questType.maxPlayers + " Warriors";
+            String subtitle = partyState.name() + " - " + members.size() + "/" + questType.getMaxPlayers() + " Warriors";
             if (partyState == PartyData.PartyState.IN_QUEST) {
                 QuestSyncPayload questData = ClientQuestCache.getData();
                 if (questData != null && questData.hasActiveQuest()) {
@@ -231,13 +231,13 @@ public class PartyScreenRenderer {
 
             // Icon + Name
             String icon = getQuestTypeIcon(type);
-            String name = type.displayName;
+            String name = type.getDisplayName();
             int textColor = isActive ? COLOR_GLOW_CYAN : (isHovered ? COLOR_TEXT_WHITE : COLOR_TEXT_GRAY);
 
             graphics.drawCenteredString(f, icon + " " + name, tabX + (tabWidth - 4) / 2, tabY + 6, textColor);
 
             // Player range
-            String range = type.minPlayers + "-" + type.maxPlayers + " players";
+            String range = type.getMinPlayers() + "-" + type.getMaxPlayers() + " players";
             graphics.drawCenteredString(f, range, tabX + (tabWidth - 4) / 2, tabY + 17, COLOR_TEXT_DIM);
         }
 
@@ -713,7 +713,7 @@ public class PartyScreenRenderer {
         graphics.drawString(f, waveLine, textX, textY, COLOR_TEXT_WHITE, false);
         textY += f.lineHeight + lineGap;
 
-        String typeLine = fitToWidth(f, "Type " + questType.displayName, maxWidth);
+        String typeLine = fitToWidth(f, "Type " + questType.getDisplayName(), maxWidth);
         graphics.drawString(f, typeLine, textX, textY, COLOR_TEXT_DIM, false);
         textY += f.lineHeight + lineGap;
 
@@ -1030,7 +1030,7 @@ public class PartyScreenRenderer {
         col += 90;
         graphics.drawString(f, String.format("Points: %d", mobCount * config.pointsPerKill), col, statsY, COLOR_STAT_POINTS, false);
         col += 100;
-        graphics.drawString(f, String.format("Difficulty: %.1fx", questType.difficultyMultiplier * waveMultiplier), col, statsY, COLOR_STAT_DIFFICULTY, false);
+        graphics.drawString(f, String.format("Difficulty: %.1fx", questType.getDifficultyMultiplier() * waveMultiplier), col, statsY, COLOR_STAT_DIFFICULTY, false);
     }
 
     private void renderKitSelectionRow(GuiGraphics graphics) {
@@ -1191,7 +1191,7 @@ public class PartyScreenRenderer {
         }
         int memberCount = members != null ? members.size() : 0;
         boolean soloAllowed = questType.allowsSoloPlay();
-        boolean enoughPlayers = (soloAllowed && memberCount == 1) || memberCount >= questType.minPlayers;
+        boolean enoughPlayers = (soloAllowed && memberCount == 1) || memberCount >= questType.getMinPlayers();
         if (!enoughPlayers) {
             return "NEXT: Invite players";
         }

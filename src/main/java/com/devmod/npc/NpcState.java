@@ -28,15 +28,18 @@ public enum NpcState {
     UNAVAILABLE(DesignTokens.Npc.STATE_UNAVAILABLE_PRIMARY, DesignTokens.Npc.STATE_UNAVAILABLE_SECONDARY);
 
     /** Primary color (brighter) */
-    public final int primary;
+    private final int primary;
 
     /** Secondary color (darker) */
-    public final int secondary;
+    private final int secondary;
 
     NpcState(int primary, int secondary) {
         this.primary = primary;
         this.secondary = secondary;
     }
+
+    public int getPrimary() { return primary; }
+    public int getSecondary() { return secondary; }
 
     /**
      * Get primary color with full alpha.

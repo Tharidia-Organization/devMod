@@ -36,6 +36,10 @@ public record NpcConfiguration(
     long updatedAt,
     int revision
 ) {
+    public static final int MAX_DISPLAY_NAME_LENGTH = 64;
+    public static final int MAX_SKIN_NAME_LENGTH = 32;
+    public static final int MAX_DIALOG_SET_ID_LENGTH = 64;
+
     public static final Codec<NpcConfiguration> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
             UUIDUtil.CODEC.fieldOf("id").forGetter(NpcConfiguration::id),
@@ -79,20 +83,20 @@ public record NpcConfiguration(
     public static final StreamCodec<FriendlyByteBuf, NpcConfiguration> STREAM_CODEC = StreamCodec.of(
         (buf, data) -> {
             buf.writeUUID(data.id);
-            buf.writeUtf(data.displayName);
+            buf.writeUtf(truncate(data.displayName, MAX_DISPLAY_NAME_LENGTH), MAX_DISPLAY_NAME_LENGTH);
             buf.writeBoolean(data.skinPlayerUUID != null);
             if (data.skinPlayerUUID != null) {
                 buf.writeUUID(data.skinPlayerUUID);
             }
             buf.writeBoolean(data.skinPlayerName != null);
             if (data.skinPlayerName != null) {
-                buf.writeUtf(data.skinPlayerName);
+                buf.writeUtf(truncate(data.skinPlayerName, MAX_SKIN_NAME_LENGTH), MAX_SKIN_NAME_LENGTH);
             }
             NpcBehavior.STREAM_CODEC.encode(buf, data.behavior);
             NpcAppearance.STREAM_CODEC.encode(buf, data.appearance);
             buf.writeBoolean(data.dialogSetId != null);
             if (data.dialogSetId != null) {
-                buf.writeUtf(data.dialogSetId);
+                buf.writeUtf(truncate(data.dialogSetId, MAX_DIALOG_SET_ID_LENGTH), MAX_DIALOG_SET_ID_LENGTH);
             }
             buf.writeUUID(data.ownerUUID);
             buf.writeBoolean(data.spawnPosition != null);
@@ -109,12 +113,12 @@ public record NpcConfiguration(
         },
         buf -> {
             UUID id = Objects.requireNonNull(buf.readUUID());
-            String displayName = Objects.requireNonNull(buf.readUtf());
+            String displayName = Objects.requireNonNull(buf.readUtf(MAX_DISPLAY_NAME_LENGTH));
             UUID skinUUID = buf.readBoolean() ? buf.readUUID() : null;
-            String skinName = buf.readBoolean() ? buf.readUtf() : null;
+            String skinName = buf.readBoolean() ? buf.readUtf(MAX_SKIN_NAME_LENGTH) : null;
             NpcBehavior behavior = Objects.requireNonNull(NpcBehavior.STREAM_CODEC.decode(buf));
             NpcAppearance appearance = Objects.requireNonNull(NpcAppearance.STREAM_CODEC.decode(buf));
-            String dialogSetId = buf.readBoolean() ? buf.readUtf() : null;
+            String dialogSetId = buf.readBoolean() ? buf.readUtf(MAX_DIALOG_SET_ID_LENGTH) : null;
             UUID ownerUUID = Objects.requireNonNull(buf.readUUID());
             BlockPos spawnPos = buf.readBoolean() ? buf.readBlockPos() : null;
             ResourceKey<Level> dimension = buf.readBoolean()
@@ -128,6 +132,31 @@ public record NpcConfiguration(
                 dialogSetId, ownerUUID, spawnPos, dimension, createdAt, updatedAt, revision);
         }
     );
+
+    public NpcConfiguration {
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(displayName, "displayName");
+        Objects.requireNonNull(behavior, "behavior");
+        Objects.requireNonNull(appearance, "appearance");
+        Objects.requireNonNull(ownerUUID, "ownerUUID");
+        displayName = truncate(displayName, MAX_DISPLAY_NAME_LENGTH);
+        if (skinPlayerName != null) {
+            skinPlayerName = truncate(skinPlayerName, MAX_SKIN_NAME_LENGTH);
+        }
+        if (dialogSetId != null) {
+            dialogSetId = truncate(dialogSetId, MAX_DIALOG_SET_ID_LENGTH);
+        }
+    }
+
+    private static String truncate(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        if (value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
+    }
 
     /**
      * Creates a new NPC configuration with default settings.

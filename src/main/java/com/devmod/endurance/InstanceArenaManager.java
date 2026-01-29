@@ -24,6 +24,9 @@ public class InstanceArenaManager {
     // Map from instance ID to arena ID (for reverse lookup when ending by instanceId)
     private final Map<UUID, UUID> instanceToArena = new ConcurrentHashMap<>();
 
+    // Lock for bidirectional map operations to ensure atomicity
+    private final Object mappingLock = new Object();
+
     // Map from player to pending instance creation
     private final Map<UUID, CompletableFuture<InstanceQuestResult>> pendingCreations = new ConcurrentHashMap<>();
 
@@ -50,15 +53,18 @@ public class InstanceArenaManager {
     /**
      * End an instance quest and destroy the dimension.
      * Called by EnduranceQuestManager with the instanceId stored in the session.
+     * Thread-safe: Uses synchronized block for atomic bidirectional map removal.
      *
      * @param instanceId The instance ID to end
      * @param success Whether the quest was completed successfully
      */
     public void endInstanceQuest(UUID instanceId, boolean success) {
-        // Remove from both maps
-        UUID arenaId = instanceToArena.remove(instanceId);
-        if (arenaId != null) {
-            arenaToInstance.remove(arenaId);
+        // Remove from both maps atomically to prevent inconsistent state
+        synchronized (mappingLock) {
+            UUID arenaId = instanceToArena.remove(instanceId);
+            if (arenaId != null) {
+                arenaToInstance.remove(arenaId);
+            }
         }
 
         // Verify instance exists
@@ -95,6 +101,21 @@ public class InstanceArenaManager {
     public boolean hasPendingCreation(UUID playerId) {
         CompletableFuture<InstanceQuestResult> pending = pendingCreations.get(playerId);
         return pending != null && !pending.isDone();
+    }
+
+    /**
+     * Register a bidirectional mapping between arena and instance.
+     * Thread-safe: Uses synchronized block for atomic bidirectional map addition.
+     *
+     * @param arenaId The arena ID
+     * @param instanceId The instance ID
+     */
+    public void registerMapping(UUID arenaId, UUID instanceId) {
+        synchronized (mappingLock) {
+            arenaToInstance.put(arenaId, instanceId);
+            instanceToArena.put(instanceId, arenaId);
+        }
+        LOGGER.debug("[InstanceArena] Registered mapping: arena {} <-> instance {}", arenaId, instanceId);
     }
 
     /**

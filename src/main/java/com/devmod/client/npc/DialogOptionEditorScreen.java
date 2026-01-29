@@ -23,6 +23,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.action.DialogAction;
 
@@ -150,6 +151,7 @@ public class DialogOptionEditorScreen extends Screen {
         idField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.translatable("gui.devmod.npc.option_editor.id"));
         idField.setValue(editedId);
+        idField.setMaxLength(DialogLimits.MAX_OPTION_ID_LENGTH);
         idField.setResponder(s -> editedId = s);
         idField.setBordered(false);
         idField.setTextColor(DesignTokens.Text.PRIMARY);
@@ -161,6 +163,7 @@ public class DialogOptionEditorScreen extends Screen {
         labelField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.translatable("gui.devmod.npc.option_editor.label"));
         labelField.setValue(editedLabel);
+        labelField.setMaxLength(DialogLimits.MAX_OPTION_LABEL_LENGTH);
         labelField.setResponder(s -> editedLabel = s);
         labelField.setBordered(false);
         labelField.setTextColor(DesignTokens.Text.PRIMARY);
@@ -172,6 +175,7 @@ public class DialogOptionEditorScreen extends Screen {
         iconField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.translatable("gui.devmod.npc.option_editor.icon"));
         iconField.setValue(editedIcon);
+        iconField.setMaxLength(DialogLimits.MAX_OPTION_ICON_LENGTH);
         iconField.setResponder(s -> editedIcon = s);
         iconField.setBordered(false);
         iconField.setTextColor(DesignTokens.Text.PRIMARY);
@@ -196,6 +200,7 @@ public class DialogOptionEditorScreen extends Screen {
         param1Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.literal("Param 1"));
         param1Field.setValue(actionParam1);
+        param1Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
         param1Field.setResponder(s -> actionParam1 = s);
         param1Field.setBordered(false);
         param1Field.setTextColor(DesignTokens.Text.PRIMARY);
@@ -206,6 +211,7 @@ public class DialogOptionEditorScreen extends Screen {
         param2Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.literal("Param 2"));
         param2Field.setValue(actionParam2);
+        param2Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
         param2Field.setResponder(s -> actionParam2 = s);
         param2Field.setBordered(false);
         param2Field.setTextColor(DesignTokens.Text.PRIMARY);
@@ -216,6 +222,7 @@ public class DialogOptionEditorScreen extends Screen {
         param3Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
             Component.literal("Param 3"));
         param3Field.setValue(actionParam3);
+        param3Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
         param3Field.setResponder(s -> actionParam3 = s);
         param3Field.setBordered(false);
         param3Field.setTextColor(DesignTokens.Text.PRIMARY);
@@ -255,24 +262,30 @@ public class DialogOptionEditorScreen extends Screen {
         param1Field.visible = false;
         param2Field.visible = false;
         param3Field.visible = false;
+        param1Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
+        param2Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
+        param3Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
 
         // Show relevant fields based on action type
         switch (selectedActionType) {
             case GOTO -> {
                 param1Field.visible = true;
                 param1Field.setHint(Component.literal("Node ID"));
+                param1Field.setMaxLength(DialogLimits.MAX_NODE_ID_LENGTH);
             }
             case COMMAND -> {
                 param1Field.visible = true;
                 param2Field.visible = true;
                 param1Field.setHint(Component.literal("Command"));
                 param2Field.setHint(Component.literal("Source: PLAYER/CONSOLE/NPC"));
+                param1Field.setMaxLength(DialogLimits.MAX_COMMAND_LENGTH);
             }
             case TELEPORT -> {
                 param1Field.visible = true;
                 param2Field.visible = true;
                 param1Field.setHint(Component.literal("Position: x,y,z"));
                 param2Field.setHint(Component.literal("Zone ID (optional)"));
+                param2Field.setMaxLength(DialogLimits.MAX_ZONE_ID_LENGTH);
             }
             case GIVE_ITEM -> {
                 param1Field.visible = true;
@@ -291,6 +304,7 @@ public class DialogOptionEditorScreen extends Screen {
             case OPEN_GUI -> {
                 param1Field.visible = true;
                 param1Field.setHint(Component.literal("GUI ID"));
+                param1Field.setMaxLength(DialogLimits.MAX_GUI_ID_LENGTH);
             }
             case CLOSE -> {
                 // No parameters needed

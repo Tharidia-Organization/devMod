@@ -216,7 +216,7 @@ public final class ShieldBlockHandler {
             ComboSystem.ActionResult actionResult = comboSession.registerParry();
             EnduranceEventCombat.syncCombatFlowToClient(
                 serverPlayer,
-                ComboSystem.ActionType.PARRY.displayName,
+                ComboSystem.ActionType.PARRY.getDisplayName(),
                 actionResult.styleEarned()
             );
         }

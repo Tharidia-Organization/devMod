@@ -24,7 +24,6 @@ public class EffekseerLevelRendererMixin {
         float partial = deltaTracker.getGameTimeDeltaPartialTick(false);
         EffekRenderer.renderWorldEffeks(partial, viewMatrix, projectionMatrix, camera);
 
-        // Telepad depth rendering is now handled by TelepadDepthRenderHandler using RenderLevelStageEvent
-        // at AFTER_CUTOUT_BLOCKS stage (before entities) for proper player occlusion
+        // Telepad player occlusion is handled by PlayerRendererMixin using portal geometry checks.
     }
 }

@@ -22,6 +22,7 @@ class SpeakerLineTest {
     }
 
     @Test
+    @SuppressWarnings("NullAway")
     void testNullSpeakerIdThrows() {
         // PRIMA DEL FIX: Avrebbe creato l'oggetto, NPE in isPlayer()
         // DOPO IL FIX: NPE immediata nel costruttore
@@ -33,6 +34,7 @@ class SpeakerLineTest {
     }
 
     @Test
+    @SuppressWarnings("NullAway")
     void testNullTextThrows() {
         NullPointerException ex = assertThrows(
             NullPointerException.class,

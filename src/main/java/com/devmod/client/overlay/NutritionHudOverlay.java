@@ -222,7 +222,7 @@ public class NutritionHudOverlay {
         for (NutritionCategory cat : NutritionCategory.ALL) {
             float value = ClientNutritionCache.getValue(cat);
             // FIX UX #9: Draw category label (first letter)
-            String label = cat.displayName.substring(0, 1);
+            String label = cat.getDisplayName().substring(0, 1);
             int labelColor = getCategoryColor(cat, value);
             graphics.drawString(font, label, labelX, barY - 1, labelColor, false);
             // Draw the bar
@@ -287,7 +287,7 @@ public class NutritionHudOverlay {
     }
 
     private static int getCategoryColor(NutritionCategory category, float value) {
-        int baseColor = category.color | DesignTokens.Mask.ALPHA;
+        int baseColor = category.getColor() | DesignTokens.Mask.ALPHA;
 
         // Desaturate when low
         if (value < 0.2f) {

@@ -82,15 +82,17 @@ public class RadialMenuConfig {
         PLAYER("Player"),
         DEV("Dev");
 
-        public final String label;
+        private final String label;
 
         MenuProfile(String label) {
             this.label = label;
         }
 
+        public String getLabel() { return label; }
+
         public static MenuProfile fromName(String name) {
             for (MenuProfile profile : values()) {
-                if (profile.name().equalsIgnoreCase(name) || profile.label.equalsIgnoreCase(name)) {
+                if (profile.name().equalsIgnoreCase(name) || profile.getLabel().equalsIgnoreCase(name)) {
                     return profile;
                 }
             }
@@ -187,16 +189,16 @@ public class RadialMenuConfig {
          * Apply a preset theme
          */
         public void applyPreset(ThemePreset preset) {
-            this.presetName = preset.name;
-            this.bgDark = preset.bgDark;
-            this.bgLight = preset.bgLight;
-            this.selected = preset.selected;
-            this.hover = preset.hover;
-            this.active = preset.active;
-            this.activeGlow = preset.activeGlow;
-            this.border = preset.border;
-            this.textPrimary = preset.textPrimary;
-            this.textSecondary = preset.textSecondary;
+            this.presetName = preset.getName();
+            this.bgDark = preset.getBgDark();
+            this.bgLight = preset.getBgLight();
+            this.selected = preset.getSelected();
+            this.hover = preset.getHover();
+            this.active = preset.getActive();
+            this.activeGlow = preset.getActiveGlow();
+            this.border = preset.getBorder();
+            this.textPrimary = preset.getTextPrimary();
+            this.textSecondary = preset.getTextSecondary();
         }
     }
 
@@ -214,10 +216,10 @@ public class RadialMenuConfig {
         COLORBLIND("colorblind", RadialMenuThemeDefaults.Presets.COLORBLIND),
         HIGH_CONTRAST("high_contrast", RadialMenuThemeDefaults.Presets.HIGH_CONTRAST);
 
-        public final String name;
-        public final int bgDark, bgLight, selected, hover;
-        public final int active, activeGlow, border;
-        public final int textPrimary, textSecondary;
+        private final String name;
+        private final int bgDark, bgLight, selected, hover;
+        private final int active, activeGlow, border;
+        private final int textPrimary, textSecondary;
 
         ThemePreset(String name, RadialMenuThemeDefaults.ThemePresetValues values) {
             this.name = name;
@@ -232,9 +234,20 @@ public class RadialMenuConfig {
             this.textSecondary = values.textSecondary;
         }
 
+        public String getName() { return name; }
+        public int getBgDark() { return bgDark; }
+        public int getBgLight() { return bgLight; }
+        public int getSelected() { return selected; }
+        public int getHover() { return hover; }
+        public int getActive() { return active; }
+        public int getActiveGlow() { return activeGlow; }
+        public int getBorder() { return border; }
+        public int getTextPrimary() { return textPrimary; }
+        public int getTextSecondary() { return textSecondary; }
+
         public static ThemePreset fromName(String name) {
             for (ThemePreset preset : values()) {
-                if (preset.name.equalsIgnoreCase(name)) {
+                if (preset.getName().equalsIgnoreCase(name)) {
                     return preset;
                 }
             }

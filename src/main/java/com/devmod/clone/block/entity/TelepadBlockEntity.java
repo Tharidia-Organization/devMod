@@ -126,8 +126,7 @@ public class TelepadBlockEntity extends BlockEntity {
     public void clientTick() {
         chargeProgressPrev = chargeProgress;
 
-        // Register for depth rendering on client side
-        // This must happen in tick (before render) so the mixin can access it
+        // Register for client-side occlusion checks
         BlockState state = getBlockState();
         boolean active = state.getValue(TelepadBlock.ACTIVE);
         float intensity = active ? 1.0f : (chargeProgress > 0.01f ? 0.75f : 0.0f);

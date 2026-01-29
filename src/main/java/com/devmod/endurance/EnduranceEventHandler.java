@@ -287,9 +287,9 @@ public class EnduranceEventHandler {
 
             // Send badge unlock notifications for newly earned badges
             for (GamificationManager.Badge badge : gamificationResult.newBadges) {
-                String rewardDescription = "+" + badge.bonusPoints + " bonus points (" + badge.rarity.displayName + ")";
+                String rewardDescription = "+" + badge.getBonusPoints() + " bonus points (" + badge.getRarity().getDisplayName() + ")";
                 NotificationService.INSTANCE.notifyBadgeUnlock(
-                    playerId, badge.name, badge.rarity.displayName, badge.description, rewardDescription);
+                    playerId, badge.getName(), badge.getRarity().getDisplayName(), badge.getDescription(), rewardDescription);
             }
 
             // Send record banner for new personal records
@@ -393,7 +393,7 @@ public class EnduranceEventHandler {
 
         LOGGER.info("[EnduranceQuest] Quest ended for {} - Completed: {}, Style Rank: {}",
             player.getName().getString(), completed,
-            comboSession != null ? comboSession.getHighestRank().displayName : "N/A");
+            comboSession != null ? comboSession.getHighestRank().getDisplayName() : "N/A");
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -470,7 +470,7 @@ public class EnduranceEventHandler {
         // Boss wave: override enemy type with boss name
         if (isBossWave) {
             var bossFight = BossWaveSystem.INSTANCE.getBossFight(session.getArena().getId());
-            enemyType = bossFight.map(bf -> bf.getArchetype().displayName).orElse("Champion");
+            enemyType = bossFight.map(bf -> bf.getArchetype().getDisplayName()).orElse("Champion");
         }
 
         // Send unified notification (replaces 5-10 chat lines with a single toast overlay)
@@ -509,7 +509,7 @@ public class EnduranceEventHandler {
         CombatTracker.WaveCombatStats waveStats = combatSession != null ? combatSession.getCurrentWaveStats() : null;
 
         // Calculate wave statistics
-        String styleRank = comboSession != null ? comboSession.getCurrentRank().displayName : "D";
+        String styleRank = comboSession != null ? comboSession.getCurrentRank().getDisplayName() : "D";
         int maxCombo = comboSession != null ? comboSession.getMaxCombo() : 0;
         float waveDamage = waveStats != null ? waveStats.damageDealt : 0;
         int waveKills = waveStats != null ? waveStats.kills : 0;
@@ -631,7 +631,7 @@ public class EnduranceEventHandler {
         if (!perkChoices.isEmpty()) {
             LOGGER.info("[EnduranceQuest] Generated {} perk choices for player {}: {}",
                 perkChoices.size(), player.getName().getString(),
-                perkChoices.stream().map(p -> p.name).toList());
+                perkChoices.stream().map(p -> p.getName()).toList());
             // Send perk choices to client for UI display
             com.devmod.network.NetworkHandler.sendPerkChoices(player, waveNumber, perkChoices);
         }
@@ -1189,6 +1189,9 @@ public class EnduranceEventHandler {
 
             // Clear per-player synced kit data
             KitManager.INSTANCE.clearSyncedKits(playerId);
+
+            // Clear arena build rate limiter data to prevent memory leak
+            com.devmod.arena.builder.ArenaBuilder.cleanupPlayerRateLimiter(playerId);
         }
     }
 

@@ -25,23 +25,12 @@ public enum QuestType {
      */
     EVENT(8, 20, 128, 2.0f, "Server Event", "Server-wide events for 8-20 players");
 
-    /** Minimum players required to start this quest type */
-    public final int minPlayers;
-
-    /** Maximum players allowed in this quest type */
-    public final int maxPlayers;
-
-    /** Default arena size in blocks for this quest type */
-    public final int defaultArenaSize;
-
-    /** Difficulty multiplier applied to mob counts and boss stats */
-    public final float difficultyMultiplier;
-
-    /** Short display name for UI */
-    public final String displayName;
-
-    /** Description for tooltips and info panels */
-    public final String description;
+    private final int minPlayers;
+    private final int maxPlayers;
+    private final int defaultArenaSize;
+    private final float difficultyMultiplier;
+    private final String displayName;
+    private final String description;
 
     QuestType(int minPlayers, int maxPlayers, int defaultArenaSize,
               float difficultyMultiplier, String displayName, String description) {
@@ -52,6 +41,13 @@ public enum QuestType {
         this.displayName = displayName;
         this.description = description;
     }
+
+    public int getMinPlayers() { return minPlayers; }
+    public int getMaxPlayers() { return maxPlayers; }
+    public int getDefaultArenaSize() { return defaultArenaSize; }
+    public float getDifficultyMultiplier() { return difficultyMultiplier; }
+    public String getDisplayName() { return displayName; }
+    public String getDescription() { return description; }
 
     /**
      * Calculate scaled mob count based on player count.

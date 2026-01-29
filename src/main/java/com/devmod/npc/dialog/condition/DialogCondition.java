@@ -11,9 +11,12 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.npc.NpcEmotion;
+import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.NpcContext;
 
 /**
@@ -98,6 +101,132 @@ public sealed interface DialogCondition permits
             default -> throw new IllegalArgumentException("Unknown condition type: " + type);
         }
     );
+
+    /**
+     * Network codec for dialog conditions (used by the dialog editor payloads).
+     */
+    StreamCodec<FriendlyByteBuf, DialogCondition> STREAM_CODEC =
+        StreamCodec.of(DialogCondition::encode, DialogCondition::decode);
+
+    static void encode(FriendlyByteBuf buf, DialogCondition condition) {
+        buf.writeUtf(DialogLimits.truncate(condition.getType(), DialogLimits.MAX_CONDITION_TYPE_LENGTH),
+            DialogLimits.MAX_CONDITION_TYPE_LENGTH);
+        switch (condition) {
+            case Always ignored -> {
+                // no extra data
+            }
+            case FirstVisit first -> buf.writeUUID(first.npcId());
+            case HasPermission perm -> buf.writeVarInt(perm.opLevel());
+            case HasSelectedOption selected -> buf.writeUtf(
+                DialogLimits.truncate(selected.optionId(), DialogLimits.MAX_OPTION_ID_LENGTH),
+                DialogLimits.MAX_OPTION_ID_LENGTH
+            );
+            case NpcHasEmotion emo -> buf.writeVarInt(emo.emotion().ordinal());
+            case QuestCompleted quest -> buf.writeUtf(
+                DialogLimits.truncate(quest.questId(), DialogLimits.MAX_QUEST_ID_LENGTH),
+                DialogLimits.MAX_QUEST_ID_LENGTH
+            );
+            case QuestCount count -> {
+                buf.writeVarInt(count.minQuests());
+                buf.writeVarInt(count.comparison().ordinal());
+            }
+            case TimeOfDay time -> {
+                buf.writeLong(time.minTime());
+                buf.writeLong(time.maxTime());
+            }
+            case And and -> {
+                int size = and.conditions().size();
+                if (size > DialogLimits.MAX_CONDITION_CHILDREN) {
+                    throw new IllegalArgumentException("Too many AND conditions: " + size);
+                }
+                buf.writeVarInt(size);
+                for (DialogCondition child : and.conditions()) {
+                    STREAM_CODEC.encode(buf, child);
+                }
+            }
+            case Or or -> {
+                int size = or.conditions().size();
+                if (size > DialogLimits.MAX_CONDITION_CHILDREN) {
+                    throw new IllegalArgumentException("Too many OR conditions: " + size);
+                }
+                buf.writeVarInt(size);
+                for (DialogCondition child : or.conditions()) {
+                    STREAM_CODEC.encode(buf, child);
+                }
+            }
+            case Not not -> STREAM_CODEC.encode(buf, not.condition());
+            case Custom custom -> {
+                buf.writeUtf(DialogLimits.truncate(custom.handlerId(), DialogLimits.MAX_CUSTOM_HANDLER_LENGTH),
+                    DialogLimits.MAX_CUSTOM_HANDLER_LENGTH);
+                boolean hasData = custom.data() != null && !custom.data().isEmpty();
+                buf.writeBoolean(hasData);
+                if (hasData) {
+                    buf.writeNbt(custom.data());
+                }
+            }
+        }
+    }
+
+    static DialogCondition decode(FriendlyByteBuf buf) {
+        String type = buf.readUtf(DialogLimits.MAX_CONDITION_TYPE_LENGTH);
+        return switch (type) {
+            case "always" -> new Always();
+            case "first_visit" -> new FirstVisit(buf.readUUID());
+            case "permission" -> new HasPermission(buf.readVarInt());
+            case "has_selected_option" -> new HasSelectedOption(buf.readUtf(DialogLimits.MAX_OPTION_ID_LENGTH));
+            case "npc_emotion" -> {
+                int ordinal = buf.readVarInt();
+                NpcEmotion emotion = NpcEmotion.NEUTRAL;
+                if (ordinal >= 0 && ordinal < NpcEmotion.values().length) {
+                    emotion = NpcEmotion.values()[ordinal];
+                }
+                yield new NpcHasEmotion(emotion);
+            }
+            case "quest_completed" -> new QuestCompleted(buf.readUtf(DialogLimits.MAX_QUEST_ID_LENGTH));
+            case "quest_count" -> {
+                int min = buf.readVarInt();
+                int compOrdinal = buf.readVarInt();
+                Comparison comparison = Comparison.GREATER_OR_EQUAL;
+                if (compOrdinal >= 0 && compOrdinal < Comparison.values().length) {
+                    comparison = Comparison.values()[compOrdinal];
+                }
+                yield new QuestCount(min, comparison);
+            }
+            case "time" -> new TimeOfDay(buf.readLong(), buf.readLong());
+            case "and" -> {
+                int count = buf.readVarInt();
+                if (count < 0 || count > DialogLimits.MAX_CONDITION_CHILDREN) {
+                    throw new IllegalArgumentException("Invalid AND condition count: " + count);
+                }
+                List<DialogCondition> conditions = new ArrayList<>(count);
+                for (int i = 0; i < count; i++) {
+                    conditions.add(STREAM_CODEC.decode(buf));
+                }
+                yield new And(List.copyOf(conditions));
+            }
+            case "or" -> {
+                int count = buf.readVarInt();
+                if (count < 0 || count > DialogLimits.MAX_CONDITION_CHILDREN) {
+                    throw new IllegalArgumentException("Invalid OR condition count: " + count);
+                }
+                List<DialogCondition> conditions = new ArrayList<>(count);
+                for (int i = 0; i < count; i++) {
+                    conditions.add(STREAM_CODEC.decode(buf));
+                }
+                yield new Or(List.copyOf(conditions));
+            }
+            case "not" -> new Not(STREAM_CODEC.decode(buf));
+            case "custom" -> {
+                String handlerId = buf.readUtf(DialogLimits.MAX_CUSTOM_HANDLER_LENGTH);
+                CompoundTag data = buf.readBoolean() ? buf.readNbt() : new CompoundTag();
+                if (data == null) {
+                    data = new CompoundTag();
+                }
+                yield new Custom(handlerId, data);
+            }
+            default -> throw new IllegalArgumentException("Unknown condition type: " + type);
+        };
+    }
 
     // ========================================================================
     // Condition Implementations

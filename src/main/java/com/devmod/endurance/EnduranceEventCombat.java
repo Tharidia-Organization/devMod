@@ -89,7 +89,7 @@ public class EnduranceEventCombat {
                     ComboSystem.ActionResult result = comboSession.registerAction(actionType, damage);
 
                     // Sync combat flow state to client
-                    syncCombatFlowToClient(player, actionType.displayName, result.styleEarned());
+                    syncCombatFlowToClient(player, actionType.getDisplayName(), result.styleEarned());
 
                     // Update tension system with combo progress
                     if (target instanceof Mob mob) {
@@ -323,7 +323,7 @@ public class EnduranceEventCombat {
             if (!affixStr.isEmpty()) {
                 try {
                     SpawnAffix affix = SpawnAffix.valueOf(affixStr);
-                    affixElite = affix.elite;
+                    affixElite = affix.isElite();
                 } catch (IllegalArgumentException ignored) {
                     // Invalid affix name, keep false
                 }
@@ -377,7 +377,7 @@ public class EnduranceEventCombat {
 
             // Sync combat flow state after kill (includes momentum update)
             String killAction = killResult != null && killResult.announcement() != null
-                ? killResult.announcement().action.displayName : "Kill";
+                ? killResult.announcement().action.getDisplayName() : "Kill";
             int killPoints = killResult != null ? killResult.styleEarned() : 0;
             syncCombatFlowToClient(player, killAction, killPoints);
 

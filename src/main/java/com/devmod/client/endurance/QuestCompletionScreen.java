@@ -316,7 +316,7 @@ public class QuestCompletionScreen extends Screen {
         y += 12;
 
         g.drawString(safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha));
-        g.drawString(safeFont, "Style Rank: " + data.getStyleRank().displayName, rightX, y, applyAlpha(data.getStyleRank().color, alpha));
+        g.drawString(safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), rightX, y, applyAlpha(data.getStyleRank().getColor(), alpha));
         y += 12;
 
         if (data.totalDamageTaken() > 0) {

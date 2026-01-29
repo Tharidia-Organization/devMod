@@ -89,7 +89,7 @@ public class NpcConfigScreen extends Screen {
         // Display Name
         nameField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
             Component.translatable("gui.devmod.npc.config.name"));
-        nameField.setMaxLength(64);
+        nameField.setMaxLength(NpcConfiguration.MAX_DISPLAY_NAME_LENGTH);
         nameField.setValue(originalConfig.displayName());
         nameField.setBordered(false);
         nameField.setTextColor(DesignTokens.Text.PRIMARY);
@@ -100,7 +100,7 @@ public class NpcConfigScreen extends Screen {
         // Skin Player Name
         skinNameField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
             Component.translatable("gui.devmod.npc.config.skin"));
-        skinNameField.setMaxLength(32);
+        skinNameField.setMaxLength(NpcConfiguration.MAX_SKIN_NAME_LENGTH);
         skinNameField.setValue(originalConfig.skinPlayerName() != null ? originalConfig.skinPlayerName() : "");
         skinNameField.setBordered(false);
         skinNameField.setTextColor(DesignTokens.Text.PRIMARY);
@@ -111,7 +111,7 @@ public class NpcConfigScreen extends Screen {
         // Dialog Set ID
         dialogSetIdField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
             Component.translatable("gui.devmod.npc.config.dialog"));
-        dialogSetIdField.setMaxLength(64);
+        dialogSetIdField.setMaxLength(NpcConfiguration.MAX_DIALOG_SET_ID_LENGTH);
         dialogSetIdField.setValue(originalConfig.dialogSetId() != null ? originalConfig.dialogSetId() : "");
         dialogSetIdField.setBordered(false);
         dialogSetIdField.setTextColor(DesignTokens.Text.PRIMARY);

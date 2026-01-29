@@ -167,15 +167,16 @@ public class GroupDialogSession {
     }
 
     // ========================================================================
-    // State Mutations
+    // State Mutations (synchronized to prevent race conditions)
     // ========================================================================
 
     /**
      * Advances to the next line in the current node.
+     * Thread-safe: Synchronized to prevent concurrent modification.
      *
      * @return true if advanced, false if already at last line
      */
-    public boolean advanceLine() {
+    public synchronized boolean advanceLine() {
         lastActivity = System.currentTimeMillis();
 
         if (hasMoreLines()) {
@@ -187,11 +188,12 @@ public class GroupDialogSession {
 
     /**
      * Moves to a different node.
+     * Thread-safe: Synchronized to prevent concurrent modification.
      *
      * @param nodeId The node to move to
      * @return true if moved, false if node doesn't exist
      */
-    public boolean goToNode(@Nonnull String nodeId) {
+    public synchronized boolean goToNode(@Nonnull String nodeId) {
         if (!dialog.nodes().containsKey(nodeId)) {
             return false;
         }
@@ -204,8 +206,9 @@ public class GroupDialogSession {
 
     /**
      * Resets to the beginning of the dialog.
+     * Thread-safe: Synchronized to prevent concurrent modification.
      */
-    public void reset() {
+    public synchronized void reset() {
         lastActivity = System.currentTimeMillis();
         currentNodeId = dialog.entryNodeId();
         currentLineIndex = 0;
@@ -213,8 +216,9 @@ public class GroupDialogSession {
 
     /**
      * Updates the last activity timestamp.
+     * Thread-safe: Synchronized to prevent concurrent modification with other state mutations.
      */
-    public void touch() {
+    public synchronized void touch() {
         lastActivity = System.currentTimeMillis();
     }
 

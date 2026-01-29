@@ -3529,6 +3529,7 @@
   "area.message.error_wrong_dimension": "Error: you must be in the correct dimension to build this area",
   "area.message.error_build_in_progress": "Error: area is already being built",
   "area.message.error_restore_in_progress": "Error: snapshot restore is in progress for this area",
+  "area.message.error_too_many_pending_builds": "Too many pending biome builds. Please wait and try again.",
   "area.message.error_too_many_builds": "Too many builds in progress. Please wait for some to complete.",
   "area.message.build_queued": "Build queued (position %d). Will start automatically when a slot opens.",
   "area.message.queue_full": "Build queue is full. Please try again later.",

@@ -13,6 +13,7 @@ import net.minecraft.network.codec.StreamCodec;
 
 import com.devmod.npc.dialog.action.DialogAction;
 import com.devmod.npc.dialog.condition.DialogCondition;
+import com.devmod.npc.dialog.DialogLimits;
 
 /**
  * Immutable record representing a dialog option that a player can select.
@@ -38,20 +39,22 @@ public record DialogOption(
 
     public static final StreamCodec<FriendlyByteBuf, DialogOption> STREAM_CODEC = StreamCodec.of(
         (buf, data) -> {
-            buf.writeUtf(data.id);
-            buf.writeUtf(data.label);
-            buf.writeUtf(data.icon);
-            // Note: Conditions are not sent to client, only evaluated server-side
-            // Action type is sent for client display purposes
-            buf.writeUtf(data.action.getType());
+            buf.writeUtf(DialogLimits.truncate(data.id, DialogLimits.MAX_OPTION_ID_LENGTH), DialogLimits.MAX_OPTION_ID_LENGTH);
+            buf.writeUtf(DialogLimits.truncate(data.label, DialogLimits.MAX_OPTION_LABEL_LENGTH), DialogLimits.MAX_OPTION_LABEL_LENGTH);
+            buf.writeUtf(DialogLimits.truncate(data.icon, DialogLimits.MAX_OPTION_ICON_LENGTH), DialogLimits.MAX_OPTION_ICON_LENGTH);
+            buf.writeBoolean(data.showCondition != null);
+            if (data.showCondition != null) {
+                DialogCondition.STREAM_CODEC.encode(buf, data.showCondition);
+            }
+            DialogAction.STREAM_CODEC.encode(buf, data.action);
         },
         buf -> {
-            String id = buf.readUtf();
-            String label = buf.readUtf();
-            String icon = buf.readUtf();
-            buf.readUtf();
-            // Client receives minimal info - actual action is executed server-side
-            return new DialogOption(id, label, icon, null, new DialogAction.CloseDialog());
+            String id = buf.readUtf(DialogLimits.MAX_OPTION_ID_LENGTH);
+            String label = buf.readUtf(DialogLimits.MAX_OPTION_LABEL_LENGTH);
+            String icon = buf.readUtf(DialogLimits.MAX_OPTION_ICON_LENGTH);
+            DialogCondition condition = buf.readBoolean() ? DialogCondition.STREAM_CODEC.decode(buf) : null;
+            DialogAction action = DialogAction.STREAM_CODEC.decode(buf);
+            return new DialogOption(id, label, icon, condition, action);
         }
     );
 

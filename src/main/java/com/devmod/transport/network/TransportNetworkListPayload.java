@@ -31,6 +31,9 @@ public record TransportNetworkListPayload(
     List<NetworkNodeInfo> nodes
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
+    /** Maximum nodes per network list to prevent DoS via unbounded allocation */
+    private static final int MAX_NODES = 200;
+
     public static final Type<TransportNetworkListPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "215")));
 
@@ -58,7 +61,7 @@ public record TransportNetworkListPayload(
 
     private static TransportNetworkListPayload decode(ByteBuf buf) {
         String networkName = ByteBufCodecs.STRING_UTF8.decode(Objects.requireNonNull(buf));
-        int count = buf.readShort();
+        int count = Math.min(buf.readShort() & 0xFFFF, MAX_NODES); // Use unsigned short and clamp to max
         List<NetworkNodeInfo> nodes = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             nodes.add(decodeNode(buf));

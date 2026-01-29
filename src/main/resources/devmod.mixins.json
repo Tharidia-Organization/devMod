@@ -18,6 +18,7 @@
     "client.CameraShakeMixin",
     "client.ModelPartTransformMixin",
     "client.LivingEntityRendererMixin",
+    "client.PlayerRendererMixin",
     "client.DebugRendererMixin",
     "client.EffekseerLevelRendererMixin",
     "client.HexereiDynamicRegistriesMixin",

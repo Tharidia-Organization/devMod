@@ -68,6 +68,9 @@ public class DynamicDimensionManager {
     private final Map<ResourceKey<Level>, UUID> dimensionToInstance = new ConcurrentHashMap<>();
     private final Map<UUID, ResourceKey<Level>> instanceToDimension = new ConcurrentHashMap<>();
 
+    // Tracks forced chunks per dimension for cleanup (memory leak prevention)
+    private final Map<ResourceKey<Level>, Set<ChunkPos>> forcedChunksPerDimension = new ConcurrentHashMap<>();
+
     private MinecraftServer server;
     private boolean initialized = false;
 
@@ -101,6 +104,7 @@ public class DynamicDimensionManager {
         this.initialized = false;
         dimensionToInstance.clear();
         instanceToDimension.clear();
+        forcedChunksPerDimension.clear();
 
         // Clear DH registrations on shutdown (wrapped to handle classloader issues during shutdown)
         try {
@@ -787,15 +791,23 @@ public class DynamicDimensionManager {
 
         int chunksForced = 0;
         if (settings.keepLoaded) {
+            // Track forced chunks for cleanup on dimension unload
+            Set<ChunkPos> forcedChunks = ConcurrentHashMap.newKeySet();
+            ResourceKey<Level> dimensionKey = level.dimension();
+
             for (int cx = -chunkRadius; cx <= chunkRadius; cx++) {
                 for (int cz = -chunkRadius; cz <= chunkRadius; cz++) {
                     int chunkX = centerChunkX + cx;
                     int chunkZ = centerChunkZ + cz;
                     // setChunkForced ensures chunk stays loaded AND entities tick
                     level.setChunkForced(chunkX, chunkZ, true);
+                    forcedChunks.add(new ChunkPos(chunkX, chunkZ));
                     chunksForced++;
                 }
             }
+
+            // Store tracked chunks for cleanup
+            forcedChunksPerDimension.put(dimensionKey, forcedChunks);
 
             // Add PLAYER ticket to center chunk to guarantee entity ticking
             // PLAYER tickets have level 33 - 31 = 2, which enables entity ticking
@@ -1022,16 +1034,44 @@ public class DynamicDimensionManager {
                 LOGGER.warn("[DynamicDim] Failed to post LevelEvent.Unload: {}", e.getMessage());
             }
 
-            // 2. Save dimension data before unloading
+            // 2. Remove forced chunks to prevent memory leaks (~2MB per instance)
+            Set<ChunkPos> forcedChunks = forcedChunksPerDimension.remove(dimensionKey);
+            if (forcedChunks != null && !forcedChunks.isEmpty()) {
+                int unforcedCount = 0;
+                for (ChunkPos chunk : forcedChunks) {
+                    try {
+                        level.setChunkForced(chunk.x, chunk.z, false);
+                        unforcedCount++;
+                    } catch (Exception e) {
+                        LOGGER.debug("[DynamicDim] Could not unforce chunk {}: {}", chunk, e.getMessage());
+                    }
+                }
+                LOGGER.debug("[DynamicDim] Unforced {} chunks for {}", unforcedCount, dimensionKey.location());
+            }
+
+            // 3. Remove PLAYER ticket from center chunk
+            try {
+                ChunkPos centerChunkPos = new ChunkPos(0, 0); // Default arena center
+                level.getChunkSource().removeRegionTicket(
+                    nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
+                    centerChunkPos,
+                    DEFAULT_TICK_DISTANCE,
+                    centerChunkPos
+                );
+            } catch (Exception e) {
+                LOGGER.debug("[DynamicDim] Could not remove PLAYER ticket: {}", e.getMessage());
+            }
+
+            // 4. Save dimension data before unloading
             level.save(null, true, false);
 
-            // 3. Get the levels map via Mixin accessor
+            // 5. Get the levels map via Mixin accessor
             Map<ResourceKey<Level>, ServerLevel> levels = ((MinecraftServerAccessor) server).getLevels();
 
-            // 4. Remove from the levels map
+            // 6. Remove from the levels map
             levels.remove(dimensionKey);
 
-            // 4. Close the level's resources
+            // 7. Close the level's resources
             try {
                 level.close();
             } catch (Exception e) {

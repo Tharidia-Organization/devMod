@@ -35,11 +35,13 @@ public class EnduranceEventTick {
 
     private static int tickCounter = 0;
     private static int gamificationTickCounter = 0;
+    private static int overrideCleanupTickCounter = 0;
 
     private static final int WAVE_CHECK_INTERVAL = 20; // Check every second
     private static final int ARENA_CLEANUP_INTERVAL = 40; // Check every 2 seconds
     private static final int MOB_VALIDATION_INTERVAL = 60; // Check every 3 seconds
     private static final int MOB_AI_DEBUG_INTERVAL = 100; // Debug AI state every 5 seconds (just for monitoring)
+    private static final int OVERRIDE_CLEANUP_INTERVAL = 300; // Clean up overrides every 5 minutes (300 seconds)
     private static final long DIMENSION_RECOVERY_COOLDOWN_MS = 2000;
     private static final long CONFINEMENT_LOG_COOLDOWN_MS = 1000;
 
@@ -152,6 +154,14 @@ public class EnduranceEventTick {
             if (gamificationTickCounter >= 60) {
                 gamificationTickCounter = 0;
                 GamificationManager.INSTANCE.tickResets();
+            }
+
+            // Clean up expired overrides every 5 minutes (300 seconds)
+            overrideCleanupTickCounter++;
+            if (overrideCleanupTickCounter >= OVERRIDE_CLEANUP_INTERVAL) {
+                overrideCleanupTickCounter = 0;
+                EnduranceQuestManager.INSTANCE.cleanupExpiredOverrides();
+                com.devmod.arena.override.TemplateOverrideManager.getInstance().cleanupExpired();
             }
         }
 
@@ -497,7 +507,7 @@ public class EnduranceEventTick {
             var waveStateOpt = WaveManager.INSTANCE.getWaveState(arena.getId());
             if (waveStateOpt.isPresent()) {
                 for (WaveManager.WaveModifier mod : waveStateOpt.get().getModifiers()) {
-                    modifiers.add(mod.displayName);
+                    modifiers.add(mod.getDisplayName());
                 }
             }
 

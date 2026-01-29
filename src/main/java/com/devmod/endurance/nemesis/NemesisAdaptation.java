@@ -139,10 +139,10 @@ public enum NemesisAdaptation {
         AdaptationType.SPECIAL
     );
 
-    public final String displayName;
-    public final String description;
-    public final int color;
-    public final AdaptationType type;
+    private final String displayName;
+    private final String description;
+    private final int color;
+    private final AdaptationType type;
 
     NemesisAdaptation(String displayName, String description, int color, AdaptationType type) {
         this.displayName = displayName;
@@ -150,6 +150,11 @@ public enum NemesisAdaptation {
         this.color = color;
         this.type = type;
     }
+
+    public String getDisplayName() { return displayName; }
+    public String getDescription() { return description; }
+    public int getColor() { return color; }
+    public AdaptationType getType() { return type; }
 
     /**
      * Get the stat modifier provided by this adaptation.

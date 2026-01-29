@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
@@ -109,7 +110,7 @@ public final class ArrivalManager {
 
         ArrivalSession session = new ArrivalSession(
             sessionId,
-            new ArrayList<>(expectedPlayers),
+            new CopyOnWriteArrayList<>(expectedPlayers),
             ConcurrentHashMap.newKeySet(),
             destinationLevel,
             arrivalBounds,
@@ -460,7 +461,7 @@ public final class ArrivalManager {
         final int minArrivals;
         final long startTick;
         @Nullable final Consumer<ArrivalResult> onComplete;
-        Phase phase;
+        volatile Phase phase;
 
         ArrivalSession(
                 UUID sessionId,

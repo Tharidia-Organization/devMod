@@ -256,9 +256,9 @@ public class QuestStartSequence {
         }
 
         // Check minimum player count
-        if (onlineMembers.size() < questType.minPlayers) {
+        if (onlineMembers.size() < questType.getMinPlayers()) {
             issues.add(I18n.translate("devmod.party.validation.not_enough_players",
-                questType.minPlayers, onlineMembers.size()).getString());
+                questType.getMinPlayers(), onlineMembers.size()).getString());
         }
 
         if (!issues.isEmpty()) {
@@ -304,7 +304,7 @@ public class QuestStartSequence {
                         int arrived = sequence.arrivedMembers.size();
                         int total = sequence.members.size();
 
-                        if (arrived >= sequence.questType.minPlayers) {
+                        if (arrived >= sequence.questType.getMinPlayers()) {
                             // Enough players arrived, continue
                             LOGGER.warn("[QuestSequence] Arrival timeout but {} of {} arrived, proceeding", arrived, total);
                             sequence.phase = QuestSequencePayload.Phase.SYNCING;
@@ -364,9 +364,9 @@ public class QuestStartSequence {
         // Create quest settings
         List<UUID> memberIds = sequence.members.stream().map(ServerPlayer::getUUID).toList();
         EnduranceQuestManager.QuestSettings settings = new EnduranceQuestManager.QuestSettings();
-        settings.totalWaves = (int) (10 * sequence.questType.difficultyMultiplier);
+        settings.totalWaves = (int) (10 * sequence.questType.getDifficultyMultiplier());
         settings.endlessMode = false;
-        settings.arenaSize = sequence.questType.defaultArenaSize;
+        settings.arenaSize = sequence.questType.getDefaultArenaSize();
         settings.party(sequence.partyId, new ArrayList<>(memberIds));
         settings.questType = sequence.questType;
 
@@ -664,7 +664,7 @@ public class QuestStartSequence {
                 sequence.arrivedMembers.remove(playerId);
 
                 // Check if still have enough players
-                if (sequence.members.size() < sequence.questType.minPlayers) {
+                if (sequence.members.size() < sequence.questType.getMinPlayers()) {
                     cancelSequence(entry.getKey(), null, "Not enough players");
                 } else {
                     // Notify remaining members

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import { NewsArticle, ListResponse } from '../types';
+import { NewsArticle, ListResponse, NewsCategory } from '../types';
 import { useToast } from '../context/ToastContext';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { format } from 'date-fns';
@@ -26,7 +26,7 @@ const MAX_PRIORITY = 100;
 interface NewsFormData {
   title: string;
   content: string;
-  category: string;
+  category: NewsCategory;
   authorName: string;
   publishNow: boolean;
   publishAtMillis?: number;
@@ -168,7 +168,7 @@ export default function NewsPage() {
     const data: NewsFormData = {
       title,
       content,
-      category: formData.get('category') as string,
+      category: formData.get('category') as NewsCategory,
       authorName,
       publishNow: publishAtMillis ? false : formData.get('publishNow') === 'on',
       publishAtMillis,
@@ -220,12 +220,14 @@ export default function NewsPage() {
 
   const hasErrors = Object.keys(formErrors).length > 0;
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = (category: NewsCategory) => {
     switch (category) {
       case 'PATCH': return 'bg-blue-100 text-blue-700';
       case 'EVENT': return 'bg-purple-100 text-purple-700';
       case 'ANNOUNCEMENT': return 'bg-green-100 text-green-700';
       case 'MAINTENANCE': return 'bg-orange-100 text-orange-700';
+      case 'DEV_BLOG': return 'bg-indigo-100 text-indigo-700';
+      case 'COMMUNITY': return 'bg-pink-100 text-pink-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -427,6 +429,8 @@ export default function NewsPage() {
                       <option value="PATCH">Patch Notes</option>
                       <option value="EVENT">Event</option>
                       <option value="MAINTENANCE">Maintenance</option>
+                      <option value="DEV_BLOG">Dev Blog</option>
+                      <option value="COMMUNITY">Community</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   </div>

@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.devmod.arena.api.ArenaHandle;
 
@@ -35,7 +36,7 @@ public class PartyQuestSession {
     private final AtomicInteger lastAdvancedWave;
     private final AtomicInteger lastCountdownWave;
     private final long startTime;
-    private volatile Status status;
+    private final AtomicReference<Status> status;
     private volatile long endTime;
 
     public PartyQuestSession(UUID partyId,
@@ -65,7 +66,7 @@ public class PartyQuestSession {
             this.activeMembers.addAll(members);
         }
         this.startTime = System.currentTimeMillis();
-        this.status = Status.ACTIVE;
+        this.status = new AtomicReference<>(Status.ACTIVE);
         this.endTime = 0L;
     }
 
@@ -95,9 +96,9 @@ public class PartyQuestSession {
     public Set<UUID> getWaveReadyMembers() { return Set.copyOf(waveReadyMembers); }
     public long getStartTime() { return startTime; }
     public long getEndTime() { return endTime; }
-    public Status getStatus() { return status; }
+    public Status getStatus() { return status.get(); }
 
-    public boolean isActive() { return status == Status.ACTIVE; }
+    public boolean isActive() { return status.get() == Status.ACTIVE; }
     public boolean isSpectator(UUID memberId) {
         return memberId != null && spectators.contains(memberId);
     }
@@ -175,11 +176,21 @@ public class PartyQuestSession {
         return activeMembers.isEmpty();
     }
 
-    public void end(Status newStatus) {
-        if (status != Status.ACTIVE) {
-            return;
+    /**
+     * Atomically end the session if it's currently active.
+     * Uses compare-and-set to prevent race conditions where multiple threads
+     * try to end the session simultaneously with different statuses.
+     *
+     * @param newStatus The status to set (defaults to CANCELLED if null)
+     * @return true if this call successfully ended the session, false if already ended
+     */
+    public boolean end(Status newStatus) {
+        Status targetStatus = newStatus != null ? newStatus : Status.CANCELLED;
+        // Atomic compare-and-set: only succeeds if currently ACTIVE
+        if (status.compareAndSet(Status.ACTIVE, targetStatus)) {
+            endTime = System.currentTimeMillis();
+            return true;
         }
-        status = newStatus != null ? newStatus : Status.CANCELLED;
-        endTime = System.currentTimeMillis();
+        return false;
     }
 }

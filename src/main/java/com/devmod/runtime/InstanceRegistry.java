@@ -319,7 +319,10 @@ public class InstanceRegistry {
                     if (success) {
                         unregister(instanceId);
                     } else {
-                        LOGGER.warn("[InstanceRegistry] Failed to destroy dimension for {}", instanceId);
+                        // Remove from pending to prevent infinite retry loop (memory leak)
+                        // The instance data remains for debugging but won't be retried
+                        pendingDestruction.remove(instanceId);
+                        LOGGER.warn("[InstanceRegistry] Failed to destroy dimension for {}, removed from pending queue", instanceId);
                     }
                 }), "destroy instance " + instanceId);
         }

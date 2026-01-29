@@ -25,6 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     const response = await api.login(username, password);
+    if (!response.token) {
+      throw new Error(response.error || 'Login failed');
+    }
     api.setToken(response.token);
     setIsAuthenticated(true);
   }, []);

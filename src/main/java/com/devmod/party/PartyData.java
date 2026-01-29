@@ -127,9 +127,9 @@ public class PartyData {
             LOGGER.debug("[Party] Cannot add member - party not in FORMING state");
             return false;
         }
-        if (members.size() >= questType.maxPlayers) {
+        if (members.size() >= questType.getMaxPlayers()) {
             LOGGER.debug("[Party] Cannot add member - party is full ({}/{})",
-                    members.size(), questType.maxPlayers);
+                    members.size(), questType.getMaxPlayers());
             return false;
         }
         if (members.contains(playerId)) {
@@ -143,7 +143,7 @@ public class PartyData {
         memberKits.put(playerId, DEFAULT_KIT_ID);
 
         LOGGER.info("[Party] {} joined party {} ({}/{})",
-                playerName, partyId, members.size(), questType.maxPlayers);
+                playerName, partyId, members.size(), questType.getMaxPlayers());
 
         // Remove any pending invite for this player
         pendingInvites.values().removeIf(invite ->
@@ -275,7 +275,7 @@ public class PartyData {
             return false;
         }
         int totalPotentialMembers = members.size() + pendingInvites.size();
-        return totalPotentialMembers < questType.maxPlayers;
+        return totalPotentialMembers < questType.getMaxPlayers();
     }
 
     /**
@@ -428,7 +428,7 @@ public class PartyData {
         if (questType.allowsSoloPlay() && members.size() == 1) {
             return true;
         }
-        return members.size() >= questType.minPlayers && allMembersReady();
+        return members.size() >= questType.getMinPlayers() && allMembersReady();
     }
 
     /**
@@ -514,7 +514,7 @@ public class PartyData {
             return false;
         }
         // Only allow change if current members fit in new type
-        if (members.size() > newType.maxPlayers) {
+        if (members.size() > newType.getMaxPlayers()) {
             return false;
         }
         this.questType = newType;
@@ -632,11 +632,11 @@ public class PartyData {
     }
 
     public boolean isFull() {
-        return members.size() >= questType.maxPlayers;
+        return members.size() >= questType.getMaxPlayers();
     }
 
     public int getRemainingSlots() {
-        return Math.max(0, questType.maxPlayers - members.size() - pendingInvites.size());
+        return Math.max(0, questType.getMaxPlayers() - members.size() - pendingInvites.size());
     }
 
     @Override
@@ -644,7 +644,7 @@ public class PartyData {
         return "PartyData{" +
                 "partyId=" + partyId +
                 ", leader=" + leaderName +
-                ", members=" + members.size() + "/" + questType.maxPlayers +
+                ", members=" + members.size() + "/" + questType.getMaxPlayers() +
                 ", questType=" + questType +
                 ", state=" + state +
                 '}';

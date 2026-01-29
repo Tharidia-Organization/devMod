@@ -95,7 +95,7 @@ public class PartyMobSelectionIntegrationTest {
 
         boolean addMember(UUID playerId, String playerName) {
             if (state != PartyState.FORMING) return false;
-            if (members.size() >= questType.maxPlayers) return false;
+            if (members.size() >= questType.getMaxPlayers()) return false;
             if (members.contains(playerId)) return false;
             members.add(playerId);
             memberNames.put(playerId, playerName);
@@ -137,7 +137,7 @@ public class PartyMobSelectionIntegrationTest {
         boolean canStartQuest() {
             if (state != PartyState.FORMING && state != PartyState.READY) return false;
             if (questType.allowsSoloPlay() && members.size() == 1) return true;
-            return members.size() >= questType.minPlayers && allMembersReady();
+            return members.size() >= questType.getMinPlayers() && allMembersReady();
         }
 
         boolean startQuest(UUID instanceId) {
@@ -163,7 +163,7 @@ public class PartyMobSelectionIntegrationTest {
 
         boolean setQuestType(QuestType newType) {
             if (state != PartyState.FORMING) return false;
-            if (members.size() > newType.maxPlayers) return false;
+            if (members.size() > newType.getMaxPlayers()) return false;
             this.questType = newType;
             return true;
         }
@@ -424,7 +424,7 @@ public class PartyMobSelectionIntegrationTest {
             raidParty.setSelectedMobId(leaderId, mob);
 
             assertEquals(coopParty.getSelectedMobId(), raidParty.getSelectedMobId());
-            assertTrue(QuestType.RAID_BOSS.difficultyMultiplier > QuestType.PVE_COOP.difficultyMultiplier);
+            assertTrue(QuestType.RAID_BOSS.getDifficultyMultiplier() > QuestType.PVE_COOP.getDifficultyMultiplier());
         }
     }
 
@@ -458,12 +458,12 @@ public class PartyMobSelectionIntegrationTest {
             float baseHP = 20.0f;
 
             var swarm = EnduranceQuestRegistry.MobDifficultyPreset.SWARM;
-            int swarmCount = (int) (baseMobCount * swarm.countMultiplier);
-            float swarmHP = baseHP * swarm.hpMultiplier;
+            int swarmCount = (int) (baseMobCount * swarm.getCountMultiplier());
+            float swarmHP = baseHP * swarm.getHpMultiplier();
 
             var tank = EnduranceQuestRegistry.MobDifficultyPreset.TANK;
-            int tankCount = (int) (baseMobCount * tank.countMultiplier);
-            float tankHP = baseHP * tank.hpMultiplier;
+            int tankCount = (int) (baseMobCount * tank.getCountMultiplier());
+            float tankHP = baseHP * tank.getHpMultiplier();
 
             assertTrue(swarmCount > tankCount, "SWARM should have more mobs");
             assertTrue(swarmHP < tankHP, "SWARM should have less HP per mob");
@@ -483,9 +483,9 @@ public class PartyMobSelectionIntegrationTest {
             float baseHP = 20.0f;
             float baseDamage = 5.0f;
 
-            assertEquals(baseCount, (int) (baseCount * standard.countMultiplier));
-            assertEquals(baseHP, baseHP * standard.hpMultiplier, 0.001f);
-            assertEquals(baseDamage, baseDamage * standard.damageMultiplier, 0.001f);
+            assertEquals(baseCount, (int) (baseCount * standard.getCountMultiplier()));
+            assertEquals(baseHP, baseHP * standard.getHpMultiplier(), 0.001f);
+            assertEquals(baseDamage, baseDamage * standard.getDamageMultiplier(), 0.001f);
         }
     }
 

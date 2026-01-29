@@ -183,21 +183,21 @@ public class FoodModuleUI {
 
         for (NutritionCategory cat : NutritionCategory.ALL) {
             EditorSlider slider = new EditorSlider(
-                "diet_" + cat.key,
-                cat.displayName,
+                "diet_" + cat.getKey(),
+                cat.getDisplayName(),
                 0, 100, 0 // Use 0-100 range for percentage display
             )
                 .step(5)
                 .format("%.0f")
                 .suffix("%")
-                .trackColor(cat.color)
+                .trackColor(cat.getColor())
                 .showInput(true)
                 .source(dataSource)
                 .info(getCategoryDescription(cat))
                 .onChange(v -> {
                     // Convert 0-100 to 0.0-1.0 for storage
                     stats.setNutritionValue(cat, v / 100f);
-                    module.markDirty(cat.displayName + " nutrition");
+                    module.markDirty(cat.getDisplayName() + " nutrition");
                 });
 
             dietSliders.put(cat, slider);

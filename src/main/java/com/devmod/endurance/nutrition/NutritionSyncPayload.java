@@ -196,7 +196,7 @@ public record NutritionSyncPayload(
      * @return value 0.0-1.0
      */
     public float getValue(NutritionCategory category) {
-        return getValue(category.index);
+        return getValue(category.getIndex());
     }
 
     @Override

@@ -2476,4 +2476,18 @@ public class ArenaBuilder {
         List<String> warnings,
         List<String> errors
     ) {}
+
+    // =====================================================================
+    // Static Cleanup Methods (called from event handlers)
+    // =====================================================================
+
+    /**
+     * Cleans up rate limiter data for a player on disconnect.
+     * Prevents memory leak from unbounded playerBuckets map.
+     *
+     * @param playerId The player's UUID
+     */
+    public static void cleanupPlayerRateLimiter(UUID playerId) {
+        BUILD_RATE_LIMITER.cleanupPlayer(playerId);
+    }
 }

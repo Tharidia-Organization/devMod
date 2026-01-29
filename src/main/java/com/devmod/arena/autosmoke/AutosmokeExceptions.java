@@ -6,6 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AutosmokeExceptions {
 
+    /** Maximum number of templates with exceptions to prevent unbounded growth */
+    private static final int MAX_WHITELIST_TEMPLATES = 500;
+
     /**
      * Exception categories
      */
@@ -99,6 +102,10 @@ public class AutosmokeExceptions {
      * @param reason The reason for the exception (for documentation)
      */
     public void addException(String templateId, ExceptionCategory category, String reason) {
+        // Prevent unbounded growth - refuse new templates if at capacity
+        if (!whitelist.containsKey(templateId) && whitelist.size() >= MAX_WHITELIST_TEMPLATES) {
+            return;
+        }
         whitelist.computeIfAbsent(templateId, k -> ConcurrentHashMap.newKeySet())
                 .add(new ExceptionEntry(category, null, reason));
     }
@@ -111,6 +118,10 @@ public class AutosmokeExceptions {
      * @param reason The reason for the exception
      */
     public void addAssertionException(String templateId, String assertionName, String reason) {
+        // Prevent unbounded growth - refuse new templates if at capacity
+        if (!whitelist.containsKey(templateId) && whitelist.size() >= MAX_WHITELIST_TEMPLATES) {
+            return;
+        }
         whitelist.computeIfAbsent(templateId, k -> ConcurrentHashMap.newKeySet())
                 .add(new ExceptionEntry(ExceptionCategory.NAMED_ASSERTION, assertionName, reason));
     }

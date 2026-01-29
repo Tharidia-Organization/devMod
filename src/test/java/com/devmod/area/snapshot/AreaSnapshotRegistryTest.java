@@ -35,6 +35,7 @@ import com.devmod.area.data.AreaShape;
 class AreaSnapshotRegistryTest {
 
     @TempDir
+    @SuppressWarnings("NullAway")
     Path tempDir;
 
     private AreaSnapshotRegistry registry;
@@ -62,7 +63,7 @@ class AreaSnapshotRegistryTest {
     }
 
     private AreaSnapshot createSnapshot(UUID id, UUID areaId, String description, long createdAt) {
-        return Objects.requireNonNull(new AreaSnapshot(
+        return new AreaSnapshot(
             id,
             areaId,
             "Test Area",
@@ -77,7 +78,7 @@ class AreaSnapshotRegistryTest {
             AreaShape.RECTANGULAR,
             Level.OVERWORLD,
             null   // customShapeNbt
-        ));
+        );
     }
 
     private void createSnapshotFile(AreaSnapshot snapshot) throws IOException {
@@ -484,7 +485,7 @@ class AreaSnapshotRegistryTest {
             UUID creatorId = Objects.requireNonNull(UUID.randomUUID());
             long createdAt = System.currentTimeMillis();
 
-            AreaSnapshot original = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot original = new AreaSnapshot(
                 snapshotId,
                 areaId,
                 "My Area",
@@ -499,7 +500,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.CIRCULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
             registry.registerSnapshot(Objects.requireNonNull(original));
 
             // Save
@@ -560,7 +561,7 @@ class AreaSnapshotRegistryTest {
         @DisplayName("truncates long description")
         void constructor_truncatesLongDescription() {
             String longDesc = "A".repeat(200);  // Longer than MAX_DESCRIPTION_LENGTH
-            AreaSnapshot snapshot = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot snapshot = new AreaSnapshot(
                 Objects.requireNonNull(UUID.randomUUID()),
                 Objects.requireNonNull(UUID.randomUUID()),
                 "Area",
@@ -573,7 +574,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.RECTANGULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
 
             assertEquals(AreaSnapshot.MAX_DESCRIPTION_LENGTH, snapshot.description().length());
         }
@@ -582,7 +583,7 @@ class AreaSnapshotRegistryTest {
         @DisplayName("truncates long creator name")
         void constructor_truncatesLongCreatorName() {
             String longName = "A".repeat(100);  // Longer than MAX_CREATOR_NAME_LENGTH
-            AreaSnapshot snapshot = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot snapshot = new AreaSnapshot(
                 Objects.requireNonNull(UUID.randomUUID()),
                 Objects.requireNonNull(UUID.randomUUID()),
                 "Area",
@@ -595,7 +596,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.RECTANGULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
 
             assertEquals(AreaSnapshot.MAX_CREATOR_NAME_LENGTH, Objects.requireNonNull(snapshot.creatorName()).length());
         }
@@ -603,7 +604,7 @@ class AreaSnapshotRegistryTest {
         @Test
         @DisplayName("normalizes negative blockCount to zero")
         void constructor_normalizesNegativeBlockCount() {
-            AreaSnapshot snapshot = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot snapshot = new AreaSnapshot(
                 Objects.requireNonNull(UUID.randomUUID()),
                 Objects.requireNonNull(UUID.randomUUID()),
                 "Area",
@@ -617,7 +618,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.RECTANGULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
 
             assertEquals(0, snapshot.blockCount());
         }
@@ -625,7 +626,7 @@ class AreaSnapshotRegistryTest {
         @Test
         @DisplayName("normalizes negative fileSizeBytes to zero")
         void constructor_normalizesNegativeFileSize() {
-            AreaSnapshot snapshot = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot snapshot = new AreaSnapshot(
                 Objects.requireNonNull(UUID.randomUUID()),
                 Objects.requireNonNull(UUID.randomUUID()),
                 "Area",
@@ -639,7 +640,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.RECTANGULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
 
             assertEquals(0, snapshot.fileSizeBytes());
         }
@@ -700,8 +701,9 @@ class AreaSnapshotRegistryTest {
 
         @Test
         @DisplayName("null description becomes empty string")
+        @SuppressWarnings("NullAway")
         void constructor_nullDescriptionBecomesEmpty() {
-            AreaSnapshot snapshot = Objects.requireNonNull(new AreaSnapshot(
+            AreaSnapshot snapshot = new AreaSnapshot(
                 Objects.requireNonNull(UUID.randomUUID()),
                 Objects.requireNonNull(UUID.randomUUID()),
                 "Area",
@@ -714,7 +716,7 @@ class AreaSnapshotRegistryTest {
                 AreaShape.RECTANGULAR,
                 Level.OVERWORLD,
                 null
-            ));
+            );
 
             assertEquals("", snapshot.description());
         }

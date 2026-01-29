@@ -75,10 +75,10 @@ public class BadgeTestScreen extends Screen {
         for (BadgeRarity rarity : BadgeRarity.values()) {
             final BadgeRarity finalRarity = rarity;
             Component buttonText = Objects.requireNonNull(
-                Component.literal("Test " + rarity.displayName + " Badge")
+                Component.literal("Test " + rarity.getDisplayName() + " Badge")
             );
             EditorButton.Style style = EditorButton.Style.PRIMARY;
-            Integer accent = DesignTokens.Mask.ALPHA | rarity.color;
+            Integer accent = DesignTokens.Mask.ALPHA | rarity.getColor();
             if (rarity == BadgeRarity.LEGENDARY) {
                 style = EditorButton.Style.SUCCESS;
             } else if (rarity == BadgeRarity.COMMON) {
@@ -168,7 +168,7 @@ public class BadgeTestScreen extends Screen {
         for (BadgeRarity rarity : BadgeRarity.values()) {
             // Color dot
             int dotX = centerX + BUTTON_WIDTH / 2 + 10;
-            graphics.fill(dotX, y + 6, dotX + 12, y + 18, DesignTokens.Mask.ALPHA | rarity.color);
+            graphics.fill(dotX, y + 6, dotX + 12, y + 18, DesignTokens.Mask.ALPHA | rarity.getColor());
             y += BUTTON_SPACING;
         }
     }
@@ -220,8 +220,8 @@ public class BadgeTestScreen extends Screen {
         Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
             .titleKey("devmod.notification.badge_unlock.title")
             .messageKey("devmod.notification.badge_unlock.message")
-            .param("badge", rarity.displayName + " Badge")
-            .param("rarity", rarity.displayName)
+            .param("badge", rarity.getDisplayName() + " Badge")
+            .param("rarity", rarity.getDisplayName())
             .priority(priority)
             .soundId("badge." + rarityId)
             .iconId("badge." + rarityId)

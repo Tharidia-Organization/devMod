@@ -28,6 +28,8 @@ public class HeatmapService {
 
     // HARDENING: Memory cap per heatmap type (prevents OOM from unbounded growth)
     private static final int MAX_BUCKETS_PER_TYPE = 50_000;
+    private static final int MAX_THROTTLE_ENTRIES = 1000; // Cap throttle map size
+    private static final long THROTTLE_ENTRY_EXPIRY_MS = 60_000; // Expire throttle entries after 60s
     private static final long CAP_LOG_INTERVAL_MS = 60_000; // Rate-limit cap warnings
     private final AtomicLong lastCapWarningMs = new AtomicLong(0);
 
@@ -90,6 +92,12 @@ public class HeatmapService {
         if (lastRecord != null && now - lastRecord < MOVEMENT_THROTTLE_MS) {
             return; // Throttled
         }
+
+        // HARDENING: Evict expired entries and cap size to prevent unbounded growth
+        if (movementThrottle.size() >= MAX_THROTTLE_ENTRIES) {
+            movementThrottle.entrySet().removeIf(e -> now - e.getValue() > THROTTLE_ENTRY_EXPIRY_MS);
+        }
+
         movementThrottle.put(playerId, now);
         increment(movementHeatmap, room, pos);
     }
@@ -231,6 +239,7 @@ public class HeatmapService {
         chokePointHeatmap.clear();
         invisibleCollisionHeatmap.clear();
         parkourFallHeatmap.clear();
+        movementThrottle.clear(); // Clear throttle map to prevent memory leak
     }
 
     public void clearRoom(String room) {

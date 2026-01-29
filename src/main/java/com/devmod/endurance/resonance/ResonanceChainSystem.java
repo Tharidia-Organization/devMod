@@ -74,10 +74,10 @@ public final class ResonanceChainSystem {
         TRINITY(3, 2.5f, 500, "TRINITY!"),
         APOCALYPSE(4, 5.0f, 1000, "APOCALYPSE!");
 
-        public final int requiredPlayers;
-        public final float damageMultiplier;
-        public final int styleBonus;
-        public final String announcement;
+        private final int requiredPlayers;
+        private final float damageMultiplier;
+        private final int styleBonus;
+        private final String announcement;
 
         ResonanceTier(int requiredPlayers, float damageMultiplier, int styleBonus, String announcement) {
             this.requiredPlayers = requiredPlayers;
@@ -85,6 +85,11 @@ public final class ResonanceChainSystem {
             this.styleBonus = styleBonus;
             this.announcement = announcement;
         }
+
+        public int getRequiredPlayers() { return requiredPlayers; }
+        public float getDamageMultiplier() { return damageMultiplier; }
+        public int getStyleBonus() { return styleBonus; }
+        public String getAnnouncement() { return announcement; }
 
         public int getColor() {
             return switch (this) {
@@ -283,7 +288,7 @@ public final class ResonanceChainSystem {
                 // Instant SSS for APOCALYPSE
                 if (tier == ResonanceTier.APOCALYPSE) {
                     // Add enough points to reach SSS threshold
-                    int sssThreshold = ComboSystem.StyleRank.SSS.threshold;
+                    int sssThreshold = ComboSystem.StyleRank.SSS.getThreshold();
                     if (session.getStyleScore() < sssThreshold) {
                         session.addBonusPoints(sssThreshold - session.getStyleScore() + 1);
                     }
@@ -395,7 +400,7 @@ public final class ResonanceChainSystem {
         if (player == null) {
             return;
         }
-        String announcement = tier.announcement;
+        String announcement = tier.getAnnouncement();
         com.devmod.notification.NotificationService.INSTANCE.notifyResonanceTier(
             player.getUUID(),
             Objects.requireNonNull(announcement),

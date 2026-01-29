@@ -1,6 +1,5 @@
 package com.devmod.npc.network;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,7 +9,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
+import com.devmod.npc.dialog.DialogLimits;
 
 /**
  * Client -> Server payload when player selects a dialog option.
@@ -32,17 +33,20 @@ public record NpcDialogActionPayload(
 
     private static void encode(FriendlyByteBuf buf, NpcDialogActionPayload payload) {
         buf.writeUUID(payload.npcId);
-        buf.writeUtf(Objects.requireNonNull(payload.dialogSetId));
-        buf.writeUtf(Objects.requireNonNull(payload.nodeId));
-        buf.writeUtf(Objects.requireNonNull(payload.optionId));
+        buf.writeUtf(DialogLimits.truncate(Objects.requireNonNull(payload.dialogSetId), DialogLimits.MAX_DIALOG_ID_LENGTH),
+            DialogLimits.MAX_DIALOG_ID_LENGTH);
+        buf.writeUtf(DialogLimits.truncate(Objects.requireNonNull(payload.nodeId), DialogLimits.MAX_NODE_ID_LENGTH),
+            DialogLimits.MAX_NODE_ID_LENGTH);
+        buf.writeUtf(DialogLimits.truncate(Objects.requireNonNull(payload.optionId), DialogLimits.MAX_OPTION_ID_LENGTH),
+            DialogLimits.MAX_OPTION_ID_LENGTH);
     }
 
     private static NpcDialogActionPayload decode(FriendlyByteBuf buf) {
         return new NpcDialogActionPayload(
             buf.readUUID(),
-            buf.readUtf(),
-            buf.readUtf(),
-            buf.readUtf()
+            buf.readUtf(DialogLimits.MAX_DIALOG_ID_LENGTH),
+            buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH),
+            buf.readUtf(DialogLimits.MAX_OPTION_ID_LENGTH)
         );
     }
 
@@ -53,27 +57,10 @@ public record NpcDialogActionPayload(
 
     @Override
     public int estimatedSize() {
-        return 16 + // UUID
-               estimatedUtfSize(dialogSetId) +
-               estimatedUtfSize(nodeId) +
-               estimatedUtfSize(optionId);
-    }
-
-    private static int estimatedUtfSize(String value) {
-        if (value == null || value.isEmpty()) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
+        int size = 16; // UUID
+        size += PayloadSizeUtil.estimatedUtfSize(dialogSetId);
+        size += PayloadSizeUtil.estimatedUtfSize(nodeId);
+        size += PayloadSizeUtil.estimatedUtfSize(optionId);
         return size;
     }
 }

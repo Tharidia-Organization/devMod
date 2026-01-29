@@ -156,12 +156,12 @@ public enum Curse {
         "The dying fight hardest..."
     );
 
-    public final String displayName;
-    public final String description;
-    public final CurseTier tier;
-    public final float rewardMultiplier;
-    public final int color;
-    public final String flavorText;
+    private final String displayName;
+    private final String description;
+    private final CurseTier tier;
+    private final float rewardMultiplier;
+    private final int color;
+    private final String flavorText;
 
     Curse(String displayName, String description, CurseTier tier,
           float rewardMultiplier, int color, String flavorText) {
@@ -173,6 +173,13 @@ public enum Curse {
         this.flavorText = flavorText;
     }
 
+    public String getDisplayName() { return displayName; }
+    public String getDescription() { return description; }
+    public CurseTier getTier() { return tier; }
+    public float getRewardMultiplier() { return rewardMultiplier; }
+    public int getColor() { return color; }
+    public String getFlavorText() { return flavorText; }
+
     /**
      * Curse tiers determine how impactful the curse is.
      */
@@ -181,27 +188,31 @@ public enum Curse {
         MAJOR("Major", EnduranceColors.BargainTier.MAJOR, 2),
         CURSED("Cursed", EnduranceColors.BargainTier.CURSED, 3);
 
-        public final String displayName;
-        public final int color;
-        public final int weight; // For random selection weighting
+        private final String displayName;
+        private final int color;
+        private final int weight; // For random selection weighting
 
         CurseTier(String displayName, int color, int weight) {
             this.displayName = displayName;
             this.color = color;
             this.weight = weight;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public int getWeight() { return weight; }
     }
 
     /**
      * Get a formatted display string with tier color.
      */
     public String getFormattedName() {
-        String tierColor = switch (tier) {
+        String tierColor = switch (getTier()) {
             case MINOR -> "§a";
             case MAJOR -> "§6";
             case CURSED -> "§c§l";
         };
-        return tierColor + displayName;
+        return tierColor + getDisplayName();
     }
 
     /**

@@ -106,14 +106,14 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
     @Override
     public void onQuestStarted(PartyData party, UUID instanceId) {
         QuestType questType = party.getQuestType();
-        String questName = questType != null ? questType.displayName : "Quest";
+        String questName = questType != null ? questType.getDisplayName() : "Quest";
         notifyMembersExcluding(party, null, "quest_started", Map.of("quest", questName));
     }
 
     @Override
     public void onQuestFinished(PartyData party) {
         QuestType questType = party.getQuestType();
-        String questName = questType != null ? questType.displayName : "Quest";
+        String questName = questType != null ? questType.getDisplayName() : "Quest";
         notifyMembersExcluding(party, null, "quest_finished", Map.of("quest", questName));
     }
 

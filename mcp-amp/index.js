@@ -14,65 +14,48 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import https from 'https';
-import http from 'http';
 
 // Configuration from environment
-const AMP_HOST = process.env.AMP_HOST || '51.68.35.33';
-const AMP_PORT = process.env.AMP_PORT || '8080';
-const AMP_INSTANCE_ID = process.env.AMP_INSTANCE_ID || '4dacbb63-e7cc-4481-9cd1-13970cb57f8f';
-const AMP_USERNAME = process.env.AMP_USERNAME || 'lordbanana89';
-const AMP_PASSWORD = process.env.AMP_PASSWORD || 'Robby1989?';
-const SSH_HOST = process.env.SSH_HOST || 'debian@51.68.35.33';
-const MODS_PATH = process.env.MODS_PATH || '/home/amp/.ampdata/instances/DevModTestPlace01/Minecraft/mods';
-const CONFIG_PATH = process.env.CONFIG_PATH || '/home/amp/.ampdata/instances/DevModTestPlace01/Minecraft/config';
+const requireEnv = (key) => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+};
+
+const AMP_INSTANCE_PORT = process.env.AMP_INSTANCE_PORT || '8081';
+const AMP_USERNAME = requireEnv('AMP_USERNAME');
+const AMP_PASSWORD = requireEnv('AMP_PASSWORD');
+const SSH_HOST = requireEnv('SSH_HOST');
+const MODS_PATH = process.env.MODS_PATH;
+const CONFIG_PATH = process.env.CONFIG_PATH;
+const LOGS_PATH = process.env.LOGS_PATH;
+
+const requireSetting = (value, name) => {
+  if (!value) {
+    throw new Error(`Missing required configuration: ${name}`);
+  }
+  return value;
+};
+
+const escapeShellArg = (value) => value.replace(/'/g, "'\"'\"'");
+
+const ensureSafeRelativePath = (value) => {
+  if (!value || value.includes('..') || value.startsWith('/') || value.includes('\\')) {
+    throw new Error('Invalid path; use a relative path without traversal');
+  }
+  return value;
+};
+
+const ensureSafeFilename = (value) => {
+  if (!value || value.includes('/') || value.includes('\\') || value.includes('..')) {
+    throw new Error('Invalid filename');
+  }
+  return value;
+};
 
 let sessionId = null;
-
-/**
- * Make HTTP request to AMP API
- */
-async function ampRequest(endpoint, data = {}, useInstance = false) {
-  const port = useInstance ? '8081' : AMP_PORT;
-  const host = useInstance ? '127.0.0.1' : AMP_HOST;
-
-  // For instance API, we need to go through SSH
-  if (useInstance) {
-    return sshAmpRequest(endpoint, data);
-  }
-
-  return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({ SESSIONID: sessionId, ...data });
-
-    const options = {
-      hostname: AMP_HOST,
-      port: parseInt(AMP_PORT),
-      path: `/API/${endpoint}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
-      }
-    };
-
-    const req = http.request(options, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch (e) {
-          resolve({ raw: body });
-        }
-      });
-    });
-
-    req.on('error', reject);
-    req.write(postData);
-    req.end();
-  });
-}
 
 /**
  * Make request to instance API via SSH tunnel with auto-retry on session expiry
@@ -80,8 +63,9 @@ async function ampRequest(endpoint, data = {}, useInstance = false) {
 async function sshAmpRequest(endpoint, data = {}, retried = false) {
   const { execSync } = await import('child_process');
   const postData = JSON.stringify({ SESSIONID: sessionId, ...data });
+  const safePostData = escapeShellArg(postData);
 
-  const cmd = `ssh ${SSH_HOST} 'curl -s -X POST "http://127.0.0.1:8081/API/${endpoint}" -H "Content-Type: application/json" -H "Accept: application/json" -d '"'"'${postData}'"'"''`;
+  const cmd = `ssh ${SSH_HOST} 'curl -s -X POST "http://127.0.0.1:${AMP_INSTANCE_PORT}/API/${endpoint}" -H "Content-Type: application/json" -H "Accept: application/json" -d '"'"'${safePostData}'"'"''`;
 
   try {
     const result = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
@@ -119,24 +103,6 @@ function isSessionExpired(result) {
 }
 
 /**
- * Login to AMP API
- */
-async function login() {
-  const result = await ampRequest('Core/Login', {
-    username: AMP_USERNAME,
-    password: AMP_PASSWORD,
-    token: '',
-    rememberMe: false
-  });
-
-  if (result.sessionID) {
-    sessionId = result.sessionID;
-    return true;
-  }
-  return false;
-}
-
-/**
  * Login to instance API via SSH
  */
 async function loginInstance() {
@@ -151,7 +117,7 @@ async function loginInstance() {
     sessionId = result.sessionID;
     return true;
   }
-  return false;
+  throw new Error(result?.error || 'AMP login failed');
 }
 
 /**
@@ -350,7 +316,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { name, arguments: rawArgs } = request.params;
+  const args = rawArgs ?? {};
 
   try {
     switch (name) {
@@ -423,11 +390,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'amp_logs': {
-        const lines = args.lines || 50;
-        // Escape filter for safe shell usage - replace single quotes
-        const safeFilter = args.filter ? args.filter.replace(/'/g, "'\"'\"'") : '';
+        const lines = Number.isFinite(args.lines) ? Math.max(1, Math.min(1000, Math.floor(args.lines))) : 50;
+        const logsPath = escapeShellArg(requireSetting(LOGS_PATH, 'LOGS_PATH'));
+        const safeFilter = args.filter ? escapeShellArg(args.filter) : '';
         const filterCmd = safeFilter ? ` | grep -iE '${safeFilter}'` : '';
-        const cmd = `sudo tail -${lines} /home/amp/.ampdata/instances/DevModTestPlace01/Minecraft/logs/latest.log${filterCmd}`;
+        const cmd = `sudo tail -${lines} '${logsPath}'${filterCmd}`;
         const result = await sshCommand(cmd);
         return {
           content: [{
@@ -438,8 +405,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'amp_list_mods': {
-        const filter = args.filter ? `| grep -i '${args.filter}'` : '';
-        const cmd = `sudo ls -la ${MODS_PATH} ${filter}`;
+        const modsPath = escapeShellArg(requireSetting(MODS_PATH, 'MODS_PATH'));
+        const safeFilter = args.filter ? escapeShellArg(args.filter) : '';
+        const filterCmd = safeFilter ? ` | grep -i '${safeFilter}'` : '';
+        const cmd = `sudo ls -la '${modsPath}'${filterCmd}`;
         const result = await sshCommand(cmd);
         return {
           content: [{
@@ -450,7 +419,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'amp_mod_enable': {
-        const cmd = `sudo mv '${MODS_PATH}/${args.modName}.disabled' '${MODS_PATH}/${args.modName}'`;
+        const modsPath = escapeShellArg(requireSetting(MODS_PATH, 'MODS_PATH'));
+        const modName = ensureSafeFilename(args.modName);
+        const cmd = `sudo mv '${modsPath}/${modName}.disabled' '${modsPath}/${modName}'`;
         const result = await sshCommand(cmd);
         return {
           content: [{
@@ -461,7 +432,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'amp_mod_disable': {
-        const cmd = `sudo mv '${MODS_PATH}/${args.modName}' '${MODS_PATH}/${args.modName}.disabled'`;
+        const modsPath = escapeShellArg(requireSetting(MODS_PATH, 'MODS_PATH'));
+        const modName = ensureSafeFilename(args.modName);
+        const cmd = `sudo mv '${modsPath}/${modName}' '${modsPath}/${modName}.disabled'`;
         const result = await sshCommand(cmd);
         return {
           content: [{
@@ -472,7 +445,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'amp_read_config': {
-        const cmd = `sudo cat '${CONFIG_PATH}/${args.path}'`;
+        const configPath = escapeShellArg(requireSetting(CONFIG_PATH, 'CONFIG_PATH'));
+        const relativePath = ensureSafeRelativePath(args.path);
+        const cmd = `sudo cat '${configPath}/${relativePath}'`;
         const result = await sshCommand(cmd);
         return {
           content: [{
@@ -485,7 +460,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'amp_upload_file': {
         const { execSync } = await import('child_process');
         try {
-          execSync(`scp '${args.localPath}' '${SSH_HOST}:${args.remotePath}'`, {
+          const localPath = escapeShellArg(args.localPath);
+          const remotePath = escapeShellArg(args.remotePath);
+          execSync(`scp '${localPath}' '${SSH_HOST}:${remotePath}'`, {
             encoding: 'utf8',
             timeout: 120000
           });

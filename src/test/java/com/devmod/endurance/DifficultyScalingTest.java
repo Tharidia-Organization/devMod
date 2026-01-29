@@ -35,8 +35,8 @@ public class DifficultyScalingTest {
         if (baseMobCount <= 0 || playerCount <= 0) {
             return baseMobCount;
         }
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
-        double scaleFactor = Math.sqrt(clampedPlayers) * questType.difficultyMultiplier;
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
+        double scaleFactor = Math.sqrt(clampedPlayers) * questType.getDifficultyMultiplier();
         scaleFactor = Math.min(scaleFactor, MAX_MOB_COUNT_SCALE);
         return (int) Math.ceil(baseMobCount * scaleFactor);
     }
@@ -46,9 +46,9 @@ public class DifficultyScalingTest {
         if (baseHP <= 0 || playerCount <= 0) {
             return baseHP;
         }
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
         float playerScale = 1.0f + (clampedPlayers - 1) * BOSS_HP_SCALE_PER_PLAYER;
-        float totalScale = playerScale * questType.difficultyMultiplier;
+        float totalScale = playerScale * questType.getDifficultyMultiplier();
         totalScale = Math.min(totalScale, MAX_BOSS_HP_SCALE);
         return baseHP * totalScale;
     }
@@ -58,7 +58,7 @@ public class DifficultyScalingTest {
         if (baseDamage <= 0 || playerCount <= 0) {
             return baseDamage;
         }
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
         float damageScale = 1.0f + (clampedPlayers - 1) * BOSS_DMG_SCALE_PER_PLAYER;
         damageScale = Math.min(damageScale, 2.0f);
         return baseDamage * damageScale;
@@ -69,9 +69,9 @@ public class DifficultyScalingTest {
         if (baseHP <= 0 || playerCount <= 0) {
             return baseHP;
         }
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
         float playerScale = 1.0f + (clampedPlayers - 1) * MOB_HP_SCALE_PER_PLAYER;
-        float totalScale = playerScale * questType.difficultyMultiplier;
+        float totalScale = playerScale * questType.getDifficultyMultiplier();
         totalScale = Math.min(totalScale, 3.0f);
         return baseHP * totalScale;
     }
@@ -102,11 +102,11 @@ public class DifficultyScalingTest {
         void allPresetsHaveValidMultipliers() {
             for (EnduranceQuestRegistry.MobDifficultyPreset preset :
                     EnduranceQuestRegistry.MobDifficultyPreset.values()) {
-                assertTrue(preset.countMultiplier > 0,
+                assertTrue(preset.getCountMultiplier() > 0,
                     preset + " countMultiplier must be positive");
-                assertTrue(preset.hpMultiplier > 0,
+                assertTrue(preset.getHpMultiplier() > 0,
                     preset + " hpMultiplier must be positive");
-                assertTrue(preset.damageMultiplier > 0,
+                assertTrue(preset.getDamageMultiplier() > 0,
                     preset + " damageMultiplier must be positive");
             }
         }
@@ -116,8 +116,8 @@ public class DifficultyScalingTest {
         @DisplayName("SWARM preset has high count, low HP")
         void swarmPresetCharacteristics() {
             var preset = EnduranceQuestRegistry.MobDifficultyPreset.SWARM;
-            assertTrue(preset.countMultiplier > 1.0f, "SWARM should have >1 count multiplier");
-            assertTrue(preset.hpMultiplier < 1.0f, "SWARM should have <1 HP multiplier");
+            assertTrue(preset.getCountMultiplier() > 1.0f, "SWARM should have >1 count multiplier");
+            assertTrue(preset.getHpMultiplier() < 1.0f, "SWARM should have <1 HP multiplier");
         }
 
         @Test
@@ -125,8 +125,8 @@ public class DifficultyScalingTest {
         @DisplayName("TANK preset has low count, high HP")
         void tankPresetCharacteristics() {
             var preset = EnduranceQuestRegistry.MobDifficultyPreset.TANK;
-            assertTrue(preset.countMultiplier < 1.0f, "TANK should have <1 count multiplier");
-            assertTrue(preset.hpMultiplier > 1.0f, "TANK should have >1 HP multiplier");
+            assertTrue(preset.getCountMultiplier() < 1.0f, "TANK should have <1 count multiplier");
+            assertTrue(preset.getHpMultiplier() > 1.0f, "TANK should have >1 HP multiplier");
         }
 
         @Test
@@ -134,8 +134,8 @@ public class DifficultyScalingTest {
         @DisplayName("GLASS_CANNON preset has low HP, high damage")
         void glassCannonsPresetCharacteristics() {
             var preset = EnduranceQuestRegistry.MobDifficultyPreset.GLASS_CANNON;
-            assertTrue(preset.hpMultiplier < 1.0f, "GLASS_CANNON should have <1 HP multiplier");
-            assertTrue(preset.damageMultiplier > 1.0f, "GLASS_CANNON should have >1 damage multiplier");
+            assertTrue(preset.getHpMultiplier() < 1.0f, "GLASS_CANNON should have <1 HP multiplier");
+            assertTrue(preset.getDamageMultiplier() > 1.0f, "GLASS_CANNON should have >1 damage multiplier");
         }
 
         @Test
@@ -143,8 +143,8 @@ public class DifficultyScalingTest {
         @DisplayName("BOSS_STYLE preset has very low count, very high HP")
         void bossStylePresetCharacteristics() {
             var preset = EnduranceQuestRegistry.MobDifficultyPreset.BOSS_STYLE;
-            assertTrue(preset.countMultiplier < 0.5f, "BOSS_STYLE should have very low count");
-            assertTrue(preset.hpMultiplier >= 2.0f, "BOSS_STYLE should have very high HP");
+            assertTrue(preset.getCountMultiplier() < 0.5f, "BOSS_STYLE should have very low count");
+            assertTrue(preset.getHpMultiplier() >= 2.0f, "BOSS_STYLE should have very high HP");
         }
 
         @Test
@@ -152,9 +152,9 @@ public class DifficultyScalingTest {
         @DisplayName("STANDARD preset is neutral (1.0x all)")
         void standardPresetIsNeutral() {
             var preset = EnduranceQuestRegistry.MobDifficultyPreset.STANDARD;
-            assertEquals(1.0f, preset.countMultiplier, 0.001f);
-            assertEquals(1.0f, preset.hpMultiplier, 0.001f);
-            assertEquals(1.0f, preset.damageMultiplier, 0.001f);
+            assertEquals(1.0f, preset.getCountMultiplier(), 0.001f);
+            assertEquals(1.0f, preset.getHpMultiplier(), 0.001f);
+            assertEquals(1.0f, preset.getDamageMultiplier(), 0.001f);
         }
 
         @Test
@@ -162,10 +162,10 @@ public class DifficultyScalingTest {
         @DisplayName("All presets have display names and descriptions")
         void allPresetsHaveMetadata() {
             for (var preset : EnduranceQuestRegistry.MobDifficultyPreset.values()) {
-                assertNotNull(preset.displayName, preset + " must have displayName");
-                assertNotNull(preset.description, preset + " must have description");
-                assertFalse(preset.displayName.isEmpty(), preset + " displayName must not be empty");
-                assertFalse(preset.description.isEmpty(), preset + " description must not be empty");
+                assertNotNull(preset.getDisplayName(), preset + " must have displayName");
+                assertNotNull(preset.getDescription(), preset + " must have description");
+                assertFalse(preset.getDisplayName().isEmpty(), preset + " displayName must not be empty");
+                assertFalse(preset.getDescription().isEmpty(), preset + " description must not be empty");
             }
         }
 
@@ -421,7 +421,7 @@ public class DifficultyScalingTest {
         @Order(1)
         @DisplayName("All QuestTypes have valid difficulty multipliers")
         void allQuestTypesHaveValidMultipliers(QuestType questType) {
-            assertTrue(questType.difficultyMultiplier > 0,
+            assertTrue(questType.getDifficultyMultiplier() > 0,
                 questType + " must have positive difficulty multiplier");
         }
 
@@ -429,8 +429,8 @@ public class DifficultyScalingTest {
         @Order(2)
         @DisplayName("QuestType multipliers increase: PVE_COOP < RAID_BOSS < EVENT")
         void questTypeMultiplierOrdering() {
-            assertTrue(QuestType.PVE_COOP.difficultyMultiplier < QuestType.RAID_BOSS.difficultyMultiplier);
-            assertTrue(QuestType.RAID_BOSS.difficultyMultiplier < QuestType.EVENT.difficultyMultiplier);
+            assertTrue(QuestType.PVE_COOP.getDifficultyMultiplier() < QuestType.RAID_BOSS.getDifficultyMultiplier());
+            assertTrue(QuestType.RAID_BOSS.getDifficultyMultiplier() < QuestType.EVENT.getDifficultyMultiplier());
         }
 
         @Test
@@ -438,9 +438,9 @@ public class DifficultyScalingTest {
         @DisplayName("QuestType player limits are valid")
         void questTypePlayerLimitsValid() {
             for (QuestType qt : QuestType.values()) {
-                assertTrue(qt.minPlayers >= 1, qt + " minPlayers must be >= 1");
-                assertTrue(qt.maxPlayers >= qt.minPlayers, qt + " maxPlayers must be >= minPlayers");
-                assertTrue(qt.maxPlayers <= 20, qt + " maxPlayers should be reasonable");
+                assertTrue(qt.getMinPlayers() >= 1, qt + " minPlayers must be >= 1");
+                assertTrue(qt.getMaxPlayers() >= qt.getMinPlayers(), qt + " maxPlayers must be >= minPlayers");
+                assertTrue(qt.getMaxPlayers() <= 20, qt + " maxPlayers should be reasonable");
             }
         }
 
@@ -449,9 +449,9 @@ public class DifficultyScalingTest {
         @DisplayName("QuestType has display info")
         void questTypeHasDisplayInfo() {
             for (QuestType qt : QuestType.values()) {
-                assertNotNull(qt.displayName);
-                assertNotNull(qt.description);
-                assertFalse(qt.displayName.isEmpty());
+                assertNotNull(qt.getDisplayName());
+                assertNotNull(qt.getDescription());
+                assertFalse(qt.getDisplayName().isEmpty());
             }
         }
 
@@ -514,7 +514,7 @@ public class DifficultyScalingTest {
         void totalScaleFactorCombinesAll() {
             // sqrt(4) * 1.0 * 1.2 (wave 5) = 2 * 1 * 1.2 = 2.4
             float playerScale = (float) Math.sqrt(4);
-            float questScale = QuestType.PVE_COOP.difficultyMultiplier;
+            float questScale = QuestType.PVE_COOP.getDifficultyMultiplier();
             float waveScale = simulateWaveMultiplier(5, 10);
             float total = playerScale * questScale * waveScale;
 
@@ -527,7 +527,7 @@ public class DifficultyScalingTest {
         void extremeScaling() {
             // 10 players, EVENT (2.0x), wave 10 in endless
             float playerScale = (float) Math.sqrt(10);
-            float questScale = QuestType.EVENT.difficultyMultiplier;
+            float questScale = QuestType.EVENT.getDifficultyMultiplier();
             float waveScale = simulateWaveMultiplier(10, 0);
             float total = playerScale * questScale * waveScale;
 

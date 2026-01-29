@@ -157,7 +157,7 @@ public class NutritionSession {
     }
 
     public float getValue(NutritionCategory category) {
-        return currentValues[category.index];
+        return currentValues[category.getIndex()];
     }
 
     public float getValue(int categoryIndex) {

@@ -625,6 +625,12 @@ public class InstanceManager {
                 player.getName().getString());
         }
 
+        // Cancel pending recovery if any
+        if (pendingRecoveries.remove(playerId) != null) {
+            LOGGER.debug("[InstanceManager] Cancelled pending recovery for disconnected player {}",
+                player.getName().getString());
+        }
+
         // Check if player was in an instance
         Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getPlayerInstance(playerId);
         if (instanceOpt.isPresent()) {

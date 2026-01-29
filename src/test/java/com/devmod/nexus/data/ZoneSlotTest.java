@@ -81,6 +81,7 @@ class ZoneSlotTest {
 
     @Nested
     @DisplayName("Validation")
+    @SuppressWarnings("NullAway")
     class ValidationTests {
 
         @Test

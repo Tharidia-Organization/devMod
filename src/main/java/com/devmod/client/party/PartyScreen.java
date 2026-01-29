@@ -221,8 +221,8 @@ public class PartyScreen extends Screen {
             long notReady = members.stream().filter(m -> !m.isReady()).count();
             return notReady > 0 ? "Press READY" : null;
         }
-        if (memberCount < questType.minPlayers) {
-            return "Need " + questType.minPlayers + " players";
+        if (memberCount < questType.getMinPlayers()) {
+            return "Need " + questType.getMinPlayers() + " players";
         }
         long notReady = members.stream().filter(m -> !m.isReady()).count();
         if (notReady > 0) {
@@ -990,7 +990,7 @@ public class PartyScreen extends Screen {
         if (!isInParty) return false;
         if (kitSyncInFlight) return false;
         if (questType.allowsSoloPlay() && members.size() == 1) return true;
-        if (members.size() < questType.minPlayers) return false;
+        if (members.size() < questType.getMinPlayers()) return false;
         return members.stream().allMatch(PartySyncPayload.PartyMemberInfo::isReady);
     }
 

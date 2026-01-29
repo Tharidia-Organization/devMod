@@ -342,7 +342,7 @@ public class GuildSystem {
             "[Guild] " + guild.getName() + " reached level " + newLevel + "!")
             .withStyle(SharedColorTokens.Chat.AQUA);
         if (perk != null) {
-            message = message.append(Objects.requireNonNull(Component.literal(" Perk unlocked: " + perk.name)
+            message = message.append(Objects.requireNonNull(Component.literal(" Perk unlocked: " + perk.getName())
                 .withStyle(SharedColorTokens.Chat.GOLD)));
         }
         notifyGuildMembers(guild, message);
@@ -615,13 +615,16 @@ public class GuildSystem {
         VETERAN(2, "Veteran"),
         MEMBER(1, "Member");
 
-        public final int level;
-        public final String displayName;
+        private final int level;
+        private final String displayName;
 
         GuildRank(int level, String displayName) {
             this.level = level;
             this.displayName = displayName;
         }
+
+        public int getLevel() { return level; }
+        public String getDisplayName() { return displayName; }
     }
 
     public enum ObjectiveType {
@@ -654,9 +657,9 @@ public class GuildSystem {
         GUILD_BANK_BONUS(17, "Guild Treasury", "+20% bank capacity"),
         BONUS_TOKENS_15(20, "Token Boost III", "+15% token gain for members");
 
-        public final int level;
-        public final String name;
-        public final String description;
+        private final int level;
+        private final String name;
+        private final String description;
 
         GuildPerk(int level, String name, String description) {
             this.level = level;
@@ -664,9 +667,13 @@ public class GuildSystem {
             this.description = description;
         }
 
+        public int getLevel() { return level; }
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+
         public static GuildPerk getForLevel(int level) {
             for (GuildPerk perk : values()) {
-                if (perk.level == level) {
+                if (perk.getLevel() == level) {
                     return perk;
                 }
             }

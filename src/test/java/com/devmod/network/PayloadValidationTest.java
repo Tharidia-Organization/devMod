@@ -393,48 +393,48 @@ class PayloadValidationTest {
         @DisplayName("SMALL has correct limits")
         void smallHasCorrectLimits() {
             PayloadValidation.PayloadLimits limits = PayloadValidation.PayloadLimits.SMALL;
-            assertEquals(1024, limits.maxSizeBytes);
-            assertEquals(100, limits.maxRequestsPerWindow);
-            assertEquals(60_000, limits.windowMs);
+            assertEquals(1024, limits.getMaxSizeBytes());
+            assertEquals(100, limits.getMaxRequestsPerWindow());
+            assertEquals(60_000, limits.getWindowMs());
         }
 
         @Test
         @DisplayName("MEDIUM has correct limits")
         void mediumHasCorrectLimits() {
             PayloadValidation.PayloadLimits limits = PayloadValidation.PayloadLimits.MEDIUM;
-            assertEquals(8192, limits.maxSizeBytes);
-            assertEquals(60, limits.maxRequestsPerWindow);
+            assertEquals(8192, limits.getMaxSizeBytes());
+            assertEquals(60, limits.getMaxRequestsPerWindow());
         }
 
         @Test
         @DisplayName("MAILBOX has correct limits")
         void mailboxHasCorrectLimits() {
             PayloadValidation.PayloadLimits limits = PayloadValidation.PayloadLimits.MAILBOX;
-            assertEquals(16384, limits.maxSizeBytes);
-            assertEquals(30, limits.maxRequestsPerWindow);
+            assertEquals(16384, limits.getMaxSizeBytes());
+            assertEquals(30, limits.getMaxRequestsPerWindow());
         }
 
         @Test
         @DisplayName("TELEMETRY has correct limits")
         void telemetryHasCorrectLimits() {
             PayloadValidation.PayloadLimits limits = PayloadValidation.PayloadLimits.TELEMETRY;
-            assertEquals(65536, limits.maxSizeBytes);
-            assertEquals(10, limits.maxRequestsPerWindow);
+            assertEquals(65536, limits.getMaxSizeBytes());
+            assertEquals(10, limits.getMaxRequestsPerWindow());
         }
 
         @Test
         @DisplayName("NONE has maximum limits")
         void noneHasMaximumLimits() {
             PayloadValidation.PayloadLimits limits = PayloadValidation.PayloadLimits.NONE;
-            assertEquals(Integer.MAX_VALUE, limits.maxSizeBytes);
-            assertEquals(Integer.MAX_VALUE, limits.maxRequestsPerWindow);
+            assertEquals(Integer.MAX_VALUE, limits.getMaxSizeBytes());
+            assertEquals(Integer.MAX_VALUE, limits.getMaxRequestsPerWindow());
         }
 
         @Test
         @DisplayName("All limits have 60 second window")
         void allLimitsHave60SecondWindow() {
             for (PayloadValidation.PayloadLimits limit : PayloadValidation.PayloadLimits.values()) {
-                assertEquals(60_000, limit.windowMs,
+                assertEquals(60_000, limit.getWindowMs(),
                     limit.name() + " should have 60s window");
             }
         }

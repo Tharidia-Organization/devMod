@@ -12,10 +12,10 @@ public enum SpawnAffix {
     ELITE(1.0f, 1.0f, 1.0f, true),
     OBJECTIVE_ELITE(1.1f, 1.1f, 1.05f, true);
 
-    public final float hpMultiplier;
-    public final float damageMultiplier;
-    public final float speedMultiplier;
-    public final boolean elite;
+    private final float hpMultiplier;
+    private final float damageMultiplier;
+    private final float speedMultiplier;
+    private final boolean elite;
 
     SpawnAffix(float hpMultiplier, float damageMultiplier, float speedMultiplier, boolean elite) {
         this.hpMultiplier = hpMultiplier;
@@ -23,4 +23,9 @@ public enum SpawnAffix {
         this.speedMultiplier = speedMultiplier;
         this.elite = elite;
     }
+
+    public float getHpMultiplier() { return hpMultiplier; }
+    public float getDamageMultiplier() { return damageMultiplier; }
+    public float getSpeedMultiplier() { return speedMultiplier; }
+    public boolean isElite() { return elite; }
 }

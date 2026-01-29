@@ -31,15 +31,19 @@ public final class BloodContract {
         MAJOR(1.5f, EnduranceColors.Contract.MAJOR, "Major"),        // High risk
         BLOOD(2.0f, EnduranceColors.Contract.BLOOD, "Blood");        // Extreme risk
 
-        public final float baseMultiplier;
-        public final int color;
-        public final String displayName;
+        private final float baseMultiplier;
+        private final int color;
+        private final String displayName;
 
         ContractTier(float baseMultiplier, int color, String displayName) {
             this.baseMultiplier = baseMultiplier;
             this.color = color;
             this.displayName = displayName;
         }
+
+        public float getBaseMultiplier() { return baseMultiplier; }
+        public int getColor() { return color; }
+        public String getDisplayName() { return displayName; }
     }
 
     /**
@@ -70,11 +74,13 @@ public final class BloodContract {
         LINKED_FATE("If one dies, all die"),
         BLOOD_PACT("Share damage across party");
 
-        public final String description;
+        private final String description;
 
         ContractEffect(String description) {
             this.description = description;
         }
+
+        public String getDescription() { return description; }
     }
 
     /**
@@ -132,12 +138,12 @@ public final class BloodContract {
     public float getRewardMultiplier() { return rewardMultiplier; }
 
     public float getTotalMultiplier() {
-        return tier.baseMultiplier * rewardMultiplier;
+        return tier.getBaseMultiplier() * rewardMultiplier;
     }
 
     public boolean isPartyContract() { return isPartyContract; }
 
-    public int getColor() { return tier.color; }
+    public int getColor() { return tier.getColor(); }
 
     /**
      * Check if this contract is violated given the current context.

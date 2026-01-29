@@ -2336,6 +2336,7 @@
   "area.message.error_locked": "Errore: area bloccata",
   "area.message.error_overlap": "Errore: area sovrapposta a un'altra",
   "area.message.error_permission": "Errore: permessi insufficienti",
+  "area.message.error_too_many_pending_builds": "Troppi build di bioma in attesa. Attendi e riprova.",
   "area.message.error_too_many_builds": "Troppe costruzioni in corso. Attendi che alcune terminino.",
   "area.message.build_queued": "Costruzione in coda (posizione %d). Partira' automaticamente quando si libera uno slot.",
   "area.message.queue_full": "Coda costruzioni piena. Riprova piu' tardi.",

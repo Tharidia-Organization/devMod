@@ -138,6 +138,8 @@ public class TransportRegistry extends SavedData {
                 networkNodes.remove(nodeId);
                 if (networkNodes.isEmpty()) {
                     networkIndex.remove(network);
+                    // Clean up round-robin counter to prevent memory leak
+                    roundRobinCounters.remove(network);
                 }
             }
         });
@@ -503,6 +505,8 @@ public class TransportRegistry extends SavedData {
             networkNodes.remove(nodeId);
             if (networkNodes.isEmpty()) {
                 networkIndex.remove(network);
+                // Clean up round-robin counter to prevent memory leak
+                roundRobinCounters.remove(network);
             }
         }
 

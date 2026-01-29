@@ -24,6 +24,11 @@ public class DuckDbDestination implements LogDestination {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDbDestination.class);
     private static final Splitter COMMA_SPLITTER = Splitter.on(',');
 
+    /** Maximum age for pending build starts before cleanup (10 minutes) */
+    private static final long MAX_BUILD_START_AGE_MS = 10 * 60 * 1000;
+    /** Maximum pending builds to prevent unbounded growth */
+    private static final int MAX_PENDING_BUILDS = 100;
+
     private final ConcurrentHashMap<UUID, BuildStartInfo> buildStarts = new ConcurrentHashMap<>();
 
     public DuckDbDestination() {
@@ -50,6 +55,9 @@ public class DuckDbDestination implements LogDestination {
             return;
         }
 
+        // Periodic cleanup of stale pending builds
+        cleanupStaleBuildStarts();
+
         for (LogEvent event : events) {
             switch (event.eventName()) {
                 case "arena.build.start" -> handleBuildStart(event);
@@ -63,9 +71,32 @@ public class DuckDbDestination implements LogDestination {
         }
     }
 
+    /**
+     * Removes stale build start entries that never received an end/fail event.
+     * Also caps the map size to prevent unbounded growth.
+     */
+    private void cleanupStaleBuildStarts() {
+        if (buildStarts.isEmpty()) {
+            return;
+        }
+
+        Instant cutoff = Instant.now().minusMillis(MAX_BUILD_START_AGE_MS);
+        buildStarts.entrySet().removeIf(entry -> entry.getValue().startedAt().isBefore(cutoff));
+
+        // Cap size if still too large (oldest entries removed first)
+        if (buildStarts.size() > MAX_PENDING_BUILDS) {
+            buildStarts.entrySet().stream()
+                .sorted((a, b) -> a.getValue().startedAt().compareTo(b.getValue().startedAt()))
+                .limit(buildStarts.size() - MAX_PENDING_BUILDS)
+                .map(Map.Entry::getKey)
+                .toList()
+                .forEach(buildStarts::remove);
+        }
+    }
+
     @Override
     public void close() {
-        // Lifecycle managed by DuckDBTelemetryService
+        buildStarts.clear();
     }
 
     private void handleBuildStart(LogEvent event) {

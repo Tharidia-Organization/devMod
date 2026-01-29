@@ -269,4 +269,23 @@ public class ArenaBuildRateLimiter {
         TokenBucket bucket = playerBuckets.get(playerId);
         return bucket != null ? bucket.getTokens() : BURST_CAPACITY;
     }
+
+    /**
+     * Cleans up rate limit data for a player.
+     * Called on player disconnect to prevent memory leak.
+     *
+     * @param playerId The player's UUID
+     */
+    public void cleanupPlayer(UUID playerId) {
+        if (playerBuckets.remove(playerId) != null) {
+            LOGGER.debug("Cleaned up rate limit bucket for player {}", playerId);
+        }
+    }
+
+    /**
+     * Gets the number of tracked player buckets (for monitoring).
+     */
+    public int getPlayerBucketCount() {
+        return playerBuckets.size();
+    }
 }

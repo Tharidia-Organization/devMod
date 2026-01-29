@@ -84,15 +84,19 @@ public class LeaderboardSystem {
         TOTAL_PRESTIGE("Prestige", "Total prestige earned", true),
         FLAWLESS_RUNS("Flawless", "No-hit completions", true);
 
-        public final String displayName;
-        public final String description;
-        public final boolean higherIsBetter;
+        private final String displayName;
+        private final String description;
+        private final boolean higherIsBetter;
 
         LeaderboardCategory(String displayName, String description, boolean higherIsBetter) {
             this.displayName = displayName;
             this.description = description;
             this.higherIsBetter = higherIsBetter;
         }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public boolean isHigherIsBetter() { return higherIsBetter; }
     }
 
     /**
@@ -211,17 +215,17 @@ public class LeaderboardSystem {
         if (arenaId != null) {
             Map<String, List<LeaderboardEntry>> arenaBoards = boards.get(category);
             List<LeaderboardEntry> arenaBoard = arenaBoards.computeIfAbsent(arenaId, k -> new ArrayList<>());
-            updateBoard(arenaBoard, entry, category.higherIsBetter);
+            updateBoard(arenaBoard, entry, category.isHigherIsBetter());
         }
 
         // Update global board
         List<LeaderboardEntry> globalBoard = globalBoards.get(category);
-        updateBoard(globalBoard, entry, category.higherIsBetter);
+        updateBoard(globalBoard, entry, category.isHigherIsBetter());
 
         // Update weekly board
         checkWeeklyReset();
         List<LeaderboardEntry> weeklyBoard = weeklyBoards.get(category);
-        updateBoard(weeklyBoard, entry, category.higherIsBetter);
+        updateBoard(weeklyBoard, entry, category.isHigherIsBetter());
 
         // Emit telemetry if rank changed
         int newGlobalRank = getPlayerRank(category, playerId, null);

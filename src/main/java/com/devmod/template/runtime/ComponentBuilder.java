@@ -19,6 +19,7 @@ import com.devmod.template.data.ZoneTemplate;
  * Builds room decoration components in the world.
  * Each component type has a registered builder function.
  */
+@SuppressWarnings("null") // Minecraft's BlockState API lacks @Nonnull annotations but defaultBlockState() never returns null
 public final class ComponentBuilder {
     private ComponentBuilder() {}
 

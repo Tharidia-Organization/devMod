@@ -298,6 +298,8 @@ public class EnduranceQuestManager {
             }
         }
         activeSessions.clear();
+        partySessions.clear();
+        questToParty.clear();
 
         // Save all player stats (includes partial rewards)
         persistence.savePlayerStats();
@@ -2527,9 +2529,16 @@ public class EnduranceQuestManager {
 
     /**
      * Get active quest session for a player.
+     * Returns empty if the session is still initializing (placeholder state).
+     * This prevents race conditions where code tries to use an incomplete session.
      */
     public Optional<ActiveQuestSession> getActiveSession(UUID playerId) {
-        return Optional.ofNullable(activeSessions.get(playerId));
+        ActiveQuestSession session = activeSessions.get(playerId);
+        // Filter out initializing sessions to prevent race conditions
+        if (session != null && session.isInitializing()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(session);
     }
 
     /**
@@ -3317,6 +3326,20 @@ public class EnduranceQuestManager {
     }
 
     /**
+     * Cleans up expired overrides to prevent memory leaks.
+     * Should be called periodically (e.g., every 5 minutes).
+     *
+     * @return The number of expired overrides cleaned up
+     */
+    public int cleanupExpiredOverrides() {
+        int cleaned = 0;
+        if (overrideManager != null) {
+            cleaned = overrideManager.cleanupExpiredOverrides();
+        }
+        return cleaned;
+    }
+
+    /**
      * Cleanup path used only during server shutdown to avoid dangling state
      * and to ensure telemetry/stats are flushed without granting full rewards.
      */
@@ -3411,7 +3434,7 @@ public class EnduranceQuestManager {
         public QuestSettings questType(QuestType type) {
             this.questType = type;
             // Auto-adjust arena size based on quest type
-            this.arenaSize = type.defaultArenaSize;
+            this.arenaSize = type.getDefaultArenaSize();
             return this;
         }
 
@@ -3652,6 +3675,14 @@ public class EnduranceQuestManager {
         // Pending state (while instance is being created)
         public boolean isPending() { return pending; }
         public void setPending(boolean pending) { this.pending = pending; }
+
+        /**
+         * Check if this session is still being initialized (placeholder state).
+         * An initializing session has no arena yet and should not be used for quest logic.
+         */
+        public boolean isInitializing() {
+            return arena == null;
+        }
         public boolean isLoadingProtection() { return loadingProtection; }
         public void setLoadingProtection(boolean loadingProtection) { this.loadingProtection = loadingProtection; }
 

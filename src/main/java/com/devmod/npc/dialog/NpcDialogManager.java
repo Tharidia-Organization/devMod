@@ -498,6 +498,8 @@ public class NpcDialogManager {
 
     /**
      * Checks rate limiting for a player.
+     * Thread-safe: Synchronizes on the timestamp list to prevent TOCTOU race conditions
+     * where multiple threads could pass the check before any adds a timestamp.
      */
     private boolean checkRateLimit(@Nonnull UUID playerId) {
         long now = System.currentTimeMillis();
@@ -505,16 +507,19 @@ public class NpcDialogManager {
 
         List<Long> timestamps = actionTimestamps.computeIfAbsent(playerId, k -> new ArrayList<>());
 
-        // Remove old timestamps
-        timestamps.removeIf(t -> t < oneMinuteAgo);
+        // Synchronize on the list to make check-then-act atomic
+        synchronized (timestamps) {
+            // Remove old timestamps
+            timestamps.removeIf(t -> t < oneMinuteAgo);
 
-        // Check limit
-        if (timestamps.size() >= MAX_ACTIONS_PER_MINUTE) {
-            return false;
+            // Check limit
+            if (timestamps.size() >= MAX_ACTIONS_PER_MINUTE) {
+                return false;
+            }
+
+            timestamps.add(now);
+            return true;
         }
-
-        timestamps.add(now);
-        return true;
     }
 
     /**
@@ -536,9 +541,18 @@ public class NpcDialogManager {
         });
 
         // Also cleanup old action timestamps
+        // Must synchronize on each list to avoid race with checkRateLimit()
         long oneMinuteAgo = now - 60_000;
-        actionTimestamps.values().forEach(list -> list.removeIf(t -> t < oneMinuteAgo));
-        actionTimestamps.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+        actionTimestamps.forEach((playerId, list) -> {
+            synchronized (list) {
+                list.removeIf(t -> t < oneMinuteAgo);
+            }
+        });
+        actionTimestamps.entrySet().removeIf(entry -> {
+            synchronized (entry.getValue()) {
+                return entry.getValue().isEmpty();
+            }
+        });
     }
 
     /**
@@ -547,6 +561,20 @@ public class NpcDialogManager {
     public void clearAll() {
         activeSessions.clear();
         actionTimestamps.clear();
+    }
+
+    /**
+     * Cleans up all dialog data for a player (called on disconnect).
+     * Prevents memory leaks by removing player-specific entries.
+     *
+     * @param playerId The player's UUID
+     */
+    public void cleanupPlayer(@Nonnull UUID playerId) {
+        NpcDialogSession removed = activeSessions.remove(playerId);
+        actionTimestamps.remove(playerId);
+        if (removed != null) {
+            DevMod.LOGGER.debug("Cleaned up dialog data for disconnected player {}", playerId);
+        }
     }
 
     // ========================================================================

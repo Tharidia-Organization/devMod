@@ -130,27 +130,35 @@ public class TemplateLockManager {
 
     /**
      * Releases a lock for a template.
+     * DD62: Uses stripe lock to prevent race conditions with concurrent acquire/release.
      *
      * @param templateId The template to unlock
      * @param owner The lock owner (must match)
      * @return true if released, false if not owned
      */
     public boolean release(String templateId, String owner) {
-        TemplateLock lock = locks.get(templateId);
+        // DD62: Use stripe lock for thread-safe release
+        ReentrantLock stripe = getStripe(templateId);
+        stripe.lock();
+        try {
+            TemplateLock lock = locks.get(templateId);
 
-        if (lock == null) {
-            return false;
+            if (lock == null) {
+                return false;
+            }
+
+            if (!lock.owner().equals(owner)) {
+                LOGGER.warn("Cannot release lock for {}: owner mismatch (expected {}, got {})",
+                    templateId, lock.owner(), owner);
+                return false;
+            }
+
+            locks.remove(templateId);
+            LOGGER.debug("Lock released for {} by {}", templateId, owner);
+            return true;
+        } finally {
+            stripe.unlock();
         }
-
-        if (!lock.owner().equals(owner)) {
-            LOGGER.warn("Cannot release lock for {}: owner mismatch (expected {}, got {})",
-                templateId, lock.owner(), owner);
-            return false;
-        }
-
-        locks.remove(templateId);
-        LOGGER.debug("Lock released for {} by {}", templateId, owner);
-        return true;
     }
 
     /**

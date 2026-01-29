@@ -36,10 +36,10 @@ public class DifficultyScaler {
         }
 
         // Clamp player count to quest type limits
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
 
         // Calculate scale: sqrt(players) * questMultiplier
-        double scaleFactor = Math.sqrt(clampedPlayers) * questType.difficultyMultiplier;
+        double scaleFactor = Math.sqrt(clampedPlayers) * questType.getDifficultyMultiplier();
 
         // Apply cap
         scaleFactor = Math.min(scaleFactor, MAX_MOB_COUNT_SCALE);
@@ -75,11 +75,11 @@ public class DifficultyScaler {
             return baseHP;
         }
 
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
 
         // Linear scaling per additional player
         float playerScale = 1.0f + (clampedPlayers - 1) * BOSS_HP_SCALE_PER_PLAYER;
-        float totalScale = playerScale * questType.difficultyMultiplier;
+        float totalScale = playerScale * questType.getDifficultyMultiplier();
 
         // Apply cap
         totalScale = Math.min(totalScale, MAX_BOSS_HP_SCALE);
@@ -116,7 +116,7 @@ public class DifficultyScaler {
             return baseDamage;
         }
 
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
 
         // Modest scaling - damage shouldn't scale as much as HP
         float damageScale = 1.0f + (clampedPlayers - 1) * BOSS_DMG_SCALE_PER_PLAYER;
@@ -155,11 +155,11 @@ public class DifficultyScaler {
             return baseHP;
         }
 
-        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.maxPlayers));
+        int clampedPlayers = Math.max(1, Math.min(playerCount, questType.getMaxPlayers()));
 
         // Gentler scaling for regular mobs
         float playerScale = 1.0f + (clampedPlayers - 1) * MOB_HP_SCALE_PER_PLAYER;
-        float totalScale = playerScale * questType.difficultyMultiplier;
+        float totalScale = playerScale * questType.getDifficultyMultiplier();
 
         // Cap at 3x HP for regular mobs
         totalScale = Math.min(totalScale, 3.0f);
@@ -207,7 +207,7 @@ public class DifficultyScaler {
      */
     public float getTotalScaleFactor(int playerCount, QuestType questType, int waveNumber, int totalWaves) {
         float playerScale = (float) Math.sqrt(Math.max(1, playerCount));
-        float questScale = questType.difficultyMultiplier;
+        float questScale = questType.getDifficultyMultiplier();
         float waveScale = getWaveMultiplier(waveNumber, totalWaves);
 
         return playerScale * questScale * waveScale;
@@ -246,7 +246,7 @@ public class DifficultyScaler {
      */
     public int getRecommendedArenaSize(QuestType questType, int playerCount) {
         // Base size from quest type, add ~10% per additional player
-        int baseSize = questType.defaultArenaSize;
+        int baseSize = questType.getDefaultArenaSize();
         int extraPerPlayer = baseSize / 10;
         int playerBonus = Math.max(0, playerCount - 1) * extraPerPlayer;
 

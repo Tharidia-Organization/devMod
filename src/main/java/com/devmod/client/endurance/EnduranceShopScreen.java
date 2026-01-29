@@ -418,8 +418,8 @@ public class EnduranceShopScreen extends Screen {
         boolean isHovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY < y + ITEM_HEIGHT;
         boolean isSelected = item == selectedItem;
         boolean canAfford = canAfford(item);
-        int owned = playerPurchases.getOrDefault(item.id, 0);
-        boolean maxedOut = owned >= item.maxPurchases;
+        int owned = playerPurchases.getOrDefault(item.getId(), 0);
+        boolean maxedOut = owned >= item.getMaxPurchases();
 
         int bgColor;
         if (maxedOut) {
@@ -435,7 +435,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(x, y, x + width, y + ITEM_HEIGHT, bgColor);
 
         // Category color indicator
-        int catColor = getCategoryColor(item.category);
+        int catColor = getCategoryColor(item.getCategory());
         graphics.fill(x, y, x + 4, y + ITEM_HEIGHT, catColor);
 
         // Item name (truncated to prevent overflow)
@@ -448,13 +448,13 @@ public class EnduranceShopScreen extends Screen {
         graphics.drawString(Objects.requireNonNull(font), description, x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Price
-        int currencyColor = getCurrencyColor(item.currency);
-        String priceText = item.price + " " + getCurrencyLabel(item.currency);
+        int currencyColor = getCurrencyColor(item.getCurrency());
+        String priceText = item.getPrice() + " " + getCurrencyLabel(item.getCurrency());
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
         graphics.drawString(Objects.requireNonNull(font), priceText, x + 10, y + 35, priceColor);
 
         // Owned count
-        String ownedText = Objects.requireNonNull(I18n.translate("devmod.ui.owned").getString()) + ": " + owned + "/" + item.maxPurchases;
+        String ownedText = Objects.requireNonNull(I18n.translate("devmod.ui.owned").getString()) + ": " + owned + "/" + item.getMaxPurchases();
         int ownedColor = maxedOut ? COLOR_SUCCESS : COLOR_TEXT_DIM;
         graphics.drawString(Objects.requireNonNull(font), ownedText, x + width - font.width(ownedText) - 10, y + 5, ownedColor);
 
@@ -482,8 +482,8 @@ public class EnduranceShopScreen extends Screen {
         y += 20;
 
         // Category
-        int catColor = getCategoryColor(item.category);
-        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(item.category), panelX + panelWidth / 2, y, catColor);
+        int catColor = getCategoryColor(item.getCategory());
+        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(item.getCategory()), panelX + panelWidth / 2, y, catColor);
         y += 25;
 
         // Divider
@@ -503,17 +503,17 @@ public class EnduranceShopScreen extends Screen {
         // Price details
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
-        int currencyColor = getCurrencyColor(item.currency);
-        graphics.drawString(Objects.requireNonNull(font), "  " + item.price + " " + getCurrencyLabel(item.currency),
+        int currencyColor = getCurrencyColor(item.getCurrency());
+        graphics.drawString(Objects.requireNonNull(font), "  " + item.getPrice() + " " + getCurrencyLabel(item.getCurrency()),
             panelX + 10, y, currencyColor);
         y += 20;
 
         // Purchase info
-        int owned = playerPurchases.getOrDefault(item.id, 0);
+        int owned = playerPurchases.getOrDefault(item.getId(), 0);
         graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.shop.purchases").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
         y += 12;
-        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + item.maxPurchases,
-            panelX + 10, y, owned >= item.maxPurchases ? COLOR_SUCCESS : COLOR_TEXT_DIM);
+        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + item.getMaxPurchases(),
+            panelX + 10, y, owned >= item.getMaxPurchases() ? COLOR_SUCCESS : COLOR_TEXT_DIM);
     }
 
     /**
@@ -536,7 +536,7 @@ public class EnduranceShopScreen extends Screen {
         int purchaseX = width - purchaseW - 10;
         final var currentItem = selectedItem;
         boolean canPurchase = currentItem != null && canAfford(currentItem)
-            && playerPurchases.getOrDefault(currentItem.id, 0) < currentItem.maxPurchases;
+            && playerPurchases.getOrDefault(currentItem.getId(), 0) < currentItem.getMaxPurchases();
         boolean purchaseHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, purchaseX, buttonY, purchaseW, purchaseH);
         int purchaseColor = canPurchase ? COLOR_SUCCESS : DesignTokens.Text.MUTED;
         renderButton(graphics, purchaseX, buttonY, purchaseW, purchaseH,
@@ -563,17 +563,17 @@ public class EnduranceShopScreen extends Screen {
 
     @Nonnull
     private String getCurrencyLabel(RewardSystem.Currency currency) {
-        return Objects.requireNonNull(I18n.translate("devmod.currency." + currency.key).getString());
+        return Objects.requireNonNull(I18n.translate("devmod.currency." + currency.getKey()).getString());
     }
 
     @Nonnull
     private String getItemName(RewardSystem.ShopItem item) {
-        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id).getString());
+        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.getId()).getString());
     }
 
     @Nonnull
     private String getItemDescription(RewardSystem.ShopItem item) {
-        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.id + ".desc").getString());
+        return Objects.requireNonNull(I18n.translate("devmod.shop." + item.getId() + ".desc").getString());
     }
 
     private List<String> wrapText(@Nonnull String text, int maxWidth) {
@@ -615,12 +615,12 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private boolean canAfford(RewardSystem.ShopItem item) {
-        return switch (item.currency) {
-            case TOKENS -> playerTokens >= item.price;
-            case COINS -> playerCoins >= item.price;
-            case PRESTIGE -> playerPrestige >= item.price;
-            case GEMS -> playerGems >= item.price;
-            case BLOOD_GEMS -> playerBloodGems >= item.price;
+        return switch (item.getCurrency()) {
+            case TOKENS -> playerTokens >= item.getPrice();
+            case COINS -> playerCoins >= item.getPrice();
+            case PRESTIGE -> playerPrestige >= item.getPrice();
+            case GEMS -> playerGems >= item.getPrice();
+            case BLOOD_GEMS -> playerBloodGems >= item.getPrice();
             default -> false;
         };
     }
@@ -718,15 +718,15 @@ public class EnduranceShopScreen extends Screen {
         final var item = selectedItem;
         if (item == null) return;
 
-        int owned = playerPurchases.getOrDefault(item.id, 0);
-        if (owned >= item.maxPurchases) return;
+        int owned = playerPurchases.getOrDefault(item.getId(), 0);
+        if (owned >= item.getMaxPurchases()) return;
         if (!canAfford(item)) return;
 
         // Send purchase request to server
-        PacketDistributor.sendToServer(new ShopPurchasePayload(item.id));
+        PacketDistributor.sendToServer(new ShopPurchasePayload(item.getId()));
 
         // Optimistically update local state and cache
-        ClientShopCache.optimisticPurchase(item.id, item.currency, item.price);
+        ClientShopCache.optimisticPurchase(item.getId(), item.getCurrency(), item.getPrice());
 
         // Update local display values from cache
         playerTokens = ClientShopCache.getTokens();

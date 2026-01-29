@@ -571,7 +571,7 @@ public class PerkSynergyWeb {
         if (hidden == null) {
             // Not a hidden perk, get normal display from PerkSystem
             return PerkSystem.INSTANCE.getPerk(perkId)
-                .map(p -> new HiddenPerkDisplay(p.name, p.description, true, 1.0f, ""))
+                .map(p -> new HiddenPerkDisplay(p.getName(), p.getDescription(), true, 1.0f, ""))
                 .orElse(null);
         }
 
@@ -579,7 +579,7 @@ public class PerkSynergyWeb {
         if (discoveries != null && discoveries.hasDiscovered(perkId)) {
             // Already discovered
             return PerkSystem.INSTANCE.getPerk(perkId)
-                .map(p -> new HiddenPerkDisplay(p.name, p.description, true, 1.0f, "Discovered!"))
+                .map(p -> new HiddenPerkDisplay(p.getName(), p.getDescription(), true, 1.0f, "Discovered!"))
                 .orElse(null);
         }
 
@@ -665,7 +665,7 @@ public class PerkSynergyWeb {
         // For now, mark them as "sacrificed" in persistent data
         // Apply the result perk
         PerkSystem.INSTANCE.getPerk(recipe.resultPerkId).ifPresent(perk -> {
-            session.addPerk(perk.id);
+            session.addPerk(perk.getId());
             PerkSystem.PerkContext context = new PerkSystem.PerkContext(player, session, 1);
             perk.apply(context);
         });
@@ -835,13 +835,13 @@ public class PerkSynergyWeb {
 
     private String getPerkName(String perkId) {
         return PerkSystem.INSTANCE.getPerk(perkId)
-            .map(p -> p.name)
+            .map(p -> p.getName())
             .orElse(perkId);
     }
 
     private String getPerkDescription(String perkId) {
         return PerkSystem.INSTANCE.getPerk(perkId)
-            .map(p -> p.description)
+            .map(p -> p.getDescription())
             .orElse("");
     }
 
@@ -934,7 +934,7 @@ public class PerkSynergyWeb {
         public boolean isMet(DiscoveryContext context) {
             long count = context.sessionPerks().stream()
                 .map(id -> PerkSystem.INSTANCE.getPerk(id).orElse(null))
-                .filter(p -> p != null && p.category == category)
+                .filter(p -> p != null && p.getCategory() == category)
                 .count();
             return count >= requiredCount;
         }
@@ -943,7 +943,7 @@ public class PerkSynergyWeb {
         public float getProgress(DiscoveryContext context) {
             long count = context.sessionPerks().stream()
                 .map(id -> PerkSystem.INSTANCE.getPerk(id).orElse(null))
-                .filter(p -> p != null && p.category == category)
+                .filter(p -> p != null && p.getCategory() == category)
                 .count();
             return Math.min(1.0f, (float) count / requiredCount);
         }
@@ -952,7 +952,7 @@ public class PerkSynergyWeb {
         public String getProgressText(DiscoveryContext context) {
             long count = context.sessionPerks().stream()
                 .map(id -> PerkSystem.INSTANCE.getPerk(id).orElse(null))
-                .filter(p -> p != null && p.category == category)
+                .filter(p -> p != null && p.getCategory() == category)
                 .count();
             return progressText + " (" + count + "/" + requiredCount + ")";
         }

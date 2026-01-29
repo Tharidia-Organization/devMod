@@ -878,13 +878,13 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             .orElse(Set.of());
 
         for (PerkSystem.Perk perk : perks) {
-            int currentStacks = sessionOpt.map(s -> s.getPerkStacks(perk.id)).orElse(0);
-            boolean suggested = sessionOpt.map(s -> s.isSuggested(perk.id)).orElse(false);
-            boolean required = sessionOpt.map(s -> s.isRequired(perk.id) && !s.hasPerk(perk.id)).orElse(false);
+            int currentStacks = sessionOpt.map(s -> s.getPerkStacks(perk.getId())).orElse(0);
+            boolean suggested = sessionOpt.map(s -> s.isSuggested(perk.getId())).orElse(false);
+            boolean required = sessionOpt.map(s -> s.isRequired(perk.getId()) && !s.hasPerk(perk.getId())).orElse(false);
 
             // Analyze synergies for this perk
             PerkSynergySystem.SynergyPreview synergyPreview =
-                PerkSynergySystem.INSTANCE.analyzePerk(perk.id, ownedPerks);
+                PerkSynergySystem.INSTANCE.analyzePerk(perk.getId(), ownedPerks);
 
             choices.add(PerkChoicesPayload.PerkChoice.fromWithSynergy(
                 perk, currentStacks, suggested, required, synergyPreview));
@@ -985,7 +985,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
 
                 int choiceIndex = -1;
                 for (int i = 0; i < pendingChoices.size(); i++) {
-                    if (pendingChoices.get(i).id.equals(perkId)) {
+                    if (pendingChoices.get(i).getId().equals(perkId)) {
                         choiceIndex = i;
                         break;
                     }
@@ -1027,7 +1027,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
         List<String> achievementNames = new ArrayList<>();
         if (rewards.achievementsUnlocked != null) {
             for (RewardSystem.Achievement achievement : rewards.achievementsUnlocked) {
-                achievementNames.add(achievement.displayName);
+                achievementNames.add(achievement.getDisplayName());
             }
         }
 

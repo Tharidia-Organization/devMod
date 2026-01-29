@@ -11,6 +11,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -23,12 +24,6 @@ public record MailboxSendPayload(
     @Nullable String body,
     @Nullable String attachmentData
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
-
-    // Security limits
-    private static final int MAX_SUBJECT_LENGTH = 256;
-    private static final int MAX_BODY_LENGTH = 2000;
-    private static final int MAX_NAME_LENGTH = 64;
-    private static final int MAX_ATTACHMENT_LENGTH = 4096;
 
     public static final Type<MailboxSendPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mailbox_send"))
@@ -46,18 +41,21 @@ public record MailboxSendPayload(
 
     private static void encode(RegistryFriendlyByteBuf buf, MailboxSendPayload payload) {
         buf.writeUUID(Objects.requireNonNull(payload.recipientUuid));
-        writeOptionalUtf(buf, payload.recipientName);
-        buf.writeUtf(Objects.requireNonNull(payload.subject));
-        writeOptionalUtf(buf, payload.body);
-        writeOptionalUtf(buf, payload.attachmentData);
+        writeOptionalUtf(buf, payload.recipientName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(payload.subject, MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH),
+            MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH
+        );
+        writeOptionalUtf(buf, payload.body, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
+        writeOptionalUtf(buf, payload.attachmentData, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
     }
 
     private static MailboxSendPayload decode(RegistryFriendlyByteBuf buf) {
         UUID recipientUuid = buf.readUUID();
-        @Nullable String recipientName = readOptionalUtf(buf, MAX_NAME_LENGTH);
-        String subject = buf.readUtf(MAX_SUBJECT_LENGTH);
-        @Nullable String body = readOptionalUtf(buf, MAX_BODY_LENGTH);
-        @Nullable String attachmentData = readOptionalUtf(buf, MAX_ATTACHMENT_LENGTH);
+        @Nullable String recipientName = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        String subject = buf.readUtf(MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH);
+        @Nullable String body = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
+        @Nullable String attachmentData = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
 
         return new MailboxSendPayload(recipientUuid, recipientName, subject, body, attachmentData);
     }
@@ -68,8 +66,8 @@ public record MailboxSendPayload(
         return value.isEmpty() ? null : value;
     }
 
-    private static void writeOptionalUtf(RegistryFriendlyByteBuf buf, @Nullable String value) {
-        buf.writeUtf(value != null ? value : "");
+    private static void writeOptionalUtf(RegistryFriendlyByteBuf buf, @Nullable String value, int maxLength) {
+        buf.writeUtf(MailboxPayloadLimits.truncate(value, maxLength), maxLength);
     }
 
     @Override
@@ -80,28 +78,14 @@ public record MailboxSendPayload(
     @Override
     public int estimatedSize() {
         int size = 16; // UUID
-        size += estimatedUtfSize(recipientName);
-        size += estimatedUtfSize(subject);
-        size += estimatedUtfSize(body);
-        size += estimatedUtfSize(attachmentData);
+        size += estimatedUtfSize(recipientName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        size += estimatedUtfSize(subject, MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH);
+        size += estimatedUtfSize(body, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
+        size += estimatedUtfSize(attachmentData, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
         return size;
     }
 
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
-        return size;
+    private static int estimatedUtfSize(@Nullable String value, int maxLength) {
+        return PayloadSizeUtil.estimatedUtfSize(MailboxPayloadLimits.truncateNullable(value, maxLength));
     }
 }

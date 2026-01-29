@@ -251,6 +251,19 @@ public class GroupDialogManager {
     }
 
     /**
+     * Cleans up all data associated with a player.
+     * Called on player disconnect to prevent memory leaks.
+     *
+     * @param playerId The player UUID
+     */
+    public void cleanupPlayer(@Nonnull UUID playerId) {
+        GroupDialogSession removed = activeSessions.remove(playerId);
+        if (removed != null) {
+            DevMod.LOGGER.debug("Cleaned up group dialog data for player {}", playerId);
+        }
+    }
+
+    /**
      * Gets the active session for a player.
      */
     @Nonnull

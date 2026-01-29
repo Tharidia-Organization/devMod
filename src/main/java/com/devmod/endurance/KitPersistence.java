@@ -6,10 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +30,12 @@ public final class KitPersistence {
         .disableHtmlEscaping()
         .create();
 
-    // In-memory cache of custom kits
-    private static final Map<String, CustomKit> customKits = new LinkedHashMap<>();
-    private static boolean loaded = false;
+    // In-memory cache of custom kits (thread-safe)
+    private static final Map<String, CustomKit> customKits = new ConcurrentHashMap<>();
+    // volatile for visibility across threads in double-checked locking
+    private static volatile boolean loaded = false;
+    // Lock object for synchronized loading
+    private static final Object LOAD_LOCK = new Object();
 
     private KitPersistence() {}
 
@@ -67,50 +70,56 @@ public final class KitPersistence {
 
     /**
      * Load all custom kits from disk.
+     * Must be called within synchronized(LOAD_LOCK) or during initialization.
      */
     public static void loadKits() {
-        ensureDirectory();
-        customKits.clear();
+        synchronized (LOAD_LOCK) {
+            ensureDirectory();
+            customKits.clear();
 
-        Path file = getKitsFile();
-        if (!Files.exists(file)) {
-            LOGGER.info("[KitPersistence] No custom kits file found, starting fresh");
-            loaded = true;
-            return;
-        }
-
-        try {
-            String json = Files.readString(file, StandardCharsets.UTF_8);
-            Type listType = new TypeToken<List<KitData>>(){}.getType();
-            List<KitData> kitDataList = GSON.fromJson(json, listType);
-
-            if (kitDataList != null) {
-                for (KitData data : kitDataList) {
-                    try {
-                        CustomKit kit = data.toCustomKit();
-                        customKits.put(kit.getId(), kit);
-                    } catch (Exception e) {
-                        LOGGER.warn("[KitPersistence] Failed to parse kit: {}", data.name, e);
-                    }
-                }
+            Path file = getKitsFile();
+            if (!Files.exists(file)) {
+                LOGGER.info("[KitPersistence] No custom kits file found, starting fresh");
+                loaded = true;
+                return;
             }
 
-            LOGGER.info("[KitPersistence] Loaded {} custom kits", customKits.size());
-            loaded = true;
-        } catch (IOException e) {
-            LOGGER.error("[KitPersistence] Failed to load custom kits", e);
-            loaded = true;
+            try {
+                String json = Files.readString(file, StandardCharsets.UTF_8);
+                Type listType = new TypeToken<List<KitData>>(){}.getType();
+                List<KitData> kitDataList = GSON.fromJson(json, listType);
+
+                if (kitDataList != null) {
+                    for (KitData data : kitDataList) {
+                        try {
+                            CustomKit kit = data.toCustomKit();
+                            customKits.put(kit.getId(), kit);
+                        } catch (Exception e) {
+                            LOGGER.warn("[KitPersistence] Failed to parse kit: {}", data.name, e);
+                        }
+                    }
+                }
+
+                LOGGER.info("[KitPersistence] Loaded {} custom kits", customKits.size());
+                loaded = true;
+            } catch (IOException e) {
+                LOGGER.error("[KitPersistence] Failed to load custom kits", e);
+                loaded = true;
+            }
         }
     }
 
     /**
      * Save all custom kits to disk.
+     * Uses a snapshot of the map to ensure consistent save.
      */
     public static boolean saveKits() {
         ensureDirectory();
 
+        // Take a snapshot of current kits for consistent serialization
+        List<CustomKit> kitSnapshot = List.copyOf(customKits.values());
         List<KitData> kitDataList = new ArrayList<>();
-        for (CustomKit kit : customKits.values()) {
+        for (CustomKit kit : kitSnapshot) {
             kitDataList.add(KitData.fromCustomKit(kit));
         }
 
@@ -179,10 +188,15 @@ public final class KitPersistence {
 
     /**
      * Ensure kits are loaded before access.
+     * Uses double-checked locking for thread safety.
      */
     private static void ensureLoaded() {
         if (!loaded) {
-            loadKits();
+            synchronized (LOAD_LOCK) {
+                if (!loaded) {
+                    loadKits();
+                }
+            }
         }
     }
 

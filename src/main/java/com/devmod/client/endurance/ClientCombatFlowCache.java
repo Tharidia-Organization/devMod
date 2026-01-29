@@ -64,7 +64,7 @@ public final class ClientCombatFlowCache {
             rankJustChanged = true;
             rankFlashAlpha = 1.0f;
             // Add rank-up announcement
-            addAnnouncement("RANK UP!", newRank.displayName, newRank.color, true);
+            addAnnouncement("RANK UP!", newRank.getDisplayName(), newRank.getColor(), true);
         }
         previousRank = newRank;
 
@@ -83,7 +83,7 @@ public final class ClientCombatFlowCache {
     }
 
     private int getFlowColor(CombatFlowSyncPayload payload) {
-        return payload.getFlowState().color;
+        return payload.getFlowState().getColor();
     }
 
     /**
@@ -235,8 +235,8 @@ public final class ClientCombatFlowCache {
         if (current == next) return 1.0f; // Already max rank
 
         int score = (int) displayStyleScore;
-        int currentThreshold = current.threshold;
-        int nextThreshold = next.threshold;
+        int currentThreshold = current.getThreshold();
+        int nextThreshold = next.getThreshold();
         int range = nextThreshold - currentThreshold;
 
         return range > 0 ? Math.min(1.0f, (float)(score - currentThreshold) / range) : 0f;

@@ -287,11 +287,13 @@ public class NemesisProfile {
         MULTIPLE_SCARS(2),
         BATTLE_WORN(3);
 
-        public final int level;
+        private final int level;
 
         ScarLevel(int level) {
             this.level = level;
         }
+
+        public int getLevel() { return level; }
     }
 
     public enum DodgeDirection {

@@ -119,12 +119,12 @@ public class SignatureWeaponTooltip {
         }
 
         int current = imprint.getStat(bestStat);
-        int required = bestStat.traitThreshold;
+        int required = bestStat.getTraitThreshold();
         int percent = (int) (bestProgress * 100);
 
         return Component.literal("  Next: ")
             .withStyle(SharedColorTokens.Chat.GRAY)
-            .append(Component.literal(bestStat.displayName)
+            .append(Component.literal(bestStat.getDisplayName())
                 .withStyle(SharedColorTokens.Chat.YELLOW))
             .append(Component.literal(String.format(" [%d/%d] %d%%", current, required, percent))
                 .withStyle(SharedColorTokens.Chat.DARK_GRAY));

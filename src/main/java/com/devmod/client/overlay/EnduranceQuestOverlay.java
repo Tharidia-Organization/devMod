@@ -282,17 +282,17 @@ public class EnduranceQuestOverlay {
         // === Combo & Style Rank ===
         if (data.currentCombo() > 0 || data.styleScore() > 0) {
             ComboSystem.StyleRank rank = data.getStyleRank();
-            String comboText = "Combo: " + data.currentCombo() + " | " + rank.displayName;
-            g.drawString(font, comboText, textX, textY, rank.color, false);
+            String comboText = "Combo: " + data.currentCombo() + " | " + rank.getDisplayName();
+            g.drawString(font, comboText, textX, textY, rank.getColor(), false);
             textY += LINE_HEIGHT;
 
             // === Flow State Indicator ===
             FlowStateTracker.FlowState flowState = data.getFlowState();
             if (flowState != FlowStateTracker.FlowState.NEUTRAL) {
                 // Show flow state with color
-                String flowText = flowState.displayName;
+                String flowText = flowState.getDisplayName();
                 if (!flowText.isEmpty()) {
-                    g.drawString(font, flowText, textX, textY, flowState.color, false);
+                    g.drawString(font, flowText, textX, textY, flowState.getColor(), false);
                     textY += LINE_HEIGHT;
                 }
             }
@@ -353,10 +353,10 @@ public class EnduranceQuestOverlay {
 
         // State indicator
         if (momentumState != MomentumTracker.MomentumState.BUILDING) {
-            String stateText = momentumState.displayName;
+            String stateText = momentumState.getDisplayName();
             if (!stateText.isEmpty()) {
                 int stateX = barX + barWidth + 4 + font.width(percentText) + 4;
-                g.drawString(font, stateText, stateX, textY, momentumState.color, false);
+                g.drawString(font, stateText, stateX, textY, momentumState.getColor(), false);
             }
         }
 

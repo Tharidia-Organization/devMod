@@ -49,18 +49,18 @@ public enum NutritionCategory {
     public static final int COUNT = VALUES.length;
 
     /** Ordinal index (0-5). */
-    public final int index;
+    private final int index;
 
     /** Display name for UI. */
     @Nonnull
-    public final String displayName;
+    private final String displayName;
 
     /** Lowercase key for serialization. */
     @Nonnull
-    public final String key;
+    private final String key;
 
     /** ARGB color for UI rendering. */
-    public final int color;
+    private final int color;
 
     NutritionCategory(int index, @Nonnull String displayName, @Nonnull String key, int color) {
         this.index = index;
@@ -68,6 +68,11 @@ public enum NutritionCategory {
         this.key = key;
         this.color = color;
     }
+
+    public int getIndex() { return index; }
+    @Nonnull public String getDisplayName() { return displayName; }
+    @Nonnull public String getKey() { return key; }
+    public int getColor() { return color; }
 
     /**
      * Get category by index.
@@ -93,7 +98,7 @@ public enum NutritionCategory {
             return null;
         }
         for (NutritionCategory cat : VALUES) {
-            if (cat.key.equals(key)) {
+            if (cat.getKey().equals(key)) {
                 return cat;
             }
         }

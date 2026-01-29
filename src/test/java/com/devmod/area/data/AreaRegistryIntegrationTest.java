@@ -149,8 +149,7 @@ class AreaRegistryIntegrationTest {
 
             Collection<AreaDefinition> all = registry.getAllAreas();
 
-            assertThrows(UnsupportedOperationException.class, () ->
-                ((java.util.Collection<AreaDefinition>) all).clear());
+            assertThrows(UnsupportedOperationException.class, all::clear);
         }
 
         @Test

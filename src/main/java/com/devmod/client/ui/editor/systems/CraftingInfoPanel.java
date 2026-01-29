@@ -49,15 +49,19 @@ public class CraftingInfoPanel extends BaseOverlay {
         EPIC(100, DesignTokens.Rarity.EPIC, "Epic"),
         LEGENDARY(250, DesignTokens.Rarity.LEGENDARY, "Legendary");
 
-        public final int baseValue;
-        public final int color;
-        public final String displayName;
+        private final int baseValue;
+        private final int color;
+        private final String displayName;
 
         RarityTier(int baseValue, int color, String displayName) {
             this.baseValue = baseValue;
             this.color = color;
             this.displayName = displayName;
         }
+
+        public int getBaseValue() { return baseValue; }
+        public int getColor() { return color; }
+        public String getDisplayName() { return displayName; }
     }
 
     private static final Map<String, RarityTier> INGREDIENT_RARITY = new HashMap<>();
@@ -393,9 +397,9 @@ public class CraftingInfoPanel extends BaseOverlay {
             g.drawString(safeFont, line, x + ScaledCoord.scaleDim(INGREDIENT_TEXT_OFFSET), rowY,
                 DesignTokens.Text.PRIMARY(), false);
 
-            String rarityTag = String.format(Locale.ROOT, "(%s)", ing.rarity().displayName);
+            String rarityTag = String.format(Locale.ROOT, "(%s)", ing.rarity().getDisplayName());
             int tagX = x + ScaledCoord.scaleDim(INGREDIENT_TAG_OFFSET);
-            g.drawString(safeFont, rarityTag, tagX, rowY, ing.rarity().color, false);
+            g.drawString(safeFont, rarityTag, tagX, rowY, ing.rarity().getColor(), false);
 
             String valueStr = String.format(Locale.ROOT, "+%d", ing.value());
             int valueX = x + ScaledCoord.scaleDim(INGREDIENT_VALUE_OFFSET);
@@ -417,8 +421,8 @@ public class CraftingInfoPanel extends BaseOverlay {
         lineY += ScaledCoord.scaleDim(SUMMARY_LINE_HEIGHT);
 
         g.drawString(safeFont, RARITY_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
-        g.drawString(safeFont, analysis.rarityTier().displayName, x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
-            lineY, analysis.rarityTier().color, false);
+        g.drawString(safeFont, analysis.rarityTier().getDisplayName(), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
+            lineY, analysis.rarityTier().getColor(), false);
     }
 
     private List<RecipeHolder<CraftingRecipe>> findRecipesFor(ItemStack stack) {
@@ -454,7 +458,7 @@ public class CraftingInfoPanel extends BaseOverlay {
 
             IngredientValue existing = aggregated.get(id);
             int newCount = (existing == null ? ingredient.getCount() : existing.count() + ingredient.getCount());
-            int value = rarity.baseValue * newCount;
+            int value = rarity.getBaseValue() * newCount;
 
             IngredientValue updated = new IngredientValue(ingredient, newCount, rarity, value);
             aggregated.put(id, updated);

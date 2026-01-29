@@ -77,15 +77,19 @@ public final class PayloadValidation {
         /** No validation (for trusted internal payloads) */
         NONE(Integer.MAX_VALUE, Integer.MAX_VALUE, 60_000);
 
-        public final int maxSizeBytes;
-        public final int maxRequestsPerWindow;
-        public final long windowMs;
+        private final int maxSizeBytes;
+        private final int maxRequestsPerWindow;
+        private final long windowMs;
 
         PayloadLimits(int maxSizeBytes, int maxRequestsPerWindow, long windowMs) {
             this.maxSizeBytes = maxSizeBytes;
             this.maxRequestsPerWindow = maxRequestsPerWindow;
             this.windowMs = windowMs;
         }
+
+        public int getMaxSizeBytes() { return maxSizeBytes; }
+        public int getMaxRequestsPerWindow() { return maxRequestsPerWindow; }
+        public long getWindowMs() { return windowMs; }
     }
 
     /**
@@ -160,10 +164,10 @@ public final class PayloadValidation {
 
             // Validate size (estimate based on payload type)
             int estimatedSize = estimatePayloadSize(payload);
-            if (estimatedSize >= 0 && estimatedSize > limits.maxSizeBytes) {
-                recordSizeRejection(payloadType, estimatedSize, limits.maxSizeBytes);
+            if (estimatedSize >= 0 && estimatedSize > limits.getMaxSizeBytes()) {
+                recordSizeRejection(payloadType, estimatedSize, limits.getMaxSizeBytes());
                 LOGGER.warn("[SECURITY] Oversized payload rejected: type={}, size~={}, limit={}, player={}",
-                    payload.type().id(), estimatedSize, limits.maxSizeBytes,
+                    payload.type().id(), estimatedSize, limits.getMaxSizeBytes(),
                     playerId != null ? playerId : "unknown");
                 if (serverPlayer != null && playerId != null) {
                     recordViolationAndMaybeDisconnect(serverPlayer, playerId, "oversized payload");
@@ -217,8 +221,8 @@ public final class PayloadValidation {
      */
     private static boolean checkRateLimit(String key, PayloadLimits limits) {
         RateLimiterState state = rateLimiters.computeIfAbsent(key,
-            k -> new RateLimiterState(limits.windowMs));
-        return state.tryAcquire(limits.maxRequestsPerWindow);
+            k -> new RateLimiterState(limits.getWindowMs()));
+        return state.tryAcquire(limits.getMaxRequestsPerWindow());
     }
 
     /**

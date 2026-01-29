@@ -44,17 +44,20 @@ public enum EditorState {
     /**
      * Primary color for this state.
      */
-    public final int primary;
+    private final int primary;
 
     /**
      * Secondary color for this state.
      */
-    public final int secondary;
+    private final int secondary;
 
     EditorState(int primary, int secondary) {
         this.primary = primary;
         this.secondary = secondary;
     }
+
+    public int getPrimary() { return primary; }
+    public int getSecondary() { return secondary; }
 
     /**
      * Returns the primary color with full alpha.

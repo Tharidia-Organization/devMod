@@ -44,13 +44,16 @@ public class DailyChallenge {
         HARD(2.0f, 0.2f),       // 20% chance, 2x rewards
         EXTREME(3.0f, 0.05f);   // 5% chance, 3x rewards
 
-        public final float rewardMultiplier;
-        public final float rotationWeight;
+        private final float rewardMultiplier;
+        private final float rotationWeight;
 
         ChallengeDifficulty(float rewardMultiplier, float rotationWeight) {
             this.rewardMultiplier = rewardMultiplier;
             this.rotationWeight = rotationWeight;
         }
+
+        public float getRewardMultiplier() { return rewardMultiplier; }
+        public float getRotationWeight() { return rotationWeight; }
     }
 
     public DailyChallenge(
@@ -70,8 +73,8 @@ public class DailyChallenge {
         this.type = type;
         this.difficulty = difficulty;
         this.targetValue = targetValue;
-        this.tokenReward = (int) (baseTokenReward * difficulty.rewardMultiplier);
-        this.prestigeReward = (int) (basePrestigeReward * difficulty.rewardMultiplier);
+        this.tokenReward = (int) (baseTokenReward * difficulty.getRewardMultiplier());
+        this.prestigeReward = (int) (basePrestigeReward * difficulty.getRewardMultiplier());
         this.completionCheck = completionCheck;
     }
 

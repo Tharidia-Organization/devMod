@@ -25,11 +25,13 @@ public record DirectiveChain(
         TACTICAL("Strategic objective sequences"),
         NIGHTMARE("Extreme difficulty challenges");
 
-        public final String description;
+        private final String description;
 
         ChainTheme(String description) {
             this.description = description;
         }
+
+        public String getDescription() { return description; }
     }
 
     /**

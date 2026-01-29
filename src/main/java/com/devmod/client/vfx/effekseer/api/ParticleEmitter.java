@@ -28,12 +28,12 @@ public class ParticleEmitter {
                 DUMMIES.put(entry, new DummyParticleEmitter(entry));
             }
         }
-        return DUMMIES.get(type);
+        return Objects.requireNonNull(DUMMIES.get(type), "Type not in DUMMIES: " + type);
     }
 
     private static final EnumMap<Type, ParticleEmitter> DUMMIES = new EnumMap<>(Type.class);
 
-    protected ParticleEmitter(int handle, EffekseerManager manager, Type type) {
+    protected ParticleEmitter(int handle, @Nullable EffekseerManager manager, Type type) {
         this.handle = handle;
         this.manager = manager;
         this.type = type;
@@ -184,7 +184,7 @@ public class ParticleEmitter {
 
     public void addPreDrawCallback(PreDrawCallback callback) {
         Optional.ofNullable(this.callback).ifPresentOrElse(
-            existing -> this.callback = this.callback.andThen(existing),
+            existing -> this.callback = existing.andThen(callback),
             () -> this.callback = callback
         );
     }

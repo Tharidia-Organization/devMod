@@ -27,6 +27,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.DialogNode;
 import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.DialogSet;
@@ -68,6 +69,7 @@ public class DialogEditorScreen extends Screen {
     @Nullable private String selectedOptionId;
     private List<String> nodeIdList = new ArrayList<>();
     private int nodeScrollOffset = 0;
+    private boolean suppressLineUpdate = false;
 
     // === Undo/Redo ===
     private final DialogEditorHistory history = new DialogEditorHistory();
@@ -216,6 +218,7 @@ public class DialogEditorScreen extends Screen {
         nameField = new EditBox(font, col1X + 50, headerY, COL1_WIDTH - 50, 16,
             Component.translatable("gui.devmod.npc.dialog_editor.name"));
         nameField.setValue(dialogName);
+        nameField.setMaxLength(DialogLimits.MAX_DIALOG_NAME_LENGTH);
         nameField.setResponder(s -> {
             if (!s.equals(dialogName)) {
                 pushHistory();
@@ -231,6 +234,7 @@ public class DialogEditorScreen extends Screen {
         entryNodeField = new EditBox(font, col2X + 80, headerY, 100, 16,
             Component.translatable("gui.devmod.npc.dialog_editor.entry_node"));
         entryNodeField.setValue(entryNodeId);
+        entryNodeField.setMaxLength(DialogLimits.MAX_NODE_ID_LENGTH);
         entryNodeField.setResponder(s -> {
             if (!s.equals(entryNodeId)) {
                 pushHistory();
@@ -467,19 +471,33 @@ public class DialogEditorScreen extends Screen {
     private void onLinesChanged(String newText) {
         if (selectedNodeId == null) return;
         if (linesEditor == null) return;
+        if (suppressLineUpdate) return;
 
         DialogNode node = editedNodes.get(selectedNodeId);
         if (node == null) return;
 
         List<String> lines = new ArrayList<>();
         for (String line : Splitter.on('\n').split(newText)) {
-            lines.add(line);
+            if (lines.size() >= DialogLimits.MAX_LINES_PER_NODE) {
+                break;
+            }
+            lines.add(DialogLimits.truncate(line, DialogLimits.MAX_LINE_LENGTH));
+        }
+
+        String normalized = String.join("\n", lines);
+        if (!normalized.equals(newText)) {
+            suppressLineUpdate = true;
+            linesEditor.setValue(normalized);
+            suppressLineUpdate = false;
         }
 
         editedNodes.put(selectedNodeId, node.withLines(lines));
     }
 
     private void addNewNode() {
+        if (editedNodes.size() >= DialogLimits.MAX_NODES) {
+            return;
+        }
         pushHistory();
 
         String newId = "node_" + (editedNodes.size() + 1);
@@ -515,6 +533,7 @@ public class DialogEditorScreen extends Screen {
 
         DialogNode node = editedNodes.get(selectedNodeId);
         if (node == null) return;
+        if (node.lines().size() >= DialogLimits.MAX_LINES_PER_NODE) return;
 
         String currentText = linesEditor.getValue();
         linesEditor.setValue(currentText + (currentText.isEmpty() ? "" : "\n") + "New line...");
@@ -525,6 +544,7 @@ public class DialogEditorScreen extends Screen {
 
         DialogNode node = editedNodes.get(selectedNodeId);
         if (node == null) return;
+        if (node.options().size() >= DialogLimits.MAX_OPTIONS_PER_NODE) return;
 
         pushHistory();
         String optId = "opt_" + (node.options().size() + 1);

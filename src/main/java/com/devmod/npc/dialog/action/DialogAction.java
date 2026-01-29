@@ -12,6 +12,8 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -23,6 +25,7 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
 import com.devmod.npc.NpcEmotion;
+import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.NpcContext;
 
 /**
@@ -76,6 +79,157 @@ public sealed interface DialogAction permits
             default -> throw new IllegalArgumentException("Unknown action type: " + type);
         }
     );
+
+    /**
+     * Network codec for dialog actions (used by the dialog editor payloads).
+     */
+    StreamCodec<FriendlyByteBuf, DialogAction> STREAM_CODEC =
+        StreamCodec.of(DialogAction::encode, DialogAction::decode);
+
+    static void encode(FriendlyByteBuf buf, DialogAction action) {
+        buf.writeUtf(DialogLimits.truncate(action.getType(), DialogLimits.MAX_ACTION_TYPE_LENGTH),
+            DialogLimits.MAX_ACTION_TYPE_LENGTH);
+        switch (action) {
+            case GoToNode goTo -> buf.writeUtf(
+                DialogLimits.truncate(goTo.nodeId(), DialogLimits.MAX_NODE_ID_LENGTH),
+                DialogLimits.MAX_NODE_ID_LENGTH
+            );
+            case CloseDialog ignored -> {
+                // no extra data
+            }
+            case ExecuteCommand cmd -> {
+                buf.writeUtf(
+                    DialogLimits.truncate(cmd.command(), DialogLimits.MAX_COMMAND_LENGTH),
+                    DialogLimits.MAX_COMMAND_LENGTH
+                );
+                buf.writeVarInt(cmd.source().ordinal());
+            }
+            case Teleport tp -> {
+                buf.writeBoolean(tp.position() != null);
+                if (tp.position() != null) {
+                    buf.writeBlockPos(tp.position());
+                }
+                buf.writeBoolean(tp.dimension() != null);
+                if (tp.dimension() != null) {
+                    buf.writeResourceLocation(tp.dimension().location());
+                }
+                buf.writeBoolean(tp.zoneId() != null);
+                if (tp.zoneId() != null) {
+                    buf.writeUtf(
+                        DialogLimits.truncate(tp.zoneId(), DialogLimits.MAX_ZONE_ID_LENGTH),
+                        DialogLimits.MAX_ZONE_ID_LENGTH
+                    );
+                }
+            }
+            case GiveItem give -> {
+                buf.writeResourceLocation(give.itemId());
+                buf.writeVarInt(give.count());
+                buf.writeBoolean(give.nbt() != null);
+                if (give.nbt() != null) {
+                    buf.writeNbt(give.nbt());
+                }
+            }
+            case PlaySound sound -> {
+                buf.writeResourceLocation(sound.soundId());
+                buf.writeFloat(sound.volume());
+                buf.writeFloat(sound.pitch());
+            }
+            case OpenGui gui -> buf.writeUtf(
+                DialogLimits.truncate(gui.guiId(), DialogLimits.MAX_GUI_ID_LENGTH),
+                DialogLimits.MAX_GUI_ID_LENGTH
+            );
+            case SetVariable sv -> {
+                buf.writeUtf(DialogLimits.truncate(sv.key(), DialogLimits.MAX_VARIABLE_KEY_LENGTH),
+                    DialogLimits.MAX_VARIABLE_KEY_LENGTH);
+                buf.writeUtf(DialogLimits.truncate(sv.value(), DialogLimits.MAX_VARIABLE_VALUE_LENGTH),
+                    DialogLimits.MAX_VARIABLE_VALUE_LENGTH);
+            }
+            case RememberChoice rc -> {
+                buf.writeUtf(DialogLimits.truncate(rc.key(), DialogLimits.MAX_VARIABLE_KEY_LENGTH),
+                    DialogLimits.MAX_VARIABLE_KEY_LENGTH);
+                buf.writeUtf(DialogLimits.truncate(rc.value(), DialogLimits.MAX_VARIABLE_VALUE_LENGTH),
+                    DialogLimits.MAX_VARIABLE_VALUE_LENGTH);
+            }
+            case SetEmotion se -> buf.writeVarInt(se.emotion().ordinal());
+            case Custom custom -> {
+                buf.writeUtf(DialogLimits.truncate(custom.handlerId(), DialogLimits.MAX_CUSTOM_HANDLER_LENGTH),
+                    DialogLimits.MAX_CUSTOM_HANDLER_LENGTH);
+                boolean hasData = custom.data() != null && !custom.data().isEmpty();
+                buf.writeBoolean(hasData);
+                if (hasData) {
+                    buf.writeNbt(custom.data());
+                }
+            }
+        }
+    }
+
+    static DialogAction decode(FriendlyByteBuf buf) {
+        String type = buf.readUtf(DialogLimits.MAX_ACTION_TYPE_LENGTH);
+        return switch (type) {
+            case "goto" -> new GoToNode(buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH));
+            case "close" -> new CloseDialog();
+            case "command" -> {
+                String command = buf.readUtf(DialogLimits.MAX_COMMAND_LENGTH);
+                int sourceOrdinal = buf.readVarInt();
+                CommandSource source = CommandSource.PLAYER;
+                if (sourceOrdinal >= 0 && sourceOrdinal < CommandSource.values().length) {
+                    source = CommandSource.values()[sourceOrdinal];
+                }
+                yield new ExecuteCommand(command, source);
+            }
+            case "teleport" -> {
+                net.minecraft.core.BlockPos pos = buf.readBoolean() ? buf.readBlockPos() : null;
+                net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension = buf.readBoolean()
+                    ? net.minecraft.resources.ResourceKey.create(
+                        net.minecraft.core.registries.Registries.DIMENSION,
+                        buf.readResourceLocation()
+                    )
+                    : null;
+                String zoneId = buf.readBoolean() ? buf.readUtf(DialogLimits.MAX_ZONE_ID_LENGTH) : null;
+                yield new Teleport(pos, dimension, zoneId);
+            }
+            case "give_item" -> {
+                net.minecraft.resources.ResourceLocation itemId = buf.readResourceLocation();
+                int count = buf.readVarInt();
+                CompoundTag nbt = buf.readBoolean() ? buf.readNbt() : null;
+                yield new GiveItem(itemId, count, nbt);
+            }
+            case "sound" -> {
+                net.minecraft.resources.ResourceLocation soundId = buf.readResourceLocation();
+                float volume = buf.readFloat();
+                float pitch = buf.readFloat();
+                yield new PlaySound(soundId, volume, pitch);
+            }
+            case "gui" -> new OpenGui(buf.readUtf(DialogLimits.MAX_GUI_ID_LENGTH));
+            case "set_variable" -> {
+                String key = buf.readUtf(DialogLimits.MAX_VARIABLE_KEY_LENGTH);
+                String value = buf.readUtf(DialogLimits.MAX_VARIABLE_VALUE_LENGTH);
+                yield new SetVariable(key, value);
+            }
+            case "remember" -> {
+                String key = buf.readUtf(DialogLimits.MAX_VARIABLE_KEY_LENGTH);
+                String value = buf.readUtf(DialogLimits.MAX_VARIABLE_VALUE_LENGTH);
+                yield new RememberChoice(key, value);
+            }
+            case "emotion" -> {
+                int ordinal = buf.readVarInt();
+                NpcEmotion emotion = NpcEmotion.NEUTRAL;
+                if (ordinal >= 0 && ordinal < NpcEmotion.values().length) {
+                    emotion = NpcEmotion.values()[ordinal];
+                }
+                yield new SetEmotion(emotion);
+            }
+            case "custom" -> {
+                String handlerId = buf.readUtf(DialogLimits.MAX_CUSTOM_HANDLER_LENGTH);
+                CompoundTag data = buf.readBoolean() ? buf.readNbt() : new CompoundTag();
+                if (data == null) {
+                    data = new CompoundTag();
+                }
+                yield new Custom(handlerId, data);
+            }
+            default -> throw new IllegalArgumentException("Unknown action type: " + type);
+        };
+    }
 
     // ========================================================================
     // Action Implementations

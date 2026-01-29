@@ -52,6 +52,9 @@ public final class AreaBuildTaskManager {
     /** MED-04 fix: Maximum time in milliseconds for biome precompute before timeout */
     public static final long MAX_BIOME_PRECOMPUTE_MS = 60_000; // 60 seconds
 
+    /** Maximum number of pending biome builds to prevent unbounded memory growth */
+    public static final int MAX_PENDING_BIOME_BUILDS = 10;
+
     /** Active build tasks by area ID */
     private final Map<UUID, ActiveBuild> activeBuildTasks = new ConcurrentHashMap<>();
 
@@ -283,6 +286,17 @@ public final class AreaBuildTaskManager {
         UUID areaId = definition.id();
         if (pendingBiomeBuilds.containsKey(areaId)) {
             DevMod.LOGGER.warn("[Area] Biome build already preparing for area: {}", areaId);
+            return;
+        }
+        // Prevent unbounded growth of pending biome builds
+        if (pendingBiomeBuilds.size() >= MAX_PENDING_BIOME_BUILDS) {
+            DevMod.LOGGER.warn("[Area] Maximum pending biome builds ({}) reached, rejecting build for area: {}",
+                MAX_PENDING_BIOME_BUILDS, areaId);
+            if (player != null) {
+                player.displayClientMessage(
+                    Objects.requireNonNull(net.minecraft.network.chat.Component.translatable("area.message.error_too_many_pending_builds")),
+                    true);
+            }
             return;
         }
         PendingBiomeBuild pending = new PendingBiomeBuild(

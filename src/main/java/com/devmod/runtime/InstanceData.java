@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -31,8 +32,8 @@ public class InstanceData {
     private ResourceKey<Level> dimensionKey;
     private final long createdAt;
 
-    // === State ===
-    private InstanceState state;
+    // === State (thread-safe via AtomicReference) ===
+    private final AtomicReference<InstanceState> state;
 
     // === Players ===
     private final Set<UUID> currentPlayers;
@@ -86,7 +87,7 @@ public class InstanceData {
      * @return New InstanceData configured for the quest type
      */
     public static InstanceData createForQuestType(UUID ownerId, QuestType questType) {
-        return new InstanceData(UUID.randomUUID(), ownerId, questType.maxPlayers);
+        return new InstanceData(UUID.randomUUID(), ownerId, questType.getMaxPlayers());
     }
 
     private InstanceData(UUID instanceId, UUID ownerId, int maxPlayers) {
@@ -94,7 +95,7 @@ public class InstanceData {
         this.ownerId = ownerId;
         this.maxPlayers = maxPlayers;
         this.createdAt = System.currentTimeMillis();
-        this.state = InstanceState.CREATING;
+        this.state = new AtomicReference<>(InstanceState.CREATING);
         this.currentPlayers = ConcurrentHashMap.newKeySet();
         this.markedForDestructionAt = 0;
     }
@@ -107,7 +108,7 @@ public class InstanceData {
         this.ownerId = ownerId;
         this.maxPlayers = maxPlayers;
         this.createdAt = createdAt;
-        this.state = InstanceState.CREATING;
+        this.state = new AtomicReference<>(InstanceState.CREATING);
         this.currentPlayers = ConcurrentHashMap.newKeySet();
         this.markedForDestructionAt = 0;
     }
@@ -115,19 +116,20 @@ public class InstanceData {
     // === State Management ===
 
     public InstanceState getState() {
-        return state;
+        return state.get();
     }
 
     /**
      * Set the instance state with validation.
      * Logs a warning if the transition is invalid but still allows it
      * to prevent deadlocks in error scenarios.
+     * Uses atomic compare-and-swap for thread safety.
      *
      * @param newState The new state to transition to
-     * @return true if the transition was valid, false if it was forced
+     * @return true if the transition was valid, false if it was forced or failed
      */
     public boolean setState(InstanceState newState) {
-        InstanceState oldState = this.state;
+        InstanceState oldState = this.state.get();
 
         if (oldState == newState) {
             LOGGER.debug("[Instance] {} already in state {}", instanceId, newState);
@@ -141,7 +143,14 @@ public class InstanceData {
             // Still allow the transition to prevent deadlocks, but log the warning
         }
 
-        this.state = newState;
+        // Use CAS to ensure atomic state transition
+        if (!this.state.compareAndSet(oldState, newState)) {
+            // State was changed by another thread, retry
+            LOGGER.debug("[Instance] {} state transition conflict, retrying {} -> {}",
+                instanceId, oldState, newState);
+            return setState(newState);
+        }
+
         LOGGER.info("[Instance] {} state changed: {} -> {}{}", instanceId, oldState, newState,
             valid ? "" : " [FORCED]");
 
@@ -153,21 +162,21 @@ public class InstanceData {
      * Use sparingly - prefer setState() which logs invalid transitions.
      */
     public void forceState(InstanceState newState) {
-        InstanceState oldState = this.state;
-        this.state = newState;
+        InstanceState oldState = this.state.getAndSet(newState);
         LOGGER.info("[Instance] {} state FORCED: {} -> {}", instanceId, oldState, newState);
     }
 
     public boolean isActive() {
-        return state == InstanceState.ACTIVE;
+        return state.get() == InstanceState.ACTIVE;
     }
 
     public boolean isDestroyed() {
-        return state == InstanceState.DESTROYED;
+        return state.get() == InstanceState.DESTROYED;
     }
 
     public boolean canAcceptPlayers() {
-        return (state == InstanceState.READY || state == InstanceState.ACTIVE)
+        InstanceState currentState = state.get();
+        return (currentState == InstanceState.READY || currentState == InstanceState.ACTIVE)
             && currentPlayers.size() < maxPlayers;
     }
 
@@ -191,7 +200,8 @@ public class InstanceData {
 
             // Check if instance is now empty - schedule destruction for both READY and ACTIVE states
             // This handles edge cases like teleport failures during READY state
-            if (currentPlayers.isEmpty() && (state == InstanceState.ACTIVE || state == InstanceState.READY)) {
+            InstanceState currentState = state.get();
+            if (currentPlayers.isEmpty() && (currentState == InstanceState.ACTIVE || currentState == InstanceState.READY)) {
                 scheduleDestruction();
             }
         }
@@ -380,7 +390,7 @@ public class InstanceData {
         map.put("ownerId", ownerId.toString());
         map.put("maxPlayers", maxPlayers);
         map.put("createdAt", createdAt);
-        map.put("state", state.name());
+        map.put("state", state.get().name());
 
         ResourceKey<Level> key = dimensionKey;
         if (key != null) {
@@ -437,7 +447,7 @@ public class InstanceData {
         long createdAt = ((Number) map.get("createdAt")).longValue();
 
         InstanceData data = new InstanceData(instanceId, ownerId, maxPlayers, createdAt);
-        data.state = InstanceState.valueOf((String) map.get("state"));
+        data.state.set(InstanceState.valueOf((String) map.get("state")));
 
         if (map.containsKey("dimension")) {
             String dim = Objects.requireNonNull((String) map.get("dimension"), "dimension");
@@ -490,7 +500,7 @@ public class InstanceData {
     public String toString() {
         return "InstanceData{" +
             "id=" + instanceId +
-            ", state=" + state +
+            ", state=" + state.get() +
             ", players=" + currentPlayers.size() + "/" + maxPlayers +
             ", wave=" + currentWave + "/" + totalWaves +
             ", age=" + (getAge() / 1000) + "s" +

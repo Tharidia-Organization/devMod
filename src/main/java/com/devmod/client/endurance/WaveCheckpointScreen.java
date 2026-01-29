@@ -352,7 +352,7 @@ public class WaveCheckpointScreen extends Screen {
         // Pulsing glow behind rank
         float pulse = 0.6f + 0.4f * (float) Math.sin(rankElapsed / 150.0);
         int glowRadius = (int) (30 * pulse);
-        int glowColor = applyAlpha(DesignTokens.withAlpha(styleRank.color, DesignTokens.Alpha.A27), alpha * pulse);
+        int glowColor = applyAlpha(DesignTokens.withAlpha(styleRank.getColor(), DesignTokens.Alpha.A27), alpha * pulse);
 
         g.fill(centerX - glowRadius, y - 10, centerX + glowRadius, y + 20, glowColor);
 
@@ -364,9 +364,9 @@ public class WaveCheckpointScreen extends Screen {
         g.pose().scale(rankScale * 1.8f, rankScale * 1.8f, 1.0f);
 
         var safeFont = Objects.requireNonNull(font);
-        String rankText = Objects.requireNonNull(styleRank.displayName);
+        String rankText = Objects.requireNonNull(styleRank.getDisplayName());
         int rankWidth = safeFont.width(rankText);
-        int rankColor = applyAlpha(styleRank.color, alpha);
+        int rankColor = applyAlpha(styleRank.getColor(), alpha);
         g.drawString(safeFont, rankText, -rankWidth / 2, -5, rankColor, true);
 
         g.pose().popPose();

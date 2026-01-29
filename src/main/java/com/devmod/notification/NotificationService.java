@@ -188,18 +188,18 @@ public class NotificationService {
             return;
         }
 
-        String rewardDesc = achievement.rewardAmount > 0
-            ? "+" + achievement.rewardAmount + " " + achievement.rewardCurrency.displayName
+        String rewardDesc = achievement.getRewardAmount() > 0
+            ? "+" + achievement.getRewardAmount() + " " + achievement.getRewardCurrency().getDisplayName()
             : "Special reward unlocked";
-        String tierId = achievement.lootTier.name().toLowerCase(Locale.ROOT);
+        String tierId = achievement.getLootTier().name().toLowerCase(Locale.ROOT);
 
         Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
             .titleKey("devmod.notification.achievement.title")
             .messageKey("devmod.notification.achievement.message")
-            .param("achievement", achievement.displayName)
+            .param("achievement", achievement.getDisplayName())
             .param("reward", rewardDesc)
-            .param("description", achievement.description != null ? achievement.description : "")
-            .priority(getPriorityForLootTier(achievement.lootTier))
+            .param("description", achievement.getDescription() != null ? achievement.getDescription() : "")
+            .priority(getPriorityForLootTier(achievement.getLootTier()))
             .soundId("badge." + tierId)
             .iconId("badge." + tierId)
             .persistToMailbox(true)
@@ -218,7 +218,7 @@ public class NotificationService {
 
         String name = I18n.translate(milestone.getNameKey()).getString();
         String description = I18n.translate(milestone.getDescriptionKey()).getString();
-        String rewardDesc = milestone.getType().displayName;
+        String rewardDesc = milestone.getType().getDisplayName();
         if (milestone.getUnlockValue() != null && !milestone.getUnlockValue().isBlank()) {
             rewardDesc = rewardDesc + " (" + milestone.getUnlockValue() + ")";
         }
@@ -229,7 +229,7 @@ public class NotificationService {
             .param("achievement", name)
             .param("description", description)
             .param("reward", rewardDesc)
-            .param("type", milestone.getType().displayName)
+            .param("type", milestone.getType().getDisplayName())
             .priority(NotificationPriority.HIGH)
             .soundId("badge.legendary")
             .iconId("badge.legendary")

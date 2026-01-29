@@ -40,14 +40,14 @@ public enum TideLevel {
      */
     APOCALYPSE(800, 1000, EnduranceColors.Tide.APOCALYPSE, "Apocalypse", 0.50f, true, true, 2);
 
-    public final int minTide;
-    public final int maxTide;
-    public final int color;
-    public final String displayName;
-    public final float statBonus;         // Mob stat multiplier
-    public final boolean curseMutators;   // Enable curse mutators
-    public final boolean forcedBosses;    // Force boss spawns
-    public final int bossWaveInterval;    // Spawn boss every N waves (0 = disabled)
+    private final int minTide;
+    private final int maxTide;
+    private final int color;
+    private final String displayName;
+    private final float statBonus;         // Mob stat multiplier
+    private final boolean curseMutators;   // Enable curse mutators
+    private final boolean forcedBosses;    // Force boss spawns
+    private final int bossWaveInterval;    // Spawn boss every N waves (0 = disabled)
 
     TideLevel(int minTide, int maxTide, int color, String displayName,
               float statBonus, boolean curseMutators, boolean forcedBosses, int bossWaveInterval) {
@@ -60,6 +60,15 @@ public enum TideLevel {
         this.forcedBosses = forcedBosses;
         this.bossWaveInterval = bossWaveInterval;
     }
+
+    public int getMinTide() { return minTide; }
+    public int getMaxTide() { return maxTide; }
+    public int getColor() { return color; }
+    public String getDisplayName() { return displayName; }
+    public float getStatBonus() { return statBonus; }
+    public boolean isCurseMutators() { return curseMutators; }
+    public boolean isForcedBosses() { return forcedBosses; }
+    public int getBossWaveInterval() { return bossWaveInterval; }
 
     /**
      * Get the TideLevel for a given tide value.

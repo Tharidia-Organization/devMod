@@ -151,12 +151,14 @@ public class TensionSystem {
             LOGGER.debug("[TensionSystem] Kill streak bonus: +{}", DEFAULT_KILL_STREAK_BONUS);
         }
 
-        // Apply tension gain
-        state.currentTension += tensionGain;
-        state.wavesSinceLastBoss++;
+        // Apply tension gain (synchronized to prevent race with onPlayerDamaged/onMobKill)
+        synchronized (state) {
+            state.currentTension += tensionGain;
+            state.wavesSinceLastBoss++;
 
-        // Reset wave tracking
-        resetWaveTracking(state);
+            // Reset wave tracking
+            resetWaveTracking(state);
+        }
 
         LOGGER.info("[TensionSystem] Wave {} complete. Tension: {}/{} ({}%)",
             waveNumber, state.currentTension, state.bossThreshold,
@@ -171,19 +173,23 @@ public class TensionSystem {
 
     /**
      * Called when a boss wave is completed. Resets tension.
+     * Thread-safe: Synchronized to prevent race conditions during multi-field reset.
      */
     public void onBossDefeated(UUID questId) {
         TensionState state = questStates.get(questId);
         if (state == null) return;
 
-        state.currentTension = 0f;
-        state.bossThreshold = randomThreshold(questId);
-        state.wavesSinceLastBoss = 0;
-        state.totalBossesSpawned++;
-        state.bossWavePending = false;
+        float newThreshold = randomThreshold(questId);
+        synchronized (state) {
+            state.currentTension = 0f;
+            state.bossThreshold = newThreshold;
+            state.wavesSinceLastBoss = 0;
+            state.totalBossesSpawned++;
+            state.bossWavePending = false;
+        }
 
         LOGGER.info("[TensionSystem] Boss defeated. Tension reset. New threshold: {}",
-            state.bossThreshold);
+            newThreshold);
     }
 
     /**
@@ -219,43 +225,52 @@ public class TensionSystem {
 
     /**
      * Called when player takes damage in current wave.
+     * Thread-safe: Synchronized to prevent race with wave tracking reads.
      */
     public void onPlayerDamaged(UUID questId) {
         TensionState state = questStates.get(questId);
         if (state != null) {
-            state.currentWaveNoHit = false;
+            synchronized (state) {
+                state.currentWaveNoHit = false;
+            }
         }
     }
 
     /**
      * Called when combo is updated.
+     * Thread-safe: Synchronized to prevent race with wave completion reads.
      */
     public void onComboUpdate(UUID questId, int comboCount, ComboSystem.StyleRank rank) {
         TensionState state = questStates.get(questId);
         if (state != null) {
-            if (comboCount > state.currentWaveMaxCombo) {
-                state.currentWaveMaxCombo = comboCount;
-            }
-            if (rank.ordinal() > state.currentWaveMaxRank.ordinal()) {
-                state.currentWaveMaxRank = rank;
+            synchronized (state) {
+                if (comboCount > state.currentWaveMaxCombo) {
+                    state.currentWaveMaxCombo = comboCount;
+                }
+                if (rank.ordinal() > state.currentWaveMaxRank.ordinal()) {
+                    state.currentWaveMaxRank = rank;
+                }
             }
         }
     }
 
     /**
      * Called when player kills a mob. Tracks rapid kill streaks.
+     * Thread-safe: Synchronized to prevent race with wave completion reads.
      */
     public void onMobKill(UUID questId) {
         TensionState state = questStates.get(questId);
         if (state != null) {
             long now = System.currentTimeMillis();
-            // Rapid kill = within 2 seconds of last kill
-            if (now - state.lastKillTime < 2000) {
-                state.rapidKillStreak++;
-            } else {
-                state.rapidKillStreak = 1;
+            synchronized (state) {
+                // Rapid kill = within 2 seconds of last kill
+                if (now - state.lastKillTime < 2000) {
+                    state.rapidKillStreak++;
+                } else {
+                    state.rapidKillStreak = 1;
+                }
+                state.lastKillTime = now;
             }
-            state.lastKillTime = now;
         }
     }
 

@@ -1,3 +1,8 @@
+// Common enums
+export type MessageType = 'PLAYER' | 'SYSTEM' | 'ADMIN' | 'REWARD';
+export type NewsCategory = 'PATCH' | 'EVENT' | 'ANNOUNCEMENT' | 'MAINTENANCE' | 'DEV_BLOG' | 'COMMUNITY';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed';
+
 // Message types
 export interface Message {
   id: string;
@@ -6,7 +11,7 @@ export interface Message {
   recipientUuid: string;
   subject: string;
   body: string | null;
-  messageType: 'PLAYER' | 'SYSTEM' | 'ADMIN' | 'REWARD';
+  messageType: MessageType;
   createdAtMillis: number;
   readAtMillis: number | null;
   expiresAtMillis: number | null;
@@ -20,7 +25,7 @@ export interface CreateMessageRequest {
   senderName?: string;
   subject: string;
   body?: string;
-  messageType?: string;
+  messageType?: MessageType;
   attachmentData?: string;
   expiresAtMillis?: number;
 }
@@ -29,7 +34,7 @@ export interface BroadcastRequest {
   senderName?: string;
   subject: string;
   body?: string;
-  messageType?: string;
+  messageType?: MessageType;
   attachmentData?: string;
   expiresAtMillis?: number;
 }
@@ -39,7 +44,7 @@ export interface NewsArticle {
   id: string;
   title: string;
   content: string;
-  category: 'PATCH' | 'EVENT' | 'ANNOUNCEMENT' | 'MAINTENANCE';
+  category: NewsCategory;
   authorName: string;
   publishedAtMillis: number | null;
   expiresAtMillis: number | null;
@@ -51,7 +56,7 @@ export interface NewsArticle {
 export interface CreateNewsRequest {
   title: string;
   content: string;
-  category?: string;
+  category?: NewsCategory;
   authorName?: string;
   publishNow?: boolean;
   publishAtMillis?: number;
@@ -63,7 +68,7 @@ export interface CreateNewsRequest {
 export interface UpdateNewsRequest {
   title?: string;
   content?: string;
-  category?: string;
+  category?: NewsCategory;
   authorName?: string;
   publishAtMillis?: number;
   expiresAtMillis?: number;
@@ -108,11 +113,12 @@ export interface TestTask {
   assignedTo: string;
   assignedByName: string | null;
   priority: number;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
-  createdAt: number;
-  dueAt: number | null;
-  completedAt: number | null;
+  status: TaskStatus;
+  createdAtMillis: number;
+  dueAtMillis: number | null;
+  completedAtMillis: number | null;
   notes: string | null;
+  overdue: boolean;
 }
 
 export interface CreateTaskRequest {
@@ -121,16 +127,15 @@ export interface CreateTaskRequest {
   assignedTo: string;
   assignedByName?: string;
   priority?: number;
-  dueAt?: number;
+  dueAtMillis?: number;
 }
 
 export interface UpdateTaskRequest {
   title?: string;
   description?: string;
-  assignedTo?: string;
   priority?: number;
-  status?: string;
-  dueAt?: number;
+  status?: TaskStatus;
+  dueAtMillis?: number;
   notes?: string;
 }
 
@@ -176,6 +181,18 @@ export interface Config {
   sendCooldownSeconds: number;
   broadcastBatchSize: number;
   broadcastBatchDelayMs: number;
+  broadcastQueueEnabled: boolean;
+  broadcastQueueThreshold: number;
+  deliveryDispatchEnabled: boolean;
+  deliveryImmediateDispatchEnabled: boolean;
+  deliveryDispatchIntervalSeconds: number;
+  deliveryDispatchBatchSize: number;
+  deliveryMaxAttempts: number;
+  deliveryRetryDelaySeconds: number;
+  deliveryRetryMaxDelaySeconds: number;
+  deliveryRetryBackoffMultiplier: number;
+  deliveryRetryJitterRatio: number;
+  deliveryRecallEnabled: boolean;
   minLevelToSend: number;
   itemAttachmentsEnabled: boolean;
   currencyAttachmentsEnabled: boolean;
@@ -184,8 +201,6 @@ export interface Config {
   hardDeleteOnUserDelete: boolean;
   maintenanceMode: boolean;
   useOpLevelForRoles: boolean;
-  broadcastQueueEnabled: boolean;
-  broadcastQueueThreshold: number;
   contentFilterEnabled: boolean;
   contentFilterAction: string;
   contentFilterWords: string[];
@@ -227,6 +242,8 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
-  expiresAt: number;
+  success: boolean;
+  token: string | null;
+  expiresAt: number | null;
+  error?: string | null;
 }

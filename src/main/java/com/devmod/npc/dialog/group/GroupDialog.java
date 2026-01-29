@@ -18,6 +18,7 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
+import com.devmod.npc.dialog.DialogLimits;
 /**
  * A dialog involving multiple NPCs that speak in sequence.
  * Each node contains lines with speaker attribution.
@@ -54,37 +55,55 @@ public record GroupDialog(
 
     public static final StreamCodec<FriendlyByteBuf, GroupDialog> STREAM_CODEC = StreamCodec.of(
         (buf, dialog) -> {
-            buf.writeUtf(dialog.id);
-            buf.writeUtf(dialog.name);
-            buf.writeVarInt(dialog.participants.size());
+            buf.writeUtf(DialogLimits.truncate(dialog.id, DialogLimits.MAX_DIALOG_ID_LENGTH), DialogLimits.MAX_DIALOG_ID_LENGTH);
+            buf.writeUtf(DialogLimits.truncate(dialog.name, DialogLimits.MAX_DIALOG_NAME_LENGTH), DialogLimits.MAX_DIALOG_NAME_LENGTH);
+            int participantCount = Math.min(dialog.participants.size(), DialogLimits.MAX_NODES);
+            buf.writeVarInt(participantCount);
+            int writtenParticipants = 0;
             for (UUID participant : dialog.participants) {
+                if (writtenParticipants >= participantCount) {
+                    break;
+                }
                 buf.writeUUID(participant);
+                writtenParticipants++;
             }
-            buf.writeVarInt(dialog.nodes.size());
+            int nodeCount = Math.min(dialog.nodes.size(), DialogLimits.MAX_NODES);
+            buf.writeVarInt(nodeCount);
+            int writtenNodes = 0;
             for (var entry : dialog.nodes.entrySet()) {
-                buf.writeUtf(entry.getKey());
+                if (writtenNodes >= nodeCount) {
+                    break;
+                }
+                buf.writeUtf(DialogLimits.truncate(entry.getKey(), DialogLimits.MAX_NODE_ID_LENGTH), DialogLimits.MAX_NODE_ID_LENGTH);
                 GroupDialogNode.STREAM_CODEC.encode(buf, entry.getValue());
+                writtenNodes++;
             }
-            buf.writeUtf(dialog.entryNodeId);
+            buf.writeUtf(DialogLimits.truncate(dialog.entryNodeId, DialogLimits.MAX_NODE_ID_LENGTH), DialogLimits.MAX_NODE_ID_LENGTH);
             buf.writeLong(dialog.updatedAt);
             buf.writeVarInt(dialog.revision);
         },
         buf -> {
-            String id = buf.readUtf();
-            String name = buf.readUtf();
+            String id = buf.readUtf(DialogLimits.MAX_DIALOG_ID_LENGTH);
+            String name = buf.readUtf(DialogLimits.MAX_DIALOG_NAME_LENGTH);
             int participantCount = buf.readVarInt();
+            if (participantCount < 0 || participantCount > DialogLimits.MAX_NODES) {
+                throw new IllegalArgumentException("Invalid group dialog participant count: " + participantCount);
+            }
             List<UUID> participants = new ArrayList<>();
             for (int i = 0; i < participantCount; i++) {
                 participants.add(buf.readUUID());
             }
             int nodeCount = buf.readVarInt();
+            if (nodeCount < 0 || nodeCount > DialogLimits.MAX_NODES) {
+                throw new IllegalArgumentException("Invalid group dialog node count: " + nodeCount);
+            }
             Map<String, GroupDialogNode> nodes = new HashMap<>();
             for (int i = 0; i < nodeCount; i++) {
-                String nodeId = buf.readUtf();
+                String nodeId = buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH);
                 GroupDialogNode node = GroupDialogNode.STREAM_CODEC.decode(buf);
                 nodes.put(nodeId, node);
             }
-            String entryNodeId = buf.readUtf();
+            String entryNodeId = buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH);
             long updatedAt = buf.readLong();
             int revision = buf.readVarInt();
             return new GroupDialog(id, name, participants, nodes, entryNodeId, updatedAt, revision);
@@ -241,6 +260,22 @@ public record GroupDialog(
     public List<String> validate() {
         List<String> errors = new ArrayList<>();
 
+        if (id.length() > DialogLimits.MAX_DIALOG_ID_LENGTH) {
+            errors.add("Dialog ID too long (max " + DialogLimits.MAX_DIALOG_ID_LENGTH + " chars)");
+        }
+        if (name.length() > DialogLimits.MAX_DIALOG_NAME_LENGTH) {
+            errors.add("Dialog name too long (max " + DialogLimits.MAX_DIALOG_NAME_LENGTH + " chars)");
+        }
+        if (participants.size() > DialogLimits.MAX_NODES) {
+            errors.add("Too many participants (max " + DialogLimits.MAX_NODES + ")");
+        }
+        if (nodes.size() > DialogLimits.MAX_NODES) {
+            errors.add("Too many dialog nodes (max " + DialogLimits.MAX_NODES + ")");
+        }
+        if (entryNodeId.length() > DialogLimits.MAX_NODE_ID_LENGTH) {
+            errors.add("Entry node ID too long (max " + DialogLimits.MAX_NODE_ID_LENGTH + " chars)");
+        }
+
         if (id.isEmpty()) {
             errors.add("Dialog ID is empty");
         }
@@ -270,8 +305,40 @@ public record GroupDialog(
         }
 
         // Check for orphan goto actions
-        for (GroupDialogNode node : nodes.values()) {
+        for (var entry : nodes.entrySet()) {
+            String nodeKey = entry.getKey();
+            GroupDialogNode node = entry.getValue();
+            if (node.id().length() > DialogLimits.MAX_NODE_ID_LENGTH) {
+                errors.add("Node ID too long: " + node.id());
+            }
+            if (!node.id().equals(nodeKey)) {
+                errors.add("Node key '" + nodeKey + "' does not match node ID '" + node.id() + "'");
+            }
+            if (node.lines().size() > DialogLimits.MAX_LINES_PER_NODE) {
+                errors.add("Node '" + node.id() + "' has too many lines (max " + DialogLimits.MAX_LINES_PER_NODE + ")");
+            }
+            for (SpeakerLine line : node.lines()) {
+                if (line.text().length() > DialogLimits.MAX_LINE_LENGTH) {
+                    errors.add("Line too long in node '" + node.id() + "' (max " + DialogLimits.MAX_LINE_LENGTH + " chars)");
+                }
+                if (line.speakerNameOverride() != null
+                    && line.speakerNameOverride().length() > DialogLimits.MAX_DIALOG_NAME_LENGTH) {
+                    errors.add("Speaker name override too long in node '" + node.id() + "'");
+                }
+            }
+            if (node.options().size() > DialogLimits.MAX_OPTIONS_PER_NODE) {
+                errors.add("Node '" + node.id() + "' has too many options (max " + DialogLimits.MAX_OPTIONS_PER_NODE + ")");
+            }
             for (var option : node.options()) {
+                if (option.id().length() > DialogLimits.MAX_OPTION_ID_LENGTH) {
+                    errors.add("Option ID too long in node '" + node.id() + "'");
+                }
+                if (option.label().length() > DialogLimits.MAX_OPTION_LABEL_LENGTH) {
+                    errors.add("Option label too long in node '" + node.id() + "'");
+                }
+                if (option.icon().length() > DialogLimits.MAX_OPTION_ICON_LENGTH) {
+                    errors.add("Option icon too long in node '" + node.id() + "'");
+                }
                 if (option.action() instanceof com.devmod.npc.dialog.action.DialogAction.GoToNode goTo) {
                     if (!nodes.containsKey(goTo.nodeId())) {
                         errors.add("Node '" + node.id() + "' references non-existent node '" + goTo.nodeId() + "'");

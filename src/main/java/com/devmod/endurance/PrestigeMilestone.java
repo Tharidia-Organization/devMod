@@ -25,13 +25,16 @@ public class PrestigeMilestone {
         TOKEN_MULTIPLIER("Token Multiplier", EnduranceColors.Prestige.TOKEN_MULTIPLIER),
         EXCLUSIVE_PERK("Exclusive Perk", EnduranceColors.Prestige.EXCLUSIVE_PERK);
 
-        public final String displayName;
-        public final int color;
+        private final String displayName;
+        private final int color;
 
         MilestoneType(String displayName, int color) {
             this.displayName = displayName;
             this.color = color;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
     }
 
     public PrestigeMilestone(int requiredPrestige, String id, String nameKey,

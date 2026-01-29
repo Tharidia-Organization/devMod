@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.hologram.data.HologramOptions;
 import com.devmod.hologram.data.HologramStyle;
+import com.devmod.hologram.runtime.HologramNaming;
 import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
@@ -39,9 +40,12 @@ public record SaveHologramPayload(
         public SaveHologramPayload decode(FriendlyByteBuf buf) {
             UUID hologramId = buf.readUUID();
             int lineCount = buf.readVarInt();
+            if (lineCount < 0 || lineCount > HologramNaming.MAX_LINES) {
+                throw new IllegalArgumentException("Invalid hologram line count: " + lineCount);
+            }
             List<String> lines = new ArrayList<>(lineCount);
             for (int i = 0; i < lineCount; i++) {
-                lines.add(buf.readUtf());
+                lines.add(buf.readUtf(HologramNaming.MAX_LINE_LENGTH));
             }
             HologramStyle style = HologramStyle.STREAM_CODEC.decode(buf);
             HologramOptions options = HologramOptions.STREAM_CODEC.decode(buf);
@@ -52,9 +56,15 @@ public record SaveHologramPayload(
         @Override
         public void encode(FriendlyByteBuf buf, SaveHologramPayload payload) {
             buf.writeUUID(payload.hologramId);
-            buf.writeVarInt(payload.lines.size());
+            int lineCount = Math.min(payload.lines.size(), HologramNaming.MAX_LINES);
+            buf.writeVarInt(lineCount);
+            int written = 0;
             for (String line : payload.lines) {
-                buf.writeUtf(line);
+                if (written >= lineCount) {
+                    break;
+                }
+                buf.writeUtf(HologramNaming.truncateLine(line), HologramNaming.MAX_LINE_LENGTH);
+                written++;
             }
             HologramStyle.STREAM_CODEC.encode(buf, payload.style);
             HologramOptions.STREAM_CODEC.encode(buf, payload.options);
@@ -67,6 +77,14 @@ public record SaveHologramPayload(
         Objects.requireNonNull(lines, "lines");
         Objects.requireNonNull(style, "style");
         Objects.requireNonNull(options, "options");
+        if (lines.size() > HologramNaming.MAX_LINES) {
+            lines = new ArrayList<>(lines.subList(0, HologramNaming.MAX_LINES));
+        }
+        List<String> normalized = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            normalized.add(HologramNaming.truncateLine(line));
+        }
+        lines = List.copyOf(normalized);
     }
 
     @Override

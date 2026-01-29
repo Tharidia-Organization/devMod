@@ -71,6 +71,8 @@ public class ChargeManager {
 
     /**
      * Starts charging for a player at the given node.
+     * Thread-safe: Uses compute() to atomically check and update charging state,
+     * preventing TOCTOU race conditions.
      *
      * @param player the player
      * @param node the transport node
@@ -81,12 +83,7 @@ public class ChargeManager {
         }
 
         UUID playerId = player.getUUID();
-
-        // Don't restart charging if already charging at same node
-        ChargingState existing = chargingPlayers.get(playerId);
-        if (existing != null && existing.nodeId().equals(node.id())) {
-            return;
-        }
+        UUID nodeId = node.id();
 
         BlockPos nodePos = node.getPosition().orElse(null);
         if (nodePos == null) {
@@ -94,14 +91,17 @@ public class ChargeManager {
         }
 
         int chargeTime = node.getEffectiveChargeTime();
+        TransportColor nodeColor = node.color();
 
-        chargingPlayers.put(playerId, new ChargingState(
-            node.id(),
-            nodePos,
-            0,
-            chargeTime,
-            node.color()
-        ));
+        // Atomic check-and-update to prevent TOCTOU race condition
+        chargingPlayers.compute(playerId, (id, existing) -> {
+            // Don't restart charging if already charging at same node
+            if (existing != null && existing.nodeId().equals(nodeId)) {
+                return existing;
+            }
+            // Create new charging state
+            return new ChargingState(nodeId, nodePos, 0, chargeTime, nodeColor);
+        });
     }
 
     /**

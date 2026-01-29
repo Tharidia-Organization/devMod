@@ -17,7 +17,7 @@ class TelemetryBatchPayloadDirectTest {
     @DisplayName("EventType lookup and compressed event helpers")
     void eventTypeLookupAndCompressedEvent() {
         EventType type = EventType.COMBAT_HIT;
-        assertEquals(type, EventType.fromId(type.id));
+        assertEquals(type, EventType.fromId(type.getId()));
         assertNull(EventType.fromId((byte) 120));
 
         CompressedEvent event = CompressedEvent.fromString(type, 42, "payload");

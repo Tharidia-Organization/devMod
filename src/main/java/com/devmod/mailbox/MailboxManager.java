@@ -2021,7 +2021,7 @@ public class MailboxManager {
             for (Map.Entry<RewardSystem.Currency, Integer> entry : currencyCounts.entrySet()) {
                 int available = wallet.getCurrency(entry.getKey());
                 if (available < entry.getValue()) {
-                    return AttachmentReservation.failure("Insufficient " + entry.getKey().displayName);
+                    return AttachmentReservation.failure("Insufficient " + entry.getKey().getDisplayName());
                 }
             }
 

@@ -1,6 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import type { LoginResponse, TaskStatus, NewsCategory } from '../types';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const parsedTimeout = Number(import.meta.env.VITE_API_TIMEOUT_MS);
+const API_TIMEOUT_MS = Number.isFinite(parsedTimeout) ? parsedTimeout : 15000;
 
 class ApiClient {
   private client: AxiosInstance;
@@ -9,6 +12,7 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
+      timeout: API_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -60,9 +64,13 @@ class ApiClient {
   }
 
   // Auth
-  async login(username: string, password: string): Promise<{ token: string; expiresAt: number }> {
+  async login(username: string, password: string): Promise<LoginResponse> {
     const response = await this.client.post('/auth/login', { username, password });
-    return response.data;
+    const data = response.data as LoginResponse;
+    if (!data.success || !data.token || !data.expiresAt) {
+      throw new Error(data.error || 'Login failed');
+    }
+    return data;
   }
 
   // Messages
@@ -138,7 +146,7 @@ class ApiClient {
   async createNews(data: {
     title: string;
     content: string;
-    category?: string;
+    category?: NewsCategory;
     authorName?: string;
     publishNow?: boolean;
     publishAtMillis?: number;
@@ -153,7 +161,7 @@ class ApiClient {
   async updateNews(id: string, data: {
     title?: string;
     content?: string;
-    category?: string;
+    category?: NewsCategory;
     authorName?: string;
     publishAtMillis?: number;
     expiresAtMillis?: number;
@@ -213,7 +221,7 @@ class ApiClient {
     assignedTo: string;
     assignedByName?: string;
     priority?: number;
-    dueAt?: number;
+    dueAtMillis?: number;
   }) {
     const response = await this.client.post('/tasks', data);
     return response.data;
@@ -222,10 +230,9 @@ class ApiClient {
   async updateTask(id: string, data: {
     title?: string;
     description?: string;
-    assignedTo?: string;
     priority?: number;
-    status?: string;
-    dueAt?: number;
+    status?: TaskStatus;
+    dueAtMillis?: number;
     notes?: string;
   }) {
     const response = await this.client.put(`/tasks/${id}`, data);

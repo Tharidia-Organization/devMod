@@ -17,18 +17,24 @@ import com.devmod.network.PayloadValidation;
 
 public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
+    /** Maximum POIs per payload to prevent DoS via unbounded allocation */
+    private static final int MAX_POIS = 500;
+    /** Maximum type string length */
+    private static final int MAX_TYPE_LENGTH = 128;
+
     public static final CustomPacketPayload.Type<POIPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_poi")));
 
     public static final StreamCodec<FriendlyByteBuf, POIPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public POIPayload decode(@Nonnull FriendlyByteBuf buf) {
-            int count = buf.readVarInt();
+            int count = Math.min(buf.readVarInt(), MAX_POIS);
+            if (count < 0) count = 0;
             List<POIInfo> pois = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 pois.add(new POIInfo(
                     buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), // x, y, z
-                    Objects.requireNonNull(buf.readUtf()),    // type
+                    Objects.requireNonNull(buf.readUtf(MAX_TYPE_LENGTH)),    // type
                     buf.readVarInt(), // freeTickets
                     buf.readVarInt()  // maxTickets
                 ));

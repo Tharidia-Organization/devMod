@@ -86,7 +86,7 @@ class RewardSystemDirectTest {
 
         assertTrue(unlocked.stream().anyMatch(achievement ->
             achievement instanceof RewardSystem.Achievement
-                && "first_blood".equals(((RewardSystem.Achievement) achievement).id)));
+                && "first_blood".equals(((RewardSystem.Achievement) achievement).getId())));
         assertEquals(100, system.getWallet(playerId).getCurrency(RewardSystem.Currency.TOKENS));
     }
 

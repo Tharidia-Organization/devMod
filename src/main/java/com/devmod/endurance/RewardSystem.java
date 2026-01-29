@@ -97,15 +97,19 @@ public class RewardSystem {
         GEMS("Gems", EnduranceColors.Currency.GEMS, "gems"),                         // Premium currency
         BLOOD_GEMS("Blood Gems", EnduranceColors.Currency.BLOOD_GEMS, "blood_gems"); // Rare currency from bosses
 
-        public final String displayName;
-        public final int color;
-        public final String key;
+        private final String displayName;
+        private final int color;
+        private final String key;
 
         Currency(String displayName, int color, String key) {
             this.displayName = displayName;
             this.color = color;
             this.key = key;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public String getKey() { return key; }
     }
 
     /**
@@ -119,15 +123,19 @@ public class RewardSystem {
         LEGENDARY(EnduranceColors.LootTier.LEGENDARY, 1.0f, "Legendary"),
         MYTHIC(EnduranceColors.LootTier.MYTHIC, 0.0f, "Mythic"); // Never drops randomly, only from achievements
 
-        public final int color;
-        public final float dropWeight;
-        public final String displayName;
+        private final int color;
+        private final float dropWeight;
+        private final String displayName;
 
         LootTier(int color, float dropWeight, String displayName) {
             this.color = color;
             this.dropWeight = dropWeight;
             this.displayName = displayName;
         }
+
+        public int getColor() { return color; }
+        public float getDropWeight() { return dropWeight; }
+        public String getDisplayName() { return displayName; }
     }
 
     // ========== Initialization ==========
@@ -861,24 +869,29 @@ public class RewardSystem {
 
     /**
      * Player's currency and progression data.
+     * Thread-safe: Uses ConcurrentHashMap for all shared collections to prevent
+     * race conditions during concurrent currency operations.
      */
     public static class PlayerWallet {
         private final UUID playerId;
-        private final Map<String, Integer> currencies = new HashMap<>();
-        private final Map<String, Integer> purchases = new HashMap<>();
-        private final Set<String> achievements = new HashSet<>();
-        private final Map<String, Integer> templateCompletions = new HashMap<>();
+        private final Map<String, Integer> currencies = new java.util.concurrent.ConcurrentHashMap<>();
+        private final Map<String, Integer> purchases = new java.util.concurrent.ConcurrentHashMap<>();
+        private final Set<String> achievements = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        private final Map<String, Integer> templateCompletions = new java.util.concurrent.ConcurrentHashMap<>();
         private int completionStreak = 0;
         private long lastCompletionDay = -1;
 
         // Track lifetime prestige for milestone system
         private int totalPrestigeEarned = 0;
-        private final Set<String> unlockedMilestones = new HashSet<>();
+        private final Set<String> unlockedMilestones = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         // Ascension (New Game+) system
         private int ascensionLevel = 0;
         private String ascensionTitle = null;
-        private final Set<String> unlockedAscensionPerks = new HashSet<>();
+        private final Set<String> unlockedAscensionPerks = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        // Lock for compound operations on prestige and streak counters
+        private final Object progressionLock = new Object();
 
         public PlayerWallet(UUID playerId) {
             this.playerId = playerId;
@@ -902,17 +915,27 @@ public class RewardSystem {
          * Add currency. For prestige, also tracks lifetime total.
          * @return List of newly unlocked milestone IDs (empty if none)
          */
+        /**
+         * Add currency. For prestige, also tracks lifetime total.
+         * Thread-safe: Uses synchronized block for atomic prestige tracking.
+         * @return List of newly unlocked milestone IDs (empty if none)
+         */
         public java.util.List<String> addCurrency(Currency currency, int amount) {
             currencies.merge(currency.key, amount, (a, b) -> a + b);
 
             // Track lifetime prestige for milestone system
             if (currency == Currency.PRESTIGE && amount > 0) {
-                int previousTotal = totalPrestigeEarned;
-                totalPrestigeEarned += amount;
+                int newTotal;
+                int previousTotal;
+                synchronized (progressionLock) {
+                    previousTotal = totalPrestigeEarned;
+                    totalPrestigeEarned += amount;
+                    newTotal = totalPrestigeEarned;
+                }
 
                 // Check for newly unlocked milestones
                 java.util.List<PrestigeMilestone> newMilestones =
-                    PrestigeMilestone.getNewlyUnlockedMilestones(previousTotal, totalPrestigeEarned);
+                    PrestigeMilestone.getNewlyUnlockedMilestones(previousTotal, newTotal);
 
                 java.util.List<String> newMilestoneIds = new java.util.ArrayList<>();
                 for (PrestigeMilestone milestone : newMilestones) {
@@ -957,22 +980,29 @@ public class RewardSystem {
             templateCompletions.merge(templateId, 1, (a, b) -> a + b);
         }
 
+        /**
+         * Thread-safe: Uses synchronized block for atomic streak update.
+         */
         public int updateCompletionStreak() {
             long today = LocalDate.now(ZoneId.systemDefault()).toEpochDay();
-            if (lastCompletionDay == today) {
+            synchronized (progressionLock) {
+                if (lastCompletionDay == today) {
+                    return completionStreak;
+                }
+                if (lastCompletionDay == today - 1) {
+                    completionStreak++;
+                } else {
+                    completionStreak = 1;
+                }
+                lastCompletionDay = today;
                 return completionStreak;
             }
-            if (lastCompletionDay == today - 1) {
-                completionStreak++;
-            } else {
-                completionStreak = 1;
-            }
-            lastCompletionDay = today;
-            return completionStreak;
         }
 
         public int getCompletionStreak() {
-            return completionStreak;
+            synchronized (progressionLock) {
+                return completionStreak;
+            }
         }
 
         public UUID getPlayerId() { return playerId; }
@@ -982,7 +1012,11 @@ public class RewardSystem {
         public Map<String, Integer> getTemplateCompletions() { return templateCompletions; }
 
         // Prestige milestone accessors
-        public int getTotalPrestigeEarned() { return totalPrestigeEarned; }
+        public int getTotalPrestigeEarned() {
+            synchronized (progressionLock) {
+                return totalPrestigeEarned;
+            }
+        }
         public Set<String> getUnlockedMilestones() { return unlockedMilestones; }
         public boolean hasMilestone(String milestoneId) { return unlockedMilestones.contains(milestoneId); }
 
@@ -990,22 +1024,42 @@ public class RewardSystem {
          * Get extra perk slots from prestige milestones.
          */
         public int getExtraPerkSlots() {
-            return PrestigeMilestone.getExtraPerkSlots(totalPrestigeEarned);
+            synchronized (progressionLock) {
+                return PrestigeMilestone.getExtraPerkSlots(totalPrestigeEarned);
+            }
         }
 
         /**
          * Get token multiplier from prestige milestones.
          */
         public float getTokenMultiplier() {
-            return PrestigeMilestone.getTokenMultiplier(totalPrestigeEarned);
+            synchronized (progressionLock) {
+                return PrestigeMilestone.getTokenMultiplier(totalPrestigeEarned);
+            }
         }
 
         // Ascension (New Game+) accessors
-        public int getAscensionLevel() { return ascensionLevel; }
-        public void setAscensionLevel(int level) { this.ascensionLevel = level; }
+        public int getAscensionLevel() {
+            synchronized (progressionLock) {
+                return ascensionLevel;
+            }
+        }
+        public void setAscensionLevel(int level) {
+            synchronized (progressionLock) {
+                this.ascensionLevel = level;
+            }
+        }
 
-        public String getAscensionTitle() { return ascensionTitle; }
-        public void setAscensionTitle(String title) { this.ascensionTitle = title; }
+        public String getAscensionTitle() {
+            synchronized (progressionLock) {
+                return ascensionTitle;
+            }
+        }
+        public void setAscensionTitle(String title) {
+            synchronized (progressionLock) {
+                this.ascensionTitle = title;
+            }
+        }
 
         public Set<String> getUnlockedAscensionPerks() { return unlockedAscensionPerks; }
         public boolean hasAscensionPerk(String perkId) { return unlockedAscensionPerks.contains(perkId); }
@@ -1097,13 +1151,13 @@ public class RewardSystem {
      * Shop item for purchase.
      */
     public static class ShopItem {
-        public final String id;
-        public final String displayName;
-        public final String description;
-        public final Currency currency;
-        public final int price;
-        public final int maxPurchases;
-        public final ShopCategory category;
+        private final String id;
+        private final String displayName;
+        private final String description;
+        private final Currency currency;
+        private final int price;
+        private final int maxPurchases;
+        private final ShopCategory category;
 
         public ShopItem(String id, String displayName, String description,
                        Currency currency, int price, int maxPurchases, ShopCategory category) {
@@ -1115,6 +1169,14 @@ public class RewardSystem {
             this.maxPurchases = maxPurchases;
             this.category = category;
         }
+
+        public String getId() { return id; }
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public Currency getCurrency() { return currency; }
+        public int getPrice() { return price; }
+        public int getMaxPurchases() { return maxPurchases; }
+        public ShopCategory getCategory() { return category; }
     }
 
     /**
@@ -1126,25 +1188,28 @@ public class RewardSystem {
         UTILITY("Utility", EnduranceColors.RewardCategory.UTILITY),
         COSMETICS("Cosmetics", EnduranceColors.RewardCategory.COSMETICS);
 
-        public final String displayName;
-        public final int color;
+        private final String displayName;
+        private final int color;
 
         ShopCategory(String displayName, int color) {
             this.displayName = displayName;
             this.color = color;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
     }
 
     /**
      * Achievement definition.
      */
     public static class Achievement {
-        public final String id;
-        public final String displayName;
-        public final String description;
-        public final Currency rewardCurrency;
-        public final int rewardAmount;
-        public final LootTier lootTier;
+        private final String id;
+        private final String displayName;
+        private final String description;
+        private final Currency rewardCurrency;
+        private final int rewardAmount;
+        private final LootTier lootTier;
 
         public Achievement(String id, String displayName, String description,
                           Currency rewardCurrency, int rewardAmount, LootTier lootTier) {
@@ -1155,6 +1220,13 @@ public class RewardSystem {
             this.rewardAmount = rewardAmount;
             this.lootTier = lootTier;
         }
+
+        public String getId() { return id; }
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public Currency getRewardCurrency() { return rewardCurrency; }
+        public int getRewardAmount() { return rewardAmount; }
+        public LootTier getLootTier() { return lootTier; }
     }
 
     /**

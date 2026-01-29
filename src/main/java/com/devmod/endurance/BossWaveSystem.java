@@ -75,12 +75,12 @@ public class BossWaveSystem {
         ELEMENTAL("Elemental", EnduranceColors.Boss.ELEMENTAL, 1.2f, 1.8f, 1.0f,
             "Harnesses elemental powers for area attacks");
 
-        public final String displayName;
-        public final int color;
-        public final float speedMultiplier;
-        public final float damageMultiplier;
-        public final float healthMultiplier;
-        public final String description;
+        private final String displayName;
+        private final int color;
+        private final float speedMultiplier;
+        private final float damageMultiplier;
+        private final float healthMultiplier;
+        private final String description;
 
         BossArchetype(String displayName, int color, float speed, float damage, float health, String desc) {
             this.displayName = displayName;
@@ -90,6 +90,13 @@ public class BossWaveSystem {
             this.healthMultiplier = health;
             this.description = desc;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public float getSpeedMultiplier() { return speedMultiplier; }
+        public float getDamageMultiplier() { return damageMultiplier; }
+        public float getHealthMultiplier() { return healthMultiplier; }
+        public String getDescription() { return description; }
     }
 
     /**
@@ -122,15 +129,19 @@ public class BossWaveSystem {
         LIGHTNING_STORM("Lightning Storm", 200, "Calls down lightning strikes"),
         ELEMENTAL_SHIFT("Elemental Shift", 250, "Changes element and gains new powers");
 
-        public final String displayName;
-        public final int cooldownTicks;
-        public final String description;
+        private final String displayName;
+        private final int cooldownTicks;
+        private final String description;
 
         BossAbility(String displayName, int cooldownTicks, String description) {
             this.displayName = displayName;
             this.cooldownTicks = cooldownTicks;
             this.description = description;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getCooldownTicks() { return cooldownTicks; }
+        public String getDescription() { return description; }
     }
 
     /**
@@ -336,7 +347,7 @@ public class BossWaveSystem {
         }
 
         public void useAbility(BossAbility ability) {
-            abilityCooldowns.put(ability, ability.cooldownTicks);
+            abilityCooldowns.put(ability, ability.getCooldownTicks());
             abilitiesUsed++;
         }
 
@@ -355,13 +366,16 @@ public class BossWaveSystem {
         PHASE_2("Phase 2", 1.25f),  // 50%-26% health - more aggressive
         PHASE_3("Phase 3", 1.5f);   // 25%-0% health - desperate, strongest
 
-        public final String displayName;
-        public final float damageMultiplier;
+        private final String displayName;
+        private final float damageMultiplier;
 
         BossPhase(String displayName, float damageMultiplier) {
             this.displayName = displayName;
             this.damageMultiplier = damageMultiplier;
         }
+
+        public String getDisplayName() { return displayName; }
+        public float getDamageMultiplier() { return damageMultiplier; }
     }
 
     // ========== Boss Wave Management ==========
@@ -541,7 +555,7 @@ public class BossWaveSystem {
             float scaledHealth = DifficultyScaler.INSTANCE.scaleBossHealth((float) bossHealth, playerCount, questType);
 
             // Apply variant modifier
-            scaledHealth *= mixedData.variant().healthMod;
+            scaledHealth *= mixedData.variant().getHealthMod();
 
             healthAttr.setBaseValue(scaledHealth);
             mob.setHealth(scaledHealth);
@@ -559,7 +573,7 @@ public class BossWaveSystem {
             float scaledDamage = DifficultyScaler.INSTANCE.scaleBossDamage((float) baseDamage, playerCount, questType);
 
             // Apply variant modifier
-            scaledDamage *= mixedData.variant().damageMod;
+            scaledDamage *= mixedData.variant().getDamageMod();
 
             damageAttr.setBaseValue(scaledDamage);
         }
@@ -668,8 +682,8 @@ public class BossWaveSystem {
         level.playSound(null, safePos, Objects.requireNonNull(sound), SoundSource.HOSTILE, 1.0f, 0.5f);
 
         String variantInfo = mixedData.isRareVariant()
-            ? " [" + mixedData.variant().titlePrefix + "]"
-            : " (" + mixedData.secondaryArchetype().displayName + " hybrid)";
+            ? " [" + mixedData.variant().getTitlePrefix() + "]"
+            : " (" + mixedData.secondaryArchetype().getDisplayName() + " hybrid)";
 
         LOGGER.info("[BossWave] BOSS WAVE {} - {} has appeared!{}",
             waveNumber, mixedData.generatedName(), variantInfo);
@@ -886,7 +900,7 @@ public class BossWaveSystem {
 
         // Telemetry: record boss ability (playersHit and damage will be updated by specific abilities)
         EnduranceTelemetryService.INSTANCE.recordBossAbility(
-            fight.arenaId, fight.archetype.name(), ability.displayName, 0, 0
+            fight.arenaId, fight.archetype.name(), ability.getDisplayName(), 0, 0
         );
 
         switch (ability) {

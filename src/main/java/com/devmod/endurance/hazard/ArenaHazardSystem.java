@@ -98,12 +98,12 @@ public class ArenaHazardSystem {
             "Reality tears at the seams..."
         );
 
-        public final String displayName;
-        public final String description;
-        public final int triggerWave;
-        public final int color;
-        public final int durationTicks;
-        public final String warningText;
+        private final String displayName;
+        private final String description;
+        private final int triggerWave;
+        private final int color;
+        private final int durationTicks;
+        private final String warningText;
 
         HazardType(String displayName, String description, int triggerWave,
                    int color, int durationTicks, String warningText) {
@@ -114,6 +114,13 @@ public class ArenaHazardSystem {
             this.durationTicks = durationTicks;
             this.warningText = warningText;
         }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
+        public int getTriggerWave() { return triggerWave; }
+        public int getColor() { return color; }
+        public int getDurationTicks() { return durationTicks; }
+        public String getWarningText() { return warningText; }
     }
 
     /**
@@ -141,11 +148,11 @@ public class ArenaHazardSystem {
             this.type = type;
             this.state = HazardState.WARNING;
             this.warningTicks = 60; // 3 second warning
-            this.ticksRemaining = type.durationTicks;
+            this.ticksRemaining = type.getDurationTicks();
         }
 
         public float getProgress() {
-            return 1.0f - ((float) ticksRemaining / type.durationTicks);
+            return 1.0f - ((float) ticksRemaining / type.getDurationTicks());
         }
     }
 
@@ -239,11 +246,11 @@ public class ArenaHazardSystem {
 
         for (HazardType type : HazardType.values()) {
             // Check if this wave triggers the hazard
-            if (waveNumber >= type.triggerWave && !session.triggeredHazards.contains(type)) {
+            if (waveNumber >= type.getTriggerWave() && !session.triggeredHazards.contains(type)) {
                 // First time reaching this wave - trigger hazard
                 triggerHazard(questId, type);
                 triggered.add(type);
-            } else if (waveNumber > type.triggerWave && (waveNumber - type.triggerWave) % 4 == 0) {
+            } else if (waveNumber > type.getTriggerWave() && (waveNumber - type.getTriggerWave()) % 4 == 0) {
                 // Repeat hazard every 4 waves after first trigger
                 if (!session.hasActiveHazard(type)) {
                     triggerHazard(questId, type);
@@ -266,7 +273,7 @@ public class ArenaHazardSystem {
         session.activeHazards.add(hazard);
         session.triggeredHazards.add(type);
 
-        LOGGER.info("[ArenaHazards] Triggered {} for quest {}", type.displayName, questId);
+        LOGGER.info("[ArenaHazards] Triggered {} for quest {}", type.getDisplayName(), questId);
     }
 
     // ========== Tick Processing ==========
@@ -296,7 +303,7 @@ public class ArenaHazardSystem {
         // Warning effects
         if (hazard.warningTicks == 60) {
             // Initial warning
-            displayClientMessage(player, "§c§l⚠ " + hazard.type.warningText, true);
+            displayClientMessage(player, "§c§l⚠ " + hazard.type.getWarningText(), true);
             playSound(level, resolveBlockPos(player), SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.0f, 0.8f);
         }
 
@@ -304,7 +311,7 @@ public class ArenaHazardSystem {
 
         if (hazard.warningTicks <= 0) {
             hazard.state = HazardState.ACTIVE;
-            displayClientMessage(player, "§4§l" + hazard.type.displayName.toUpperCase(Locale.ROOT) + "!", true);
+            displayClientMessage(player, "§4§l" + hazard.type.getDisplayName().toUpperCase(Locale.ROOT) + "!", true);
             playSound(level, resolveBlockPos(player), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.AMBIENT, 0.8f, 1.2f);
 
             // Initialize hazard-specific state
@@ -336,7 +343,7 @@ public class ArenaHazardSystem {
         if (hazard.ticksRemaining <= 0) {
             cleanupHazard(hazard);
             hazard.state = HazardState.INACTIVE;
-            displayClientMessage(player, "§a" + hazard.type.displayName + " subsides...", true);
+            displayClientMessage(player, "§a" + hazard.type.getDisplayName() + " subsides...", true);
         }
     }
 
@@ -648,9 +655,9 @@ public class ArenaHazardSystem {
         return session.activeHazards.stream()
             .filter(h -> h.state != HazardState.INACTIVE)
             .map(h -> new HazardInfo(
-                h.type.displayName,
-                h.type.description,
-                h.type.color,
+                h.type.getDisplayName(),
+                h.type.getDescription(),
+                h.type.getColor(),
                 h.state,
                 h.getProgress()
             ))

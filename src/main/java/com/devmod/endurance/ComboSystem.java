@@ -36,10 +36,10 @@ public class ComboSystem {
         SS("Sadistic", 12000, EnduranceColors.StyleRank.SS, 4.0f),
         SSS("Sensational", 20000, EnduranceColors.StyleRank.SSS, 5.0f);
 
-        public final String displayName;
-        public final int threshold;
-        public final int color;
-        public final float multiplier;
+        private final String displayName;
+        private final int threshold;
+        private final int color;
+        private final float multiplier;
 
         StyleRank(String displayName, int threshold, int color, float multiplier) {
             this.displayName = displayName;
@@ -48,10 +48,15 @@ public class ComboSystem {
             this.multiplier = multiplier;
         }
 
+        public String getDisplayName() { return displayName; }
+        public int getThreshold() { return threshold; }
+        public int getColor() { return color; }
+        public float getMultiplier() { return multiplier; }
+
         public static StyleRank fromScore(int styleScore) {
             StyleRank result = D;
             for (StyleRank rank : values()) {
-                if (styleScore >= rank.threshold) {
+                if (styleScore >= rank.getThreshold()) {
                     result = rank;
                 }
             }
@@ -125,15 +130,19 @@ public class ComboSystem {
         SPEED_CLEAR("Speed Demon!", 300, 600),
         VARIETY_MASTER("Variety Master!", 200, 400);
 
-        public final String displayName;
-        public final int basePoints;
-        public final int stylePoints;
+        private final String displayName;
+        private final int basePoints;
+        private final int stylePoints;
 
         ActionType(String displayName, int basePoints, int stylePoints) {
             this.displayName = displayName;
             this.basePoints = basePoints;
             this.stylePoints = stylePoints;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getBasePoints() { return basePoints; }
+        public int getStylePoints() { return stylePoints; }
     }
 
     /**
@@ -297,11 +306,11 @@ public class ComboSystem {
             // Calculate points with multipliers (including flow state)
             float comboMultiplier = (float) Math.min(1.0 + (currentCombo * comboIncrement), maxMultiplier);
             float varietyMultiplier = 1.0f + (varietyBonus * 0.01f);
-            float rankMultiplier = currentRank.multiplier;
+            float rankMultiplier = currentRank.getMultiplier();
             float flowMultiplier = flowResult.styleMultiplier();
 
-            int basePoints = (int) (action.basePoints * comboMultiplier * varietyMultiplier * rankMultiplier);
-            int styleGain = (int) (action.stylePoints * varietyMultiplier * flowMultiplier);
+            int basePoints = (int) (action.getBasePoints() * comboMultiplier * varietyMultiplier * rankMultiplier);
+            int styleGain = (int) (action.getStylePoints() * varietyMultiplier * flowMultiplier);
 
             // Add style
             styleScore += styleGain;
@@ -333,7 +342,7 @@ public class ComboSystem {
             }
 
             // Telemetry: record special actions
-            if (action.stylePoints >= 100 && questId != null) {
+            if (action.getStylePoints() >= 100 && questId != null) {
                 EnduranceTelemetryService.INSTANCE.recordSpecialAction(
                     playerId, questId, action, basePoints, styleGain, currentCombo
                 );
@@ -348,7 +357,7 @@ public class ComboSystem {
 
             // Create announcement if significant
             ActionAnnouncement announcement = null;
-            if (action.stylePoints >= 100 || rankUp) {
+            if (action.getStylePoints() >= 100 || rankUp) {
                 announcement = new ActionAnnouncement(action, styleGain, rankUp ? newRank : null);
                 addAnnouncement(announcement);
             }
@@ -551,7 +560,7 @@ public class ComboSystem {
 
             // Calculate style gain (without combo increment)
             float varietyMultiplier = 1.0f + (varietyBonus * 0.01f);
-            int styleGain = (int) (milestone.stylePoints * varietyMultiplier);
+            int styleGain = (int) (milestone.getStylePoints() * varietyMultiplier);
 
             styleScore += styleGain;
             totalStyleEarned += styleGain;

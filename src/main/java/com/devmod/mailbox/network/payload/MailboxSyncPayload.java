@@ -1,6 +1,5 @@
 package com.devmod.mailbox.network.payload;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -14,6 +13,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
 /**
@@ -25,13 +25,6 @@ public record MailboxSyncPayload(
     int unreadCount,
     int maxMessages
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
-
-    // Security limits
-    private static final int MAX_MESSAGES = 200;
-    private static final int MAX_SUBJECT_LENGTH = 256;
-    private static final int MAX_BODY_LENGTH = 2000;
-    private static final int MAX_NAME_LENGTH = 64;
-    private static final int MAX_ATTACHMENT_LENGTH = 4096;
 
     public static final Type<MailboxSyncPayload> TYPE = new Type<>(
         Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath("devmod", "mailbox_sync"))
@@ -48,8 +41,10 @@ public record MailboxSyncPayload(
     }
 
     private static void encode(RegistryFriendlyByteBuf buf, MailboxSyncPayload payload) {
-        buf.writeVarInt(payload.messages.size());
-        for (MailboxMessageData msg : payload.messages) {
+        int messageCount = MailboxPayloadLimits.clampCount(payload.messages.size(), MailboxPayloadLimits.MAX_MESSAGES);
+        buf.writeVarInt(messageCount);
+        for (int i = 0; i < messageCount; i++) {
+            MailboxMessageData msg = payload.messages.get(i);
             encodeMessage(buf, msg);
         }
         buf.writeVarInt(payload.unreadCount);
@@ -58,9 +53,7 @@ public record MailboxSyncPayload(
 
     private static MailboxSyncPayload decode(RegistryFriendlyByteBuf buf) {
         int messageCount = buf.readVarInt();
-        if (messageCount < 0 || messageCount > MAX_MESSAGES) {
-            messageCount = 0;
-        }
+        messageCount = MailboxPayloadLimits.clampCount(messageCount, MailboxPayloadLimits.MAX_MESSAGES);
 
         List<MailboxMessageData> messages = new ArrayList<>(messageCount);
         for (int i = 0; i < messageCount; i++) {
@@ -75,30 +68,33 @@ public record MailboxSyncPayload(
 
     private static void encodeMessage(RegistryFriendlyByteBuf buf, MailboxMessageData msg) {
         buf.writeUUID(msg.id);
-        writeOptionalUtf(buf, msg.senderName);
-        buf.writeUtf(msg.subject);
-        writeOptionalUtf(buf, msg.body);
+        writeOptionalUtf(buf, msg.senderName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        buf.writeUtf(
+            MailboxPayloadLimits.truncate(msg.subject, MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH),
+            MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH
+        );
+        writeOptionalUtf(buf, msg.body, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
         buf.writeVarInt(msg.messageTypeOrdinal);
         buf.writeLong(msg.createdAtMillis);
         buf.writeBoolean(msg.isRead);
         buf.writeLong(msg.expiresAtMillis);
         buf.writeBoolean(msg.hasAttachment);
         buf.writeBoolean(msg.attachmentClaimed);
-        writeOptionalUtf(buf, msg.attachmentData);
+        writeOptionalUtf(buf, msg.attachmentData, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
     }
 
     private static MailboxMessageData decodeMessage(RegistryFriendlyByteBuf buf) {
         UUID id = buf.readUUID();
-        @Nullable String senderName = readOptionalUtf(buf, MAX_NAME_LENGTH);
-        String subject = buf.readUtf(MAX_SUBJECT_LENGTH);
-        @Nullable String body = readOptionalUtf(buf, MAX_BODY_LENGTH);
+        @Nullable String senderName = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        String subject = buf.readUtf(MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH);
+        @Nullable String body = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
         int messageTypeOrdinal = buf.readVarInt();
         long createdAtMillis = buf.readLong();
         boolean isRead = buf.readBoolean();
         long expiresAtMillis = buf.readLong();
         boolean hasAttachment = buf.readBoolean();
         boolean attachmentClaimed = buf.readBoolean();
-        @Nullable String attachmentData = readOptionalUtf(buf, MAX_ATTACHMENT_LENGTH);
+        @Nullable String attachmentData = readOptionalUtf(buf, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
 
         return new MailboxMessageData(
             id, senderName, subject, body, messageTypeOrdinal,
@@ -113,8 +109,8 @@ public record MailboxSyncPayload(
         return value.isEmpty() ? null : value;
     }
 
-    private static void writeOptionalUtf(RegistryFriendlyByteBuf buf, @Nullable String value) {
-        buf.writeUtf(value != null ? value : "");
+    private static void writeOptionalUtf(RegistryFriendlyByteBuf buf, @Nullable String value, int maxLength) {
+        buf.writeUtf(MailboxPayloadLimits.truncate(value, maxLength), maxLength);
     }
 
     @Override
@@ -124,46 +120,34 @@ public record MailboxSyncPayload(
 
     @Override
     public int estimatedSize() {
-        int size = varIntSize(messages.size());
-        for (MailboxMessageData msg : messages) {
+        int count = MailboxPayloadLimits.clampCount(messages.size(), MailboxPayloadLimits.MAX_MESSAGES);
+        int size = PayloadSizeUtil.varIntSize(count);
+        for (int i = 0; i < count; i++) {
+            MailboxMessageData msg = messages.get(i);
             size += estimateMessageSize(msg);
         }
-        size += varIntSize(unreadCount);
-        size += varIntSize(maxMessages);
+        size += PayloadSizeUtil.varIntSize(unreadCount);
+        size += PayloadSizeUtil.varIntSize(maxMessages);
         return size;
     }
 
     private static int estimateMessageSize(MailboxMessageData msg) {
         int size = 16; // UUID
-        size += estimatedUtfSize(msg.senderName);
-        size += estimatedUtfSize(msg.subject);
-        size += estimatedUtfSize(msg.body);
-        size += varIntSize(msg.messageTypeOrdinal);
+        size += estimatedUtfSize(msg.senderName, MailboxPayloadLimits.MAX_MESSAGE_NAME_LENGTH);
+        size += estimatedUtfSize(msg.subject, MailboxPayloadLimits.MAX_MESSAGE_SUBJECT_LENGTH);
+        size += estimatedUtfSize(msg.body, MailboxPayloadLimits.MAX_MESSAGE_BODY_LENGTH);
+        size += PayloadSizeUtil.varIntSize(msg.messageTypeOrdinal);
         size += 8; // createdAtMillis
         size += 1; // isRead
         size += 8; // expiresAtMillis
         size += 1; // hasAttachment
         size += 1; // attachmentClaimed
-        size += estimatedUtfSize(msg.attachmentData);
+        size += estimatedUtfSize(msg.attachmentData, MailboxPayloadLimits.MAX_MESSAGE_ATTACHMENT_LENGTH);
         return size;
     }
 
-    private static int estimatedUtfSize(@Nullable String value) {
-        if (value == null || value.isEmpty()) {
-            return varIntSize(0);
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return varIntSize(bytes.length) + bytes.length;
-    }
-
-    private static int varIntSize(int value) {
-        int v = value;
-        int size = 1;
-        while ((v & ~0x7F) != 0) {
-            v >>>= 7;
-            size++;
-        }
-        return size;
+    private static int estimatedUtfSize(@Nullable String value, int maxLength) {
+        return PayloadSizeUtil.estimatedUtfSize(MailboxPayloadLimits.truncateNullable(value, maxLength));
     }
 
     /**

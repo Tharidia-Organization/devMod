@@ -78,20 +78,20 @@ public class WaveManager {
         private final @javax.annotation.Nullable SpawnContext spawnContext;
         private final float rewardMultiplier;
         private final @javax.annotation.Nullable String directiveId;
-        private int totalToSpawn;
-        private int spawned = 0;
-        private int killed = 0;
-        private int practiceDummyCounter = 0;
-        private long waveStartTime;
-        private int waveTicks = 0;
-        private int nextSpawnIndex = 0;
-        private boolean complete = false;
-        private boolean completionNotified = false;
-        private int externalRespawnCount = 0;
+        private volatile int totalToSpawn;
+        private volatile int spawned = 0;
+        private volatile int killed = 0;
+        private volatile int practiceDummyCounter = 0;
+        private volatile long waveStartTime;
+        private volatile int waveTicks = 0;
+        private volatile int nextSpawnIndex = 0;
+        private volatile boolean complete = false;
+        private volatile boolean completionNotified = false;
+        private volatile int externalRespawnCount = 0;
         private final int externalRespawnLimit;
 
-        // Wave modifiers (roguelike elements)
-        private final Set<WaveModifier> modifiers = new HashSet<>();
+        // Wave modifiers (roguelike elements) - thread-safe for concurrent access
+        private final Set<WaveModifier> modifiers = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         // Multiplayer scaling parameters
         private final int playerCount;
@@ -193,7 +193,11 @@ public class WaveManager {
         public @javax.annotation.Nullable SpawnContext getSpawnContext() { return spawnContext; }
         public @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession getSession() { return session; }
 
-        public void recordKill(UUID mobId) {
+        /**
+         * Records a kill for this wave.
+         * Thread-safe: Synchronized to prevent race conditions during kill counting.
+         */
+        public synchronized void recordKill(UUID mobId) {
             killed++;
             objective.recordKill();
             if (objective.getType() == WaveObjectiveState.Type.ELITE_HUNT) {
@@ -210,7 +214,11 @@ public class WaveManager {
             }
         }
 
-        public void addSpawnedMob(UUID mobId, SpawnAffix affix, boolean objectiveTarget) {
+        /**
+         * Adds a spawned mob to this wave's tracking.
+         * Thread-safe: Synchronized to prevent race conditions during spawn counting.
+         */
+        public synchronized void addSpawnedMob(UUID mobId, SpawnAffix affix, boolean objectiveTarget) {
             spawnedMobs.add(mobId);
             if (affix != null) {
                 spawnAffixes.put(mobId, affix);
@@ -222,15 +230,24 @@ public class WaveManager {
             spawned++;
         }
 
-        public int nextPracticeDummyIndex() {
+        /**
+         * Thread-safe: Synchronized for atomic counter increment.
+         */
+        public synchronized int nextPracticeDummyIndex() {
             return practiceDummyCounter++;
         }
 
-        public void incrementWaveTicks() {
+        /**
+         * Thread-safe: Synchronized for atomic counter increment.
+         */
+        public synchronized void incrementWaveTicks() {
             waveTicks++;
         }
 
-        public void advanceSpawnIndex(int index) {
+        /**
+         * Thread-safe: Synchronized to prevent concurrent index updates.
+         */
+        public synchronized void advanceSpawnIndex(int index) {
             nextSpawnIndex = index;
         }
 
@@ -238,11 +255,17 @@ public class WaveManager {
             return nextSpawnIndex < spawnPlan.size();
         }
 
-        public void markComplete() {
+        /**
+         * Thread-safe: Synchronized for flag consistency.
+         */
+        public synchronized void markComplete() {
             complete = true;
         }
 
-        public void markCompletionNotified() {
+        /**
+         * Thread-safe: Synchronized for flag consistency.
+         */
+        public synchronized void markCompletionNotified() {
             completionNotified = true;
         }
 
@@ -254,7 +277,10 @@ public class WaveManager {
             return mobId != null && objectiveTargets.contains(mobId);
         }
 
-        public boolean replaceObjectiveTarget(UUID oldId, UUID newId) {
+        /**
+         * Thread-safe: Synchronized for atomic remove+add operation on objective targets.
+         */
+        public synchronized boolean replaceObjectiveTarget(UUID oldId, UUID newId) {
             if (oldId == null || newId == null) {
                 return false;
             }
@@ -266,13 +292,19 @@ public class WaveManager {
             return false;
         }
 
-        public void adjustKillTarget(int newTarget) {
+        /**
+         * Thread-safe: Synchronized to prevent concurrent target adjustment.
+         */
+        public synchronized void adjustKillTarget(int newTarget) {
             if (objective.getType() == WaveObjectiveState.Type.KILL_ALL) {
                 objective.adjustKillTarget(newTarget);
             }
         }
 
-        public int registerExternalRespawn(int count) {
+        /**
+         * Thread-safe: Synchronized for atomic read-modify-write of respawn counter.
+         */
+        public synchronized int registerExternalRespawn(int count) {
             int remaining = Math.max(0, externalRespawnLimit - externalRespawnCount);
             int allowed = Math.min(remaining, Math.max(0, count));
             externalRespawnCount += allowed;
@@ -309,13 +341,16 @@ public class WaveManager {
         REGEN("Regenerating", "Mobs slowly regenerate health"),
         DOUBLE_SPAWN("Horde", "Double the number of mobs");
 
-        public final String displayName;
-        public final String description;
+        private final String displayName;
+        private final String description;
 
         WaveModifier(String displayName, String description) {
             this.displayName = displayName;
             this.description = description;
         }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
     }
 
     // ========== Wave Management ==========
@@ -374,7 +409,7 @@ public class WaveManager {
                 activeWaves.put(arena.getId(), waveState);
 
                 LOGGER.info("[EnduranceQuest] Started BOSS wave {} with {} archetype",
-                    waveNumber, bossFight.getArchetype().displayName);
+                    waveNumber, bossFight.getArchetype().getDisplayName());
 
                 EnduranceTelemetryService.INSTANCE.recordWaveStart(
                     quest.getQuestId(),
@@ -652,10 +687,10 @@ public class WaveManager {
                 // FIX #9B: Check ELITE_HUNTER curse - forces all mobs to be elite
                 boolean forcedElite = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE
                     .shouldSpawnElite(waveState.quest.getQuestId());
-                if (!safeAffix.elite && (forcedElite || random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession()))) {
+                if (!safeAffix.isElite() && (forcedElite || random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession()))) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                     appliedAffix = SpawnAffix.ELITE;
-                } else if (safeAffix.elite) {
+                } else if (safeAffix.isElite()) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                 }
 
@@ -888,7 +923,7 @@ public class WaveManager {
             applyMobModifiers(mob, waveState);
             applyMultiplayerHPScaling(mob, waveState);
             applySpawnAffix(mob, affix);
-            if (affix.elite) {
+            if (affix.isElite()) {
                 applyEliteBuffs(mob, waveState.waveNumber);
             }
 
@@ -1171,7 +1206,9 @@ public class WaveManager {
         if (waveState == null || level == null) {
             return;
         }
-        for (UUID mobId : waveState.spawnedMobs) {
+        // Take a snapshot to avoid ConcurrentModificationException during iteration
+        List<UUID> mobSnapshot = List.copyOf(waveState.spawnedMobs);
+        for (UUID mobId : mobSnapshot) {
             Entity entity = level.getEntity(Objects.requireNonNull(mobId));
             if (entity != null) {
                 entity.discard();
@@ -1450,16 +1487,16 @@ public class WaveManager {
         }
         var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (healthAttr != null) {
-            healthAttr.setBaseValue(healthAttr.getBaseValue() * affix.hpMultiplier);
+            healthAttr.setBaseValue(healthAttr.getBaseValue() * affix.getHpMultiplier());
             mob.setHealth(mob.getMaxHealth());
         }
         var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
         if (attackAttr != null) {
-            attackAttr.setBaseValue(attackAttr.getBaseValue() * affix.damageMultiplier);
+            attackAttr.setBaseValue(attackAttr.getBaseValue() * affix.getDamageMultiplier());
         }
         var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
         if (speedAttr != null) {
-            speedAttr.setBaseValue(speedAttr.getBaseValue() * affix.speedMultiplier);
+            speedAttr.setBaseValue(speedAttr.getBaseValue() * affix.getSpeedMultiplier());
         }
     }
 
@@ -1497,7 +1534,7 @@ public class WaveManager {
             mob.setHealth(mob.getMaxHealth());
 
             LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={}, globalMult={})",
-                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.displayName, questType, waveScale, globalHealthMult);
+                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.getDisplayName(), questType, waveScale, globalHealthMult);
             if (shouldLogBossHp(mobConfig)) {
                 LOGGER.info("[EnduranceQuest] Boss HP scaling (pre-affix) for {}: baseAttr={}, baseEstimated={}, ratio={}, scaled={}, maxHp={}, wave={}, players={}, type={}, waveScale={}, globalMult={}, questId={}",
                     mobConfig.mobId, baseHP, mobConfig.baseHealth, ratio, scaledHP, mob.getMaxHealth(),
@@ -1522,7 +1559,7 @@ public class WaveManager {
             attackAttr.setBaseValue(scaledDamage);
 
             LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={}, waveScale={}, globalMult={})",
-                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.displayName, waveScale, globalDamageMult);
+                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.getDisplayName(), waveScale, globalDamageMult);
         }
 
         // Apply speed multiplier if session has global speed override
@@ -1651,8 +1688,9 @@ public class WaveManager {
     public void cleanupWave(UUID arenaId, ServerLevel level) {
         WaveState state = activeWaves.remove(arenaId);
         if (state != null) {
-            // Remove any remaining mobs
-            for (UUID mobId : state.spawnedMobs) {
+            // Take a snapshot to avoid ConcurrentModificationException during iteration
+            List<UUID> mobSnapshot = List.copyOf(state.spawnedMobs);
+            for (UUID mobId : mobSnapshot) {
                 Entity entity = level.getEntity(Objects.requireNonNull(mobId));
                 if (entity != null) {
                     entity.discard();

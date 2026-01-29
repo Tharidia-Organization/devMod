@@ -36,10 +36,10 @@ public class FlowStateTracker {
         FRESH("FRESH!", EnduranceColors.Flow.FRESH, FRESH_BONUS, "Nice variety!"),
         VIRTUOSO("VIRTUOSO!", EnduranceColors.Flow.VIRTUOSO, VIRTUOSO_MULTIPLIER, "Incredible style!");
 
-        public final String displayName;
-        public final int color;
-        public final float multiplier;
-        public final String message;
+        private final String displayName;
+        private final int color;
+        private final float multiplier;
+        private final String message;
 
         FlowState(String displayName, int color, float multiplier, String message) {
             this.displayName = displayName;
@@ -47,6 +47,11 @@ public class FlowStateTracker {
             this.multiplier = multiplier;
             this.message = message;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public float getMultiplier() { return multiplier; }
+        public String getMessage() { return message; }
     }
 
     /**

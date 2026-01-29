@@ -107,7 +107,7 @@ public final class LeaderboardCommands {
         for (LeaderboardCategory cat : LeaderboardCategory.values()) {
             String name = Objects.requireNonNull(cat.name().toLowerCase(Locale.ROOT));
             if (name.startsWith(remaining)) {
-                builder.suggest(name, Objects.requireNonNull(Component.literal(Objects.requireNonNull(cat.displayName))));
+                builder.suggest(name, Objects.requireNonNull(Component.literal(Objects.requireNonNull(cat.getDisplayName()))));
             }
         }
         return builder.buildFuture();
@@ -130,10 +130,10 @@ public final class LeaderboardCommands {
         CommandSourceStack src = ctx.getSource();
         src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Leaderboard Categories ===")), false);
         for (LeaderboardCategory cat : LeaderboardCategory.values()) {
-            String direction = cat.higherIsBetter ? "§a↑" : "§c↓";
+            String direction = cat.isHigherIsBetter() ? "§a↑" : "§c↓";
             src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
                 "§7%s %s §f%s §8- §7%s",
-                direction, cat.name().toLowerCase(Locale.ROOT), cat.displayName, cat.description
+                direction, cat.name().toLowerCase(Locale.ROOT), cat.getDisplayName(), cat.getDescription()
             )))), false);
         }
         return 1;
@@ -308,7 +308,7 @@ public final class LeaderboardCommands {
     private static void displayLeaderboard(CommandSourceStack src, LeaderboardCategory category,
                                             List<LeaderboardEntry> entries, String scope) {
         src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
-            "§e=== %s - %s ===", category.displayName, scope
+            "§e=== %s - %s ===", category.getDisplayName(), scope
         )))), false);
 
         if (entries.isEmpty()) {
@@ -338,7 +338,7 @@ public final class LeaderboardCommands {
 
         src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
             "§7%s: §f%s §8(§e%s§8)",
-            category.displayName, rankStr, scoreStr
+            category.getDisplayName(), rankStr, scoreStr
         )))), false);
     }
 

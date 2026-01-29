@@ -57,7 +57,7 @@ class PerkSystemDirectTest {
         try {
             List<PerkSystem.Perk> choices = system.generatePerkChoices(player, 1);
             assertEquals(1, choices.size());
-            assertEquals("sharp_blades", choices.get(0).id);
+            assertEquals("sharp_blades", choices.get(0).getId());
         } finally {
             system.endSession(playerId);
         }

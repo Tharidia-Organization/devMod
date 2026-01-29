@@ -202,8 +202,15 @@ public final class TransportExecutor {
             return false;
         }
 
-        Optional<TransportData> destOpt = registry.get(Objects.requireNonNull(source.getLinkedNodeId().get()));
-        if (destOpt.isEmpty() || Objects.requireNonNull(destOpt.get()).getPosition().isEmpty()) {
+        // Safe Optional handling to prevent NoSuchElementException
+        Optional<UUID> linkedIdOpt = source.getLinkedNodeId();
+        if (linkedIdOpt.isEmpty()) {
+            playErrorEffect(sourceLevel, source);
+            return false;
+        }
+
+        Optional<TransportData> destOpt = registry.get(Objects.requireNonNull(linkedIdOpt.get()));
+        if (destOpt.isEmpty() || destOpt.get().getPosition().isEmpty()) {
             playErrorEffect(sourceLevel, source);
             return false;
         }
@@ -223,8 +230,15 @@ public final class TransportExecutor {
             return false;
         }
 
+        // Safe Optional handling to prevent NoSuchElementException
+        Optional<String> networkNameOpt = source.getNetworkName();
+        if (networkNameOpt.isEmpty()) {
+            playErrorEffect(sourceLevel, source);
+            return false;
+        }
+
         Optional<TransportData> destOpt = registry.getNetworkDestination(
-            Objects.requireNonNull(source.getNetworkName().get()),
+            Objects.requireNonNull(networkNameOpt.get()),
             Objects.requireNonNull(source.id()),
             source.selectionMode()
         );
@@ -638,6 +652,19 @@ public final class TransportExecutor {
     // ============================================================================
     // SHUTDOWN
     // ============================================================================
+
+    /**
+     * Cleans up player-specific data (called on player disconnect).
+     * Prevents memory leaks by removing player entries from all tracking maps.
+     *
+     * @param playerId the player's UUID
+     */
+    public void cleanupPlayer(@Nonnull UUID playerId) {
+        chargeManager.stopCharging(playerId);
+        cooldownManager.clearCooldowns(playerId);
+        lastChargeSync.remove(playerId);
+        chargingPlayersLastTick.remove(playerId);
+    }
 
     /**
      * Cleans up all state (called on server shutdown).

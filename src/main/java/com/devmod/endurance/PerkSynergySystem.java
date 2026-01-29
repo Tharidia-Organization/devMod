@@ -31,15 +31,19 @@ public class PerkSynergySystem {
         STRONG(3, EnduranceColors.Synergy.STRONG, "Strong"),      // Significant combo
         LEGENDARY(4, EnduranceColors.Synergy.LEGENDARY, "Legendary"); // Game-changing combo
 
-        public final int value;
-        public final int color;
-        public final String displayName;
+        private final int value;
+        private final int color;
+        private final String displayName;
 
         SynergyStrength(int value, int color, String displayName) {
             this.value = value;
             this.color = color;
             this.displayName = displayName;
         }
+
+        public int getValue() { return value; }
+        public int getColor() { return color; }
+        public String getDisplayName() { return displayName; }
     }
 
     /**
@@ -56,14 +60,14 @@ public class PerkSynergySystem {
      * A defined synergy between perks.
      */
     public static class PerkSynergy {
-        public final String id;
-        public final String name;
-        public final String description;
-        public final SynergyType type;
-        public final SynergyStrength strength;
-        public final Set<String> requiredPerks;  // All must be owned for synergy
-        public final Set<String> optionalPerks;  // Any of these enhance the synergy
-        public final String bonusEffect;         // Description of bonus when active
+        private final String id;
+        private final String name;
+        private final String description;
+        private final SynergyType type;
+        private final SynergyStrength strength;
+        private final Set<String> requiredPerks;  // All must be owned for synergy
+        private final Set<String> optionalPerks;  // Any of these enhance the synergy
+        private final String bonusEffect;         // Description of bonus when active
 
         public PerkSynergy(String id, String name, String description, SynergyType type,
                           SynergyStrength strength, Set<String> requiredPerks,
@@ -77,6 +81,15 @@ public class PerkSynergySystem {
             this.optionalPerks = optionalPerks != null ? optionalPerks : Set.of();
             this.bonusEffect = bonusEffect;
         }
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public SynergyType getType() { return type; }
+        public SynergyStrength getStrength() { return strength; }
+        public Set<String> getRequiredPerks() { return requiredPerks; }
+        public Set<String> getOptionalPerks() { return optionalPerks; }
+        public String getBonusEffect() { return bonusEffect; }
 
         /**
          * Check if this synergy is active for a given set of owned perks.
@@ -362,10 +375,10 @@ public class PerkSynergySystem {
         synergies.add(synergy);
 
         // Index by perk for quick lookup
-        for (String perkId : synergy.requiredPerks) {
+        for (String perkId : synergy.getRequiredPerks()) {
             synergiesByPerk.computeIfAbsent(perkId, k -> new ArrayList<>()).add(synergy);
         }
-        for (String perkId : synergy.optionalPerks) {
+        for (String perkId : synergy.getOptionalPerks()) {
             synergiesByPerk.computeIfAbsent(perkId, k -> new ArrayList<>()).add(synergy);
         }
     }
@@ -393,19 +406,19 @@ public class PerkSynergySystem {
 
             if (wouldBeActive && !wasActive) {
                 // This perk would complete the synergy!
-                newSynergies.add(new NewSynergy(synergy, synergy.bonusEffect));
-                totalScore += synergy.strength.value * 2; // Bonus for completing
+                newSynergies.add(new NewSynergy(synergy, synergy.getBonusEffect()));
+                totalScore += synergy.getStrength().getValue() * 2; // Bonus for completing
             } else if (wouldBeActive) {
                 // Already active, this perk enhances it
-                active.add(new ActiveSynergy(synergy, synergy.bonusEffect));
-                totalScore += synergy.strength.value;
+                active.add(new ActiveSynergy(synergy, synergy.getBonusEffect()));
+                totalScore += synergy.getStrength().getValue();
             } else {
                 // Not complete yet, show progress
                 Set<String> missing = synergy.getMissingPerks(simulatedOwned);
                 float progress = synergy.getCompletionPercent(simulatedOwned);
                 if (progress > 0 && missing.size() <= 2) {
                     potential.add(new PotentialSynergy(synergy, missing, progress));
-                    totalScore += (int) (synergy.strength.value * progress);
+                    totalScore += (int) (synergy.getStrength().getValue() * progress);
                 }
             }
         }
@@ -447,12 +460,12 @@ public class PerkSynergySystem {
         int score = 0;
         for (PerkSynergy synergy : synergies) {
             if (synergy.isActive(ownedPerks)) {
-                score += synergy.strength.value;
+                score += synergy.getStrength().getValue();
             } else {
                 // Partial credit for progress
                 float progress = synergy.getCompletionPercent(ownedPerks);
                 if (progress >= 0.5f) {
-                    score += (int) (synergy.strength.value * progress * 0.5f);
+                    score += (int) (synergy.getStrength().getValue() * progress * 0.5f);
                 }
             }
         }
@@ -470,7 +483,7 @@ public class PerkSynergySystem {
             if (missing.size() == 1) {
                 // Just one perk away - highly recommended
                 recommended.addAll(missing);
-            } else if (missing.size() == 2 && synergy.strength.value >= SynergyStrength.STRONG.value) {
+            } else if (missing.size() == 2 && synergy.getStrength().getValue() >= SynergyStrength.STRONG.getValue()) {
                 // Two perks away from a strong synergy
                 recommended.addAll(missing);
             }

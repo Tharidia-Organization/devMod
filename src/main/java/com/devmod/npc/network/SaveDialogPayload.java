@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 import com.devmod.npc.dialog.DialogSet;
 
@@ -27,6 +28,10 @@ public record SaveDialogPayload(
     public static final StreamCodec<FriendlyByteBuf, SaveDialogPayload> STREAM_CODEC =
         StreamCodec.of(SaveDialogPayload::encode, SaveDialogPayload::decode);
 
+    public SaveDialogPayload {
+        Objects.requireNonNull(dialogSet, "dialogSet");
+    }
+
     private static void encode(FriendlyByteBuf buf, SaveDialogPayload payload) {
         DialogSet.STREAM_CODEC.encode(buf, payload.dialogSet);
         buf.writeVarInt(payload.expectedRevision);
@@ -45,6 +50,8 @@ public record SaveDialogPayload(
 
     @Override
     public int estimatedSize() {
-        return 2048 + 5; // DialogSet estimate + VarInt
+        long size = DialogPayloadSizing.estimateDialogSetSize(dialogSet);
+        size += PayloadSizeUtil.varIntSize(expectedRevision);
+        return PayloadSizeUtil.clampToInt(size);
     }
 }

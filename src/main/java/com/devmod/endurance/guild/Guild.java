@@ -97,7 +97,7 @@ public class Guild {
     public boolean canInvite(UUID playerId) {
         GuildMember member = members.get(playerId);
         if (member == null) return false;
-        return member.rank().level >= GuildSystem.GuildRank.OFFICER.level;
+        return member.rank().getLevel() >= GuildSystem.GuildRank.OFFICER.getLevel();
     }
 
     public boolean canKick(UUID playerId) {

@@ -55,10 +55,10 @@ public class BossDNAMixer {
         MIRROR("Mirror", 1.0f, 1.0f, 1.0f),       // Copies player stats
         EVOLVING("Evolving", 1.1f, 1.1f, 1.2f);   // Changes per phase
 
-        public final String titlePrefix;
-        public final float healthMod;
-        public final float damageMod;
-        public final float rewardMod;
+        private final String titlePrefix;
+        private final float healthMod;
+        private final float damageMod;
+        private final float rewardMod;
 
         BossVariant(String titlePrefix, float health, float damage, float reward) {
             this.titlePrefix = titlePrefix;
@@ -66,6 +66,11 @@ public class BossDNAMixer {
             this.damageMod = damage;
             this.rewardMod = reward;
         }
+
+        public String getTitlePrefix() { return titlePrefix; }
+        public float getHealthMod() { return healthMod; }
+        public float getDamageMod() { return damageMod; }
+        public float getRewardMod() { return rewardMod; }
     }
 
     /**
@@ -133,14 +138,14 @@ public class BossDNAMixer {
         String name = generateName(primary, secondary, variant, rng);
 
         // Calculate stat multipliers (weighted average)
-        float healthMult = calculateStatMultiplier(primary.healthMultiplier, secondary.healthMultiplier,
-            tertiary != null ? tertiary.healthMultiplier : 0, variant);
-        float damageMult = calculateStatMultiplier(primary.damageMultiplier, secondary.damageMultiplier,
-            tertiary != null ? tertiary.damageMultiplier : 0, variant);
-        float speedMult = calculateStatMultiplier(primary.speedMultiplier, secondary.speedMultiplier,
-            tertiary != null ? tertiary.speedMultiplier : 0, variant);
+        float healthMult = calculateStatMultiplier(primary.getHealthMultiplier(), secondary.getHealthMultiplier(),
+            tertiary != null ? tertiary.getHealthMultiplier() : 0, variant);
+        float damageMult = calculateStatMultiplier(primary.getDamageMultiplier(), secondary.getDamageMultiplier(),
+            tertiary != null ? tertiary.getDamageMultiplier() : 0, variant);
+        float speedMult = calculateStatMultiplier(primary.getSpeedMultiplier(), secondary.getSpeedMultiplier(),
+            tertiary != null ? tertiary.getSpeedMultiplier() : 0, variant);
 
-        float rewardMult = variant.rewardMod * (1.0f + (waveNumber * 0.05f));
+        float rewardMult = variant.getRewardMod() * (1.0f + (waveNumber * 0.05f));
 
         MixedBossData data = new MixedBossData(
             primary, secondary, tertiary, variant,
@@ -269,21 +274,21 @@ public class BossDNAMixer {
      * Uses weighted RGB blending.
      */
     private int blendColors(BossArchetype primary, BossArchetype secondary, BossArchetype tertiary) {
-        int r1 = (primary.color >> 16) & 0xFF;
-        int g1 = (primary.color >> 8) & 0xFF;
-        int b1 = primary.color & 0xFF;
+        int r1 = (primary.getColor() >> 16) & 0xFF;
+        int g1 = (primary.getColor() >> 8) & 0xFF;
+        int b1 = primary.getColor() & 0xFF;
 
-        int r2 = (secondary.color >> 16) & 0xFF;
-        int g2 = (secondary.color >> 8) & 0xFF;
-        int b2 = secondary.color & 0xFF;
+        int r2 = (secondary.getColor() >> 16) & 0xFF;
+        int g2 = (secondary.getColor() >> 8) & 0xFF;
+        int b2 = secondary.getColor() & 0xFF;
 
         int r, g, b;
 
         if (tertiary != null) {
             // Chimera: equal blend of all 3
-            int r3 = (tertiary.color >> 16) & 0xFF;
-            int g3 = (tertiary.color >> 8) & 0xFF;
-            int b3 = tertiary.color & 0xFF;
+            int r3 = (tertiary.getColor() >> 16) & 0xFF;
+            int g3 = (tertiary.getColor() >> 8) & 0xFF;
+            int b3 = tertiary.getColor() & 0xFF;
 
             r = (r1 + r2 + r3) / 3;
             g = (g1 + g2 + g3) / 3;
@@ -306,8 +311,8 @@ public class BossDNAMixer {
         StringBuilder name = new StringBuilder();
 
         // Variant prefix
-        if (!variant.titlePrefix.isEmpty()) {
-            name.append(variant.titlePrefix).append(" ");
+        if (!variant.getTitlePrefix().isEmpty()) {
+            name.append(variant.getTitlePrefix()).append(" ");
         }
 
         // Random prefix (50% chance)
@@ -335,8 +340,8 @@ public class BossDNAMixer {
      * Create a hybrid name from two archetypes.
      */
     private String createHybridName(BossArchetype primary, BossArchetype secondary, Random rng) {
-        String pName = primary.displayName;
-        String sName = secondary.displayName;
+        String pName = primary.getDisplayName();
+        String sName = secondary.getDisplayName();
 
         // Different blending strategies
         int strategy = rng.nextInt(3);
@@ -368,9 +373,9 @@ public class BossDNAMixer {
 
         // Apply variant modifier
         return switch (variant) {
-            case CHIMERA -> base * variant.healthMod;
+            case CHIMERA -> base * variant.getHealthMod();
             case MIRROR -> base; // Mirror uses player stats, not archetype
-            case EVOLVING -> base * variant.healthMod;
+            case EVOLVING -> base * variant.getHealthMod();
             default -> base;
         };
     }

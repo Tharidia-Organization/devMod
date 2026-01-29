@@ -3,6 +3,7 @@ package com.devmod.runtime;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
@@ -36,10 +38,18 @@ public class RecoverySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverySystem.class);
     public static final RecoverySystem INSTANCE = new RecoverySystem();
 
+    /** Lock striping map to avoid String.intern() memory leaks while ensuring per-player synchronization */
+    private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
+
     private Path snapshotsDir;
     private boolean initialized = false;
 
     private RecoverySystem() {}
+
+    /** Get or create a lock object for a specific player (avoids String.intern() memory leak) */
+    private Object getPlayerLock(UUID playerId) {
+        return playerLocks.computeIfAbsent(playerId, k -> new Object());
+    }
 
     /**
      * Initialize the recovery system.
@@ -80,25 +90,24 @@ public class RecoverySystem {
 
     /**
      * Update the state of an existing snapshot.
-     * Thread-safe: Uses file locking to prevent concurrent read-modify-write races.
+     * Thread-safe: Uses per-player locks to prevent concurrent read-modify-write races.
      */
     public void updateSnapshotState(UUID playerId, PlayerInstanceState newState) {
         Path snapshotFile = getSnapshotFile(playerId);
 
-        // Synchronize on the player ID to prevent concurrent updates for the same player
-        // This prevents the read-modify-write race condition
-        synchronized (playerId.toString().intern()) {
+        // Synchronize on a per-player lock object to prevent concurrent updates
+        // This prevents the read-modify-write race condition without using String.intern()
+        synchronized (getPlayerLock(playerId)) {
             try {
-                if (!Files.exists(snapshotFile)) {
-                    LOGGER.warn("[Recovery] No snapshot found for player {} to update", playerId);
-                    return;
-                }
-
+                // Load, modify, save atomically within the lock
+                // NoSuchFileException will be thrown if file doesn't exist (handles TOCTOU)
                 PlayerInstanceSnapshot snapshot = PlayerInstanceSnapshot.loadFromFile(snapshotFile);
                 snapshot.setState(newState);
                 snapshot.saveToFile(snapshotFile);
 
                 LOGGER.debug("[Recovery] Updated snapshot state for {} to {}", playerId, newState);
+            } catch (NoSuchFileException e) {
+                LOGGER.warn("[Recovery] No snapshot found for player {} to update", playerId);
             } catch (IOException e) {
                 LOGGER.error("[Recovery] Failed to update snapshot state for {}", playerId, e);
             }
@@ -107,15 +116,18 @@ public class RecoverySystem {
 
     /**
      * Load a player's snapshot if it exists.
+     * Handles TOCTOU by catching NoSuchFileException instead of pre-checking existence.
      */
     public Optional<PlayerInstanceSnapshot> loadSnapshot(UUID playerId) {
         if (!initialized) return Optional.empty();
 
         try {
             Path snapshotFile = getSnapshotFile(playerId);
-            if (Files.exists(snapshotFile)) {
-                return Optional.of(PlayerInstanceSnapshot.loadFromFile(snapshotFile));
-            }
+            // Directly attempt to load - NoSuchFileException handles missing file case
+            return Optional.of(PlayerInstanceSnapshot.loadFromFile(snapshotFile));
+        } catch (NoSuchFileException e) {
+            // File doesn't exist - this is a normal case, not an error
+            return Optional.empty();
         } catch (IOException e) {
             LOGGER.error("[Recovery] Failed to load snapshot for {}", playerId, e);
         }
@@ -135,6 +147,9 @@ public class RecoverySystem {
             }
         } catch (IOException e) {
             LOGGER.error("[Recovery] Failed to delete snapshot for {}", playerId, e);
+        } finally {
+            // Clean up the lock object to prevent memory leak
+            playerLocks.remove(playerId);
         }
     }
 

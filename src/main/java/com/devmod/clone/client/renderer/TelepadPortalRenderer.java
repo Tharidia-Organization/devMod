@@ -28,16 +28,11 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import org.joml.Matrix4f;
 
-import com.devmod.DevMod;
 import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
 
 @OnlyIn(Dist.CLIENT)
 public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEntity> {
-    // Portal dimensions (35% larger than previous)
-    private static final float PORTAL_WIDTH = 2.457f;
-    private static final float PORTAL_HEIGHT = 3.51f;
-    private static final float PORTAL_Y_OFFSET = 1.0f;
     private static final int OVAL_SEGMENTS = 48;
 
     // Vortex settings
@@ -47,8 +42,6 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
     // Ring glow settings
     private static final float RING_THICKNESS = 0.12f;
     private static final float GLOW_LAYERS = 3;
-
-    private static boolean loggedOnce = false;
 
     public TelepadPortalRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -72,17 +65,11 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         float idleBoost = active ? 1.0f : 0.75f;
         float intensity = Mth.clamp(idleBoost * (0.45f + 0.65f * charge), 0.0f, 1.5f);
 
-        // Register this telepad for depth rendering (before entities via mixin)
+        // Register this telepad for client-side occlusion checks
         if (intensity > 0.01f) {
             TelepadDepthRenderer.registerTelepad(be.getBlockPos());
         } else {
             TelepadDepthRenderer.unregisterTelepad(be.getBlockPos());
-        }
-
-        if (!loggedOnce) {
-            DevMod.LOGGER.info("[TelepadPortalRenderer] Rendering portal active={} charge={} intensity={}",
-                active, charge, intensity);
-            loggedOnce = true;
         }
 
         // Get game time for animation
@@ -110,7 +97,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         poseStack.pushPose();
 
         // Position portal above telepad center
-        poseStack.translate(0.5, PORTAL_Y_OFFSET, 0.5);
+        poseStack.translate(0.5, TelepadPortalGeometry.PORTAL_Y_OFFSET, 0.5);
 
         // Rotate based on facing direction
         Direction facing = be.getBlockState().getValue(TelepadBlock.FACING);
@@ -124,8 +111,8 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
 
         PoseStack.Pose pose = poseStack.last();
         Matrix4f matrix = pose.pose();
-        float halfWidth = PORTAL_WIDTH / 2.0f;
-        float halfHeight = PORTAL_HEIGHT / 2.0f;
+        float halfWidth = TelepadPortalGeometry.getHalfWidth();
+        float halfHeight = TelepadPortalGeometry.getHalfHeight();
         int fullBright = LightTexture.FULL_BRIGHT;
 
         // Render depth base using RenderType.translucent()
@@ -232,7 +219,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         poseStack.pushPose();
 
         // Position portal above telepad center
-        poseStack.translate(0.5, PORTAL_Y_OFFSET, 0.5);
+        poseStack.translate(0.5, TelepadPortalGeometry.PORTAL_Y_OFFSET, 0.5);
 
         // Rotate based on facing direction
         Direction facing = be.getBlockState().getValue(TelepadBlock.FACING);
@@ -246,8 +233,8 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
 
         Matrix4f matrix = poseStack.last().pose();
         float effectiveIntensity = Math.max(intensity, 0.5f);
-        float halfWidth = PORTAL_WIDTH / 2.0f;
-        float halfHeight = PORTAL_HEIGHT / 2.0f;
+        float halfWidth = TelepadPortalGeometry.getHalfWidth();
+        float halfHeight = TelepadPortalGeometry.getHalfHeight();
 
         // Setup render state
         RenderSystem.enableBlend();

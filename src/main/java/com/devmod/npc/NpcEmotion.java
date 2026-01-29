@@ -125,14 +125,14 @@ public enum NpcEmotion implements StringRepresentable {
      * Gets the primary color for this emotion (from visual state).
      */
     public int getPrimaryColor() {
-        return visualState.primary;
+        return visualState.getPrimary();
     }
 
     /**
      * Gets the secondary color for this emotion (from visual state).
      */
     public int getSecondaryColor() {
-        return visualState.secondary;
+        return visualState.getSecondary();
     }
 
     /**

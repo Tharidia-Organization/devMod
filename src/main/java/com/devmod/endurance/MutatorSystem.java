@@ -45,32 +45,36 @@ public class MutatorSystem {
         NEUTRAL("Twist", EnduranceColors.Mutator.NEUTRAL, 1.0f),       // Different, same rewards
         CHAOTIC("Chaos", EnduranceColors.Mutator.CHAOTIC, 1.25f);      // Unpredictable
 
-        public final String displayName;
-        public final int color;
-        public final float rewardMultiplier;
+        private final String displayName;
+        private final int color;
+        private final float rewardMultiplier;
 
         MutatorCategory(String displayName, int color, float rewardMultiplier) {
             this.displayName = displayName;
             this.color = color;
             this.rewardMultiplier = rewardMultiplier;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
+        public float getRewardMultiplier() { return rewardMultiplier; }
     }
 
     /**
      * A single mutator definition.
      */
     public static class Mutator {
-        public final String id;
-        public final String name;
-        public final String description;
-        public final MutatorCategory category;
-        public final String iconSymbol;
+        private final String id;
+        private final String name;
+        private final String description;
+        private final MutatorCategory category;
+        private final String iconSymbol;
 
         // Can be combined with other mutators?
-        public final Set<String> incompatibleMutators;
+        private final Set<String> incompatibleMutators;
 
         // Weight for random selection (higher = more common)
-        public final int weight;
+        private final int weight;
 
         public Mutator(String id, String name, String description, MutatorCategory category,
                        String iconSymbol, int weight, Set<String> incompatible) {
@@ -87,6 +91,14 @@ public class MutatorSystem {
                        String iconSymbol, int weight) {
             this(id, name, description, category, iconSymbol, weight, Set.of());
         }
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public MutatorCategory getCategory() { return category; }
+        public String getIconSymbol() { return iconSymbol; }
+        public Set<String> getIncompatibleMutators() { return incompatibleMutators; }
+        public int getWeight() { return weight; }
     }
 
     /**
@@ -154,12 +166,12 @@ public class MutatorSystem {
 
         public void addMutator(Mutator mutator) {
             activeMutators.add(mutator);
-            totalRewardMultiplier *= mutator.category.rewardMultiplier;
+            totalRewardMultiplier *= mutator.getCategory().getRewardMultiplier();
             applyMutatorEffects(mutator);
         }
 
         private void applyMutatorEffects(Mutator mutator) {
-            switch (mutator.id) {
+            switch (mutator.getId()) {
                 // Mob stat mutators
                 case "beefy_mobs" -> mobHealthMultiplier *= 2.0f;
                 case "glass_mobs" -> mobHealthMultiplier *= 0.5f;
@@ -234,7 +246,7 @@ public class MutatorSystem {
         public boolean isBulletHell() { return bulletHell; }
 
         public boolean hasMutator(String id) {
-            return activeMutators.stream().anyMatch(m -> m.id.equals(id));
+            return activeMutators.stream().anyMatch(m -> m.getId().equals(id));
         }
 
         public float getRewardMultiplier() { return totalRewardMultiplier; }
@@ -243,7 +255,7 @@ public class MutatorSystem {
         public String getSummary() {
             if (activeMutators.isEmpty()) return "No mutators";
             return activeMutators.stream()
-                .map(m -> m.iconSymbol + " " + m.name)
+                .map(m -> m.getIconSymbol() + " " + m.getName())
                 .reduce((a, b) -> a + " | " + b)
                 .orElse("");
         }
@@ -349,7 +361,7 @@ public class MutatorSystem {
     }
 
     private void register(Mutator mutator) {
-        allMutators.put(mutator.id, mutator);
+        allMutators.put(mutator.getId(), mutator);
     }
 
     // ========== Session Management ==========
@@ -369,7 +381,7 @@ public class MutatorSystem {
         }
 
         List<Mutator> available = new ArrayList<>(allMutators.values());
-        available.removeIf(m -> session.isExcluded(m.id));
+        available.removeIf(m -> session.isExcluded(m.getId()));
         Set<String> selectedIds = new HashSet<>();
 
         // Higher waves allow more/harder mutators
@@ -382,16 +394,16 @@ public class MutatorSystem {
                     LOGGER.warn("[MutatorSystem] Required mutator '{}' not found", requiredId);
                     continue;
                 }
-                if (session.isExcluded(required.id)) {
+                if (session.isExcluded(required.getId())) {
                     LOGGER.warn("[MutatorSystem] Required mutator '{}' excluded by policy", requiredId);
                     continue;
                 }
                 session.addMutator(required);
-                selectedIds.add(required.id);
+                selectedIds.add(required.getId());
                 available.removeIf(m ->
-                    m.id.equals(required.id) ||
-                    m.incompatibleMutators.contains(required.id) ||
-                    required.incompatibleMutators.contains(m.id)
+                    m.getId().equals(required.getId()) ||
+                    m.getIncompatibleMutators().contains(required.getId()) ||
+                    required.getIncompatibleMutators().contains(m.getId())
                 );
             }
             actualCount = Math.max(actualCount, selectedIds.size());
@@ -401,13 +413,13 @@ public class MutatorSystem {
             Mutator selected = selectWeightedMutator(available, session);
             if (selected != null) {
                 session.addMutator(selected);
-                selectedIds.add(selected.id);
+                selectedIds.add(selected.getId());
 
                 // Remove incompatible mutators from pool
                 available.removeIf(m ->
-                    m.id.equals(selected.id) ||
-                    m.incompatibleMutators.contains(selected.id) ||
-                    selected.incompatibleMutators.contains(m.id)
+                    m.getId().equals(selected.getId()) ||
+                    m.getIncompatibleMutators().contains(selected.getId()) ||
+                    selected.getIncompatibleMutators().contains(m.getId())
                 );
             }
         }
@@ -475,12 +487,12 @@ public class MutatorSystem {
 
         // Get available mutators (not already active)
         List<Mutator> available = new ArrayList<>(allMutators.values());
-        available.removeIf(m -> session.hasMutator(m.id));
-        available.removeIf(m -> session.isExcluded(m.id));
+        available.removeIf(m -> session.hasMutator(m.getId()));
+        available.removeIf(m -> session.isExcluded(m.getId()));
 
         // Prefer negative mutators (challenging) as waves progress
         List<Mutator> negativeMutators = available.stream()
-            .filter(m -> m.category == MutatorCategory.NEGATIVE || m.category == MutatorCategory.CHAOTIC)
+            .filter(m -> m.getCategory() == MutatorCategory.NEGATIVE || m.getCategory() == MutatorCategory.CHAOTIC)
             .collect(java.util.stream.Collectors.toList());
 
         List<Mutator> pool = negativeMutators.isEmpty() ? available : negativeMutators;
@@ -489,7 +501,7 @@ public class MutatorSystem {
             Mutator newMutator = selectWeightedMutator(pool, session);
             if (newMutator != null) {
                 session.addMutator(newMutator);
-                LOGGER.info("[MutatorSystem] Added new mutator: {} ({})", newMutator.name, newMutator.id);
+                LOGGER.info("[MutatorSystem] Added new mutator: {} ({})", newMutator.getName(), newMutator.getId());
 
                 // Telemetry: record mutator added mid-quest
                 EnduranceTelemetryService.INSTANCE.recordMutatorAdded(
@@ -506,8 +518,8 @@ public class MutatorSystem {
 
         int totalWeight = 0;
         for (Mutator mutator : mutators) {
-            int weight = mutator.weight;
-            if (session != null && session.isSuggested(mutator.id)) {
+            int weight = mutator.getWeight();
+            if (session != null && session.isSuggested(mutator.getId())) {
                 weight = (int) Math.ceil(weight * 1.5);
             }
             totalWeight += weight;
@@ -516,8 +528,8 @@ public class MutatorSystem {
         int cumulative = 0;
 
         for (Mutator mutator : mutators) {
-            int weight = mutator.weight;
-            if (session != null && session.isSuggested(mutator.id)) {
+            int weight = mutator.getWeight();
+            if (session != null && session.isSuggested(mutator.getId())) {
                 weight = (int) Math.ceil(weight * 1.5);
             }
             cumulative += weight;
@@ -633,7 +645,7 @@ public class MutatorSystem {
 
     public List<Mutator> getMutatorsByCategory(MutatorCategory category) {
         return allMutators.values().stream()
-            .filter(m -> m.category == category)
+            .filter(m -> m.getCategory() == category)
             .toList();
     }
 }

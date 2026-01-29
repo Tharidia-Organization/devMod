@@ -47,13 +47,16 @@ public final class WaveModifierService {
         REGEN("Regenerating", "Mobs slowly regenerate health"),
         DOUBLE_SPAWN("Horde", "Double the number of mobs");
 
-        public final String displayName;
-        public final String description;
+        private final String displayName;
+        private final String description;
 
         WaveModifier(String displayName, String description) {
             this.displayName = displayName;
             this.description = description;
         }
+
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
     }
 
     /**

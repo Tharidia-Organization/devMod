@@ -53,16 +53,16 @@ public record PerkChoicesPayload(
     ) {
         public static PerkChoice from(PerkSystem.Perk perk, int currentStacks, boolean suggested, boolean required) {
             return new PerkChoice(
-                perk.id,
-                perk.name,
-                perk.description,
-                perk.tier.displayName,
-                perk.tier.color,
-                perk.category.displayName,
-                perk.category.color,
-                perk.stackable,
+                perk.getId(),
+                perk.getName(),
+                perk.getDescription(),
+                perk.getTier().getDisplayName(),
+                perk.getTier().getColor(),
+                perk.getCategory().getDisplayName(),
+                perk.getCategory().getColor(),
+                perk.isStackable(),
                 currentStacks,
-                perk.maxStacks,
+                perk.getMaxStacks(),
                 suggested,
                 required,
                 0, "", 0, 0, false  // Default synergy values
@@ -76,26 +76,26 @@ public record PerkChoicesPayload(
                 boolean suggested, boolean required, PerkSynergySystem.SynergyPreview preview) {
             String hint = "";
             if (!preview.newSynergies().isEmpty()) {
-                hint = "Completes: " + preview.newSynergies().get(0).synergy().name;
+                hint = "Completes: " + preview.newSynergies().get(0).synergy().getName();
             } else if (!preview.potentialSynergies().isEmpty()) {
                 var potential = preview.potentialSynergies().get(0);
                 int missing = potential.missingPerks().size();
-                hint = potential.synergy().name + " (" + missing + " away)";
+                hint = potential.synergy().getName() + " (" + missing + " away)";
             } else if (!preview.activeSynergies().isEmpty()) {
-                hint = "Enhances: " + preview.activeSynergies().get(0).synergy().name;
+                hint = "Enhances: " + preview.activeSynergies().get(0).synergy().getName();
             }
 
             return new PerkChoice(
-                perk.id,
-                perk.name,
-                perk.description,
-                perk.tier.displayName,
-                perk.tier.color,
-                perk.category.displayName,
-                perk.category.color,
-                perk.stackable,
+                perk.getId(),
+                perk.getName(),
+                perk.getDescription(),
+                perk.getTier().getDisplayName(),
+                perk.getTier().getColor(),
+                perk.getCategory().getDisplayName(),
+                perk.getCategory().getColor(),
+                perk.isStackable(),
                 currentStacks,
-                perk.maxStacks,
+                perk.getMaxStacks(),
                 suggested,
                 required,
                 preview.totalSynergyScore(),

@@ -311,6 +311,65 @@ public class OverrideManager {
     }
 
     // ===================
+    // Cleanup
+    // ===================
+
+    /**
+     * Cleans up expired overrides from all maps.
+     * Should be called periodically (e.g., every 5 minutes) to prevent memory leaks.
+     *
+     * @return The number of expired overrides cleaned up
+     */
+    public int cleanupExpiredOverrides() {
+        int cleaned = 0;
+
+        // Clean expired player overrides
+        var playerIterator = playerOverrides.entrySet().iterator();
+        while (playerIterator.hasNext()) {
+            var entry = playerIterator.next();
+            if (entry.getValue().isExpired()) {
+                playerIterator.remove();
+                cleaned++;
+                LOGGER.debug("Cleaned up expired player override for {}", entry.getKey());
+            }
+        }
+
+        // Clean expired party overrides
+        var partyIterator = partyOverrides.entrySet().iterator();
+        while (partyIterator.hasNext()) {
+            var entry = partyIterator.next();
+            if (entry.getValue().isExpired()) {
+                partyIterator.remove();
+                cleaned++;
+                LOGGER.debug("Cleaned up expired party override for {}", entry.getKey());
+            }
+        }
+
+        // Clean expired quest overrides
+        var questIterator = questOverrides.entrySet().iterator();
+        while (questIterator.hasNext()) {
+            var entry = questIterator.next();
+            if (entry.getValue().isExpired()) {
+                questIterator.remove();
+                cleaned++;
+                LOGGER.debug("Cleaned up expired quest override for {}", entry.getKey());
+            }
+        }
+
+        if (cleaned > 0) {
+            LOGGER.info("Cleaned up {} expired overrides", cleaned);
+            telemetry.emit("arena.override.cleanup", Map.of(
+                "cleanedCount", cleaned,
+                "remainingPlayer", playerOverrides.size(),
+                "remainingParty", partyOverrides.size(),
+                "remainingQuest", questOverrides.size()
+            ));
+        }
+
+        return cleaned;
+    }
+
+    // ===================
     // Stats
     // ===================
 

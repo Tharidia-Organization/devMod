@@ -440,9 +440,9 @@ public class TelemetryDashboardServer {
 
         return gson.toJson(Map.of(
             "category", category.name(),
-            "displayName", category.displayName,
-            "description", category.description,
-            "higherIsBetter", category.higherIsBetter,
+            "displayName", category.getDisplayName(),
+            "description", category.getDescription(),
+            "higherIsBetter", category.isHigherIsBetter(),
             "scope", scope.isEmpty() ? "global" : scope,
             "arenaId", arenaId,
             "entries", result
@@ -454,9 +454,9 @@ public class TelemetryDashboardServer {
         for (var cat : com.devmod.endurance.LeaderboardSystem.LeaderboardCategory.values()) {
             Map<String, Object> row = new java.util.LinkedHashMap<>();
             row.put("id", cat.name());
-            row.put("displayName", cat.displayName);
-            row.put("description", cat.description);
-            row.put("higherIsBetter", cat.higherIsBetter);
+            row.put("displayName", cat.getDisplayName());
+            row.put("description", cat.getDescription());
+            row.put("higherIsBetter", cat.isHigherIsBetter());
             categories.add(row);
         }
         return gson.toJson(Map.of("categories", categories));

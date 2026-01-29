@@ -86,7 +86,7 @@ public class DevilsBargainManager {
             recalculateModifiers();
 
             LOGGER.info("[Bargain] Quest {} added curse: {} (total: {}, reward: {}x)",
-                questId, curse.displayName, activeCurses.size(), totalRewardMultiplier);
+                questId, curse.getDisplayName(), activeCurses.size(), totalRewardMultiplier);
 
             return true;
         }
@@ -109,7 +109,7 @@ public class DevilsBargainManager {
 
             for (Curse curse : activeCurses) {
                 // Multiply reward
-                totalRewardMultiplier *= curse.rewardMultiplier;
+                totalRewardMultiplier *= curse.getRewardMultiplier();
 
                 // Apply curse-specific effects
                 switch (curse) {
@@ -239,7 +239,7 @@ public class DevilsBargainManager {
         for (int i = 0; i < offerings.size(); i++) {
             Curse curse = offerings.get(i);
             message.append(String.format("§7[%d] %s §7- %s §e(%.2fx)%n",
-                i + 1, curse.getFormattedName(), curse.description, curse.rewardMultiplier));
+                i + 1, curse.getFormattedName(), curse.getDescription(), curse.getRewardMultiplier()));
         }
         message.append("§8Skip with /bargain skip");
 
@@ -277,7 +277,7 @@ public class DevilsBargainManager {
         List<Curse> weighted = new ArrayList<>();
 
         for (Curse curse : available) {
-            int weight = switch (curse.tier) {
+            int weight = switch (curse.getTier()) {
                 case MINOR -> Math.max(1, 3 - curseCount / 2);
                 case MAJOR -> 2;
                 case CURSED -> Math.min(3, 1 + curseCount / 3);

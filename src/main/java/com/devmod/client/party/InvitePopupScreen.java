@@ -133,7 +133,7 @@ public class InvitePopupScreen extends Screen {
         graphics.drawCenteredString(Objects.requireNonNull(font, "font"), inviteMsg, popupX + POPUP_WIDTH / 2, popupY + 35, COLOR_TEXT);
 
         // Quest type with color coding
-        String questTypeMsg = Objects.requireNonNull(questType.displayName, "questTypeMsg");
+        String questTypeMsg = Objects.requireNonNull(questType.getDisplayName(), "questTypeMsg");
         int questColor = getQuestTypeColor(questType);
         graphics.drawCenteredString(Objects.requireNonNull(font, "font"), questTypeMsg, popupX + POPUP_WIDTH / 2, popupY + 50, questColor);
 
@@ -185,9 +185,9 @@ public class InvitePopupScreen extends Screen {
 
     private String getQuestTypeDescription(QuestType type) {
         return switch (type) {
-            case PVE_COOP -> String.format("%d-%d players, standard difficulty", type.minPlayers, type.maxPlayers);
-            case RAID_BOSS -> String.format("%d-%d players, enhanced bosses", type.minPlayers, type.maxPlayers);
-            case EVENT -> String.format("%d-%d players, massive boss", type.minPlayers, type.maxPlayers);
+            case PVE_COOP -> String.format("%d-%d players, standard difficulty", type.getMinPlayers(), type.getMaxPlayers());
+            case RAID_BOSS -> String.format("%d-%d players, enhanced bosses", type.getMinPlayers(), type.getMaxPlayers());
+            case EVENT -> String.format("%d-%d players, massive boss", type.getMinPlayers(), type.getMaxPlayers());
         };
     }
 

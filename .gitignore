@@ -66,3 +66,13 @@ replay_pid*
 /.obsidian/graph.json
 /.obsidian/workspace.json
 /Excalidraw/Drawing 2025-12-27 21.24.19.excalidraw.md
+
+# macOS metadata
+.DS_Store
+
+# IntelliJ project files
+*.ipr
+*.iws
+
+# Spotless local config
+/config/spotless/

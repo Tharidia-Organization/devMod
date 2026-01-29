@@ -19,6 +19,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.Level;
 
+import com.devmod.npc.dialog.DialogLimits;
+
 /**
  * Schedule constraints for dialog availability.
  * Dialogs can be restricted by in-game time, real-world days, and date ranges.
@@ -138,10 +140,10 @@ public record DialogSchedule(
             }
 
             buf.writeBoolean(schedule.startDate != null);
-            if (schedule.startDate != null) buf.writeUtf(schedule.startDate.toString());
+            if (schedule.startDate != null) buf.writeUtf(schedule.startDate.toString(), DialogLimits.MAX_DATE_LENGTH);
 
             buf.writeBoolean(schedule.endDate != null);
-            if (schedule.endDate != null) buf.writeUtf(schedule.endDate.toString());
+            if (schedule.endDate != null) buf.writeUtf(schedule.endDate.toString(), DialogLimits.MAX_DATE_LENGTH);
         },
         buf -> {
             Long minGameTime = buf.readBoolean() ? buf.readLong() : null;
@@ -150,14 +152,21 @@ public record DialogSchedule(
             Set<DayOfWeek> realWorldDays = null;
             if (buf.readBoolean()) {
                 int count = buf.readVarInt();
+                if (count < 0 || count > DialogLimits.MAX_SCHEDULE_DAYS) {
+                    throw new IllegalArgumentException("Invalid dialog schedule day count: " + count);
+                }
                 realWorldDays = EnumSet.noneOf(DayOfWeek.class);
                 for (int i = 0; i < count; i++) {
                     realWorldDays.add(DayOfWeek.of(buf.readVarInt()));
                 }
             }
 
-            LocalDate startDate = buf.readBoolean() ? LocalDate.parse(buf.readUtf()) : null;
-            LocalDate endDate = buf.readBoolean() ? LocalDate.parse(buf.readUtf()) : null;
+            LocalDate startDate = buf.readBoolean()
+                ? LocalDate.parse(buf.readUtf(DialogLimits.MAX_DATE_LENGTH))
+                : null;
+            LocalDate endDate = buf.readBoolean()
+                ? LocalDate.parse(buf.readUtf(DialogLimits.MAX_DATE_LENGTH))
+                : null;
 
             return new DialogSchedule(minGameTime, maxGameTime, realWorldDays, startDate, endDate);
         }

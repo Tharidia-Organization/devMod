@@ -14,6 +14,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
 import com.devmod.npc.NpcEmotion;
+import com.devmod.npc.dialog.DialogLimits;
 
 /**
  * A single line of dialog with speaker information.
@@ -60,21 +61,31 @@ public record SpeakerLine(
     public static final StreamCodec<FriendlyByteBuf, SpeakerLine> STREAM_CODEC = StreamCodec.of(
         (buf, line) -> {
             buf.writeUUID(line.speakerId);
-            buf.writeUtf(line.text);
+            buf.writeUtf(DialogLimits.truncate(line.text, DialogLimits.MAX_LINE_LENGTH), DialogLimits.MAX_LINE_LENGTH);
             buf.writeBoolean(line.emotion != null);
             if (line.emotion != null) {
-                buf.writeUtf(line.emotion.getSerializedName());
+                buf.writeUtf(
+                    DialogLimits.truncate(line.emotion.getSerializedName(), DialogLimits.MAX_ACTION_TYPE_LENGTH),
+                    DialogLimits.MAX_ACTION_TYPE_LENGTH
+                );
             }
             buf.writeBoolean(line.speakerNameOverride != null);
             if (line.speakerNameOverride != null) {
-                buf.writeUtf(line.speakerNameOverride);
+                buf.writeUtf(
+                    DialogLimits.truncate(line.speakerNameOverride, DialogLimits.MAX_DIALOG_NAME_LENGTH),
+                    DialogLimits.MAX_DIALOG_NAME_LENGTH
+                );
             }
         },
         buf -> {
             UUID speakerId = buf.readUUID();
-            String text = buf.readUtf();
-            NpcEmotion emotion = buf.readBoolean() ? NpcEmotion.fromName(buf.readUtf()) : null;
-            String nameOverride = buf.readBoolean() ? buf.readUtf() : null;
+            String text = buf.readUtf(DialogLimits.MAX_LINE_LENGTH);
+            NpcEmotion emotion = buf.readBoolean()
+                ? NpcEmotion.fromName(buf.readUtf(DialogLimits.MAX_ACTION_TYPE_LENGTH))
+                : null;
+            String nameOverride = buf.readBoolean()
+                ? buf.readUtf(DialogLimits.MAX_DIALOG_NAME_LENGTH)
+                : null;
             return new SpeakerLine(speakerId, text, emotion, nameOverride);
         }
     );

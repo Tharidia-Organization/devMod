@@ -77,15 +77,19 @@ public class PerkSystem {
         EPIC(EnduranceColors.PerkRarity.EPIC, "Epic", 4),             // 4% chance
         LEGENDARY(EnduranceColors.PerkRarity.LEGENDARY, "Legendary", 1); // 1% chance
 
-        public final int color;
-        public final String displayName;
-        public final int weight;
+        private final int color;
+        private final String displayName;
+        private final int weight;
 
         PerkTier(int color, String displayName, int weight) {
             this.color = color;
             this.displayName = displayName;
             this.weight = weight;
         }
+
+        public int getColor() { return color; }
+        public String getDisplayName() { return displayName; }
+        public int getWeight() { return weight; }
     }
 
     /**
@@ -100,35 +104,38 @@ public class PerkSystem {
         COMBO("Combo", EnduranceColors.PerkCategory.COMBO),         // Style and combo bonuses
         CURSE("Curse", EnduranceColors.PerkCategory.CURSE);         // Negative effects for rewards
 
-        public final String displayName;
-        public final int color;
+        private final String displayName;
+        private final int color;
 
         PerkCategory(String displayName, int color) {
             this.displayName = displayName;
             this.color = color;
         }
+
+        public String getDisplayName() { return displayName; }
+        public int getColor() { return color; }
     }
 
     /**
      * A single perk definition.
      */
     public static class Perk {
-        public final String id;
-        public final String name;
-        public final String description;
-        public final PerkTier tier;
-        public final PerkCategory category;
-        public final String iconPath;
+        private final String id;
+        private final String name;
+        private final String description;
+        private final PerkTier tier;
+        private final PerkCategory category;
+        private final String iconPath;
 
         // Can this perk stack?
-        public final boolean stackable;
-        public final int maxStacks;
+        private final boolean stackable;
+        private final int maxStacks;
 
         // Required perks to appear (synergy)
-        public final Set<String> requiredPerks;
+        private final Set<String> requiredPerks;
 
         // Perks that make this one not appear
-        public final Set<String> incompatiblePerks;
+        private final Set<String> incompatiblePerks;
 
         // Effect when acquired
         private final Consumer<PerkContext> onAcquire;
@@ -169,6 +176,17 @@ public class PerkSystem {
             this.onKill = onKill;
             this.onDamageTaken = onDamageTaken;
         }
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public PerkTier getTier() { return tier; }
+        public PerkCategory getCategory() { return category; }
+        public String getIconPath() { return iconPath; }
+        public boolean isStackable() { return stackable; }
+        public int getMaxStacks() { return maxStacks; }
+        public Set<String> getRequiredPerks() { return requiredPerks; }
+        public Set<String> getIncompatiblePerks() { return incompatiblePerks; }
 
         public void apply(PerkContext context) {
             if (onAcquire != null) onAcquire.accept(context);
@@ -680,7 +698,7 @@ public class PerkSystem {
     }
 
     private void registerPerk(Perk perk) {
-        allPerks.put(perk.id, perk);
+        allPerks.put(perk.getId(), perk);
     }
 
     // ========== Session Management ==========
@@ -823,30 +841,30 @@ public class PerkSystem {
         List<Perk> available = new ArrayList<>();
 
         for (Perk perk : allPerks.values()) {
-            if (session.isExcluded(perk.id)) continue;
+            if (session.isExcluded(perk.getId())) continue;
 
             // Check if already at max stacks
-            if (!perk.stackable && session.hasPerk(perk.id)) continue;
-            if (perk.stackable && session.getPerkStacks(perk.id) >= perk.maxStacks) continue;
+            if (!perk.isStackable() && session.hasPerk(perk.getId())) continue;
+            if (perk.isStackable() && session.getPerkStacks(perk.getId()) >= perk.getMaxStacks()) continue;
 
             // Check required perks
-            if (!perk.requiredPerks.isEmpty()) {
-                boolean hasAll = perk.requiredPerks.stream().allMatch(session::hasPerk);
+            if (!perk.getRequiredPerks().isEmpty()) {
+                boolean hasAll = perk.getRequiredPerks().stream().allMatch(session::hasPerk);
                 if (!hasAll) continue;
             }
 
             // Check incompatible perks
-            if (perk.incompatiblePerks.stream().anyMatch(session::hasPerk)) continue;
+            if (perk.getIncompatiblePerks().stream().anyMatch(session::hasPerk)) continue;
 
             // Check synergy requirements for legendary perks
-            if (perk.tier == PerkTier.LEGENDARY) {
-                if (perk.id.equals("avatar_of_war")) {
+            if (perk.getTier() == PerkTier.LEGENDARY) {
+                if (perk.getId().equals("avatar_of_war")) {
                     long offenseCount = session.getAcquiredPerkIds().stream()
                         .map(allPerks::get)
                         .filter(p -> p != null && p.category == PerkCategory.OFFENSE)
                         .count();
                     if (offenseCount < 5) continue;
-                } else if (perk.id.equals("unkillable")) {
+                } else if (perk.getId().equals("unkillable")) {
                     long defenseCount = session.getAcquiredPerkIds().stream()
                         .map(allPerks::get)
                         .filter(p -> p != null && p.category == PerkCategory.DEFENSE)
@@ -856,9 +874,9 @@ public class PerkSystem {
             }
 
             // Higher tier perks appear more in later waves
-            if (perk.tier.ordinal() > waveNumber / 2) {
+            if (perk.getTier().ordinal() > waveNumber / 2) {
                 // Skip very rare perks in early waves
-                if (waveNumber < 3 && perk.tier.ordinal() >= PerkTier.EPIC.ordinal()) continue;
+                if (waveNumber < 3 && perk.getTier().ordinal() >= PerkTier.EPIC.ordinal()) continue;
             }
 
             available.add(perk);
@@ -881,12 +899,12 @@ public class PerkSystem {
                 LOGGER.warn("[PerkSystem] Required perk '{}' not found", perkId);
                 continue;
             }
-            if (perk.incompatiblePerks.stream().anyMatch(session::hasPerk)) {
+            if (perk.getIncompatiblePerks().stream().anyMatch(session::hasPerk)) {
                 LOGGER.warn("[PerkSystem] Required perk '{}' incompatible with existing perks", perkId);
                 continue;
             }
-            if (!perk.requiredPerks.isEmpty()) {
-                boolean hasAll = perk.requiredPerks.stream().allMatch(session::hasPerk);
+            if (!perk.getRequiredPerks().isEmpty()) {
+                boolean hasAll = perk.getRequiredPerks().stream().allMatch(session::hasPerk);
                 if (!hasAll) {
                     LOGGER.warn("[PerkSystem] Required perk '{}' missing prerequisites", perkId);
                     continue;
@@ -911,9 +929,9 @@ public class PerkSystem {
         for (Perk perk : perks) {
             // Higher waves increase rare perk chances
             // Use config-aware weight if quest context available, otherwise fall back to enum default
-            int weight = questId != null ? getTierWeight(perk.tier, questId) : perk.tier.weight;
-            if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
-            if (session != null && session.isSuggested(perk.id)) {
+            int weight = questId != null ? getTierWeight(perk.getTier(), questId) : perk.getTier().getWeight();
+            if (waveNumber >= 5) weight *= (perk.getTier().ordinal() + 1);
+            if (session != null && session.isSuggested(perk.getId())) {
                 weight = (int) Math.ceil(weight * 1.5);
             }
             totalWeight += weight;
@@ -923,9 +941,9 @@ public class PerkSystem {
         int roll = random.nextInt(totalWeight);
         int cumulative = 0;
         for (Perk perk : perks) {
-            int weight = questId != null ? getTierWeight(perk.tier, questId) : perk.tier.weight;
-            if (waveNumber >= 5) weight *= (perk.tier.ordinal() + 1);
-            if (session != null && session.isSuggested(perk.id)) {
+            int weight = questId != null ? getTierWeight(perk.getTier(), questId) : perk.getTier().getWeight();
+            if (waveNumber >= 5) weight *= (perk.getTier().ordinal() + 1);
+            if (session != null && session.isSuggested(perk.getId())) {
                 weight = (int) Math.ceil(weight * 1.5);
             }
             cumulative += weight;
@@ -952,7 +970,7 @@ public class PerkSystem {
         session.clearPendingChoices();
 
         LOGGER.info("[PerkSystem] Player {} selected perk: {} ({})",
-            player.getName().getString(), selected.name, selected.tier.displayName);
+            player.getName().getString(), selected.name, selected.tier.getDisplayName());
 
         return true;
     }
@@ -961,26 +979,26 @@ public class PerkSystem {
      * Apply a perk to player.
      */
     private void applyPerk(ServerPlayer player, PerkSession session, Perk perk) {
-        session.addPerk(perk.id);
+        session.addPerk(perk.getId());
 
         // Telemetry: record perk selection
         EnduranceTelemetryService.INSTANCE.recordPerkSelected(
             player.getUUID(),
             session.getQuestId(),
-            perk.id,
-            perk.name,
-            perk.tier,
-            perk.category,
-            session.getPerkStacks(perk.id),
+            perk.getId(),
+            perk.getName(),
+            perk.getTier(),
+            perk.getCategory(),
+            session.getPerkStacks(perk.getId()),
             session.getTotalPerksAcquired(),
             session.getLastPerkChoicesWave()
         );
 
         // Trigger player attribute snapshot on perk acquisition
         com.devmod.telemetry.player.PlayerAttributeTelemetryService.INSTANCE
-            .recordSnapshot(player, "perk_acquired_" + perk.id);
+            .recordSnapshot(player, "perk_acquired_" + perk.getId());
 
-        PerkContext context = new PerkContext(player, session, session.getPerkStacks(perk.id));
+        PerkContext context = new PerkContext(player, session, session.getPerkStacks(perk.getId()));
         perk.apply(context);
     }
 

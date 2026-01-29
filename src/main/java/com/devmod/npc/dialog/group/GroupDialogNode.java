@@ -13,6 +13,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
+import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.condition.DialogCondition;
 
@@ -38,25 +39,43 @@ public record GroupDialogNode(
 
     public static final StreamCodec<FriendlyByteBuf, GroupDialogNode> STREAM_CODEC = StreamCodec.of(
         (buf, node) -> {
-            buf.writeUtf(node.id);
-            buf.writeVarInt(node.lines.size());
+            buf.writeUtf(DialogLimits.truncate(node.id, DialogLimits.MAX_NODE_ID_LENGTH), DialogLimits.MAX_NODE_ID_LENGTH);
+            int lineCount = Math.min(node.lines.size(), DialogLimits.MAX_LINES_PER_NODE);
+            buf.writeVarInt(lineCount);
+            int writtenLines = 0;
             for (SpeakerLine line : node.lines) {
+                if (writtenLines >= lineCount) {
+                    break;
+                }
                 SpeakerLine.STREAM_CODEC.encode(buf, line);
+                writtenLines++;
             }
-            buf.writeVarInt(node.options.size());
+            int optionCount = Math.min(node.options.size(), DialogLimits.MAX_OPTIONS_PER_NODE);
+            buf.writeVarInt(optionCount);
+            int writtenOptions = 0;
             for (DialogOption option : node.options) {
+                if (writtenOptions >= optionCount) {
+                    break;
+                }
                 DialogOption.STREAM_CODEC.encode(buf, option);
+                writtenOptions++;
             }
             // Note: showCondition is not sent to client (evaluated server-side)
         },
         buf -> {
-            String id = buf.readUtf();
+            String id = buf.readUtf(DialogLimits.MAX_NODE_ID_LENGTH);
             int lineCount = buf.readVarInt();
+            if (lineCount < 0 || lineCount > DialogLimits.MAX_LINES_PER_NODE) {
+                throw new IllegalArgumentException("Invalid group dialog line count: " + lineCount);
+            }
             List<SpeakerLine> lines = new ArrayList<>();
             for (int i = 0; i < lineCount; i++) {
                 lines.add(SpeakerLine.STREAM_CODEC.decode(buf));
             }
             int optionCount = buf.readVarInt();
+            if (optionCount < 0 || optionCount > DialogLimits.MAX_OPTIONS_PER_NODE) {
+                throw new IllegalArgumentException("Invalid group dialog option count: " + optionCount);
+            }
             List<DialogOption> options = new ArrayList<>();
             for (int i = 0; i < optionCount; i++) {
                 options.add(DialogOption.STREAM_CODEC.decode(buf));

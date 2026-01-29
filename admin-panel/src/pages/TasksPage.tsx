@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import { TestTask, ListResponse } from '../types';
+import { TestTask, ListResponse, TaskStatus } from '../types';
 import { useToast } from '../context/ToastContext';
 import { getApiErrorMessage } from '../utils/apiErrors';
 import { format } from 'date-fns';
@@ -29,14 +29,21 @@ interface TaskFormData {
   assignedTo: string;
   assignedByName: string;
   priority: number;
-  status: string;
-  notes: string;
+  status?: TaskStatus;
+  notes?: string;
+  dueAtMillis?: number;
 }
+
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  pending: 'Pending',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
 
 export default function TasksPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<TestTask | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | TaskStatus>('all');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
@@ -53,6 +60,7 @@ export default function TasksPage() {
       assignedTo: data.assignedTo!,
       assignedByName: data.assignedByName,
       priority: Number(data.priority) || 1,
+      dueAtMillis: data.dueAtMillis,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -77,8 +85,12 @@ export default function TasksPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<TaskFormData> }) => api.updateTask(id, {
-      ...data,
+      title: data.title,
+      description: data.description,
       priority: data.priority !== undefined ? Number(data.priority) : undefined,
+      status: data.status,
+      dueAtMillis: data.dueAtMillis,
+      notes: data.notes,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -128,6 +140,7 @@ export default function TasksPage() {
     const assignedTo = (formData.get('assignedTo') as string || '').trim();
     const assignedByName = (formData.get('assignedByName') as string || '').trim() || 'Admin';
     const priorityValue = Number(formData.get('priority'));
+    const dueAtRaw = (formData.get('dueAt') as string || '').trim();
 
     const nextErrors: Record<string, string> = {};
     if (!title) {
@@ -144,6 +157,16 @@ export default function TasksPage() {
       nextErrors.priority = `Must be between ${PRIORITY_MIN} and ${PRIORITY_MAX}`;
     }
 
+    let dueAtMillis: number | undefined;
+    if (dueAtRaw) {
+      const parsed = new Date(`${dueAtRaw}T00:00:00`);
+      if (Number.isNaN(parsed.getTime())) {
+        nextErrors.dueAt = 'Enter a valid date';
+      } else {
+        dueAtMillis = parsed.getTime();
+      }
+    }
+
     if (Object.keys(nextErrors).length > 0) {
       setFormErrors(nextErrors);
       return;
@@ -156,8 +179,9 @@ export default function TasksPage() {
       assignedTo,
       assignedByName,
       priority: priorityValue,
-      status: formData.get('status') as string,
-      notes: formData.get('notes') as string,
+      status: (formData.get('status') as TaskStatus) || undefined,
+      notes: (formData.get('notes') as string) || undefined,
+      dueAtMillis,
     };
 
     if (editingTask) {
@@ -203,20 +227,20 @@ export default function TasksPage() {
 
   const hasErrors = Object.keys(formErrors).length > 0;
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: TaskStatus) => {
     switch (status) {
-      case 'PENDING': return <Clock className="h-4 w-4" />;
-      case 'IN_PROGRESS': return <PlayCircle className="h-4 w-4" />;
-      case 'COMPLETED': return <CheckCircle2 className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'in_progress': return <PlayCircle className="h-4 w-4" />;
+      case 'completed': return <CheckCircle2 className="h-4 w-4" />;
       default: return null;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: TaskStatus) => {
     switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-700';
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700';
-      case 'COMPLETED': return 'bg-green-100 text-green-700';
+      case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'in_progress': return 'bg-blue-100 text-blue-700';
+      case 'completed': return 'bg-green-100 text-green-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -296,7 +320,7 @@ export default function TasksPage() {
 
       {/* Status Filter */}
       <div className="flex gap-2">
-        {['all', 'PENDING', 'IN_PROGRESS', 'COMPLETED'].map((status) => (
+        {(['all', 'pending', 'in_progress', 'completed'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -307,7 +331,7 @@ export default function TasksPage() {
                 : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
             )}
           >
-            {status === 'all' ? 'All' : status.replace('_', ' ')}
+            {status === 'all' ? 'All' : STATUS_LABELS[status]}
           </button>
         ))}
       </div>
@@ -329,11 +353,16 @@ export default function TasksPage() {
                     getStatusColor(task.status)
                   )}>
                     {getStatusIcon(task.status)}
-                    {task.status.replace('_', ' ')}
+                    {STATUS_LABELS[task.status] ?? task.status}
                   </span>
                   <span className={clsx('text-sm font-medium', getPriorityColor(task.priority))}>
                     Priority {task.priority}
                   </span>
+                  {task.overdue && (
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                      Overdue
+                    </span>
+                  )}
                 </div>
                 {task.description && (
                   <p className="text-gray-600 mt-2">{task.description}</p>
@@ -341,9 +370,9 @@ export default function TasksPage() {
                 <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                   <span>Assigned to: <span className="font-mono">{task.assignedTo.substring(0, 8)}...</span></span>
                   <span>By: {task.assignedByName || 'Admin'}</span>
-                  <span>Created: {format(new Date(task.createdAt), 'MMM d, yyyy')}</span>
-                  {task.dueAt && (
-                    <span className="text-orange-600">Due: {format(new Date(task.dueAt), 'MMM d, yyyy')}</span>
+                  <span>Created: {format(new Date(task.createdAtMillis), 'MMM d, yyyy')}</span>
+                  {task.dueAtMillis && (
+                    <span className="text-orange-600">Due: {format(new Date(task.dueAtMillis), 'MMM d, yyyy')}</span>
                   )}
                 </div>
                 {task.notes && (
@@ -427,11 +456,15 @@ export default function TasksPage() {
                   name="assignedTo"
                   required
                   defaultValue={editingTask?.assignedTo}
+                  disabled={!!editingTask}
                   onChange={handleFieldChange}
-                  className={inputClass('assignedTo')}
+                  className={`${inputClass('assignedTo')} disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed`}
                   placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
                 />
-                {helperText('assignedTo', 'Must be a valid UUID')}
+                {helperText(
+                  'assignedTo',
+                  editingTask ? 'Reassigning requires a new task' : 'Must be a valid UUID'
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -457,6 +490,17 @@ export default function TasksPage() {
                   {helperText('priority', `Range ${PRIORITY_MIN} to ${PRIORITY_MAX}`)}
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <input
+                  name="dueAt"
+                  type="date"
+                  defaultValue={editingTask?.dueAtMillis ? format(new Date(editingTask.dueAtMillis), 'yyyy-MM-dd') : ''}
+                  onChange={handleFieldChange}
+                  className={inputClass('dueAt')}
+                />
+                {helperText('dueAt', 'Optional deadline for the task')}
+              </div>
               {editingTask && (
                 <>
                   <div>
@@ -468,9 +512,9 @@ export default function TasksPage() {
                         onChange={handleFieldChange}
                         className={inputClass('status') + ' appearance-none'}
                       >
-                        <option value="PENDING">Pending</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                     </div>

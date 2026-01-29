@@ -12,6 +12,8 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
 import com.devmod.npc.dialog.DialogSet;
+import com.devmod.npc.dialog.DialogLimits;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Server -> Client payload to open the dialog editor screen.
@@ -30,7 +32,8 @@ public record OpenDialogEditorPayload(
         StreamCodec.of(OpenDialogEditorPayload::encode, OpenDialogEditorPayload::decode);
 
     private static void encode(FriendlyByteBuf buf, OpenDialogEditorPayload payload) {
-        buf.writeUtf(Objects.requireNonNull(payload.dialogSetId));
+        buf.writeUtf(DialogLimits.truncate(Objects.requireNonNull(payload.dialogSetId), DialogLimits.MAX_DIALOG_ID_LENGTH),
+            DialogLimits.MAX_DIALOG_ID_LENGTH);
 
         buf.writeBoolean(payload.dialogSet != null);
         if (payload.dialogSet != null) {
@@ -39,7 +42,7 @@ public record OpenDialogEditorPayload(
     }
 
     private static OpenDialogEditorPayload decode(FriendlyByteBuf buf) {
-        String dialogSetId = buf.readUtf();
+        String dialogSetId = buf.readUtf(DialogLimits.MAX_DIALOG_ID_LENGTH);
         DialogSet dialogSet = buf.readBoolean()
             ? DialogSet.STREAM_CODEC.decode(buf)
             : null;
@@ -54,11 +57,11 @@ public record OpenDialogEditorPayload(
 
     @Override
     public int estimatedSize() {
-        int size = 64; // dialogSetId estimate
+        long size = PayloadSizeUtil.estimatedUtfSize(dialogSetId);
         if (dialogSet != null) {
-            size += 2048; // DialogSet estimate
+            size += DialogPayloadSizing.estimateDialogSetSize(dialogSet);
         }
-        return size;
+        return PayloadSizeUtil.clampToInt(size);
     }
 
     /**

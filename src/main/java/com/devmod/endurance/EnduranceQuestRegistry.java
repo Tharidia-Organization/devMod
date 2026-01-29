@@ -76,13 +76,16 @@ public class EnduranceQuestRegistry {
         ELITE(5, 3.0f),        // Ravagers, piglin brutes
         BOSS(10, 5.0f);        // Wither, Ender Dragon, modded bosses
 
-        public final int basePoints;
-        public final float difficultyMultiplier;
+        private final int basePoints;
+        private final float difficultyMultiplier;
 
         MobTier(int basePoints, float difficultyMultiplier) {
             this.basePoints = basePoints;
             this.difficultyMultiplier = difficultyMultiplier;
         }
+
+        public int getBasePoints() { return basePoints; }
+        public float getDifficultyMultiplier() { return difficultyMultiplier; }
     }
 
     /**
@@ -102,15 +105,15 @@ public class EnduranceQuestRegistry {
         BOSS_STYLE(0.3f, 3.0f, 1.2f, "Boss Style", "Single powerful foe");
 
         /** Multiplier for mob count scaling */
-        public final float countMultiplier;
+        private final float countMultiplier;
         /** Multiplier for mob HP scaling */
-        public final float hpMultiplier;
+        private final float hpMultiplier;
         /** Multiplier for mob damage scaling */
-        public final float damageMultiplier;
+        private final float damageMultiplier;
         /** Display name for UI */
-        public final String displayName;
+        private final String displayName;
         /** Description for tooltips */
-        public final String description;
+        private final String description;
 
         MobDifficultyPreset(float countMultiplier, float hpMultiplier, float damageMultiplier,
                            String displayName, String description) {
@@ -120,6 +123,12 @@ public class EnduranceQuestRegistry {
             this.displayName = displayName;
             this.description = description;
         }
+
+        public float getCountMultiplier() { return countMultiplier; }
+        public float getHpMultiplier() { return hpMultiplier; }
+        public float getDamageMultiplier() { return damageMultiplier; }
+        public String getDisplayName() { return displayName; }
+        public String getDescription() { return description; }
     }
 
     /**
@@ -400,7 +409,7 @@ public class EnduranceQuestRegistry {
             int baseCount = (int)((baseCountPerWave * globalMultiplier) + (waveNumber - 1) * countScalingPerWave * waveScaling);
             int capped = Math.min(baseCount, maxPerWave);
             // Apply difficulty preset multiplier
-            int presetAdjusted = (int) Math.ceil(capped * difficultyPreset.countMultiplier);
+            int presetAdjusted = (int) Math.ceil(capped * difficultyPreset.getCountMultiplier());
             return DifficultyScaler.INSTANCE.scaleMobCount(presetAdjusted, playerCount, questType);
         }
 
@@ -412,7 +421,7 @@ public class EnduranceQuestRegistry {
          */
         public float getScaledHealth(int playerCount, QuestType questType) {
             float scaled = DifficultyScaler.INSTANCE.scaleMobHealth(baseHealth, playerCount, questType);
-            return scaled * difficultyPreset.hpMultiplier;
+            return scaled * difficultyPreset.getHpMultiplier();
         }
 
         /**
@@ -423,14 +432,14 @@ public class EnduranceQuestRegistry {
         public float getScaledDamage(int playerCount) {
             // Damage scales more gently
             float playerScale = 1.0f + (playerCount - 1) * 0.05f;
-            return baseDamage * playerScale * difficultyPreset.damageMultiplier;
+            return baseDamage * playerScale * difficultyPreset.getDamageMultiplier();
         }
 
         /**
          * Get a summary string for UI display.
          */
         public String getStatsSummary() {
-            return String.format("HP: %.0f | DMG: %.0f | %s", baseHealth, baseDamage, difficultyPreset.displayName);
+            return String.format("HP: %.0f | DMG: %.0f | %s", baseHealth, baseDamage, difficultyPreset.getDisplayName());
         }
     }
 

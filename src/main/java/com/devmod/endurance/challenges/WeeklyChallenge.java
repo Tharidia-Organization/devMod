@@ -43,13 +43,16 @@ public class WeeklyChallenge {
         EPIC(2.0f, 0.35f),         // 35% chance, 2x rewards
         LEGENDARY(4.0f, 0.15f);    // 15% chance, 4x rewards
 
-        public final float rewardMultiplier;
-        public final float rotationWeight;
+        private final float rewardMultiplier;
+        private final float rotationWeight;
 
         WeeklyChallengeTier(float rewardMultiplier, float rotationWeight) {
             this.rewardMultiplier = rewardMultiplier;
             this.rotationWeight = rotationWeight;
         }
+
+        public float getRewardMultiplier() { return rewardMultiplier; }
+        public float getRotationWeight() { return rotationWeight; }
     }
 
     public WeeklyChallenge(
@@ -69,8 +72,8 @@ public class WeeklyChallenge {
         this.type = type;
         this.tier = tier;
         this.targetValue = targetValue;
-        this.tokenReward = (int) (baseTokenReward * tier.rewardMultiplier);
-        this.prestigeReward = (int) (basePrestigeReward * tier.rewardMultiplier);
+        this.tokenReward = (int) (baseTokenReward * tier.getRewardMultiplier());
+        this.prestigeReward = (int) (basePrestigeReward * tier.getRewardMultiplier());
         this.completionCheck = completionCheck;
     }
 
