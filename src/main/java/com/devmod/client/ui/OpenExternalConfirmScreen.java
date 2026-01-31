@@ -130,23 +130,23 @@ public class OpenExternalConfirmScreen extends Screen {
         }
 
         // Title
-        graphics.drawCenteredString(renderFont, dialogTitle, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(12), DesignTokens.ExternalConfirm.TITLE);
+        UIScaleManager.drawScaledCenteredString(graphics, renderFont, dialogTitle, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(12), DesignTokens.ExternalConfirm.TITLE);
 
         // URL (truncated if too long)
         String displayUrl = url;
         int maxUrlWidth = scaledDialogWidth - UIScaleManager.scale(20);
-        if (renderFont.width(displayUrl) > maxUrlWidth) {
-            while (renderFont.width(displayUrl + "...") > maxUrlWidth && displayUrl.length() > 10) {
+        if (UIScaleManager.getScaledStringWidth(renderFont, displayUrl) > maxUrlWidth) {
+            while (UIScaleManager.getScaledStringWidth(renderFont, displayUrl + "...") > maxUrlWidth && displayUrl.length() > 10) {
                 displayUrl = displayUrl.substring(0, displayUrl.length() - 1);
             }
             displayUrl += "...";
         }
-        graphics.drawCenteredString(renderFont, displayUrl, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(32), DesignTokens.ExternalConfirm.URL);
+        UIScaleManager.drawScaledCenteredString(graphics, renderFont, displayUrl, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(32), DesignTokens.ExternalConfirm.URL);
 
         // Status message (if any)
         String currentStatus = statusMessage;
         if (currentStatus != null) {
-            graphics.drawCenteredString(renderFont, currentStatus, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(50), statusColor);
+            UIScaleManager.drawScaledCenteredString(graphics, renderFont, currentStatus, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(50), statusColor);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);

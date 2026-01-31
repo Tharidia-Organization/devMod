@@ -146,17 +146,17 @@ public class BadgeTestScreen extends Screen {
         Component titleComponent = getTitleComponent();
 
         // Title
-        graphics.drawCenteredString(font, titleComponent, this.width / 2, 20, DesignTokens.Text.PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, titleComponent, this.width / 2, 20, DesignTokens.Text.PRIMARY);
 
         // Subtitle
-        graphics.drawCenteredString(font,
+        UIScaleManager.drawScaledCenteredString(graphics, font,
             Component.translatable("devmod.testing.badge_tests.subtitle"),
             this.width / 2, 40, DesignTokens.Text.MUTED);
 
         // Queue status
         int unreadCount = ClientNotificationManager.INSTANCE.getUnreadCount();
         Component queueText = Component.translatable("devmod.testing.badge_tests.unread", unreadCount);
-        graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
+        UIScaleManager.drawScaledCenteredString(graphics, font, queueText, this.width / 2, this.height - 30,
             unreadCount > 0 ? TestingUiTheme.Badge.UNREAD : DesignTokens.Text.MUTED);
 
         // Render widgets

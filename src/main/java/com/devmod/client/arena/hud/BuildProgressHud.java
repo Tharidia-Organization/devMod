@@ -161,8 +161,8 @@ public class BuildProgressHud {
         // Phase text
         String phaseText = Objects.requireNonNull(getPhaseDisplayName(state.phase));
         phaseText = truncateToWidth(font, phaseText, barWidth);
-        int phaseWidth = font.width(phaseText);
-        graphics.drawString(font, phaseText, x + (barWidth - phaseWidth) / 2, panelY + UIScaleManager.scale(3),
+        int phaseWidth = UIScaleManager.getScaledStringWidth(font, phaseText);
+        UIScaleManager.drawScaledString(graphics, font, phaseText, x + (barWidth - phaseWidth) / 2, panelY + UIScaleManager.scale(3),
             applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
 
         // Progress bar border
@@ -182,22 +182,22 @@ public class BuildProgressHud {
 
         // Percentage text
         String percentText = Objects.requireNonNull(String.format("%.1f%%", state.displayedProgress * 100));
-        int percentWidth = font.width(percentText);
+        int percentWidth = UIScaleManager.getScaledStringWidth(font, percentText);
         int textX = x + (barWidth - percentWidth) / 2;
         int textY = y + (barHeight - UIScaleManager.scale(8)) / 2;
 
         // Shadow
-        graphics.drawString(font, percentText, textX + 1, textY + 1,
+        UIScaleManager.drawScaledString(graphics, font, percentText, textX + 1, textY + 1,
             applyAlpha(BuildProgressHudTheme.Panel.TEXT_SHADOW, alpha), false);
         // Text
-        graphics.drawString(font, percentText, textX, textY,
+        UIScaleManager.drawScaledString(graphics, font, percentText, textX, textY,
             applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
 
         // Block count text
         String blockText = Objects.requireNonNull(String.format("%,d / %,d blocks", state.blocksPlaced, state.totalBlocks));
         blockText = truncateToWidth(font, blockText, barWidth);
-        int blockWidth = font.width(blockText);
-        graphics.drawString(font, blockText, x + (barWidth - blockWidth) / 2, y + barHeight + UIScaleManager.scale(4),
+        int blockWidth = UIScaleManager.getScaledStringWidth(font, blockText);
+        UIScaleManager.drawScaledString(graphics, font, blockText, x + (barWidth - blockWidth) / 2, y + barHeight + UIScaleManager.scale(4),
             applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
     }
 
@@ -233,13 +233,13 @@ public class BuildProgressHud {
     }
 
     private String truncateToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
-        if (font.width(text) <= maxWidth) {
+        if (UIScaleManager.getScaledStringWidth(font, text) <= maxWidth) {
             return text;
         }
         String ellipsis = "...";
         int minChars = Math.min(4, text.length());
         String trimmed = text;
-        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+        while (UIScaleManager.getScaledStringWidth(font, trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed + ellipsis;

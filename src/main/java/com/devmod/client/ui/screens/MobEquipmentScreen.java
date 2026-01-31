@@ -270,7 +270,7 @@ public class MobEquipmentScreen extends Screen {
             String msg = errorMessage != null ? errorMessage : "";
             int textWidth = safeFont.width(msg);
             int errorX = (this.width - textWidth) / 2;
-            graphics.drawString(safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, DesignTokens.Accent.RED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, DesignTokens.Accent.RED(), false);
 
             errorDisplayTicks--;
             if (errorDisplayTicks <= 0) {
@@ -309,7 +309,7 @@ public class MobEquipmentScreen extends Screen {
         graphics.fill(x, y + 4, x + 3, y + 14, accentColor);
 
         // Label
-        graphics.drawString(Objects.requireNonNull(font), label, x + 8, y + 5, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, x + 8, y + 5, DesignTokens.Text.PRIMARY(), false);
 
         // Current item preview (if any)
         if (!currentItem.isEmpty()) {
@@ -559,11 +559,11 @@ public class MobEquipmentScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
         String title = "Unsaved Changes";
         int titleX = dx + (DIALOG_WIDTH - safeFont.width(title)) / 2;
-        graphics.drawString(safeFont, title, titleX, dy + 10, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, title, titleX, dy + 10, DesignTokens.Text.PRIMARY(), false);
 
         String msg1 = "Discard equipment edits?";
         int msgX = dx + (DIALOG_WIDTH - safeFont.width(msg1)) / 2;
-        graphics.drawString(safeFont, msg1, msgX, dy + 28, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, msg1, msgX, dy + 28, DesignTokens.Text.SECONDARY(), false);
 
         int btnW = 90;
         int btnH = DesignTokens.Size.BUTTON_HEIGHT;

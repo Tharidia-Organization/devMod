@@ -584,7 +584,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         if (!areaSaved) {
             title = title.copy().append(Objects.requireNonNull(Component.translatable("area.builder.unsaved")));
         }
-        graphics.drawCenteredString(
+        UIScaleManager.drawScaledCenteredString(
+            graphics,
             Objects.requireNonNull(this.font),
             Objects.requireNonNull(title),
             centerX, layout.titleY,
@@ -592,7 +593,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         );
 
         // Name label
-        graphics.drawString(
+        UIScaleManager.drawScaledString(
+            graphics,
             Objects.requireNonNull(this.font),
             Objects.requireNonNull(Component.translatable("area.builder.name_label")),
             layout.contentX, layout.nameLabelY,
@@ -621,7 +623,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             presetName,
             biomeName
         );
-        graphics.drawCenteredString(fontRef, Objects.requireNonNull(summary), centerX, summaryY, AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
+        UIScaleManager.drawScaledCenteredString(graphics, fontRef, Objects.requireNonNull(summary), centerX, summaryY,
+            AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
 
         renderInputBackgrounds(graphics);
 
@@ -663,7 +666,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         String savingText = Component.translatable("area.builder.saving").getString() + dots;
 
         // Draw saving text
-        graphics.drawCenteredString(
+        UIScaleManager.drawScaledCenteredString(
+            graphics,
             Objects.requireNonNull(this.font),
             savingText,
             centerX, centerY,
@@ -675,7 +679,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             long elapsed = System.currentTimeMillis() - saveRequestTimestamp;
             if (elapsed > 2000) {
                 String elapsedText = Objects.requireNonNull(String.format("(%.1fs)", elapsed / 1000.0));
-                graphics.drawCenteredString(
+                UIScaleManager.drawScaledCenteredString(
+                    graphics,
                     Objects.requireNonNull(this.font),
                     elapsedText,
                     centerX, centerY + 15,

@@ -19,6 +19,7 @@ import net.minecraft.network.chat.Component;
 
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
@@ -144,16 +145,16 @@ public class CategoryPanel implements HubPanel {
 
             // Checkmark
             if (active) {
-                graphics.drawString(safeFont, "v", filterX + 2, filterY + 2, DesignTokens.Text.WHITE(), false);
+                UIScaleManager.drawScaledString(graphics, safeFont, "v", filterX + 2, filterY + 2, DesignTokens.Text.WHITE(), false);
             }
 
             // Abbreviated label
             @Nonnull String label = Objects.requireNonNull(
                 Objects.requireNonNull(status.name(), "statusName").substring(0, 1),
                 "label");
-            graphics.drawString(safeFont, label, filterX + boxSize + 3, filterY + 3, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, label, filterX + boxSize + 3, filterY + 3, DesignTokens.Text.MUTED(), false);
 
-            filterX += boxSize + safeFont.width(label) + 10;
+            filterX += boxSize + UIScaleManager.getScaledStringWidth(safeFont, label) + 10;
         }
 
         return filterY + FILTER_ROW_HEIGHT;
@@ -221,19 +222,19 @@ public class CategoryPanel implements HubPanel {
 
         // Expand icon
         @Nonnull String icon = expanded ? "v" : ">";
-        graphics.drawString(safeFont, icon, rx, ry + 6, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, icon, rx, ry + 6, DesignTokens.Text.MUTED(), false);
 
         // Category name
         @Nonnull String safeCategory = Objects.requireNonNull(category, "category");
-        graphics.drawString(safeFont, safeCategory, rx + 12, ry + 6, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeCategory, rx + 12, ry + 6, DesignTokens.Text.PRIMARY(), false);
 
         // Count badge
         long passed = tests.stream().filter(t -> t.getStatus() == TestCase.TestStatus.PASSED).count();
         long total = tests.size();
         @Nonnull String count = Objects.requireNonNull(String.format("%d/%d", passed, total), "count");
         int countColor = passed == total ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.MUTED();
-        int countWidth = safeFont.width(count);
-        graphics.drawString(safeFont, count, rx + rwidth - countWidth, ry + 6, countColor, false);
+        int countWidth = UIScaleManager.getScaledStringWidth(safeFont, count);
+        UIScaleManager.drawScaledString(graphics, safeFont, count, rx + rwidth - countWidth, ry + 6, countColor, false);
     }
 
     private void renderTestRow(GuiGraphics graphics, int rx, int ry, int rwidth, TestCase test,
@@ -255,17 +256,17 @@ public class CategoryPanel implements HubPanel {
             Objects.requireNonNullElse(test.getName(), ""),
             "testName");
         int maxNameWidth = rwidth - 14;
-        if (safeFont.width(name) > maxNameWidth) {
+        if (UIScaleManager.getScaledStringWidth(safeFont, name) > maxNameWidth) {
             String ellipsis = "...";
             int minChars = Math.min(6, name.length());
-            while (safeFont.width(name + ellipsis) > maxNameWidth && name.length() > minChars) {
+            while (UIScaleManager.getScaledStringWidth(safeFont, name + ellipsis) > maxNameWidth && name.length() > minChars) {
                 name = Objects.requireNonNull(name.substring(0, name.length() - 1), "name");
             }
             name += ellipsis;
         }
 
         int textColor = selected ? DesignTokens.Text.ACCENT() : DesignTokens.Text.SECONDARY();
-        graphics.drawString(safeFont, name, rx + 10, ry + 4, textColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, name, rx + 10, ry + 4, textColor, false);
     }
 
     private void renderScrollbar(GuiGraphics graphics, int sx, int sy, int swidth, int sheight) {
@@ -341,7 +342,7 @@ public class CategoryPanel implements HubPanel {
             @Nonnull String label = Objects.requireNonNull(
                 Objects.requireNonNull(status.name(), "statusName").substring(0, 1),
                 "label");
-            int itemWidth = boxSize + safeFont.width(label) + 10;
+            int itemWidth = boxSize + UIScaleManager.getScaledStringWidth(safeFont, label) + 10;
 
             if (mx >= filterX && mx < filterX + itemWidth) {
                 state.toggleFilter(status);

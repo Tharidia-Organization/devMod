@@ -145,8 +145,8 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
         if (progress.complete()) {
             title = "Nexus Hub Ready!";
         }
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, panelX + (sPanelWidth - titleWidth) / 2, panelY + UIScaleManager.scale(8), textPrimaryWithAlpha, false);
+        int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
+        UIScaleManager.drawScaledString(graphics, font, title, panelX + (sPanelWidth - titleWidth) / 2, panelY + UIScaleManager.scale(8), textPrimaryWithAlpha, false);
 
         // Draw progress bar background
         int barX = panelX + sPanelPadding;
@@ -166,14 +166,14 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
         String stepText = rawStepName != null ? rawStepName : "";
 
         // Percentage on the right
-        int percentWidth = font.width(percentText);
-        graphics.drawString(font, percentText, barX + sBarWidth - percentWidth, barY + sBarHeight + UIScaleManager.scale(4), textPrimaryWithAlpha, false);
+        int percentWidth = UIScaleManager.getScaledStringWidth(font, percentText);
+        UIScaleManager.drawScaledString(graphics, font, percentText, barX + sBarWidth - percentWidth, barY + sBarHeight + UIScaleManager.scale(4), textPrimaryWithAlpha, false);
 
         // Step name on the left
         if (!stepText.isEmpty()) {
             int maxStepWidth = Math.max(0, sBarWidth - percentWidth - UIScaleManager.scale(8));
             String displayStep = truncateToWidth(font, stepText, maxStepWidth);
-            graphics.drawString(font, Objects.requireNonNull(displayStep), barX, barY + sBarHeight + UIScaleManager.scale(4), textSecondaryWithAlpha, false);
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(displayStep), barX, barY + sBarHeight + UIScaleManager.scale(4), textSecondaryWithAlpha, false);
         }
     }
 
@@ -229,13 +229,13 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
     }
 
     private static String truncateToWidth(Font font, String text, int maxWidth) {
-        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+        if (maxWidth <= 0 || UIScaleManager.getScaledStringWidth(font, text) <= maxWidth) {
             return text;
         }
         String ellipsis = "...";
         int minChars = Math.min(4, text.length());
         String trimmed = text;
-        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+        while (UIScaleManager.getScaledStringWidth(font, trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed + ellipsis;

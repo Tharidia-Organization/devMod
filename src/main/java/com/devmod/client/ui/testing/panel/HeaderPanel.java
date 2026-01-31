@@ -6,6 +6,7 @@ import java.util.Objects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_HEADER_ACCENT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.SEPARATOR_HEIGHT;
 import static com.devmod.client.ui.testing.panel.PanelConstants.TITLE_HEIGHT;
@@ -50,7 +51,7 @@ public record HeaderPanel(
     @Override
     public void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-        graphics.drawString(font, title, x, y, titleColor, false);
+        UIScaleManager.drawScaledString(graphics, font, title, x, y, titleColor, false);
 
         if (showSeparator) {
             int lineY = y + TITLE_HEIGHT;

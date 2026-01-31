@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.unified.SettingsPage;
@@ -198,8 +199,8 @@ public class RadialSettingsPage implements SettingsPage {
         if (rowHovered) {
             graphics.fill(x, y, x + width, y + ROW_HEIGHT, DesignTokens.Surface.LEVEL_1);
         }
-        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(font, description, x, y + 14, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, description, x, y + 14, DesignTokens.Text.MUTED, false);
         int toggleWidth = 36;
         int toggleHeight = 18;
         int toggleX = x + width - toggleWidth;
@@ -212,12 +213,12 @@ public class RadialSettingsPage implements SettingsPage {
         if (rowHovered) {
             graphics.fill(x, y, x + width, y + ROW_HEIGHT, DesignTokens.Surface.LEVEL_1);
         }
-        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(font, description, x, y + 14, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, description, x, y + 14, DesignTokens.Text.MUTED, false);
         String safeValue = Objects.requireNonNull(value, "value");
-        int valueWidth = font.width(safeValue);
+        int valueWidth = UIScaleManager.getScaledStringWidth(font, safeValue);
         int valueX = x + width - valueWidth;
-        graphics.drawString(font, safeValue, valueX, y + 4, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, safeValue, valueX, y + 4, DesignTokens.Text.SECONDARY, false);
     }
 
     private void renderScrollbar(GuiGraphics graphics, int x, int y, int height) {

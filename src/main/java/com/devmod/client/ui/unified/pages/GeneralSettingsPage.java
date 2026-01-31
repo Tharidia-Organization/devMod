@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.ModConfig;
 import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ThemeManager;
 import com.devmod.client.ui.scroll.Scrollbar;
@@ -132,7 +133,7 @@ public class GeneralSettingsPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Current color preview
-            graphics.drawString(font, "Current:", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, "Current:", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
 
             // Color preview square
             int previewX = x + 60;
@@ -141,11 +142,11 @@ public class GeneralSettingsPage implements SettingsPage {
 
             // Color name
             String colorName = getColorName(followRangeColor);
-            graphics.drawString(font, colorName, previewX + COLOR_PREVIEW_SIZE + 8, currentY + 4, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, colorName, previewX + COLOR_PREVIEW_SIZE + 8, currentY + 4, DesignTokens.Text.PRIMARY, false);
             currentY += ROW_HEIGHT + 4;
 
             // Color presets
-            graphics.drawString(font, "Presets:", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, "Presets:", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
             int colorX = x + 60;
             for (int i = 0; i < COLOR_PRESETS.length; i++) {
                 boolean selected = followRangeColor == COLOR_PRESETS[i];
@@ -184,7 +185,7 @@ public class GeneralSettingsPage implements SettingsPage {
             drawActionButton(graphics, font, x, currentY, btnWidth, btnHeight, "Replay Tutorial", btnHovered, DesignTokens.Semantic.INFO);
 
             // Description
-            graphics.drawString(font, "Restart the interactive guide", x + btnWidth + 12, currentY + 6, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, font, "Restart the interactive guide", x + btnWidth + 12, currentY + 6, DesignTokens.Text.MUTED, false);
             currentY += ROW_HEIGHT + 8;
 
             // Separator
@@ -205,7 +206,7 @@ public class GeneralSettingsPage implements SettingsPage {
             btnHovered = isMouseOver(mouseX, mouseY, x, currentY, btnWidth, btnHeight);
             String themeName = ThemeManager.INSTANCE.current().getName();
             drawActionButton(graphics, font, x, currentY, btnWidth, btnHeight, "Theme: " + themeName, btnHovered, DesignTokens.Semantic.INFO);
-            graphics.drawString(font, "Cycle: Dark → Light → High Contrast", x + btnWidth + 12, currentY + 6, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, font, "Cycle: Dark → Light → High Contrast", x + btnWidth + 12, currentY + 6, DesignTokens.Text.MUTED, false);
             currentY += ROW_HEIGHT + 8;
 
             // Hint
@@ -239,7 +240,7 @@ public class GeneralSettingsPage implements SettingsPage {
         int textW = font.width(text);
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(font, text, textX, textY, hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, text, textX, textY, hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY, false);
     }
 
     private void renderToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
@@ -253,10 +254,10 @@ public class GeneralSettingsPage implements SettingsPage {
         }
 
         // Label
-        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
 
         // Description (smaller, muted)
-        graphics.drawString(font, description, x, y + 14, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, description, x, y + 14, DesignTokens.Text.MUTED, false);
 
         // Toggle on right - standardized dimensions (36x18)
         int toggleWidth = 36;

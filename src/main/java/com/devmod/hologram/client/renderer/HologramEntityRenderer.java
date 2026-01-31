@@ -66,13 +66,35 @@ public class HologramEntityRenderer {
                                 float partialTicks) {
         List<HologramEntityData> entities = blockEntity.getEntitiesForRendering(level, level.getGameTime());
         if (entities == null || entities.isEmpty()) {
+            // DEBUG: Log why no entities
+            if (level.getGameTime() % 100 == 0) { // Log every 5 seconds
+                org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                    "[EntityRender] No entities from getEntitiesForRendering. showEntities={}, activeFilters={}",
+                    blockEntity.isShowEntities(),
+                    blockEntity.getActiveEntityFilters()
+                );
+            }
             return;
         }
 
         // Apply frustum culling
         List<HologramEntityData> visibleEntities = cullEntities(entities, blockEntity);
         if (visibleEntities.isEmpty()) {
+            // DEBUG: Log culling issue
+            if (level.getGameTime() % 100 == 0) {
+                org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                    "[EntityRender] All {} entities culled by distance", entities.size()
+                );
+            }
             return;
+        }
+
+        // DEBUG: Log successful render
+        if (level.getGameTime() % 100 == 0) {
+            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                "[EntityRender] Rendering {} entities (from {} before cull)",
+                visibleEntities.size(), entities.size()
+            );
         }
 
         int maxModels = blockEntity.getMaxEntityModels();
@@ -156,8 +178,11 @@ public class HologramEntityRenderer {
                                     float partialTicks) {
         if (entities.isEmpty()) return;
 
-        // Use hologram shader for consistent visual style with terrain
-        ShaderInstance shader = HologramShaderRegistry.getShader();
+        // CRITICAL: Check if custom shader is available BEFORE choosing vertex format
+        // Vertex format MUST match shader expectations to avoid attribute mismatch
+        boolean useCustomShader = HologramShaderRegistry.isTexturedModeSupported();
+        ShaderInstance shader = useCustomShader ? HologramShaderRegistry.getShader() : null;
+
         if (shader != null) {
             RenderSystem.setShader(() -> shader);
 
@@ -187,12 +212,16 @@ public class HologramEntityRenderer {
         RenderSystem.getModelViewStack().set(combinedModelView);
         RenderSystem.applyModelViewMatrix();
 
-        // Batch all cubes into a single buffer
+        // CRITICAL: Vertex format MUST match shader
+        // Custom shader (hologram.vsh) expects: Position, UV0, Color (POSITION_TEX_COLOR)
+        // Fallback (position_color) expects: Position, Color (POSITION_COLOR)
+        VertexFormat format = useCustomShader ? DefaultVertexFormat.POSITION_TEX_COLOR : DefaultVertexFormat.POSITION_COLOR;
+
         Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, format);
 
         for (HologramEntityData entityData : entities) {
-            addCubeVertices(buffer, entityData);
+            addCubeVertices(buffer, entityData, useCustomShader);
         }
 
         // Single draw call for all cubes
@@ -208,8 +237,12 @@ public class HologramEntityRenderer {
 
     /**
      * Add vertices for a single entity cube to the buffer.
+     *
+     * @param buffer The buffer to add vertices to
+     * @param entityData The entity data
+     * @param includeUV Whether to include UV coordinates (must match buffer's vertex format)
      */
-    private void addCubeVertices(@Nonnull BufferBuilder buffer, @Nonnull HologramEntityData entityData) {
+    private void addCubeVertices(@Nonnull BufferBuilder buffer, @Nonnull HologramEntityData entityData, boolean includeUV) {
         float x = entityData.relativeX();
         float y = entityData.relativeY();
         float z = entityData.relativeZ();
@@ -230,41 +263,82 @@ public class HologramEntityRenderer {
         float minZ = z - halfWidth;
         float maxZ = z + halfWidth;
 
-        // Bottom face
-        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        // Add vertices with or without UV based on format
+        if (includeUV) {
+            // POSITION_TEX_COLOR format
+            // Bottom face
+            buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
 
-        // Top face
-        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            // Top face
+            buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
 
-        // North face (-Z)
-        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            // North face (-Z)
+            buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
 
-        // South face (+Z)
-        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            // South face (+Z)
+            buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
 
-        // West face (-X)
-        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            // West face (-X)
+            buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
 
-        // East face (+X)
-        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
-        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            // East face (+X)
+            buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        } else {
+            // POSITION_COLOR format (no UV)
+            // Bottom face
+            buffer.addVertex(minX, minY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, maxZ).setColor(r, g, b, a);
+
+            // Top face
+            buffer.addVertex(minX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setColor(r, g, b, a);
+
+            // North face (-Z)
+            buffer.addVertex(minX, minY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, minZ).setColor(r, g, b, a);
+
+            // South face (+Z)
+            buffer.addVertex(maxX, minY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, maxZ).setColor(r, g, b, a);
+
+            // West face (-X)
+            buffer.addVertex(minX, minY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, maxY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(minX, minY, minZ).setColor(r, g, b, a);
+
+            // East face (+X)
+            buffer.addVertex(maxX, minY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, minZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, maxY, maxZ).setColor(r, g, b, a);
+            buffer.addVertex(maxX, minY, maxZ).setColor(r, g, b, a);
+        }
     }
 
     /**

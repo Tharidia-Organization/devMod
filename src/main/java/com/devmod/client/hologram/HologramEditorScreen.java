@@ -291,7 +291,7 @@ public class HologramEditorScreen extends Screen {
             currentLines.size(),
             HologramNaming.MAX_LINES
         );
-        graphics.drawString(this.font, info, leftPos + PADDING, contentTop, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, this.font, info, leftPos + PADDING, contentTop, DesignTokens.Text.SECONDARY, false);
 
         // Line numbers
         int startY = contentTop + DesignTokens.Spacing.MD + DesignTokens.Spacing.SM;
@@ -301,7 +301,8 @@ public class HologramEditorScreen extends Screen {
         for (int i = visibleStart; i < visibleEnd; i++) {
             int displayIndex = i - scrollOffset;
             int y = startY + displayIndex * LINE_HEIGHT + 5;
-            graphics.drawString(this.font, String.valueOf(i + 1) + ":", leftPos + 5, y, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, this.font, String.valueOf(i + 1) + ":", leftPos + 5, y,
+                DesignTokens.Text.MUTED, false);
         }
 
         renderLineEditorBackgrounds(graphics);
@@ -311,7 +312,7 @@ public class HologramEditorScreen extends Screen {
 
         // Preview section title
         int previewY = topPos + EDITOR_HEIGHT - 90;
-        graphics.drawString(this.font, "Preview:", leftPos + PADDING, previewY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, this.font, "Preview:", leftPos + PADDING, previewY, DesignTokens.Text.SECONDARY, false);
 
         // Simple preview of first few lines
         int previewLineY = previewY + 12;
@@ -321,7 +322,8 @@ public class HologramEditorScreen extends Screen {
             if (line.length() > 50) {
                 line = line.substring(0, 47) + "...";
             }
-            graphics.drawString(this.font, line, leftPos + PADDING, previewLineY + i * 10, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, this.font, line, leftPos + PADDING, previewLineY + i * 10,
+                DesignTokens.Text.PRIMARY, false);
         }
     }
 

@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
@@ -59,7 +60,7 @@ public class ProgressFooter implements HubPanel {
 
         String statsText = String.format("Progress: %d/%d | Passed: %d | Failed: %d | Pending: %d",
             passed + failed, total, passed, failed, pending);
-        graphics.drawString(font, statsText, x + PADDING, contentY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, statsText, x + PADDING, contentY, DesignTokens.Text.SECONDARY(), false);
         contentY += 14;
 
         // Progress bar

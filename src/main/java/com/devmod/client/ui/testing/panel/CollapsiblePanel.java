@@ -6,6 +6,7 @@ import java.util.Objects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.ANIMATION_SPEED;
@@ -134,7 +135,8 @@ public final class CollapsiblePanel implements UIPanel {
         renderCollapseIcon(graphics, x + 8, y + (HEADER_HEIGHT - 12) / 2);
 
         // Title
-        graphics.drawString(font, title, x + 26, y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, title, x + 26, y + (HEADER_HEIGHT - 8) / 2,
+            DesignTokens.Text.PRIMARY(), false);
 
         // Content (with animation)
         if (animProgress > 0.01f) {

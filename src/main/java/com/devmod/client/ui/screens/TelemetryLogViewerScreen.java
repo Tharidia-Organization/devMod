@@ -132,13 +132,13 @@ public class TelemetryLogViewerScreen extends Screen {
             int textColor = selected ? DesignTokens.Text.ACCENT() : DesignTokens.Text.PRIMARY();
             String label = Objects.requireNonNull(type.label(), "label");
             int maxLabelWidth = CATEGORY_WIDTH - 20;
-            if (safeFont.width(label) > maxLabelWidth) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, label) > maxLabelWidth) {
                 String trimmed = Objects.requireNonNull(
-                    safeFont.plainSubstrByWidth(label, Math.max(0, maxLabelWidth - safeFont.width("..."))),
+                    safeFont.plainSubstrByWidth(label, Math.max(0, maxLabelWidth - UIScaleManager.getScaledStringWidth(safeFont, "..."))),
                     "trimmed");
                 label = trimmed + "...";
             }
-            graphics.drawString(safeFont, label, x + 10, rowY + 6, textColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, label, x + 10, rowY + 6, textColor, false);
             rowY += ROW_HEIGHT;
         }
     }
@@ -146,13 +146,13 @@ public class TelemetryLogViewerScreen extends Screen {
     private void renderLogPanel(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int height) {
         graphics.fill(x + 1, y + 1, x + width - 1, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
         String header = currentType.label() + " (" + (sourceLabel.isBlank() ? currentType.fileName() : sourceLabel) + ")";
-        graphics.drawString(font, header, x + 8, y + 7, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, header, x + 8, y + 7, DesignTokens.Text.PRIMARY(), false);
 
         String countLabel = truncated
             ? "Last " + lines.size() + " lines"
             : lines.size() + " lines";
-        int countWidth = font.width(countLabel);
-        graphics.drawString(font, countLabel, x + width - countWidth - 8, y + 7, DesignTokens.Text.MUTED(), false);
+        int countWidth = UIScaleManager.getScaledStringWidth(font, countLabel);
+        UIScaleManager.drawScaledString(graphics, font, countLabel, x + width - countWidth - 8, y + 7, DesignTokens.Text.MUTED(), false);
 
         int listY = y + HEADER_HEIGHT + 6;
         int listHeight = height - HEADER_HEIGHT - 10;
@@ -162,7 +162,7 @@ public class TelemetryLogViewerScreen extends Screen {
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
 
         if (lines.isEmpty()) {
-            graphics.drawString(font, "No log data available.", x + 10, listY + 4, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, "No log data available.", x + 10, listY + 4, DesignTokens.Text.MUTED(), false);
             return;
         }
 
@@ -170,7 +170,7 @@ public class TelemetryLogViewerScreen extends Screen {
         int rowY = listY;
         for (int i = scrollOffset; i < end; i++) {
             String line = Objects.requireNonNull(lines.get(i), "line");
-            graphics.drawString(font, line, x + 10, rowY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, line, x + 10, rowY, DesignTokens.Text.SECONDARY(), false);
             rowY += lineHeight;
         }
     }

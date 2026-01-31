@@ -17,6 +17,7 @@ import com.devmod.client.rendering.LineOfSightVisualizer;
 import com.devmod.client.rendering.PathfindingDebugger;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
@@ -76,7 +77,7 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Developer Access
             // ==========================================
-            graphics.drawString(safeFont, "Developer Access", x, currentY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Developer Access", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             boolean developerModeEnabled = SettingsManager.INSTANCE.getSettings().debug.developerMode;
@@ -89,7 +90,7 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Minecraft Native Debug API
             // ==========================================
-            graphics.drawString(safeFont, "\u00A76Minecraft Native Debug API", x, currentY, DesignTokens.Heatmap.LIGHT_DARK, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "\u00A76Minecraft Native Debug API", x, currentY, DesignTokens.Heatmap.LIGHT_DARK, false);
             currentY += 14;
 
             // Entity Pathing (like DebugUtils)
@@ -137,7 +138,7 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Core Debug
             // ==========================================
-            graphics.drawString(safeFont, "Core Debug Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Core Debug Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Debug Renderer toggle
@@ -153,7 +154,7 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Section: Custom AI Tools
-            graphics.drawString(safeFont, "Custom AI Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Custom AI Tools", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Line of Sight toggle
@@ -169,7 +170,7 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Section: Spatial
-            graphics.drawString(safeFont, "Spatial Analysis", x, currentY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Spatial Analysis", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Room Bounds toggle
@@ -180,7 +181,7 @@ public class DebugOverlaysPage implements SettingsPage {
             currentY += SECTION_SPACING;
 
             // Quick actions
-            graphics.drawString(safeFont, "Quick Actions", x, currentY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Quick Actions", x, currentY, DesignTokens.Text.PRIMARY, false);
             currentY += 14;
 
             // Disable All / Enable All buttons
@@ -272,10 +273,10 @@ public class DebugOverlaysPage implements SettingsPage {
         graphics.fill(x, y + 2, x + 3, y + 12, DesignTokens.Heatmap.LIGHT_DARK);
 
         // Label
-        graphics.drawString(safeFont, safeLabel, x + 8, y + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeLabel, x + 8, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Description
-        graphics.drawString(safeFont, safeDescription, x + 8, y + 12, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeDescription, x + 8, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle switch
         int toggleX = x + rowWidth - 36;
@@ -302,17 +303,18 @@ public class DebugOverlaysPage implements SettingsPage {
         }
 
         // Label
-        graphics.drawString(safeFont, safeLabel, x, y + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeLabel, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Hotkey badge (if present)
         if (!safeHotkey.isEmpty()) {
-            int hotkeyX = x + safeFont.width(safeLabel) + 8;
-            graphics.fill(hotkeyX - 2, y, hotkeyX + safeFont.width(safeHotkey) + 2, y + 10, DesignTokens.Bg.LEVEL_0);
-            graphics.drawString(safeFont, safeHotkey, hotkeyX, y + 1, DesignTokens.Text.MUTED, false);
+            int hotkeyX = x + UIScaleManager.getScaledStringWidth(safeFont, safeLabel) + 8;
+            int hotkeyWidth = UIScaleManager.getScaledStringWidth(safeFont, safeHotkey);
+            graphics.fill(hotkeyX - 2, y, hotkeyX + hotkeyWidth + 2, y + 10, DesignTokens.Bg.LEVEL_0);
+            UIScaleManager.drawScaledString(graphics, safeFont, safeHotkey, hotkeyX, y + 1, DesignTokens.Text.MUTED, false);
         }
 
         // Description
-        graphics.drawString(safeFont, safeDescription, x, y + 12, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeDescription, x, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle switch
         int toggleX = x + rowWidth - 36;

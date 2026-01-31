@@ -118,7 +118,7 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
         // Title
         Component title = Objects.requireNonNull(Component.translatable("devmod.admin.instance.title"));
-        graphics.drawString(safeFont(), title, panelX + UIScaleManager.scale(15), panelY + UIScaleManager.scale(18), DesignTokens.Text.WHITE);
+        UIScaleManager.drawScaledString(graphics, safeFont(), title, panelX + UIScaleManager.scale(15), panelY + UIScaleManager.scale(18), DesignTokens.Text.WHITE);
 
         // Stats bar
         int statsY = panelY + scaledHeaderHeight;
@@ -126,22 +126,22 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
         String stats = String.format("\u00A7a%d Active \u00A7f| \u00A7b%d Players \u00A7f| \u00A7c%d Pending",
             activeCount, totalPlayers, pendingDestructionCount);
-        graphics.drawString(safeFont(), stats, panelX + UIScaleManager.scale(15), statsY + UIScaleManager.scale(10), DesignTokens.Text.WHITE);
+        UIScaleManager.drawScaledString(graphics, safeFont(), stats, panelX + UIScaleManager.scale(15), statsY + UIScaleManager.scale(10), DesignTokens.Text.WHITE);
 
         // Instance list
         renderInstanceList(graphics, mouseX, mouseY);
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(safeFont(), "\u25B2", panelX + scaledPanelWidth / 2, listY - UIScaleManager.scale(10), DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont(), "\u25B2", panelX + scaledPanelWidth / 2, listY - UIScaleManager.scale(10), DesignTokens.Text.MUTED);
         }
         if (scrollOffset + maxVisibleEntries < instances.size()) {
-            graphics.drawCenteredString(safeFont(), "\u25BC", panelX + scaledPanelWidth / 2, listY + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont(), "\u25BC", panelX + scaledPanelWidth / 2, listY + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
         }
 
         // Empty state
         if (instances.isEmpty()) {
-            graphics.drawCenteredString(safeFont(),
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont(),
                 Objects.requireNonNull(Component.translatable("devmod.admin.instance.empty")),
                 panelX + scaledPanelWidth / 2, listY + listHeight / 2, DesignTokens.Text.MUTED);
         }
@@ -180,7 +180,7 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
         // State + Arena template
         String header = instance.getStateDisplay() + " \u00A7f" + (instance.arenaTemplate() != null ? instance.arenaTemplate() : "unknown");
-        graphics.drawString(safeFont(), header, textX, textY, DesignTokens.Text.WHITE);
+        UIScaleManager.drawScaledString(graphics, safeFont(), header, textX, textY, DesignTokens.Text.WHITE);
 
         // Players
         textY += lineSpacing;
@@ -188,12 +188,12 @@ public class AdminInstanceScreen extends BaseDevModScreen {
         if (!instance.playerNames().isEmpty()) {
             players += " (" + String.join(", ", instance.playerNames()) + ")";
         }
-        graphics.drawString(safeFont(), players, textX, textY, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledString(graphics, safeFont(), players, textX, textY, DesignTokens.Text.SECONDARY);
 
         // Wave + Duration
         textY += lineSpacing;
         String info = "Wave: " + instance.getWaveDisplay() + " | Duration: " + instance.getDurationDisplay();
-        graphics.drawString(safeFont(), info, textX, textY, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledString(graphics, safeFont(), info, textX, textY, DesignTokens.Text.SECONDARY);
 
         // Action buttons
         int btnY = y + UIScaleManager.scale(48);
@@ -228,7 +228,7 @@ public class AdminInstanceScreen extends BaseDevModScreen {
         boolean hovered = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h;
         int bgColor = hovered ? color : (color & DesignTokens.AdminPanel.RGB_MASK) | DesignTokens.AdminPanel.BUTTON_ALPHA_MASK;
         graphics.fill(x, y, x + w, y + h, bgColor);
-        graphics.drawCenteredString(safeFont(), text, x + w / 2, y + 4, DesignTokens.Text.WHITE);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont(), text, x + w / 2, y + 4, DesignTokens.Text.WHITE);
         return hovered;
     }
 

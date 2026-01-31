@@ -201,7 +201,7 @@ public class ArenaTestWizard extends Screen {
         graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Header
-        graphics.drawCenteredString(Objects.requireNonNull(font), "Quick Test Wizard",
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), "Quick Test Wizard",
             panelX + PANEL_WIDTH / 2, panelY + PADDING, DesignTokens.Text.TITLE());
 
         // Template list
@@ -260,22 +260,22 @@ public class ArenaTestWizard extends Screen {
             // Template name
             String prefix = entry.isRecent() ? "\u2605 " : "";
             int textColor = index == selectedIndex ? DesignTokens.Accent.CYAN() : DesignTokens.Text.PRIMARY();
-            graphics.drawString(safeFont, prefix + entry.template().id(), listX + 4, rowY + 6, textColor);
+            UIScaleManager.drawScaledString(graphics, safeFont, prefix + entry.template().id(), listX + 4, rowY + 6, textColor);
 
             // Version
             String version = "v" + entry.template().version();
-            int versionWidth = safeFont.width(version);
-            graphics.drawString(safeFont, version, listX + listWidth - versionWidth - 4, rowY + 6,
+            int versionWidth = UIScaleManager.getScaledStringWidth(safeFont, version);
+            UIScaleManager.drawScaledString(graphics, safeFont, version, listX + listWidth - versionWidth - 4, rowY + 6,
                 DesignTokens.Text.MUTED());
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(safeFont, "\u25B2", listX + listWidth / 2, listY - 8,
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, "\u25B2", listX + listWidth / 2, listY - 8,
                 DesignTokens.Text.MUTED());
         }
         if (scrollOffset + maxVisibleRows < filteredTemplates.size()) {
-            graphics.drawCenteredString(safeFont, "\u25BC", listX + listWidth / 2, listY + listHeight + 2,
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, "\u25BC", listX + listWidth / 2, listY + listHeight + 2,
                 DesignTokens.Text.MUTED());
         }
     }
@@ -290,12 +290,12 @@ public class ArenaTestWizard extends Screen {
             // Size
             int sizeX = Objects.requireNonNullElse(t.sizeX(), t.size());
             int sizeZ = Objects.requireNonNullElse(t.sizeZ(), t.size());
-            graphics.drawString(safeFont, "Size: " + sizeX + " x " + sizeZ,
+            UIScaleManager.drawScaledString(graphics, safeFont, "Size: " + sizeX + " x " + sizeZ,
                 panelX + PADDING, infoY, DesignTokens.Text.PRIMARY());
 
             // Spawn slots
             int slots = t.spawnSlots() != null ? t.spawnSlots().size() : 0;
-            graphics.drawString(safeFont, "Spawn Slots: " + slots,
+            UIScaleManager.drawScaledString(graphics, safeFont, "Spawn Slots: " + slots,
                 panelX + PADDING + 150, infoY, DesignTokens.Text.PRIMARY());
 
             // Palette preview (DD35: floor/walls/ceiling materials)
@@ -307,17 +307,17 @@ public class ArenaTestWizard extends Screen {
             if (t.tags() != null && !t.tags().isEmpty()) {
                 String tags = "Tags: " + String.join(", ", t.tags());
                 if (tags.length() > 50) tags = tags.substring(0, 47) + "...";
-                graphics.drawString(safeFont, tags, panelX + PADDING, infoY, DesignTokens.Text.MUTED());
+                UIScaleManager.drawScaledString(graphics, safeFont, tags, panelX + PADDING, infoY, DesignTokens.Text.MUTED());
             }
 
             // Deprecated warning
             if (t.deprecated()) {
                 infoY += 14;
-                graphics.drawString(safeFont, "\u26A0 DEPRECATED", panelX + PADDING, infoY,
+                UIScaleManager.drawScaledString(graphics, safeFont, "\u26A0 DEPRECATED", panelX + PADDING, infoY,
                     DesignTokens.Accent.RED());
             }
         } else {
-            graphics.drawString(safeFont, "Select a template to test", panelX + PADDING, infoY,
+            UIScaleManager.drawScaledString(graphics, safeFont, "Select a template to test", panelX + PADDING, infoY,
                 DesignTokens.Text.MUTED());
         }
     }
@@ -329,7 +329,7 @@ public class ArenaTestWizard extends Screen {
         var safeFont = Objects.requireNonNull(font);
         int x = panelX + PADDING;
 
-        graphics.drawString(safeFont, "Palette:", x, y, DesignTokens.Text.MUTED());
+        UIScaleManager.drawScaledString(graphics, safeFont, "Palette:", x, y, DesignTokens.Text.MUTED());
         x += 50;
 
         // Floor material
@@ -337,7 +337,7 @@ public class ArenaTestWizard extends Screen {
             String floorMat = shortenMaterial(t.floor().material());
             int floorColor = getMaterialColor(t.floor().material());
             graphics.fill(x, y, x + 10, y + 10, floorColor);
-            graphics.drawString(safeFont, floorMat, x + 14, y, DesignTokens.Text.PRIMARY());
+            UIScaleManager.drawScaledString(graphics, safeFont, floorMat, x + 14, y, DesignTokens.Text.PRIMARY());
             x += 80;
         }
 
@@ -346,7 +346,7 @@ public class ArenaTestWizard extends Screen {
             String wallMat = shortenMaterial(t.walls().material());
             int wallColor = getMaterialColor(t.walls().material());
             graphics.fill(x, y, x + 10, y + 10, wallColor);
-            graphics.drawString(safeFont, wallMat, x + 14, y, DesignTokens.Text.PRIMARY());
+            UIScaleManager.drawScaledString(graphics, safeFont, wallMat, x + 14, y, DesignTokens.Text.PRIMARY());
             x += 80;
         }
 
@@ -355,7 +355,7 @@ public class ArenaTestWizard extends Screen {
             String ceilMat = shortenMaterial(t.ceiling().material());
             int ceilColor = getMaterialColor(t.ceiling().material());
             graphics.fill(x, y, x + 10, y + 10, ceilColor);
-            graphics.drawString(safeFont, ceilMat, x + 14, y, DesignTokens.Text.PRIMARY());
+            UIScaleManager.drawScaledString(graphics, safeFont, ceilMat, x + 14, y, DesignTokens.Text.PRIMARY());
         }
     }
 

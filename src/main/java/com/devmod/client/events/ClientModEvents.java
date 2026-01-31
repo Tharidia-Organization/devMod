@@ -41,6 +41,7 @@ import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
 import com.devmod.client.transport.TransportClientPayloadHooks;
 import com.devmod.client.ui.overlay.OverlayTheme;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.combat.HitHelper;
 import com.devmod.notification.Notification;
@@ -405,18 +406,21 @@ public class ClientModEvents {
             }
 
             // --- DRAWING ---
-            gui.drawString(font, I18n.translate("devmod.debug.entity.name", entity.getName().getString()).getString(), x, y,
+            UIScaleManager.drawScaledString(gui, font,
+                I18n.translate("devmod.debug.entity.name", entity.getName().getString()).getString(), x, y,
                 OverlayTheme.Debug.ENTITY_NAME);
             y += lineHeight;
 
-            gui.drawString(font, I18n.translate("devmod.debug.entity.hp", df.format(hp), df.format(maxHp)).getString(), x, y,
+            UIScaleManager.drawScaledString(gui, font,
+                I18n.translate("devmod.debug.entity.hp", df.format(hp), df.format(maxHp)).getString(), x, y,
                 OverlayTheme.Debug.ENTITY_HP);
             y += lineHeight;
 
             // Armor
             float damageReduction = armor * 4.0f;
             if (damageReduction > 80.0f) damageReduction = 80.0f;
-            gui.drawString(font, I18n.translate("devmod.debug.entity.armor", armor, (int)damageReduction).getString(), x, y,
+            UIScaleManager.drawScaledString(gui, font,
+                I18n.translate("devmod.debug.entity.armor", armor, (int)damageReduction).getString(), x, y,
                 OverlayTheme.Debug.ENTITY_ARMOR);
             y += lineHeight;
 
@@ -425,7 +429,8 @@ public class ClientModEvents {
             var dmgAttr = entity.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
             if (dmgAttr != null) dmg = dmgAttr.getValue();
             if (dmg > 0) {
-                gui.drawString(font, I18n.translate("devmod.debug.entity.damage", df.format(dmg), df.format(dmg / 2.0)).getString(), x, y,
+                UIScaleManager.drawScaledString(gui, font,
+                    I18n.translate("devmod.debug.entity.damage", df.format(dmg), df.format(dmg / 2.0)).getString(), x, y,
                     OverlayTheme.Debug.ENTITY_DAMAGE);
                 y += lineHeight;
             }
@@ -434,12 +439,13 @@ public class ClientModEvents {
             double follow = 0;
             var followAttr = entity.getAttribute(Objects.requireNonNull(Attributes.FOLLOW_RANGE));
             if (followAttr != null) follow = followAttr.getValue();
-            gui.drawString(font, I18n.translate("devmod.debug.entity.follow_range", df.format(follow)).getString(), x, y,
+            UIScaleManager.drawScaledString(gui, font,
+                I18n.translate("devmod.debug.entity.follow_range", df.format(follow)).getString(), x, y,
                 OverlayTheme.Debug.ENTITY_FOLLOW_RANGE);
             y += lineHeight;
 
             // REACH
-            gui.drawString(font, reachText, x, y, reachColor);
+            UIScaleManager.drawScaledString(gui, font, reachText, x, y, reachColor);
             y += lineHeight;
 
             // Target
@@ -448,7 +454,8 @@ public class ClientModEvents {
                 var tgt = mob.getTarget();
                 if (tgt != null) target = tgt.getName().getString();
             }
-            gui.drawString(font, I18n.translate("devmod.debug.entity.target", target).getString(), x, y,
+            UIScaleManager.drawScaledString(gui, font,
+                I18n.translate("devmod.debug.entity.target", target).getString(), x, y,
                 OverlayTheme.Debug.ENTITY_TARGET);
         }
     }

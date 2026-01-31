@@ -225,16 +225,7 @@ public abstract class ErrorBoundaryScreen extends Screen {
             List<String> stackLines = getStackTraceLines(lastError, MAX_STACK_LINES);
             int lineY = boxY + UIScaleManager.scale(64);
             for (String line : stackLines) {
-                float textScale = UIScaleManager.getTextScale();
-                if (Math.abs(textScale - 1.0f) < 0.01f) {
-                    graphics.drawString(font, line, boxX + 10, lineY, DesignTokens.Text.MUTED);
-                } else {
-                    graphics.pose().pushPose();
-                    graphics.pose().translate(boxX + 10, lineY, 0);
-                    graphics.pose().scale(textScale, textScale, 1.0f);
-                    graphics.drawString(font, line, 0, 0, DesignTokens.Text.MUTED);
-                    graphics.pose().popPose();
-                }
+                UIScaleManager.drawScaledString(graphics, font, line, boxX + 10, lineY, DesignTokens.Text.MUTED);
                 lineY += UIScaleManager.getScaledLineHeight();
             }
         }
@@ -353,7 +344,8 @@ public abstract class ErrorBoundaryScreen extends Screen {
 
             // Render minimal error indicator
             graphics.fill(0, 0, screen.width, screen.height, DesignTokens.ErrorBoundary.SCRIM);
-            graphics.drawCenteredString(
+            UIScaleManager.drawScaledCenteredString(
+                graphics,
                 Minecraft.getInstance().font,
                 Component.translatable("gui.devmod.error.render_failed"),
                 screen.width / 2,

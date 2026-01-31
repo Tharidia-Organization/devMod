@@ -253,14 +253,14 @@ public class UnifiedSettingsScreen extends Screen {
                     String safeTooltipText = Objects.requireNonNull(tooltipText, "tooltipText");
                     if (System.currentTimeMillis() - tooltipShowTime >= TOOLTIP_DELAY_MS && !safeTooltipText.isEmpty()) {
                         // Draw tooltip
-                        int tipWidth = safeFont.width(safeTooltipText) + 8;
+                        int tipWidth = UIScaleManager.getScaledStringWidth(safeFont, safeTooltipText) + 8;
                         int tipHeight = 14;
                         int tipX = Math.min(mouseX + 10, width - tipWidth - 5);
                         int tipY = mouseY - tipHeight - 5;
 
                         graphics.fill(tipX, tipY, tipX + tipWidth, tipY + tipHeight, DesignTokens.Background.PANEL());
                         AxiomRenderer.drawBorder(graphics, tipX, tipY, tipWidth, tipHeight, DesignTokens.Border.DEFAULT());
-                        graphics.drawString(safeFont, safeTooltipText, tipX + 4, tipY + 3, DesignTokens.Text.PRIMARY(), false);
+                        UIScaleManager.drawScaledString(graphics, safeFont, safeTooltipText, tipX + 4, tipY + 3, DesignTokens.Text.PRIMARY(), false);
                     }
                     return;
                 }
@@ -359,12 +359,12 @@ public class UnifiedSettingsScreen extends Screen {
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Title
-        graphics.drawString(safeFont, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "VOXEL-LAB Settings", PADDING, (HEADER_HEIGHT - 9) / 2, DesignTokens.Text.TITLE(), false);
 
         // Breadcrumb on the right
         String breadcrumb = Objects.requireNonNull(currentCategory.getLabel(), "breadcrumb");
-        int breadcrumbWidth = safeFont.width(breadcrumb);
-        graphics.drawString(safeFont, breadcrumb, width - breadcrumbWidth - PADDING, (HEADER_HEIGHT - 9) / 2,
+        int breadcrumbWidth = UIScaleManager.getScaledStringWidth(safeFont, breadcrumb);
+        UIScaleManager.drawScaledString(graphics, safeFont, breadcrumb, width - breadcrumbWidth - PADDING, (HEADER_HEIGHT - 9) / 2,
             currentCategory.getAccentColor(), false);
 
         // Close button (X)
@@ -372,7 +372,7 @@ public class UnifiedSettingsScreen extends Screen {
         int closeY = (HEADER_HEIGHT - 12) / 2;
         boolean closeHovered = mouseX >= closeX && mouseX < closeX + 12 && mouseY >= closeY && mouseY < closeY + 12;
         int closeColor = closeHovered ? DesignTokens.Status.ERROR() : DesignTokens.Text.MUTED();
-        graphics.drawString(safeFont, "X", closeX, closeY, closeColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "X", closeX, closeY, closeColor, false);
     }
 
     // === Sidebar ===
@@ -413,9 +413,9 @@ public class UnifiedSettingsScreen extends Screen {
 
         // Search icon or text
         if (safeSearchQuery.isEmpty() && !searchFocused) {
-            graphics.drawString(safeFont, "Search...", x + 6, y + 6, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Search...", x + 6, y + 6, DesignTokens.Text.MUTED(), false);
         } else {
-            graphics.drawString(safeFont, safeSearchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, DesignTokens.Text.PRIMARY(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, safeSearchQuery + (searchFocused ? "_" : ""), x + 6, y + 6, DesignTokens.Text.PRIMARY(), false);
         }
 
         // Clear button if has text (larger hit area for better usability)
@@ -423,7 +423,7 @@ public class UnifiedSettingsScreen extends Screen {
             int clearX = x + boxWidth - 16;
             int clearHitWidth = 16; // Larger hit area than visual "x"
             boolean clearHovered = mouseX >= clearX && mouseX < clearX + clearHitWidth && mouseY >= y && mouseY < y + SEARCH_HEIGHT;
-            graphics.drawString(safeFont, "x", clearX + 3, y + 6, clearHovered ? DesignTokens.Status.ERROR() : DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "x", clearX + 3, y + 6, clearHovered ? DesignTokens.Status.ERROR() : DesignTokens.Text.MUTED(), false);
         }
     }
 
@@ -456,19 +456,19 @@ public class UnifiedSettingsScreen extends Screen {
         int iconColor = selected ? category.getAccentColor() :
             (hasPage ? DesignTokens.Text.SECONDARY() : DesignTokens.Text.DISABLED());
         String icon = Objects.requireNonNullElse(category.getIcon(), "");
-        graphics.drawString(safeFont, "[" + icon + "]", x, y + 4, iconColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "[" + icon + "]", x, y + 4, iconColor, false);
 
         // Label
         int labelColor = selected ? DesignTokens.Text.PRIMARY() :
             (hasPage ? DesignTokens.Text.SECONDARY() : DesignTokens.Text.DISABLED());
         String label = Objects.requireNonNullElse(category.getLabel(), "");
-        graphics.drawString(safeFont, label, x + 28, y + 4, labelColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label, x + 28, y + 4, labelColor, false);
 
         // "coming soon" indicator for unimplemented pages
         if (!hasPage) {
             String soon = "soon";
-            int soonWidth = safeFont.width(soon);
-            graphics.drawString(safeFont, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
+            int soonWidth = UIScaleManager.getScaledStringWidth(safeFont, soon);
+            UIScaleManager.drawScaledString(graphics, safeFont, soon, SIDEBAR_WIDTH - soonWidth - PADDING, y + 4,
                 DesignTokens.Text.DISABLED(), false);
         }
     }
@@ -502,13 +502,13 @@ public class UnifiedSettingsScreen extends Screen {
         // Animate title with fade
         int titleAlpha = (int) (255 * categoryTransitionProgress);
         int titleColor = (titleAlpha << 24) | (DesignTokens.Text.PRIMARY() & DesignTokens.Mask.RGB);
-        graphics.drawString(safeFont, pageTitle, contentX + animOffset, contentY, titleColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, pageTitle, contentX + animOffset, contentY, titleColor, false);
 
         // Description (animated)
         int descAlpha = (int) (255 * categoryTransitionProgress * 0.7f);
         int descColor = (descAlpha << 24) | (DesignTokens.Text.MUTED() & DesignTokens.Mask.RGB);
         String description = Objects.requireNonNullElse(currentCategory.getDescription(), "");
-        graphics.drawString(safeFont, description, contentX + animOffset, contentY + 12, descColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, description, contentX + animOffset, contentY + 12, descColor, false);
 
         // Separator
         int sepY = contentY + 28;
@@ -526,8 +526,8 @@ public class UnifiedSettingsScreen extends Screen {
         } else {
             // Placeholder for unimplemented pages
             String placeholder = "This section is coming soon...";
-            int placeholderWidth = safeFont.width(placeholder);
-            graphics.drawString(safeFont, placeholder,
+            int placeholderWidth = UIScaleManager.getScaledStringWidth(safeFont, placeholder);
+            UIScaleManager.drawScaledString(graphics, safeFont, placeholder,
                 contentX + (contentWidth - placeholderWidth) / 2,
                 pageY + pageHeight / 2,
                 DesignTokens.Text.DISABLED(), false);
@@ -603,16 +603,16 @@ public class UnifiedSettingsScreen extends Screen {
             && (System.currentTimeMillis() - footerStatusTime) < FOOTER_STATUS_DURATION_MS;
         if (showStatus) {
             String status = Objects.requireNonNull(footerStatus, "footerStatus");
-            int statusWidth = safeFont.width(status);
-            graphics.drawString(safeFont, status, (width - statusWidth) / 2, buttonY + 5,
+            int statusWidth = UIScaleManager.getScaledStringWidth(safeFont, status);
+            UIScaleManager.drawScaledString(graphics, safeFont, status, (width - statusWidth) / 2, buttonY + 5,
                 DesignTokens.Status.SUCCESS(), false);
         } else {
             String hint = (currentDirty || otherDirty)
                 ? "Unsaved changes | Save writes to disk | ESC/K to close"
                 : "Save writes to disk | ESC/K to close";
-            int hintWidth = safeFont.width(hint);
+            int hintWidth = UIScaleManager.getScaledStringWidth(safeFont, hint);
             int hintColor = (currentDirty || otherDirty) ? DesignTokens.Text.WARNING() : DesignTokens.Text.MUTED();
-            graphics.drawString(safeFont, hint, (width - hintWidth) / 2, buttonY + 5, hintColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, hint, (width - hintWidth) / 2, buttonY + 5, hintColor, false);
         }
     }
 

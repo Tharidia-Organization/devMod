@@ -298,10 +298,10 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledCenteredString(graphics, renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.MUTED);
         }
         if (scrollOffset + VISIBLE_MEMBERS < members.size()) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledCenteredString(graphics, renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
         }
     }
 

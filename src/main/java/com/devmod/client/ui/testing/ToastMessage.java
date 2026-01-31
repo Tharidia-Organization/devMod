@@ -4,6 +4,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -59,7 +60,7 @@ public final class ToastMessage {
             alpha = Math.max(0f, 1.0f - easeInCubic(t));
         }
 
-        int textWidth = font.width(message);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, message);
         int widthPx = textWidth + paddingX * 2;
         int heightPx = 12 + paddingY * 2;
         int toastX = rightX - widthPx;
@@ -71,7 +72,7 @@ public final class ToastMessage {
 
         graphics.fill(toastX, toastY, toastX + widthPx, toastY + heightPx, bg);
         AxiomRenderer.drawBorder(graphics, toastX, toastY, widthPx, heightPx, border);
-        graphics.drawString(font, message, toastX + paddingX, toastY + paddingY + 2, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, message, toastX + paddingX, toastY + paddingY + 2, textColor, false);
     }
 
     public void renderInBounds(GuiGraphics graphics, Font font, int x, int y, int width, int height, Position position) {
@@ -79,7 +80,7 @@ public final class ToastMessage {
             return;
         }
 
-        int textWidth = font.width(message);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, message);
         int widthPx = textWidth + DEFAULT_PADDING_X * 2;
         int heightPx = 12 + DEFAULT_PADDING_Y * 2;
 

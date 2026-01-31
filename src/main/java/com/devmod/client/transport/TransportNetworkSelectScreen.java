@@ -187,10 +187,10 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(font, Component.literal("^"), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, Component.literal("^"), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.SECONDARY);
         }
         if (scrollOffset + VISIBLE_ITEMS < nodes.size()) {
-            graphics.drawCenteredString(font, Component.literal("v"), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, Component.literal("v"), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY);
         }
     }
 

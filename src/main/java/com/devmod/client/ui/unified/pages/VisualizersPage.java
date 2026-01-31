@@ -16,6 +16,7 @@ import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.SettingsPage;
@@ -113,7 +114,7 @@ public class VisualizersPage implements SettingsPage {
             // Radius slider
             // Calculate effective width accounting for scrollbar if present
             int effectiveWidth = showScrollbar ? Math.max(0, width - SCROLLBAR_WIDTH - 8) : width;
-            graphics.drawString(safeFont, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Radius: " + lightLevelRadius + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
             int labelWidth = 120;
             int buttonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int sliderX = x + labelWidth;
@@ -222,7 +223,7 @@ public class VisualizersPage implements SettingsPage {
 
             // View Distance slider
             // Calculate effective width accounting for scrollbar if present (reuse from earlier)
-            graphics.drawString(safeFont, "View Distance: " + viewDistance + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "View Distance: " + viewDistance + " blocks", x, currentY + 4, DesignTokens.Text.SECONDARY, false);
             int vdLabelWidth = 140;
             int vdButtonsWidth = 56; // Two 20px buttons + 8px gap + 8px margin
             int vdSliderX = x + vdLabelWidth;
@@ -256,7 +257,7 @@ public class VisualizersPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Hint about view distance
-            graphics.drawString(safeFont, "Affects all visualizers render range", x, currentY, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Affects all visualizers render range", x, currentY, DesignTokens.Text.MUTED, false);
             currentY += 16;
 
             // Hint
@@ -327,8 +328,8 @@ public class VisualizersPage implements SettingsPage {
         }
 
         // Label and description
-        graphics.drawString(safeFont, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(safeFont, description, x, y + 12, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, description, x, y + 12, DesignTokens.Text.MUTED, false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - 36;
@@ -354,7 +355,7 @@ public class VisualizersPage implements SettingsPage {
         AxiomRenderer.drawBorder(graphics, x, y + 2, 12, 12, DesignTokens.Stroke.DEFAULT);
 
         // Label
-        graphics.drawString(safeFont, label, x + 18, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label, x + 18, y + 4, DesignTokens.Text.PRIMARY, false);
 
         // Toggle - use standardized dimensions
         int toggleX = x + rowWidth - 36;

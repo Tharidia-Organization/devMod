@@ -234,8 +234,9 @@ public class VoxelLabUiTestScreen extends Screen {
         var font = Objects.requireNonNull(this.font, "font");
 
         // Header
-        graphics.drawString(font, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
-        graphics.drawString(font, "UI Component Showcase & Impact HUD Manager", PADDING, PADDING + 12, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, "UI Component Showcase & Impact HUD Manager", PADDING, PADDING + 12,
+            DesignTokens.Text.SECONDARY(), false);
 
         // Show cases button
         showCasesButton.render(graphics, PADDING, PADDING + 30, 180, 22, mouseX, mouseY);
@@ -256,8 +257,8 @@ public class VoxelLabUiTestScreen extends Screen {
         int offsetX = ImpactHudButtons.getOffsetX();
         int offsetY = ImpactHudButtons.getOffsetY();
         String offsetStr = Objects.requireNonNull(String.format("Offset: X=%d Y=%d", offsetX, offsetY), "offset string");
-        int offsetStrX = width - SIDEBAR_WIDTH - PADDING - font.width(offsetStr) - 20;
-        graphics.drawString(font, offsetStr, offsetStrX, PADDING + 12, DesignTokens.Neutral.N500, false);
+        int offsetStrX = width - SIDEBAR_WIDTH - PADDING - UIScaleManager.getScaledStringWidth(font, offsetStr) - 20;
+        UIScaleManager.drawScaledString(graphics, font, offsetStr, offsetStrX, PADDING + 12, DesignTokens.Neutral.N500, false);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -320,7 +321,7 @@ public class VoxelLabUiTestScreen extends Screen {
         graphics.fill(PADDING - 4, areaTop, areaRight, areaBottom, DesignTokens.Background.PANEL());
 
         var font = Objects.requireNonNull(this.font, "font");
-        graphics.drawString(font, "EditorButton Variants", PADDING, areaTop + 6, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "EditorButton Variants", PADDING, areaTop + 6, DesignTokens.Text.PRIMARY(), false);
 
         for (DemoButton demo : demoButtons) {
             demo.button.render(graphics, demo.x, demo.y, demo.width, demo.button.getSize().height(), mouseX, mouseY);

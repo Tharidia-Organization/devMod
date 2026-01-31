@@ -234,14 +234,14 @@ public class TestingHub extends Screen {
         int contentY = panelY + UIScaleManager.scale(DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 10);
 
         // Instructions
-        graphics.drawString(uiFont, "Welcome to DevMod QA Testing!", contentX, contentY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, uiFont, "Welcome to DevMod QA Testing!", contentX, contentY, DesignTokens.Text.PRIMARY(), false);
         contentY += UIScaleManager.scale(16);
 
-        graphics.drawString(uiFont, "Enter your name to start tracking tests.", contentX, contentY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, uiFont, "Enter your name to start tracking tests.", contentX, contentY, DesignTokens.Text.SECONDARY(), false);
         contentY += UIScaleManager.scale(30);
 
         // Name label
-        graphics.drawString(uiFont, "Tester Name:", contentX, contentY + UIScaleManager.scale(6), DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, uiFont, "Tester Name:", contentX, contentY + UIScaleManager.scale(6), DesignTokens.Text.SECONDARY(), false);
         contentY += UIScaleManager.scale(40);
 
         if (testerNameField != null) {
@@ -333,12 +333,12 @@ public class TestingHub extends Screen {
         graphics.fill(hubX, hubY + scaledHeaderHeight - 1, hubX + hubWidth, hubY + scaledHeaderHeight, DesignTokens.Border.DEFAULT());
 
         // Title
-        graphics.drawString(uiFont, "DEVMOD TESTING HUB", hubX + UIScaleManager.scale(12), hubY + UIScaleManager.scale(10), DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, uiFont, "DEVMOD TESTING HUB", hubX + UIScaleManager.scale(12), hubY + UIScaleManager.scale(10), DesignTokens.Text.TITLE(), false);
 
         // Session info
         String tester = "Tester: " + TestingSession.INSTANCE.getTesterName();
-        int testerWidth = uiFont.width(tester);
-        graphics.drawString(uiFont, tester, hubX + hubWidth - testerWidth - UIScaleManager.scale(80), hubY + UIScaleManager.scale(10), DesignTokens.Text.MUTED(), false);
+        int testerWidth = UIScaleManager.getScaledStringWidth(uiFont, tester);
+        UIScaleManager.drawScaledString(graphics, uiFont, tester, hubX + hubWidth - testerWidth - UIScaleManager.scale(80), hubY + UIScaleManager.scale(10), DesignTokens.Text.MUTED(), false);
 
         int buttonHeight = EditorButton.Size.SMALL.height();
         int buttonY = hubY + (scaledHeaderHeight - buttonHeight) / 2;

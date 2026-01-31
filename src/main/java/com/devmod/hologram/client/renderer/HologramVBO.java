@@ -29,6 +29,7 @@ public class HologramVBO {
     private VertexFormat.Mode drawMode = VertexFormat.Mode.QUADS;
     private int vertexCount;
     private boolean texturedMode;
+    private boolean hasUVCoords;  // Actual VBO format includes UV coordinates
 
     /**
      * Upload mesh data to the GPU.
@@ -44,10 +45,14 @@ public class HologramVBO {
         }
 
         this.drawMode = VertexFormat.Mode.QUADS;
-        this.texturedMode = mesh.isTexturedMode();
 
         // Choose vertex format based on mesh mode and shader availability
+        // CRITICAL: Track actual format used, not just what mesh wanted
         boolean useUV = HologramShaderRegistry.isTexturedModeSupported();
+        this.hasUVCoords = useUV;
+        // texturedMode is true only if BOTH mesh wants textures AND VBO has UV coords
+        this.texturedMode = mesh.isTexturedMode() && useUV;
+
         VertexFormat format = useUV ? DefaultVertexFormat.POSITION_TEX_COLOR : DefaultVertexFormat.POSITION_COLOR;
 
         // Build vertices
@@ -69,10 +74,19 @@ public class HologramVBO {
     }
 
     /**
-     * Check if this VBO was built in textured mode.
+     * Check if this VBO was built in textured mode (mesh wanted textures AND VBO has UV coords).
      */
     public boolean isTexturedMode() {
         return texturedMode;
+    }
+
+    /**
+     * Check if this VBO was built with UV coordinates.
+     * This determines whether the custom hologram shader can be used safely.
+     * If false, must use fallback shader to avoid vertex attribute mismatch.
+     */
+    public boolean hasUVCoords() {
+        return hasUVCoords;
     }
 
     /**

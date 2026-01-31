@@ -132,14 +132,15 @@ public class CombatRecapScreen extends Screen {
 
         // Title
         String title = "COMBAT RECAP";
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, x + (contentW - titleWidth) / 2, y,
+        int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
+        UIScaleManager.drawScaledString(graphics, font, title, x + (contentW - titleWidth) / 2, y,
             withAlpha(TEXT_HIGHLIGHT, alpha), false);
         y += LINE_HEIGHT + 8;
 
         // Session info line
         String sessionInfo = formatSessionInfo();
-        graphics.drawString(font, sessionInfo, x + (contentW - font.width(sessionInfo)) / 2, y,
+        int sessionWidth = UIScaleManager.getScaledStringWidth(font, sessionInfo);
+        UIScaleManager.drawScaledString(graphics, font, sessionInfo, x + (contentW - sessionWidth) / 2, y,
             withAlpha(TEXT_SECONDARY, alpha), false);
         y += LINE_HEIGHT + SECTION_GAP;
 
@@ -169,7 +170,8 @@ public class CombatRecapScreen extends Screen {
 
         // Close hint
         String hint = "[ESC] Close";
-        graphics.drawString(font, hint, panelX + panelW - font.width(hint) - PANEL_PADDING,
+        int hintWidth = UIScaleManager.getScaledStringWidth(font, hint);
+        UIScaleManager.drawScaledString(graphics, font, hint, panelX + panelW - hintWidth - PANEL_PADDING,
             panelY + panelH - LINE_HEIGHT - 8, withAlpha(TEXT_SECONDARY, alpha), false);
     }
 
@@ -187,7 +189,7 @@ public class CombatRecapScreen extends Screen {
 
     private int renderStatsSection(GuiGraphics graphics, int x, int y, int width, float alpha) {
         // Section title
-        graphics.drawString(font, "Statistics", x, y, withAlpha(ACCENT_COLOR, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, "Statistics", x, y, withAlpha(ACCENT_COLOR, alpha), false);
         y += LINE_HEIGHT + 4;
 
         // Stats bars
@@ -205,9 +207,10 @@ public class CombatRecapScreen extends Screen {
 
         // Best hit
         y += 4;
-        graphics.drawString(font, "Best Hit:", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, "Best Hit:", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
         String bestHit = String.format("%.1f on %s", tracker.getHighestHit(), tracker.getHighestHitTarget());
-        graphics.drawString(font, bestHit, x + font.width("Best Hit: "), y,
+        int bestHitLabelWidth = UIScaleManager.getScaledStringWidth(font, "Best Hit: ");
+        UIScaleManager.drawScaledString(graphics, font, bestHit, x + bestHitLabelWidth, y,
             withAlpha(TEXT_HIGHLIGHT, alpha), false);
 
         return y + LINE_HEIGHT;
@@ -216,11 +219,11 @@ public class CombatRecapScreen extends Screen {
     private int renderStatBar(GuiGraphics graphics, int x, int y, int width, String label,
                               String value, int color, float fill, float alpha) {
         // Label
-        graphics.drawString(font, label, x, y, withAlpha(TEXT_PRIMARY, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y, withAlpha(TEXT_PRIMARY, alpha), false);
 
         // Value (right-aligned)
-        int valueWidth = font.width(value);
-        graphics.drawString(font, value, x + width - valueWidth, y, withAlpha(color, alpha), false);
+        int valueWidth = UIScaleManager.getScaledStringWidth(font, value);
+        UIScaleManager.drawScaledString(graphics, font, value, x + width - valueWidth, y, withAlpha(color, alpha), false);
         y += LINE_HEIGHT;
 
         // Bar background
@@ -245,13 +248,13 @@ public class CombatRecapScreen extends Screen {
 
     private int renderBodyPartChart(GuiGraphics graphics, int x, int y, int width, float alpha) {
         // Section title
-        graphics.drawString(font, "Body Part Distribution", x, y, withAlpha(ACCENT_COLOR, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, "Body Part Distribution", x, y, withAlpha(ACCENT_COLOR, alpha), false);
         y += LINE_HEIGHT + 8;
 
         Map<BodyPart, Integer> distribution = tracker.getBodyPartDistribution();
         int total = distribution.values().stream().mapToInt(Integer::intValue).sum();
         if (total == 0) {
-            graphics.drawString(font, "No hits recorded", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
+            UIScaleManager.drawScaledString(graphics, font, "No hits recorded", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
             return y + LINE_HEIGHT;
         }
 
@@ -291,7 +294,7 @@ public class CombatRecapScreen extends Screen {
 
             // Label and percentage
             String text = String.format("%s: %.0f%%", labels[i], percentage);
-            graphics.drawString(font, text, legendX + 14, legendY + 2,
+            UIScaleManager.drawScaledString(graphics, font, text, legendX + 14, legendY + 2,
                 withAlpha(TEXT_PRIMARY, alpha), false);
 
             legendY += LINE_HEIGHT;
@@ -352,7 +355,7 @@ public class CombatRecapScreen extends Screen {
 
     private void renderDpsGraph(GuiGraphics graphics, int x, int y, int width, int height, float alpha) {
         // Section title
-        graphics.drawString(font, "DPS Timeline", x, y, withAlpha(ACCENT_COLOR, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, "DPS Timeline", x, y, withAlpha(ACCENT_COLOR, alpha), false);
         y += LINE_HEIGHT + 4;
 
         int graphHeight = height - LINE_HEIGHT - 4;
@@ -369,7 +372,8 @@ public class CombatRecapScreen extends Screen {
         List<CombatSessionTracker.DpsSnapshot> timeline = tracker.getDpsTimeline();
         if (timeline.size() < 2) {
             String noData = "Not enough data";
-            graphics.drawString(font, noData, x + (width - font.width(noData)) / 2,
+            int noDataWidth = UIScaleManager.getScaledStringWidth(font, noData);
+            UIScaleManager.drawScaledString(graphics, font, noData, x + (width - noDataWidth) / 2,
                 y + graphHeight / 2 - 4, withAlpha(TEXT_SECONDARY, alpha), false);
             return;
         }
@@ -406,17 +410,17 @@ public class CombatRecapScreen extends Screen {
 
         // Y-axis label
         String maxLabel = String.format("%.0f", maxDps);
-        graphics.drawString(font, maxLabel, x + 2, y + 2, withAlpha(TEXT_SECONDARY, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, maxLabel, x + 2, y + 2, withAlpha(TEXT_SECONDARY, alpha), false);
     }
 
     private void renderTopTargets(GuiGraphics graphics, int x, int y, int width, float alpha) {
-        graphics.drawString(font, "Top Targets", x, y, withAlpha(ACCENT_COLOR, alpha), false);
+        UIScaleManager.drawScaledString(graphics, font, "Top Targets", x, y, withAlpha(ACCENT_COLOR, alpha), false);
         y += LINE_HEIGHT + 4;
 
         List<CombatSessionTracker.TargetStats> targets = tracker.getTopTargets(3);
 
         if (targets.isEmpty()) {
-            graphics.drawString(font, "No targets", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
+            UIScaleManager.drawScaledString(graphics, font, "No targets", x, y, withAlpha(TEXT_SECONDARY, alpha), false);
             return;
         }
 
@@ -428,11 +432,11 @@ public class CombatRecapScreen extends Screen {
                 target.getTotalDamage(), target.getHits(), target.getCritRate() * 100);
 
             int rankColor = i == 0 ? TEXT_HIGHLIGHT : TEXT_PRIMARY;
-            graphics.drawString(font, rank, x, y, withAlpha(rankColor, alpha), false);
-            graphics.drawString(font, name, x + 20, y, withAlpha(TEXT_PRIMARY, alpha), false);
+            UIScaleManager.drawScaledString(graphics, font, rank, x, y, withAlpha(rankColor, alpha), false);
+            UIScaleManager.drawScaledString(graphics, font, name, x + 20, y, withAlpha(TEXT_PRIMARY, alpha), false);
 
-            int statsWidth = font.width(stats);
-            graphics.drawString(font, stats, x + width - statsWidth, y,
+            int statsWidth = UIScaleManager.getScaledStringWidth(font, stats);
+            UIScaleManager.drawScaledString(graphics, font, stats, x + width - statsWidth, y,
                 withAlpha(TEXT_SECONDARY, alpha), false);
 
             y += LINE_HEIGHT;

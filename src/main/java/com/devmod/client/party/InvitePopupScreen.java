@@ -144,26 +144,26 @@ public class InvitePopupScreen extends Screen {
         // Header
         int headerHeight = UIScaleManager.scale(25);
         graphics.fill(popupX, popupY, popupX + popupWidth, popupY + headerHeight, COLOR_HEADER);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(title, "title"),
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(title, "title"),
             popupX + popupWidth / 2, popupY + UIScaleManager.scale(8), COLOR_ACCENT);
 
         // Invite message
         String inviteMsg = Objects.requireNonNull(String.format("%s invites you to:", senderName), "inviteMsg");
         inviteMsg = truncateToWidth(Objects.requireNonNull(font), inviteMsg, popupWidth - UIScaleManager.scale(20));
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), inviteMsg,
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), inviteMsg,
             popupX + popupWidth / 2, popupY + UIScaleManager.scale(35), COLOR_TEXT);
 
         // Quest type with color coding
         String questTypeMsg = Objects.requireNonNull(questType.getDisplayName(), "questTypeMsg");
         int questColor = getQuestTypeColor(questType);
         questTypeMsg = truncateToWidth(Objects.requireNonNull(font), questTypeMsg, popupWidth - UIScaleManager.scale(20));
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), questTypeMsg,
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), questTypeMsg,
             popupX + popupWidth / 2, popupY + UIScaleManager.scale(50), questColor);
 
         // Quest type description
         String description = Objects.requireNonNull(getQuestTypeDescription(questType), "description");
         description = truncateToWidth(Objects.requireNonNull(font), description, popupWidth - UIScaleManager.scale(20));
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), description,
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), description,
             popupX + popupWidth / 2, popupY + UIScaleManager.scale(65), COLOR_TEXT_DIM);
 
         // Timer
@@ -176,7 +176,7 @@ public class InvitePopupScreen extends Screen {
         String timerText = Objects.requireNonNull(I18n.translate("devmod.party.invite_expires", remainingSeconds).getString(), "timerText");
         int timerColor = countdown.getColor();
         timerText = truncateToWidth(Objects.requireNonNull(font), timerText, popupWidth - UIScaleManager.scale(20));
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), timerText,
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), timerText,
             popupX + popupWidth / 2, popupY + popupHeight - UIScaleManager.scale(55), timerColor);
 
         // Timer bar
@@ -237,13 +237,13 @@ public class InvitePopupScreen extends Screen {
     }
 
     private static String truncateToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
-        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+        if (maxWidth <= 0 || UIScaleManager.getScaledStringWidth(font, text) <= maxWidth) {
             return text;
         }
         String ellipsis = "...";
         int minChars = Math.min(4, text.length());
         String trimmed = text;
-        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+        while (UIScaleManager.getScaledStringWidth(font, trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed + ellipsis;

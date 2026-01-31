@@ -21,6 +21,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
 import com.devmod.client.panels.tracking.EntityTracker;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 public class EntityInfoPanel extends FloatingPanel {
@@ -110,11 +111,11 @@ public class EntityInfoPanel extends FloatingPanel {
 
         // Entity name
         Font font = Objects.requireNonNull(mc.font);
-        graphics.drawString(font, entityName, 0, y, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, entityName, 0, y, DesignTokens.Text.PRIMARY, false);
         y += lineHeight + 2;
 
         // Type
-        graphics.drawString(font, entityType, 0, y, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, entityType, 0, y, DesignTokens.Text.MUTED, false);
         y += lineHeight + 4;
 
         // Health bar
@@ -131,23 +132,23 @@ public class EntityInfoPanel extends FloatingPanel {
 
         // Health text
         String healthText = String.format("%.1f / %.1f", currentHealth, maxHealth);
-        graphics.drawString(font, healthText, 0, y, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, healthText, 0, y, DesignTokens.Text.SECONDARY, false);
         y += lineHeight + 4;
 
         // Stats
         if (attackDamage > 0) {
-            graphics.drawString(font, String.format("ATK: %.1f", attackDamage), 0, y, DesignTokens.Semantic.ERROR, false);
+            UIScaleManager.drawScaledString(graphics, font, String.format("ATK: %.1f", attackDamage), 0, y, DesignTokens.Semantic.ERROR, false);
             y += lineHeight;
         }
 
         if (armor > 0) {
-            graphics.drawString(font, String.format("DEF: %.1f", armor), 0, y, DesignTokens.Semantic.INFO, false);
+            UIScaleManager.drawScaledString(graphics, font, String.format("DEF: %.1f", armor), 0, y, DesignTokens.Semantic.INFO, false);
             y += lineHeight;
         }
 
         // Effects count
         if (effectCount > 0) {
-            graphics.drawString(font, String.format("Effects: %d", effectCount), 0, y, DesignTokens.Semantic.WARNING, false);
+            UIScaleManager.drawScaledString(graphics, font, String.format("Effects: %d", effectCount), 0, y, DesignTokens.Semantic.WARNING, false);
         }
     }
 

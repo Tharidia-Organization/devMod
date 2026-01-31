@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -215,28 +216,28 @@ public class FpsTracker {
         int textY = y + PADDING;
 
         // Titolo (Impact UI cyan)
-        graphics.drawString(font, "Performance", textX, textY, TEXT_CYAN, false);
+        UIScaleManager.drawScaledString(graphics, font, "Performance", textX, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT + 2;
 
         // FPS with color based on value
         int fpsColor = getFpsColor(currentFps);
         @Nonnull String fpsStr = Objects.requireNonNull(String.format("FPS: %d", currentFps), "fpsStr");
-        graphics.drawString(font, fpsStr, textX, textY, fpsColor, false);
+        UIScaleManager.drawScaledString(graphics, font, fpsStr, textX, textY, fpsColor, false);
 
         // Min/Max on the same row
         @Nonnull String minMaxStr = Objects.requireNonNull(String.format("\u00A77(%d-%d)", minFps, maxFps), "minMaxStr");
-        graphics.drawString(font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Average FPS
         @Nonnull String avgStr = Objects.requireNonNull(String.format("Avg: %d fps", avgFps), "avgStr");
-        graphics.drawString(font, avgStr, textX, textY, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, avgStr, textX, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Frame time
         int ftColor = getFrameTimeColor(frameTimeMs);
         @Nonnull String ftStr = Objects.requireNonNull(String.format("Frame: %.1fms", frameTimeMs), "ftStr");
-        graphics.drawString(font, ftStr, textX, textY, ftColor, false);
+        UIScaleManager.drawScaledString(graphics, font, ftStr, textX, textY, ftColor, false);
         textY += LINE_HEIGHT;
 
         // Memory
@@ -247,7 +248,7 @@ public class FpsTracker {
 
         int memColor = memPercent > 80 ? TEXT_RED : (memPercent > 60 ? TEXT_YELLOW : TEXT_GREEN);
         @Nonnull String memStr = Objects.requireNonNull(String.format("Mem: %dMB/%.0f%%", usedMB, memPercent), "memStr");
-        graphics.drawString(font, memStr, textX, textY, memColor, false);
+        UIScaleManager.drawScaledString(graphics, font, memStr, textX, textY, memColor, false);
         textY += LINE_HEIGHT + 2;
 
         // Mini grafico FPS

@@ -13,6 +13,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
@@ -93,19 +94,19 @@ public class TelemetryPage implements SettingsPage {
 
             // Weapon summaries count
             List<String> weaponSummaries = TelemetryService.INSTANCE.getWeaponSummaries();
-            graphics.drawString(font, "Weapons tracked: " + weaponSummaries.size(), x, currentY,
+            UIScaleManager.drawScaledString(graphics, font, "Weapons tracked: " + weaponSummaries.size(), x, currentY,
                 DesignTokens.Text.PRIMARY, false);
             currentY += ROW_HEIGHT;
 
             // Room summaries count
             List<String> roomSummaries = TelemetryService.INSTANCE.getRoomSummaries();
-            graphics.drawString(font, "Rooms explored: " + roomSummaries.size(), x, currentY,
+            UIScaleManager.drawScaledString(graphics, font, "Rooms explored: " + roomSummaries.size(), x, currentY,
                 DesignTokens.Text.PRIMARY, false);
             currentY += ROW_HEIGHT;
 
             // Fight summaries count
             List<String> fightSummaries = TelemetryService.INSTANCE.getFightSummaries();
-            graphics.drawString(font, "Fights recorded: " + fightSummaries.size(), x, currentY,
+            UIScaleManager.drawScaledString(graphics, font, "Fights recorded: " + fightSummaries.size(), x, currentY,
                 DesignTokens.Text.PRIMARY, false);
             currentY += ROW_HEIGHT + SECTION_SPACING;
 
@@ -202,7 +203,7 @@ public class TelemetryPage implements SettingsPage {
 
             // Status message
             if (showStatus) {
-                graphics.drawString(font, statusMessage, x, currentY, DesignTokens.Semantic.SUCCESS, false);
+                UIScaleManager.drawScaledString(graphics, font, statusMessage, x, currentY, DesignTokens.Semantic.SUCCESS, false);
                 currentY += ROW_HEIGHT;
             }
 

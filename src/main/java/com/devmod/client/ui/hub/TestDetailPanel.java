@@ -14,6 +14,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
@@ -102,11 +103,11 @@ public class TestDetailPanel implements HubPanel {
         String line1 = "Select a test from the list";
         String line2 = "to see details here";
 
-        int w1 = Objects.requireNonNull(font, "font").width(line1);
-        int w2 = Objects.requireNonNull(font, "font").width(line2);
+        int w1 = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), line1);
+        int w2 = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), line2);
 
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, DesignTokens.Text.MUTED(), false);
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 4, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 4, DesignTokens.Text.MUTED(), false);
     }
 
     private void renderCompletionMessage(GuiGraphics graphics) {
@@ -116,11 +117,11 @@ public class TestDetailPanel implements HubPanel {
         String line1 = "All tests completed!";
         String line2 = "Save your report to share results.";
 
-        int w1 = Objects.requireNonNull(font, "font").width(line1);
-        int w2 = Objects.requireNonNull(font, "font").width(line2);
+        int w1 = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), line1);
+        int w2 = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), line2);
 
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, DesignTokens.Semantic.SUCCESS, false);
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 6, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(line1, "line1"), centerX - w1 / 2, centerY - 10, DesignTokens.Semantic.SUCCESS, false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(line2, "line2"), centerX - w2 / 2, centerY + 6, DesignTokens.Text.SECONDARY(), false);
     }
 
     private void renderTestDetails(GuiGraphics graphics, int mouseX, int mouseY, TestCase test, @Nullable Set<ToolType> tools) {
@@ -171,15 +172,15 @@ public class TestDetailPanel implements HubPanel {
     private void renderHeader(GuiGraphics graphics, int cx, int cy, int cw, TestCase test) {
         // Test name
         String name = test.getName();
-        if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(name, "name")) > cw - 60) {
+        if (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), Objects.requireNonNull(name, "name")) > cw - 60) {
             name = name.substring(0, Math.min(name.length(), 40)) + "...";
         }
-        graphics.drawString(Objects.requireNonNull(font, "font"), name, cx, cy + 4, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), name, cx, cy + 4, DesignTokens.Text.PRIMARY(), false);
 
         // Priority badge
         String priority = "[" + test.getPriority().name() + "]";
-        int priorityWidth = Objects.requireNonNull(font, "font").width(priority);
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(priority, "priority"), cx + cw - priorityWidth, cy + 4, test.getPriority().getColor(), false);
+        int priorityWidth = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), priority);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(priority, "priority"), cx + cw - priorityWidth, cy + 4, test.getPriority().getColor(), false);
 
         // Underline
         graphics.fill(cx, cy + HEADER_HEIGHT - 4, cx + cw, cy + HEADER_HEIGHT - 3, DesignTokens.Border.SEPARATOR());
@@ -191,12 +192,12 @@ public class TestDetailPanel implements HubPanel {
         graphics.fill(cx, cy + 2, cx + 8, cy + 10, statusColor);
 
         // Status text
-        graphics.drawString(Objects.requireNonNull(font, "font"), test.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), test.getStatus().getDisplayName(), cx + 12, cy, statusColor, false);
 
         // Category
         String category = "Category: " + test.getCategory();
-        int catWidth = Objects.requireNonNull(font, "font").width(category);
-        graphics.drawString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(category, "category"), cx + cw - catWidth, cy, DesignTokens.Text.MUTED(), false);
+        int catWidth = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), category);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), Objects.requireNonNull(category, "category"), cx + cw - catWidth, cy, DesignTokens.Text.MUTED(), false);
     }
 
     private int renderWrappedText(GuiGraphics graphics, int cx, int cy, int maxWidth, String text, int color) {
@@ -206,8 +207,8 @@ public class TestDetailPanel implements HubPanel {
 
         for (String word : words) {
             String testLine = line.length() > 0 ? line + " " + word : word;
-            if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(testLine, "testLine")) > maxWidth) {
-                graphics.drawString(Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
+            if (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), Objects.requireNonNull(testLine, "testLine")) > maxWidth) {
+                UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
                 lineY += LINE_HEIGHT;
                 line = new StringBuilder(word);
             } else {
@@ -216,7 +217,7 @@ public class TestDetailPanel implements HubPanel {
         }
 
         if (line.length() > 0) {
-            graphics.drawString(Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), line.toString(), cx, lineY, color, false);
             lineY += LINE_HEIGHT;
         }
 
@@ -248,24 +249,25 @@ public class TestDetailPanel implements HubPanel {
             String checkbox = isChecked ? "[X]" : "[ ]";
 
             if (stepY >= cy - 20 && stepY < cy + maxHeight + 20) {
-                graphics.drawString(Objects.requireNonNull(font, "font"), checkbox, cx, stepY, checkColor, false);
+                UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), checkbox, cx, stepY, checkColor, false);
 
                 // Step text (wrapped if necessary)
                 String stepText = step;
-                int textX = cx + Objects.requireNonNull(font, "font").width(checkbox) + 4;
-                int textWidth = cw - Objects.requireNonNull(font, "font").width(checkbox) - 8;
+                int checkboxWidth = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), checkbox);
+                int textX = cx + checkboxWidth + 4;
+                int textWidth = cw - checkboxWidth - 8;
 
-                if (Objects.requireNonNull(font, "font").width(stepText) > textWidth) {
+                if (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), stepText) > textWidth) {
                     // Truncate with ellipsis - keep at least 10 chars for readability
                     String ellipsis = "...";
                     int minChars = Math.min(10, stepText.length());
-                    while (Objects.requireNonNull(font, "font").width(stepText + ellipsis) > textWidth && stepText.length() > minChars) {
+                    while (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), stepText + ellipsis) > textWidth && stepText.length() > minChars) {
                         stepText = stepText.substring(0, stepText.length() - 1);
                     }
                     stepText = stepText + ellipsis;
                 }
 
-                graphics.drawString(Objects.requireNonNull(font, "font"), stepText, textX, stepY, DesignTokens.Text.SECONDARY(), false);
+                UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), stepText, textX, stepY, DesignTokens.Text.SECONDARY(), false);
             }
 
             stepY += LINE_HEIGHT + 4;
@@ -292,11 +294,11 @@ public class TestDetailPanel implements HubPanel {
             String badge = "[" + tool.getHotkey() + "] " + tool.getLabel();
             String status = enabled ? " OK" : " NEEDED";
 
-            graphics.drawString(Objects.requireNonNull(font, "font"), badge, toolX, cy, DesignTokens.Text.SECONDARY(), false);
-            int badgeWidth = Objects.requireNonNull(font, "font").width(badge);
-            graphics.drawString(Objects.requireNonNull(font, "font"), status, toolX + badgeWidth, cy, badgeColor, false);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), badge, toolX, cy, DesignTokens.Text.SECONDARY(), false);
+            int badgeWidth = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), badge);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), status, toolX + badgeWidth, cy, badgeColor, false);
 
-            toolX += Objects.requireNonNull(font, "font").width(badge + status) + 16;
+            toolX += UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), badge + status) + 16;
 
             // New line if necessary
             if (toolX > cx + cw - 100) {

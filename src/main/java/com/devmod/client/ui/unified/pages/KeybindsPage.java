@@ -15,6 +15,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.input.KeybindConflictDetector;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsPage;
@@ -195,7 +196,7 @@ public class KeybindsPage implements SettingsPage {
 
             // Section header
             if (currentY >= y - ROW_HEIGHT) {
-                graphics.drawString(font, section.title, x, currentY + 2, DesignTokens.Text.PRIMARY, false);
+                UIScaleManager.drawScaledString(graphics, font, section.title, x, currentY + 2, DesignTokens.Text.PRIMARY, false);
             }
             currentY += ROW_HEIGHT;
 
@@ -222,7 +223,7 @@ public class KeybindsPage implements SettingsPage {
         int hintY = y + height - HINT_HEIGHT + 4;
         // Draw background for better visibility
         graphics.fill(x - 4, hintY - 4, x + width + 4, hintY + 14, DesignTokens.Bg.LEVEL_1);
-        graphics.drawString(font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, "ℹ To rebind keys: ESC → Options → Controls → DevMod", x, hintY, DesignTokens.Text.SECONDARY, false);
     }
 
     /**
@@ -256,7 +257,7 @@ public class KeybindsPage implements SettingsPage {
         int badgeX = x;
         int badgeY = y + 1;
         int badgeHeight = ROW_HEIGHT - 4;
-        int textWidth = font.width(entry.key);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, entry.key);
         int actualBadgeWidth = Math.max(KEY_BADGE_WIDTH, textWidth + 8);
 
         int badgeBorderColor = hasConflict ? DesignTokens.Keybinds.CONFLICT_BORDER : DesignTokens.Accent.PRIMARY;
@@ -265,33 +266,33 @@ public class KeybindsPage implements SettingsPage {
 
         int keyTextX = badgeX + (actualBadgeWidth - textWidth) / 2;
         int keyTextColor = hasConflict ? DesignTokens.Keybinds.CONFLICT_TEXT : DesignTokens.Accent.PRIMARY;
-        graphics.drawString(font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, keyTextColor, false);
+        UIScaleManager.drawScaledString(graphics, font, entry.key, keyTextX, badgeY + (badgeHeight - 8) / 2, keyTextColor, false);
 
         // Conflict warning icon
         int nameX = badgeX + actualBadgeWidth + 10;
         if (hasConflict) {
-            graphics.drawString(font, "⚠", nameX - 2, y + 2, DesignTokens.Keybinds.CONFLICT_BORDER, false);
+            UIScaleManager.drawScaledString(graphics, font, "⚠", nameX - 2, y + 2, DesignTokens.Keybinds.CONFLICT_BORDER, false);
             nameX += 12;
         }
 
         // Action name
-        graphics.drawString(font, entry.name, nameX, y + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, entry.name, nameX, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Description (muted, to the right) - only if space allows
-        int descX = nameX + font.width(entry.name) + 16;
+        int descX = nameX + UIScaleManager.getScaledStringWidth(font, entry.name) + 16;
         int availableWidth = x + rowWidth - descX;
         if (availableWidth > 50) {
             String desc = entry.description;
             // Truncate description if too long (keep at least 6 chars for readability)
-            if (font.width(desc) > availableWidth) {
+            if (UIScaleManager.getScaledStringWidth(font, desc) > availableWidth) {
                 String ellipsis = "...";
                 int minChars = Math.min(6, desc.length());
-                while (font.width(desc + ellipsis) > availableWidth && desc.length() > minChars) {
+                while (UIScaleManager.getScaledStringWidth(font, desc + ellipsis) > availableWidth && desc.length() > minChars) {
                     desc = desc.substring(0, desc.length() - 1);
                 }
                 desc = desc + ellipsis;
             }
-            graphics.drawString(font, desc, descX, y + 2, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, font, desc, descX, y + 2, DesignTokens.Text.MUTED, false);
         }
     }
 

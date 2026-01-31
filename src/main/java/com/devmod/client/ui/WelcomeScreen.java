@@ -244,7 +244,7 @@ public class WelcomeScreen extends Screen {
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(DesignTokens.Welcome.HINT, hintAlpha);
-            safeGraphics.drawCenteredString(safeFont, "Press ESC to skip", centerX, panelY + scaledPanelHeight - 15, hintColor);
+            UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Press ESC to skip", centerX, panelY + scaledPanelHeight - 15, hintColor);
         }
 
         safeGraphics.pose().popPose();
@@ -321,7 +321,7 @@ public class WelcomeScreen extends Screen {
 
         // Subtitle
         int subtitleColor = applyAlpha(COLOR_SUBTITLE, alpha);
-        g.drawCenteredString(safeFont, "Welcome!", centerX, panelY + UIScaleManager.scale(48), subtitleColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "Welcome!", centerX, panelY + UIScaleManager.scale(48), subtitleColor);
 
         // Separator line
         int sepWidth = UIScaleManager.scale(180);
@@ -341,7 +341,7 @@ public class WelcomeScreen extends Screen {
         if (featureElapsed > 0) {
             float headerAlpha = Math.min(1.0f, featureElapsed / 200.0f);
             int headerColor = applyAlpha(COLOR_TEXT_DIM, headerAlpha);
-            g.drawString(safeFont, "What you get:", x, y, headerColor, false);
+            UIScaleManager.drawScaledString(g, safeFont, "What you get:", x, y, headerColor, false);
             y += UIScaleManager.scale(16);
         }
 
@@ -378,11 +378,11 @@ public class WelcomeScreen extends Screen {
         // Feature name
         int textOffset = UIScaleManager.scale(15);
         int nameColor = applyAlpha(feature.color, alpha);
-        g.drawString(safeFont, feature.name, x + textOffset, y + UIScaleManager.scale(2), nameColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, feature.name, x + textOffset, y + UIScaleManager.scale(2), nameColor, true);
 
         // Description
         int descColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(safeFont, feature.description, x + textOffset, y + UIScaleManager.scale(12), descColor, false);
+        UIScaleManager.drawScaledString(g, safeFont, feature.description, x + textOffset, y + UIScaleManager.scale(12), descColor, false);
     }
 
     private void renderKeybinds(GuiGraphics g, int centerX, int startY, long elapsed) {
@@ -397,7 +397,7 @@ public class WelcomeScreen extends Screen {
 
         // Header
         int headerColor = applyAlpha(COLOR_TEXT, alpha);
-        g.drawCenteredString(safeFont, "Suggested Keybinds", centerX, startY + UIScaleManager.scale(10), headerColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "Suggested Keybinds", centerX, startY + UIScaleManager.scale(10), headerColor);
 
         // Keybinds
         int y = startY + UIScaleManager.scale(28);
@@ -417,7 +417,7 @@ public class WelcomeScreen extends Screen {
         @Nonnull Font safeFont = safeFont();
         // Key box background
         String keyText = "[" + kb.key + "]";
-        int keyWidth = safeFont.width(keyText);
+        int keyWidth = UIScaleManager.getScaledStringWidth(safeFont, keyText);
 
         int padding = UIScaleManager.scale(2);
         int boxHeight = UIScaleManager.scale(10);
@@ -426,11 +426,11 @@ public class WelcomeScreen extends Screen {
 
         // Key text
         int keyColor = applyAlpha(COLOR_KEY, alpha);
-        g.drawString(safeFont, keyText, x, y, keyColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, keyText, x, y, keyColor, true);
 
         // Action text
         int actionColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(safeFont, kb.action, x + keyWidth + UIScaleManager.scale(10), y, actionColor, false);
+        UIScaleManager.drawScaledString(g, safeFont, kb.action, x + keyWidth + UIScaleManager.scale(10), y, actionColor, false);
     }
 
     private void renderParticles(GuiGraphics g) {

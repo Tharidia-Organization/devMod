@@ -406,24 +406,24 @@ public class RoomBoundsEditorScreen extends Screen {
         safeGraphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, PANEL_BG);
 
         // Title
-        safeGraphics.drawCenteredString(safeFont, "Room Bounds Editor", centerX, panelY + 10, TEXT_TITLE);
+        UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Room Bounds Editor", centerX, panelY + 10, TEXT_TITLE);
 
         // Dimension info
         String dimension = Objects.requireNonNull(currentDimension, "dimension");
-        safeGraphics.drawString(safeFont, "Dimension: " + dimension, panelX + 20, panelY + 30, TEXT_DIM);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Dimension: " + dimension, panelX + 20, panelY + 30, TEXT_DIM);
 
         // Room Name Label
-        safeGraphics.drawString(safeFont, "Room Name:", panelX + 20, panelY + 54, TEXT_NORMAL);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Room Name:", panelX + 20, panelY + 54, TEXT_NORMAL);
 
         // Point A info
         String pointAText = pointA != null ? formatBlockPos(pointA) : "Not set";
         int pointAColor = pointA != null ? TEXT_ACCENT : TEXT_DIM;
-        safeGraphics.drawString(safeFont, "Point A: " + pointAText, panelX + 20, panelY + 110, pointAColor);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Point A: " + pointAText, panelX + 20, panelY + 110, pointAColor);
 
         // Point B info
         String pointBText = pointB != null ? formatBlockPos(pointB) : "Not set";
         int pointBColor = pointB != null ? TEXT_ACCENT : TEXT_DIM;
-        safeGraphics.drawString(safeFont, "Point B: " + pointBText, panelX + 20, panelY + 125, pointBColor);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Point B: " + pointBText, panelX + 20, panelY + 125, pointBColor);
 
         // Room size preview - local capture for null safety on static @Nullable fields
         BlockPos ptA = pointA;
@@ -433,11 +433,11 @@ public class RoomBoundsEditorScreen extends Screen {
             int sizeY = Math.abs(ptB.getY() - ptA.getY()) + 1;
             int sizeZ = Math.abs(ptB.getZ() - ptA.getZ()) + 1;
             String sizeText = String.format("Size: %dx%dx%d (%d blocks)", sizeX, sizeY, sizeZ, sizeX * sizeY * sizeZ);
-            safeGraphics.drawString(safeFont, sizeText, panelX + 20, panelY + 145, TEXT_ACCENT);
+            UIScaleManager.drawScaledString(safeGraphics, safeFont, sizeText, panelX + 20, panelY + 145, TEXT_ACCENT);
         }
 
         // Existing rooms list
-        safeGraphics.drawString(safeFont, "Existing Rooms: " + existingRooms.size(), panelX + 20, panelY + 165, TEXT_NORMAL);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Existing Rooms: " + existingRooms.size(), panelX + 20, panelY + 165, TEXT_NORMAL);
 
         int listY = panelY + 178;
         int maxShow = 2;
@@ -445,10 +445,10 @@ public class RoomBoundsEditorScreen extends Screen {
         for (int i = startIdx; i < existingRooms.size() && i < startIdx + maxShow; i++) {
             RoomDefinition room = existingRooms.get(i);
             String roomInfo = "- " + room.id() + " " + formatBlockPos(room.min()) + " to " + formatBlockPos(room.max());
-            if (safeFont.width(roomInfo) > PANEL_WIDTH - 40) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, roomInfo) > PANEL_WIDTH - 40) {
                 roomInfo = "- " + room.id() + " (...)";
             }
-            safeGraphics.drawString(safeFont, roomInfo, panelX + 25, listY, TEXT_DIM);
+            UIScaleManager.drawScaledString(safeGraphics, safeFont, roomInfo, panelX + 25, listY, TEXT_DIM);
             listY += 10;
         }
 
@@ -459,14 +459,14 @@ public class RoomBoundsEditorScreen extends Screen {
                 float alpha = elapsed < 2500 ? 1.0f : 1.0f - (elapsed - 2500) / 500.0f;
                 int color = applyAlpha(statusColor, alpha);
                 String status = Objects.requireNonNull(statusMessage, "statusMessage");
-                safeGraphics.drawCenteredString(safeFont, status, centerX, panelY + PANEL_HEIGHT - 15, color);
+                UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, status, centerX, panelY + PANEL_HEIGHT - 15, color);
             } else {
                 statusMessage = "";
             }
         }
 
         // Hint
-        safeGraphics.drawCenteredString(safeFont, "Stand at corner, click 'Set Point'. Repeat for opposite corner.",
+        UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Stand at corner, click 'Set Point'. Repeat for opposite corner.",
                 centerX, panelY + PANEL_HEIGHT + 5, TEXT_DIM);
 
         renderInputBackgrounds(safeGraphics);

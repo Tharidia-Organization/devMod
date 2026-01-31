@@ -187,7 +187,9 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             return;
         }
 
-        // Check if VBO is in textured mode
+        // CRITICAL: Check actual VBO format, not just what mesh wanted
+        // VBO tracks whether it was built with UV coords - must match shader expectations
+        boolean vboHasUV = vbo.hasUVCoords();
         boolean texturedMode = vbo.isTexturedMode();
 
         // Bind block atlas if in textured mode
@@ -195,8 +197,12 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
         }
 
-        // Get hologram shader (falls back to position_color if not ready)
-        ShaderInstance shader = HologramShaderRegistry.getShader();
+        // CRITICAL: Only use custom shader if VBO was built with matching vertex format
+        // Custom shader expects POSITION_TEX_COLOR (Position, UV0, Color)
+        // Fallback expects POSITION_COLOR (Position, Color)
+        // Using wrong shader = vertex attribute mismatch = garbage colors
+        ShaderInstance shader = vboHasUV ? HologramShaderRegistry.getShader() : null;
+
         if (shader != null) {
             RenderSystem.setShader(() -> shader);
 
@@ -224,7 +230,7 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             // Set textured mode uniforms
             HologramShaderRegistry.setTexturedModeUniforms(texturedMode, 0.3f);
         } else {
-            // Fallback to basic shader
+            // Fallback to basic shader (matches POSITION_COLOR format)
             RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
         }
 

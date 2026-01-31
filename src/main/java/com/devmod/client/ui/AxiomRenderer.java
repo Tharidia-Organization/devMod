@@ -34,7 +34,7 @@ public final class AxiomRenderer {
         graphics.fill(x, y + headerHeight, x + width, y + headerHeight + 1, borderColor);
 
         // Title
-        graphics.drawString(font, title, x + DesignTokens.Spacing.PANEL_PADDING, y + 6, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, title, x + DesignTokens.Spacing.PANEL_PADDING, y + 6, textColor, false);
     }
 
     /**
@@ -142,16 +142,16 @@ public final class AxiomRenderer {
      * Draw a muted/hint text
      */
     public static void drawHint(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, DesignTokens.Text.MUTED, false);
     }
 
     /**
      * Draw centered title
      */
     public static void drawCenteredTitle(GuiGraphics graphics, @Nonnull Font font, int screenWidth, int y, @Nonnull String title) {
-        int textWidth = font.width(title);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, title);
         int x = (screenWidth - textWidth) / 2;
-        graphics.drawString(font, title, x, y, DesignTokens.Text.WHITE, false);
+        UIScaleManager.drawScaledString(graphics, font, title, x, y, DesignTokens.Text.WHITE, false);
     }
 
     /**
@@ -159,9 +159,9 @@ public final class AxiomRenderer {
      */
     public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
                                       @Nonnull String label, @Nonnull String value) {
-        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
-        int labelWidth = font.width(label);
-        graphics.drawString(font, value, x + labelWidth, y, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y, DesignTokens.Text.SECONDARY, false);
+        int labelWidth = UIScaleManager.getScaledStringWidth(font, label);
+        UIScaleManager.drawScaledString(graphics, font, value, x + labelWidth, y, DesignTokens.Text.PRIMARY, false);
     }
 
     /**
@@ -169,9 +169,9 @@ public final class AxiomRenderer {
      */
     public static void drawLabelValue(GuiGraphics graphics, @Nonnull Font font, int x, int y,
                                       @Nonnull String label, @Nonnull String value, int valueColor) {
-        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
-        int labelWidth = font.width(label);
-        graphics.drawString(font, value, x + labelWidth, y, valueColor, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y, DesignTokens.Text.SECONDARY, false);
+        int labelWidth = UIScaleManager.getScaledStringWidth(font, label);
+        UIScaleManager.drawScaledString(graphics, font, value, x + labelWidth, y, valueColor, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -199,7 +199,7 @@ public final class AxiomRenderer {
     public static void drawToggleRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                      @Nonnull String label, boolean enabled, boolean hovered) {
         // Label on left
-        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
 
         // Toggle on right
         int toggleWidth = DesignTokens.Size.TOGGLE_WIDTH;
@@ -212,9 +212,9 @@ public final class AxiomRenderer {
      */
     public static void drawStatRow(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                    @Nonnull String label, @Nonnull String value, int valueColor) {
-        graphics.drawString(font, label, x, y, DesignTokens.Text.SECONDARY, false);
-        int valueWidth = font.width(value);
-        graphics.drawString(font, value, x + width - valueWidth, y, valueColor, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y, DesignTokens.Text.SECONDARY, false);
+        int valueWidth = UIScaleManager.getScaledStringWidth(font, value);
+        UIScaleManager.drawScaledString(graphics, font, value, x + width - valueWidth, y, valueColor, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

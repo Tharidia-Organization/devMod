@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
@@ -252,29 +253,29 @@ public class PerformanceProfiler {
         int textY = y + PADDING;
 
         // === Header ===
-        graphics.drawString(font, "DevMod Profiler", textX, textY, TEXT_CYAN, false);
+        UIScaleManager.drawScaledString(graphics, font, "DevMod Profiler", textX, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT + 4;
 
         // === FPS Section ===
-        graphics.drawString(font, "▸ Performance", textX, textY, TEXT_CYAN, false);
+        UIScaleManager.drawScaledString(graphics, font, "▸ Performance", textX, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT;
 
         int fpsColor = getFpsColor(currentFps);
-        graphics.drawString(font, String.format("FPS: %d", currentFps), textX + 4, textY, fpsColor, false);
-        graphics.drawString(font, String.format("\u00A77(min:%d avg:%d max:%d)", minFps, avgFps, maxFps),
+        UIScaleManager.drawScaledString(graphics, font, String.format("FPS: %d", currentFps), textX + 4, textY, fpsColor, false);
+        UIScaleManager.drawScaledString(graphics, font, String.format("\u00A77(min:%d avg:%d max:%d)", minFps, avgFps, maxFps),
             textX + 50, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Frame time
         int ftColor = getFrameTimeColor(currentFrameTimeMs);
-        graphics.drawString(font, String.format("Frame: %.2fms", currentFrameTimeMs), textX + 4, textY, ftColor, false);
-        graphics.drawString(font, String.format("\u00A77(avg:%.1f max:%.1f)", avgFrameTimeMs, maxFrameTimeMs),
+        UIScaleManager.drawScaledString(graphics, font, String.format("Frame: %.2fms", currentFrameTimeMs), textX + 4, textY, ftColor, false);
+        UIScaleManager.drawScaledString(graphics, font, String.format("\u00A77(avg:%.1f max:%.1f)", avgFrameTimeMs, maxFrameTimeMs),
             textX + 80, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // TPS
         int tpsColor = estimatedTps >= 19 ? TEXT_GREEN : (estimatedTps >= 15 ? TEXT_YELLOW : TEXT_RED);
-        graphics.drawString(font, String.format("TPS: %.1f", estimatedTps), textX + 4, textY, tpsColor, false);
+        UIScaleManager.drawScaledString(graphics, font, String.format("TPS: %.1f", estimatedTps), textX + 4, textY, tpsColor, false);
         textY += LINE_HEIGHT;
 
         // Frame time graph
@@ -283,7 +284,7 @@ public class PerformanceProfiler {
         textY += 24;
 
         // === Memory Section ===
-        graphics.drawString(font, "▸ Memory", textX, textY, TEXT_CYAN, false);
+        UIScaleManager.drawScaledString(graphics, font, "▸ Memory", textX, textY, TEXT_CYAN, false);
         textY += LINE_HEIGHT;
 
         Runtime runtime = Runtime.getRuntime();
@@ -293,7 +294,7 @@ public class PerformanceProfiler {
         float memPercent = (float) usedMB / maxMB * 100;
 
         int memColor = memPercent > 80 ? TEXT_RED : (memPercent > 60 ? TEXT_YELLOW : TEXT_GREEN);
-        graphics.drawString(font, String.format("Used: %dMB / %dMB (%.0f%%)", usedMB, totalMB, memPercent),
+        UIScaleManager.drawScaledString(graphics, font, String.format("Used: %dMB / %dMB (%.0f%%)", usedMB, totalMB, memPercent),
             textX + 4, textY, memColor, false);
         textY += LINE_HEIGHT;
 
@@ -304,7 +305,7 @@ public class PerformanceProfiler {
 
         // === System Timings ===
         if (!systemTimingsAvg.isEmpty()) {
-            graphics.drawString(font, "▸ System Timings", textX, textY, TEXT_CYAN, false);
+            UIScaleManager.drawScaledString(graphics, font, "▸ System Timings", textX, textY, TEXT_CYAN, false);
             textY += LINE_HEIGHT;
 
             // Sort by time (descending) and render
@@ -321,7 +322,7 @@ public class PerformanceProfiler {
                 String timeStr = timeUs >= 1000 ? String.format("%.2fms", timeUs / 1000f)
                                                 : String.format("%.0fus", timeUs);
 
-                graphics.drawString(font, String.format("%-16s %s", name, timeStr),
+                UIScaleManager.drawScaledString(graphics, font, String.format("%-16s %s", name, timeStr),
                     textX + 4, textY, color, false);
                 textY += LINE_HEIGHT;
             }
@@ -330,13 +331,13 @@ public class PerformanceProfiler {
 
         // === Active Counters ===
         if (!activeCounters.isEmpty()) {
-            graphics.drawString(font, "▸ Active Systems", textX, textY, TEXT_CYAN, false);
+            UIScaleManager.drawScaledString(graphics, font, "▸ Active Systems", textX, textY, TEXT_CYAN, false);
             textY += LINE_HEIGHT;
 
             for (Map.Entry<String, Integer> entry : activeCounters.entrySet()) {
                 int val = entry.getValue();
                 int color = val > 0 ? TEXT_CYAN : TEXT_GRAY;
-                graphics.drawString(font, String.format("%-18s %d", entry.getKey(), val),
+                UIScaleManager.drawScaledString(graphics, font, String.format("%-18s %d", entry.getKey(), val),
                     textX + 4, textY, color, false);
                 textY += LINE_HEIGHT;
             }

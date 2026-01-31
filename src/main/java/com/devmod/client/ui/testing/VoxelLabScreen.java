@@ -191,11 +191,11 @@ public class VoxelLabScreen extends Screen {
     private void renderHeader(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         Font safeFont = Objects.requireNonNull(font, "font");
         // Title
-        graphics.drawString(safeFont, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
 
         // Subtitle with tab description
         String subtitle = Objects.requireNonNull(activeTab.getDescription(), "subtitle");
-        graphics.drawString(safeFont, subtitle, PADDING, PADDING + 14, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, subtitle, PADDING, PADDING + 14, DesignTokens.Text.SECONDARY(), false);
 
         // Close button
         int closeX = width - PADDING - 24;

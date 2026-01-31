@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.EditorScaleCalculator;
@@ -96,7 +97,7 @@ public class EditorSettingsPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Description
-            graphics.drawString(font, "Select the editor panel scale:", x, currentY, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, "Select the editor panel scale:", x, currentY, DesignTokens.Text.SECONDARY, false);
             currentY += 14;
 
             // Scale buttons row
@@ -127,7 +128,7 @@ public class EditorSettingsPage implements SettingsPage {
             currentY += ROW_HEIGHT;
 
             // Mode description
-            graphics.drawString(font, "Mode when opening the editor:", x, currentY, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, "Mode when opening the editor:", x, currentY, DesignTokens.Text.SECONDARY, false);
             currentY += 14;
 
             // Preview button
@@ -193,7 +194,7 @@ public class EditorSettingsPage implements SettingsPage {
         String info = String.format("Current: %s → %.2fx | Panel: %d×%d px | Screen: %d×%d",
                 scaleSource, effectiveScale, panelW, panelH, screenW, screenH);
 
-        graphics.drawString(Objects.requireNonNull(font), info, x, y, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), info, x, y, DesignTokens.Text.MUTED, false);
         return effectiveScale;
     }
 
@@ -229,7 +230,7 @@ public class EditorSettingsPage implements SettingsPage {
         graphics.fill(panelX + leftW, panelY + headerH, panelX + leftW + 1, panelY + scaledH, DesignTokens.Stroke.MUTED);
 
         String label = String.format("Preview %.2fx", effectiveScale);
-        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(label, "label"),
             previewX + 6, previewY + previewHeight - 12, DesignTokens.Text.MUTED, false);
     }
 
@@ -252,11 +253,11 @@ public class EditorSettingsPage implements SettingsPage {
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Text centered
-        int textW = safeFont.width(Objects.requireNonNull(label, "label"));
+        int textW = UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(label, "label"));
         int textX = x + (w - textW) / 2;
         int textY = y + (h - 8) / 2;
         int textColor = selected ? DesignTokens.Text.PRIMARY : (hovered ? DesignTokens.Text.PRIMARY : DesignTokens.Text.SECONDARY);
-        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"), textX, textY, textColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(label, "label"), textX, textY, textColor, false);
     }
 
     private void drawModeButton(GuiGraphics graphics, Font font, int x, int y, int w, int h,
@@ -284,11 +285,11 @@ public class EditorSettingsPage implements SettingsPage {
 
         // Label
         int textX = x + 8;
-        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(label, "label"),
             textX, y + 4, selected ? DesignTokens.Text.PRIMARY : DesignTokens.Text.SECONDARY, false);
 
         // Description (smaller)
-        graphics.drawString(safeFont, Objects.requireNonNull(desc, "description"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(desc, "description"),
             textX, y + 13, DesignTokens.Text.MUTED, false);
     }
 
@@ -300,8 +301,8 @@ public class EditorSettingsPage implements SettingsPage {
             graphics.fill(x, y, x + width, y + ROW_HEIGHT, DesignTokens.Surface.LEVEL_1);
         }
 
-        graphics.drawString(font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(font, description, x, y + 14, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, description, x, y + 14, DesignTokens.Text.MUTED, false);
 
         int toggleX = x + width - 36;
         AxiomRenderer.drawToggle(graphics, font, toggleX, y, 36, 18, enabled, rowHovered);

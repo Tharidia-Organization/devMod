@@ -112,7 +112,7 @@ public class AttributeHudOverlay {
 
         // TITLE
         String title = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.title").getString(), contentWidth);
-        graphics.drawString(font, title, textX, y, TITLE_COLOR, false);
+        UIScaleManager.drawScaledString(graphics, font, title, textX, y, TITLE_COLOR, false);
         y += sLineHeight + UIScaleManager.scale(2);
 
         // Separator line
@@ -125,7 +125,7 @@ public class AttributeHudOverlay {
             y = renderTargetSection(graphics, font, textX, y, contentWidth, target, sLineHeight, sSectionGap);
         } else {
             String noTarget = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.no_target").getString(), contentWidth);
-            graphics.drawString(font, noTarget, textX, y, TEXT_GRAY, false);
+            UIScaleManager.drawScaledString(graphics, font, noTarget, textX, y, TEXT_GRAY, false);
             y += sLineHeight + sSectionGap;
         }
 
@@ -179,7 +179,7 @@ public class AttributeHudOverlay {
             : I18n.translate("devmod.attribute_monitor.blocked").getString();
         nameStr += " " + losTag;
         nameStr = truncateToWidth(font, nameStr, width);
-        graphics.drawString(font, nameStr, x, y, TEXT_WHITE, false);
+        UIScaleManager.drawScaledString(graphics, font, nameStr, x, y, TEXT_WHITE, false);
         y += sLineHeight;
 
         // Health bar
@@ -188,7 +188,7 @@ public class AttributeHudOverlay {
         String healthStr = I18n.translate("devmod.attribute_monitor.health",
             target.getCurrentHealth(), target.getMaxHealth(), healthPercent).getString();
         healthStr = truncateToWidth(font, healthStr, width);
-        graphics.drawString(font, healthStr, x, y, healthColor, false);
+        UIScaleManager.drawScaledString(graphics, font, healthStr, x, y, healthColor, false);
         y += sLineHeight;
 
         // Graphical health bar
@@ -204,28 +204,28 @@ public class AttributeHudOverlay {
         String armorStr = I18n.translate("devmod.attribute_monitor.armor",
             target.getArmorValue(), target.getArmorToughness()).getString();
         armorStr = truncateToWidth(font, armorStr, width);
-        graphics.drawString(font, armorStr, x, y, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, armorStr, x, y, TEXT_GRAY, false);
         y += sLineHeight;
 
         // Attack stats
         String attackStr = I18n.translate("devmod.attribute_monitor.attack",
             target.getAttackDamage(), target.getAttackSpeed()).getString();
         attackStr = truncateToWidth(font, attackStr, width);
-        graphics.drawString(font, attackStr, x, y, TEXT_ORANGE, false);
+        UIScaleManager.drawScaledString(graphics, font, attackStr, x, y, TEXT_ORANGE, false);
         y += sLineHeight;
 
         // Movement
         String moveStr = I18n.translate("devmod.attribute_monitor.movement",
             target.getMovementSpeed(), target.getKnockbackResistance() * 100).getString();
         moveStr = truncateToWidth(font, moveStr, width);
-        graphics.drawString(font, moveStr, x, y, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, moveStr, x, y, TEXT_GRAY, false);
         y += sLineHeight;
 
         // Distance
         double dist = target.getDistanceToPlayer();
         String distStr = I18n.translate("devmod.attribute_monitor.distance", dist).getString();
         distStr = truncateToWidth(font, distStr, width);
-        graphics.drawString(font, distStr, x, y, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, distStr, x, y, TEXT_GRAY, false);
         y += sLineHeight;
 
         // Pehkui (if present)
@@ -233,7 +233,7 @@ public class AttributeHudOverlay {
             Float scale = target.getPehkuiScale();
             String scaleStr = I18n.translate("devmod.attribute_monitor.pehkui_scale", scale != null ? scale : 1f).getString();
             scaleStr = truncateToWidth(font, scaleStr, width);
-            graphics.drawString(font, scaleStr, x, y, OverlayTheme.Attribute.SCALE, false);
+            UIScaleManager.drawScaledString(graphics, font, scaleStr, x, y, OverlayTheme.Attribute.SCALE, false);
             y += sLineHeight;
         }
 
@@ -245,7 +245,7 @@ public class AttributeHudOverlay {
                 : "devmod.attribute_monitor.health_delta.negative";
             String deltaStr = I18n.translate(deltaKey, delta).getString();
             deltaStr = truncateToWidth(font, deltaStr, width);
-            graphics.drawString(font, deltaStr, x, y, delta > 0 ? TEXT_GREEN : TEXT_RED, false);
+            UIScaleManager.drawScaledString(graphics, font, deltaStr, x, y, delta > 0 ? TEXT_GREEN : TEXT_RED, false);
             y += sLineHeight;
         }
 
@@ -257,12 +257,12 @@ public class AttributeHudOverlay {
 
         String header = I18n.translate("devmod.attribute_monitor.tracked_entities", tracked.size()).getString();
         header = truncateToWidth(font, header, width);
-        graphics.drawString(font, header, x, y, TEXT_YELLOW, false);
+        UIScaleManager.drawScaledString(graphics, font, header, x, y, TEXT_YELLOW, false);
         y += sLineHeight;
 
         if (tracked.isEmpty()) {
             String noneText = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.none").getString(), width - UIScaleManager.scale(4));
-            graphics.drawString(font, noneText, x + UIScaleManager.scale(4), y, TEXT_GRAY, false);
+            UIScaleManager.drawScaledString(graphics, font, noneText, x + UIScaleManager.scale(4), y, TEXT_GRAY, false);
             y += sLineHeight;
         } else {
             TrackedEntity primary = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
@@ -277,7 +277,7 @@ public class AttributeHudOverlay {
                 String entryStr = String.format("%s%s %s \u00A77(%.0f%%)",
                     prefix, losIndicator, entity.getEntityName(), entity.getHealthPercent());
                 entryStr = truncateToWidth(font, entryStr, width);
-                graphics.drawString(font, entryStr, x, y, TEXT_WHITE, false);
+                UIScaleManager.drawScaledString(graphics, font, entryStr, x, y, TEXT_WHITE, false);
                 y += sLineHeight;
                 shown++;
             }
@@ -285,7 +285,7 @@ public class AttributeHudOverlay {
             if (tracked.size() > 5) {
                 String moreText = I18n.translate("devmod.attribute_monitor.more", tracked.size() - 5).getString();
                 moreText = truncateToWidth(font, moreText, width);
-                graphics.drawString(font, moreText, x, y, TEXT_GRAY, false);
+                UIScaleManager.drawScaledString(graphics, font, moreText, x, y, TEXT_GRAY, false);
                 y += sLineHeight;
             }
         }
@@ -297,12 +297,12 @@ public class AttributeHudOverlay {
         List<AttributeLogEntry> logs = AttributeMonitoringSystem.INSTANCE.getLogHistory();
 
         String logTitle = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.log_history").getString(), width);
-        graphics.drawString(font, logTitle, x, y, TEXT_GRAY, false);
+        UIScaleManager.drawScaledString(graphics, font, logTitle, x, y, TEXT_GRAY, false);
         y += sLineHeight;
 
         if (logs.isEmpty()) {
             String noneText = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), width - UIScaleManager.scale(4));
-            graphics.drawString(font, noneText, x + UIScaleManager.scale(4), y,
+            UIScaleManager.drawScaledString(graphics, font, noneText, x + UIScaleManager.scale(4), y,
                 OverlayTheme.Attribute.EMPTY_LOG, false);
         } else {
             int shown = 0;
@@ -319,7 +319,7 @@ public class AttributeHudOverlay {
 
                 // Truncate if too long
                 fullStr = truncateToWidth(font, fullStr, width);
-                graphics.drawString(font, fullStr, x, y, color, false);
+                UIScaleManager.drawScaledString(graphics, font, fullStr, x, y, color, false);
                 y += sLineHeight;
                 shown++;
             }
@@ -330,15 +330,17 @@ public class AttributeHudOverlay {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+        if (maxWidth <= 0 || UIScaleManager.getScaledStringWidth(font, text) <= maxWidth) {
             return text;
         }
-        int ellipsisWidth = font.width("...");
+        int ellipsisWidth = UIScaleManager.getScaledStringWidth(font, "...");
         int allowed = Math.max(0, maxWidth - ellipsisWidth);
         if (allowed <= 0) {
             return "...";
         }
-        return font.plainSubstrByWidth(text, allowed) + "...";
+        float textScale = UIScaleManager.getTextScale();
+        int allowedUnscaled = textScale > 0.0f ? Math.max(0, Math.round(allowed / textScale)) : allowed;
+        return font.plainSubstrByWidth(text, allowedUnscaled) + "...";
     }
 
     private static void renderBackground(GuiGraphics graphics, int x, int y, int width, int height) {

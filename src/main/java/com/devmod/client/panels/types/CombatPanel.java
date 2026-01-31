@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3;
 import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.panels.core.FloatingPanel;
 import com.devmod.client.panels.core.PanelType;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.damage.DamageBreakdown;
 
@@ -66,12 +67,12 @@ public class CombatPanel extends FloatingPanel {
         // Danno principale (grande e colorato)
         String damageText = Objects.requireNonNull(String.format("%.1f", actualDamage), "damageText");
         int damageColor = getDamageColor(actualDamage);
-        graphics.drawString(font, damageText, 0, y, damageColor, false);
+        UIScaleManager.drawScaledString(graphics, font, damageText, 0, y, damageColor, false);
         y += lineHeight + 4;
 
         // Parte colpita
         String partText = Objects.requireNonNull(partHit + " (x" + String.format("%.2f", partMultiplier) + ")", "partText");
-        graphics.drawString(font, partText, 0, y, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, partText, 0, y, DesignTokens.Text.SECONDARY, false);
         y += lineHeight + 2;
 
         // Breakdown se c'e' spazio
@@ -82,7 +83,7 @@ public class CombatPanel extends FloatingPanel {
 
             // Base damage
             String baseText = Objects.requireNonNull(String.format("Base: %.1f", baseDamage), "baseText");
-            graphics.drawString(font, baseText, 0, y, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, font, baseText, 0, y, DesignTokens.Text.MUTED, false);
             y += lineHeight;
 
             // Calculated vs Actual
@@ -90,7 +91,7 @@ public class CombatPanel extends FloatingPanel {
                 float diff = actualDamage - finalDamage;
                 String diffText = Objects.requireNonNull(String.format("Armor: %s%.1f", diff < 0 ? "" : "+", diff), "diffText");
                 int diffColor = diff < 0 ? DesignTokens.Semantic.ERROR : DesignTokens.Semantic.SUCCESS;
-                graphics.drawString(font, diffText, 0, y, diffColor, false);
+                UIScaleManager.drawScaledString(graphics, font, diffText, 0, y, diffColor, false);
             }
         }
     }

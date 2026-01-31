@@ -208,11 +208,11 @@ public class QuickTestWizard extends Screen {
 
         // Title
         String title = "⚡ Quick Test Wizard";
-        graphics.drawString(getFont(), title, x + UIScaleManager.scale(15), y + UIScaleManager.scale(12), DesignTokens.Accent.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), title, x + UIScaleManager.scale(15), y + UIScaleManager.scale(12), DesignTokens.Accent.PRIMARY, false);
 
         // Subtitle
         String subtitle = getStepTitle();
-        graphics.drawString(getFont(), subtitle, x + UIScaleManager.scale(15), y + UIScaleManager.scale(26), DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), subtitle, x + UIScaleManager.scale(15), y + UIScaleManager.scale(26), DesignTokens.Text.SECONDARY, false);
     }
 
     private String getStepTitle() {
@@ -245,7 +245,7 @@ public class QuickTestWizard extends Screen {
             // Number
             String num = String.valueOf(i + 1);
             int textColor = (completed || current) ? DesignTokens.Text.TITLE : DesignTokens.Text.MUTED;
-            graphics.drawString(getFont(), num, cx - UIScaleManager.scale(3), indicatorY - UIScaleManager.scale(4), textColor, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), num, cx - UIScaleManager.scale(3), indicatorY - UIScaleManager.scale(4), textColor, false);
 
             // Connector line
             if (i < TOTAL_STEPS - 1) {
@@ -276,11 +276,11 @@ public class QuickTestWizard extends Screen {
         String desc = Objects.requireNonNullElse(selectedTestType.getDescription(), "");
         int margin = UIScaleManager.scale(20);
         int descY = y + cardHeight + margin;
-        graphics.drawString(getFont(), desc, panelX + margin, descY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), desc, panelX + margin, descY, DesignTokens.Text.SECONDARY, false);
 
         // Auto-configuration hint
         String hint = "\u00A77Auto-config: " + Objects.requireNonNullElse(selectedTestType.getAutoConfigHint(), "");
-        graphics.drawString(getFont(), hint, panelX + margin, descY + UIScaleManager.scale(15), DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), hint, panelX + margin, descY + UIScaleManager.scale(15), DesignTokens.Text.MUTED, false);
     }
 
     private void drawTestTypeCard(GuiGraphics graphics, int x, int y, int w, int h,
@@ -295,12 +295,12 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, x, y, w, h, borderColor);
 
         // Icon
-        graphics.drawString(getFont(), type.getIcon(), x + w/2 - 6, y + 15, type.getColor(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), type.getIcon(), x + w/2 - 6, y + 15, type.getColor(), false);
 
         // Name
         @Nonnull String displayName = Objects.requireNonNull(Objects.requireNonNullElse(type.getDisplayName(), ""), "displayName");
-        int textW = getFont().width(displayName);
-        graphics.drawString(getFont(), displayName, x + (w - textW)/2, y + 40,
+        int textW = UIScaleManager.getScaledStringWidth(getFont(), displayName);
+        UIScaleManager.drawScaledString(graphics, getFont(), displayName, x + (w - textW)/2, y + 40,
             selected ? DesignTokens.Text.TITLE : DesignTokens.Text.PRIMARY, false);
 
         // Selected indicator
@@ -316,7 +316,7 @@ public class QuickTestWizard extends Screen {
         int rightCol = panelX + UIScaleManager.scale(260);
 
         // Mob selection
-        graphics.drawString(getFont(), "\u00A7lTarget Mob:", leftCol, y, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7lTarget Mob:", leftCol, y, DesignTokens.Text.PRIMARY, false);
 
         // Mob list (scrollable)
         int listY = y + UIScaleManager.scale(15);
@@ -331,9 +331,9 @@ public class QuickTestWizard extends Screen {
         if (availableMobs.isEmpty()) {
             // Show empty state message
             int textOffset = UIScaleManager.scale(10);
-            graphics.drawString(getFont(), "No mobs found!", leftCol + textOffset, listY + UIScaleManager.scale(20), DesignTokens.Semantic.WARNING, false);
-            graphics.drawString(getFont(), "Enter a world first", leftCol + textOffset, listY + UIScaleManager.scale(35), DesignTokens.Text.MUTED, false);
-            graphics.drawString(getFont(), "to load mob registry.", leftCol + textOffset, listY + UIScaleManager.scale(48), DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), "No mobs found!", leftCol + textOffset, listY + UIScaleManager.scale(20), DesignTokens.Semantic.WARNING, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), "Enter a world first", leftCol + textOffset, listY + UIScaleManager.scale(35), DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), "to load mob registry.", leftCol + textOffset, listY + UIScaleManager.scale(48), DesignTokens.Text.MUTED, false);
         } else {
             for (int i = 0; i < Math.min(visibleItems, availableMobs.size()); i++) {
                 int idx = mobListScroll + i;
@@ -354,19 +354,19 @@ public class QuickTestWizard extends Screen {
 
                 String mobName = mob.getDisplayName() != null ? mob.getDisplayName() : mob.getMobId().toString();
                 if (mobName.length() > 25) mobName = mobName.substring(0, 22) + "...";
-                graphics.drawString(getFont(), mobName, leftCol + UIScaleManager.scale(8), itemY + UIScaleManager.scale(6),
+                UIScaleManager.drawScaledString(graphics, getFont(), mobName, leftCol + UIScaleManager.scale(8), itemY + UIScaleManager.scale(6),
                     selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY, false);
             }
         }
 
         // Right column: Wave settings
-        graphics.drawString(getFont(), "\u00A7lWave Settings:", rightCol, y, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7lWave Settings:", rightCol, y, DesignTokens.Text.PRIMARY, false);
 
         int settingY = y + UIScaleManager.scale(20);
         int rowHeight = UIScaleManager.scale(25);
 
         // Wave count
-        graphics.drawString(getFont(), "Waves: " + waveCount, rightCol, settingY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Waves: " + waveCount, rightCol, settingY, DesignTokens.Text.SECONDARY, false);
         drawPlusMinus(graphics, rightCol + UIScaleManager.scale(100), settingY - 2, mouseX, mouseY);
         settingY += rowHeight;
 
@@ -375,7 +375,7 @@ public class QuickTestWizard extends Screen {
         settingY += rowHeight;
 
         // Arena size
-        graphics.drawString(getFont(), "Arena: " + arenaSize + " blocks", rightCol, settingY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Arena: " + arenaSize + " blocks", rightCol, settingY, DesignTokens.Text.SECONDARY, false);
         drawPlusMinus(graphics, rightCol + UIScaleManager.scale(120), settingY - 2, mouseX, mouseY);
 
         // Quick presets
@@ -389,14 +389,14 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, panelX + margin, previewY, panelWidth - margin * 2, previewH, DesignTokens.Border.MUTED);
 
         int textPad = UIScaleManager.scale(10);
-        graphics.drawString(getFont(), "\u00A7lTest Preview:", panelX + margin + textPad, previewY + UIScaleManager.scale(8), DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7lTest Preview:", panelX + margin + textPad, previewY + UIScaleManager.scale(8), DesignTokens.Text.PRIMARY, false);
         if (selectedMob != null) {
             String preview = String.format("Fight %d waves of %s in %dx%d arena",
                 waveCount, selectedMob.getPath(), arenaSize, arenaSize);
-            graphics.drawString(getFont(), preview, panelX + margin + textPad, previewY + UIScaleManager.scale(25), DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), preview, panelX + margin + textPad, previewY + UIScaleManager.scale(25), DesignTokens.Text.SECONDARY, false);
 
             String duration = endlessMode ? "Endless (until death)" : "~" + (waveCount * 2) + " minutes estimated";
-            graphics.drawString(getFont(), duration, panelX + margin + textPad, previewY + UIScaleManager.scale(40), DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), duration, panelX + margin + textPad, previewY + UIScaleManager.scale(40), DesignTokens.Text.MUTED, false);
         }
     }
 
@@ -407,14 +407,14 @@ public class QuickTestWizard extends Screen {
         graphics.fill(x, y, x + 16, y + 16, minusHover ? DesignTokens.Background.HOVER : DesignTokens.Background.INPUT);
         graphics.fill(x + 24, y, x + 40, y + 16, plusHover ? DesignTokens.Background.HOVER : DesignTokens.Background.INPUT);
 
-        graphics.drawString(getFont(), "-", x + 5, y + 4, DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(getFont(), "+", x + 29, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "-", x + 5, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "+", x + 29, y + 4, DesignTokens.Text.PRIMARY, false);
     }
 
     private void drawPresets(GuiGraphics graphics, int x, int y, int panelWidth, int mouseX, int mouseY) {
         presetHitboxes.clear();
 
-        graphics.drawString(getFont(), "\u00A7lQuick presets:", x, y - 12, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7lQuick presets:", x, y - 12, DesignTokens.Text.PRIMARY, false);
 
         int margin = UIScaleManager.scale(20);
         int gap = UIScaleManager.scale(10);
@@ -436,8 +436,8 @@ public class QuickTestWizard extends Screen {
             graphics.fill(px, py, px + colWidth, py + rowHeight, bg);
             AxiomRenderer.drawBorder(graphics, px, py, colWidth, rowHeight, selected ? DesignTokens.Semantic.SUCCESS : DesignTokens.Border.MUTED);
 
-            graphics.drawString(getFont(), preset.name, px + 8, py + 7, DesignTokens.Text.PRIMARY, false);
-            graphics.drawString(getFont(), preset.description, px + 8, py + 20, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), preset.name, px + 8, py + 7, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), preset.description, px + 8, py + 20, DesignTokens.Text.MUTED, false);
 
             presetHitboxes.add(new PresetHitbox(preset, px, py, colWidth, rowHeight));
         }
@@ -456,13 +456,13 @@ public class QuickTestWizard extends Screen {
         }
 
         // Label
-        graphics.drawString(getFont(), label, x + 20, y + 3, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), label, x + 20, y + 3, DesignTokens.Text.SECONDARY, false);
     }
 
     // ===================== STEP 3: Overlays =====================
     private void drawStep3_Overlays(GuiGraphics graphics, int panelX, int y, int panelWidth, int mouseX, int mouseY) {
         int margin = UIScaleManager.scale(20);
-        graphics.drawString(getFont(), "\u00A7lRecommended overlays for " + selectedTestType.getDisplayName() + ":",
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7lRecommended overlays for " + selectedTestType.getDisplayName() + ":",
             panelX + margin, y, DesignTokens.Text.PRIMARY, false);
 
         int rowHeight = UIScaleManager.scale(25);
@@ -498,13 +498,13 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, panelX + margin, infoY, panelWidth - margin * 2, infoH, DesignTokens.Semantic.WARNING);
 
         int textPad = UIScaleManager.scale(10);
-        graphics.drawString(getFont(), "\u00A76ℹ\u00A7r Overlays provide real-time feedback during testing:",
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A76ℹ\u00A7r Overlays provide real-time feedback during testing:",
             panelX + margin + textPad, infoY + UIScaleManager.scale(10), DesignTokens.Text.PRIMARY, false);
-        graphics.drawString(getFont(), "• Telemetry HUD shows recording status and current room",
+        UIScaleManager.drawScaledString(graphics, getFont(), "• Telemetry HUD shows recording status and current room",
             panelX + margin + textPad, infoY + UIScaleManager.scale(25), DesignTokens.Text.SECONDARY, false);
-        graphics.drawString(getFont(), "• Debug overlay shows hitboxes and damage numbers",
+        UIScaleManager.drawScaledString(graphics, getFont(), "• Debug overlay shows hitboxes and damage numbers",
             panelX + margin + textPad, infoY + UIScaleManager.scale(38), DesignTokens.Text.SECONDARY, false);
-        graphics.drawString(getFont(), "• Heatmaps record movement patterns for analysis",
+        UIScaleManager.drawScaledString(graphics, getFont(), "• Heatmaps record movement patterns for analysis",
             panelX + margin + textPad, infoY + UIScaleManager.scale(51), DesignTokens.Text.SECONDARY, false);
     }
 
@@ -523,7 +523,7 @@ public class QuickTestWizard extends Screen {
 
         // Label with recommendation marker
         String displayLabel = recommended ? label + " \u00A76★" : label;
-        graphics.drawString(getFont(), displayLabel, x + 20, y + 3, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), displayLabel, x + 20, y + 3, DesignTokens.Text.SECONDARY, false);
 
         return checked; // Return unchanged - click handling separate
     }
@@ -531,7 +531,7 @@ public class QuickTestWizard extends Screen {
     // ===================== STEP 4: Summary =====================
     private void drawStep4_Summary(GuiGraphics graphics, int panelX, int y, int panelWidth, int mouseX, int mouseY) {
         int margin = UIScaleManager.scale(20);
-        graphics.drawString(getFont(), "\u00A7l\u00A7aReady to Start Test!", panelX + margin, y, DesignTokens.Semantic.SUCCESS, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "\u00A7l\u00A7aReady to Start Test!", panelX + margin, y, DesignTokens.Semantic.SUCCESS, false);
 
         int rowHeight = UIScaleManager.scale(18);
         int summaryY = y + UIScaleManager.scale(25);
@@ -539,42 +539,42 @@ public class QuickTestWizard extends Screen {
         int rightCol = panelX + UIScaleManager.scale(280);
 
         // Test type
-        graphics.drawString(getFont(), "Test Type:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
-        graphics.drawString(getFont(), selectedTestType.getDisplayName(), rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Test Type:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), selectedTestType.getDisplayName(), rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += rowHeight;
 
         // Preset / waves
-        graphics.drawString(getFont(), "Preset:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Preset:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
         PresetScenario localPreset = selectedPreset;
         String presetLabel = localPreset != null ? localPreset.name : "Custom";
-        graphics.drawString(getFont(), presetLabel, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), presetLabel, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += rowHeight;
 
-        graphics.drawString(getFont(), "Waves / Mode:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Waves / Mode:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
         String waveLabel = endlessMode ? "Endless" : waveCount + " waves";
-        graphics.drawString(getFont(), waveLabel, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), waveLabel, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += rowHeight;
 
         // Target
-        graphics.drawString(getFont(), "Target Mob:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Target Mob:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
         String mobName = selectedMob != null ? selectedMob.getPath() : "None";
-        graphics.drawString(getFont(), mobName, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), mobName, rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += rowHeight;
 
         // Arena
-        graphics.drawString(getFont(), "Arena Size:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
-        graphics.drawString(getFont(), arenaSize + "x" + arenaSize + " blocks", rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Arena Size:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), arenaSize + "x" + arenaSize + " blocks", rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
         summaryY += rowHeight;
 
         // Overlays
-        graphics.drawString(getFont(), "Active Overlays:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Active Overlays:", leftCol, summaryY, DesignTokens.Text.MUTED, false);
         List<String> activeOverlays = new ArrayList<>();
         if (enableTelemetryHud) activeOverlays.add("Telemetry");
         if (enableDebugOverlay) activeOverlays.add("Debug");
         if (enableBossPhase) activeOverlays.add("Boss Phase");
         if (enableEntityDensity) activeOverlays.add("Density");
         if (enableHeatmaps) activeOverlays.add("Heatmaps");
-        graphics.drawString(getFont(), String.join(", ", activeOverlays), rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), String.join(", ", activeOverlays), rightCol, summaryY, DesignTokens.Text.PRIMARY, false);
 
         // Big start button
         int btnWidth = UIScaleManager.scale(200);
@@ -589,8 +589,8 @@ public class QuickTestWizard extends Screen {
         AxiomRenderer.drawBorder(graphics, btnX, btnY, btnWidth, btnHeight, btnHover ? DesignTokens.Semantic.SUCCESS : DesignTokens.Border.MUTED);
 
         String btnText = "▶ START TEST";
-        int btnTextW = getFont().width(btnText);
-        graphics.drawString(getFont(), btnText, btnX + (btnWidth - btnTextW) / 2, btnY + UIScaleManager.scale(16),
+        int btnTextW = UIScaleManager.getScaledStringWidth(getFont(), btnText);
+        UIScaleManager.drawScaledString(graphics, getFont(), btnText, btnX + (btnWidth - btnTextW) / 2, btnY + UIScaleManager.scale(16),
             btnHover ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.PRIMARY, false);
     }
 

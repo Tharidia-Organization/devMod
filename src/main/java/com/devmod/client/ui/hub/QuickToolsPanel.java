@@ -21,6 +21,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestState;
@@ -183,7 +184,7 @@ public class QuickToolsPanel implements HubPanel {
         if (safeFont.width(tester) > rwidth) {
             tester = tester.substring(0, Math.min(tester.length(), 20)) + "...";
         }
-        graphics.drawString(safeFont, tester, rx, ry, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, tester, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Session duration
@@ -192,7 +193,7 @@ public class QuickToolsPanel implements HubPanel {
         long minutes = (durationMs % 3600000) / 60000;
         long seconds = (durationMs % 60000) / 1000;
         String time = String.format("Time: %02d:%02d:%02d", hours, minutes, seconds);
-        graphics.drawString(safeFont, time, rx, ry, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, time, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Progress
@@ -200,7 +201,7 @@ public class QuickToolsPanel implements HubPanel {
         int failed = TestingSession.INSTANCE.getFailedTests();
         int total = TestingSession.INSTANCE.getTotalTests();
         String progress = String.format("Tests: %d/%d", passed + failed, total);
-        graphics.drawString(safeFont, progress, rx, ry, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, progress, rx, ry, DesignTokens.Text.SECONDARY(), false);
         ry += SESSION_LINE_HEIGHT + 2;
 
         // Pass rate
@@ -209,7 +210,7 @@ public class QuickToolsPanel implements HubPanel {
             String rate = String.format("Pass Rate: %.0f%%", passRate);
             int rateColor = passRate >= 80 ? DesignTokens.Semantic.SUCCESS :
                            passRate >= 50 ? DesignTokens.Semantic.WARNING : DesignTokens.Semantic.ERROR;
-            graphics.drawString(safeFont, rate, rx, ry, rateColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, rate, rx, ry, rateColor, false);
         }
     }
 

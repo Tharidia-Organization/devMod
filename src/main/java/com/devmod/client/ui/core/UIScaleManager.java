@@ -451,9 +451,9 @@ public final class UIScaleManager {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // TEXT RENDERING
-    // ═══════════════════════════════════════════════════════════════════════════
+    // =========================================================================
 
     /**
      * Draws a string with proper UI scaling.
@@ -469,6 +469,21 @@ public final class UIScaleManager {
     public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                                         String text, int x, int y, int color, boolean shadow) {
         graphics.drawString(font, text, x, y, color, shadow);
+    }
+
+    /**
+     * Draws a string with proper UI scaling (no shadow).
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The text to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        String text, int x, int y, int color) {
+        graphics.drawString(font, text, x, y, color, false);
     }
 
     /**
@@ -514,6 +529,21 @@ public final class UIScaleManager {
     }
 
     /**
+     * Draws a Component with proper UI scaling (no shadow).
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The Component to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        net.minecraft.network.chat.Component text, int x, int y, int color) {
+        graphics.drawString(font, text, x, y, color, false);
+    }
+
+    /**
      * Draws a centered Component with proper UI scaling.
      *
      * @param graphics The GuiGraphics context
@@ -537,5 +567,25 @@ public final class UIScaleManager {
      */
     public static int getScaledStringWidth(net.minecraft.client.gui.Font font, net.minecraft.network.chat.Component text) {
         return font.width(text);
+    }
+
+    /**
+     * Gets the scaled line height for text rendering.
+     * Uses the default Minecraft font line height (9 pixels) scaled appropriately.
+     *
+     * @return The scaled line height in pixels
+     */
+    public static int getScaledLineHeight() {
+        return scale(9); // Minecraft's default font line height
+    }
+
+    /**
+     * Gets the text scale factor for custom text rendering.
+     * Text scales at 70% of the rate to prevent tiny/huge text.
+     *
+     * @return The text scale factor
+     */
+    public static float getTextScale() {
+        return 1.0f + (effectiveScale - 1.0f) * 0.7f;
     }
 }

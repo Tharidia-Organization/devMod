@@ -17,6 +17,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.SettingsPage;
@@ -112,7 +113,7 @@ public class MobConfigPage implements SettingsPage {
         lastListHeight = Math.max(ROW_HEIGHT, Math.min(nearbyMobs.size(), MAX_VISIBLE_MOBS) * ROW_HEIGHT);
 
         if (nearbyMobs.isEmpty()) {
-            graphics.drawString(safeFont, "No mobs nearby", x, currentY, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "No mobs nearby", x, currentY, DesignTokens.Text.MUTED, false);
             currentY += ROW_HEIGHT;
         } else {
             // Show up to 8 mobs
@@ -127,7 +128,7 @@ public class MobConfigPage implements SettingsPage {
                 currentY += 4;
                 String scrollHint = "Scroll for more (" + (scrollOffset + 1) + "-" +
                     Math.min(scrollOffset + displayCount, nearbyMobs.size()) + " of " + nearbyMobs.size() + ")";
-                graphics.drawString(safeFont, scrollHint, x, currentY, DesignTokens.Text.MUTED, false);
+                UIScaleManager.drawScaledString(graphics, safeFont, scrollHint, x, currentY, DesignTokens.Text.MUTED, false);
                 currentY += ROW_HEIGHT;
             }
         }
@@ -147,7 +148,7 @@ public class MobConfigPage implements SettingsPage {
         String countLabel = configuredCount == 0
             ? "No global mob configs yet"
             : configuredCount + " mob types have custom stats";
-        graphics.drawString(safeFont, countLabel, x, currentY,
+        UIScaleManager.drawScaledString(graphics, safeFont, countLabel, x, currentY,
             configuredCount > 0 ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED, false);
         currentY += ROW_HEIGHT;
 
@@ -170,7 +171,7 @@ public class MobConfigPage implements SettingsPage {
                     ? (STATUS_MESSAGE_DURATION_MS - elapsed) / 500f
                     : 1f;
             int color = (statusMessageColor & DesignTokens.Mask.RGB) | ((int)(alpha * 255) << 24);
-            graphics.drawString(font, statusMessage, x, currentY, color, false);
+            UIScaleManager.drawScaledString(graphics, font, statusMessage, x, currentY, color, false);
         }
 
         if (showingClearConfirm) {
@@ -199,13 +200,14 @@ public class MobConfigPage implements SettingsPage {
         String mobName = Objects.requireNonNull(mob.getName().getString());
         boolean hasConfig = MobConfigManager.hasConfig(mob.getType());
 
-        graphics.drawString(safeFont, mobName, x, y + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, mobName, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
         // Config indicator
         if (hasConfig) {
-            int tagX = x + safeFont.width(mobName) + 8;
-            graphics.fill(tagX - 2, y, tagX + safeFont.width("configured") + 2, y + 12, DesignTokens.Surface.LEVEL_2);
-            graphics.drawString(safeFont, "configured", tagX, y + 2, DesignTokens.Semantic.SUCCESS, false);
+            int tagX = x + UIScaleManager.getScaledStringWidth(safeFont, mobName) + 8;
+            int tagWidth = UIScaleManager.getScaledStringWidth(safeFont, "configured");
+            graphics.fill(tagX - 2, y, tagX + tagWidth + 2, y + 12, DesignTokens.Surface.LEVEL_2);
+            UIScaleManager.drawScaledString(graphics, safeFont, "configured", tagX, y + 2, DesignTokens.Semantic.SUCCESS, false);
         }
 
         // Health bar
@@ -227,7 +229,7 @@ public class MobConfigPage implements SettingsPage {
         if (mc.player != null) {
             double distance = mob.distanceTo(mc.player);
             String distText = String.format("%.1fm", distance);
-            graphics.drawString(safeFont, distText, x, y + 12, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, distText, x, y + 12, DesignTokens.Text.MUTED, false);
         }
 
         return y + ROW_HEIGHT;
@@ -367,16 +369,16 @@ public class MobConfigPage implements SettingsPage {
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 2, DesignTokens.Semantic.WARNING);
 
         String title = "Clear all configs?";
-        int titleX = panelX + (panelWidth - font.width(title)) / 2;
-        graphics.drawString(font, title, titleX, panelY + 10, DesignTokens.Text.PRIMARY, false);
+        int titleX = panelX + (panelWidth - UIScaleManager.getScaledStringWidth(font, title)) / 2;
+        UIScaleManager.drawScaledString(graphics, font, title, titleX, panelY + 10, DesignTokens.Text.PRIMARY, false);
 
         String line1 = "This removes all global mob stats.";
-        int line1X = panelX + (panelWidth - font.width(line1)) / 2;
-        graphics.drawString(font, line1, line1X, panelY + 28, DesignTokens.Text.SECONDARY, false);
+        int line1X = panelX + (panelWidth - UIScaleManager.getScaledStringWidth(font, line1)) / 2;
+        UIScaleManager.drawScaledString(graphics, font, line1, line1X, panelY + 28, DesignTokens.Text.SECONDARY, false);
 
         String line2 = "This cannot be undone.";
-        int line2X = panelX + (panelWidth - font.width(line2)) / 2;
-        graphics.drawString(font, line2, line2X, panelY + 42, DesignTokens.Text.SECONDARY, false);
+        int line2X = panelX + (panelWidth - UIScaleManager.getScaledStringWidth(font, line2)) / 2;
+        UIScaleManager.drawScaledString(graphics, font, line2, line2X, panelY + 42, DesignTokens.Text.SECONDARY, false);
 
         int btnW = 90;
         int btnH = DesignTokens.Component.BUTTON_HEIGHT_LG;

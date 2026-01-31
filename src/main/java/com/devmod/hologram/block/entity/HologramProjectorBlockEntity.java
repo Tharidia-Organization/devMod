@@ -658,6 +658,14 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         // Query entities in the region
         List<Entity> entities = level.getEntities((Entity) null, scanBox, Entity::isAlive);
 
+        // DEBUG: Log entity query results
+        if (gameTime % 100 == 0) {
+            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                "[Entities] AABB query: {} raw entities in scan region, activeFilters={}",
+                entities.size(), activeEntityFilters
+            );
+        }
+
         // Convert to lightweight data with relative coordinates
         double originX = scanMinX;
         double originY = level.getMinBuildHeight();

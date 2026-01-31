@@ -17,6 +17,7 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.ImpactDisplayMode;
 import com.devmod.client.overlay.ImpactHudController;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
@@ -91,7 +92,7 @@ public class CombatSettingsPage implements SettingsPage {
             ItemStack heldItem = mc.player != null ? mc.player.getMainHandItem() : ItemStack.EMPTY;
 
             if (heldItem.isEmpty()) {
-                graphics.drawString(font, "No weapon in hand", x, currentY, DesignTokens.Text.MUTED, false);
+                UIScaleManager.drawScaledString(graphics, font, "No weapon in hand", x, currentY, DesignTokens.Text.MUTED, false);
                 currentY += ROW_HEIGHT;
 
                 AxiomRenderer.drawHint(graphics, font, x, currentY, "Hold a weapon to see its stats");
@@ -99,7 +100,7 @@ public class CombatSettingsPage implements SettingsPage {
             } else {
                 // Weapon name and icon
                 String weaponName = heldItem.getHoverName().getString();
-                graphics.drawString(font, weaponName, x, currentY, DesignTokens.Text.PRIMARY, false);
+                UIScaleManager.drawScaledString(graphics, font, weaponName, x, currentY, DesignTokens.Text.PRIMARY, false);
                 currentY += ROW_HEIGHT;
 
                 // Get weapon stats
@@ -212,7 +213,7 @@ public class CombatSettingsPage implements SettingsPage {
                     ClientActionContexts.forClient(ActionOrigin.UI)));
             impactCombatLanguageBtn.render(graphics, x, currentY, 160, modeBtnHeight, mouseX, mouseY);
             if (combatLanguageActive) {
-                graphics.drawString(font, "Active", x + 170, currentY + 6, DesignTokens.Semantic.SUCCESS, false);
+                UIScaleManager.drawScaledString(graphics, font, "Active", x + 170, currentY + 6, DesignTokens.Semantic.SUCCESS, false);
             }
             currentY += modeBtnHeight + 4;
             AxiomRenderer.drawHint(graphics, font, x, currentY, "3D Combat Language preset (glyphs only)");
@@ -262,11 +263,11 @@ public class CombatSettingsPage implements SettingsPage {
 
     private int renderStatRow(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int width,
                                String label, String value, int valueColor) {
-        graphics.drawString(font, label, x, y + 2, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.SECONDARY, false);
 
-        int valueWidth = font.width(Objects.requireNonNull(value));
+        int valueWidth = UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(value));
         int rightPadding = showScrollbar ? Scrollbar.WIDTH + 8 : 8;
-        graphics.drawString(font, value, x + width - valueWidth - rightPadding, y + 2, valueColor, false);
+        UIScaleManager.drawScaledString(graphics, font, value, x + width - valueWidth - rightPadding, y + 2, valueColor, false);
 
         return y + ROW_HEIGHT;
     }
