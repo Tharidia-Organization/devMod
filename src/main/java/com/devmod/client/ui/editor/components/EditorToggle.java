@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
@@ -191,12 +192,12 @@ public class EditorToggle {
         int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
         labelColor = applyAlpha(labelColor);
         String safeLabel = Objects.requireNonNullElse(label, "");
-        safeGraphics.drawString(font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+        UIScaleManager.drawScaledString(safeGraphics, font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
 
         // Source badge (inline after label)
         SourceBadge badge = SHOW_SOURCE_BADGE ? this.sourceBadge : null;
         if (badge != null) {
-            int badgeX = x + font.width(Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
+            int badgeX = x + UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
             int badgeY = y + (height - badge.getHeight()) / 2;
             badge.render(graphics, badgeX, badgeY, mouseX, mouseY);
         }
@@ -243,8 +244,8 @@ public class EditorToggle {
         int stateColor = enabled ?
             (value ? DesignTokens.Accent.GREEN() : DesignTokens.Text.MUTED()) :
             DesignTokens.Text.DISABLED();
-        int stateX = toggleX - font.width(stateText) - STATE_TEXT_GAP;
-        safeGraphics.drawString(font, stateText, stateX, y + TEXT_OFFSET_Y, applyAlpha(stateColor), false);
+        int stateX = toggleX - UIScaleManager.getScaledStringWidth(font, stateText) - STATE_TEXT_GAP;
+        UIScaleManager.drawScaledString(safeGraphics, font, stateText, stateX, y + TEXT_OFFSET_Y, applyAlpha(stateColor), false);
 
         return height;
     }

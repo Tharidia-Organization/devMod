@@ -148,7 +148,7 @@ public class NpcDialogScreen extends Screen {
         renderDialogPanel(graphics, dialogX, dialogY);
 
         var safeFont = Objects.requireNonNull(font, "font");
-        graphics.drawString(safeFont, speakerName, dialogX + PADDING, dialogY + PADDING - 4, COLOR_SPEAKER);
+        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + PADDING, dialogY + PADDING - 4, COLOR_SPEAKER);
 
         int borderColor = textFullyRevealed ? COLOR_BORDER_IDLE : COLOR_BORDER_TALKING;
         graphics.fill(dialogX + PADDING, dialogY + PADDING + 10,
@@ -158,8 +158,8 @@ public class NpcDialogScreen extends Screen {
 
         if (!textFullyRevealed) {
             String hint = "[Click to skip]";
-            int hintWidth = safeFont.width(hint);
-            graphics.drawString(safeFont, hint, dialogX + DIALOG_WIDTH - PADDING - hintWidth,
+            int hintWidth = UIScaleManager.getScaledStringWidth(safeFont, hint);
+            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + DIALOG_WIDTH - PADDING - hintWidth,
                 dialogY + DIALOG_HEIGHT - PADDING, COLOR_TEXT_DIM);
         }
 
@@ -186,7 +186,7 @@ public class NpcDialogScreen extends Screen {
         var safeFont = Objects.requireNonNull(font, "font");
         int charsDrawn = 0;
         int currentY = y;
-        int lineHeight = safeFont.lineHeight + 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight();
         int maxWidth = DIALOG_WIDTH - PADDING * 2;
 
         for (String line : lines) {
@@ -202,7 +202,7 @@ public class NpcDialogScreen extends Screen {
 
                 if (charsToShow > 0) {
                     String visibleText = wrappedLine.substring(0, charsToShow);
-                    graphics.drawString(safeFont, visibleText, x, currentY, COLOR_TEXT);
+                    UIScaleManager.drawScaledString(graphics, safeFont, visibleText, x, currentY, COLOR_TEXT);
                 }
 
                 charsDrawn += lineLength;
@@ -222,7 +222,7 @@ public class NpcDialogScreen extends Screen {
 
         for (String word : line.split(" ", -1)) {
             String test = current.length() == 0 ? word : current + " " + word;
-            if (safeFont.width(test) <= maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, test) <= maxWidth) {
                 if (current.length() > 0) current.append(" ");
                 current.append(word);
             } else {

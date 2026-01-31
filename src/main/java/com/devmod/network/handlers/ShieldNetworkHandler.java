@@ -7,9 +7,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.network.ChannelId;
 import com.devmod.network.NetworkHandler;
+import com.devmod.network.PayloadValidation.PayloadLimits;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.network.ShieldStatePayload;
+
+import static com.devmod.network.PayloadValidation.validated;
 
 /**
  * P2: Domain-specific network handler for shield visual effect payloads.
@@ -35,17 +38,17 @@ public final class ShieldNetworkHandler extends NetworkHandlerBase implements Pa
         event.registrar(ChannelId.SHIELD_STATE.asString()).playToClient(
             nn(ShieldStatePayload.TYPE),
             nn(ShieldStatePayload.STREAM_CODEC),
-            ShieldNetworkHandler::handleShieldState
+            validated(ShieldNetworkHandler::handleShieldState, PayloadLimits.SMALL)
         );
         event.registrar(ChannelId.SHIELD_IMPACT.asString()).playToClient(
             nn(ShieldImpactPayload.TYPE),
             nn(ShieldImpactPayload.STREAM_CODEC),
-            ShieldNetworkHandler::handleShieldImpact
+            validated(ShieldNetworkHandler::handleShieldImpact, PayloadLimits.SMALL)
         );
         event.registrar(ChannelId.SHIELD_SHATTER.asString()).playToClient(
             nn(ShieldShatterPayload.TYPE),
             nn(ShieldShatterPayload.STREAM_CODEC),
-            ShieldNetworkHandler::handleShieldShatter
+            validated(ShieldNetworkHandler::handleShieldShatter, PayloadLimits.SMALL)
         );
     }
 

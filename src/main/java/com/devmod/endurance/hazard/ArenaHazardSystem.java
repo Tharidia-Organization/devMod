@@ -16,13 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.ArenaContext;
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveCompleted;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
@@ -44,8 +37,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.endurance.ArenaContext;
 import com.devmod.endurance.EnduranceColors;
-
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveCompleted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 public class ArenaHazardSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ArenaHazardSystem.class);
 
@@ -313,7 +311,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         // Warning effects
         if (hazard.warningTicks == 60) {
             // Initial warning
-            displayClientMessage(player, "§c§l⚠ " + hazard.getType().getWarningText(), true);
+            displayClientMessage(player, "\u00A7c\u00A7l⚠ " + hazard.getType().getWarningText(), true);
             playSound(level, resolveBlockPos(player), SoundEvents.WARDEN_HEARTBEAT, SoundSource.AMBIENT, 1.0f, 0.8f);
         }
 
@@ -321,7 +319,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
         if (hazard.warningTicks <= 0) {
             hazard.state = HazardState.ACTIVE;
-            displayClientMessage(player, "§4§l" + hazard.getType().getDisplayName().toUpperCase(Locale.ROOT) + "!", true);
+            displayClientMessage(player, "\u00A74\u00A7l" + hazard.getType().getDisplayName().toUpperCase(Locale.ROOT) + "!", true);
             playSound(level, resolveBlockPos(player), SoundEvents.ENDER_DRAGON_GROWL, SoundSource.AMBIENT, 0.8f, 1.2f);
 
             // Initialize hazard-specific state
@@ -353,7 +351,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         if (hazard.ticksRemaining <= 0) {
             cleanupHazard(hazard);
             hazard.state = HazardState.INACTIVE;
-            displayClientMessage(player, "§a" + hazard.getType().getDisplayName() + " subsides...", true);
+            displayClientMessage(player, "\u00A7a" + hazard.getType().getDisplayName() + " subsides...", true);
         }
     }
 
@@ -530,7 +528,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
                 if (hazardDamage != null) {
                     player.hurt(hazardDamage, 2.0f);
                 }
-                displayClientMessage(player, "§c§lThe void consumes you!", true);
+                displayClientMessage(player, "\u00A7c\u00A7lThe void consumes you!", true);
             }
         }
 
@@ -640,7 +638,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
             // Signal to spawn system that extra mobs should spawn
             // This would integrate with WaveSpawnSystem
-            displayClientMessage(player, "§5A void rift tears open!", true);
+            displayClientMessage(player, "\u00A75A void rift tears open!", true);
         }
 
         // Ambient void particles

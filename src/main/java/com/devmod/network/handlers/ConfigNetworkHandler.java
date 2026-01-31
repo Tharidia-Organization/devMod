@@ -61,28 +61,28 @@ public final class ConfigNetworkHandler extends NetworkHandlerBase implements Pa
         event.registrar(ChannelId.GLOBAL_CONFIG_SYNC.asString()).playToClient(
             nn(GlobalConfigSyncPayload.TYPE),
             nn(GlobalConfigSyncPayload.STREAM_CODEC),
-            ConfigNetworkHandler::handleGlobalConfigSync
+            validated(ConfigNetworkHandler::handleGlobalConfigSync, PayloadLimits.SYNC_MEDIUM)
         );
 
         // RECIPE_CLIENT_SYNC: Server -> Client recipe sync
         event.registrar(ChannelId.RECIPE_CLIENT_SYNC.asString()).playToClient(
             nn(RecipeClientSyncPayload.TYPE),
             nn(RecipeClientSyncPayload.STREAM_CODEC),
-            ConfigNetworkHandler::handleRecipeClientSync
+            validated(ConfigNetworkHandler::handleRecipeClientSync, PayloadLimits.SYNC_LARGE)
         );
 
         // EDITOR_APPLY_CONFIRM: Server -> Client editor confirmation
         event.registrar(ChannelId.EDITOR_APPLY_CONFIRM.asString()).playToClient(
             nn(EditorApplyConfirmPayload.TYPE),
             nn(EditorApplyConfirmPayload.STREAM_CODEC),
-            ConfigNetworkHandler::handleEditorApplyConfirm
+            validated(ConfigNetworkHandler::handleEditorApplyConfirm, PayloadLimits.SMALL)
         );
 
         // MOB_CONFIG_CONFIRM: Server -> Client mob config confirmation
         event.registrar(ChannelId.MOB_CONFIG_CONFIRM.asString()).playToClient(
             nn(MobConfigConfirmPayload.TYPE),
             nn(MobConfigConfirmPayload.STREAM_CODEC),
-            ConfigNetworkHandler::handleMobConfigConfirm
+            validated(ConfigNetworkHandler::handleMobConfigConfirm, PayloadLimits.SMALL)
         );
     }
 

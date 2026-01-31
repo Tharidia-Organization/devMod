@@ -24,9 +24,9 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -34,7 +34,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.block.entity.ClonePulverizerBlockEntity;
-
 /**
  * Clone Pulverizer block - industrial crusher machine.
  * Accepts items dropped from above, pulverizes them, and ejects results.

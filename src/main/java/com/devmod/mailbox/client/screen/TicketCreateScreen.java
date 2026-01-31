@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
@@ -160,16 +161,16 @@ public class TicketCreateScreen extends Screen {
 
         // Title
         String title = "Create New Ticket";
-        graphics.drawString(getFont(), title, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), title, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
 
         // Separator
         graphics.fill(panelX + 10, panelY + 35, panelX + PANEL_WIDTH - 10, panelY + 36, DesignTokens.Border.DEFAULT());
 
         // Subject label
-        graphics.drawString(getFont(), "Subject:", panelX + 15, panelY + 65, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Subject:", panelX + 15, panelY + 65, DesignTokens.Text.SECONDARY(), false);
 
         // Category label
-        graphics.drawString(getFont(), "Category:", panelX + 15, panelY + 100, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Category:", panelX + 15, panelY + 100, DesignTokens.Text.SECONDARY(), false);
 
         // Render category buttons
         int catX = panelX + 100;
@@ -190,16 +191,16 @@ public class TicketCreateScreen extends Screen {
         }
 
         // Description label
-        graphics.drawString(getFont(), "Description:", panelX + 15, panelY + 165, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "Description:", panelX + 15, panelY + 165, DesignTokens.Text.SECONDARY(), false);
 
         // Priority indicator
         String priorityText = "Priority: " + selectedPriority.getDisplayName();
         int priorityColor = getPriorityColor(selectedPriority);
-        graphics.drawString(getFont(), priorityText, panelX + 15, panelY + 200, priorityColor, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), priorityText, panelX + 15, panelY + 200, priorityColor, false);
 
         // Hint text
         String hint = "Tip: Select a category to set the default priority. Abuse reports are high priority.";
-        graphics.drawString(getFont(), hint, panelX + 15, panelY + 220, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), hint, panelX + 15, panelY + 220, DesignTokens.Text.MUTED(), false);
 
         // Buttons
         int buttonY = panelY + PANEL_HEIGHT - 40;
@@ -241,7 +242,7 @@ public class TicketCreateScreen extends Screen {
         }
 
         int y = panelY + PANEL_HEIGHT - 60;
-        graphics.drawString(getFont(), statusMessage, panelX + 15, y, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), statusMessage, panelX + 15, y, statusColor, false);
     }
 
     private int getPriorityColor(TicketPriority priority) {

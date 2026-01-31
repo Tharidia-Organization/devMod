@@ -32,11 +32,11 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -45,7 +45,6 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import com.devmod.clone.CloneItems;
 import com.devmod.clone.block.entity.NeurocellLBlockEntity;
 import com.devmod.clone.item.BioscannerItem;
-
 /**
  * NeurocellL block - Large cloning chamber (2x2x2).
  * Can render larger entities than the standard Neurocell.

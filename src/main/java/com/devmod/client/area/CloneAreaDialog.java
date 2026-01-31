@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.area.network.CloneAreaPayload;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -134,8 +135,8 @@ public final class CloneAreaDialog extends BaseOverlay {
             Typography.withUiScale(Typography.BODY));
 
         // New name label
-        int nameLabelY = y + padding + labelHeight + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
-        graphics.drawString(font,
+        int nameLabelY = y + padding + UIScaleManager.getScaledLineHeight() + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.clone.new_name")),
             x + padding, nameLabelY,
             DesignTokens.Text.SECONDARY());
@@ -164,18 +165,18 @@ public final class CloneAreaDialog extends BaseOverlay {
 
         // Position label
         int posLabelY = nameFieldY + fieldHeight + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.clone.position")),
             x + padding, posLabelY,
             DesignTokens.Text.SECONDARY());
 
         // Position fields
-        int posFieldY = posLabelY + labelHeight + 4;
+        int posFieldY = posLabelY + UIScaleManager.getScaledLineHeight() + 4;
         int coordGap = ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
-        int labelWidth = font.width("X: ");
+        int labelWidth = UIScaleManager.getScaledStringWidth(font, "X: ");
 
         // X field
-        graphics.drawString(font, "X:", x + padding, posFieldY + 5, DesignTokens.Text.MUTED());
+        UIScaleManager.drawScaledString(graphics, font, "X:", x + padding, posFieldY + 5, DesignTokens.Text.MUTED());
         EditBox xBox = xField;
         if (xBox == null) {
             xBox = new EditBox(font, x + padding + labelWidth, posFieldY, coordFieldWidth, fieldHeight,
@@ -193,7 +194,7 @@ public final class CloneAreaDialog extends BaseOverlay {
 
         // Y field
         int yFieldX = x + padding + labelWidth + coordFieldWidth + coordGap + labelWidth;
-        graphics.drawString(font, "Y:", yFieldX - labelWidth, posFieldY + 5, DesignTokens.Text.MUTED());
+        UIScaleManager.drawScaledString(graphics, font, "Y:", yFieldX - labelWidth, posFieldY + 5, DesignTokens.Text.MUTED());
         EditBox yBox = yField;
         if (yBox == null) {
             yBox = new EditBox(font, yFieldX, posFieldY, coordFieldWidth, fieldHeight,
@@ -211,7 +212,7 @@ public final class CloneAreaDialog extends BaseOverlay {
 
         // Z field
         int zFieldX = yFieldX + coordFieldWidth + coordGap + labelWidth;
-        graphics.drawString(font, "Z:", zFieldX - labelWidth, posFieldY + 5, DesignTokens.Text.MUTED());
+        UIScaleManager.drawScaledString(graphics, font, "Z:", zFieldX - labelWidth, posFieldY + 5, DesignTokens.Text.MUTED());
         EditBox zBox = zField;
         if (zBox == null) {
             zBox = new EditBox(font, zFieldX, posFieldY, coordFieldWidth, fieldHeight,
@@ -255,8 +256,8 @@ public final class CloneAreaDialog extends BaseOverlay {
         if (error != null) {
             long elapsed = System.currentTimeMillis() - errorDisplayTime;
             if (elapsed < ERROR_DISPLAY_DURATION) {
-                int errorY = btnY - font.lineHeight - 4;
-                graphics.drawCenteredString(font, error,
+                int errorY = btnY - UIScaleManager.getScaledLineHeight() - 4;
+                UIScaleManager.drawScaledCenteredString(graphics, font, error,
                     x + width / 2, errorY, DesignTokens.AreaBuilder.ERROR_TEXT);
             } else {
                 errorMessage = null;

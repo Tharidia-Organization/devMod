@@ -17,6 +17,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.area.network.SaveAreaTemplatePayload;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -108,8 +109,8 @@ public final class SaveTemplateDialog extends BaseOverlay {
             Typography.withUiScale(Typography.BODY));
 
         // Name label
-        int nameLabelY = y + padding + labelHeight + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
-        graphics.drawString(font,
+        int nameLabelY = y + padding + UIScaleManager.getScaledLineHeight() + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.template.name")),
             x + padding, nameLabelY,
             DesignTokens.Text.SECONDARY());
@@ -139,7 +140,7 @@ public final class SaveTemplateDialog extends BaseOverlay {
 
         // Description label
         int descLabelY = fieldY + fieldHeight + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.template.description")),
             x + padding, descLabelY,
             DesignTokens.Text.SECONDARY());

@@ -1,0 +1,317 @@
+package com.devmod.hologram.client.renderer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.joml.Matrix4f;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+
+import com.devmod.hologram.block.entity.HologramProjectorBlockEntity;
+
+/**
+ * Dedicated renderer for entities within the hologram projection.
+ * Handles both simple cube rendering and full 3D model rendering with frustum culling.
+ *
+ * <p>Extracted from HologramRenderer for Single Responsibility Principle compliance.
+ * All entity rendering logic is centralized here, including:
+ * <ul>
+ *   <li>Frustum culling for performance optimization</li>
+ *   <li>Simple cube rendering with holographic shader</li>
+ *   <li>Full 3D model rendering with live position interpolation</li>
+ * </ul>
+ */
+public class HologramEntityRenderer {
+
+    /** Maximum render distance squared for hologram entity visibility (128 blocks). */
+    private static final double MAX_HOLOGRAM_DISTANCE_SQ = 128.0 * 128.0;
+
+    /** Maximum render distance squared for individual entity visibility (64 blocks). */
+    private static final double MAX_ENTITY_DISTANCE_SQ = 64.0 * 64.0;
+
+    private final EntityRenderDispatcher entityDispatcher;
+
+    public HologramEntityRenderer() {
+        this.entityDispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
+    }
+
+    /**
+     * Main entry point for rendering entities within the hologram.
+     * Applies frustum culling and delegates to appropriate render method.
+     *
+     * @param poseStack The pose stack with hologram transformations applied
+     * @param level The current level
+     * @param blockEntity The projector block entity
+     * @param partialTicks Partial tick time for smooth interpolation
+     */
+    public void renderEntities(@Nonnull PoseStack poseStack, @Nonnull Level level,
+                                @Nonnull HologramProjectorBlockEntity blockEntity,
+                                float partialTicks) {
+        List<HologramEntityData> entities = blockEntity.getEntitiesForRendering(level, level.getGameTime());
+        if (entities == null || entities.isEmpty()) {
+            return;
+        }
+
+        // Apply frustum culling
+        List<HologramEntityData> visibleEntities = cullEntities(entities, blockEntity);
+        if (visibleEntities.isEmpty()) {
+            return;
+        }
+
+        int maxModels = blockEntity.getMaxEntityModels();
+        boolean useFullModels = blockEntity.isFullEntityModels();
+
+        if (useFullModels && maxModels > 0) {
+            // Render first N entities as 3D models, rest as cubes
+            int modelCount = Math.min(visibleEntities.size(), maxModels);
+            List<HologramEntityData> modelEntities = visibleEntities.subList(0, modelCount);
+            List<HologramEntityData> cubeEntities = visibleEntities.subList(modelCount, visibleEntities.size());
+
+            renderFullModels(poseStack, level, modelEntities, blockEntity, partialTicks);
+            if (!cubeEntities.isEmpty()) {
+                renderSimpleCubes(poseStack, cubeEntities, partialTicks);
+            }
+        } else {
+            renderSimpleCubes(poseStack, visibleEntities, partialTicks);
+        }
+    }
+
+    /**
+     * Apply frustum culling to filter entities outside camera view.
+     * Two-stage culling:
+     * 1. Skip all entities if hologram is too far (> 128 blocks)
+     * 2. Skip individual entities that are too far (> 64 blocks)
+     *
+     * @param entities The full list of entities to render
+     * @param blockEntity The projector block entity
+     * @return Filtered list of visible entities
+     */
+    @Nonnull
+    private List<HologramEntityData> cullEntities(@Nonnull List<HologramEntityData> entities,
+                                                   @Nonnull HologramProjectorBlockEntity blockEntity) {
+        var camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Vec3 cameraPos = camera.getPosition();
+
+        // Projector world position (hologram center)
+        double projX = blockEntity.getBlockPos().getX() + 0.5;
+        double projY = blockEntity.getBlockPos().getY() + 2.0;
+        double projZ = blockEntity.getBlockPos().getZ() + 0.5;
+
+        // Stage 1: Skip ALL entities if hologram is too far from camera
+        double distSq = cameraPos.distanceToSqr(projX, projY, projZ);
+        if (distSq > MAX_HOLOGRAM_DISTANCE_SQ) {
+            return List.of();
+        }
+
+        // Calculate transform parameters
+        int width = blockEntity.getScanMaxX() - blockEntity.getScanMinX() + 1;
+        int depth = blockEntity.getScanMaxZ() - blockEntity.getScanMinZ() + 1;
+        float scale = (float) blockEntity.getBlockSize() / Math.max(width, depth);
+        float centerX = width / 2.0f;
+        float centerZ = depth / 2.0f;
+
+        // Stage 2: Filter individual entities by distance
+        List<HologramEntityData> visibleEntities = new ArrayList<>();
+        for (HologramEntityData entity : entities) {
+            // Transform entity position to world coords
+            double worldX = projX + (entity.relativeX() - centerX) * scale;
+            double worldY = projY + entity.relativeY() * scale;
+            double worldZ = projZ + (entity.relativeZ() - centerZ) * scale;
+
+            // Distance cull
+            if (cameraPos.distanceToSqr(worldX, worldY, worldZ) < MAX_ENTITY_DISTANCE_SQ) {
+                visibleEntities.add(entity);
+            }
+        }
+
+        return visibleEntities;
+    }
+
+    /**
+     * Render entities as simple colored cubes with holographic shader effects.
+     * All cubes are batched into a single draw call for efficiency.
+     *
+     * @param poseStack The pose stack with hologram transformations applied
+     * @param entities The entities to render as cubes
+     * @param partialTicks Partial tick time for shader animations
+     */
+    private void renderSimpleCubes(@Nonnull PoseStack poseStack, @Nonnull List<HologramEntityData> entities,
+                                    float partialTicks) {
+        if (entities.isEmpty()) return;
+
+        // Use hologram shader for consistent visual style with terrain
+        ShaderInstance shader = HologramShaderRegistry.getShader();
+        if (shader != null) {
+            RenderSystem.setShader(() -> shader);
+
+            Level level = Minecraft.getInstance().level;
+            if (level != null) {
+                float gameTime = (level.getGameTime() + partialTicks) / 20.0f;
+
+                // Cyan hologram color (same as terrain)
+                float[] holoColor = {0.2f, 0.85f, 1.0f};
+
+                HologramShaderRegistry.setUniforms(gameTime, 0.8f, 0.1f, 1.0f, holoColor);
+                HologramShaderRegistry.setAnimationUniforms(1.0f, gameTime, 0.2f, 256.0f);
+                HologramShaderRegistry.setTexturedModeUniforms(false, 0.0f);
+            }
+        } else {
+            RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+        }
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+
+        // Combine RenderSystem modelview with hologram transforms
+        Matrix4f combinedModelView = new Matrix4f(RenderSystem.getModelViewMatrix());
+        combinedModelView.mul(poseStack.last().pose());
+        RenderSystem.getModelViewStack().pushMatrix();
+        RenderSystem.getModelViewStack().set(combinedModelView);
+        RenderSystem.applyModelViewMatrix();
+
+        // Batch all cubes into a single buffer
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+
+        for (HologramEntityData entityData : entities) {
+            addCubeVertices(buffer, entityData);
+        }
+
+        // Single draw call for all cubes
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
+
+        // Restore RenderSystem state
+        RenderSystem.getModelViewStack().popMatrix();
+        RenderSystem.applyModelViewMatrix();
+
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
+    }
+
+    /**
+     * Add vertices for a single entity cube to the buffer.
+     */
+    private void addCubeVertices(@Nonnull BufferBuilder buffer, @Nonnull HologramEntityData entityData) {
+        float x = entityData.relativeX();
+        float y = entityData.relativeY();
+        float z = entityData.relativeZ();
+        float halfWidth = entityData.bbWidth() / 2.0f;
+        float height = entityData.bbHeight();
+
+        // Extract RGB from color
+        int color = entityData.color();
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+        float a = entityData.isHostile() ? 0.9f : 0.7f;
+
+        float minX = x - halfWidth;
+        float maxX = x + halfWidth;
+        float minY = y;
+        float maxY = y + height;
+        float minZ = z - halfWidth;
+        float maxZ = z + halfWidth;
+
+        // Bottom face
+        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+
+        // Top face
+        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+
+        // North face (-Z)
+        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+
+        // South face (+Z)
+        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+
+        // West face (-X)
+        buffer.addVertex(minX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(minX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+
+        // East face (+X)
+        buffer.addVertex(maxX, minY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, minZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, maxY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+        buffer.addVertex(maxX, minY, maxZ).setUv(0, 0).setColor(r, g, b, a);
+    }
+
+    /**
+     * Render entities as full 3D models.
+     * Uses live interpolated positions for smooth movement.
+     *
+     * @param poseStack The pose stack with hologram transformations applied
+     * @param level The current level
+     * @param entities The entities to render as 3D models
+     * @param blockEntity The projector block entity
+     * @param partialTicks Partial tick time for smooth interpolation
+     */
+    private void renderFullModels(@Nonnull PoseStack poseStack, @Nonnull Level level,
+                                   @Nonnull List<HologramEntityData> entities,
+                                   @Nonnull HologramProjectorBlockEntity blockEntity,
+                                   float partialTicks) {
+        Minecraft mc = Minecraft.getInstance();
+        MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
+
+        // Compute origin for live position calculation
+        double originX = blockEntity.getScanMinX();
+        double originY = level.getMinBuildHeight();
+        double originZ = blockEntity.getScanMinZ();
+
+        // Disable shadows once for all entities
+        entityDispatcher.setRenderShadow(false);
+        try {
+            for (HologramEntityData entityData : entities) {
+                Entity entity = level.getEntity(entityData.entityId());
+                if (entity == null) continue;
+
+                poseStack.pushPose();
+
+                // Use LIVE interpolated position for smooth movement
+                float relX = (float) (entity.getX(partialTicks) - originX);
+                float relY = (float) (entity.getY(partialTicks) - originY);
+                float relZ = (float) (entity.getZ(partialTicks) - originZ);
+                poseStack.translate(relX, relY, relZ);
+
+                entityDispatcher.render(entity, 0, 0, 0, 0, partialTicks, poseStack, bufferSource, LightTexture.FULL_BRIGHT);
+
+                poseStack.popPose();
+            }
+        } finally {
+            entityDispatcher.setRenderShadow(true);
+        }
+
+        bufferSource.endBatch();
+    }
+}

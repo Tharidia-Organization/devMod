@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.ammo.AmmoSystem;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.RangedWeaponModule;
 import com.devmod.client.ui.editor.components.EditorSlider;
@@ -624,23 +625,23 @@ public class RangedModuleUI {
                 }
             }
 
-            graphics.drawString(font, header, x, y, headerColor, false);
+            UIScaleManager.drawScaledString(graphics, font, header, x, y, headerColor, false);
             y += ENTRY_LINE_HEIGHT;
             if (!hint.isEmpty()) {
-                graphics.drawString(font, hint, x, y, hintColor, false);
+                UIScaleManager.drawScaledString(graphics, font, hint, x, y, hintColor, false);
                 y += ENTRY_LINE_HEIGHT;
             }
             int shown = 0;
             for (String entry : ammoMatches) {
                 if (shown >= MAX_MATCHES_SHOWN) break;
-                graphics.drawString(font, "- " + entry, x, y, DesignTokens.Text.PRIMARY(), false);
+                UIScaleManager.drawScaledString(graphics, font, "- " + entry, x, y, DesignTokens.Text.PRIMARY(), false);
                 y += ENTRY_LINE_HEIGHT;
                 shown++;
             }
 
             // Suggestions + clear
             y += SUGGESTION_TITLE_GAP;
-            graphics.drawString(font, "Suggestions:", x, y, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, "Suggestions:", x, y, DesignTokens.Text.SECONDARY(), false);
             y += SUGGESTION_TITLE_LINE_HEIGHT;
             suggestionRects.clear();
             int btnHeight = SUGGESTION_ROW_HEIGHT;
@@ -649,7 +650,7 @@ public class RangedModuleUI {
             // Clear button
             int clearX = x;
             graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, DesignTokens.Background.INPUT());
-            graphics.drawString(font, "Clear filter", clearX + BUTTON_TEXT_OFFSET_X,
+            UIScaleManager.drawScaledString(graphics, font, "Clear filter", clearX + BUTTON_TEXT_OFFSET_X,
                 y + BUTTON_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
             suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
             y += btnHeight + BUTTON_GAP;
@@ -657,7 +658,7 @@ public class RangedModuleUI {
             for (AmmoSystem.AmmoSuggestion sugg : ammoSuggestions) {
                 graphics.fill(clearX, y, clearX + btnWidth, y + btnHeight, DesignTokens.Background.PANEL());
                 String label = formatSuggestionLabel(sugg);
-                graphics.drawString(font, label, clearX + BUTTON_TEXT_OFFSET_X,
+                UIScaleManager.drawScaledString(graphics, font, label, clearX + BUTTON_TEXT_OFFSET_X,
                     y + BUTTON_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
                 suggestionRects.add(new ResponsiveLayout.Rect(clearX, y, btnWidth, btnHeight));
                 y += btnHeight + BUTTON_GAP;

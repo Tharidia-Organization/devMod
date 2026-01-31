@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.zone.data.ZoneBounds;
 
@@ -128,14 +129,14 @@ public class ZoneBoundsWidget extends AbstractWidget {
         int labelX2 = x + LABEL_WIDTH + 10 + FIELD_WIDTH + COL_SPACING;
 
         // Draw labels
-        graphics.drawString(font, "Min X:", x, y + 5, COLOR_LABEL, false);
-        graphics.drawString(font, "Max X:", labelX2, y + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Min X:", x, y + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Max X:", labelX2, y + 5, COLOR_LABEL, false);
 
-        graphics.drawString(font, "Min Y:", x, y + ROW_HEIGHT + 5, COLOR_LABEL, false);
-        graphics.drawString(font, "Max Y:", labelX2, y + ROW_HEIGHT + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Min Y:", x, y + ROW_HEIGHT + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Max Y:", labelX2, y + ROW_HEIGHT + 5, COLOR_LABEL, false);
 
-        graphics.drawString(font, "Min Z:", x, y + ROW_HEIGHT * 2 + 5, COLOR_LABEL, false);
-        graphics.drawString(font, "Max Z:", labelX2, y + ROW_HEIGHT * 2 + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Min Z:", x, y + ROW_HEIGHT * 2 + 5, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, "Max Z:", labelX2, y + ROW_HEIGHT * 2 + 5, COLOR_LABEL, false);
 
         // Render edit boxes
         AxiomRenderer.drawInputBackground(graphics, minXField.getX(), minXField.getY(), minXField.getWidth(),
@@ -162,11 +163,11 @@ public class ZoneBoundsWidget extends AbstractWidget {
         ZoneBounds current = new ZoneBounds(minX, maxX, minY, maxY, minZ, maxZ).normalized();
         String sizeText = String.format("Size: %d x %d x %d = %,d blocks",
             current.width(), current.height(), current.length(), current.volume());
-        graphics.drawString(font, sizeText, x, summaryY, COLOR_VALUE, false);
+        UIScaleManager.drawScaledString(graphics, font, sizeText, x, summaryY, COLOR_VALUE, false);
 
         String centerText = String.format("Center: (%d, %d, %d)",
             (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
-        graphics.drawString(font, centerText, x, summaryY + 12, COLOR_LABEL, false);
+        UIScaleManager.drawScaledString(graphics, font, centerText, x, summaryY + 12, COLOR_LABEL, false);
     }
 
     @Override

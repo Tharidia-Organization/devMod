@@ -44,7 +44,7 @@ public final class ClientVFXHelper {
                 BodyPart.BODY,
                 0f,
                 evasionBreakdown,
-                "§c§lEVADED! (Arrow)",
+                "\u00A7c\u00A7lEVADED! (Arrow)",
                 true,
                 savedTargetPos,
                 shooter.getLookAngle()
@@ -77,7 +77,7 @@ public final class ClientVFXHelper {
                 BodyPart.BODY,
                 0f,
                 evasionBreakdown,
-                "§c§lEVADED!",
+                "\u00A7c\u00A7lEVADED!",
                 false,
                 targetPos,
                 lookDir

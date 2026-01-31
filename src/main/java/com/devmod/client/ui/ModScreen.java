@@ -18,7 +18,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
-
 @OnlyIn(Dist.CLIENT)
 public abstract class ModScreen extends Screen {
 
@@ -44,6 +43,7 @@ public abstract class ModScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        UIScaleManager.update();
         // Track screen open for telemetry
         UiTelemetry.screenOpened(getTelemetryCategory(), getTelemetryScreen());
     }

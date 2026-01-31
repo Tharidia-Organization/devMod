@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.testing.TesterProfile;
@@ -279,14 +280,14 @@ public class QANotificationSystem {
         Font fontNonNull = Objects.requireNonNull(font);
 
         // Type prefix
-        graphics.drawString(fontNonNull, notif.type.getPrefix(), x + 8, y + 5, typeColor, false);
+        UIScaleManager.drawScaledString(graphics, fontNonNull, notif.type.getPrefix(), x + 8, y + 5, typeColor, false);
 
         // Title
-        graphics.drawString(fontNonNull, notif.title, x + 8, y + 16, titleColor, false);
+        UIScaleManager.drawScaledString(graphics, fontNonNull, notif.title, x + 8, y + 16, titleColor, false);
 
         // Subtitle
         if (notif.subtitle != null && !notif.subtitle.isEmpty()) {
-            graphics.drawString(fontNonNull, notif.subtitle, x + 8, y + 27, subtitleColor, false);
+            UIScaleManager.drawScaledString(graphics, fontNonNull, notif.subtitle, x + 8, y + 27, subtitleColor, false);
         }
     }
 

@@ -20,7 +20,6 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -31,6 +30,7 @@ import com.devmod.client.endurance.PerkSelectionScreen;
 import com.devmod.client.endurance.WaveCheckpointScreen;
 import com.devmod.client.endurance.WaveDirectiveScreen;
 import com.devmod.client.telemetry.ClientLVCCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.endurance.ComboSystem;
@@ -40,7 +40,6 @@ import com.devmod.endurance.MomentumTracker;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
 import com.devmod.telemetry.network.LVCSyncPayload;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class EnduranceQuestOverlay {
@@ -155,14 +154,30 @@ public class EnduranceQuestOverlay {
         checkForStateTransition(mc, state);
 
         Font font = mc.font;
-        int panelX = MARGIN_LEFT;
-        int panelY = MARGIN_TOP;
 
-        // Calculate panel height
-        int panelHeight = calculatePanelHeight(data);
+        // Scale dimensions for positioning
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sMarginLeft = UIScaleManager.scale(MARGIN_LEFT);
+        int sMarginTop = UIScaleManager.scale(MARGIN_TOP);
+
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+
+        boolean allowDetails = showDetails;
+        int panelHeight = calculatePanelHeight(data, panelWidth, allowDetails);
+        if (panelHeight > UIScaleManager.getSafeHeight() && allowDetails) {
+            allowDetails = false;
+            panelHeight = calculatePanelHeight(data, panelWidth, false);
+        }
+
+        int panelX = Math.max(safeLeft, Math.min(sMarginLeft, safeRight - panelWidth));
+        int panelY = Math.max(safeTop, Math.min(sMarginTop, safeBottom - panelHeight));
 
         // Render panel
-        renderPanel(graphics, font, panelX, panelY, PANEL_WIDTH, panelHeight, data);
+        renderPanel(graphics, font, panelX, panelY, panelWidth, panelHeight, data, allowDetails);
 
         // Check for wave completion animation
         if (data.currentWave() != lastWave) {
@@ -173,7 +188,7 @@ public class EnduranceQuestOverlay {
         }
 
         // Render wave complete animation
-        renderWaveCompleteAnimation(graphics, font, panelX, panelY + panelHeight + 5);
+        renderWaveCompleteAnimation(graphics, font, panelX, panelY + panelHeight + UIScaleManager.scale(5), panelWidth);
 
         // Render prominent wave banner at top center
         renderWaveBanner(graphics, font, mc.getWindow().getGuiScaledWidth(), data);
@@ -186,12 +201,22 @@ public class EnduranceQuestOverlay {
      * Renders the main panel.
      */
     private static void renderPanel(GuiGraphics g, Font font, int x, int y, int width, int height,
-                                     QuestSyncPayload data) {
+                                     QuestSyncPayload data, boolean allowDetails) {
         // Background with border
         renderPanelBackground(g, x, y, width, height);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
+        int sGap2 = UIScaleManager.scale(2);
+        int sGap4 = UIScaleManager.scale(4);
+        int sGap6 = UIScaleManager.scale(6);
+        int sGap8 = UIScaleManager.scale(8);
+        int sGap10 = UIScaleManager.scale(10);
+
+        int textX = x + sPanelPadding;
+        int textY = y + sPanelPadding;
+        int contentWidth = Math.max(0, width - sPanelPadding * 2);
 
         // === Header: Quest Name (truncated if needed) ===
         String questName = data.questName();
@@ -200,35 +225,30 @@ public class EnduranceQuestOverlay {
         }
         // Remove problematic characters and truncate
         questName = questName.replaceAll("[^\\w\\s-]", "").trim();
-        int maxNameWidth = width - PANEL_PADDING * 2 - 60; // Leave space for points
         var safeFont = Objects.requireNonNull(font);
-        if (safeFont.width(Objects.requireNonNull(questName)) > maxNameWidth) {
-            String ellipsis = "...";
-            int minChars = Math.min(6, questName.length()); // Keep at least 6 chars for readability
-            while (safeFont.width(questName + ellipsis) > maxNameWidth && questName.length() > minChars) {
-                questName = questName.substring(0, questName.length() - 1);
-            }
-            questName = questName + ellipsis;
-        }
-        g.drawString(font, "\u2694 " + questName, textX, textY, TEXT_TITLE, true); // ⚔ icon
+        String pointsText = data.pointsEarned() + " pts";
+        int pointsWidth = UIScaleManager.getScaledStringWidth(safeFont, pointsText);
+        int maxNameWidth = Math.max(0, contentWidth - pointsWidth - sGap6);
+        questName = truncateToWidth(safeFont, questName, maxNameWidth);
+        UIScaleManager.drawScaledString(g, font, "\u2694 " + questName, textX, textY, TEXT_TITLE, true); // ⚔ icon
 
         // Points in header on the right
-        String pointsText = data.pointsEarned() + " pts";
-        int pointsWidth = font.width(pointsText);
-        g.drawString(font, pointsText, x + width - PANEL_PADDING - pointsWidth, textY, TEXT_ACCENT, false);
-        textY += LINE_HEIGHT + 4;
+        UIScaleManager.drawScaledString(g, font, pointsText, x + width - sPanelPadding - pointsWidth, textY, TEXT_ACCENT);
+        textY += sLineHeight + sGap4;
 
         // === Template/Policy/Difficulty ===
         String templatePolicy = buildTemplatePolicyLine(data);
         if (!templatePolicy.isBlank()) {
-            g.drawString(font, templatePolicy, textX, textY, TEXT_DIM, false);
-            textY += LINE_HEIGHT;
+            templatePolicy = truncateToWidth(safeFont, templatePolicy, contentWidth);
+            UIScaleManager.drawScaledString(g, font, templatePolicy, textX, textY, TEXT_DIM);
+            textY += sLineHeight;
         }
 
         String difficultyLine = buildDifficultyLine(data);
         if (!difficultyLine.isBlank()) {
-            g.drawString(font, difficultyLine, textX, textY, TEXT_DIM, false);
-            textY += LINE_HEIGHT;
+            difficultyLine = truncateToWidth(safeFont, difficultyLine, contentWidth);
+            UIScaleManager.drawScaledString(g, font, difficultyLine, textX, textY, TEXT_DIM);
+            textY += sLineHeight;
         }
 
         // === Objective & Status ===
@@ -236,16 +256,18 @@ public class EnduranceQuestOverlay {
         if (objectiveTitle == null || objectiveTitle.isBlank()) {
             objectiveTitle = "Survive waves";
         }
-        g.drawString(font, "Objective: " + objectiveTitle, textX, textY, TEXT_DIM, false);
-        textY += LINE_HEIGHT;
+        String objectiveLine = truncateToWidth(safeFont, "Objective: " + objectiveTitle, contentWidth);
+        UIScaleManager.drawScaledString(g, font, objectiveLine, textX, textY, TEXT_DIM);
+        textY += sLineHeight;
         String objectiveDescription = data.objectiveDescription();
         if (objectiveDescription != null && !objectiveDescription.isBlank()) {
-            g.drawString(font, objectiveDescription, textX, textY, TEXT_DIM, false);
-            textY += LINE_HEIGHT;
+            String descLine = truncateToWidth(safeFont, objectiveDescription, contentWidth);
+            UIScaleManager.drawScaledString(g, font, descLine, textX, textY, TEXT_DIM);
+            textY += sLineHeight;
         }
-        String statusLabel = "Status: " + getStatusLabel(data);
-        g.drawString(font, statusLabel, textX, textY, getStatusColor(data), false);
-        textY += LINE_HEIGHT + 2;
+        String statusLabel = truncateToWidth(safeFont, "Status: " + getStatusLabel(data), contentWidth);
+        UIScaleManager.drawScaledString(g, font, statusLabel, textX, textY, getStatusColor(data));
+        textY += sLineHeight + sGap2;
 
         // === Wave Progress (on separate row) ===
         String waveText;
@@ -254,13 +276,16 @@ public class EnduranceQuestOverlay {
         } else {
             waveText = "Wave " + data.currentWave() + " / " + data.totalWaves();
         }
-        g.drawString(font, waveText, textX, textY, TEXT_NORMAL, false);
+        String killsText = data.mobsKilled() + " kills";
+        killsText = truncateToWidth(safeFont, killsText, contentWidth);
+        int killsWidth = UIScaleManager.getScaledStringWidth(safeFont, killsText);
+        int maxWaveWidth = Math.max(0, contentWidth - killsWidth - sGap6);
+        waveText = truncateToWidth(safeFont, waveText, maxWaveWidth);
+        UIScaleManager.drawScaledString(g, font, waveText, textX, textY, TEXT_NORMAL);
 
         // Kills on the right of the same row
-        String killsText = data.mobsKilled() + " kills";
-        int killsWidth = font.width(killsText);
-        g.drawString(font, killsText, x + width - PANEL_PADDING - killsWidth, textY, TEXT_SUCCESS, false);
-        textY += LINE_HEIGHT + 4;
+        UIScaleManager.drawScaledString(g, font, killsText, x + width - sPanelPadding - killsWidth, textY, TEXT_SUCCESS);
+        textY += sLineHeight + sGap4;
 
         // === Progress Bar (Objective progress) ===
         WaveObjectiveState.Type objectiveType = data.getObjectiveType();
@@ -272,21 +297,23 @@ public class EnduranceQuestOverlay {
             : data.objectiveTarget();
         float progress = targetValue > 0 ? (float) progressValue / targetValue : 0;
 
-        renderProgressBar(g, textX, textY, width - PANEL_PADDING * 2, PROGRESS_BAR_HEIGHT, progress);
+        renderProgressBar(g, textX, textY, contentWidth, sProgressBarHeight, progress);
 
         // Progress text above the bar
         String progressLabel = buildObjectiveProgressLabel(objectiveType, progressValue, targetValue);
-        int mobTextWidth = font.width(Objects.requireNonNull(progressLabel, "progressLabel"));
-        g.drawString(font, progressLabel, textX + (width - PANEL_PADDING * 2 - mobTextWidth) / 2,
-                     textY - 1, TEXT_DIM, false);
-        textY += PROGRESS_BAR_HEIGHT + 6;
+        progressLabel = truncateToWidth(safeFont, Objects.requireNonNull(progressLabel, "progressLabel"), contentWidth);
+        int mobTextWidth = UIScaleManager.getScaledStringWidth(safeFont, progressLabel);
+        UIScaleManager.drawScaledString(g, font, progressLabel, textX + (contentWidth - mobTextWidth) / 2,
+                     textY - UIScaleManager.scale(1), TEXT_DIM);
+        textY += sProgressBarHeight + sGap6;
 
         // === Combo & Style Rank ===
         if (data.currentCombo() > 0 || data.styleScore() > 0) {
             ComboSystem.StyleRank rank = data.getStyleRank();
             String comboText = "Combo: " + data.currentCombo() + " | " + rank.getDisplayName();
-            g.drawString(font, comboText, textX, textY, rank.getColor(), false);
-            textY += LINE_HEIGHT;
+            comboText = truncateToWidth(safeFont, comboText, contentWidth);
+            UIScaleManager.drawScaledString(g, font, comboText, textX, textY, rank.getColor());
+            textY += sLineHeight;
 
             // === Flow State Indicator ===
             FlowStateTracker.FlowState flowState = data.getFlowState();
@@ -294,34 +321,37 @@ public class EnduranceQuestOverlay {
                 // Show flow state with color
                 String flowText = flowState.getDisplayName();
                 if (!flowText.isEmpty()) {
-                    g.drawString(font, flowText, textX, textY, flowState.getColor(), false);
-                    textY += LINE_HEIGHT;
+                    flowText = truncateToWidth(safeFont, flowText, contentWidth);
+                    UIScaleManager.drawScaledString(g, font, flowText, textX, textY, flowState.getColor());
+                    textY += sLineHeight;
                 }
             }
 
             // Show virtuoso progress bar if making progress
             if (data.virtuosoProgress() > 0 && data.virtuosoProgress() < 1.0f) {
                 String virtuosoLabel = "Virtuoso: ";
-                g.drawString(font, virtuosoLabel, textX, textY, TEXT_DIM, false);
-                int barX = textX + font.width(virtuosoLabel);
-                int barWidth = 60;
-                int barHeight = 4;
+                UIScaleManager.drawScaledString(g, font, virtuosoLabel, textX, textY, TEXT_DIM);
+                int barX = textX + UIScaleManager.getScaledStringWidth(safeFont, virtuosoLabel);
+                int maxBarWidth = Math.max(0, contentWidth - UIScaleManager.getScaledStringWidth(safeFont, virtuosoLabel) - sGap4);
+                int barWidth = Math.min(UIScaleManager.scale(60), maxBarWidth);
+                int barHeight = UIScaleManager.scale(4);
                 // Background
                 g.fill(barX, textY + 2, barX + barWidth, textY + 2 + barHeight, PROGRESS_BG);
                 // Fill (golden for virtuoso progress)
                 int fillWidth = (int) (barWidth * data.virtuosoProgress());
                 g.fill(barX, textY + 2, barX + fillWidth, textY + 2 + barHeight, COLOR_MOMENTUM_HEATED);
-                textY += LINE_HEIGHT;
+                textY += sLineHeight;
             }
 
             // Show stale risk warning
             if (data.staleRisk() >= 0.66f && flowState != FlowStateTracker.FlowState.STALE) {
                 String warning = "⚠ Vary attacks!";
-                g.drawString(font, warning, textX, textY, COLOR_MOMENTUM_HEATED, false);
-                textY += LINE_HEIGHT;
+                warning = truncateToWidth(safeFont, warning, contentWidth);
+                UIScaleManager.drawScaledString(g, font, warning, textX, textY, COLOR_MOMENTUM_HEATED);
+                textY += sLineHeight;
             }
 
-            textY += 2;
+            textY += sGap2;
         }
 
         // === Momentum Bar ===
@@ -330,10 +360,13 @@ public class EnduranceQuestOverlay {
 
         // Draw momentum label
         String momentumLabel = "Momentum: ";
-        g.drawString(font, momentumLabel, textX, textY, TEXT_DIM, false);
-        int barX = textX + font.width(momentumLabel);
-        int barWidth = 80;
-        int barHeight = 6;
+        UIScaleManager.drawScaledString(g, font, momentumLabel, textX, textY, TEXT_DIM);
+        int barX = textX + UIScaleManager.getScaledStringWidth(safeFont, momentumLabel);
+        int barHeight = UIScaleManager.scale(6);
+        String percentText = momentumPercent + "%";
+        int percentWidth = UIScaleManager.getScaledStringWidth(safeFont, percentText);
+        int maxBarWidth = Math.max(0, contentWidth - UIScaleManager.getScaledStringWidth(safeFont, momentumLabel) - percentWidth - sGap8);
+        int barWidth = Math.min(UIScaleManager.scale(80), maxBarWidth);
 
         // Background
         g.fill(barX, textY + 1, barX + barWidth, textY + 1 + barHeight, PROGRESS_BG);
@@ -350,87 +383,92 @@ public class EnduranceQuestOverlay {
         g.fill(barX, textY + 1, barX + fillWidth, textY + 1 + barHeight, fillColor);
 
         // Percentage text
-        String percentText = momentumPercent + "%";
-        g.drawString(font, percentText, barX + barWidth + 4, textY, TEXT_NORMAL, false);
+        int percentX = barX + barWidth + sGap4;
+        UIScaleManager.drawScaledString(g, font, percentText, percentX, textY, TEXT_NORMAL);
 
         // State indicator
         if (momentumState != MomentumTracker.MomentumState.BUILDING) {
             String stateText = momentumState.getDisplayName();
             if (!stateText.isEmpty()) {
-                int stateX = barX + barWidth + 4 + font.width(percentText) + 4;
-                g.drawString(font, stateText, stateX, textY, momentumState.getColor(), false);
+                int stateX = percentX + percentWidth + sGap4;
+                int stateMaxWidth = Math.max(0, textX + contentWidth - stateX);
+                stateText = truncateToWidth(safeFont, stateText, stateMaxWidth);
+                UIScaleManager.drawScaledString(g, font, stateText, stateX, textY, momentumState.getColor());
             }
         }
 
         // Overdrive timer
         if (data.isOverdrive() && data.overdriveRemaining() > 0) {
-            textY += LINE_HEIGHT;
+            textY += sLineHeight;
             long seconds = data.overdriveRemaining() / 1000;
             String timerText = "⚡ OVERDRIVE: " + seconds + "s";
-            g.drawString(font, timerText, textX, textY, COLOR_MOMENTUM_OVERDRIVE, false);
+            timerText = truncateToWidth(safeFont, timerText, contentWidth);
+            UIScaleManager.drawScaledString(g, font, timerText, textX, textY, COLOR_MOMENTUM_OVERDRIVE);
         }
 
-        textY += LINE_HEIGHT + 2;
+        textY += sLineHeight + sGap2;
 
         // === Wave Modifiers ===
         List<String> modifiers = data.waveModifiers();
         if (!modifiers.isEmpty()) {
             String modLabel = "Modifiers: ";
-            g.drawString(font, modLabel, textX, textY, TEXT_DIM, false);
+            UIScaleManager.drawScaledString(g, font, modLabel, textX, textY, TEXT_DIM);
 
-            int modX = textX + font.width(modLabel);
+            int modX = textX + UIScaleManager.getScaledStringWidth(safeFont, modLabel);
+            int maxLineX = textX + contentWidth;
             for (String modName : modifiers) {
                 int modColor = getModifierColor(modName);
                 String icon = getModifierIcon(modName);
-                String displayText = icon + " " + modName;
-                g.drawString(font, displayText, modX, textY, modColor, false);
-                modX += font.width(displayText) + 6;
-
-                // Wrap to next line if needed
-                if (modX > x + width - PANEL_PADDING - 40) {
-                    textY += LINE_HEIGHT;
+                String displayText = truncateToWidth(safeFont, icon + " " + modName, contentWidth);
+                int displayWidth = UIScaleManager.getScaledStringWidth(safeFont, displayText);
+                if (modX + displayWidth > maxLineX && modX > textX) {
+                    textY += sLineHeight;
                     modX = textX;
                 }
+                UIScaleManager.drawScaledString(g, font, displayText, modX, textY, modColor);
+                modX += displayWidth + sGap6;
             }
-            textY += LINE_HEIGHT + 2;
+            textY += sLineHeight + sGap2;
         }
 
         // === Detailed Stats ===
-        if (showDetails) {
+        if (allowDetails) {
             // Separator line
-            g.fill(x + 4, textY, x + width - 4, textY + 1,
+            g.fill(x + UIScaleManager.scale(4), textY, x + width - UIScaleManager.scale(4), textY + 1,
                 OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
-            textY += 4;
+            textY += sGap4;
 
-            g.drawString(font, "Run Stats", textX, textY, TEXT_ACCENT, false);
-            textY += LINE_HEIGHT;
+            UIScaleManager.drawScaledString(g, font, "Run Stats", textX, textY, TEXT_ACCENT);
+            textY += sLineHeight;
 
             // Contract multiplier (if active)
             if (ContractHudOverlay.INSTANCE.hasActiveContracts()) {
                 float contractMult = ContractHudOverlay.INSTANCE.getTotalMultiplier();
                 String contractText = String.format("\u2694 Contracts: %.1fx", contractMult);
-                g.drawString(font, contractText, textX, textY, OverlayTheme.Contract.MULTIPLIER_HIGH, false);
-                textY += LINE_HEIGHT;
+                contractText = truncateToWidth(safeFont, contractText, contentWidth);
+                UIScaleManager.drawScaledString(g, font, contractText, textX, textY, OverlayTheme.Contract.MULTIPLIER_HIGH);
+                textY += sLineHeight;
             }
 
             // Session timer + Kills on same line
             long duration = data.sessionDurationMs();
             String timeText = formatDuration(duration);
-            g.drawString(font, "Time: " + timeText, textX, textY, TEXT_DIM, false);
-            String killText = data.mobsKilled() + " kills";
-            int killWidth = font.width(killText);
-            g.drawString(font, killText, x + width - PANEL_PADDING - killWidth, textY, TEXT_SUCCESS, false);
-            textY += LINE_HEIGHT;
+            String timeLine = truncateToWidth(safeFont, "Time: " + timeText, contentWidth);
+            UIScaleManager.drawScaledString(g, font, timeLine, textX, textY, TEXT_DIM);
+            String killText = truncateToWidth(safeFont, data.mobsKilled() + " kills", contentWidth);
+            int killWidth = UIScaleManager.getScaledStringWidth(safeFont, killText);
+            UIScaleManager.drawScaledString(g, font, killText, x + width - sPanelPadding - killWidth, textY, TEXT_SUCCESS);
+            textY += sLineHeight;
 
             // Damage dealt/taken + Deaths (if any)
-            String dmgText = "DMG: " + data.damageDealt() + "/" + data.damageTaken();
-            g.drawString(font, dmgText, textX, textY, TEXT_DIM, false);
+            String dmgText = truncateToWidth(safeFont, "DMG: " + data.damageDealt() + "/" + data.damageTaken(), contentWidth);
+            UIScaleManager.drawScaledString(g, font, dmgText, textX, textY, TEXT_DIM);
             if (data.deaths() > 0) {
-                String deathText = "\u2620 " + data.deaths(); // Skull icon
-                int deathWidth = font.width(deathText);
-                g.drawString(font, deathText, x + width - PANEL_PADDING - deathWidth, textY, TEXT_DANGER, false);
+                String deathText = truncateToWidth(safeFont, "\u2620 " + data.deaths(), contentWidth);
+                int deathWidth = UIScaleManager.getScaledStringWidth(safeFont, deathText);
+                UIScaleManager.drawScaledString(g, font, deathText, x + width - sPanelPadding - deathWidth, textY, TEXT_DANGER);
             }
-            textY += LINE_HEIGHT;
+            textY += sLineHeight;
 
             // Get LVC data for enhanced metrics
             ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
@@ -454,8 +492,9 @@ public class EnduranceQuestOverlay {
             } else {
                 dpsMetrics = String.format("KPS %.2f | DPS %.1f | DTPS %.1f", kps, dps, dtps);
             }
-            g.drawString(font, dpsMetrics, textX, textY, TEXT_DIM, false);
-            textY += LINE_HEIGHT;
+            dpsMetrics = truncateToWidth(safeFont, dpsMetrics, contentWidth);
+            UIScaleManager.drawScaledString(g, font, dpsMetrics, textX, textY, TEXT_DIM);
+            textY += sLineHeight;
 
             // LVC-specific stats (accuracy, crits, abilities, defense)
             if (hasLvc && lvcPayload != null) {
@@ -464,8 +503,9 @@ public class EnduranceQuestOverlay {
                 double accuracy = lvcCache.getAccuracy() * 100;
                 int critCount = payload.criticalHitCount();
                 String accCritText = String.format("Accuracy %.0f%% | \u2726 %d crits", accuracy, critCount); // Sparkle icon
-                g.drawString(font, accCritText, textX, textY, TEXT_DIM, false);
-                textY += LINE_HEIGHT;
+                accCritText = truncateToWidth(safeFont, accCritText, contentWidth);
+                UIScaleManager.drawScaledString(g, font, accCritText, textX, textY, TEXT_DIM);
+                textY += sLineHeight;
 
                 // Ability usage (dash, dodge, perfect dodge) - only if any used
                 int dashCount = payload.dashCount();
@@ -484,8 +524,9 @@ public class EnduranceQuestOverlay {
                         if (dashCount > 0 || dodgeCount > 0) abilityText.append(" ");
                         abilityText.append("\u2605").append(perfectCount); // Perfect icon
                     }
-                    g.drawString(font, abilityText.toString(), textX, textY, COLOR_AFFIX_SWIFT, false);
-                    textY += LINE_HEIGHT;
+                    String abilities = truncateToWidth(safeFont, abilityText.toString(), contentWidth);
+                    UIScaleManager.drawScaledString(g, font, abilities, textX, textY, COLOR_AFFIX_SWIFT);
+                    textY += sLineHeight;
                 }
 
                 // Defensive stats (damage negated, stamina spent) - only if meaningful
@@ -494,8 +535,9 @@ public class EnduranceQuestOverlay {
                 if (damageNegated > 0 || staminaSpent > 10) {
                     String defenseText = String.format("\u2764 %.0f blocked | \u269B %.0f stamina",
                         damageNegated, staminaSpent); // Blocked and stamina icons
-                    g.drawString(font, defenseText, textX, textY, COLOR_SURVIVE_GREEN, false);
-                    textY += LINE_HEIGHT;
+                    defenseText = truncateToWidth(safeFont, defenseText, contentWidth);
+                    UIScaleManager.drawScaledString(g, font, defenseText, textX, textY, COLOR_SURVIVE_GREEN);
+                    textY += sLineHeight;
                 }
 
                 // Top weapons - compact display
@@ -503,17 +545,18 @@ public class EnduranceQuestOverlay {
                 if (topWeapons != null && !topWeapons.isEmpty()) {
                     String weaponsDisplay = formatTopWeapons(topWeapons);
                     if (!weaponsDisplay.isEmpty()) {
-                        g.drawString(font, "\u2694 " + weaponsDisplay, textX, textY, TEXT_TITLE, false);
-                        textY += LINE_HEIGHT;
+                        String weaponsLine = truncateToWidth(safeFont, "\u2694 " + weaponsDisplay, contentWidth);
+                        UIScaleManager.drawScaledString(g, font, weaponsLine, textX, textY, TEXT_TITLE);
+                        textY += sLineHeight;
                     }
                 }
             }
         }
 
         // === Keybind Hint ===
-        textY += 2;
-        String hint = "F11: Continue | F12: Exit";
-        g.drawString(font, hint, textX, textY, COLOR_BORDER_DIM, false);
+        textY += sGap2;
+        String hint = truncateToWidth(safeFont, "F11: Continue | F12: Exit", contentWidth);
+        UIScaleManager.drawScaledString(g, font, hint, textX, textY, COLOR_BORDER_DIM);
     }
 
     /**
@@ -559,10 +602,15 @@ public class EnduranceQuestOverlay {
                                    objectiveType == WaveObjectiveState.Type.HOLD_ZONE;
 
         // Banner positioned at top-center - wider for timed objectives
-        int bannerWidth = isTimedObjective ? 220 : 160;
-        int bannerHeight = isTimedObjective ? 48 : WAVE_BANNER_HEIGHT;
-        int bannerX = (screenWidth - bannerWidth) / 2;
-        int bannerY = 5;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeWidth = UIScaleManager.getSafeWidth();
+        int safeHeight = UIScaleManager.getSafeHeight();
+        int bannerWidth = Math.min(UIScaleManager.scale(isTimedObjective ? 220 : 160), safeWidth);
+        int bannerHeight = Math.min(UIScaleManager.scale(isTimedObjective ? 48 : WAVE_BANNER_HEIGHT), safeHeight);
+        int bannerX = safeLeft + (safeWidth - bannerWidth) / 2;
+        int bannerY = Math.max(safeTop, UIScaleManager.scale(5));
+        int padding = UIScaleManager.scale(6);
 
         // Choose colors based on objective type
         int borderColor = isTimedObjective ? COLOR_SURVIVE_GREEN : PANEL_BORDER; // Green for survive, orange for kill
@@ -582,9 +630,9 @@ public class EnduranceQuestOverlay {
             // Show objective type label at top
             String objectiveLabel = objectiveType == WaveObjectiveState.Type.SURVIVE_TIME
                 ? "\u23F1 SURVIVE" : "\u2B55 HOLD ZONE";  // ⏱ SURVIVE or ⭕ HOLD ZONE
-            int labelWidth = safeFont.width(objectiveLabel);
-            g.drawString(font, objectiveLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                        bannerY + 4, COLOR_SURVIVE_GREEN, true);
+            objectiveLabel = truncateToWidth(safeFont, objectiveLabel, bannerWidth - padding * 2);
+            UIScaleManager.drawScaledCenteredString(g, font, objectiveLabel, bannerX + bannerWidth / 2,
+                        bannerY + UIScaleManager.scale(4), COLOR_SURVIVE_GREEN);
 
             // Calculate remaining time
             int progress = data.objectiveProgress();
@@ -593,50 +641,56 @@ public class EnduranceQuestOverlay {
 
             // Large countdown timer in center
             String timerText = remaining + "s";
+            int timerWidth = UIScaleManager.getScaledStringWidth(safeFont, timerText);
             g.pose().pushPose();
-            float scale = 2.0f;
-            int timerWidth = safeFont.width(timerText);
+            float maxScale = timerWidth > 0
+                ? Math.min(2.0f, (bannerWidth - padding * 2) / (float) timerWidth)
+                : 1.0f;
+            float scale = Math.max(0.8f, maxScale);
 
-            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 14, 0);
+            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + UIScaleManager.scale(14), 0);
             g.pose().scale(scale, scale, 1.0f);
             g.pose().translate(-timerWidth / 2.0f, 0, 0);
 
             // Pulse effect when time is low
             int timerColor = remaining <= 5 ? COLOR_AFFIX_EMPOWERED : TEXT_NORMAL; // Red when <= 5s
-            g.drawString(font, timerText, 0, 0, timerColor, true);
+            UIScaleManager.drawScaledString(g, font, timerText, 0, 0, timerColor, true);
             g.pose().popPose();
 
             // Wave number smaller at bottom
             String waveLabel = "Wave " + data.currentWave();
-            int waveLabelWidth = safeFont.width(waveLabel);
-            g.drawString(font, waveLabel, bannerX + bannerWidth / 2 - waveLabelWidth / 2,
-                        bannerY + bannerHeight - 12, TEXT_DIM, false);
+            waveLabel = truncateToWidth(safeFont, waveLabel, bannerWidth - padding * 2);
+            UIScaleManager.drawScaledCenteredString(g, font, waveLabel, bannerX + bannerWidth / 2,
+                        bannerY + bannerHeight - UIScaleManager.scale(12), TEXT_DIM);
         } else {
             // === KILL OBJECTIVE MODE (original behavior) ===
             // Large wave number at center
             String waveNum = String.valueOf(data.currentWave());
+            int numWidth = UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(waveNum));
 
             g.pose().pushPose();
-            float scale = 2.0f;
-            int numWidth = safeFont.width(Objects.requireNonNull(waveNum));
+            float maxScale = numWidth > 0
+                ? Math.min(2.0f, (bannerWidth - padding * 2) / (float) numWidth)
+                : 1.0f;
+            float scale = Math.max(0.8f, maxScale);
 
-            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + 4, 0);
+            g.pose().translate(bannerX + bannerWidth / 2.0f, bannerY + UIScaleManager.scale(4), 0);
             g.pose().scale(scale, scale, 1.0f);
             g.pose().translate(-numWidth / 2.0f, 0, 0);
-            g.drawString(font, waveNum, 0, 0, WAVE_NUMBER_COLOR, true);
+            UIScaleManager.drawScaledString(g, font, waveNum, 0, 0, WAVE_NUMBER_COLOR, true);
             g.pose().popPose();
 
             // Label below the number
             if (!data.endlessMode()) {
                 String totalLabel = "/ " + data.totalWaves();
-                int labelWidth = safeFont.width(totalLabel);
-                g.drawString(font, totalLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                            bannerY + bannerHeight - 11, TEXT_DIM, false);
+                totalLabel = truncateToWidth(safeFont, totalLabel, bannerWidth - padding * 2);
+                UIScaleManager.drawScaledCenteredString(g, font, totalLabel, bannerX + bannerWidth / 2,
+                            bannerY + bannerHeight - UIScaleManager.scale(11), TEXT_DIM);
             } else {
                 String endlessLabel = "ENDLESS";
-                int labelWidth = safeFont.width(endlessLabel);
-                g.drawString(font, endlessLabel, bannerX + bannerWidth / 2 - labelWidth / 2,
-                            bannerY + bannerHeight - 11, TEXT_ACCENT, false);
+                endlessLabel = truncateToWidth(safeFont, endlessLabel, bannerWidth - padding * 2);
+                UIScaleManager.drawScaledCenteredString(g, font, endlessLabel, bannerX + bannerWidth / 2,
+                            bannerY + bannerHeight - UIScaleManager.scale(11), TEXT_ACCENT);
             }
         }
     }
@@ -644,7 +698,7 @@ public class EnduranceQuestOverlay {
     /**
      * Renders wave completion animation.
      */
-    private static void renderWaveCompleteAnimation(GuiGraphics g, Font font, int x, int y) {
+    private static void renderWaveCompleteAnimation(GuiGraphics g, Font font, int x, int y, int panelWidth) {
         long elapsed = System.currentTimeMillis() - waveCompleteAnimTime;
         if (elapsed > WAVE_ANIM_DURATION) return;
 
@@ -652,15 +706,16 @@ public class EnduranceQuestOverlay {
         float alpha = progress < 0.7f ? 1.0f : 1.0f - (progress - 0.7f) / 0.3f;
         float scale = 1.0f + (1.0f - progress) * 0.3f;
 
-        String message = "WAVE COMPLETE!";
+        String message = truncateToWidth(Objects.requireNonNull(font), "WAVE COMPLETE!",
+            Math.max(0, panelWidth - UIScaleManager.scale(8)));
         int color = applyAlpha(TEXT_SUCCESS, alpha);
 
         g.pose().pushPose();
-        g.pose().translate(x + PANEL_WIDTH / 2.0f, y, 0);
+        g.pose().translate(x + panelWidth / 2.0f, y, 0);
         g.pose().scale(scale, scale, 1.0f);
-        g.pose().translate(-font.width(message) / 2.0f, 0, 0);
+        g.pose().translate(-UIScaleManager.getScaledStringWidth(font, message) / 2.0f, 0, 0);
 
-        g.drawString(font, message, 0, 0, color, true);
+        UIScaleManager.drawScaledString(g, font, message, 0, 0, color, true);
 
         g.pose().popPose();
     }
@@ -668,52 +723,57 @@ public class EnduranceQuestOverlay {
     /**
      * Calculates dynamic panel height.
      */
-    private static int calculatePanelHeight(QuestSyncPayload data) {
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Header (quest name)
+    private static int calculatePanelHeight(QuestSyncPayload data, int panelWidth, boolean showDetails) {
+        // Use scaled dimensions
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
+
+        int height = sPanelPadding * 2;
+        height += sLineHeight + UIScaleManager.scale(2);  // Header (quest name)
         if (!buildTemplatePolicyLine(data).isBlank()) {
-            height += LINE_HEIGHT; // Template/Policy
+            height += sLineHeight; // Template/Policy
         }
         if (!buildDifficultyLine(data).isBlank()) {
-            height += LINE_HEIGHT; // Difficulty/Mode
+            height += sLineHeight; // Difficulty/Mode
         }
-        height += LINE_HEIGHT;     // Objective
+        height += sLineHeight;     // Objective
         if (data.objectiveDescription() != null && !data.objectiveDescription().isBlank()) {
-            height += LINE_HEIGHT; // Objective description
+            height += sLineHeight; // Objective description
         }
-        height += LINE_HEIGHT + 2; // Status
-        height += LINE_HEIGHT + 4;  // Wave progress text
-        height += PROGRESS_BAR_HEIGHT + 6; // Progress bar
+        height += sLineHeight + UIScaleManager.scale(2); // Status
+        height += sLineHeight + UIScaleManager.scale(4);  // Wave progress text
+        height += sProgressBarHeight + UIScaleManager.scale(6); // Progress bar
 
         // Combo/style (if active)
         if (data.currentCombo() > 0 || data.styleScore() > 0) {
-            height += LINE_HEIGHT; // Combo line
+            height += sLineHeight; // Combo line
 
             // Flow state indicator
             FlowStateTracker.FlowState flowState = data.getFlowState();
             if (flowState != FlowStateTracker.FlowState.NEUTRAL) {
-                height += LINE_HEIGHT;
+                height += sLineHeight;
             }
 
             // Virtuoso progress bar
             if (data.virtuosoProgress() > 0 && data.virtuosoProgress() < 1.0f) {
-                height += LINE_HEIGHT;
+                height += sLineHeight;
             }
 
             // Stale risk warning
             if (data.staleRisk() >= 0.66f && flowState != FlowStateTracker.FlowState.STALE) {
-                height += LINE_HEIGHT;
+                height += sLineHeight;
             }
 
-            height += 2;
+            height += UIScaleManager.scale(2);
         }
 
         // Momentum bar (always shown during quest)
-        height += LINE_HEIGHT + 2; // Momentum bar line
+        height += sLineHeight + UIScaleManager.scale(2); // Momentum bar line
 
         // Overdrive timer
         if (data.isOverdrive() && data.overdriveRemaining() > 0) {
-            height += LINE_HEIGHT;
+            height += sLineHeight;
         }
 
         // Modifiers - calculate actual line count based on text width
@@ -721,57 +781,75 @@ public class EnduranceQuestOverlay {
         if (!modifiers.isEmpty()) {
             // Estimate modifier lines based on total character width
             // "Modifiers: " label + icons + names + spacing
-            int estimatedWidth = 60; // "Modifiers: " label
+            int estimatedWidth = UIScaleManager.scale(60); // "Modifiers: " label
             int lines = 1;
             for (String modName : modifiers) {
-                int modWidth = modName.length() * 7 + 20; // icon + name + spacing
-                if (estimatedWidth + modWidth > PANEL_WIDTH - PANEL_PADDING * 2 - 40) {
+                int modWidth = modName.length() * UIScaleManager.scale(7) + UIScaleManager.scale(20); // icon + name + spacing
+                if (estimatedWidth + modWidth > panelWidth - sPanelPadding * 2 - UIScaleManager.scale(40)) {
                     lines++;
                     estimatedWidth = 0;
                 }
                 estimatedWidth += modWidth;
             }
-            height += LINE_HEIGHT * lines + 2;
+            height += sLineHeight * lines + UIScaleManager.scale(2);
         }
 
-            if (showDetails) {
-                height += 4;  // Separator
-                height += LINE_HEIGHT * 4; // Run Stats + Time + Kills/DMG + metrics
+        if (showDetails) {
+            height += UIScaleManager.scale(4);  // Separator
+            height += sLineHeight * 4; // Run Stats + Time + Kills/DMG + metrics
 
-                // LVC-specific lines if data available
-                ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
-                LVCSyncPayload lvcPayload = lvcCache.getCachedPayload();
-                boolean hasLvc = lvcCache.hasData() && !lvcCache.isStale() && lvcPayload != null;
+            // LVC-specific lines if data available
+            ClientLVCCache lvcCache = ClientLVCCache.INSTANCE;
+            LVCSyncPayload lvcPayload = lvcCache.getCachedPayload();
+            boolean hasLvc = lvcCache.hasData() && !lvcCache.isStale() && lvcPayload != null;
 
-                if (hasLvc && lvcPayload != null) {
-                    LVCSyncPayload payload = lvcPayload;
-                    height += LINE_HEIGHT; // Accuracy & crits line
+            if (hasLvc && lvcPayload != null) {
+                LVCSyncPayload payload = lvcPayload;
+                height += sLineHeight; // Accuracy & crits line
 
-                    // Ability usage line (if any abilities used)
-                    if (payload.dashCount() > 0 || payload.dodgeCount() > 0 || payload.perfectDodgeCount() > 0) {
-                        height += LINE_HEIGHT;
-                    }
-
-                    // Defensive stats line (if meaningful)
-                    if (payload.totalDamageNegated() > 0 || payload.totalStaminaSpent() > 10) {
-                        height += LINE_HEIGHT;
-                    }
-
-                    // Top weapons line (if any)
-                    String topWeapons = payload.topWeapons();
-                    if (topWeapons != null && !topWeapons.isEmpty()) {
-                        height += LINE_HEIGHT;
-                    }
+                // Ability usage line (if any abilities used)
+                if (payload.dashCount() > 0 || payload.dodgeCount() > 0 || payload.perfectDodgeCount() > 0) {
+                    height += sLineHeight;
                 }
 
+                // Defensive stats line (if meaningful)
+                if (payload.totalDamageNegated() > 0 || payload.totalStaminaSpent() > 10) {
+                    height += sLineHeight;
+                }
+
+                // Top weapons line (if any)
+                String topWeapons = payload.topWeapons();
+                if (topWeapons != null && !topWeapons.isEmpty()) {
+                    height += sLineHeight;
+                }
+            }
+
             if (data.deaths() > 0) {
-                height += LINE_HEIGHT; // Deaths
+                height += sLineHeight; // Deaths
             }
         }
 
-        height += LINE_HEIGHT + 2; // Keybind hint
+        height += sLineHeight + UIScaleManager.scale(2); // Keybind hint
 
         return height;
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0) {
+            return "";
+        }
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     /**
@@ -980,7 +1058,9 @@ public class EnduranceQuestOverlay {
                             mc.setScreen(null);
                         }
                         if (mc.screen == null) {
-                            mc.setScreen(new WaveDirectiveScreen());
+                            com.devmod.client.ui.ScreenSafety.openSafe(
+                                "wave_directive",
+                                () -> new WaveDirectiveScreen());
                         }
                         return;
                     }
@@ -1099,7 +1179,7 @@ public class EnduranceQuestOverlay {
         float pulse = (float) Math.sin(elapsed / 100.0) * 0.15f + 0.85f;
 
         // Screen edge glow red
-        int edgeHeight = 15;
+        int edgeHeight = Math.max(2, UIScaleManager.scale(15));
         int glowAlpha = (int) (pulse * 180);
         int glowColor = OverlayTheme.withAlpha(COLOR_BOSS_ALERT, glowAlpha);
 
@@ -1117,29 +1197,39 @@ public class EnduranceQuestOverlay {
         int centerY = screenHeight / 2;
 
         String warningText = "!! BOSS INCOMING IN " + seconds + "s !!";
+        int boxPadding = UIScaleManager.scale(10);
+        int maxTextWidth = Math.max(0, UIScaleManager.getSafeWidth() - boxPadding * 2 - UIScaleManager.scale(8));
+        warningText = truncateToWidth(font, warningText, maxTextWidth);
         int textWidth = font.width(warningText);
 
         // Background box
-        int boxPadding = 10;
-        int boxX = centerX - textWidth / 2 - boxPadding;
-        int boxY = centerY - 60;
-        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 32,
+        int boxWidth = textWidth + boxPadding * 2;
+        int boxHeight = UIScaleManager.scale(32);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        int boxX = Math.max(safeLeft, Math.min(centerX - boxWidth / 2, safeRight - boxWidth));
+        int boxY = Math.max(safeTop, Math.min(centerY - UIScaleManager.scale(60), safeBottom - boxHeight));
+        g.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight,
             OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, OverlayTheme.Alpha.STANDARD));
 
         // Border
         int borderColorAlert = applyAlpha(COLOR_BOSS_ALERT, pulse);
-        g.fill(boxX, boxY, boxX + textWidth + boxPadding * 2, boxY + 1, borderColorAlert);
-        g.fill(boxX, boxY + 31, boxX + textWidth + boxPadding * 2, boxY + 32, borderColorAlert);
-        g.fill(boxX, boxY, boxX + 1, boxY + 32, borderColorAlert);
-        g.fill(boxX + textWidth + boxPadding * 2 - 1, boxY, boxX + textWidth + boxPadding * 2, boxY + 32, borderColorAlert);
+        g.fill(boxX, boxY, boxX + boxWidth, boxY + 1, borderColorAlert);
+        g.fill(boxX, boxY + boxHeight - 1, boxX + boxWidth, boxY + boxHeight, borderColorAlert);
+        g.fill(boxX, boxY, boxX + 1, boxY + boxHeight, borderColorAlert);
+        g.fill(boxX + boxWidth - 1, boxY, boxX + boxWidth, boxY + boxHeight, borderColorAlert);
 
         // Text pulsating
         int textAlpha = (int) (pulse * 255);
         int textColor = OverlayTheme.withAlpha(COLOR_BOSS_ALERT, textAlpha);
-        g.drawCenteredString(font, warningText, centerX, boxY + 6, textColor);
+        UIScaleManager.drawScaledCenteredString(g, font, warningText, boxX + boxWidth / 2, boxY + UIScaleManager.scale(6), textColor);
 
         // Boss type below
-        g.drawCenteredString(font, Objects.requireNonNull(bossAlertType.toUpperCase(Locale.ROOT)), centerX, boxY + 18, TEXT_DIM);
+        String bossType = Objects.requireNonNull(bossAlertType.toUpperCase(Locale.ROOT));
+        bossType = truncateToWidth(font, bossType, maxTextWidth);
+        UIScaleManager.drawScaledCenteredString(g, font, bossType, boxX + boxWidth / 2, boxY + UIScaleManager.scale(18), TEXT_DIM);
 
         // Sound every second (first 100ms of each second)
         Minecraft mc = Minecraft.getInstance();

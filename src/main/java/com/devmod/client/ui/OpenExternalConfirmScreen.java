@@ -256,7 +256,10 @@ public class OpenExternalConfirmScreen extends Screen {
      * @param title        Dialog title
      */
     public static void openWithConfirmation(@Nullable Screen parentScreen, String url, String title) {
-        Minecraft.getInstance().setScreen(new OpenExternalConfirmScreen(parentScreen, url, title));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "open_external_confirm",
+            parentScreen,
+            () -> new OpenExternalConfirmScreen(parentScreen, url, title));
     }
 
     /**

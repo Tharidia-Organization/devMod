@@ -19,30 +19,26 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.network.TransportPartyStatusPayload;
 
-/**
+/*
  * Party teleport status screen.
+ * Displays party teleport progress including:
+ * - Current phase (countdown, teleporting, waiting, complete)
+ * - Party member list with arrival status
+ * - Progress visualization
+ * - Cancel option during countdown
  *
- * <p>Displays party teleport progress including:
- * <ul>
- *   <li>Current phase (countdown, teleporting, waiting, complete)</li>
- *   <li>Party member list with arrival status</li>
- *   <li>Progress visualization</li>
- *   <li>Cancel option during countdown</li>
- * </ul>
- *
- * <p>From Bibbia Estetica Regola 4:
- * <ul>
- *   <li>Progress bar centered, horizontal</li>
- *   <li>Member list scrollable</li>
- *   <li>Phase color coding</li>
- *   <li>Background transparency: 85% opaque (0xD9)</li>
- * </ul>
+ * From Bibbia Estetica Regola 4:
+ * - Progress bar centered, horizontal
+ * - Member list scrollable
+ * - Phase color coding
+ * - Background transparency: 85% opaque (0xD9)
  */
 @OnlyIn(Dist.CLIENT)
 public class PartyTeleportScreen extends BaseDevModScreen {
@@ -69,11 +65,18 @@ public class PartyTeleportScreen extends BaseDevModScreen {
     private int scrollOffset = 0;
     private boolean autoCloseOnComplete = true;
 
-    // Panel bounds
+    // Panel bounds (recalculated each frame for responsiveness)
     private int panelLeft;
     private int panelTop;
     private int listTop;
     private int listHeight;
+
+    // Scaled dimensions (updated each frame for responsiveness)
+    private int scaledPanelWidth;
+    private int scaledPanelHeight;
+    private int scaledMemberHeight;
+    private int scaledProgressBarHeight;
+    private int scaledBorderThickness;
 
     // Widgets
     @Nullable
@@ -81,7 +84,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
     @Nullable
     private EditorButtonWidget closeButton;
 
-    /**
+    /*
      * Party member entry.
      */
     public record PartyMemberEntry(
@@ -107,13 +110,20 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
-        panelLeft = (width - PANEL_WIDTH) / 2;
-        panelTop = (height - PANEL_HEIGHT) / 2;
-        listTop = panelTop + 100;
-        listHeight = MEMBER_HEIGHT * VISIBLE_MEMBERS;
+        // Calculate scaled layout for init
+        UIScaleManager.update();
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int sMemberHeight = UIScaleManager.scale(MEMBER_HEIGHT);
 
-        int buttonWidth = 120;
-        int buttonY = panelTop + PANEL_HEIGHT - 35;
+        panelLeft = (width - sPanelWidth) / 2;
+        panelTop = (height - sPanelHeight) / 2;
+        listTop = panelTop + UIScaleManager.scale(100);
+        listHeight = sMemberHeight * VISIBLE_MEMBERS;
+
+        int buttonWidth = UIScaleManager.scale(120);
+        int buttonHeight = UIScaleManager.scale(20);
+        int buttonY = panelTop + sPanelHeight - UIScaleManager.scale(35);
 
         // Cancel button (only visible during countdown)
         EditorButton cancel = EditorButton.builder("party-teleport-cancel",
@@ -122,7 +132,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::cancelTeleport)
             .build();
-        cancelButton = new EditorButtonWidget(cancel, panelLeft + (PANEL_WIDTH - buttonWidth) / 2, buttonY, buttonWidth, 20);
+        cancelButton = new EditorButtonWidget(cancel, panelLeft + (sPanelWidth - buttonWidth) / 2, buttonY, buttonWidth, buttonHeight);
         addRenderableWidget(cancelButton);
 
         // Close button (visible after complete/cancelled)
@@ -132,7 +142,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        var closeBtn = new EditorButtonWidget(close, panelLeft + (PANEL_WIDTH - buttonWidth) / 2, buttonY, buttonWidth, 20);
+        var closeBtn = new EditorButtonWidget(close, panelLeft + (sPanelWidth - buttonWidth) / 2, buttonY, buttonWidth, buttonHeight);
         closeBtn.visible = false;
         closeButton = closeBtn;
         addRenderableWidget(closeBtn);
@@ -140,7 +150,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         updateButtonVisibility();
     }
 
-    /**
+    /*
      * Updates the party teleport status from a payload.
      */
     public void updateStatus(@Nonnull TransportPartyStatusPayload payload) {
@@ -178,14 +188,14 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * Updates the countdown display.
      */
     public void updateCountdown(int secondsRemaining) {
         this.countdownSeconds = secondsRemaining;
     }
 
-    /**
+    /*
      * Updates button visibility based on phase.
      */
     private void updateButtonVisibility() {
@@ -207,75 +217,100 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        scaledMemberHeight = UIScaleManager.scale(MEMBER_HEIGHT);
+        scaledProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
+        scaledBorderThickness = UIScaleManager.scale(BORDER_THICKNESS);
+
+        // Recalculate panel bounds
+        panelLeft = (width - scaledPanelWidth) / 2;
+        panelTop = (height - scaledPanelHeight) / 2;
+        listTop = panelTop + UIScaleManager.scale(100);
+        listHeight = scaledMemberHeight * VISIBLE_MEMBERS;
+
         var renderFont = Objects.requireNonNull(this.font);
 
         // Panel background
         int bgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_2 & 0xFFFFFF);
-        graphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, bgColor);
+        graphics.fill(panelLeft, panelTop, panelLeft + scaledPanelWidth, panelTop + scaledPanelHeight, bgColor);
 
         // Panel border (phase-colored)
         int borderColor = (0xFF << 24) | (getPhaseColor() & 0xFFFFFF);
-        renderBorder(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT, borderColor);
+        renderBorder(graphics, panelLeft, panelTop, scaledPanelWidth, scaledPanelHeight, borderColor);
 
         // Title
         Component title = Objects.requireNonNull(Component.translatable("screen.devmod.party_teleport.title"));
-        int titleWidth = renderFont.width(title);
-        graphics.drawString(renderFont, title, panelLeft + (PANEL_WIDTH - titleWidth) / 2, panelTop + 10, DesignTokens.Text.PRIMARY, true);
+        String titleString = title.getString();
+        int titleWidth = UIScaleManager.getScaledStringWidth(renderFont, titleString);
+        UIScaleManager.drawScaledString(graphics, renderFont, titleString, panelLeft + (scaledPanelWidth - titleWidth) / 2, panelTop + UIScaleManager.scale(10), DesignTokens.Text.PRIMARY, true);
 
         // Phase status
         Component phaseText = getPhaseText();
-        int phaseWidth = renderFont.width(phaseText);
+        String phaseString = phaseText.getString();
+        int phaseWidth = UIScaleManager.getScaledStringWidth(renderFont, phaseString);
         int phaseColor = getPhaseColor();
-        graphics.drawString(renderFont, phaseText, panelLeft + (PANEL_WIDTH - phaseWidth) / 2, panelTop + 28, phaseColor, true);
+        UIScaleManager.drawScaledString(graphics, renderFont, phaseString, panelLeft + (scaledPanelWidth - phaseWidth) / 2, panelTop + UIScaleManager.scale(28), phaseColor, true);
 
         // Destination
         if (!destinationName.isEmpty()) {
             Component destText = Objects.requireNonNull(
                 Component.translatable("screen.devmod.party_teleport.destination", destinationName));
-            int destWidth = renderFont.width(destText);
-            graphics.drawString(renderFont, destText, panelLeft + (PANEL_WIDTH - destWidth) / 2, panelTop + 44, DesignTokens.Text.SECONDARY, false);
+            String destString = destText.getString();
+            int destWidth = UIScaleManager.getScaledStringWidth(renderFont, destString);
+            UIScaleManager.drawScaledString(graphics, renderFont, destString, panelLeft + (scaledPanelWidth - destWidth) / 2, panelTop + UIScaleManager.scale(44), DesignTokens.Text.SECONDARY);
         }
 
         // Progress bar
-        int progressY = panelTop + 60;
-        renderProgressBar(graphics, panelLeft + 20, progressY, PANEL_WIDTH - 40, PROGRESS_BAR_HEIGHT);
+        int sPadding = UIScaleManager.scale(20);
+        int progressY = panelTop + UIScaleManager.scale(60);
+        renderProgressBar(graphics, panelLeft + sPadding, progressY, scaledPanelWidth - sPadding * 2, scaledProgressBarHeight);
 
         // Progress text
         String progressText = Objects.requireNonNull(String.format("%d / %d", arrivedCount, expectedCount));
-        int progressTextWidth = renderFont.width(progressText);
-        graphics.drawString(renderFont, progressText, panelLeft + (PANEL_WIDTH - progressTextWidth) / 2, progressY + 20, DesignTokens.Text.SECONDARY, false);
+        int progressTextWidth = UIScaleManager.getScaledStringWidth(renderFont, progressText);
+        UIScaleManager.drawScaledString(graphics, renderFont, progressText, panelLeft + (scaledPanelWidth - progressTextWidth) / 2, progressY + UIScaleManager.scale(20), DesignTokens.Text.SECONDARY);
 
         // Member list header
-        graphics.drawString(renderFont, Objects.requireNonNull(
-            Component.translatable("screen.devmod.party_teleport.members")), panelLeft + 15, listTop - 12, DesignTokens.Text.SECONDARY, false);
+        int sListPadding = UIScaleManager.scale(15);
+        String membersHeader = Objects.requireNonNull(
+            Component.translatable("screen.devmod.party_teleport.members")).getString();
+        UIScaleManager.drawScaledString(graphics, renderFont, membersHeader, panelLeft + sListPadding, listTop - UIScaleManager.scale(12), DesignTokens.Text.SECONDARY);
 
         // Member list background
+        int sListInset = UIScaleManager.scale(10);
         int listBgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_1 & 0xFFFFFF);
-        graphics.fill(panelLeft + 10, listTop, panelLeft + PANEL_WIDTH - 10, listTop + listHeight, listBgColor);
+        graphics.fill(panelLeft + sListInset, listTop, panelLeft + scaledPanelWidth - sListInset, listTop + listHeight, listBgColor);
 
         // Render visible members
+        int sItemInset = UIScaleManager.scale(12);
+        int sItemPadding = UIScaleManager.scale(2);
         int visibleCount = Math.min(VISIBLE_MEMBERS, members.size() - scrollOffset);
         for (int i = 0; i < visibleCount; i++) {
             int memberIndex = scrollOffset + i;
             PartyMemberEntry member = members.get(memberIndex);
-            int itemY = listTop + i * MEMBER_HEIGHT;
-            renderMemberItem(graphics, member, panelLeft + 12, itemY + 2, PANEL_WIDTH - 24, MEMBER_HEIGHT - 4);
+            int itemY = listTop + i * scaledMemberHeight;
+            renderMemberItem(graphics, member, panelLeft + sItemInset, itemY + sItemPadding, scaledPanelWidth - sItemInset * 2, scaledMemberHeight - sItemPadding * 2);
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + PANEL_WIDTH / 2, listTop - 8, DesignTokens.Text.MUTED);
+            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.MUTED);
         }
         if (scrollOffset + VISIBLE_MEMBERS < members.size()) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + PANEL_WIDTH / 2, listTop + listHeight + 2, DesignTokens.Text.MUTED);
+            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
         }
     }
 
-    /**
+    /*
      * Renders the progress bar.
      */
     private void renderProgressBar(GuiGraphics graphics, int x, int y, int width, int height) {
         var renderFont = Objects.requireNonNull(this.font);
+        int sInset = UIScaleManager.scale(2);
 
         // Background
         int bgColor = (0xFF << 24) | (DesignTokens.Bg.LEVEL_1 & 0xFFFFFF);
@@ -283,31 +318,35 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
         // Border
         int borderColor = (0xFF << 24) | (DesignTokens.Stroke.DEFAULT & 0xFFFFFF);
-        renderBorder(graphics, x, y, width, height, borderColor, 1);
+        renderBorder(graphics, x, y, width, height, borderColor, UIScaleManager.scale(1));
 
         // Fill
         float progress = expectedCount > 0 ? (float) arrivedCount / expectedCount : 0f;
         progress = Math.min(1f, Math.max(0f, progress));
-        int fillWidth = (int) ((width - 4) * progress);
+        int fillWidth = (int) ((width - sInset * 2) * progress);
 
         if (fillWidth > 0) {
             int fillColor = (0xFF << 24) | (getPhaseColor() & 0xFFFFFF);
-            graphics.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, fillColor);
+            graphics.fill(x + sInset, y + sInset, x + sInset + fillWidth, y + height - sInset, fillColor);
         }
 
         // Countdown text (during countdown phase)
         if (currentPhase == TransportPartyStatusPayload.PHASE_COUNTDOWN && countdownSeconds > 0) {
             String countText = Objects.requireNonNull(String.valueOf(countdownSeconds));
-            int countWidth = renderFont.width(countText);
-            graphics.drawString(renderFont, countText, x + (width - countWidth) / 2, y + (height - 8) / 2, DesignTokens.Text.PRIMARY, true);
+            int countWidth = UIScaleManager.getScaledStringWidth(renderFont, countText);
+            int textHeight = UIScaleManager.scale(8);
+            UIScaleManager.drawScaledString(graphics, renderFont, countText, x + (width - countWidth) / 2, y + (height - textHeight) / 2, DesignTokens.Text.PRIMARY, true);
         }
     }
 
-    /**
+    /*
      * Renders a party member item.
      */
     private void renderMemberItem(GuiGraphics graphics, PartyMemberEntry member, int x, int y, int width, int height) {
         var renderFont = Objects.requireNonNull(this.font);
+        int sIndicatorWidth = UIScaleManager.scale(4);
+        int sTextPadding = UIScaleManager.scale(8);
+        int sTextHeight = UIScaleManager.scale(8);
 
         // Background based on status
         int bgColor;
@@ -320,7 +359,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
         // Status indicator
         int indicatorColor = member.arrived() ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.MUTED;
-        graphics.fill(x, y, x + 4, y + height, (0xFF << 24) | (indicatorColor & 0xFFFFFF));
+        graphics.fill(x, y, x + sIndicatorWidth, y + height, (0xFF << 24) | (indicatorColor & 0xFFFFFF));
 
         // Player name
         String displayName = member.playerName();
@@ -328,16 +367,16 @@ public class PartyTeleportScreen extends BaseDevModScreen {
             displayName = "[L] " + displayName;
         }
         int textColor = member.arrived() ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.PRIMARY;
-        graphics.drawString(renderFont, displayName, x + 8, y + (height - 8) / 2, textColor, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, displayName, x + sTextPadding, y + (height - sTextHeight) / 2, textColor);
 
         // Status text
         String statusText = member.arrived() ? "Arrived" : "Waiting...";
-        int statusWidth = renderFont.width(statusText);
+        int statusWidth = UIScaleManager.getScaledStringWidth(renderFont, statusText);
         int statusColor = member.arrived() ? DesignTokens.Semantic.SUCCESS : DesignTokens.Text.MUTED;
-        graphics.drawString(renderFont, statusText, x + width - statusWidth - 4, y + (height - 8) / 2, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, statusText, x + width - statusWidth - sIndicatorWidth, y + (height - sTextHeight) / 2, statusColor);
     }
 
-    /**
+    /*
      * Gets the current phase display text.
      */
     @Nonnull
@@ -357,7 +396,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         });
     }
 
-    /**
+    /*
      * Gets the color for the current phase.
      */
     private int getPhaseColor() {
@@ -371,11 +410,11 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         };
     }
 
-    /**
+    /*
      * Renders a border.
      */
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {
-        renderBorder(graphics, x, y, width, height, color, BORDER_THICKNESS);
+        renderBorder(graphics, x, y, width, height, color, scaledBorderThickness);
     }
 
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color, int thickness) {
@@ -385,7 +424,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         graphics.fill(x + width - thickness, y, x + width, y + height, color);
     }
 
-    /**
+    /*
      * Cancels the party teleport.
      */
     private void cancelTeleport() {
@@ -402,7 +441,8 @@ public class PartyTeleportScreen extends BaseDevModScreen {
 
     @Override
     protected boolean handleMouseScroll(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mouseX >= panelLeft + 10 && mouseX < panelLeft + PANEL_WIDTH - 10
+        int sListInset = UIScaleManager.scale(10);
+        if (mouseX >= panelLeft + sListInset && mouseX < panelLeft + scaledPanelWidth - sListInset
             && mouseY >= listTop && mouseY < listTop + listHeight) {
 
             if (scrollY > 0 && scrollOffset > 0) {
@@ -421,7 +461,7 @@ public class PartyTeleportScreen extends BaseDevModScreen {
         return false;
     }
 
-    /**
+    /*
      * Opens this screen.
      */
     public static void open(
@@ -429,10 +469,12 @@ public class PartyTeleportScreen extends BaseDevModScreen {
             @Nonnull List<PartyMemberEntry> members,
             @Nonnull String destination,
             @Nonnull TransportColor color) {
-        Minecraft.getInstance().setScreen(new PartyTeleportScreen(partyId, members, destination, color));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "party_teleport",
+            () -> new PartyTeleportScreen(partyId, members, destination, color));
     }
 
-    /**
+    /*
      * Gets the current screen if it's a PartyTeleportScreen.
      */
     @Nullable

@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
@@ -125,19 +126,19 @@ public class TelepadConfigScreen extends Screen {
     private void renderTitle(GuiGraphics graphics) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font);
         String titleText = "Telepad Configuration";
-        graphics.drawString(font, titleText, panelX + PADDING, panelY + 14,
+        UIScaleManager.drawScaledString(graphics, font, titleText, panelX + PADDING, panelY + 14,
             DesignTokens.Text.PRIMARY, false);
     }
 
     private void renderHelpText(GuiGraphics graphics) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font);
         int y = panelY + 45;
-        graphics.drawString(font, "Network Name:", panelX + PADDING, y,
+        UIScaleManager.drawScaledString(graphics, font, "Network Name:", panelX + PADDING, y,
             DesignTokens.Text.SECONDARY, false);
 
         // Help text below field
         int helpY = panelY + 90;
-        graphics.drawString(font, "Telepads with the same name are linked.",
+        UIScaleManager.drawScaledString(graphics, font, "Telepads with the same name are linked.",
             panelX + PADDING, helpY, DesignTokens.Text.MUTED, false);
     }
 

@@ -5,6 +5,7 @@ import javax.annotation.Nonnull;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 public final class AxiomRenderer {
@@ -79,10 +80,10 @@ public final class AxiomRenderer {
         }
 
         // Text (centered)
-        int textWidth = font.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
         int textX = x + (width - textWidth) / 2;
-        int textY = y + (height - 8) / 2;
-        graphics.drawString(font, text, textX, textY, textColor, false);
+        int textY = y + (height - UIScaleManager.getScaledLineHeight()) / 2;
+        UIScaleManager.drawScaledString(graphics, font, text, textX, textY, textColor, false);
     }
 
     /**
@@ -106,10 +107,10 @@ public final class AxiomRenderer {
         // Text
         String text = enabled ? "ON" : "OFF";
         int textColor = enabled ? DesignTokens.Text.WHITE : DesignTokens.Text.MUTED;
-        int textWidth = font.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
         int textX = x + (width - textWidth) / 2;
-        int textY = y + (height - 8) / 2;
-        graphics.drawString(font, text, textX, textY, textColor, false);
+        int textY = y + (height - UIScaleManager.getScaledLineHeight()) / 2;
+        UIScaleManager.drawScaledString(graphics, font, text, textX, textY, textColor, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -120,21 +121,21 @@ public final class AxiomRenderer {
      * Draw a label (replaces disabled Button anti-pattern)
      */
     public static void drawLabel(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, DesignTokens.Text.PRIMARY, false);
     }
 
     /**
      * Draw a label with custom color
      */
     public static void drawLabel(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text, int color) {
-        graphics.drawString(font, text, x, y, color, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, color, false);
     }
 
     /**
      * Draw a section header
      */
     public static void drawSectionHeader(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
-        graphics.drawString(font, text, x, y, DesignTokens.Text.TITLE, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, DesignTokens.Text.TITLE, false);
     }
 
     /**
@@ -284,9 +285,9 @@ public final class AxiomRenderer {
      */
     public static void drawTooltip(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {
         int padding = 4;
-        int textWidth = font.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
         int width = textWidth + padding * 2;
-        int height = 12 + padding * 2;
+        int height = UIScaleManager.getScaledLineHeight() + padding * 2;
 
         // Background
         graphics.fill(x, y, x + width, y + height, DesignTokens.Background.TOOLTIP);
@@ -295,7 +296,7 @@ public final class AxiomRenderer {
         drawBorder(graphics, x, y, width, height, DesignTokens.Border.LIGHT);
 
         // Text
-        graphics.drawString(font, text, x + padding, y + padding + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x + padding, y + padding, DesignTokens.Text.PRIMARY, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

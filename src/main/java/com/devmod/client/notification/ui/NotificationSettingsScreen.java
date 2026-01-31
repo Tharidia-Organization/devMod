@@ -18,12 +18,11 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.notification.ClientNotificationPreferences;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
-
 @OnlyIn(Dist.CLIENT)
 public class NotificationSettingsScreen extends Screen {
 
@@ -166,21 +165,21 @@ public class NotificationSettingsScreen extends Screen {
         graphics.pose().pushPose();
         graphics.pose().translate(titleX, panelY + 16, 0);
         graphics.pose().scale(1.3f, 1.3f, 1.0f);
-        graphics.drawString(font, title, 0, 0,
+        UIScaleManager.drawScaledString(graphics, font, title, 0, 0,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
         graphics.pose().popPose();
 
         String subtitle = Component.translatable("devmod.notification.settings.subtitle").getString();
-        graphics.drawString(font, subtitle, titleX, panelY + 38,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100), false);
+        UIScaleManager.drawScaledString(graphics, font, subtitle, titleX, panelY + 38,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
 
         String backLabel = Objects.requireNonNull(Component.translatable("gui.back").getString());
-        int backW = font.width(backLabel) + 14;
+        int backW = UIScaleManager.getScaledStringWidth(font, backLabel) + 14;
         backRect = new Rect(panelX + panelWidth - PANEL_PADDING - backW, panelY + 18, backW, 20);
         renderActionButton(graphics, backRect, backLabel, mouseX, mouseY, false);
 
         String resetLabel = Objects.requireNonNull(Component.translatable("controls.reset").getString());
-        int resetW = font.width(resetLabel) + 14;
+        int resetW = UIScaleManager.getScaledStringWidth(font, resetLabel) + 14;
         resetRect = new Rect(backRect.x() - resetW - 8, panelY + 18, resetW, 20);
         renderActionButton(graphics, resetRect, resetLabel, mouseX, mouseY, true);
     }
@@ -201,8 +200,8 @@ public class NotificationSettingsScreen extends Screen {
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40));
 
         int textColor = accent ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_SECONDARY;
-        graphics.drawString(font, label, rect.x() + 7, rect.y() + 6,
-                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100), false);
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 7, rect.y() + 6,
+                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
     private void renderGlobalPanel(GuiGraphics graphics, int x, int y, int width, int height,
@@ -216,7 +215,7 @@ public class NotificationSettingsScreen extends Screen {
         graphics.fill(x, y, x + width, y + 2, headerColor);
 
         int cursorY = y + 14;
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.global")),
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.global")).getString(),
                 x + 12, cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
         cursorY += 18;
@@ -248,8 +247,8 @@ public class NotificationSettingsScreen extends Screen {
 
     private void drawSettingLabel(GuiGraphics graphics, int x, int y, String key) {
         Font font = Objects.requireNonNull(this.font);
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))), x, y + 6,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100), false);
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))).getString(), x, y + 6,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
     }
 
     private void renderCategoryPanel(GuiGraphics graphics, int x, int y, int width, int height,
@@ -263,7 +262,7 @@ public class NotificationSettingsScreen extends Screen {
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, DesignTokens.Alpha.A40));
 
         int headerY = y + 12;
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.categories")),
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.categories")).getString(),
                 x + 10, headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
         int labelY = headerY + 16;
@@ -271,12 +270,12 @@ public class NotificationSettingsScreen extends Screen {
         int soundX = overlayX + TOGGLE_WIDTH + 10;
         int volumeX = soundX + TOGGLE_WIDTH + 10;
 
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.overlay")),
-                overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.sound")),
-                soundX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
-        graphics.drawString(font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.volume")),
-                volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80), false);
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.overlay")).getString(),
+                overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.sound")).getString(),
+                soundX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.volume")).getString(),
+                volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
 
         int listTop = labelY + 12;
         int listHeight = height - (listTop - y) - 12;
@@ -327,8 +326,8 @@ public class NotificationSettingsScreen extends Screen {
 
         if (rect.contains(mouseX, mouseY)) {
             String label = Math.round(value * 100) + "%";
-            graphics.drawString(Objects.requireNonNull(font), label, rect.x() + rect.w() + 6, rect.y() - 2,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A100), false);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + rect.w() + 6, rect.y() - 2,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A100));
         }
     }
 
@@ -344,8 +343,8 @@ public class NotificationSettingsScreen extends Screen {
 
         String label = priority.name().toLowerCase(Locale.ROOT);
         int textColor = NotificationUiTheme.getPriorityColor(priority);
-        graphics.drawString(Objects.requireNonNull(font), label, rect.x() + 6, rect.y() + 5,
-                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + 6, rect.y() + 5,
+                NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
     @Override
@@ -524,11 +523,11 @@ public class NotificationSettingsScreen extends Screen {
             int labelX = x + 10;
             String label = Objects.requireNonNull(Component.translatable(Objects.requireNonNull(category.getTranslationKey())).getString());
             int labelMax = width - 200;
-            if (font.width(label) > labelMax) {
+            if (UIScaleManager.getScaledStringWidth(font, label) > labelMax) {
                 label = Objects.requireNonNull(font.plainSubstrByWidth(label, labelMax - 6)) + "...";
             }
-            graphics.drawString(font, label, labelX, y + 10,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), false);
+            UIScaleManager.drawScaledString(graphics, font, label, labelX, y + 10,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
 
             int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
             overlayRect = new Rect(overlayX, y + 7, TOGGLE_WIDTH, 16);

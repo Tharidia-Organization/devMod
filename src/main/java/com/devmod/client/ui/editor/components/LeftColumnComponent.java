@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -233,12 +234,12 @@ public class LeftColumnComponent {
 
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font, "font cannot be null");
         String title = "Selected piece";
-        graphics.drawString(font, title, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
+        UIScaleManager.drawScaledString(graphics, font, title, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
             y + ScaledCoord.scaleDim(DesignTokens.Spacing.SM), DesignTokens.Text.SECONDARY(), false);
 
         SlotSelector.SlotInfo info = slotSelector.getSelectedSlot();
         String label = info != null && info.label() != null ? info.label() : "Slot";
-        graphics.drawString(font, label, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
+        UIScaleManager.drawScaledString(graphics, font, label, x + ScaledCoord.scaleDim(ARMOR_CARD_TEXT_PADDING),
             y + ScaledCoord.scaleDim(ARMOR_CARD_LABEL_Y), DesignTokens.Text.PRIMARY(), false);
 
         // Render item icon on the right
@@ -249,7 +250,7 @@ public class LeftColumnComponent {
             ItemStack item = Objects.requireNonNull(info.item(), "slot item cannot be null");
             graphics.renderItem(item, iconX, iconY);
         } else {
-            graphics.drawString(font, "⟳", iconX + ARMOR_CARD_ICON_GLYPH_OFFSET,
+            UIScaleManager.drawScaledString(graphics, font, "⟳", iconX + ARMOR_CARD_ICON_GLYPH_OFFSET,
                 iconY + ARMOR_CARD_ICON_GLYPH_OFFSET, DesignTokens.Text.MUTED(), false);
         }
 

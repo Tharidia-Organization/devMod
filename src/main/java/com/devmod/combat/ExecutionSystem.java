@@ -16,10 +16,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
@@ -47,7 +43,9 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.EnduranceTags;
 import com.devmod.endurance.MomentumTracker;
-
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 public class ExecutionSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionSystem.class);
 
@@ -470,7 +468,7 @@ public class ExecutionSystem implements QuestLifecycleListener {
 
         // Send feedback
         Component executedMessage = requireNonNull(Component.literal(
-            "§6§lEXECUTED! §r§a+" + styleGain + " Style §r§c+" + String.format("%.1f", hpRegen) + " HP"
+            "\u00A76\u00A7lEXECUTED! \u00A7r\u00A7a+" + styleGain + " Style \u00A7r\u00A7c+" + String.format("%.1f", hpRegen) + " HP"
         ), "executedMessage");
         player.displayClientMessage(executedMessage, true);
 
@@ -518,7 +516,7 @@ public class ExecutionSystem implements QuestLifecycleListener {
 
         // Send feedback
         Component interruptedMessage = requireNonNull(
-            Component.literal("§c§lINTERRUPTED! §r§7Vulnerability: 2x damage for 3 sec"),
+            Component.literal("\u00A7c\u00A7lINTERRUPTED! \u00A7r\u00A77Vulnerability: 2x damage for 3 sec"),
             "interruptedMessage"
         );
         player.displayClientMessage(interruptedMessage, true);

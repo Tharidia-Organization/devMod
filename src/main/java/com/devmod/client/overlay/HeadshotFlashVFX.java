@@ -2,17 +2,14 @@ package com.devmod.client.overlay;
 
 import java.util.Objects;
 
+import com.google.errorprone.annotations.InlineMe;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.common.EventBusSubscriber;
-
-import com.google.errorprone.annotations.InlineMe;
-
-import com.devmod.DevMod;
-
+import net.neoforged.api.distmarker.OnlyIn;
 /**
  * Headshot feedback system.
  *
@@ -24,7 +21,7 @@ import com.devmod.DevMod;
  * The "dink" sound (high-pitched crossbow hit) is universally recognized
  * as a headshot confirmation sound from games like CS:GO.
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public class HeadshotFlashVFX {
 
     // Cooldown to prevent sound spam on rapid headshots

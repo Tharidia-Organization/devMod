@@ -18,12 +18,11 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SpawnabilityOverlay;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public final class DynamicRadiusHudOverlay {
 
@@ -62,8 +61,9 @@ public final class DynamicRadiusHudOverlay {
         if (font == null) return;
 
         int fps = mc.getFps();
-        int x = MARGIN;
-        int y = MARGIN;
+        int sMargin = UIScaleManager.scale(MARGIN);
+        int x = sMargin;
+        int y = sMargin;
 
         if (lightEnabled) {
             Component name = I18n.translate("devmod.radial.item.light_levels");
@@ -85,11 +85,28 @@ public final class DynamicRadiusHudOverlay {
     private static int drawHint(GuiGraphics graphics, Font font, int x, int y, Component name,
                                 int baseRadius, int dynamicRadius, int fps) {
         Component line = I18n.translate("devmod.render.overlay_radius_hint", name, baseRadius, dynamicRadius, fps);
-        int width = font.width(line);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sLineGap = UIScaleManager.scale(LINE_GAP);
+        int maxWidth = Math.max(0, UIScaleManager.getSafeWidth() - sPadding * 2);
+        String display = truncateToWidth(font, line.getString(), maxWidth);
+        int width = UIScaleManager.getScaledStringWidth(font, display);
         int height = font.lineHeight;
-        int boxHeight = height + (PADDING * 2);
-        graphics.fill(x - PADDING, y - PADDING, x + width + PADDING, y + height + PADDING, BG_COLOR);
-        graphics.drawString(font, line, x, y, TEXT_COLOR, false);
-        return y + boxHeight + LINE_GAP;
+        int boxHeight = height + (sPadding * 2);
+        graphics.fill(x - sPadding, y - sPadding, x + width + sPadding, y + height + sPadding, BG_COLOR);
+        UIScaleManager.drawScaledString(graphics, font, display, x, y, TEXT_COLOR, false);
+        return y + boxHeight + sLineGap;
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 }

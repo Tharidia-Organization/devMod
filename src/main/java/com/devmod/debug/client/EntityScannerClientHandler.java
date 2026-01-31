@@ -46,7 +46,8 @@ public final class EntityScannerClientHandler {
             // Only open if not already showing scanner screen for this position
             if (!(currentScreen instanceof EntityScannerScreen existingScreen)
                 || !existingScreen.getScannerPos().equals(payload.scannerPos())) {
-                mc.setScreen(new EntityScannerScreen(payload.scannerPos()));
+                com.devmod.client.ui.ScreenSafety.openSafe("entity_scanner",
+                    () -> new EntityScannerScreen(payload.scannerPos()));
             }
         });
         work.isDone();

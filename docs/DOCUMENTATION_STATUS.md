@@ -1,6 +1,6 @@
 # Documentation Status
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 > Stato: CURRENT (set canonico)
 
 ## Canonical docs

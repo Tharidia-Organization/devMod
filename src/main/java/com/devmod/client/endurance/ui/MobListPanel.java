@@ -19,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry;
 import com.devmod.endurance.EnduranceQuestRegistry.MobQuestConfig;
@@ -401,9 +402,9 @@ public class MobListPanel {
                 : "devmod.endurance.mob_editor.no_results";
             String emptyText = I18n.translate(emptyKey).getString();
             if (emptyText != null) {
-                int textWidth = font.width(emptyText);
+                int textWidth = UIScaleManager.getScaledStringWidth(font, emptyText);
                 int centerY = y + topInset + (height - topInset) / 2 - 4;
-                graphics.drawString(font, emptyText, x + (width - textWidth) / 2, centerY,
+                UIScaleManager.drawScaledString(graphics, font, emptyText, x + (width - textWidth) / 2, centerY,
                     DesignTokens.Text.MUTED, false);
             }
         }
@@ -437,18 +438,18 @@ public class MobListPanel {
             String truncated = font.plainSubstrByWidth(displayName, itemWidth - 70);
             displayName = truncated + "..";
         }
-        graphics.drawString(font, displayName, textX, itemY + 3, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, displayName, textX, itemY + 3, textColor, false);
 
         // Tier badge
         int badgeColor = getTierColor(entry.config.tier());
         String tierLabel = entry.config.tier().name().substring(0, 1);
         int badgeX = itemX + itemWidth - 18;
         graphics.fill(badgeX, itemY + 2, badgeX + 14, itemY + 14, badgeColor);
-        graphics.drawString(font, tierLabel, badgeX + 4, itemY + 4, DesignTokens.Text.WHITE, false);
+        UIScaleManager.drawScaledString(graphics, font, tierLabel, badgeX + 4, itemY + 4, DesignTokens.Text.WHITE, false);
 
         // Namespace (small, below name)
         String namespace = entry.config.mobId().getNamespace();
-        graphics.drawString(font, namespace, textX, itemY + 12, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, namespace, textX, itemY + 12, DesignTokens.Text.SECONDARY, false);
     }
 
     private void renderCheckbox(GuiGraphics graphics, int x, int y, boolean checked, boolean hovered) {

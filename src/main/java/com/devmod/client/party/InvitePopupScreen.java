@@ -58,6 +58,8 @@ public class InvitePopupScreen extends Screen {
     // UI state
     private int popupX;
     private int popupY;
+    private int popupWidth;
+    private int popupHeight;
     private boolean responded = false;
     @Nullable
     private EditorButton acceptButton;
@@ -93,9 +95,11 @@ public class InvitePopupScreen extends Screen {
     protected void init() {
         super.init();
 
-        // Center the popup
-        popupX = (width - POPUP_WIDTH) / 2;
-        popupY = (height - POPUP_HEIGHT) / 2;
+        // Center the popup (scaled values will be calculated during render)
+        popupWidth = UIScaleManager.scale(POPUP_WIDTH);
+        popupHeight = UIScaleManager.scale(POPUP_HEIGHT);
+        popupX = (width - popupWidth) / 2;
+        popupY = (height - popupHeight) / 2;
 
         // Accept button
         acceptButton = EditorButton.builder("invite-accept", Component.translatable("devmod.party.accept").getString())
@@ -118,30 +122,49 @@ public class InvitePopupScreen extends Screen {
         // Darken background
         renderBackground(Objects.requireNonNull(graphics, "graphics"), mouseX, mouseY, partialTick);
 
+        popupWidth = Math.min(UIScaleManager.scale(POPUP_WIDTH), UIScaleManager.getSafeWidth());
+        popupHeight = Math.min(UIScaleManager.scale(POPUP_HEIGHT), UIScaleManager.getSafeHeight());
+        popupX = (width - popupWidth) / 2;
+        popupY = (height - popupHeight) / 2;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        popupX = Math.max(safeLeft, Math.min(popupX, safeRight - popupWidth));
+        popupY = Math.max(safeTop, Math.min(popupY, safeBottom - popupHeight));
+
         // Popup background
-        graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + POPUP_HEIGHT, COLOR_BG);
+        graphics.fill(popupX, popupY, popupX + popupWidth, popupY + popupHeight, COLOR_BG);
 
         // Border with glow effect
-        graphics.renderOutline(popupX, popupY, POPUP_WIDTH, POPUP_HEIGHT, COLOR_BORDER);
-        graphics.renderOutline(popupX - 1, popupY - 1, POPUP_WIDTH + 2, POPUP_HEIGHT + 2,
+        graphics.renderOutline(popupX, popupY, popupWidth, popupHeight, COLOR_BORDER);
+        graphics.renderOutline(popupX - 1, popupY - 1, popupWidth + 2, popupHeight + 2,
                 DesignTokens.withAlpha(COLOR_BORDER, 0x44));
 
         // Header
-        graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + 25, COLOR_HEADER);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(title, "title"), popupX + POPUP_WIDTH / 2, popupY + 8, COLOR_ACCENT);
+        int headerHeight = UIScaleManager.scale(25);
+        graphics.fill(popupX, popupY, popupX + popupWidth, popupY + headerHeight, COLOR_HEADER);
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), Objects.requireNonNull(title, "title"),
+            popupX + popupWidth / 2, popupY + UIScaleManager.scale(8), COLOR_ACCENT);
 
         // Invite message
         String inviteMsg = Objects.requireNonNull(String.format("%s invites you to:", senderName), "inviteMsg");
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), inviteMsg, popupX + POPUP_WIDTH / 2, popupY + 35, COLOR_TEXT);
+        inviteMsg = truncateToWidth(Objects.requireNonNull(font), inviteMsg, popupWidth - UIScaleManager.scale(20));
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), inviteMsg,
+            popupX + popupWidth / 2, popupY + UIScaleManager.scale(35), COLOR_TEXT);
 
         // Quest type with color coding
         String questTypeMsg = Objects.requireNonNull(questType.getDisplayName(), "questTypeMsg");
         int questColor = getQuestTypeColor(questType);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), questTypeMsg, popupX + POPUP_WIDTH / 2, popupY + 50, questColor);
+        questTypeMsg = truncateToWidth(Objects.requireNonNull(font), questTypeMsg, popupWidth - UIScaleManager.scale(20));
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), questTypeMsg,
+            popupX + popupWidth / 2, popupY + UIScaleManager.scale(50), questColor);
 
         // Quest type description
         String description = Objects.requireNonNull(getQuestTypeDescription(questType), "description");
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), description, popupX + POPUP_WIDTH / 2, popupY + 65, COLOR_TEXT_DIM);
+        description = truncateToWidth(Objects.requireNonNull(font), description, popupWidth - UIScaleManager.scale(20));
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), description,
+            popupX + popupWidth / 2, popupY + UIScaleManager.scale(65), COLOR_TEXT_DIM);
 
         // Timer
         long remainingMs = countdown.getRemainingMs();
@@ -152,7 +175,9 @@ public class InvitePopupScreen extends Screen {
 
         String timerText = Objects.requireNonNull(I18n.translate("devmod.party.invite_expires", remainingSeconds).getString(), "timerText");
         int timerColor = countdown.getColor();
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), timerText, popupX + POPUP_WIDTH / 2, popupY + POPUP_HEIGHT - 55, timerColor);
+        timerText = truncateToWidth(Objects.requireNonNull(font), timerText, popupWidth - UIScaleManager.scale(20));
+        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), timerText,
+            popupX + popupWidth / 2, popupY + popupHeight - UIScaleManager.scale(55), timerColor);
 
         // Timer bar
         renderTimerBar(graphics, remainingMs);
@@ -161,10 +186,10 @@ public class InvitePopupScreen extends Screen {
     }
 
     private void renderTimerBar(GuiGraphics graphics, long remainingMs) {
-        int barX = popupX + 20;
-        int barY = popupY + POPUP_HEIGHT - 45;
-        int barWidth = POPUP_WIDTH - 40;
-        int barHeight = 4;
+        int barX = popupX + UIScaleManager.scale(20);
+        int barY = popupY + popupHeight - UIScaleManager.scale(45);
+        int barWidth = popupWidth - UIScaleManager.scale(40);
+        int barHeight = UIScaleManager.scale(4);
 
         // Background
         graphics.fill(barX, barY, barX + barWidth, barY + barHeight, DesignTokens.Background.INPUT);
@@ -194,9 +219,12 @@ public class InvitePopupScreen extends Screen {
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
-        int buttonY = popupY + POPUP_HEIGHT - 35;
-        int acceptX = popupX + POPUP_WIDTH / 2 - BUTTON_WIDTH - BUTTON_GAP / 2;
-        int declineX = popupX + POPUP_WIDTH / 2 + BUTTON_GAP / 2;
+        int buttonWidth = UIScaleManager.scale(BUTTON_WIDTH);
+        int buttonHeight = UIScaleManager.scale(BUTTON_HEIGHT);
+        int buttonGap = UIScaleManager.scale(BUTTON_GAP);
+        int buttonY = popupY + popupHeight - UIScaleManager.scale(35);
+        int acceptX = popupX + popupWidth / 2 - buttonWidth - buttonGap / 2;
+        int declineX = popupX + popupWidth / 2 + buttonGap / 2;
 
         boolean enabled = !responded;
         EditorButton safeAcceptButton = Objects.requireNonNull(acceptButton, "acceptButton");
@@ -204,8 +232,21 @@ public class InvitePopupScreen extends Screen {
         safeAcceptButton.enabled(enabled);
         safeDeclineButton.enabled(enabled);
 
-        safeAcceptButton.render(graphics, acceptX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
-        safeDeclineButton.render(graphics, declineX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT, mouseX, mouseY);
+        safeAcceptButton.render(graphics, acceptX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+        safeDeclineButton.render(graphics, declineX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+    }
+
+    private static String truncateToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 
     @Override
@@ -297,8 +338,9 @@ public class InvitePopupScreen extends Screen {
     public static void showInvite(PartyInviteActionData notification) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            InvitePopupScreen popup = fromActionData(notification);
-            mc.setScreen(popup);
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "party_invite",
+                () -> fromActionData(notification));
         }
     }
 }

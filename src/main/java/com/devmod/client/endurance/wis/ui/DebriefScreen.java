@@ -32,6 +32,7 @@ import com.devmod.client.endurance.wis.WaveTelemetryCollector;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -484,16 +485,16 @@ public class DebriefScreen extends BaseDevModScreen {
         int percent = (int)(scrollRatio * 100);
         String percentText = percent + "%";
         Font font = Minecraft.getInstance().font;
-        int textX = x - font.width(percentText) - 4;
+        int textX = x - UIScaleManager.getScaledStringWidth(font, percentText) - 4;
         int textY = thumbY + (thumbHeight - font.lineHeight) / 2;
-        graphics.drawString(font, percentText, textX, textY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, percentText, textX, textY, COLOR_TEXT_DIM, false);
     }
 
     private void renderHeader(GuiGraphics graphics) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
         String title = Objects.requireNonNull(
             Component.translatable("devmod.endurance.debrief.header.title", waveNumber).getString());
-        graphics.drawString(font, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, COLOR_ACCENT, true);
+        UIScaleManager.drawScaledString(graphics, font, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, COLOR_ACCENT, true);
 
         String subtitle = Component.translatable(
             "devmod.endurance.debrief.header.subtitle",
@@ -501,7 +502,7 @@ public class DebriefScreen extends BaseDevModScreen {
             collector.getTotalKills(),
             String.format("%.1f", collector.getDPS())
         ).getString();
-        graphics.drawString(font, subtitle, panelX + PANEL_PADDING,
+        UIScaleManager.drawScaledString(graphics, font, subtitle, panelX + PANEL_PADDING,
             panelY + PANEL_PADDING + font.lineHeight + HEADER_GAP, COLOR_TEXT_DIM, false);
     }
 
@@ -527,7 +528,7 @@ public class DebriefScreen extends BaseDevModScreen {
         GradeBreakdown breakdown = getOrCalculateGradeBreakdown();
         int gradeColor = getGradeColor(breakdown.grade);
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.section.grade"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.section.grade"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
         cursorLeft += lineHeight;
 
         float gradeScale = 2.4f;
@@ -535,58 +536,58 @@ public class DebriefScreen extends BaseDevModScreen {
         graphics.pose().pushPose();
         graphics.pose().translate(leftX, cursorLeft, 0);
         graphics.pose().scale(gradeScale, gradeScale, 1f);
-        graphics.drawString(font, breakdown.grade, 0, 0, gradeColor, true);
+        UIScaleManager.drawScaledString(graphics, font, breakdown.grade, 0, 0, gradeColor, true);
         graphics.pose().popPose();
         cursorLeft += gradeHeight + DesignTokens.Space._2;
 
         int breakdownY = cursorLeft;
-        graphics.drawString(font, tr("devmod.endurance.debrief.grade.dps", String.format("%.0f", breakdown.dpsScore), String.format("%.0f", CAP_DPS)),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.dps", String.format("%.0f", breakdown.dpsScore), String.format("%.0f", CAP_DPS)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
         if (breakdown.noDamageBonus > 0) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.grade.no_damage",
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.no_damage",
                 String.format("%.0f", breakdown.noDamageBonus), String.format("%.0f", CAP_NO_DAMAGE)),
                 leftX, breakdownY, COLOR_SUCCESS, false);
             breakdownY += font.lineHeight;
         }
-        graphics.drawString(font, tr("devmod.endurance.debrief.grade.combo", String.format("%.0f", breakdown.comboScore), String.format("%.0f", CAP_COMBO)),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.combo", String.format("%.0f", breakdown.comboScore), String.format("%.0f", CAP_COMBO)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.grade.ttk", String.format("%.0f", breakdown.ttkScore), String.format("%.0f", CAP_TTK)),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.ttk", String.format("%.0f", breakdown.ttkScore), String.format("%.0f", CAP_TTK)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.grade.crit", String.format("%.0f", breakdown.critScore), String.format("%.0f", CAP_CRIT)),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.crit", String.format("%.0f", breakdown.critScore), String.format("%.0f", CAP_CRIT)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
         breakdownY += font.lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.grade.total", String.format("%.0f", breakdown.totalScore), String.format("%.0f", CAP_TOTAL)),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.total", String.format("%.0f", breakdown.totalScore), String.format("%.0f", CAP_TOTAL)),
             leftX, breakdownY, COLOR_ACCENT, false);
         cursorLeft = breakdownY + lineHeight;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.section.achievements"), leftX, cursorLeft, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.section.achievements"), leftX, cursorLeft, COLOR_ACCENT, false);
         cursorLeft += lineHeight;
 
         boolean hasAchievement = false;
         if (collector.wasNoDamageWave()) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.no_damage"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.achievement.no_damage"), leftX, cursorLeft, COLOR_SUCCESS, false);
             cursorLeft += lineHeight;
             hasAchievement = true;
         }
         if (collector.getMaxCombo() >= 50) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.combo_master"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.achievement.combo_master"), leftX, cursorLeft, COLOR_SUCCESS, false);
             cursorLeft += lineHeight;
             hasAchievement = true;
         }
         if (collector.getCriticalHitRate() > 0.5f) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.precision"), leftX, cursorLeft, COLOR_SUCCESS, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.achievement.precision"), leftX, cursorLeft, COLOR_SUCCESS, false);
             cursorLeft += lineHeight;
             hasAchievement = true;
         }
         if (!hasAchievement) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.achievement.none"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.achievement.none"), leftX, cursorLeft, COLOR_TEXT_DIM, false);
             cursorLeft += lineHeight;
         }
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.section.stats"), rightX, cursorRight, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.section.stats"), rightX, cursorRight, COLOR_TEXT_DIM, false);
         cursorRight += lineHeight;
 
         renderStatLine(graphics, font, rightX, cursorRight,
@@ -616,14 +617,14 @@ public class DebriefScreen extends BaseDevModScreen {
 
         WaveTelemetryCollector prev = WaveIntelligenceManager.INSTANCE.getPreviousWaveCollector();
         if (prev != null) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.section.comparison"), rightX, cursorRight, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.section.comparison"), rightX, cursorRight, COLOR_TEXT_DIM, false);
             cursorRight += lineHeight;
 
             float dpsDiff = collector.getDPS() - prev.getDPS();
             String dpsSymbol = dpsDiff >= 0 ? "▲" : "▼";
             String dpsChange = dpsDiff >= 0 ? "+" + String.format("%.1f", dpsDiff) : String.format("%.1f", dpsDiff);
             int dpsColor = dpsDiff >= 0 ? COLOR_SUCCESS : COLOR_ERROR;
-            graphics.drawString(font, tr("devmod.endurance.debrief.comparison.dps", dpsSymbol, dpsChange),
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.comparison.dps", dpsSymbol, dpsChange),
                 rightX + 6, cursorRight, dpsColor, false);
             cursorRight += lineHeight;
 
@@ -632,7 +633,7 @@ public class DebriefScreen extends BaseDevModScreen {
             String ttkChange = ttkDiff >= 0 ? "-" + String.format("%.0f", ttkDiff) + "ms" :
                                "+" + String.format("%.0f", -ttkDiff) + "ms";
             int ttkColor = ttkDiff >= 0 ? COLOR_SUCCESS : COLOR_ERROR;
-            graphics.drawString(font, tr("devmod.endurance.debrief.comparison.ttk", ttkSymbol, ttkChange),
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.comparison.ttk", ttkSymbol, ttkChange),
                 rightX + 6, cursorRight, ttkColor, false);
             cursorRight += lineHeight;
         }
@@ -651,7 +652,7 @@ public class DebriefScreen extends BaseDevModScreen {
         int cursorLeft = y;
         int cursorRight = y;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.combat.mob_breakdown"), leftX, cursorLeft, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.combat.mob_breakdown"), leftX, cursorLeft, COLOR_ACCENT, false);
         cursorLeft += lineHeight + 6;
 
         Map<ResourceLocation, WaveTelemetryCollector.MobTypeStats> mobStats = collector.getMobStats();
@@ -669,17 +670,17 @@ public class DebriefScreen extends BaseDevModScreen {
             String line = tr("devmod.endurance.debrief.combat.mob_line",
                 mobName, stats.kills, String.format("%.0f", stats.totalDamageDealt),
                 String.format("%.0f", stats.getAverageTimeToKill()));
-            graphics.drawString(font, line, leftX, cursorLeft, COLOR_TEXT, false);
+            UIScaleManager.drawScaledString(graphics, font, line, leftX, cursorLeft, COLOR_TEXT, false);
             cursorLeft += lineHeight;
             shown++;
         }
         if (sorted.size() > maxRows) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.combat.more", sorted.size() - maxRows),
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.combat.more", sorted.size() - maxRows),
                 leftX, cursorLeft, COLOR_TEXT_DIM, false);
             cursorLeft += lineHeight;
         }
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.combat.weapon_stats"), rightX, cursorRight, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.combat.weapon_stats"), rightX, cursorRight, COLOR_ACCENT, false);
         cursorRight += lineHeight + 6;
 
         Map<String, WaveTelemetryCollector.WeaponStats> weaponStats = collector.getWeaponStats();
@@ -695,12 +696,12 @@ public class DebriefScreen extends BaseDevModScreen {
             String line = tr("devmod.endurance.debrief.combat.weapon_line",
                 weapon, stats.kills, String.format("%.0f", stats.totalDamage),
                 String.format("%.0f", stats.getCriticalRate() * 100));
-            graphics.drawString(font, line, rightX, cursorRight, COLOR_TEXT, false);
+            UIScaleManager.drawScaledString(graphics, font, line, rightX, cursorRight, COLOR_TEXT, false);
             cursorRight += lineHeight;
             shown++;
         }
         if (weapons.size() > maxRows) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.combat.more", weapons.size() - maxRows),
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.combat.more", weapons.size() - maxRows),
                 rightX, cursorRight, COLOR_TEXT_DIM, false);
             cursorRight += lineHeight;
         }
@@ -711,28 +712,28 @@ public class DebriefScreen extends BaseDevModScreen {
     private void renderSpatialTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
         int cursorY = y;
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.title"), x, cursorY, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.title"), x, cursorY, COLOR_ACCENT, false);
         cursorY += font.lineHeight + DesignTokens.Space._4;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.positions", collector.getPlayerPositions().size()),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.positions", collector.getPlayerPositions().size()),
             x, cursorY, COLOR_TEXT, false);
         cursorY += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.kills", collector.getKillPositions().size()),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.kills", collector.getKillPositions().size()),
             x, cursorY, COLOR_TEXT, false);
         cursorY += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.damage", collector.getDamagePositions().size()),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.damage", collector.getDamagePositions().size()),
             x, cursorY, COLOR_TEXT, false);
         cursorY += font.lineHeight + DesignTokens.Space._2;
 
         boolean noDeath = collector.getDeathPositions().isEmpty();
         String deathSymbol = noDeath ? "✓" : "✗";
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.deaths", deathSymbol, collector.getDeathPositions().size()),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.deaths", deathSymbol, collector.getDeathPositions().size()),
             x, cursorY, noDeath ? COLOR_SUCCESS : COLOR_ERROR, false);
         cursorY += font.lineHeight + DesignTokens.Space._6;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.spatial.heatmap_note"),
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.heatmap_note"),
             x, cursorY, COLOR_TEXT_DIM, false);
 
         updateScrollBounds(y, cursorY + font.lineHeight, h);
@@ -749,10 +750,10 @@ public class DebriefScreen extends BaseDevModScreen {
 
         String header = tr("devmod.endurance.debrief.timeline.header",
             timelinePage + 1, totalPages, events.size());
-        graphics.drawString(font, header, textX, y, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, header, textX, y, COLOR_ACCENT, false);
         y += font.lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.timeline.hint"), textX, y, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.timeline.hint"), textX, y, COLOR_TEXT_DIM, false);
         y += font.lineHeight + DesignTokens.Space._4;
 
         // Calculate page bounds
@@ -770,16 +771,16 @@ public class DebriefScreen extends BaseDevModScreen {
             float seconds = event.ticksSinceWaveStart() / 20f;
             String timePrefix = Objects.requireNonNull(String.format("[%.1fs] ", seconds));
 
-            graphics.drawString(font, timePrefix, textX, y, COLOR_TEXT_DIM, false);
-            graphics.drawString(font, eventText, textX + font.width(timePrefix), y, eventColor, false);
+            UIScaleManager.drawScaledString(graphics, font, timePrefix, textX, y, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, eventText, textX + UIScaleManager.getScaledStringWidth(font, timePrefix), y, eventColor, false);
             y += lineHeight;
         }
 
         // Page indicator at bottom
         if (totalPages > 1) {
             String pageInfo = Objects.requireNonNull(tr("devmod.endurance.debrief.timeline.page", timelinePage + 1, totalPages));
-            int pageInfoWidth = font.width(pageInfo);
-            graphics.drawString(font, pageInfo, x + (w - pageInfoWidth) / 2,
+            int pageInfoWidth = UIScaleManager.getScaledStringWidth(font, pageInfo);
+            UIScaleManager.drawScaledString(graphics, font, pageInfo, x + (w - pageInfoWidth) / 2,
                 listBottom + DesignTokens.Space._2, COLOR_ACCENT, false);
         }
     }
@@ -797,35 +798,35 @@ public class DebriefScreen extends BaseDevModScreen {
         if (partyStats == null || !partyStats.isPartyRun()) {
             // No party data available - UX: provide actionable guidance
             int cursorY = y;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
             cursorY += lineHeight + 6;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.empty"), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.empty"), x, cursorY, COLOR_TEXT_DIM, false);
             cursorY += lineHeight + DesignTokens.Space._3;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.how_to"), x, cursorY, COLOR_TEXT, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.how_to"), x, cursorY, COLOR_TEXT, false);
             cursorY += lineHeight;
             // UX Q4/Q5: Use dynamic keybind name with fallback for unknown/empty
             String partyKey = KeyInputHandler.OPEN_PARTY_KEY.getKey().getDisplayName().getString();
             if (partyKey == null || partyKey.isBlank() || partyKey.contains("unknown")) {
                 partyKey = "P"; // Sensible default fallback
             }
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_open", partyKey), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.step_open", partyKey), x, cursorY, COLOR_TEXT_DIM, false);
             cursorY += lineHeight;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_join"), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.step_join"), x, cursorY, COLOR_TEXT_DIM, false);
             cursorY += lineHeight;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.step_start"), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.step_start"), x, cursorY, COLOR_TEXT_DIM, false);
             cursorY += lineHeight + DesignTokens.Space._3;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.note_line1"), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.note_line1"), x, cursorY, COLOR_TEXT_DIM, false);
             cursorY += lineHeight;
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.note_line2"), x, cursorY, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.note_line2"), x, cursorY, COLOR_TEXT_DIM, false);
             updateScrollBounds(y, cursorY + lineHeight, h);
             return;
         }
 
         int cursorY = y;
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.title"), x, cursorY, COLOR_ACCENT, false);
         cursorY += lineHeight + 6;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.totals"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.totals"), x, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
         renderStatLine(graphics, font, x, cursorY, tr("devmod.endurance.debrief.party.total_kills"),
             String.valueOf(partyStats.partyTotalKills()));
@@ -844,7 +845,7 @@ public class DebriefScreen extends BaseDevModScreen {
         cursorY += lineHeight;
 
         if (partyStats.partyNoDamageWave()) {
-            graphics.drawString(font, tr("devmod.endurance.debrief.party.flawless"), x, cursorY, COLOR_SUCCESS, true);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.flawless"), x, cursorY, COLOR_SUCCESS, true);
             cursorY += lineHeight;
         }
 
@@ -856,14 +857,14 @@ public class DebriefScreen extends BaseDevModScreen {
             PartyWaveStats.PlayerWaveData mvpData = partyStats.getPlayerData(mvpId);
             String mvpName = mvpData != null ? mvpData.playerName() : tr("devmod.endurance.debrief.party.mvp_unknown");
             String mvpLabel = tr("devmod.endurance.debrief.party.mvp", mvpName);
-            graphics.drawString(font, mvpLabel, x, cursorY, DesignTokens.Overlay.Text.GOLD, true);
+            UIScaleManager.drawScaledString(graphics, font, mvpLabel, x, cursorY, DesignTokens.Overlay.Text.GOLD, true);
             if (mvpReason != null && !mvpReason.isEmpty()) {
-                graphics.drawString(font, " (" + mvpReason + ")", x + font.width(Objects.requireNonNull(mvpLabel)), cursorY, COLOR_TEXT_DIM, false);
+                UIScaleManager.drawScaledString(graphics, font, " (" + mvpReason + ")", x + UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(mvpLabel)), cursorY, COLOR_TEXT_DIM, false);
             }
             cursorY += lineHeight + DesignTokens.Space._4;
         }
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.breakdown"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.breakdown"), x, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
 
         int col1 = x;
@@ -872,28 +873,28 @@ public class DebriefScreen extends BaseDevModScreen {
         int col4 = x + (int)(w * 0.74f);
         int col5 = x + (int)(w * 0.86f);
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.player"), col1, cursorY, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.kills"), col2, cursorY, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.kill_pct"), col3, cursorY, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.dps"), col4, cursorY, COLOR_TEXT_DIM, false);
-        graphics.drawString(font, tr("devmod.endurance.debrief.party.col.combo"), col5, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.col.player"), col1, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.col.kills"), col2, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.col.kill_pct"), col3, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.col.dps"), col4, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.col.combo"), col5, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
 
         graphics.fill(col1, cursorY - 2, x + w, cursorY - 1, DesignTokens.Stroke.DEFAULT);
 
         for (PartyWaveStats.PlayerWaveData playerData : partyStats.playerStats()) {
             if (playerData.wasSpectator()) {
-                graphics.drawString(font, playerData.playerName(), col1, cursorY, COLOR_TEXT_DIM, false);
-                graphics.drawString(font, tr("devmod.endurance.debrief.party.spectator"), col2, cursorY, COLOR_TEXT_DIM, false);
+                UIScaleManager.drawScaledString(graphics, font, playerData.playerName(), col1, cursorY, COLOR_TEXT_DIM, false);
+                UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.party.spectator"), col2, cursorY, COLOR_TEXT_DIM, false);
             } else {
                 boolean isMvp = playerData.playerId().equals(mvpId);
                 int nameColor = isMvp ? DesignTokens.Overlay.Text.GOLD : COLOR_TEXT;
 
-                graphics.drawString(font, playerData.playerName(), col1, cursorY, nameColor, isMvp);
-                graphics.drawString(font, String.valueOf(playerData.kills()), col2, cursorY, COLOR_TEXT, false);
-                graphics.drawString(font, String.format("%.0f%%", playerData.killPercent()), col3, cursorY, COLOR_TEXT, false);
-                graphics.drawString(font, String.format("%.1f", playerData.dps()), col4, cursorY, COLOR_TEXT, false);
-                graphics.drawString(font, String.valueOf(playerData.maxCombo()), col5, cursorY, COLOR_TEXT, false);
+                UIScaleManager.drawScaledString(graphics, font, playerData.playerName(), col1, cursorY, nameColor, isMvp);
+                UIScaleManager.drawScaledString(graphics, font, String.valueOf(playerData.kills()), col2, cursorY, COLOR_TEXT, false);
+                UIScaleManager.drawScaledString(graphics, font, String.format("%.0f%%", playerData.killPercent()), col3, cursorY, COLOR_TEXT, false);
+                UIScaleManager.drawScaledString(graphics, font, String.format("%.1f", playerData.dps()), col4, cursorY, COLOR_TEXT, false);
+                UIScaleManager.drawScaledString(graphics, font, String.valueOf(playerData.maxCombo()), col5, cursorY, COLOR_TEXT, false);
             }
             cursorY += lineHeight;
         }
@@ -906,13 +907,13 @@ public class DebriefScreen extends BaseDevModScreen {
         Font font = Minecraft.getInstance().font;
         int lineHeight = font.lineHeight + 4;
         int cursorY = y;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.title"), x, cursorY, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.title"), x, cursorY, COLOR_ACCENT, false);
         cursorY += lineHeight + DesignTokens.Space._3;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.subtitle"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.subtitle"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight + DesignTokens.Space._4;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.subject.label"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.subject.label"), x, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
 
         EditBox subjectField = ticketSubjectField;
@@ -923,7 +924,7 @@ public class DebriefScreen extends BaseDevModScreen {
             cursorY += subjectField.getHeight() + DesignTokens.Space._4;
         }
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.notes.label"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.notes.label"), x, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
 
         EditBox notesField = ticketNotesField;
@@ -934,23 +935,23 @@ public class DebriefScreen extends BaseDevModScreen {
             cursorY += notesField.getHeight() + DesignTokens.Space._4;
         }
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.title"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.title"), x, cursorY, COLOR_TEXT_DIM, false);
         cursorY += lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.summary"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.summary"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.mobs"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.mobs"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.weapons"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.weapons"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.spatial"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.spatial"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight;
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.includes.timeline"), x, cursorY, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.includes.timeline"), x, cursorY, COLOR_TEXT, false);
         cursorY += lineHeight + DesignTokens.Space._2;
 
-        graphics.drawString(font, tr("devmod.endurance.debrief.report.submit_hint"), x, cursorY, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.submit_hint"), x, cursorY, COLOR_TEXT_DIM, false);
         if (ticketSubmitted) {
             cursorY += lineHeight;
-            graphics.drawString(font, tr("devmod.endurance.debrief.report.submitted"), x, cursorY, COLOR_SUCCESS, false);
+            UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.submitted"), x, cursorY, COLOR_SUCCESS, false);
         }
 
         updateScrollBounds(y, cursorY + lineHeight, h);
@@ -960,8 +961,8 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void renderStatLine(GuiGraphics graphics, Font font, int x, int y, String label, String value) {
         Font safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, label + ":", x, y, COLOR_TEXT_DIM, false);
-        graphics.drawString(safeFont, value, x + 100, y, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label + ":", x, y, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, value, x + 100, y, COLOR_TEXT, false);
     }
 
     private void updateScrollBounds(int startY, int contentBottom, int viewHeight) {
@@ -1390,15 +1391,9 @@ public class DebriefScreen extends BaseDevModScreen {
             if (hasQuest && state == com.devmod.endurance.EnduranceQuestState.WAVE_COMPLETE) {
                 LOGGER.info("[DebriefScreen] Opening WaveCheckpointScreen, currentScreen={}",
                     mc.screen != null ? mc.screen.getClass().getSimpleName() : "null");
-                try {
-                    var checkpoint = new com.devmod.client.endurance.WaveCheckpointScreen();
-                    LOGGER.info("[DebriefScreen] Created WaveCheckpointScreen instance");
-                    mc.setScreen(checkpoint);
-                    LOGGER.info("[DebriefScreen] setScreen completed, currentScreen={}",
-                        mc.screen != null ? mc.screen.getClass().getSimpleName() : "null");
-                } catch (Exception e) {
-                    LOGGER.error("[DebriefScreen] Failed to open WaveCheckpointScreen", e);
-                }
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "wave_checkpoint",
+                    () -> new com.devmod.client.endurance.WaveCheckpointScreen());
             } else {
                 LOGGER.info("[DebriefScreen] NOT opening checkpoint (hasQuest={}, state={})", hasQuest, state);
             }

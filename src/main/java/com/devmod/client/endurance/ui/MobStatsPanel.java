@@ -15,6 +15,7 @@ import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestRegistry.MobDifficultyPreset;
 import com.devmod.endurance.EnduranceQuestRegistry.MobTier;
@@ -224,8 +225,8 @@ public class MobStatsPanel {
             // Empty state
             String emptyText = I18n.translate("devmod.endurance.mob_editor.select_mob").getString();
             if (emptyText != null) {
-                int textWidth = font.width(emptyText);
-                graphics.drawString(font, emptyText, x + (width - textWidth) / 2, y + height / 2 - 4,
+                int textWidth = UIScaleManager.getScaledStringWidth(font, emptyText);
+                UIScaleManager.drawScaledString(graphics, font, emptyText, x + (width - textWidth) / 2, y + height / 2 - 4,
                     DesignTokens.Text.MUTED, false);
             }
             return;
@@ -240,13 +241,13 @@ public class MobStatsPanel {
         if (mobId == null) return; // Should never happen due to early return above
         EnduranceMobConfig config = originalConfig;
         String mobName = config != null ? config.getDisplayName() : mobId.getPath();
-        graphics.drawString(font, mobName, contentX, contentY, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, mobName, contentX, contentY, DesignTokens.Text.PRIMARY, false);
         contentY += 14;
 
         // Tier indicator
         String tierText = "[" + tier.name() + "]";
         int tierColor = getTierColor(tier);
-        graphics.drawString(font, tierText, contentX, contentY, tierColor, false);
+        UIScaleManager.drawScaledString(graphics, font, tierText, contentX, contentY, tierColor, false);
         contentY += 18;
 
         // Preset buttons
@@ -254,7 +255,7 @@ public class MobStatsPanel {
         contentY += SECTION_SPACING;
 
         // Stats section header
-        graphics.drawString(font, I18n.translate("devmod.endurance.mob_editor.section.stats").getString(),
+        UIScaleManager.drawScaledString(graphics, font, I18n.translate("devmod.endurance.mob_editor.section.stats").getString(),
             contentX, contentY, DesignTokens.Text.SECONDARY, false);
         contentY += 14;
 
@@ -271,7 +272,7 @@ public class MobStatsPanel {
         contentY += SECTION_SPACING;
 
         // Wave config section header
-        graphics.drawString(font, I18n.translate("devmod.endurance.mob_editor.section.wave").getString(),
+        UIScaleManager.drawScaledString(graphics, font, I18n.translate("devmod.endurance.mob_editor.section.wave").getString(),
             contentX, contentY, DesignTokens.Text.SECONDARY, false);
         contentY += 14;
 
@@ -287,7 +288,7 @@ public class MobStatsPanel {
 
         // Modified indicator
         if (hasChanges()) {
-            graphics.drawString(font, "*", x + width - 12, y + 4, DesignTokens.Semantic.WARNING, false);
+            UIScaleManager.drawScaledString(graphics, font, "*", x + width - 12, y + 4, DesignTokens.Semantic.WARNING, false);
         }
     }
 
@@ -325,8 +326,8 @@ public class MobStatsPanel {
                 label = Objects.requireNonNull(label.substring(0, 3));
             }
             int textColor = isSelected ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-            int textX = btnX + (btnWidth - font.width(label)) / 2;
-            graphics.drawString(font, label, textX, contentY + 8, textColor, false);
+            int textX = btnX + (btnWidth - UIScaleManager.getScaledStringWidth(font, label)) / 2;
+            UIScaleManager.drawScaledString(graphics, font, label, textX, contentY + 8, textColor, false);
         }
 
         return contentY + btnHeight + 4;
@@ -345,7 +346,7 @@ public class MobStatsPanel {
         int sliderH = 8;
 
         // Label
-        graphics.drawString(font, label, contentX, contentY + 2, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, font, label, contentX, contentY + 2, DesignTokens.Text.PRIMARY, false);
 
         // Slider track
         graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, DesignTokens.Surface.LEVEL_1);
@@ -368,7 +369,7 @@ public class MobStatsPanel {
         } else {
             valueStr = String.format(format, value);
         }
-        graphics.drawString(font, valueStr, sliderX + sliderW + 8, contentY + 2, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, valueStr, sliderX + sliderW + 8, contentY + 2, DesignTokens.Text.SECONDARY, false);
 
         return contentY + SLIDER_SPACING;
     }

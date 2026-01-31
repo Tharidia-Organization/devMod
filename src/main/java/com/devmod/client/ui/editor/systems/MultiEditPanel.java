@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -283,11 +284,11 @@ public class MultiEditPanel {
         // Selection count
         String countText = count + " item" + (count != 1 ? "s" : "") + " selected";
         int countColor = count == 0 ? TEXT_MUTED_COLOR : TEXT_PRIMARY_COLOR;
-        graphics.drawString(safeFont, countText, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_Y, countColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, countText, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_Y, countColor, false);
 
         // Expand/collapse button
         String expandIcon = isExpanded() ? "▼" : "▶";
-        graphics.drawString(safeFont, expandIcon, x + width - HEADER_ICON_OFFSET_X, y + HEADER_TEXT_Y,
+        UIScaleManager.drawScaledString(graphics, safeFont, expandIcon, x + width - HEADER_ICON_OFFSET_X, y + HEADER_TEXT_Y,
             headerHovered ? TEXT_PRIMARY_COLOR : TEXT_MUTED_COLOR, false);
 
         if (!isExpanded() || count == 0) {
@@ -299,8 +300,8 @@ public class MultiEditPanel {
             }
             int emptyY = y + headerHeight + EMPTY_STATE_TOP_GAP;
             graphics.fill(x + EMPTY_STATE_BORDER, emptyY, x + width - EMPTY_STATE_BORDER, emptyY + EMPTY_STATE_HEIGHT, EMPTY_STATE_BG);
-            graphics.drawString(safeFont, "No matching items in inventory", x + TEXT_INSET, emptyY + TEXT_INSET, TEXT_DIM_COLOR, false);
-            graphics.drawString(safeFont, "Add items or press M to rescan", x + TEXT_INSET,
+            UIScaleManager.drawScaledString(graphics, safeFont, "No matching items in inventory", x + TEXT_INSET, emptyY + TEXT_INSET, TEXT_DIM_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Add items or press M to rescan", x + TEXT_INSET,
                 emptyY + TEXT_INSET + EMPTY_STATE_TEXT_GAP, TEXT_HINT_COLOR, false);
             return (emptyY + EMPTY_STATE_HEIGHT) - y;
         }
@@ -335,7 +336,7 @@ public class MultiEditPanel {
         String itemType = activeItemTypeSupplier.get();
         if (itemType == null || itemType.isBlank()) itemType = "item";
         String scopeLabel = "Preset (" + itemType + ")";
-        graphics.drawString(safeFont, scopeLabel, presetRect.x() + TEXT_INSET, listY + DesignTokens.Spacing.SM,
+        UIScaleManager.drawScaledString(graphics, safeFont, scopeLabel, presetRect.x() + TEXT_INSET, listY + DesignTokens.Spacing.SM,
             TEXT_SECONDARY_COLOR, false);
 
         String presetLabel = "(no presets)";
@@ -347,9 +348,9 @@ public class MultiEditPanel {
             presetLabel = presetLabel.substring(0, PRESET_LABEL_TRUNCATE_LENGTH) + ELLIPSIS;
         }
         int labelColor = presets.isEmpty() ? TEXT_FAINT_COLOR : PRESET_LABEL_COLOR_ACTIVE;
-        graphics.drawString(safeFont, presetLabel, presetRect.x() + PRESET_LABEL_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, presetLabel, presetRect.x() + PRESET_LABEL_OFFSET_X,
             listY + DesignTokens.Spacing.SM, labelColor, false);
-        graphics.drawString(safeFont, presetDropdownOpen ? "▲" : "▼",
+        UIScaleManager.drawScaledString(graphics, safeFont, presetDropdownOpen ? "▲" : "▼",
             presetRect.right() - DesignTokens.Spacing.LG, listY + DesignTokens.Spacing.SM, TEXT_MUTED_COLOR, false);
 
         if (presetDropdownOpen && !presets.isEmpty()) {
@@ -378,22 +379,22 @@ public class MultiEditPanel {
                 if (display.length() > PRESET_OPTION_MAX_LENGTH) {
                     display = display.substring(0, PRESET_OPTION_TRUNCATE_LENGTH) + ELLIPSIS;
                 }
-                graphics.drawString(safeFont, display, optRect.x() + TEXT_INSET,
+                UIScaleManager.drawScaledString(graphics, safeFont, display, optRect.x() + TEXT_INSET,
                     optRect.y() + PRESET_OPTION_TEXT_Y, DROPDOWN_TEXT_COLOR, false);
             }
 
             if (maxOffset > 0) {
                 String hint = "Scroll " + (startIndex + 1) + "-" + (startIndex + visibleCount) + "/" + presets.size();
-                graphics.drawString(safeFont, hint, presetDropdownArea.right() - safeFont.width(hint) - PRESET_HINT_PADDING,
+                UIScaleManager.drawScaledString(graphics, safeFont, hint, presetDropdownArea.right() - UIScaleManager.getScaledStringWidth(safeFont, hint) - PRESET_HINT_PADDING,
                     presetDropdownArea.bottom() - PRESET_HINT_OFFSET_Y, DROPDOWN_HINT_COLOR, false);
             }
             if (hoveredPresetFullName != null) {
                 String hoverLine = "↳ " + hoveredPresetFullName;
-                if (safeFont.width(hoverLine) > presetDropdownArea.width() - DesignTokens.Spacing.MD) {
+                if (UIScaleManager.getScaledStringWidth(safeFont, hoverLine) > presetDropdownArea.width() - DesignTokens.Spacing.MD) {
                     hoverLine = hoverLine.substring(0, Math.max(0, Math.min(hoverLine.length(), HOVER_LABEL_MAX_LENGTH)))
                         + ELLIPSIS;
                 }
-                graphics.drawString(safeFont, hoverLine, presetDropdownArea.x() + TEXT_INSET,
+                UIScaleManager.drawScaledString(graphics, safeFont, hoverLine, presetDropdownArea.x() + TEXT_INSET,
                     presetDropdownArea.bottom() - PRESET_HINT_OFFSET_Y, DROPDOWN_HOVER_COLOR, false);
             }
             listY += presetHeight + dropdownHeight + DesignTokens.Spacing.SM;
@@ -423,19 +424,19 @@ public class MultiEditPanel {
             graphics.fill(rect.x(), rect.y(), rect.x() + rect.width(), rect.y() + rect.height(), bg);
 
             // Item icon placeholder
-            graphics.drawString(safeFont, "▪", x + DesignTokens.Spacing.SM,
+            UIScaleManager.drawScaledString(graphics, safeFont, "▪", x + DesignTokens.Spacing.SM,
                 listY + DesignTokens.Spacing.SM, TEXT_DIM_COLOR, false);
 
             String name = item.getHoverName().getString();
             if (name.length() > ITEM_NAME_MAX_LENGTH) {
                 name = name.substring(0, ITEM_NAME_TRUNCATE_LENGTH) + ELLIPSIS;
             }
-            graphics.drawString(safeFont, name, x + DesignTokens.Spacing.XL,
+            UIScaleManager.drawScaledString(graphics, safeFont, name, x + DesignTokens.Spacing.XL,
                 listY + DesignTokens.Spacing.SM, TEXT_PRIMARY_COLOR, false);
 
             // Remove button
             int removeX = x + width - ITEM_REMOVE_OFFSET_X;
-            graphics.drawString(safeFont, "✗", removeX, listY + DesignTokens.Spacing.SM,
+            UIScaleManager.drawScaledString(graphics, safeFont, "✗", removeX, listY + DesignTokens.Spacing.SM,
                 hovered ? ITEM_REMOVE_HOVER_COLOR : TEXT_FAINT_COLOR, false);
 
             listY += itemHeight;
@@ -443,7 +444,7 @@ public class MultiEditPanel {
 
         listY += DesignTokens.Spacing.SM;
         if (!persistAllowed) {
-            graphics.drawString(safeFont, "Preview mode: switch to Apply to persist", x + TEXT_INSET, listY, PREVIEW_MODE_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Preview mode: switch to Apply to persist", x + TEXT_INSET, listY, PREVIEW_MODE_COLOR, false);
             listY += DesignTokens.Spacing.LG;
         }
 
@@ -453,7 +454,7 @@ public class MultiEditPanel {
         previewToggleButton.toggled(previewOnlyMode);
         previewToggleButton.render(graphics, previewToggleRect.x(), previewToggleRect.y(), previewToggleRect.width(), toggleH, mouseX, mouseY);
         if (previewOnlyMode) {
-            graphics.drawString(safeFont, "(will not persist)", x + PREVIEW_HINT_OFFSET_X,
+            UIScaleManager.drawScaledString(graphics, safeFont, "(will not persist)", x + PREVIEW_HINT_OFFSET_X,
                 listY + DesignTokens.Spacing.SM, PREVIEW_MODE_COLOR, false);
         }
         listY += toggleH + DesignTokens.Spacing.SM;
@@ -492,9 +493,9 @@ public class MultiEditPanel {
             // Progress text
             String progressText = String.format("Applying... %d/%d", applyProgress, applyTotal);
             String safeProgressText = Objects.requireNonNull(progressText, "progressText");
-            int textWidth = safeFont.width(safeProgressText);
+            int textWidth = UIScaleManager.getScaledStringWidth(safeFont, safeProgressText);
             int textX = progressBarX + (progressBarWidth - textWidth) / 2;
-            graphics.drawString(safeFont, safeProgressText, textX, progressBarY + PROGRESS_TEXT_OFFSET_Y, TEXT_PRIMARY_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, safeProgressText, textX, progressBarY + PROGRESS_TEXT_OFFSET_Y, TEXT_PRIMARY_COLOR, false);
 
             listY += progressBarHeight + DesignTokens.Spacing.SM;
         }
@@ -520,7 +521,7 @@ public class MultiEditPanel {
                 summary += " (" + lastApplyTiming + ")";
             }
             int summaryColor = result.failureCount() == 0 ? RESULT_SUCCESS_COLOR : RESULT_WARNING_COLOR;
-            graphics.drawString(safeFont, summary, x + TEXT_INSET, listY + DesignTokens.Spacing.SM, summaryColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, summary, x + TEXT_INSET, listY + DesignTokens.Spacing.SM, summaryColor, false);
 
             if (result.failureCount() > 0) {
                 int failBtnH = FAILURE_BUTTON_HEIGHT;
@@ -563,15 +564,15 @@ public class MultiEditPanel {
                     if (line.length() > FAILURE_LINE_MAX_LENGTH) {
                         line = line.substring(0, FAILURE_LINE_TRUNCATE_LENGTH) + ELLIPSIS;
                     }
-                    graphics.drawString(safeFont, "• " + line, x + DesignTokens.Spacing.MD,
+                    UIScaleManager.drawScaledString(graphics, safeFont, "• " + line, x + DesignTokens.Spacing.MD,
                         detailY + (i - startIdx) * FAILURE_DETAIL_LINE_HEIGHT, FAILURE_TEXT_COLOR, false);
                 }
                 if (details.size() > endIdx) {
                     String moreText = "(+" + (details.size() - endIdx) + " more)";
                     moreFailuresRect = new ResponsiveLayout.Rect(x + DesignTokens.Spacing.MD,
                         detailY + (endIdx - startIdx) * FAILURE_DETAIL_LINE_HEIGHT,
-                        safeFont.width(moreText) + FAILURE_MORE_WIDTH_PADDING, FAILURE_MORE_HEIGHT);
-                    graphics.drawString(safeFont, moreText, moreFailuresRect.x(), moreFailuresRect.y(), MORE_FAILURES_COLOR, false);
+                        UIScaleManager.getScaledStringWidth(safeFont, moreText) + FAILURE_MORE_WIDTH_PADDING, FAILURE_MORE_HEIGHT);
+                    UIScaleManager.drawScaledString(graphics, safeFont, moreText, moreFailuresRect.x(), moreFailuresRect.y(), MORE_FAILURES_COLOR, false);
                 } else {
                     moreFailuresRect = ResponsiveLayout.Rect.EMPTY;
                 }

@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -268,18 +269,18 @@ public class EditorButton {
         int contentY = y + (height - font.lineHeight) / 2 + textOffsetY;
 
         // Right hotkey hint
-        int hintWidth = hotkeyHint != null ? font.width(hotkeyHint) : 0;
+        int hintWidth = hotkeyHint != null ? UIScaleManager.getScaledStringWidth(font, hotkeyHint) : 0;
         int hintX = hotkeyHint != null ? x + width - padding - hintWidth : x + width - padding;
 
         if (hotkeyHint != null) {
-            graphics.drawString(font, hotkeyHint, hintX, contentY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, hotkeyHint, hintX, contentY, DesignTokens.Text.MUTED(), false);
         }
 
         // Left icon
-        int iconWidth = icon != null ? font.width(icon) : 0;
+        int iconWidth = icon != null ? UIScaleManager.getScaledStringWidth(font, icon) : 0;
         int iconX = x + padding;
         if (icon != null) {
-            graphics.drawString(font, icon, iconX, contentY, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, icon, iconX, contentY, textColor, false);
         }
 
         // Label, con ellissi se serve
@@ -287,12 +288,12 @@ public class EditorButton {
         int labelAreaRight = hotkeyHint != null ? hintX - DesignTokens.Spacing.SM : x + width - padding;
         int labelAreaWidth = Math.max(0, labelAreaRight - labelStartX);
         String labelText = Objects.requireNonNull(fitToWidth(label, labelAreaWidth, font), "labelText");
-        int textWidth = font.width(labelText);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, labelText);
         int textX = labelStartX + Math.max(0, (labelAreaWidth - textWidth) / 2);
         // Soft shadow per la leggibilità (opaco per evitare trasparenze sui testi)
-        graphics.drawString(font, labelText, textX + TEXT_SHADOW_OFFSET, contentY + TEXT_SHADOW_OFFSET,
+        UIScaleManager.drawScaledString(graphics, font, labelText, textX + TEXT_SHADOW_OFFSET, contentY + TEXT_SHADOW_OFFSET,
             TEXT_SHADOW_COLOR, false);
-        graphics.drawString(font, labelText, textX, contentY, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, labelText, textX, contentY, textColor, false);
     }
 
     /**
@@ -585,10 +586,10 @@ public class EditorButton {
         if (maxWidth <= 0) {
             return "";
         }
-        if (font.width(safeText) <= maxWidth) {
+        if (UIScaleManager.getScaledStringWidth(font, safeText) <= maxWidth) {
             return safeText;
         }
-        int ellipsisWidth = font.width(ELLIPSIS);
+        int ellipsisWidth = UIScaleManager.getScaledStringWidth(font, ELLIPSIS);
         if (ellipsisWidth >= maxWidth) {
             return ELLIPSIS;
         }

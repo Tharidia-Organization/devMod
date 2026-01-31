@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.nexus.client.NexusClientCache;
 
@@ -40,7 +41,6 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
     private static final int BAR_WIDTH = 200;
     private static final int BAR_HEIGHT = 8;
     private static final int PANEL_PADDING = 12;
-    private static final int PANEL_WIDTH = BAR_WIDTH + PANEL_PADDING * 2;
     private static final int PANEL_HEIGHT = 48;
     private static final int VERTICAL_OFFSET = 80; // Above hotbar
 
@@ -113,12 +113,23 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
             return;
         }
 
+        // Update UIScaleManager for responsive scaling
+        UIScaleManager.update();
+
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
+        // Scaled layout values
+        int sBarWidth = UIScaleManager.scale(BAR_WIDTH);
+        int sBarHeight = UIScaleManager.scale(BAR_HEIGHT);
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sPanelWidth = sBarWidth + sPanelPadding * 2;
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int sVerticalOffset = UIScaleManager.scale(VERTICAL_OFFSET);
+
         // Panel position (centered, above hotbar)
-        int panelX = (screenWidth - PANEL_WIDTH) / 2;
-        int panelY = screenHeight - VERTICAL_OFFSET - PANEL_HEIGHT;
+        int panelX = (screenWidth - sPanelWidth) / 2;
+        int panelY = screenHeight - sVerticalOffset - sPanelHeight;
 
         // Apply alpha to colors
         int bgWithAlpha = applyAlpha(BG_COLOR, alpha);
@@ -127,7 +138,7 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
         int textSecondaryWithAlpha = applyAlpha(TEXT_SECONDARY, alpha);
 
         // Draw panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, bgWithAlpha);
+        graphics.fill(panelX, panelY, panelX + sPanelWidth, panelY + sPanelHeight, bgWithAlpha);
 
         // Draw title text
         String title = "Building Nexus Hub...";
@@ -135,17 +146,17 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
             title = "Nexus Hub Ready!";
         }
         int titleWidth = font.width(title);
-        graphics.drawString(font, title, panelX + (PANEL_WIDTH - titleWidth) / 2, panelY + 8, textPrimaryWithAlpha, false);
+        graphics.drawString(font, title, panelX + (sPanelWidth - titleWidth) / 2, panelY + UIScaleManager.scale(8), textPrimaryWithAlpha, false);
 
         // Draw progress bar background
-        int barX = panelX + PANEL_PADDING;
-        int barY = panelY + 24;
-        graphics.fill(barX, barY, barX + BAR_WIDTH, barY + BAR_HEIGHT, barBgWithAlpha);
+        int barX = panelX + sPanelPadding;
+        int barY = panelY + UIScaleManager.scale(24);
+        graphics.fill(barX, barY, barX + sBarWidth, barY + sBarHeight, barBgWithAlpha);
 
         // Draw progress bar fill with gradient
-        int fillWidth = (int) (BAR_WIDTH * displayedProgress);
+        int fillWidth = (int) (sBarWidth * displayedProgress);
         if (fillWidth > 0) {
-            drawGradientBar(graphics, barX, barY, fillWidth, BAR_HEIGHT, BAR_FILL_START, BAR_FILL_END, alpha);
+            drawGradientBar(graphics, barX, barY, fillWidth, sBarHeight, BAR_FILL_START, BAR_FILL_END, alpha);
         }
 
         // Draw percentage and step name
@@ -156,11 +167,13 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
 
         // Percentage on the right
         int percentWidth = font.width(percentText);
-        graphics.drawString(font, percentText, barX + BAR_WIDTH - percentWidth, barY + BAR_HEIGHT + 4, textPrimaryWithAlpha, false);
+        graphics.drawString(font, percentText, barX + sBarWidth - percentWidth, barY + sBarHeight + UIScaleManager.scale(4), textPrimaryWithAlpha, false);
 
         // Step name on the left
         if (!stepText.isEmpty()) {
-            graphics.drawString(font, Objects.requireNonNull(stepText), barX, barY + BAR_HEIGHT + 4, textSecondaryWithAlpha, false);
+            int maxStepWidth = Math.max(0, sBarWidth - percentWidth - UIScaleManager.scale(8));
+            String displayStep = truncateToWidth(font, stepText, maxStepWidth);
+            graphics.drawString(font, Objects.requireNonNull(displayStep), barX, barY + sBarHeight + UIScaleManager.scale(4), textSecondaryWithAlpha, false);
         }
     }
 
@@ -213,5 +226,18 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         return (a << 24) | (color & DesignTokens.NexusBuild.RGB_MASK);
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 }

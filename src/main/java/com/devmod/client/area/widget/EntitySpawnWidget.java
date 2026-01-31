@@ -17,9 +17,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.EntitySpawnConfig;
-import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.EntitySpawnPoint;
-
+import com.devmod.client.ui.editor.core.DesignTokens;
 /**
  * Widget for configuring entity spawn points within an area.
  * Displays a list of spawn points with controls to add, remove, and configure each.
@@ -61,7 +61,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         int currentY = getY();
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.spawns.title")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -74,8 +74,8 @@ public class EntitySpawnWidget extends AbstractWidget {
 
         // If globally disabled, show disabled message
         if (!config.globalEnabled()) {
-            graphics.drawString(font,
-                Objects.requireNonNull(Component.literal("Spawning disabled")),
+            UIScaleManager.drawScaledString(graphics, font,
+                "Spawning disabled",
                 getX(), currentY,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
@@ -89,8 +89,8 @@ public class EntitySpawnWidget extends AbstractWidget {
 
         // Render spawn points or empty message
         if (config.getSpawnPointCount() == 0) {
-            graphics.drawCenteredString(font,
-                Objects.requireNonNull(Component.translatable("area.spawns.empty")),
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.translatable("area.spawns.empty").getString(),
                 getX() + getWidth() / 2, currentY + listHeight / 2 - 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
@@ -117,7 +117,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         int addBgColor = addHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(getX(), currentY, getX() + 140, currentY + BUTTON_SIZE, addBgColor);
         graphics.renderOutline(getX(), currentY, 140, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.spawns.add")),
             getX() + 6, currentY + 5,
             canAdd ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_MUTED
@@ -127,8 +127,8 @@ public class EntitySpawnWidget extends AbstractWidget {
 
         // Summary
         int totalCount = config.getTotalSpawnCount();
-        graphics.drawString(font,
-            Objects.requireNonNull(Component.literal("Total entities: " + totalCount)),
+        UIScaleManager.drawScaledString(graphics, font,
+            "Total entities: " + totalCount,
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
@@ -151,7 +151,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         graphics.fill(x, y + 2, x + 4, y + ROW_HEIGHT - 2, indicatorColor);
 
         // Entity name
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             point.getEntityDisplayName(),
             x + 10, y + 4,
             point.enabled() ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_MUTED
@@ -160,16 +160,16 @@ public class EntitySpawnWidget extends AbstractWidget {
         // Position
         BlockPos pos = point.position();
         String posText = String.format("(%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ());
-        graphics.drawString(font, posText, x + 10, y + 16,
+        UIScaleManager.drawScaledString(graphics, font, posText, x + 10, y + 16,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Spawn count
         String countText = "x" + point.spawnCount();
-        graphics.drawString(font, countText, x + 140, y + 4,
+        UIScaleManager.drawScaledString(graphics, font, countText, x + 140, y + 4,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Respawn delay
-        graphics.drawString(font, point.getFormattedRespawnDelay(), x + 140, y + 16,
+        UIScaleManager.drawScaledString(graphics, font, point.getFormattedRespawnDelay(), x + 140, y + 16,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
 
         // Toggle enabled button
@@ -185,7 +185,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(removeX, y + 6, removeX + BUTTON_SIZE, y + 6 + BUTTON_SIZE, removeBgColor);
         graphics.renderOutline(removeX, y + 6, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "X", removeX + BUTTON_SIZE / 2, y + 10,
+        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + BUTTON_SIZE / 2, y + 10,
             removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 
@@ -203,8 +203,8 @@ public class EntitySpawnWidget extends AbstractWidget {
         graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_SIZE, bgColor);
         graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
 
-        Component toggleText = Objects.requireNonNull(Component.translatable(value ? "area.toggle.on" : "area.toggle.off"));
-        graphics.drawCenteredString(font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     private void renderSmallToggle(GuiGraphics graphics, boolean value, int x, int y, boolean isHovered) {

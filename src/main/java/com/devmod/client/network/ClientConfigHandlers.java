@@ -9,14 +9,13 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
+import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.network.GlobalConfigSyncPayload;
 import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.RecipeClientSyncPayload;
 import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public final class ClientConfigHandlers {
 

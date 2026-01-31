@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -222,7 +223,7 @@ public class DebugPanel {
         AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.ACCENT());
 
         int curY = y + pad;
-        graphics.drawString(font, TITLE_TEXT, x + pad, curY, HEADER_TEXT_COLOR, false);
+        UIScaleManager.drawScaledString(graphics, font, TITLE_TEXT, x + pad, curY, HEADER_TEXT_COLOR, false);
         curY += lineH;
 
         CompoundTag resolvedTag = null;
@@ -230,7 +231,7 @@ public class DebugPanel {
         // Toggle hint for NBT view - use local capture for null safety
         ResponsiveLayout.Rect toggleRect = new ResponsiveLayout.Rect(x + pad, curY, NBT_TOGGLE_WIDTH, lineH);
         nbtToggleRect = toggleRect;
-        graphics.drawString(font, showFullNbt ? NBT_FULL_LABEL : NBT_SUMMARY_LABEL, toggleRect.x(),
+        UIScaleManager.drawScaledString(graphics, font, showFullNbt ? NBT_FULL_LABEL : NBT_SUMMARY_LABEL, toggleRect.x(),
             toggleRect.y(),
             NBT_TOGGLE_COLOR, false);
         curY += lineH;
@@ -238,22 +239,22 @@ public class DebugPanel {
         if (current != null) {
             // Item identification
             String name = current.getHoverName().getString();
-            graphics.drawString(font, ITEM_PREFIX + name, x + pad, curY, ITEM_TEXT_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, font, ITEM_PREFIX + name, x + pad, curY, ITEM_TEXT_COLOR, false);
             curY += lineH;
 
             try {
-                graphics.drawString(font, COUNT_PREFIX + current.getCount(), x + pad, curY, ITEM_DETAIL_COLOR, false);
+                UIScaleManager.drawScaledString(graphics, font, COUNT_PREFIX + current.getCount(), x + pad, curY, ITEM_DETAIL_COLOR, false);
             } catch (Throwable ignored) {
-                graphics.drawString(font, COUNT_PREFIX + NA_TEXT, x + pad, curY, ITEM_DETAIL_COLOR, false);
+                UIScaleManager.drawScaledString(graphics, font, COUNT_PREFIX + NA_TEXT, x + pad, curY, ITEM_DETAIL_COLOR, false);
             }
             curY += lineH;
 
             try {
-                graphics.drawString(font, DAMAGE_PREFIX + current.getDamageValue() + DAMAGE_SEPARATOR
+                UIScaleManager.drawScaledString(graphics, font, DAMAGE_PREFIX + current.getDamageValue() + DAMAGE_SEPARATOR
                         + current.getMaxDamage(),
                     x + pad, curY, ITEM_DETAIL_COLOR, false);
             } catch (Throwable ignored) {
-                graphics.drawString(font, DAMAGE_PREFIX + NA_TEXT, x + pad, curY, ITEM_DETAIL_COLOR, false);
+                UIScaleManager.drawScaledString(graphics, font, DAMAGE_PREFIX + NA_TEXT, x + pad, curY, ITEM_DETAIL_COLOR, false);
             }
             curY += lineH;
 
@@ -297,14 +298,14 @@ public class DebugPanel {
             } catch (Exception ignored) {
                 tagText = NA_TEXT;
             }
-            graphics.drawString(font, NBT_COUNT_PREFIX + tagText, x + pad, curY, NBT_COUNT_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, font, NBT_COUNT_PREFIX + tagText, x + pad, curY, NBT_COUNT_COLOR, false);
             curY += lineH;
 
             if (!statSources.isEmpty()) {
-                graphics.drawString(font, SOURCE_LABEL, x + pad, curY, HEADER_TEXT_COLOR, false);
+                UIScaleManager.drawScaledString(graphics, font, SOURCE_LABEL, x + pad, curY, HEADER_TEXT_COLOR, false);
                 curY += lineH;
                 for (String src : statSources) {
-                    graphics.drawString(font, SOURCE_BULLET + src, x + pad + SUBITEM_INDENT, curY, SOURCE_TEXT_COLOR, false);
+                    UIScaleManager.drawScaledString(graphics, font, SOURCE_BULLET + src, x + pad + SUBITEM_INDENT, curY, SOURCE_TEXT_COLOR, false);
                     curY += lineH;
                 }
             }
@@ -312,18 +313,18 @@ public class DebugPanel {
             // Show stat diffs (expected vs actual) if available
             if (!statDiffs.isEmpty()) {
                 curY += LOG_TITLE_GAP;
-                graphics.drawString(font, "Diff (baseline → current):", x + pad, curY, HEADER_TEXT_COLOR, false);
+                UIScaleManager.drawScaledString(graphics, font, "Diff (baseline → current):", x + pad, curY, HEADER_TEXT_COLOR, false);
                 curY += lineH;
                 int diffCount = 0;
                 for (StatDiff diff : statDiffs) {
                     if (diffCount >= 6) break; // Limit display to avoid overflow
                     int color = diff.isDifferent() ? DesignTokens.DebugPanel.DIFF : DesignTokens.DebugPanel.MATCH;
-                    graphics.drawString(font, SOURCE_BULLET + diff.format(), x + pad + SUBITEM_INDENT, curY, color, false);
+                    UIScaleManager.drawScaledString(graphics, font, SOURCE_BULLET + diff.format(), x + pad + SUBITEM_INDENT, curY, color, false);
                     curY += lineH;
                     diffCount++;
                 }
                 if (statDiffs.size() > 6) {
-                    graphics.drawString(font, "  +" + (statDiffs.size() - 6) + " more...", x + pad + SUBITEM_INDENT, curY, LOG_TEXT_COLOR, false);
+                    UIScaleManager.drawScaledString(graphics, font, "  +" + (statDiffs.size() - 6) + " more...", x + pad + SUBITEM_INDENT, curY, LOG_TEXT_COLOR, false);
                     curY += lineH;
                 }
             }
@@ -349,7 +350,7 @@ public class DebugPanel {
 
         // Session log (show up to 8 lines)
         curY += LOG_TITLE_GAP;
-        graphics.drawString(font, LOG_TITLE_TEXT, x + pad, curY, HEADER_TEXT_COLOR, false);
+        UIScaleManager.drawScaledString(graphics, font, LOG_TITLE_TEXT, x + pad, curY, HEADER_TEXT_COLOR, false);
         curY += lineH;
         int maxLines = Math.min(LOG_MAX_LINES, entries.size());
         for (int i = 0; i < maxLines; i++) {
@@ -357,12 +358,12 @@ public class DebugPanel {
             if (e.length() > LOG_TRUNCATE_LIMIT) {
                 e = e.substring(0, LOG_TRUNCATE_LIMIT - ELLIPSIS.length()) + ELLIPSIS;
             }
-            graphics.drawString(font, e, x + pad, curY + i * lineH, LOG_TEXT_COLOR, false);
+            UIScaleManager.drawScaledString(graphics, font, e, x + pad, curY + i * lineH, LOG_TEXT_COLOR, false);
         }
 
         if (showFullNbt) {
             String nbtSummary = buildNbtSummary(resolvedTag);
-            graphics.drawString(font, nbtSummary, x + pad, y + height - lineH - NBT_SUMMARY_BOTTOM_PADDING,
+            UIScaleManager.drawScaledString(graphics, font, nbtSummary, x + pad, y + height - lineH - NBT_SUMMARY_BOTTOM_PADDING,
                 NBT_SUMMARY_COLOR, false);
         }
 

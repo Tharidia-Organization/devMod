@@ -1,12 +1,12 @@
 # Feature DevMod
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 ## Gameplay e Testing
 
-- Endurance quest a wave con perk, reward, shop e challenge.
-- Arena template con policy e build asincroni.
-- Combat tuning con body-part detection e OBB hitbox.
+- Endurance quest a wave con perk, reward, shop, challenge e WIS debrief.
+- Arena template con policy, build asincroni e autosmoke.
+- Combat tuning con body-part detection, OBB hitbox e stamina/abilities.
 
 ## Tooling in-game
 
@@ -16,8 +16,8 @@
 
 ## Sistemi world
 
-- Nexus hub con palette dedicata e dimension management.
-- Area Builder e Nexus Editor Central.
+- Nexus hub con slot system, palette dedicata e dimension management.
+- Area Builder e Nexus Editor Central con snapshot.
 - Zone Marker e editor zone data-driven.
 - Portali custom con rune e preview.
 - Trasporto unificato (Warp Core + moduli).
@@ -33,6 +33,7 @@
 - Telemetry NDJSON + DuckDB.
 - Dashboard locale per analytics.
 - Mailbox/news/task/ticket con admin panel web.
+- Notification center unificato.
 
 ## Compatibilita
 

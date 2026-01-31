@@ -26,6 +26,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import com.devmod.DevMod;
 import com.devmod.client.notification.NotificationSoundManager;
 import com.devmod.client.notification.NotificationUiTheme;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
@@ -157,8 +158,16 @@ public class UnifiedToastOverlay {
         Font font = mc.font;
         if (font == null) return;
 
+        // Update UIScaleManager for responsive scaling
+        UIScaleManager.update();
+
         long now = System.currentTimeMillis();
         int screenWidth = mc.getWindow().getGuiScaledWidth();
+
+        // Scaled layout values
+        int sScreenMargin = UIScaleManager.scale(SCREEN_MARGIN);
+        int sToastHeight = UIScaleManager.scale(TOAST_HEIGHT);
+        int sToastSpacing = UIScaleManager.scale(TOAST_SPACING);
         int toastWidth = getToastWidth(screenWidth);
 
         // Update hover state
@@ -167,7 +176,7 @@ public class UnifiedToastOverlay {
         hoveredToastIndex = -1;
 
         // Process and render toasts
-        int yOffset = SCREEN_MARGIN;
+        int yOffset = sScreenMargin;
 
         for (int i = 0; i < activeToasts.size(); i++) {
             ToastEntry entry = activeToasts.get(i);
@@ -177,20 +186,20 @@ public class UnifiedToastOverlay {
             float slideProgress = getSlideProgress(entry, now);
             float exitProgress = entry.state == ToastState.EXITING ? getExitProgress(entry, now) : 0;
 
-            int toastX = screenWidth - toastWidth - SCREEN_MARGIN;
+            int toastX = screenWidth - toastWidth - sScreenMargin;
             int toastY = yOffset;
 
             // Slide in from right
-            float slideOffset = (1f - slideProgress) * (toastWidth + SCREEN_MARGIN);
+            float slideOffset = (1f - slideProgress) * (toastWidth + sScreenMargin);
             // Slide out to right
-            slideOffset += exitProgress * (toastWidth + SCREEN_MARGIN);
+            slideOffset += exitProgress * (toastWidth + sScreenMargin);
 
             int renderX = toastX + (int) slideOffset;
             int renderY = toastY;
 
             // Check hover
             if (mouseX >= renderX && mouseX < renderX + toastWidth &&
-                    mouseY >= renderY && mouseY < renderY + TOAST_HEIGHT) {
+                    mouseY >= renderY && mouseY < renderY + sToastHeight) {
                 hoveredToastIndex = i;
                 // Pause dismiss timer while hovering
                 if (entry.state == ToastState.VISIBLE) {
@@ -212,9 +221,9 @@ public class UnifiedToastOverlay {
             }
 
             boolean hovered = hoveredToastIndex == i;
-            renderToast(graphics, font, entry, renderX, renderY, toastWidth, opacity, hovered, now);
+            renderToast(graphics, font, entry, renderX, renderY, toastWidth, sToastHeight, opacity, hovered, now);
 
-            yOffset += TOAST_HEIGHT + TOAST_SPACING;
+            yOffset += sToastHeight + sToastSpacing;
         }
 
         // Remove finished toasts
@@ -237,39 +246,46 @@ public class UnifiedToastOverlay {
     }
 
     private static int getToastWidth(int screenWidth) {
-        int maxAllowed = screenWidth - SCREEN_MARGIN * 2;
-        int minWidth = Math.min(TOAST_MIN_WIDTH, maxAllowed);
-        int width = Math.min(TOAST_MAX_WIDTH, maxAllowed);
+        int sScreenMargin = UIScaleManager.scale(SCREEN_MARGIN);
+        int sMinWidth = UIScaleManager.scale(TOAST_MIN_WIDTH);
+        int sMaxWidth = UIScaleManager.scale(TOAST_MAX_WIDTH);
+        int maxAllowed = screenWidth - sScreenMargin * 2;
+        int minWidth = Math.min(sMinWidth, maxAllowed);
+        int width = Math.min(sMaxWidth, maxAllowed);
         return Math.max(minWidth, width);
     }
 
     private static void renderToast(GuiGraphics graphics, Font font, ToastEntry entry,
-                                     int x, int y, int width, float opacity, boolean hovered, long now) {
+                                     int x, int y, int width, int height, float opacity, boolean hovered, long now) {
         Notification notification = entry.notification;
         int accentColor = entry.accentColor;
         int alpha = (int) (opacity * 255);
+
+        // Scaled layout values
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sIconSize = UIScaleManager.scale(ICON_SIZE);
 
         // Background with hover effect
         int bgAlpha = (alpha * DesignTokens.Alpha.A88) / 255;
         int top = NotificationUiTheme.withAlpha(hovered ? RGB_TOAST_HOVER_TOP : RGB_TOAST_TOP, bgAlpha);
         int bottom = NotificationUiTheme.withAlpha(hovered ? RGB_TOAST_HOVER_BOTTOM : RGB_TOAST_BOTTOM, bgAlpha);
-        graphics.fillGradient(x, y, x + width, y + TOAST_HEIGHT, top, bottom);
+        graphics.fillGradient(x, y, x + width, y + height, top, bottom);
         graphics.fill(x, y, x + width, y + 1,
             NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, (alpha * 24) / 255));
 
         // Accent glow on left edge
         int glowAlpha = (alpha * DesignTokens.Alpha.A80) / 255;
-        graphics.fill(x, y, x + 3, y + TOAST_HEIGHT, NotificationUiTheme.withAlpha(accentColor, glowAlpha));
+        graphics.fill(x, y, x + 3, y + height, NotificationUiTheme.withAlpha(accentColor, glowAlpha));
 
         // Priority glow (for HIGH+ priority)
         if (notification.priority().ordinal() >= NotificationPriority.HIGH.ordinal()) {
-            int glowSize = 8;
+            int glowSize = UIScaleManager.scale(8);
             int priorityColor = NotificationUiTheme.getPriorityGlowColor(notification.priority());
             for (int i = 0; i < glowSize; i++) {
                 int glowA = (alpha * (glowSize - i) * 8) / (255 * glowSize);
                 graphics.fill(x - i, y - i, x + width + i, y,
                         NotificationUiTheme.withAlpha(priorityColor, glowA));
-                graphics.fill(x - i, y + TOAST_HEIGHT, x + width + i, y + TOAST_HEIGHT + i,
+                graphics.fill(x - i, y + height, x + width + i, y + height + i,
                         NotificationUiTheme.withAlpha(priorityColor, glowA));
             }
         }
@@ -277,23 +293,23 @@ public class UnifiedToastOverlay {
         // Subtle border
         int borderAlpha = (alpha * DesignTokens.Alpha.A20) / 255;
         graphics.fill(x, y, x + width, y + 1, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
-        graphics.fill(x, y + TOAST_HEIGHT - 1, x + width, y + TOAST_HEIGHT,
+        graphics.fill(x, y + height - 1, x + width, y + height,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
-        graphics.fill(x + width - 1, y, x + width, y + TOAST_HEIGHT,
+        graphics.fill(x + width - 1, y, x + width, y + height,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, borderAlpha));
 
         // Icon area
-        int iconX = x + PADDING;
-        int iconY = y + (TOAST_HEIGHT - ICON_SIZE) / 2;
+        int iconX = x + sPadding;
+        int iconY = y + (height - sIconSize) / 2;
 
         // Icon background circle
         int iconBgAlpha = (alpha * DesignTokens.Alpha.A27) / 255;
-        renderCircle(graphics, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2, ICON_SIZE / 2 + 2,
+        renderCircle(graphics, iconX + sIconSize / 2, iconY + sIconSize / 2, sIconSize / 2 + 2,
                 NotificationUiTheme.withAlpha(accentColor, iconBgAlpha));
 
         // Content area
-        int contentX = iconX + ICON_SIZE + PADDING;
-        int contentWidth = x + width - PADDING - contentX;
+        int contentX = iconX + sIconSize + sPadding;
+        int contentWidth = x + width - sPadding - contentX;
 
         entry.ensureLayout(font, contentWidth);
 
@@ -301,31 +317,31 @@ public class UnifiedToastOverlay {
         String icon = entry.icon;
         int iconTextAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
         int iconWidth = entry.cachedIconWidth;
-        graphics.drawString(font, icon, iconX + (ICON_SIZE - iconWidth) / 2, iconY + 8,
-                NotificationUiTheme.withAlpha(accentColor, iconTextAlpha), false);
+        UIScaleManager.drawScaledString(graphics, font, icon, iconX + (sIconSize - iconWidth) / 2, iconY + UIScaleManager.scale(8),
+                NotificationUiTheme.withAlpha(accentColor, iconTextAlpha));
 
         // Title
-        int titleY = y + PADDING;
+        int titleY = y + sPadding;
         String title = entry.cachedTitle;
         int titleAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
-        graphics.drawString(font, title, contentX, titleY,
+        UIScaleManager.drawScaledString(graphics, font, title, contentX, titleY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, titleAlpha), true);
 
         // Message
-        int msgY = titleY + 14;
+        int msgY = titleY + UIScaleManager.scale(14);
         String message = entry.cachedMessage;
         int msgAlpha = (alpha * 187) / 255;
-        graphics.drawString(font, message, contentX, msgY,
-                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, msgAlpha), false);
+        UIScaleManager.drawScaledString(graphics, font, message, contentX, msgY,
+                NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, msgAlpha));
 
         // Category label (bottom right)
         String category = entry.categoryLabel;
         int catWidth = entry.cachedCategoryWidth;
-        int catX = x + width - PADDING - catWidth;
-        int catY = y + TOAST_HEIGHT - PADDING - 6;
+        int catX = x + width - sPadding - catWidth;
+        int catY = y + height - sPadding - UIScaleManager.scale(6);
         int catAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
-        graphics.drawString(font, category, catX, catY,
-                NotificationUiTheme.withAlpha(accentColor, catAlpha), false);
+        UIScaleManager.drawScaledString(graphics, font, category, catX, catY,
+                NotificationUiTheme.withAlpha(accentColor, catAlpha));
 
         // Progress bar (time remaining)
         if (entry.state == ToastState.VISIBLE && entry.pausedAt == 0) {
@@ -335,31 +351,31 @@ public class UnifiedToastOverlay {
             long elapsed = now - entry.startTime - SLIDE_IN_DURATION;
             float progress = 1f - Math.min(1f, (float) elapsed / displayDuration);
 
-            int progressY = y + TOAST_HEIGHT - 2;
+            int progressY = y + height - 2;
             int progressWidth = (int) (width * progress);
 
             // Progress background
             int progressBgAlpha = (alpha * DesignTokens.Alpha.A13) / 255;
-            graphics.fill(x, progressY, x + width, y + TOAST_HEIGHT,
+            graphics.fill(x, progressY, x + width, y + height,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_WHITE, progressBgAlpha));
 
             // Progress fill
             int progressAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
-            graphics.fill(x, progressY, x + progressWidth, y + TOAST_HEIGHT,
+            graphics.fill(x, progressY, x + progressWidth, y + height,
                     NotificationUiTheme.withAlpha(accentColor, progressAlpha));
         }
 
         // Hover: show close button
         if (hovered) {
-            int closeX = x + width - 24;
-            int closeY = y + 8;
+            int closeX = x + width - UIScaleManager.scale(24);
+            int closeY = y + UIScaleManager.scale(8);
             int closeAlpha = (alpha * DesignTokens.Alpha.A67) / 255;
 
             // Close button background
-            graphics.fill(closeX - 2, closeY - 2, closeX + 14, closeY + 14,
+            graphics.fill(closeX - 2, closeY - 2, closeX + UIScaleManager.scale(14), closeY + UIScaleManager.scale(14),
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, closeAlpha));
-            graphics.drawString(font, "x", closeX + 2, closeY + 2,
-                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, closeAlpha), false);
+            UIScaleManager.drawScaledString(graphics, font, "x", closeX + 2, closeY + 2,
+                    NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, closeAlpha));
         }
     }
 
@@ -521,7 +537,7 @@ public class UnifiedToastOverlay {
         if (width <= 0) {
             return "";
         }
-        if (font.width(text) <= width) {
+        if (UIScaleManager.getScaledStringWidth(font, text) <= width) {
             return text;
         }
         String trimmed = font.plainSubstrByWidth(text, Math.max(0, width - 10));
@@ -562,8 +578,8 @@ public class UnifiedToastOverlay {
             cachedContentWidth = contentWidth;
             cachedTitle = truncateToWidth(font, baseTitle, contentWidth);
             cachedMessage = truncateToWidth(font, baseMessage, contentWidth);
-            cachedCategoryWidth = font.width(categoryLabel);
-            cachedIconWidth = font.width(icon);
+            cachedCategoryWidth = UIScaleManager.getScaledStringWidth(font, categoryLabel);
+            cachedIconWidth = UIScaleManager.getScaledStringWidth(font, icon);
         }
     }
 }

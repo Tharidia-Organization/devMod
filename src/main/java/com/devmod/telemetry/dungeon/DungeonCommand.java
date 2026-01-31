@@ -132,12 +132,12 @@ public class DungeonCommand {
 
     private static int showHelp(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§e=== Dungeon Run Debug Commands ==="), false);
-        source.sendSuccess(() -> Component.literal("§7/devmod dungeon start <dungeon_id> §f- Start a debug dungeon run"), false);
-        source.sendSuccess(() -> Component.literal("§7/devmod dungeon end <outcome> [kills] [deaths] [rewards] §f- End run"), false);
-        source.sendSuccess(() -> Component.literal("§7/devmod dungeon status §f- Show active run status"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== Dungeon Run Debug Commands ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devmod dungeon start <dungeon_id> \u00A7f- Start a debug dungeon run"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devmod dungeon end <outcome> [kills] [deaths] [rewards] \u00A7f- End run"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devmod dungeon status \u00A7f- Show active run status"), false);
         source.sendSuccess(() -> Component.literal(""), false);
-        source.sendSuccess(() -> Component.literal("§eOutcomes: SUCCESS, DEATH, ABANDONED, TIMEOUT"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7eOutcomes: SUCCESS, DEATH, ABANDONED, TIMEOUT"), false);
         return 1;
     }
 
@@ -163,7 +163,7 @@ public class DungeonCommand {
 
         final String finalDungeonId = dungeonId;
         source.sendSuccess(() -> Component.literal(
-            "§a[DungeonRun] Started debug run in dungeon '" + finalDungeonId + "'"
+            "\u00A7a[DungeonRun] Started debug run in dungeon '" + finalDungeonId + "'"
         ), false);
 
         LOGGER.info("[DungeonCommand] DEBUG RUN START: player='{}' dungeonId='{}'",
@@ -209,7 +209,7 @@ public class DungeonCommand {
         DungeonRunService.INSTANCE.debugEndRun(player.getUUID(), outcome, "debug command");
 
         source.sendSuccess(() -> Component.literal(
-            "§a[DungeonRun] Ended debug run with outcome=" + outcome +
+            "\u00A7a[DungeonRun] Ended debug run with outcome=" + outcome +
             " kills=" + kills + " deaths=" + deaths + " rewards=" + rewardCount
         ), false);
 
@@ -251,17 +251,17 @@ public class DungeonCommand {
 
         int activeRuns = DungeonRunService.INSTANCE.getActiveRunsCount();
 
-        source.sendSuccess(() -> Component.literal("§e=== Dungeon Run Status ==="), false);
-        source.sendSuccess(() -> Component.literal("§7Active runs: §f" + activeRuns), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== Dungeon Run Status ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77Active runs: \u00A7f" + activeRuns), false);
 
         // Show recent completed runs
         var summaries = DungeonRunService.INSTANCE.getRunSummaries();
         if (summaries.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("§7No completed runs yet."), false);
+            source.sendSuccess(() -> Component.literal("\u00A77No completed runs yet."), false);
         } else {
-            source.sendSuccess(() -> Component.literal("§7Recent runs:"), false);
+            source.sendSuccess(() -> Component.literal("\u00A77Recent runs:"), false);
             for (String summary : summaries) {
-                source.sendSuccess(() -> Component.literal("§8- " + summary), false);
+                source.sendSuccess(() -> Component.literal("\u00A78- " + summary), false);
             }
         }
 

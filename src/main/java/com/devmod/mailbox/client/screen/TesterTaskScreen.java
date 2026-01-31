@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.mailbox.client.ClientMailboxAccess;
 import com.devmod.mailbox.client.ClientTaskCache;
@@ -275,14 +276,14 @@ public class TesterTaskScreen extends Screen {
         graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, MailboxUiTheme.TesterTasks.PANEL_OUTLINE);
 
         // Title
-        graphics.drawCenteredString(getFont(), Objects.requireNonNull(title, "title"), width / 2, panelY + 10,
+        UIScaleManager.drawScaledCenteredString(graphics, getFont(), Objects.requireNonNull(title, "title"), width / 2, panelY + 10,
             MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
 
         // Task count
         int pending = ClientTaskCache.getPendingCount();
         int total = ClientTaskCache.getTaskCount();
         String countText = pending + "/" + total + " pending";
-        graphics.drawString(getFont(), countText, panelX + PADDING, panelY + 10, MailboxUiTheme.TesterTasks.TEXT_MUTED);
+        UIScaleManager.drawScaledString(graphics, getFont(), countText, panelX + PADDING, panelY + 10, MailboxUiTheme.TesterTasks.TEXT_MUTED);
 
         // Render task list
         renderTaskList(graphics, mouseX, mouseY);
@@ -355,7 +356,7 @@ public class TesterTaskScreen extends Screen {
 
         // No tasks message
         if (tasks.isEmpty()) {
-            graphics.drawCenteredString(getFont(),
+            UIScaleManager.drawScaledCenteredString(graphics, getFont(),
                 Objects.requireNonNull(Component.translatable("devmod.tester.no_tasks"), "no tasks"),
                 listX + listWidth / 2, listY + listHeight / 2, MailboxUiTheme.TesterTasks.TEXT_DIM);
             return;
@@ -407,27 +408,27 @@ public class TesterTaskScreen extends Screen {
         if (titleText.length() > 40) {
             titleText = titleText.substring(0, 37) + "...";
         }
-        graphics.drawString(getFont(), titleText, x + 20, y + 5, MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
+        UIScaleManager.drawScaledString(graphics, getFont(), titleText, x + 20, y + 5, MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
 
         // Status text
         String statusText = getStatusText(task.status());
-        graphics.drawString(getFont(), statusText, x + 20, y + 18, statusColor);
+        UIScaleManager.drawScaledString(graphics, getFont(), statusText, x + 20, y + 18, statusColor);
 
         // Assigned by
         if (task.assignedByName() != null) {
-            graphics.drawString(getFont(), "From: " + task.assignedByName(), x + 20, y + 31,
+            UIScaleManager.drawScaledString(graphics, getFont(), "From: " + task.assignedByName(), x + 20, y + 31,
                 MailboxUiTheme.TesterTasks.TEXT_DIM);
         }
 
         // Due date warning
         Long dueAt = task.dueAt();
         if (task.isOverdue()) {
-            graphics.drawString(getFont(), "OVERDUE", x + entryWidth - 60, y + 5,
+            UIScaleManager.drawScaledString(graphics, getFont(), "OVERDUE", x + entryWidth - 60, y + 5,
                 MailboxUiTheme.TesterTasks.DUE_OVERDUE);
         } else if (dueAt != null) {
             long remaining = dueAt - System.currentTimeMillis();
             if (remaining < 86400000) { // Less than 24 hours
-                graphics.drawString(getFont(), "Due soon", x + entryWidth - 60, y + 5,
+                UIScaleManager.drawScaledString(graphics, getFont(), "Due soon", x + entryWidth - 60, y + 5,
                     MailboxUiTheme.TesterTasks.DUE_SOON);
             }
         }
@@ -454,21 +455,22 @@ public class TesterTaskScreen extends Screen {
         graphics.fill(detailX, detailY, detailX + detailWidth, detailY + detailHeight, MailboxUiTheme.TesterTasks.LIST_BG);
 
         // Title
-        graphics.drawString(getFont(), task.title(), detailX + 5, detailY + 5, MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
+        UIScaleManager.drawScaledString(graphics, getFont(), task.title(), detailX + 5, detailY + 5, MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
 
         // Description
         if (task.description() != null) {
             int descY = detailY + 25;
+            int lineHeight = UIScaleManager.getScaledLineHeight();
             for (String line : wrapText(task.description(), detailWidth - 10)) {
-                graphics.drawString(getFont(), line, detailX + 5, descY, MailboxUiTheme.TesterTasks.TEXT_MUTED);
-                descY += 12;
+                UIScaleManager.drawScaledString(graphics, getFont(), line, detailX + 5, descY, MailboxUiTheme.TesterTasks.TEXT_MUTED);
+                descY += lineHeight;
                 if (descY > detailY + detailHeight - 80) break;
             }
         }
 
         // Notes
         if (task.notes() != null) {
-            graphics.drawString(getFont(), "Notes: " + task.notes(), detailX + 5, detailY + detailHeight - 70,
+            UIScaleManager.drawScaledString(graphics, getFont(), "Notes: " + task.notes(), detailX + 5, detailY + detailHeight - 70,
                 MailboxUiTheme.TesterTasks.TEXT_DIM);
         }
     }
@@ -653,7 +655,7 @@ public class TesterTaskScreen extends Screen {
         }
 
         for (String word : words) {
-            if (fontRef.width(current + " " + word) > maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(fontRef, current + " " + word) > maxWidth) {
                 if (!current.isEmpty()) {
                     lines.add(current.toString());
                     current = new StringBuilder();
@@ -701,6 +703,7 @@ public class TesterTaskScreen extends Screen {
             }
             return;
         }
-        mc.setScreen(new TesterTaskScreen(taskId, openNotes));
+        com.devmod.client.ui.ScreenSafety.openSafe("tester_task",
+            () -> new TesterTaskScreen(taskId, openNotes));
     }
 }

@@ -224,7 +224,7 @@ public class FpsTracker {
         graphics.drawString(font, fpsStr, textX, textY, fpsColor, false);
 
         // Min/Max on the same row
-        @Nonnull String minMaxStr = Objects.requireNonNull(String.format("§7(%d-%d)", minFps, maxFps), "minMaxStr");
+        @Nonnull String minMaxStr = Objects.requireNonNull(String.format("\u00A77(%d-%d)", minFps, maxFps), "minMaxStr");
         graphics.drawString(font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 

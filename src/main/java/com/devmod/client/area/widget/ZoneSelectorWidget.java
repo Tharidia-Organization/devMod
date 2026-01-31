@@ -22,6 +22,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.network.ZoneListPayload.ZoneSummary;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for selecting zones from a searchable list.
@@ -145,7 +146,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
         updateLayout(font.lineHeight);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.linked_zone")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -164,8 +165,8 @@ public class ZoneSelectorWidget extends AbstractWidget {
 
         if (filteredZones.isEmpty()) {
             String msgKey = allZones.isEmpty() ? "area.zone.loading" : "area.zone.empty";
-            graphics.drawCenteredString(font,
-                Objects.requireNonNull(Component.translatable(msgKey)),
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.translatable(msgKey).getString(),
                 getX() + getWidth() / 2, listY + listHeight / 2 - 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
         }
@@ -189,14 +190,14 @@ public class ZoneSelectorWidget extends AbstractWidget {
             }
 
             // Zone name
-            graphics.drawString(font, zone.displayName(), getX() + 4, itemY + 6,
+            UIScaleManager.drawScaledString(graphics, font, zone.displayName(), getX() + 4, itemY + 6,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
             // Area count indicator
             if (zone.areaCount() > 0) {
                 String countStr = "(" + zone.areaCount() + ")";
-                int countWidth = font.width(countStr);
-                graphics.drawString(font, countStr,
+                int countWidth = UIScaleManager.getScaledStringWidth(font, countStr);
+                UIScaleManager.drawScaledString(graphics, font, countStr,
                     getX() + getWidth() - countWidth - 4, itemY + 6, AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             }
         }
@@ -220,7 +221,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
         String selectedName = selectedZoneId != null
             ? getZoneDisplayName(selectedZoneId)
             : Objects.requireNonNull(Objects.requireNonNull(Component.translatable("area.zone.none")).getString());
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.selected_zone", selectedName)),
             getX(), infoY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY

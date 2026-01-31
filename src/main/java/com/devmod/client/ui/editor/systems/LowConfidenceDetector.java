@@ -11,6 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorModule;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.WeaponTypeDetector;
@@ -173,7 +174,7 @@ public final class LowConfidenceDetector extends BaseOverlay {
         Font safeFont = Objects.requireNonNull(font, "font");
 
         // Title
-        graphics.drawString(safeFont, "Low Confidence Detection", x + PADDING, y + PADDING,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Low Confidence Detection", x + PADDING, y + PADDING,
             DesignTokens.Text.TITLE(), false);
 
         // Item info
@@ -183,37 +184,37 @@ public final class LowConfidenceDetector extends BaseOverlay {
         int textX = x + PADDING;
         int textY = y + TEXT_START_Y;
 
-        graphics.drawString(safeFont, "Item: " + itemId, textX, textY,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Item: " + itemId, textX, textY,
             DesignTokens.Text.SECONDARY(), false);
         textY += TEXT_LINE_STEP;
 
-        graphics.drawString(safeFont,
+        UIScaleManager.drawScaledString(graphics, safeFont,
             "Detected: " + detection.type() + " via " + detection.method(),
             textX, textY, DesignTokens.Text.SECONDARY(), false);
         textY += TEXT_LINE_STEP;
 
-        graphics.drawString(safeFont,
+        UIScaleManager.drawScaledString(graphics, safeFont,
             "Confidence: " + String.format("%.0f%%", detection.confidence() * 100),
             textX, textY, DesignTokens.Text.SECONDARY(), false);
 
         String warning = detection.warning();
         if (warning != null && !warning.isBlank()) {
             textY += TEXT_LINE_STEP;
-            graphics.drawString(safeFont, "Note: " + warning, textX, textY,
+            UIScaleManager.drawScaledString(graphics, safeFont, "Note: " + warning, textX, textY,
                 DesignTokens.Text.MUTED(), false);
         }
 
         // Hints
         textY = y + HINT_START_Y;
-        graphics.drawString(safeFont, "Add to whitelist/tag to skip this warning next time.",
+        UIScaleManager.drawScaledString(graphics, safeFont, "Add to whitelist/tag to skip this warning next time.",
             textX, textY, DesignTokens.Text.MUTED(), false);
         textY += TEXT_LINE_STEP;
-        graphics.drawString(safeFont, "Config: config/devmod/weapon_whitelist.json",
+        UIScaleManager.drawScaledString(graphics, safeFont, "Config: config/devmod/weapon_whitelist.json",
             textX, textY, DesignTokens.Text.MUTED(), false);
 
         // Status message
         if (statusMessage != null) {
-            graphics.drawString(safeFont, statusMessage, textX, y + height - STATUS_OFFSET_Y,
+            UIScaleManager.drawScaledString(graphics, safeFont, statusMessage, textX, y + height - STATUS_OFFSET_Y,
                 DesignTokens.Accent.ORANGE(), false);
         }
 
@@ -238,11 +239,11 @@ public final class LowConfidenceDetector extends BaseOverlay {
             DesignTokens.Background.INPUT());
 
         // Draw button labels
-        graphics.drawString(safeFont, "Continue", btnContinueX + BTN_TEXT_CONTINUE_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Continue", btnContinueX + BTN_TEXT_CONTINUE_X,
             btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
-        graphics.drawString(safeFont, "Whitelist", btnWhitelistX + BTN_TEXT_WHITELIST_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Whitelist", btnWhitelistX + BTN_TEXT_WHITELIST_X,
             btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
-        graphics.drawString(safeFont, "Cancel", btnCancelX + BTN_TEXT_CANCEL_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Cancel", btnCancelX + BTN_TEXT_CANCEL_X,
             btnY + BTN_TEXT_Y, DesignTokens.Text.PRIMARY(), false);
 
         // Cache button bounds for click handling

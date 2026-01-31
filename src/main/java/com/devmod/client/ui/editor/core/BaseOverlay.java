@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.animation.UiAnimation;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.overlay.EditorOverlay;
 
 public abstract class BaseOverlay implements EditorOverlay {
@@ -95,6 +96,10 @@ public abstract class BaseOverlay implements EditorOverlay {
         int panelH = usesDynamicHeight()
             ? ScaledCoord.scaleDim(getPanelHeight(screenHeight))
             : ScaledCoord.scaleDim(getPanelHeight());
+        int maxW = Math.max(40, screenWidth - UIScaleManager.EDGE_MARGIN * 2);
+        int maxH = Math.max(40, screenHeight - UIScaleManager.EDGE_MARGIN * 2);
+        panelW = Math.min(panelW, maxW);
+        panelH = Math.min(panelH, maxH);
         int x = (screenWidth - panelW) / 2;
         int y = (screenHeight - panelH) / 2;
 

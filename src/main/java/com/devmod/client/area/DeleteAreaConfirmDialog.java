@@ -12,6 +12,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.area.network.DeleteAreaPayload;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -84,15 +85,15 @@ public final class DeleteAreaConfirmDialog extends BaseOverlay {
             Typography.withUiScale(Typography.BODY));
 
         // Warning message
-        int messageY = y + padding + font.lineHeight + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
-        graphics.drawString(font,
+        int messageY = y + padding + UIScaleManager.getScaledLineHeight() + ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.delete.warning", areaName)),
             x + padding, messageY,
             DesignTokens.Text.SECONDARY());
 
         // Additional warning
-        int warning2Y = messageY + font.lineHeight + 4;
-        graphics.drawString(font,
+        int warning2Y = messageY + UIScaleManager.getScaledLineHeight() + 4;
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.delete.irreversible")),
             x + padding, warning2Y,
             DesignTokens.AreaBuilder.WARNING_TEXT);

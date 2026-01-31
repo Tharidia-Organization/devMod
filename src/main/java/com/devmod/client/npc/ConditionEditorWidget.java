@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -405,7 +406,8 @@ public class ConditionEditorWidget extends AbstractWidget {
         // Render nested conditions count for And/Or/Not
         if (selectedType == ConditionType.AND || selectedType == ConditionType.OR || selectedType == ConditionType.NOT) {
             String countText = "(" + nestedConditions.size() + " conditions)";
-            graphics.drawString(
+            UIScaleManager.drawScaledString(
+                graphics,
                 net.minecraft.client.Minecraft.getInstance().font,
                 countText,
                 getX() + 110, getY() + FIELD_HEIGHT + SPACING + 5,

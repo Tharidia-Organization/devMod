@@ -59,6 +59,15 @@ public class DamageTrackingService {
     }
 
     /**
+     * Registers a hit with a weapon (override when available).
+     */
+    public void registerWeaponHit(ServerPlayer player, @Nullable Item weaponOverride, double damage, boolean isKill) {
+        Item weapon = weaponOverride != null ? weaponOverride : player.getMainHandItem().getItem();
+        weaponAggregates.computeIfAbsent(weapon, k -> new WeaponAggregate())
+                .registerHit(damage, isKill);
+    }
+
+    /**
      * Registers a miss with a weapon.
      */
     public void registerWeaponMiss(ServerPlayer player) {

@@ -450,4 +450,92 @@ public final class UIScaleManager {
             return LARGE;
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // TEXT RENDERING
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draws a string with proper UI scaling.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The text to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     * @param shadow Whether to draw with shadow
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        String text, int x, int y, int color, boolean shadow) {
+        graphics.drawString(font, text, x, y, color, shadow);
+    }
+
+    /**
+     * Draws a centered string with proper UI scaling.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The text to draw
+     * @param centerX Center X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     */
+    public static void drawScaledCenteredString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                                String text, int centerX, int y, int color) {
+        graphics.drawCenteredString(font, text, centerX, y, color);
+    }
+
+    /**
+     * Gets the width of a string with proper UI scaling.
+     *
+     * @param font The font to use
+     * @param text The text to measure
+     * @return The width in pixels
+     */
+    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, String text) {
+        return font.width(text);
+    }
+
+    /**
+     * Draws a Component with proper UI scaling.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The Component to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     * @param shadow Whether to draw with shadow
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        net.minecraft.network.chat.Component text, int x, int y, int color, boolean shadow) {
+        graphics.drawString(font, text, x, y, color, shadow);
+    }
+
+    /**
+     * Draws a centered Component with proper UI scaling.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The Component to draw
+     * @param centerX Center X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     */
+    public static void drawScaledCenteredString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                                net.minecraft.network.chat.Component text, int centerX, int y, int color) {
+        graphics.drawCenteredString(font, text, centerX, y, color);
+    }
+
+    /**
+     * Gets the width of a Component with proper UI scaling.
+     *
+     * @param font The font to use
+     * @param text The Component to measure
+     * @return The width in pixels
+     */
+    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, net.minecraft.network.chat.Component text) {
+        return font.width(text);
+    }
 }

@@ -55,8 +55,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.notification.ClientNotificationManager;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -68,7 +68,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class KitSelectionScreen extends Screen {
     private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
@@ -208,6 +207,18 @@ public class KitSelectionScreen extends Screen {
     private int searchTabRetryTicks = 0;
     private boolean initialKitLoad = false;
 
+    // Scaled layout dimensions (updated each frame for responsiveness)
+    private int scaledItemSize;
+    private int scaledItemMargin;
+    private int scaledPanelPadding;
+    private int scaledTabHeight;
+    private int scaledSlotSize;
+    private int scaledLabelLineHeight;
+    private int scaledSectionDividerSpacing;
+    private int scaledActionButtonHeight;
+    private int scaledActionButtonGap;
+    private int scaledTextLineHeight;
+
     // Popup state
     private boolean showEnchantPopup = false;
     private int enchantSlot = -1;
@@ -257,6 +268,20 @@ public class KitSelectionScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+
+        // Initialize scaled dimensions before any calculations that depend on them
+        UIScaleManager.update();
+        scaledItemSize = UIScaleManager.scale(ITEM_SIZE);
+        scaledItemMargin = UIScaleManager.scale(ITEM_MARGIN);
+        scaledPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        scaledTabHeight = UIScaleManager.scale(TAB_HEIGHT);
+        scaledSlotSize = UIScaleManager.scale(SLOT_SIZE);
+        scaledLabelLineHeight = Math.max(UIScaleManager.getScaledLineHeight(), UIScaleManager.scale(LABEL_LINE_HEIGHT));
+        scaledSectionDividerSpacing = UIScaleManager.scale(SECTION_DIVIDER_SPACING);
+        scaledActionButtonHeight = UIScaleManager.scale(ACTION_BUTTON_HEIGHT);
+        scaledActionButtonGap = UIScaleManager.scale(ACTION_BUTTON_GAP);
+        scaledTextLineHeight = UIScaleManager.getScaledLineHeight();
+
         loadAllItems();
         if (!initialKitLoad) {
             loadExistingKit();
@@ -335,9 +360,9 @@ public class KitSelectionScreen extends Screen {
 
     private void initSearchBox() {
         var safeFont = Objects.requireNonNull(font);
-        int searchWidth = 200;
-        int searchX = PANEL_PADDING + 8;
-        int searchY = TAB_HEIGHT + PANEL_PADDING + 36;
+        int searchWidth = UIScaleManager.scale(200);
+        int searchX = UIScaleManager.scale(PANEL_PADDING + 8);
+        int searchY = UIScaleManager.scale(TAB_HEIGHT + PANEL_PADDING + 36);
         final EditBox box = new EditBox(safeFont, searchX, searchY, searchWidth, 18, I18n.ui("search"));
         // Hint shows search syntax: @mod for namespace, #tag for tags, $text for tooltip
         box.setHint(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Search... @mod #tag $tooltip")));
@@ -448,58 +473,62 @@ public class KitSelectionScreen extends Screen {
 
     private void calculateMaxScroll() {
         ItemGridLayout layout = getItemGridLayout();
-        int itemsPerRow = Math.max(1, layout.gridW() / (ITEM_SIZE + ITEM_MARGIN));
+        int itemsPerRow = Math.max(1, layout.gridW() / (scaledItemSize + scaledItemMargin));
         int rows = (filteredItems.size() + itemsPerRow - 1) / itemsPerRow;
-        int contentHeight = rows * (ITEM_SIZE + ITEM_MARGIN);
+        int contentHeight = rows * (scaledItemSize + scaledItemMargin);
         int viewportHeight = layout.gridH();
         itemMaxScroll = Math.max(0, contentHeight - viewportHeight);
     }
 
     private ItemGridLayout getItemGridLayout() {
-        int panelX = PANEL_PADDING;
-        int panelY = TAB_HEIGHT + PANEL_PADDING;
-        int panelW = (width / 2) - PANEL_PADDING * 2;
-        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
-        int gridX = panelX + 8;
-        int gridY = panelY + 58;
-        int gridW = panelW - 20;
-        int gridH = panelH - 68;
+        int panelX = scaledPanelPadding;
+        int panelY = scaledTabHeight + scaledPanelPadding;
+        int panelW = (width / 2) - scaledPanelPadding * 2;
+        int panelH = height - scaledTabHeight - scaledPanelPadding * 2 - UIScaleManager.scale(55);
+        int headerH = UIScaleManager.scale(28);
+        int searchH = searchBox != null ? searchBox.getHeight() : 18;
+        int searchY = panelY + headerH + UIScaleManager.scale(6);
+        int gridX = panelX + UIScaleManager.scale(8);
+        int gridY = searchY + searchH + UIScaleManager.scale(10);
+        int gridW = panelW - UIScaleManager.scale(20);
+        int gridH = Math.max(0, (panelY + panelH) - gridY - UIScaleManager.scale(10));
         return new ItemGridLayout(panelX, panelY, panelW, panelH, gridX, gridY, gridW, gridH);
     }
 
     private KitPanelLayout getKitPanelLayout() {
-        int panelX = width / 2 + PANEL_PADDING;
-        int panelY = TAB_HEIGHT + PANEL_PADDING;
-        int panelW = (width / 2) - PANEL_PADDING * 2;
-        int panelH = height - TAB_HEIGHT - PANEL_PADDING * 2 - 55;
-        int contentX = panelX + 12;
+        int panelX = width / 2 + scaledPanelPadding;
+        int panelY = scaledTabHeight + scaledPanelPadding;
+        int panelW = (width / 2) - scaledPanelPadding * 2;
+        int panelH = height - scaledTabHeight - scaledPanelPadding * 2 - UIScaleManager.scale(55);
+        int contentX = panelX + UIScaleManager.scale(12);
 
-        int y = panelY + 40;
+        int headerH = UIScaleManager.scale(28);
+        int y = panelY + headerH + UIScaleManager.scale(12);
 
         int equipmentLabelY = y;
-        int equipmentRowY = equipmentLabelY + LABEL_LINE_HEIGHT;
-        y = equipmentRowY + SLOT_SIZE + 16;
+        int equipmentRowY = equipmentLabelY + scaledLabelLineHeight;
+        y = equipmentRowY + scaledSlotSize + UIScaleManager.scale(16);
 
         int hotbarLabelY = y;
-        int hotbarRowY = hotbarLabelY + LABEL_LINE_HEIGHT;
-        y = hotbarRowY + SLOT_SIZE + SECTION_DIVIDER_SPACING;
+        int hotbarRowY = hotbarLabelY + scaledLabelLineHeight;
+        y = hotbarRowY + scaledSlotSize + scaledSectionDividerSpacing;
 
         int actionsDividerY = y;
-        y += SECTION_DIVIDER_SPACING;
+        y += scaledSectionDividerSpacing;
 
         int actionsLabelY = y;
-        int actionsRowY = actionsLabelY + LABEL_LINE_HEIGHT;
-        y = actionsRowY + ACTION_BUTTON_HEIGHT + SECTION_DIVIDER_SPACING;
+        int actionsRowY = actionsLabelY + scaledLabelLineHeight;
+        y = actionsRowY + scaledActionButtonHeight + scaledSectionDividerSpacing;
 
         int presetsDividerY = y;
-        y += SECTION_DIVIDER_SPACING;
+        y += scaledSectionDividerSpacing;
 
         int presetsLabelY = y;
-        int presetsRowY = presetsLabelY + LABEL_LINE_HEIGHT;
-        y = presetsRowY + ACTION_BUTTON_HEIGHT + SECTION_DIVIDER_SPACING;
+        int presetsRowY = presetsLabelY + scaledLabelLineHeight;
+        y = presetsRowY + scaledActionButtonHeight + scaledSectionDividerSpacing;
 
         int instructionsDividerY = y;
-        int instructionsStartY = instructionsDividerY + SECTION_DIVIDER_SPACING;
+        int instructionsStartY = instructionsDividerY + scaledSectionDividerSpacing;
 
         return new KitPanelLayout(panelX, panelY, panelW, panelH, contentX,
             equipmentLabelY, equipmentRowY,
@@ -522,7 +551,7 @@ public class KitSelectionScreen extends Screen {
         int lowerEndY = getKitLowerEndY(layout);
         int lowerViewportH = Math.max(0, lowerEndY - lowerStartY);
 
-        int instructionHeight = getInstructionLines().length * 11;
+        int instructionHeight = getInstructionLines().length * scaledTextLineHeight;
         int lowerContentHeight = (layout.instructionsStartY() + instructionHeight) - layout.actionsLabelY();
 
         kitLowerMaxScroll = Math.max(0, lowerContentHeight - lowerViewportH);
@@ -591,9 +620,22 @@ public class KitSelectionScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledItemSize = UIScaleManager.scale(ITEM_SIZE);
+        scaledItemMargin = UIScaleManager.scale(ITEM_MARGIN);
+        scaledPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        scaledTabHeight = UIScaleManager.scale(TAB_HEIGHT);
+        scaledSlotSize = UIScaleManager.scale(SLOT_SIZE);
+        scaledLabelLineHeight = UIScaleManager.scale(LABEL_LINE_HEIGHT);
+        scaledSectionDividerSpacing = UIScaleManager.scale(SECTION_DIVIDER_SPACING);
+        scaledActionButtonHeight = UIScaleManager.scale(ACTION_BUTTON_HEIGHT);
+        scaledActionButtonGap = UIScaleManager.scale(ACTION_BUTTON_GAP);
+
         // Dark background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
+        updateSearchBoxLayout();
         renderHeader(graphics, mouseX, mouseY);
         renderItemBrowser(graphics, mouseX, mouseY);
         renderKitPanel(graphics, mouseX, mouseY);
@@ -625,34 +667,60 @@ public class KitSelectionScreen extends Screen {
         }
     }
 
+    private void updateSearchBoxLayout() {
+        var box = searchBox;
+        if (box == null) {
+            return;
+        }
+        int panelX = scaledPanelPadding;
+        int panelY = scaledTabHeight + scaledPanelPadding;
+        int panelW = (width / 2) - scaledPanelPadding * 2;
+        int headerH = UIScaleManager.scale(28);
+        int searchX = panelX + UIScaleManager.scale(10);
+        int searchY = panelY + headerH + UIScaleManager.scale(6);
+        int searchW = panelW - UIScaleManager.scale(20);
+        box.setX(searchX);
+        box.setY(searchY);
+        box.setWidth(searchW);
+    }
+
+    private void drawScaledText(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                String text, int x, int y, int color) {
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, color, false);
+    }
+
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
         // Header background
-        graphics.fill(0, 0, width, TAB_HEIGHT, COLOR_PANEL_HEADER);
-        graphics.fill(0, TAB_HEIGHT - 1, width, TAB_HEIGHT, COLOR_BORDER);
+        graphics.fill(0, 0, width, scaledTabHeight, COLOR_PANEL_HEADER);
+        graphics.fill(0, scaledTabHeight - 1, width, scaledTabHeight, COLOR_BORDER);
 
         // Title
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.header.title").getString(), PANEL_PADDING, 10, COLOR_TEXT);
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.header.title").getString(),
+            scaledPanelPadding, UIScaleManager.scale(10), COLOR_TEXT);
 
         // Category tabs
-        int tabX = 120;
-        int tabW = 80;
+        int tabX = UIScaleManager.scale(120);
+        int tabW = UIScaleManager.scale(80);
+        int tabMargin = UIScaleManager.scale(4);
         for (Category cat : Category.values()) {
             boolean selected = cat == selectedCategory;
-            boolean hovered = mouseX >= tabX && mouseX < tabX + tabW && mouseY >= 4 && mouseY < TAB_HEIGHT - 4;
+            boolean hovered = mouseX >= tabX && mouseX < tabX + tabW && mouseY >= tabMargin && mouseY < scaledTabHeight - tabMargin;
 
             int tabColor = selected ? cat.color : (hovered ? COLOR_ITEM_HOVER : COLOR_PANEL);
-            graphics.fill(tabX, 4, tabX + tabW, TAB_HEIGHT - 4, tabColor);
+            graphics.fill(tabX, tabMargin, tabX + tabW, scaledTabHeight - tabMargin, tabColor);
 
             if (selected) {
                 // Bottom accent line
-                graphics.fill(tabX, TAB_HEIGHT - 4, tabX + tabW, TAB_HEIGHT - 2, cat.color);
+                graphics.fill(tabX, scaledTabHeight - tabMargin, tabX + tabW, scaledTabHeight - UIScaleManager.scale(2), cat.color);
             }
 
             String label = Objects.requireNonNull(cat.tabLabel());
-            int textX = tabX + (tabW - safeFont.width(label)) / 2;
-            graphics.drawString(safeFont, label, textX, 10, selected ? COLOR_TEXT_INVERSE : COLOR_TEXT);
+            int textW = UIScaleManager.getScaledStringWidth(safeFont, label);
+            int textX = tabX + (tabW - textW) / 2;
+            int textY = tabMargin + (scaledTabHeight - tabMargin * 2 - scaledTextLineHeight) / 2;
+            drawScaledText(graphics, safeFont, label, textX, textY, selected ? COLOR_TEXT_INVERSE : COLOR_TEXT);
 
             tabX += tabW + 4;
         }
@@ -672,10 +740,12 @@ public class KitSelectionScreen extends Screen {
         renderPanelBorder(graphics, panelX, panelY, panelW, panelH);
 
         // Panel header
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + 28, COLOR_PANEL_HEADER);
+        int headerHeight = UIScaleManager.scale(28);
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + headerHeight, COLOR_PANEL_HEADER);
         String headerText = I18n.translate("devmod.kit.header.items",
             selectedCategory.displayName(), filteredItems.size()).getString();
-        graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, selectedCategory.color);
+        drawScaledText(graphics, safeFont, headerText, panelX + UIScaleManager.scale(10),
+            panelY + UIScaleManager.scale(10), selectedCategory.color);
 
         // Item grid
         int gridX = layout.gridX();
@@ -685,36 +755,37 @@ public class KitSelectionScreen extends Screen {
 
         graphics.enableScissor(gridX, gridY, gridX + gridW, gridY + gridH);
 
-        int itemsPerRow = Math.max(1, gridW / (ITEM_SIZE + ITEM_MARGIN));
+        int itemsPerRow = Math.max(1, gridW / (scaledItemSize + scaledItemMargin));
         int y = gridY - itemScrollOffset;
 
         if (filteredItems.isEmpty()) {
             String emptyLabel = Objects.requireNonNull(I18n.ui("no_results").getString());
-            int textX = gridX + (gridW - safeFont.width(emptyLabel)) / 2;
-            int textY = gridY + gridH / 2 - 4;
-            graphics.drawString(safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
+            int textW = UIScaleManager.getScaledStringWidth(safeFont, emptyLabel);
+            int textX = gridX + (gridW - textW) / 2;
+            int textY = gridY + gridH / 2 - (scaledTextLineHeight / 2);
+            drawScaledText(graphics, safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
         } else {
             for (int i = 0; i < filteredItems.size(); i++) {
                 int col = i % itemsPerRow;
                 int row = i / itemsPerRow;
-                int itemX = gridX + col * (ITEM_SIZE + ITEM_MARGIN);
-                int itemY = y + row * (ITEM_SIZE + ITEM_MARGIN);
+                int itemX = gridX + col * (scaledItemSize + scaledItemMargin);
+                int itemY = y + row * (scaledItemSize + scaledItemMargin);
 
-                if (itemY + ITEM_SIZE < gridY || itemY > gridY + gridH) continue;
+                if (itemY + scaledItemSize < gridY || itemY > gridY + gridH) continue;
 
                 ItemStack stack = Objects.requireNonNull(filteredItems.get(i));
-                boolean hovered = mouseX >= itemX && mouseX < itemX + ITEM_SIZE &&
-                                  mouseY >= itemY && mouseY < itemY + ITEM_SIZE;
+                boolean hovered = mouseX >= itemX && mouseX < itemX + scaledItemSize &&
+                                  mouseY >= itemY && mouseY < itemY + scaledItemSize;
 
                 int bgColor = hovered ? COLOR_ITEM_HOVER : COLOR_ITEM_BG;
-                graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, bgColor);
+                graphics.fill(itemX, itemY, itemX + scaledItemSize, itemY + scaledItemSize, bgColor);
 
                 if (hovered) {
                     // Hover border
-                    graphics.fill(itemX, itemY, itemX + ITEM_SIZE, itemY + 1, COLOR_ACCENT);
-                    graphics.fill(itemX, itemY + ITEM_SIZE - 1, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
-                    graphics.fill(itemX, itemY, itemX + 1, itemY + ITEM_SIZE, COLOR_ACCENT);
-                    graphics.fill(itemX + ITEM_SIZE - 1, itemY, itemX + ITEM_SIZE, itemY + ITEM_SIZE, COLOR_ACCENT);
+                    graphics.fill(itemX, itemY, itemX + scaledItemSize, itemY + 1, COLOR_ACCENT);
+                    graphics.fill(itemX, itemY + scaledItemSize - 1, itemX + scaledItemSize, itemY + scaledItemSize, COLOR_ACCENT);
+                    graphics.fill(itemX, itemY, itemX + 1, itemY + scaledItemSize, COLOR_ACCENT);
+                    graphics.fill(itemX + scaledItemSize - 1, itemY, itemX + scaledItemSize, itemY + scaledItemSize, COLOR_ACCENT);
                 }
 
                 graphics.renderItem(stack, itemX + 1, itemY + 1);
@@ -725,11 +796,11 @@ public class KitSelectionScreen extends Screen {
 
         // Scrollbar
         if (itemMaxScroll > 0) {
-            int sbX = panelX + panelW - 8;
-            int sbH = Math.max(20, (int) ((float) gridH / (gridH + itemMaxScroll) * gridH));
+            int sbX = panelX + panelW - UIScaleManager.scale(8);
+            int sbH = Math.max(UIScaleManager.scale(20), (int) ((float) gridH / (gridH + itemMaxScroll) * gridH));
             int sbY = gridY + (int) ((float) itemScrollOffset / itemMaxScroll * (gridH - sbH));
-            graphics.fill(sbX, gridY, sbX + 4, gridY + gridH, COLOR_ITEM_BG);
-            graphics.fill(sbX, sbY, sbX + 4, sbY + sbH, COLOR_ACCENT);
+            graphics.fill(sbX, gridY, sbX + UIScaleManager.scale(4), gridY + gridH, COLOR_ITEM_BG);
+            graphics.fill(sbX, sbY, sbX + UIScaleManager.scale(4), sbY + sbH, COLOR_ACCENT);
         }
     }
 
@@ -749,34 +820,38 @@ public class KitSelectionScreen extends Screen {
         renderPanelBorder(graphics, panelX, panelY, panelW, panelH);
 
         // Panel header
-        graphics.fill(panelX, panelY, panelX + panelW, panelY + 28, COLOR_PANEL_HEADER);
+        int headerHeight = UIScaleManager.scale(28);
+        graphics.fill(panelX, panelY, panelX + panelW, panelY + headerHeight, COLOR_PANEL_HEADER);
         int itemCount = (int) kitSlots.values().stream().filter(s -> !s.isEmpty()).count();
         String headerText = I18n.translate("devmod.kit.header.kit", itemCount).getString();
-        graphics.drawString(safeFont, headerText, panelX + 10, panelY + 10, COLOR_ACCENT_ORANGE);
+        drawScaledText(graphics, safeFont, headerText, panelX + UIScaleManager.scale(10),
+            panelY + UIScaleManager.scale(10), COLOR_ACCENT_ORANGE);
 
         // === CHARACTER PREVIEW ===
-        int previewX = panelX + panelW - 80;
-        int previewY = layout.equipmentLabelY() + 80;
+        int previewX = panelX + panelW - UIScaleManager.scale(80);
+        int previewY = layout.equipmentLabelY() + UIScaleManager.scale(80);
         renderCharacterPreview(graphics, previewX, previewY, mouseX, mouseY);
 
         // === EQUIPMENT SLOTS ===
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.equipment").getString(),
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.section.equipment").getString(),
             contentX, layout.equipmentLabelY(), COLOR_TEXT_DIM);
 
         // Armor slots (vertical)
+        int slotGap = UIScaleManager.scale(6);
         for (int slot = 0; slot < 4; slot++) {
-            renderSlot(graphics, contentX + slot * (SLOT_SIZE + 6), layout.equipmentRowY(), slot, mouseX, mouseY);
+            renderSlot(graphics, contentX + slot * (scaledSlotSize + slotGap), layout.equipmentRowY(), slot, mouseX, mouseY);
         }
 
         // Offhand
-        renderSlot(graphics, contentX + 4 * (SLOT_SIZE + 6) + 10, layout.equipmentRowY(), 4, mouseX, mouseY);
+        renderSlot(graphics, contentX + 4 * (scaledSlotSize + slotGap) + UIScaleManager.scale(10), layout.equipmentRowY(), 4, mouseX, mouseY);
 
         // === HOTBAR SLOTS ===
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.section.hotbar").getString(),
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.section.hotbar").getString(),
             contentX, layout.hotbarLabelY(), COLOR_TEXT_DIM);
 
+        int hotbarSlotGap = UIScaleManager.scale(4);
         for (int i = 0; i < 9; i++) {
-            int slotX = contentX + i * (SLOT_SIZE + 4);
+            int slotX = contentX + i * (scaledSlotSize + hotbarSlotGap);
             renderSlot(graphics, slotX, layout.hotbarRowY(), 5 + i, mouseX, mouseY);
         }
 
@@ -794,12 +869,12 @@ public class KitSelectionScreen extends Screen {
             renderActionsHeader(graphics, layout, lowerOffset);
             renderActionButtons(graphics, layout, mouseX, mouseY, lowerOffset);
 
-            // === QUICK PRESETS ===
-            graphics.fill(contentX - 4, layout.presetsDividerY() - lowerOffset, panelX + panelW - 12,
-                layout.presetsDividerY() - lowerOffset + 1, COLOR_BORDER);
+        // === QUICK PRESETS ===
+        graphics.fill(contentX - 4, layout.presetsDividerY() - lowerOffset, panelX + panelW - 12,
+            layout.presetsDividerY() - lowerOffset + 1, COLOR_BORDER);
 
-            graphics.drawString(safeFont, I18n.translate("devmod.kit.section.quick_presets").getString(),
-                contentX, layout.presetsLabelY() - lowerOffset, COLOR_TEXT_DIM);
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.section.quick_presets").getString(),
+            contentX, layout.presetsLabelY() - lowerOffset, COLOR_TEXT_DIM);
 
             String[][] presets = getQuickPresets();
 
@@ -808,14 +883,15 @@ public class KitSelectionScreen extends Screen {
             for (int i = 0; i < presets.length; i++) {
                 String presetName = Objects.requireNonNull(presets[i][0]);
                 String presetIcon = Objects.requireNonNull(presets[i][1]);
-                int pw = safeFont.width(presetName) + 20;
-                boolean pHover = mouseX >= px && mouseX < px + pw && mouseY >= presetY && mouseY < presetY + ACTION_BUTTON_HEIGHT;
+                int pw = UIScaleManager.getScaledStringWidth(safeFont, presetName) + UIScaleManager.scale(20);
+                boolean pHover = mouseX >= px && mouseX < px + pw && mouseY >= presetY && mouseY < presetY + scaledActionButtonHeight;
 
-                graphics.fill(px, presetY, px + pw, presetY + ACTION_BUTTON_HEIGHT, pHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
-                renderBorder(graphics, px, presetY, pw, ACTION_BUTTON_HEIGHT, pHover ? COLOR_ACCENT : COLOR_BORDER);
+                graphics.fill(px, presetY, px + pw, presetY + scaledActionButtonHeight, pHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
+                renderBorder(graphics, px, presetY, pw, scaledActionButtonHeight, pHover ? COLOR_ACCENT : COLOR_BORDER);
 
-                graphics.drawString(safeFont, presetIcon + " " + presetName, px + 4, presetY + 5, COLOR_TEXT);
-                px += pw + 6;
+                drawScaledText(graphics, safeFont, presetIcon + " " + presetName,
+                    px + UIScaleManager.scale(4), presetY + UIScaleManager.scale(5), COLOR_TEXT);
+                px += pw + UIScaleManager.scale(6);
             }
 
             // === INSTRUCTIONS ===
@@ -825,8 +901,8 @@ public class KitSelectionScreen extends Screen {
             int y = layout.instructionsStartY() - lowerOffset;
             String[] instructions = getInstructionLines();
             for (String instr : instructions) {
-                graphics.drawString(safeFont, instr, contentX, y, COLOR_TEXT_DIM);
-                y += 11;
+                drawScaledText(graphics, safeFont, instr, contentX, y, COLOR_TEXT_DIM);
+                y += scaledTextLineHeight;
             }
 
             graphics.disableScissor();
@@ -849,7 +925,7 @@ public class KitSelectionScreen extends Screen {
         Player player = mc.player;
 
         if (player == null) {
-            graphics.drawString(safeFont, I18n.translate("devmod.kit.preview.unavailable").getString(),
+            drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.preview.unavailable").getString(),
                 x - 20, y - 40, COLOR_TEXT_DIM);
             return;
         }
@@ -883,7 +959,7 @@ public class KitSelectionScreen extends Screen {
 
     private void renderSlot(GuiGraphics graphics, int x, int y, int slot, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
-        boolean hovered = mouseX >= x && mouseX < x + SLOT_SIZE && mouseY >= y && mouseY < y + SLOT_SIZE;
+        boolean hovered = mouseX >= x && mouseX < x + scaledSlotSize && mouseY >= y && mouseY < y + scaledSlotSize;
         boolean selected = selectedSlot == slot;
 
         ItemStack stack = kitSlots.getOrDefault(slot, ItemStack.EMPTY);
@@ -891,55 +967,63 @@ public class KitSelectionScreen extends Screen {
 
         // Slot background
         int bgColor = selected ? COLOR_SLOT_SELECTED : (hovered ? COLOR_ITEM_HOVER : (hasItem ? COLOR_SLOT_FILLED : COLOR_SLOT_EMPTY));
-        graphics.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, bgColor);
+        graphics.fill(x, y, x + scaledSlotSize, y + scaledSlotSize, bgColor);
 
         // Border
         int borderColor = selected ? COLOR_ACCENT : (hovered ? COLOR_ACCENT : COLOR_BORDER);
-        renderBorder(graphics, x, y, SLOT_SIZE, SLOT_SIZE, borderColor);
+        renderBorder(graphics, x, y, scaledSlotSize, scaledSlotSize, borderColor);
 
         // Render item or slot hint
         if (hasItem) {
-            graphics.renderItem(stack, x + 3, y + 3);
+            graphics.renderItem(stack, x + UIScaleManager.scale(3), y + UIScaleManager.scale(3));
             if (stack.getCount() > 1) {
                 String count = Objects.requireNonNull(String.valueOf(stack.getCount()));
-                graphics.drawString(safeFont, count, x + SLOT_SIZE - safeFont.width(count) - 1, y + SLOT_SIZE - 9, COLOR_TEXT_WHITE);
+                int countW = UIScaleManager.getScaledStringWidth(safeFont, count);
+                drawScaledText(graphics, safeFont, count,
+                    x + scaledSlotSize - countW - 1,
+                    y + scaledSlotSize - scaledTextLineHeight,
+                    COLOR_TEXT_WHITE);
             }
             // Enchant indicator
             if (stack.isEnchanted()) {
-                graphics.drawString(safeFont, "§d✦", x + 1, y + 1, COLOR_ACCENT_PURPLE);
+                drawScaledText(graphics, safeFont, "\u00A7d✦", x + 1, y + 1, COLOR_ACCENT_PURPLE);
             }
         } else {
             // Show slot icon
             String icon = Objects.requireNonNull(SLOT_ICONS[slot]);
-            int iconX = x + (SLOT_SIZE - safeFont.width(icon)) / 2;
-            int iconY = y + (SLOT_SIZE - 8) / 2;
-            graphics.drawString(safeFont, Objects.requireNonNull("§8" + icon), iconX, iconY, COLOR_TEXT_DIM);
+            int iconW = UIScaleManager.getScaledStringWidth(safeFont, icon);
+            int iconX = x + (scaledSlotSize - iconW) / 2;
+            int iconY = y + (scaledSlotSize - scaledTextLineHeight) / 2;
+            drawScaledText(graphics, safeFont, Objects.requireNonNull("\u00A78" + icon), iconX, iconY, COLOR_TEXT_DIM);
         }
     }
 
     private void renderActionsHeader(GuiGraphics graphics, KitPanelLayout layout, int yOffset) {
         var safeFont = Objects.requireNonNull(font);
+        float textScale = UIScaleManager.getTextScale();
         String header = Objects.requireNonNull(I18n.translate("devmod.kit.section.actions").getString());
-        graphics.drawString(safeFont, header, layout.contentX(), layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
+        drawScaledText(graphics, safeFont, header, layout.contentX(), layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
 
         int panelRight = layout.panelX() + layout.panelW() - 12;
-        int leftMin = layout.contentX() + safeFont.width(header) + 8;
+        int leftMin = layout.contentX() + UIScaleManager.getScaledStringWidth(safeFont, header) + 8;
         int maxWidth = panelRight - leftMin;
         if (maxWidth <= 0) {
             return;
         }
 
         String selection = Objects.requireNonNull(getActionsSelectionLabel());
-        if (safeFont.width(selection) > maxWidth) {
-            int ellipsisWidth = safeFont.width("...");
-            if (maxWidth <= ellipsisWidth) {
-                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidth));
+        int selectionWidth = UIScaleManager.getScaledStringWidth(safeFont, selection);
+        if (selectionWidth > maxWidth) {
+            int maxWidthUnscaled = (int) (maxWidth / textScale);
+            int ellipsisWidthUnscaled = safeFont.width("...");
+            if (maxWidthUnscaled <= ellipsisWidthUnscaled) {
+                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidthUnscaled));
             } else {
-                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidth - ellipsisWidth)) + "...";
+                selection = Objects.requireNonNull(safeFont.plainSubstrByWidth(selection, maxWidthUnscaled - ellipsisWidthUnscaled)) + "...";
             }
         }
-        int selectionX = panelRight - safeFont.width(selection);
-        graphics.drawString(safeFont, selection, selectionX, layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
+        int selectionX = panelRight - UIScaleManager.getScaledStringWidth(safeFont, selection);
+        drawScaledText(graphics, safeFont, selection, selectionX, layout.actionsLabelY() - yOffset, COLOR_TEXT_DIM);
     }
 
     private void renderActionButtons(GuiGraphics graphics, KitPanelLayout layout, int mouseX, int mouseY, int yOffset) {
@@ -956,9 +1040,10 @@ public class KitSelectionScreen extends Screen {
             renderBorder(graphics, button.x(), button.y(), button.w(), button.h(), borderColor);
 
             String label = Objects.requireNonNull(button.label());
-            int textX = button.x() + (button.w() - safeFont.width(label)) / 2;
-            int textY = button.y() + (button.h() - 8) / 2;
-            graphics.drawString(safeFont, label, textX, textY, textColor);
+            int textW = UIScaleManager.getScaledStringWidth(safeFont, label);
+            int textX = button.x() + (button.w() - textW) / 2;
+            int textY = button.y() + (button.h() - scaledTextLineHeight) / 2;
+            drawScaledText(graphics, safeFont, label, textX, textY, textColor);
         }
     }
 
@@ -975,18 +1060,18 @@ public class KitSelectionScreen extends Screen {
         int y = layout.actionsRowY() - yOffset;
 
         String editLabel = Objects.requireNonNull(I18n.ui("edit").getString());
-        int editW = Math.max(70, safeFont.width(editLabel) + 16);
-        buttons.add(new ActionButton(ActionType.EDIT, editLabel, x, y, editW, ACTION_BUTTON_HEIGHT, hasItem));
-        x += editW + ACTION_BUTTON_GAP;
+        int editW = Math.max(UIScaleManager.scale(70), UIScaleManager.getScaledStringWidth(safeFont, editLabel) + UIScaleManager.scale(16));
+        buttons.add(new ActionButton(ActionType.EDIT, editLabel, x, y, editW, scaledActionButtonHeight, hasItem));
+        x += editW + scaledActionButtonGap;
 
         String enchantLabel = Objects.requireNonNull(I18n.ui("enchant").getString());
-        int enchantW = Math.max(80, safeFont.width(enchantLabel) + 16);
-        buttons.add(new ActionButton(ActionType.ENCHANT, enchantLabel, x, y, enchantW, ACTION_BUTTON_HEIGHT, hasItem));
-        x += enchantW + ACTION_BUTTON_GAP;
+        int enchantW = Math.max(UIScaleManager.scale(80), UIScaleManager.getScaledStringWidth(safeFont, enchantLabel) + UIScaleManager.scale(16));
+        buttons.add(new ActionButton(ActionType.ENCHANT, enchantLabel, x, y, enchantW, scaledActionButtonHeight, hasItem));
+        x += enchantW + scaledActionButtonGap;
 
         String removeLabel = Objects.requireNonNull(I18n.ui("remove").getString());
-        int removeW = Math.max(70, safeFont.width(removeLabel) + 16);
-        buttons.add(new ActionButton(ActionType.REMOVE, removeLabel, x, y, removeW, ACTION_BUTTON_HEIGHT, hasItem));
+        int removeW = Math.max(UIScaleManager.scale(70), UIScaleManager.getScaledStringWidth(safeFont, removeLabel) + UIScaleManager.scale(16));
+        buttons.add(new ActionButton(ActionType.REMOVE, removeLabel, x, y, removeW, scaledActionButtonHeight, hasItem));
 
         return buttons;
     }
@@ -1006,43 +1091,51 @@ public class KitSelectionScreen extends Screen {
 
     private void renderBottomBar(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
-        int barY = height - 50;
+        int barY = height - UIScaleManager.scale(50);
 
         // Bar background
         graphics.fill(0, barY, width, height, COLOR_PANEL_HEADER);
         graphics.fill(0, barY, width, barY + 1, COLOR_BORDER);
 
-        int btnY = barY + 10;
-        int btnH = 28;
+        int btnY = barY + UIScaleManager.scale(10);
+        int btnH = UIScaleManager.scale(28);
+        int btnW = UIScaleManager.scale(90);
+        int btnGap = UIScaleManager.scale(10);
 
         // Back button
-        renderButton(graphics, PANEL_PADDING, btnY, 90, btnH,
+        renderButton(graphics, scaledPanelPadding, btnY, btnW, btnH,
             I18n.translate("devmod.kit.button.back").getString(), COLOR_PANEL,
             mouseX, mouseY);
 
         // Clear button
-        renderButton(graphics, PANEL_PADDING + 100, btnY, 90, btnH,
+        renderButton(graphics, scaledPanelPadding + btnW + btnGap, btnY, btnW, btnH,
             I18n.translate("devmod.kit.button.clear").getString(), COLOR_PANEL,
             mouseX, mouseY);
 
         // Right side buttons
-        int rx = width - PANEL_PADDING;
+        int rx = width - scaledPanelPadding;
 
         // Use Kit button (prominent)
-        int useW = 120;
+        int useW = UIScaleManager.scale(120);
         boolean useHover = mouseX >= rx - useW && mouseX < rx && mouseY >= btnY && mouseY < btnY + btnH;
         graphics.fill(rx - useW, btnY, rx, btnY + btnH, useHover ? COLOR_BTN_SUCCESS_HOVER : COLOR_ACCENT_GREEN);
         renderBorder(graphics, rx - useW, btnY, useW, btnH, useHover ? COLOR_BTN_SUCCESS_BORDER_HOVER : COLOR_BTN_SUCCESS_BORDER);
         String useText = Objects.requireNonNull(I18n.translate("devmod.kit.button.use").getString());
-        graphics.drawString(safeFont, useText, rx - useW + (useW - safeFont.width(useText)) / 2, btnY + 10, COLOR_TEXT_WHITE);
+        int useTextW = UIScaleManager.getScaledStringWidth(safeFont, useText);
+        int useTextX = rx - useW + (useW - useTextW) / 2;
+        int useTextY = btnY + (btnH - scaledTextLineHeight) / 2;
+        drawScaledText(graphics, safeFont, useText, useTextX, useTextY, COLOR_TEXT_WHITE);
 
         // Save button
-        int saveW = 110;
-        boolean saveHover = mouseX >= rx - useW - saveW - 10 && mouseX < rx - useW - 10 && mouseY >= btnY && mouseY < btnY + btnH;
-        graphics.fill(rx - useW - saveW - 10, btnY, rx - useW - 10, btnY + btnH, saveHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
-        renderBorder(graphics, rx - useW - saveW - 10, btnY, saveW, btnH, saveHover ? COLOR_ACCENT : COLOR_BORDER);
+        int saveW = UIScaleManager.scale(110);
+        boolean saveHover = mouseX >= rx - useW - saveW - btnGap && mouseX < rx - useW - btnGap && mouseY >= btnY && mouseY < btnY + btnH;
+        graphics.fill(rx - useW - saveW - btnGap, btnY, rx - useW - btnGap, btnY + btnH, saveHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
+        renderBorder(graphics, rx - useW - saveW - btnGap, btnY, saveW, btnH, saveHover ? COLOR_ACCENT : COLOR_BORDER);
         String saveText = Objects.requireNonNull(I18n.translate("devmod.kit.button.save_preset").getString());
-        graphics.drawString(safeFont, saveText, rx - useW - saveW - 10 + (saveW - safeFont.width(saveText)) / 2, btnY + 10, COLOR_TEXT);
+        int saveTextW = UIScaleManager.getScaledStringWidth(safeFont, saveText);
+        int saveTextX = rx - useW - saveW - btnGap + (saveW - saveTextW) / 2;
+        int saveTextY = btnY + (btnH - scaledTextLineHeight) / 2;
+        drawScaledText(graphics, safeFont, saveText, saveTextX, saveTextY, COLOR_TEXT);
     }
 
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, int bgColor,
@@ -1054,8 +1147,10 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(x, y, x + w, y + h, hovered ? COLOR_ITEM_HOVER : bgColor);
         renderBorder(graphics, x, y, w, h, hovered ? COLOR_ACCENT : COLOR_BORDER);
 
-        int textX = x + (w - safeFont.width(safeText)) / 2;
-        graphics.drawString(safeFont, safeText, textX, y + (h - 8) / 2, COLOR_TEXT);
+        int textW = UIScaleManager.getScaledStringWidth(safeFont, safeText);
+        int textX = x + (w - textW) / 2;
+        int textY = y + (h - scaledTextLineHeight) / 2;
+        drawScaledText(graphics, safeFont, safeText, textX, textY, COLOR_TEXT);
     }
 
     private void renderBorder(GuiGraphics graphics, int x, int y, int w, int h, int color) {
@@ -1095,13 +1190,13 @@ public class KitSelectionScreen extends Screen {
 
         // Header
         graphics.fill(popupX, popupY, popupX + popupW, popupY + 30, COLOR_PANEL_HEADER);
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.popup.enchant_title").getString(),
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.popup.enchant_title").getString(),
             popupX + 10, popupY + 11, COLOR_TEXT);
 
         // Close button
         int closeX = popupX + popupW - 22;
         boolean closeHover = mouseX >= closeX && mouseX < closeX + 16 && mouseY >= popupY + 7 && mouseY < popupY + 23;
-        graphics.drawString(safeFont, closeHover ? "§c✖" : "§7✖", closeX, popupY + 11, COLOR_TEXT);
+        drawScaledText(graphics, safeFont, closeHover ? "\u00A7c✖" : "\u00A77✖", closeX, popupY + 11, COLOR_TEXT);
 
         // Enchantment list
         int listY = popupY + 40;
@@ -1111,9 +1206,10 @@ public class KitSelectionScreen extends Screen {
 
         if (availableEnchants.isEmpty()) {
             String emptyLabel = Objects.requireNonNull(I18n.ui("no_results").getString());
-            int textX = popupX + (popupW - safeFont.width(emptyLabel)) / 2;
-            int textY = listY + listH / 2 - 4;
-            graphics.drawString(safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
+            int textW = UIScaleManager.getScaledStringWidth(safeFont, emptyLabel);
+            int textX = popupX + (popupW - textW) / 2;
+            int textY = listY + listH / 2 - (scaledTextLineHeight / 2);
+            drawScaledText(graphics, safeFont, emptyLabel, textX, textY, COLOR_TEXT_DIM);
         } else {
             int ey = listY - enchantScrollOffset;
             for (EnchantmentOption opt : availableEnchants) {
@@ -1128,7 +1224,7 @@ public class KitSelectionScreen extends Screen {
                 graphics.fill(popupX + 10, ey, popupX + popupW - 10, ey + 24, eHover ? COLOR_ITEM_HOVER : COLOR_SLOT_EMPTY);
                 renderBorder(graphics, popupX + 10, ey, popupW - 20, 24, eHover ? COLOR_ACCENT_PURPLE : COLOR_BORDER);
 
-                graphics.drawString(safeFont, opt.displayName, popupX + 16, ey + 8, COLOR_TEXT);
+                drawScaledText(graphics, safeFont, opt.displayName, popupX + 16, ey + 8, COLOR_TEXT);
 
                 // Level buttons
                 int lvlX = popupX + popupW - 80;
@@ -1136,7 +1232,7 @@ public class KitSelectionScreen extends Screen {
                     int btnX = lvlX + (lvl - 1) * 14;
                     boolean lvlHover = mouseX >= btnX && mouseX < btnX + 12 && mouseY >= ey + 4 && mouseY < ey + 20;
                     int lvlColor = lvlHover ? COLOR_ACCENT_PURPLE : COLOR_TEXT_DIM;
-                    graphics.drawString(safeFont, String.valueOf(lvl), btnX + 3, ey + 8, lvlColor);
+                    drawScaledText(graphics, safeFont, String.valueOf(lvl), btnX + 3, ey + 8, lvlColor);
                 }
 
                 ey += 26;
@@ -1152,7 +1248,8 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(popupX + popupW/2 - 40, btnY, popupX + popupW/2 + 40, btnY + 24, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, popupX + popupW/2 - 40, btnY, 80, 24, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
         String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString());
-        graphics.drawString(safeFont, cancelLabel, popupX + popupW/2 - safeFont.width(cancelLabel) / 2, btnY + 8, COLOR_TEXT);
+        int cancelW = UIScaleManager.getScaledStringWidth(safeFont, cancelLabel);
+        drawScaledText(graphics, safeFont, cancelLabel, popupX + popupW/2 - cancelW / 2, btnY + 8, COLOR_TEXT);
     }
 
     private void renderNameDialog(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -1172,7 +1269,7 @@ public class KitSelectionScreen extends Screen {
 
         // Header
         graphics.fill(dialogX, dialogY, dialogX + dialogW, dialogY + 30, COLOR_PANEL_HEADER);
-        graphics.drawString(safeFont, I18n.translate("devmod.kit.dialog.save_title").getString(),
+        drawScaledText(graphics, safeFont, I18n.translate("devmod.kit.dialog.save_title").getString(),
             dialogX + 10, dialogY + 11, COLOR_TEXT);
 
         // Name input field
@@ -1200,8 +1297,9 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(dialogX + 20, btnY, dialogX + 100, btnY + 26, cancelHover ? COLOR_ITEM_HOVER : COLOR_PANEL);
         renderBorder(graphics, dialogX + 20, btnY, 80, 26, cancelHover ? COLOR_ACCENT : COLOR_BORDER);
         String cancelLabel = Objects.requireNonNull(I18n.ui("cancel").getString());
-        graphics.drawString(safeFont, cancelLabel,
-            dialogX + 20 + (80 - safeFont.width(cancelLabel)) / 2, btnY + 9, COLOR_TEXT);
+        int cancelW = UIScaleManager.getScaledStringWidth(safeFont, cancelLabel);
+        drawScaledText(graphics, safeFont, cancelLabel,
+            dialogX + 20 + (80 - cancelW) / 2, btnY + 9, COLOR_TEXT);
 
         // Save
         boolean saveHover = mouseX >= dialogX + dialogW - 100 && mouseX < dialogX + dialogW - 20 &&
@@ -1209,9 +1307,10 @@ public class KitSelectionScreen extends Screen {
         graphics.fill(dialogX + dialogW - 100, btnY, dialogX + dialogW - 20, btnY + 26,
             saveHover ? COLOR_BTN_SUCCESS_HOVER : COLOR_ACCENT_GREEN);
         renderBorder(graphics, dialogX + dialogW - 100, btnY, 80, 26, saveHover ? COLOR_BTN_SUCCESS_BORDER_HOVER : COLOR_BTN_SUCCESS_BORDER);
-        String saveLabel = "§l" + I18n.ui("save").getString();
-        graphics.drawString(safeFont, saveLabel,
-            dialogX + dialogW - 100 + (80 - safeFont.width(saveLabel)) / 2, btnY + 9, COLOR_TEXT_WHITE);
+        String saveLabel = "\u00A7l" + I18n.ui("save").getString();
+        int saveW = UIScaleManager.getScaledStringWidth(safeFont, saveLabel);
+        drawScaledText(graphics, safeFont, saveLabel,
+            dialogX + dialogW - 100 + (80 - saveW) / 2, btnY + 9, COLOR_TEXT_WHITE);
     }
 
     private void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -1223,11 +1322,11 @@ public class KitSelectionScreen extends Screen {
         int gridH = layout.gridH();
 
         if (mouseX >= gridX && mouseX < gridX + gridW && mouseY >= gridY && mouseY < gridY + gridH) {
-            int itemsPerRow = Math.max(1, gridW / (ITEM_SIZE + ITEM_MARGIN));
+            int itemsPerRow = Math.max(1, gridW / (scaledItemSize + scaledItemMargin));
             int relX = mouseX - gridX;
             int relY = mouseY - gridY + itemScrollOffset;
-            int col = relX / (ITEM_SIZE + ITEM_MARGIN);
-            int row = relY / (ITEM_SIZE + ITEM_MARGIN);
+            int col = relX / (scaledItemSize + scaledItemMargin);
+            int row = relY / (scaledItemSize + scaledItemMargin);
             int index = row * itemsPerRow + col;
 
             if (index >= 0 && index < filteredItems.size()) {
@@ -1246,17 +1345,18 @@ public class KitSelectionScreen extends Screen {
         int y = layout.equipmentRowY();
 
         // Armor + offhand row
+        int slotGap = UIScaleManager.scale(6);
         for (int slot = 0; slot < 5; slot++) {
-            int slotX = panelX + (slot < 4 ? slot * (SLOT_SIZE + 6) : 4 * (SLOT_SIZE + 6) + 10);
+            int slotX = panelX + (slot < 4 ? slot * (scaledSlotSize + slotGap) : 4 * (scaledSlotSize + slotGap) + UIScaleManager.scale(10));
             int slotY = y;
 
-            if (mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE) {
+            if (mouseX >= slotX && mouseX < slotX + scaledSlotSize && mouseY >= slotY && mouseY < slotY + scaledSlotSize) {
                 ItemStack stack = kitSlots.getOrDefault(slot, ItemStack.EMPTY);
                 if (!stack.isEmpty()) {
                     graphics.renderTooltip(Objects.requireNonNull(font), stack, mouseX, mouseY);
                 } else {
                     List<net.minecraft.network.chat.Component> tooltip = Objects.requireNonNull(List.of(
-                        net.minecraft.network.chat.Component.literal("§7" + getSlotName(slot))));
+                        net.minecraft.network.chat.Component.literal("\u00A77" + getSlotName(slot))));
                     graphics.renderTooltip(Objects.requireNonNull(font), tooltip, Objects.requireNonNull(Optional.empty()), mouseX, mouseY);
                 }
                 return;
@@ -1265,17 +1365,18 @@ public class KitSelectionScreen extends Screen {
 
         // Hotbar row
         int hotbarY = layout.hotbarRowY();
+        int hotbarSlotGap = UIScaleManager.scale(4);
         for (int i = 0; i < 9; i++) {
-            int slotX = panelX + i * (SLOT_SIZE + 4);
+            int slotX = panelX + i * (scaledSlotSize + hotbarSlotGap);
             int slotY = hotbarY;
 
-            if (mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE) {
+            if (mouseX >= slotX && mouseX < slotX + scaledSlotSize && mouseY >= slotY && mouseY < slotY + scaledSlotSize) {
                 ItemStack stack = kitSlots.getOrDefault(5 + i, Objects.requireNonNull(ItemStack.EMPTY));
                 if (!stack.isEmpty()) {
                     graphics.renderTooltip(Objects.requireNonNull(font), stack, mouseX, mouseY);
                 } else {
                     List<net.minecraft.network.chat.Component> tooltip = Objects.requireNonNull(List.of(
-                        net.minecraft.network.chat.Component.literal("§7" + getSlotName(5 + i))));
+                        net.minecraft.network.chat.Component.literal("\u00A77" + getSlotName(5 + i))));
                     graphics.renderTooltip(Objects.requireNonNull(font), tooltip, Objects.requireNonNull(Optional.empty()), mouseX, mouseY);
                 }
                 return;
@@ -1346,10 +1447,11 @@ public class KitSelectionScreen extends Screen {
     }
 
     private boolean handleCategoryTabClick(int mouseX, int mouseY) {
-        if (mouseY < 4 || mouseY >= TAB_HEIGHT - 4) return false;
+        int tabMargin = UIScaleManager.scale(4);
+        if (mouseY < tabMargin || mouseY >= scaledTabHeight - tabMargin) return false;
 
-        int tabX = 120;
-        int tabW = 80;
+        int tabX = UIScaleManager.scale(120);
+        int tabW = UIScaleManager.scale(80);
         for (Category cat : Category.values()) {
             if (mouseX >= tabX && mouseX < tabX + tabW) {
                 selectedCategory = cat;
@@ -1357,33 +1459,35 @@ public class KitSelectionScreen extends Screen {
                 playClickSound();
                 return true;
             }
-            tabX += tabW + 4;
+            tabX += tabW + UIScaleManager.scale(4);
         }
         return false;
     }
 
     private boolean handleBottomBarClick(int mouseX, int mouseY) {
-        int barY = height - 50;
-        int btnY = barY + 10;
-        int btnH = 28;
+        int barY = height - UIScaleManager.scale(50);
+        int btnY = barY + UIScaleManager.scale(10);
+        int btnH = UIScaleManager.scale(28);
+        int btnW = UIScaleManager.scale(90);
+        int btnGap = UIScaleManager.scale(10);
 
         // Back button
-        if (mouseX >= PANEL_PADDING && mouseX < PANEL_PADDING + 90 &&
+        if (mouseX >= scaledPanelPadding && mouseX < scaledPanelPadding + btnW &&
             mouseY >= btnY && mouseY < btnY + btnH) {
             goBack();
             return true;
         }
 
         // Clear button
-        if (mouseX >= PANEL_PADDING + 100 && mouseX < PANEL_PADDING + 190 &&
+        if (mouseX >= scaledPanelPadding + btnW + btnGap && mouseX < scaledPanelPadding + btnW * 2 + btnGap &&
             mouseY >= btnY && mouseY < btnY + btnH) {
             clearKit();
             return true;
         }
 
-        int rx = width - PANEL_PADDING;
-        int useW = 120;
-        int saveW = 110;
+        int rx = width - scaledPanelPadding;
+        int useW = UIScaleManager.scale(120);
+        int saveW = UIScaleManager.scale(110);
 
         // Use Kit button
         if (mouseX >= rx - useW && mouseX < rx && mouseY >= btnY && mouseY < btnY + btnH) {
@@ -1392,7 +1496,7 @@ public class KitSelectionScreen extends Screen {
         }
 
         // Save button
-        if (mouseX >= rx - useW - saveW - 10 && mouseX < rx - useW - 10 &&
+        if (mouseX >= rx - useW - saveW - btnGap && mouseX < rx - useW - btnGap &&
             mouseY >= btnY && mouseY < btnY + btnH) {
             openNameDialog();
             return true;
@@ -1412,11 +1516,11 @@ public class KitSelectionScreen extends Screen {
             return false;
         }
 
-        int itemsPerRow = Math.max(1, gridW / (ITEM_SIZE + ITEM_MARGIN));
+        int itemsPerRow = Math.max(1, gridW / (scaledItemSize + scaledItemMargin));
         int relX = mouseX - gridX;
         int relY = mouseY - gridY + itemScrollOffset;
-        int col = relX / (ITEM_SIZE + ITEM_MARGIN);
-        int row = relY / (ITEM_SIZE + ITEM_MARGIN);
+        int col = relX / (scaledItemSize + scaledItemMargin);
+        int row = relY / (scaledItemSize + scaledItemMargin);
         int index = row * itemsPerRow + col;
 
         if (index >= 0 && index < filteredItems.size()) {
@@ -1453,22 +1557,24 @@ public class KitSelectionScreen extends Screen {
         int y = layout.equipmentRowY();
 
         // Armor + offhand
+        int slotGap = UIScaleManager.scale(6);
         for (int slot = 0; slot < 5; slot++) {
-            int slotX = panelX + (slot < 4 ? slot * (SLOT_SIZE + 6) : 4 * (SLOT_SIZE + 6) + 10);
+            int slotX = panelX + (slot < 4 ? slot * (scaledSlotSize + slotGap) : 4 * (scaledSlotSize + slotGap) + UIScaleManager.scale(10));
             int slotY = y;
 
-            if (mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE) {
+            if (mouseX >= slotX && mouseX < slotX + scaledSlotSize && mouseY >= slotY && mouseY < slotY + scaledSlotSize) {
                 return handleSlotAction(slot, button);
             }
         }
 
         // Hotbar
         int hotbarY = layout.hotbarRowY();
+        int hotbarSlotGap = UIScaleManager.scale(4);
         for (int i = 0; i < 9; i++) {
-            int slotX = panelX + i * (SLOT_SIZE + 4);
+            int slotX = panelX + i * (scaledSlotSize + hotbarSlotGap);
             int slotY = hotbarY;
 
-            if (mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE) {
+            if (mouseX >= slotX && mouseX < slotX + scaledSlotSize && mouseY >= slotY && mouseY < slotY + scaledSlotSize) {
                 return handleSlotAction(5 + i, button);
             }
         }
@@ -1546,13 +1652,13 @@ public class KitSelectionScreen extends Screen {
 
         int px = panelX;
         for (int i = 0; i < presets.length; i++) {
-            int pw = safeFont.width(Objects.requireNonNull(presets[i][0])) + 20;
-            if (mouseX >= px && mouseX < px + pw && mouseY >= y && mouseY < y + 18) {
+            int pw = UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(presets[i][0])) + UIScaleManager.scale(20);
+            if (mouseX >= px && mouseX < px + pw && mouseY >= y && mouseY < y + scaledActionButtonHeight) {
                 applyQuickSet(i);
                 playSuccessSound();
                 return true;
             }
-            px += pw + 6;
+            px += pw + UIScaleManager.scale(6);
         }
         return false;
     }
@@ -1824,8 +1930,10 @@ public class KitSelectionScreen extends Screen {
         EditorStartTab startTab = EditorStartTab.GENERAL;
 
         // Open the editor with callback support
-        var mc = Minecraft.getInstance();
-        mc.setScreen(new ItemEditorScreen(stack, startTab, this, onItemEdited, true));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "item_editor",
+            this,
+            () -> new ItemEditorScreen(stack, startTab, this, onItemEdited, true));
         playClickSound();
     }
 

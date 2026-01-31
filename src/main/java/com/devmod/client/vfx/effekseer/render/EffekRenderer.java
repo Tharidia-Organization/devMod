@@ -12,6 +12,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 
+import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.api.DeviceType;
 import com.devmod.client.vfx.effekseer.api.Effekseer;
 import com.devmod.client.vfx.effekseer.api.ParticleEmitter;
@@ -34,6 +35,10 @@ public class EffekRenderer {
             if (NativePlatform.isRunningOnUnsupportedPlatform()) {
                 return;
             }
+            if (!EffekseerClient.isAvailable()) {
+                LOGGER.debug("[Effekseer] Native library not available, skipping renderer init");
+                return;
+            }
             if (Effekseer.getDeviceType() != DeviceType.OPENGL) {
                 if (!Effekseer.init()) {
                     throw new ExceptionInInitializerError("Failed to initialize Effekseer");
@@ -44,7 +49,7 @@ public class EffekRenderer {
     }
 
     public static void renderWorldEffeks(float partialTick, Matrix4f viewMatrix, Matrix4f projection, Camera camera) {
-        if (NativePlatform.isRunningOnUnsupportedPlatform()) {
+        if (NativePlatform.isRunningOnUnsupportedPlatform() || !EffekseerClient.isAvailable()) {
             return;
         }
         RenderStateCapture.ensureSizedToMain();

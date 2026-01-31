@@ -8,9 +8,6 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 
@@ -22,7 +19,6 @@ import com.devmod.client.overlay.effekseer.EffectContext.EffectType;
 import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.api.ParticleEmitter;
 import com.devmod.config.Config;
-
 /**
  * Orchestrates complex VFX sequences for impacts.
  *

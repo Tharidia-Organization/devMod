@@ -11,6 +11,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -21,15 +23,13 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
+import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.api.EffekseerEffect;
 import com.devmod.client.vfx.effekseer.api.TextureType;
-import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.installer.NativePlatform;
 import com.devmod.client.vfx.effekseer.registry.EffectDefinition;
 import com.devmod.client.vfx.effekseer.render.EffekRenderer;
 import com.devmod.client.vfx.effekseer.render.RenderUtil;
-import javax.annotation.Nullable;
-
 @SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetLoader.Preparations> {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -151,7 +151,7 @@ public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetL
         INSTANCE = this;
         EffekseerClient.init();
         EffekRenderer.init();
-        if (NativePlatform.isRunningOnUnsupportedPlatform()) {
+        if (NativePlatform.isRunningOnUnsupportedPlatform() || !EffekseerClient.isAvailable()) {
             unloadAll();
             return;
         }

@@ -426,41 +426,41 @@ public class DialogOptionEditorScreen extends Screen {
         graphics.renderOutline(popupX, popupY, POPUP_WIDTH, POPUP_HEIGHT, COLOR_BORDER);
 
         // Title
-        graphics.drawCenteredString(font, title, width / 2, popupY + PADDING, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, title, width / 2, popupY + PADDING, COLOR_TEXT);
 
         // Field labels
         int contentX = popupX + PADDING;
         int y = popupY + PADDING + 15;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.option_editor.id"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.id"),
             contentX, y, COLOR_LABEL);
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.option_editor.label"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.label"),
             contentX, y, COLOR_LABEL);
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.option_editor.icon"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.icon"),
             contentX, y, COLOR_LABEL);
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.option_editor.action_type"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.action_type"),
             contentX, y, COLOR_LABEL);
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
         // Parameter labels based on action type
         if (param1Field != null && param1Field.visible) {
-            graphics.drawString(font, selectedActionType.getParam1Label(), contentX, y, COLOR_LABEL);
+            UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam1Label(), contentX, y, COLOR_LABEL);
         }
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
         if (param2Field != null && param2Field.visible) {
-            graphics.drawString(font, selectedActionType.getParam2Label(), contentX, y, COLOR_LABEL);
+            UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam2Label(), contentX, y, COLOR_LABEL);
         }
         y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
 
         if (param3Field != null && param3Field.visible) {
-            graphics.drawString(font, selectedActionType.getParam3Label(), contentX, y, COLOR_LABEL);
+            UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam3Label(), contentX, y, COLOR_LABEL);
         }
 
         renderInputBackgrounds(graphics);

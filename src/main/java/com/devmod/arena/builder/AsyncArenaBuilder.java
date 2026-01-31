@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.arena.budget.BackpressureManager;
 import com.devmod.arena.budget.BuildBudget;
 import com.devmod.arena.config.ArenaTemplateConfig;
@@ -158,6 +159,8 @@ public class AsyncArenaBuilder {
             int originY,
             int originZ,
             Consumer<AsyncBuildResult> callback) {
+        DiagnosticLogger.arena("submitBuild: arenaId=%s, template=%s, origin=(%d,%d,%d)",
+            arenaId, template.id(), originX, originY, originZ);
 
         // Instance-only gate: block overworld builds when configured and using block placer with level access
         if (instanceGate != null) {
@@ -445,6 +448,9 @@ public class AsyncArenaBuilder {
      */
     private void completeBuild(AsyncBuild build, Exception error) {
         buildsByArenaId.remove(build.arenaId);
+        DiagnosticLogger.arena("completeBuild: arenaId=%s, template=%s, success=%s, blocks=%d, durationMs=%d",
+            build.arenaId, build.template.id(), error == null,
+            build.budget.getCurrentBlocks(), build.budget.getElapsedMs());
 
         if (error != null) {
             totalBuildsFailed++;

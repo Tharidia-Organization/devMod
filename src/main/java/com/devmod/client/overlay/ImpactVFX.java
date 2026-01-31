@@ -17,11 +17,22 @@ import com.devmod.client.overlay.vfx.SlashRenderer;
 import com.devmod.client.overlay.vfx.VortexRenderer;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 import com.devmod.client.ui.overlay.OverlayTheme;
+import com.devmod.combat.HitHelper;
 import com.devmod.config.Config;
 import com.devmod.damage.DamageBreakdown;
-import com.devmod.combat.HitHelper;
 
-import static com.devmod.client.overlay.vfx.ImpactVFXConstants.*;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.CORE_DURATION_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.CORE_FADE_IN_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.CORE_FADE_OUT_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_DURATION_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_FADE_IN_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_FADE_OUT_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_DURATION_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_FADE_IN_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_FADE_OUT_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.SLASH_DURATION_MS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.TWO_PI;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.applyIntensity;
 
 /**
  * Facade for Impact VFX rendering.

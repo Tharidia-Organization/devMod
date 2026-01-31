@@ -17,6 +17,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.ItemEditorDataManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.VirtualizedList;
@@ -391,15 +392,15 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Title
         String title = TITLE_TEXT;
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, x + (width - titleWidth) / 2, currentY + TITLE_TEXT_OFFSET_Y,
+        int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
+        UIScaleManager.drawScaledString(graphics, font, title, x + (width - titleWidth) / 2, currentY + TITLE_TEXT_OFFSET_Y,
             DesignTokens.Text.TITLE(), false);
 
         // Close button (X) in top right
         int closeX = x + width - PADDING - CLOSE_BUTTON_SIZE;
         boolean closeHovered = mouseX >= closeX && mouseX <= closeX + CLOSE_BUTTON_SIZE &&
                                mouseY >= currentY && mouseY <= currentY + TITLE_HEIGHT;
-        graphics.drawString(font, CLOSE_LABEL, closeX, currentY + TITLE_TEXT_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, font, CLOSE_LABEL, closeX, currentY + TITLE_TEXT_OFFSET_Y,
             closeHovered ? CLOSE_HOVER_COLOR : DesignTokens.Text.MUTED(), false);
 
         currentY += TITLE_HEIGHT;
@@ -409,7 +410,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
         if (!requirePresetList().isEmpty()) {
             filterInfo += " (" + requirePresetList().getItemCount() + " presets)";
         }
-        graphics.drawString(font, filterInfo, x + PADDING, currentY + FILTER_TEXT_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, font, filterInfo, x + PADDING, currentY + FILTER_TEXT_OFFSET_Y,
             DesignTokens.Text.MUTED(), false);
         currentY += FILTER_ROW_HEIGHT;
 
@@ -465,7 +466,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Label
         String label = "Rename preset:";
-        graphics.drawString(safeFont, Objects.requireNonNull(label, "label"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(label, "label"),
             x + RENAME_TEXT_PADDING, y + RENAME_BOX_PADDING,
             DesignTokens.Text.MUTED(), false);
 
@@ -483,21 +484,21 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Text
         String displayText = renameBuffer.isEmpty() ? (renamingEntry != null ? renamingEntry.name() : "") : renameBuffer;
-        graphics.drawString(safeFont, Objects.requireNonNull(displayText, "displayText"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(displayText, "displayText"),
             x + RENAME_TEXT_PADDING + RENAME_BOX_PADDING,
             inputY + (inputH - safeFont.lineHeight) / 2, DesignTokens.Text.PRIMARY(), false);
 
         // Cursor
         if ((System.currentTimeMillis() / CURSOR_BLINK_MS) % 2 == 0) {
             int cursorX = x + RENAME_TEXT_PADDING + RENAME_BOX_PADDING +
-                safeFont.width(Objects.requireNonNull(renameBuffer, "renameBuffer"));
+                UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(renameBuffer, "renameBuffer"));
             graphics.fill(cursorX, inputY + SEARCH_CURSOR_INSET, cursorX + SEARCH_CURSOR_WIDTH,
                 inputY + inputH - SEARCH_CURSOR_INSET, DesignTokens.Text.PRIMARY());
         }
 
         // Hint
         String hint = "Press Enter to confirm, Escape to cancel";
-        graphics.drawString(safeFont, Objects.requireNonNull(hint, "hint"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(hint, "hint"),
             x + RENAME_TEXT_PADDING, y + height - safeFont.lineHeight - RENAME_BOX_PADDING,
             DesignTokens.Text.MUTED(), false);
     }
@@ -518,12 +519,12 @@ public class PresetSelectorOverlay extends BaseOverlay {
         // Text
         String displayText = searchQuery.isEmpty() && !searchFocused ? SEARCH_PLACEHOLDER : searchQuery;
         int textColor = searchQuery.isEmpty() && !searchFocused ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
-        graphics.drawString(safeFont, Objects.requireNonNull(displayText, "displayText"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(displayText, "displayText"),
             x + SEARCH_TEXT_PADDING, y + (height - safeFont.lineHeight) / 2, textColor, false);
 
         // Cursor when focused
         if (searchFocused && (System.currentTimeMillis() / CURSOR_BLINK_MS) % 2 == 0) {
-            int cursorX = x + SEARCH_TEXT_PADDING + safeFont.width(Objects.requireNonNull(searchQuery, "searchQuery"));
+            int cursorX = x + SEARCH_TEXT_PADDING + UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(searchQuery, "searchQuery"));
             graphics.fill(cursorX, y + SEARCH_CURSOR_INSET, cursorX + SEARCH_CURSOR_WIDTH, y + height - SEARCH_CURSOR_INSET,
                 DesignTokens.Text.PRIMARY());
         }
@@ -537,8 +538,8 @@ public class PresetSelectorOverlay extends BaseOverlay {
         PresetListEntry entry = selectedEntry;
         if (entry == null) {
             String msg = PREVIEW_EMPTY_MESSAGE;
-            int textWidth = safeFont.width(Objects.requireNonNull(msg, "previewMessage"));
-            graphics.drawString(safeFont, Objects.requireNonNull(msg, "previewMessage"),
+            int textWidth = UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(msg, "previewMessage"));
+            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(msg, "previewMessage"),
                 x + (width - textWidth) / 2, y + height / 2 - PREVIEW_MESSAGE_OFFSET_Y,
                 DesignTokens.Text.MUTED(), false);
             return;
@@ -546,7 +547,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
 
         // Selected preset info
         int textY = y + PREVIEW_TEXT_OFFSET_Y;
-        graphics.drawString(safeFont, Objects.requireNonNull(SELECTED_PREFIX + entry.name(), "selectedLabel"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(SELECTED_PREFIX + entry.name(), "selectedLabel"),
             x + PREVIEW_TEXT_PADDING, textY,
             DesignTokens.Text.PRIMARY(), false);
         textY += PREVIEW_LINE_HEIGHT;
@@ -558,7 +559,7 @@ public class PresetSelectorOverlay extends BaseOverlay {
             case PresetScope.Category ignored -> SCOPE_COLOR_CATEGORY;
             case PresetScope.Global ignored -> SCOPE_COLOR_GLOBAL;
         };
-        graphics.drawString(safeFont, Objects.requireNonNull(scopeLabel, "scopeLabel"),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(scopeLabel, "scopeLabel"),
             x + PREVIEW_TEXT_PADDING, textY, scopeColor, false);
         textY += PREVIEW_LINE_HEIGHT;
 
@@ -568,13 +569,13 @@ public class PresetSelectorOverlay extends BaseOverlay {
             if (desc.length() > PREVIEW_DESCRIPTION_MAX) {
                 desc = desc.substring(0, PREVIEW_DESCRIPTION_TRUNCATE) + "...";
             }
-            graphics.drawString(safeFont, Objects.requireNonNull(desc, "description"),
+            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(desc, "description"),
                 x + PREVIEW_TEXT_PADDING, textY, DesignTokens.Text.MUTED(), false);
         }
 
         // User preset indicator
         if (entry.isUserPreset()) {
-            graphics.drawString(safeFont, Objects.requireNonNull(USER_PRESET_LABEL, "userLabel"),
+            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(USER_PRESET_LABEL, "userLabel"),
                 x + width - USER_LABEL_OFFSET_X, y + PREVIEW_TEXT_OFFSET_Y,
                 SCOPE_COLOR_GLOBAL_USER, false);
         }
@@ -606,15 +607,15 @@ public class PresetSelectorOverlay extends BaseOverlay {
         if (name.length() > ROW_NAME_MAX) {
             name = name.substring(0, ROW_NAME_TRUNCATE) + "...";
         }
-        graphics.drawString(font, Objects.requireNonNull(name, "name"),
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(name, "name"),
             x + ROW_NAME_PADDING, y + (LIST_ROW_HEIGHT - font.lineHeight) / 2,
             DesignTokens.Text.PRIMARY(), false);
 
         // Category tag on right
         String cat = entry.category();
         if (cat != null && !cat.isEmpty()) {
-            int catWidth = font.width(Objects.requireNonNull(cat, "category"));
-            graphics.drawString(font, Objects.requireNonNull(cat, "category"),
+            int catWidth = UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(cat, "category"));
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(cat, "category"),
                 x + width - catWidth - ROW_CATEGORY_PADDING,
                 y + (LIST_ROW_HEIGHT - font.lineHeight) / 2,
                 DesignTokens.Text.MUTED(), false);

@@ -323,20 +323,20 @@ public class ArenaCommands {
     private int showHelp(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack src = ctx.getSource();
 
-        src.sendSuccess(() -> Component.literal("§e=== Arena Commands ==="), false);
-        src.sendSuccess(() -> Component.literal("§7/arena create <template> §f- Create arena"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena template list §f- List templates"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena template info <id> §f- Template details"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena template reload §f- Reload templates"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena autosmoke run §f- Run smoke tests"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena autosmoke status §f- Autosmoke status"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena status §f- Arena system status"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena validate <id> §f- Validate template (dry-run)"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena force <id> [mins] §f- Force template session"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena force clear §f- Clear forced template"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena metrics <id> §f- Template build metrics"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena hud toggle §f- Toggle debug HUD"), false);
-        src.sendSuccess(() -> Component.literal("§7/arena hud status §f- Show HUD status"), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Arena Commands ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena create <template> \u00A7f- Create arena"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena template list \u00A7f- List templates"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena template info <id> \u00A7f- Template details"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena template reload \u00A7f- Reload templates"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena autosmoke run \u00A7f- Run smoke tests"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena autosmoke status \u00A7f- Autosmoke status"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena status \u00A7f- Arena system status"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena validate <id> \u00A7f- Validate template (dry-run)"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena force <id> [mins] \u00A7f- Force template session"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena force clear \u00A7f- Clear forced template"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena metrics <id> \u00A7f- Template build metrics"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena hud toggle \u00A7f- Toggle debug HUD"), false);
+        src.sendSuccess(() -> Component.literal("\u00A77/arena hud status \u00A7f- Show HUD status"), false);
 
         return 1;
     }
@@ -350,7 +350,7 @@ public class ArenaCommands {
 
         Optional<ArenaTemplate> templateOpt = registry.get(templateId);
         if (templateOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cTemplate not found: " + templateId));
+            src.sendFailure(Component.literal("\u00A7cTemplate not found: " + templateId));
             return 0;
         }
 
@@ -368,10 +368,10 @@ public class ArenaCommands {
             String gateCaller = getClass().getName();
             var gateResult = gate.checkDimensionKey(dimensionKey, gateCaller);
             if (gateResult == InstanceOnlyGate.Result.BLOCKED) {
-                src.sendFailure(Component.literal("§cInstance-only mode: cannot create arenas in " + dimensionLabel));
+                src.sendFailure(Component.literal("\u00A7cInstance-only mode: cannot create arenas in " + dimensionLabel));
                 return 0;
             } else if (gateResult == InstanceOnlyGate.Result.ALLOWED_DEBUG_ONLY) {
-                src.sendSuccess(() -> Component.literal("§eDebug-only override: creating in " + dimensionLabel), false);
+                src.sendSuccess(() -> Component.literal("\u00A7eDebug-only override: creating in " + dimensionLabel), false);
             }
         }
 
@@ -389,7 +389,7 @@ public class ArenaCommands {
         }
 
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Creating arena from template '%s' v%d at (%d, %d, %d)...",
+            String.format("\u00A77Creating arena from template '%s' v%d at (%d, %d, %d)...",
                 templateId, template.version(), originX, originY, originZ)
         ), false);
 
@@ -399,17 +399,17 @@ public class ArenaCommands {
 
         if (asyncPreferred) {
             if (asyncBuilderFactory == null) {
-                src.sendFailure(Component.literal("§cAsync arena builder not available"));
+                src.sendFailure(Component.literal("\u00A7cAsync arena builder not available"));
                 return 0;
             }
             AsyncArenaBuilder asyncBuilder = asyncBuilderFactory.apply(level);
             if (asyncBuilder == null) {
-                src.sendFailure(Component.literal("§cAsync arena builder not available"));
+                src.sendFailure(Component.literal("\u00A7cAsync arena builder not available"));
                 return 0;
             }
             UUID arenaId = UUID.randomUUID();
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Queued ASYNC arena build '%s' v%d (arenaId: %s)",
+                String.format("\u00A77Queued ASYNC arena build '%s' v%d (arenaId: %s)",
                     templateId, template.version(), arenaId)
             ), false);
 
@@ -425,14 +425,14 @@ public class ArenaCommands {
                             && be.getResult().errorMessage() != null) {
                             message = be.getResult().errorMessage();
                         }
-                        src.sendFailure(Component.literal("§cAsync arena build failed: " + message));
+                        src.sendFailure(Component.literal("\u00A7cAsync arena build failed: " + message));
                         LOGGER.error("Async arena build failed for template '{}': {}", templateId, message);
                         return;
                     }
                     if (asyncResult == null || !asyncResult.success()) {
                         String message = asyncResult != null && asyncResult.errorMessage() != null
                             ? asyncResult.errorMessage() : "Unknown error";
-                        src.sendFailure(Component.literal("§cAsync arena build failed: " + message));
+                        src.sendFailure(Component.literal("\u00A7cAsync arena build failed: " + message));
                         LOGGER.error("Async arena build failed for template '{}': {}", templateId, message);
                         return;
                     }
@@ -442,14 +442,14 @@ public class ArenaCommands {
                     int spawnSlotCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
 
                     src.sendSuccess(() -> Component.literal(
-                        String.format("§aAsync arena created successfully! ID: %s", asyncResult.arenaId())
+                        String.format("\u00A7aAsync arena created successfully! ID: %s", asyncResult.arenaId())
                     ), true);
                     src.sendSuccess(() -> Component.literal(
-                        String.format("§7Size: %dx%d, Blocks placed: %d, Duration: %dms",
+                        String.format("\u00A77Size: %dx%d, Blocks placed: %d, Duration: %dms",
                             sizeX, sizeZ, asyncResult.blocksPlaced(), asyncResult.durationMs())
                     ), false);
                     src.sendSuccess(() -> Component.literal(
-                        String.format("§7Spawn slots: %d", spawnSlotCount)
+                        String.format("\u00A77Spawn slots: %d", spawnSlotCount)
                     ), false);
 
                     LOGGER.info("Async arena '{}' created by {} at ({},{},{}) - {} blocks in {}ms",
@@ -469,18 +469,18 @@ public class ArenaCommands {
         // Build the arena using TemplateArenaBuilder (sync)
         TemplateArenaBuilder builder = builderFactory.apply(level);
         if (builder == null) {
-            src.sendFailure(Component.literal("§cArena builder not available"));
+            src.sendFailure(Component.literal("\u00A7cArena builder not available"));
             return 0;
         }
         ArenaBuilder.BuildResult result = builder.build(template, originX, originY, originZ);
 
         if (!result.success()) {
-            src.sendFailure(Component.literal("§cArena creation failed: " + result.errorMessage()));
+            src.sendFailure(Component.literal("\u00A7cArena creation failed: " + result.errorMessage()));
 
             if (result.rollbackResult() != null) {
                 var rollback = result.rollbackResult();
                 src.sendFailure(Component.literal(
-                    String.format("§7Rollback: %d blocks reverted in %dms",
+                    String.format("\u00A77Rollback: %d blocks reverted in %dms",
                         rollback.blocksReverted(), rollback.durationMs())
                 ));
             }
@@ -494,14 +494,14 @@ public class ArenaCommands {
         int spawnSlotCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
 
         src.sendSuccess(() -> Component.literal(
-            String.format("§aArena created successfully! ID: %s", result.arenaId())
+            String.format("\u00A7aArena created successfully! ID: %s", result.arenaId())
         ), true);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Size: %dx%d, Blocks placed: %d, Duration: %dms",
+            String.format("\u00A77Size: %dx%d, Blocks placed: %d, Duration: %dms",
                 sizeX, sizeZ, result.blockCount(), result.durationMs())
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Spawn slots: %d", spawnSlotCount)
+            String.format("\u00A77Spawn slots: %d", spawnSlotCount)
         ), false);
 
         LOGGER.info("Arena '{}' created by {} at ({},{},{}) - {} blocks in {}ms",
@@ -519,21 +519,21 @@ public class ArenaCommands {
         Collection<ArenaTemplate> templates = registry.all();
 
         if (templates.isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§7No templates loaded"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77No templates loaded"), false);
             return 1;
         }
 
         src.sendSuccess(() -> Component.literal(
-            String.format("§e=== Templates (%d) ===", templates.size())
+            String.format("\u00A7e=== Templates (%d) ===", templates.size())
         ), false);
 
         for (ArenaTemplate t : templates) {
-            String status = t.deprecated() ? "§c[DEPRECATED]" : "§a[ACTIVE]";
+            String status = t.deprecated() ? "\u00A7c[DEPRECATED]" : "\u00A7a[ACTIVE]";
             String tags = t.tags() != null && !t.tags().isEmpty()
-                ? " §8[" + String.join(", ", t.tags()) + "]"
+                ? " \u00A78[" + String.join(", ", t.tags()) + "]"
                 : "";
 
-            final String line = String.format("%s §f%s §7v%d%s", status, t.id(), t.version(), tags);
+            final String line = String.format("%s \u00A7f%s \u00A77v%d%s", status, t.id(), t.version(), tags);
             src.sendSuccess(() -> Component.literal(line), false);
         }
 
@@ -548,49 +548,49 @@ public class ArenaCommands {
 
         Optional<ArenaTemplate> templateOpt = registry.get(templateId);
         if (templateOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cTemplate not found: " + templateId));
+            src.sendFailure(Component.literal("\u00A7cTemplate not found: " + templateId));
             return 0;
         }
 
         ArenaTemplate t = templateOpt.get();
 
-        src.sendSuccess(() -> Component.literal("§e=== Template: " + t.id() + " ==="), false);
-        src.sendSuccess(() -> Component.literal("§7Version: §f" + t.version()), false);
-        src.sendSuccess(() -> Component.literal("§7Schema: §f" + t.schemaVersion()), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Template: " + t.id() + " ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Version: \u00A7f" + t.version()), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Schema: \u00A7f" + t.schemaVersion()), false);
 
         if (t.extendsTemplate() != null) {
-            src.sendSuccess(() -> Component.literal("§7Extends: §f" + t.extendsTemplate()), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Extends: \u00A7f" + t.extendsTemplate()), false);
         }
 
         int infoSizeX = Objects.requireNonNullElse(t.sizeX(), t.size());
         int infoSizeZ = Objects.requireNonNullElse(t.sizeZ(), t.size());
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Size: §f%d x %d", infoSizeX, infoSizeZ)
+            String.format("\u00A77Size: \u00A7f%d x %d", infoSizeX, infoSizeZ)
         ), false);
 
         if (t.floor() != null) {
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Floor: §f%s at Y=%d", t.floor().material(), t.floor().y())
+                String.format("\u00A77Floor: \u00A7f%s at Y=%d", t.floor().material(), t.floor().y())
             ), false);
         }
 
         int spawnCount = t.spawnSlots() != null ? t.spawnSlots().size() : 0;
-        src.sendSuccess(() -> Component.literal("§7Spawn slots: §f" + spawnCount), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Spawn slots: \u00A7f" + spawnCount), false);
 
         int hazardCount = t.hazards() != null ? t.hazards().size() : 0;
-        src.sendSuccess(() -> Component.literal("§7Hazards: §f" + hazardCount), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Hazards: \u00A7f" + hazardCount), false);
 
         if (t.tags() != null && !t.tags().isEmpty()) {
             src.sendSuccess(() -> Component.literal(
-                "§7Tags: §f" + String.join(", ", t.tags())
+                "\u00A77Tags: \u00A7f" + String.join(", ", t.tags())
             ), false);
         }
 
         if (t.deprecated()) {
-            src.sendSuccess(() -> Component.literal("§c⚠ DEPRECATED"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7c⚠ DEPRECATED"), false);
             if (t.replacementVersion() != null) {
                 src.sendSuccess(() -> Component.literal(
-                    "§7Replacement: §f" + t.replacementVersion()
+                    "\u00A77Replacement: \u00A7f" + t.replacementVersion()
                 ), false);
             }
         }
@@ -605,11 +605,11 @@ public class ArenaCommands {
 
         // Guard: prevent concurrent reloads
         if (bootstrap != null && bootstrap.isReloadInProgress()) {
-            src.sendFailure(Component.literal("§cReload already in progress. Please wait..."));
+            src.sendFailure(Component.literal("\u00A7cReload already in progress. Please wait..."));
             return 0;
         }
 
-        src.sendSuccess(() -> Component.literal("§7Reloading templates..."), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Reloading templates..."), false);
 
         try {
             ArenaTemplateRegistry.ReloadResult result;
@@ -625,12 +625,12 @@ public class ArenaCommands {
 
             if (result.success()) {
                 src.sendSuccess(() -> Component.literal(
-                    String.format("§aReloaded %d templates successfully", result.loadedCount())
+                    String.format("\u00A7aReloaded %d templates successfully", result.loadedCount())
                 ), false);
             } else {
-                src.sendFailure(Component.literal("§cReload failed with errors:"));
+                src.sendFailure(Component.literal("\u00A7cReload failed with errors:"));
                 for (String error : result.errors()) {
-                    src.sendFailure(Component.literal("§c  - " + error));
+                    src.sendFailure(Component.literal("\u00A7c  - " + error));
                 }
             }
 
@@ -638,7 +638,7 @@ public class ArenaCommands {
 
         } catch (Exception e) {
             LOGGER.error("Template reload failed", e);
-            src.sendFailure(Component.literal("§cReload failed: " + e.getMessage()));
+            src.sendFailure(Component.literal("\u00A7cReload failed: " + e.getMessage()));
             return 0;
         }
     }
@@ -648,58 +648,58 @@ public class ArenaCommands {
 
         logCommand(src, "template status", null);
 
-        src.sendSuccess(() -> Component.literal("§e=== Template System Status ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Template System Status ==="), false);
 
         // Registry info
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Templates loaded: §f%d", registry.size())
+            String.format("\u00A77Templates loaded: \u00A7f%d", registry.size())
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Registry generation: §f%d", registry.getGeneration())
+            String.format("\u00A77Registry generation: \u00A7f%d", registry.getGeneration())
         ), false);
 
         // Bootstrap status
         if (bootstrap != null) {
             // Watcher status
             boolean watcherActive = bootstrap.isWatcherActive();
-            String watcherStatus = watcherActive ? "§aActive" : "§7Inactive";
-            src.sendSuccess(() -> Component.literal("§7Hot-reload watcher: " + watcherStatus), false);
+            String watcherStatus = watcherActive ? "\u00A7aActive" : "\u00A77Inactive";
+            src.sendSuccess(() -> Component.literal("\u00A77Hot-reload watcher: " + watcherStatus), false);
 
             // Reload status
             boolean reloadInProgress = bootstrap.isReloadInProgress();
             if (reloadInProgress) {
-                src.sendSuccess(() -> Component.literal("§e⟳ Reload in progress..."), false);
+                src.sendSuccess(() -> Component.literal("\u00A7e⟳ Reload in progress..."), false);
             }
 
             // Last load result
             var lastResult = bootstrap.getLastLoadResult();
             if (lastResult != null) {
-                String resultStatus = lastResult.success() ? "§aSuccess" : "§cFailed";
+                String resultStatus = lastResult.success() ? "\u00A7aSuccess" : "\u00A7cFailed";
                 src.sendSuccess(() -> Component.literal(
-                    String.format("§7Last load: %s §7(%d templates, %d errors)",
+                    String.format("\u00A77Last load: %s \u00A77(%d templates, %d errors)",
                         resultStatus, lastResult.templates().size(), lastResult.errors().size())
                 ), false);
 
                 // Show errors if any
                 if (!lastResult.errors().isEmpty()) {
-                    src.sendSuccess(() -> Component.literal("§cErrors:"), false);
+                    src.sendSuccess(() -> Component.literal("\u00A7cErrors:"), false);
                     for (String error : lastResult.errors()) {
-                        src.sendSuccess(() -> Component.literal("§c  • " + error), false);
+                        src.sendSuccess(() -> Component.literal("\u00A7c  • " + error), false);
                     }
                 }
             } else {
-                src.sendSuccess(() -> Component.literal("§7Last load: §8Not initialized"), false);
+                src.sendSuccess(() -> Component.literal("\u00A77Last load: \u00A78Not initialized"), false);
             }
 
             // Directory info
             src.sendSuccess(() -> Component.literal(
-                "§7Directory: §f" + bootstrap.templateDirectory()
+                "\u00A77Directory: \u00A7f" + bootstrap.templateDirectory()
             ), false);
             src.sendSuccess(() -> Component.literal(
-                "§7Validation mode: §f" + bootstrap.validationMode()
+                "\u00A77Validation mode: \u00A7f" + bootstrap.validationMode()
             ), false);
         } else {
-            src.sendSuccess(() -> Component.literal("§7Bootstrap: §cNot configured"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Bootstrap: \u00A7cNot configured"), false);
         }
 
         return 1;
@@ -738,30 +738,30 @@ public class ArenaCommands {
         logCommand(src, "autosmoke run", null);
 
         if (autosmokeRunner == null) {
-            src.sendFailure(Component.literal("§cAutosmoke runner not configured"));
+            src.sendFailure(Component.literal("\u00A7cAutosmoke runner not configured"));
             return 0;
         }
 
         if (autosmokeRunner.isRunning()) {
-            src.sendFailure(Component.literal("§cAutosmoke already running"));
+            src.sendFailure(Component.literal("\u00A7cAutosmoke already running"));
             return 0;
         }
 
-        src.sendSuccess(() -> Component.literal("§7Starting autosmoke tests..."), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Starting autosmoke tests..."), false);
 
         // Run async
         CompletableFuture<Void> reportFuture = autosmokeRunner.runAllAsync().thenAccept(report -> {
             if (report == null) {
-                src.sendFailure(Component.literal("§cAutosmoke blocked by guard"));
+                src.sendFailure(Component.literal("\u00A7cAutosmoke blocked by guard"));
                 return;
             }
 
-            String resultColor = report.allPassed() ? "§a" : "§c";
+            String resultColor = report.allPassed() ? "\u00A7a" : "\u00A7c";
             src.sendSuccess(() -> Component.literal(
                 String.format("%s=== Autosmoke Results ===", resultColor)
             ), false);
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Passed: §a%d §7| Failed: §c%d §7| Duration: §f%dms",
+                String.format("\u00A77Passed: \u00A7a%d \u00A77| Failed: \u00A7c%d \u00A77| Duration: \u00A7f%dms",
                     report.passedCount(), report.failedCount(), report.totalDuration().toMillis())
             ), false);
 
@@ -769,7 +769,7 @@ public class ArenaCommands {
             for (AutosmokeRunner.TemplateTestResult r : report.results()) {
                 if (!r.passed()) {
                     src.sendSuccess(() -> Component.literal(
-                        String.format("§c  [FAIL] %s: %s", r.templateId(), r.errorMessage())
+                        String.format("\u00A7c  [FAIL] %s: %s", r.templateId(), r.errorMessage())
                     ), false);
                 }
             }
@@ -789,27 +789,27 @@ public class ArenaCommands {
 
         logCommand(src, "autosmoke status", null);
 
-        src.sendSuccess(() -> Component.literal("§e=== Autosmoke Status ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Autosmoke Status ==="), false);
 
         if (autosmokeRunner == null) {
-            src.sendSuccess(() -> Component.literal("§7Runner: §cNot configured"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Runner: \u00A7cNot configured"), false);
             return 1;
         }
 
         // Runner status
-        String runnerStatus = autosmokeRunner.isRunning() ? "§aRUNNING" : "§7Idle";
-        src.sendSuccess(() -> Component.literal("§7Runner: " + runnerStatus), false);
+        String runnerStatus = autosmokeRunner.isRunning() ? "\u00A7aRUNNING" : "\u00A77Idle";
+        src.sendSuccess(() -> Component.literal("\u00A77Runner: " + runnerStatus), false);
 
         // Last report
         autosmokeRunner.getLastReport().ifPresentOrElse(
             report -> {
-                String result = report.allPassed() ? "§aPASSED" : "§cFAILED";
+                String result = report.allPassed() ? "\u00A7aPASSED" : "\u00A7cFAILED";
                 src.sendSuccess(() -> Component.literal(
-                    String.format("§7Last run: %s (§f%d§7/§f%d§7)",
+                    String.format("\u00A77Last run: %s (\u00A7f%d\u00A77/\u00A7f%d\u00A77)",
                         result, report.passedCount(), report.results().size())
                 ), false);
             },
-            () -> src.sendSuccess(() -> Component.literal("§7Last run: §8Never"), false)
+            () -> src.sendSuccess(() -> Component.literal("\u00A77Last run: \u00A78Never"), false)
         );
 
         return 1;
@@ -820,26 +820,26 @@ public class ArenaCommands {
 
         logCommand(src, "autosmoke schedule", null);
 
-        src.sendSuccess(() -> Component.literal("§e=== Autosmoke Schedule ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Autosmoke Schedule ==="), false);
 
         if (autosmokeScheduler == null) {
-            src.sendSuccess(() -> Component.literal("§7Scheduler: §cNot configured"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Scheduler: \u00A7cNot configured"), false);
             return 1;
         }
 
-        String enabled = autosmokeScheduler.isEnabled() ? "§aEnabled" : "§cDisabled";
-        src.sendSuccess(() -> Component.literal("§7Status: " + enabled), false);
+        String enabled = autosmokeScheduler.isEnabled() ? "\u00A7aEnabled" : "\u00A7cDisabled";
+        src.sendSuccess(() -> Component.literal("\u00A77Status: " + enabled), false);
 
         if (autosmokeScheduler.getNextRunTime() != null) {
             src.sendSuccess(() -> Component.literal(
-                "§7Next run: §f" + autosmokeScheduler.getNextRunTime()
+                "\u00A77Next run: \u00A7f" + autosmokeScheduler.getNextRunTime()
             ), false);
         }
 
         AutosmokeScheduler.RunStatus lastRun = autosmokeScheduler.getLastRunStatus();
         if (lastRun != null) {
             src.sendSuccess(() -> Component.literal(
-                "§7Last: §f" + lastRun.formatSummary()
+                "\u00A77Last: \u00A7f" + lastRun.formatSummary()
             ), false);
         }
 
@@ -851,17 +851,17 @@ public class ArenaCommands {
 
         logCommand(src, "status", null);
 
-        src.sendSuccess(() -> Component.literal("§e=== Arena System Status ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Arena System Status ==="), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Templates: §f%d loaded", registry.size())
+            String.format("\u00A77Templates: \u00A7f%d loaded", registry.size())
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Generation: §f%d", registry.getGeneration())
+            String.format("\u00A77Generation: \u00A7f%d", registry.getGeneration())
         ), false);
 
         ArenaTemplateRegistry.RegistryStats stats = registry.getStats();
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Stats: §f%d loads, %d fallbacks, %d replacements",
+            String.format("\u00A77Stats: \u00A7f%d loads, %d fallbacks, %d replacements",
                 stats.getLoads(), stats.getFallbacks(), stats.getVersionReplacements())
         ), false);
 
@@ -878,7 +878,7 @@ public class ArenaCommands {
 
         Optional<ArenaTemplate> templateOpt = registry.get(templateId);
         if (templateOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cTemplate not found: " + templateId));
+            src.sendFailure(Component.literal("\u00A7cTemplate not found: " + templateId));
             return 0;
         }
 
@@ -886,16 +886,16 @@ public class ArenaCommands {
         ValidationResult result = templateValidator.validate(template);
         ArenaBuilder.BuildValidation buildValidation = arenaBuilder.validateBuild(template);
 
-        src.sendSuccess(() -> Component.literal("§e=== Validation: " + templateId + " ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Validation: " + templateId + " ==="), false);
 
         if (result.valid() && buildValidation.valid()) {
-            src.sendSuccess(() -> Component.literal("§a✓ Template is valid"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7a✓ Template is valid"), false);
         } else {
-            src.sendSuccess(() -> Component.literal("§c✗ Template has errors"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7c✗ Template has errors"), false);
         }
 
         src.sendSuccess(() -> Component.literal(String.format(
-            "§7Estimated blocks: §f%d §7| chunks: §f%d §7| est. time: §f%dms",
+            "\u00A77Estimated blocks: \u00A7f%d \u00A77| chunks: \u00A7f%d \u00A77| est. time: \u00A7f%dms",
             buildValidation.blocksRequired(),
             buildValidation.chunksRequired(),
             buildValidation.estimatedMs()
@@ -903,35 +903,35 @@ public class ArenaCommands {
 
         // Show errors
         if (!result.errors().isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§cErrors (" + result.errors().size() + "):"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7cErrors (" + result.errors().size() + "):"), false);
             for (String error : result.errors()) {
-                src.sendSuccess(() -> Component.literal("§c  • " + error), false);
+                src.sendSuccess(() -> Component.literal("\u00A7c  • " + error), false);
             }
         }
         if (!buildValidation.errors().isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§cBuild Errors (" + buildValidation.errors().size() + "):"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7cBuild Errors (" + buildValidation.errors().size() + "):"), false);
             for (String error : buildValidation.errors()) {
-                src.sendSuccess(() -> Component.literal("§c  • " + error), false);
+                src.sendSuccess(() -> Component.literal("\u00A7c  • " + error), false);
             }
         }
 
         // Show warnings
         if (!result.warnings().isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§eWarnings (" + result.warnings().size() + "):"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7eWarnings (" + result.warnings().size() + "):"), false);
             for (String warning : result.warnings()) {
-                src.sendSuccess(() -> Component.literal("§e  • " + warning), false);
+                src.sendSuccess(() -> Component.literal("\u00A7e  • " + warning), false);
             }
         }
         if (!buildValidation.warnings().isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§eBuild Warnings (" + buildValidation.warnings().size() + "):"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7eBuild Warnings (" + buildValidation.warnings().size() + "):"), false);
             for (String warning : buildValidation.warnings()) {
-                src.sendSuccess(() -> Component.literal("§e  • " + warning), false);
+                src.sendSuccess(() -> Component.literal("\u00A7e  • " + warning), false);
             }
         }
 
         if (result.valid() && result.warnings().isEmpty()
             && buildValidation.valid() && buildValidation.warnings().isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§7No issues found."), false);
+            src.sendSuccess(() -> Component.literal("\u00A77No issues found."), false);
         }
 
         return (result.valid() && buildValidation.valid()) ? 1 : 0;
@@ -946,20 +946,20 @@ public class ArenaCommands {
         logCommand(src, "force", templateId + " " + minutes + "min");
 
         if (forceTemplateCapability == null) {
-            src.sendFailure(Component.literal("§cForce template capability not configured"));
+            src.sendFailure(Component.literal("\u00A7cForce template capability not configured"));
             return 0;
         }
 
         // Must be a player
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            src.sendFailure(Component.literal("\u00A7cThis command can only be used by players"));
             return 0;
         }
 
         // Verify template exists
         Optional<ArenaTemplate> templateOpt = registry.get(templateId);
         if (templateOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cTemplate not found: " + templateId));
+            src.sendFailure(Component.literal("\u00A7cTemplate not found: " + templateId));
             return 0;
         }
 
@@ -969,19 +969,19 @@ public class ArenaCommands {
             forceTemplateCapability.createSession(player.getUUID(), templateId, duration, "CLI command");
 
         if (sessionOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cFailed to create force session - check permissions"));
+            src.sendFailure(Component.literal("\u00A7cFailed to create force session - check permissions"));
             return 0;
         }
 
         ForceTemplateCapability.ForceSession session = sessionOpt.get();
         src.sendSuccess(() -> Component.literal(
-            String.format("§aForced template '%s' for %d minutes", templateId, minutes)
+            String.format("\u00A7aForced template '%s' for %d minutes", templateId, minutes)
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Session ID: %s", session.sessionId().toString().substring(0, 8))
+            String.format("\u00A77Session ID: %s", session.sessionId().toString().substring(0, 8))
         ), false);
         src.sendSuccess(() -> Component.literal(
-            "§7Use §f/arena force clear§7 to cancel"
+            "\u00A77Use \u00A7f/arena force clear\u00A77 to cancel"
         ), false);
 
         LOGGER.info("Player {} forced template '{}' for {} minutes", player.getName().getString(), templateId, minutes);
@@ -995,24 +995,24 @@ public class ArenaCommands {
         logCommand(src, "force clear", null);
 
         if (forceTemplateCapability == null) {
-            src.sendFailure(Component.literal("§cForce template capability not configured"));
+            src.sendFailure(Component.literal("\u00A7cForce template capability not configured"));
             return 0;
         }
 
         // Must be a player
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            src.sendFailure(Component.literal("\u00A7cThis command can only be used by players"));
             return 0;
         }
 
         boolean revoked = forceTemplateCapability.revokeSession(player.getUUID(), "CLI command");
 
         if (revoked) {
-            src.sendSuccess(() -> Component.literal("§aForced template cleared"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7aForced template cleared"), false);
             LOGGER.info("Player {} cleared forced template", player.getName().getString());
             return 1;
         } else {
-            src.sendSuccess(() -> Component.literal("§7No active force session"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77No active force session"), false);
             return 1;
         }
     }
@@ -1023,22 +1023,22 @@ public class ArenaCommands {
         logCommand(src, "force status", null);
 
         if (forceTemplateCapability == null) {
-            src.sendFailure(Component.literal("§cForce template capability not configured"));
+            src.sendFailure(Component.literal("\u00A7cForce template capability not configured"));
             return 0;
         }
 
         // Must be a player
         if (!(src.getEntity() instanceof ServerPlayer player)) {
             // Console: show all active sessions
-            src.sendSuccess(() -> Component.literal("§e=== Active Force Sessions ==="), false);
+            src.sendSuccess(() -> Component.literal("\u00A7e=== Active Force Sessions ==="), false);
             var sessions = forceTemplateCapability.getActiveSessions();
             if (sessions.isEmpty()) {
-                src.sendSuccess(() -> Component.literal("§7No active sessions"), false);
+                src.sendSuccess(() -> Component.literal("\u00A77No active sessions"), false);
             } else {
                 for (var entry : sessions.entrySet()) {
                     var s = entry.getValue();
                     src.sendSuccess(() -> Component.literal(
-                        String.format("§f%s §7-> §f%s §7(expires in %dm)",
+                        String.format("\u00A7f%s \u00A77-> \u00A7f%s \u00A77(expires in %dm)",
                             entry.getKey().toString().substring(0, 8),
                             s.templateId(),
                             s.remaining().toMinutes())
@@ -1052,20 +1052,20 @@ public class ArenaCommands {
         Optional<ForceTemplateCapability.ForceSession> sessionOpt =
             forceTemplateCapability.getSession(player.getUUID());
 
-        src.sendSuccess(() -> Component.literal("§e=== Force Template Status ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Force Template Status ==="), false);
 
         if (sessionOpt.isEmpty()) {
-            src.sendSuccess(() -> Component.literal("§7No active force session"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77No active force session"), false);
         } else {
             ForceTemplateCapability.ForceSession session = sessionOpt.get();
             src.sendSuccess(() -> Component.literal(
-                "§7Template: §f" + session.templateId()
+                "\u00A77Template: \u00A7f" + session.templateId()
             ), false);
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Expires in: §f%d minutes", session.remaining().toMinutes())
+                String.format("\u00A77Expires in: \u00A7f%d minutes", session.remaining().toMinutes())
             ), false);
             src.sendSuccess(() -> Component.literal(
-                "§7Session ID: §f" + session.sessionId().toString().substring(0, 8)
+                "\u00A77Session ID: \u00A7f" + session.sessionId().toString().substring(0, 8)
             ), false);
         }
 
@@ -1082,16 +1082,16 @@ public class ArenaCommands {
 
         Optional<ArenaTemplate> templateOpt = registry.get(templateId);
         if (templateOpt.isEmpty()) {
-            src.sendFailure(Component.literal("§cTemplate not found: " + templateId));
+            src.sendFailure(Component.literal("\u00A7cTemplate not found: " + templateId));
             return 0;
         }
 
         ArenaTemplate template = templateOpt.get();
 
-        src.sendSuccess(() -> Component.literal("§e=== Metrics: " + templateId + " ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Metrics: " + templateId + " ==="), false);
 
         // Show template metadata
-        src.sendSuccess(() -> Component.literal("§7Version: §f" + template.version()), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Version: \u00A7f" + template.version()), false);
 
         // Compute estimated metrics
         int sizeX = Objects.requireNonNullElse(template.sizeX(), template.size());
@@ -1099,34 +1099,34 @@ public class ArenaCommands {
         int estimatedBlocks = sizeX * sizeZ * 3; // floor + walls estimate
 
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Size: §f%d x %d", sizeX, sizeZ)
+            String.format("\u00A77Size: \u00A7f%d x %d", sizeX, sizeZ)
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Estimated blocks: §f~%d", estimatedBlocks)
+            String.format("\u00A77Estimated blocks: \u00A7f~%d", estimatedBlocks)
         ), false);
 
         // Show limits if present
         if (template.limits() != null) {
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Max blocks: §f%d", template.limits().maxBlocks())
+                String.format("\u00A77Max blocks: \u00A7f%d", template.limits().maxBlocks())
             ), false);
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Max build time: §f%dms", template.limits().maxBuildTimeMs())
+                String.format("\u00A77Max build time: \u00A7f%dms", template.limits().maxBuildTimeMs())
             ), false);
         }
 
         // Spawn slots count
         int spawnCount = template.spawnSlots() != null ? template.spawnSlots().size() : 0;
-        src.sendSuccess(() -> Component.literal("§7Spawn slots: §f" + spawnCount), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Spawn slots: \u00A7f" + spawnCount), false);
 
         // Hazards count
         int hazardCount = template.hazards() != null ? template.hazards().size() : 0;
-        src.sendSuccess(() -> Component.literal("§7Hazards: §f" + hazardCount), false);
+        src.sendSuccess(() -> Component.literal("\u00A77Hazards: \u00A7f" + hazardCount), false);
 
         // Registry stats for this template
         ArenaTemplateRegistry.RegistryStats stats = registry.getStats();
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Registry gen: §f%d §7(loads: %d)", registry.getGeneration(), stats.getLoads())
+            String.format("\u00A77Registry gen: \u00A7f%d \u00A77(loads: %d)", registry.getGeneration(), stats.getLoads())
         ), false);
 
         return 1;
@@ -1141,22 +1141,22 @@ public class ArenaCommands {
 
         // Must be a player
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            src.sendFailure(Component.literal("\u00A7cThis command can only be used by players"));
             return 0;
         }
 
         // Check permission
         if (!hasHudPermission(player)) {
-            src.sendFailure(Component.literal("§cYou don't have permission to use the debug HUD"));
+            src.sendFailure(Component.literal("\u00A7cYou don't have permission to use the debug HUD"));
             return 0;
         }
 
         boolean newState = ArenaDebugState.getInstance().toggleHud(player.getUUID());
 
         if (newState) {
-            src.sendSuccess(() -> Component.literal("§aDebug HUD enabled"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7aDebug HUD enabled"), false);
         } else {
-            src.sendSuccess(() -> Component.literal("§7Debug HUD disabled"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Debug HUD disabled"), false);
         }
 
         LOGGER.debug("Player {} toggled HUD to {}", player.getName().getString(), newState);
@@ -1170,23 +1170,23 @@ public class ArenaCommands {
 
         // Must be a player
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendFailure(Component.literal("§cThis command can only be used by players"));
+            src.sendFailure(Component.literal("\u00A7cThis command can only be used by players"));
             return 0;
         }
 
         // Check permission
         if (!hasHudPermission(player)) {
-            src.sendFailure(Component.literal("§cYou don't have permission to use the debug HUD"));
+            src.sendFailure(Component.literal("\u00A7cYou don't have permission to use the debug HUD"));
             return 0;
         }
 
         ArenaDebugState state = ArenaDebugState.getInstance();
         if (enabled) {
             state.enableHud(player.getUUID());
-            src.sendSuccess(() -> Component.literal("§aDebug HUD enabled"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7aDebug HUD enabled"), false);
         } else {
             state.disableHud(player.getUUID());
-            src.sendSuccess(() -> Component.literal("§7Debug HUD disabled"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Debug HUD disabled"), false);
         }
 
         LOGGER.debug("Player {} set HUD to {}", player.getName().getString(), enabled);
@@ -1202,12 +1202,12 @@ public class ArenaCommands {
 
         // Console: show global status
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendSuccess(() -> Component.literal("§e=== Debug HUD Status ==="), false);
+            src.sendSuccess(() -> Component.literal("\u00A7e=== Debug HUD Status ==="), false);
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Global: %s", state.isGlobalHudEnabled() ? "§aEnabled" : "§cDisabled")
+                String.format("\u00A77Global: %s", state.isGlobalHudEnabled() ? "\u00A7aEnabled" : "\u00A7cDisabled")
             ), false);
             src.sendSuccess(() -> Component.literal(
-                String.format("§7Players with HUD: §f%d", state.getEnabledPlayerCount())
+                String.format("\u00A77Players with HUD: \u00A7f%d", state.getEnabledPlayerCount())
             ), false);
             return 1;
         }
@@ -1217,25 +1217,25 @@ public class ArenaCommands {
         boolean isEnabled = state.isHudEnabled(player.getUUID());
         boolean globalEnabled = state.isGlobalHudEnabled();
 
-        src.sendSuccess(() -> Component.literal("§e=== Debug HUD Status ==="), false);
+        src.sendSuccess(() -> Component.literal("\u00A7e=== Debug HUD Status ==="), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Permission: %s", hasPermission ? "§aYes" : "§cNo")
+            String.format("\u00A77Permission: %s", hasPermission ? "\u00A7aYes" : "\u00A7cNo")
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Your HUD: %s", isEnabled ? "§aEnabled" : "§7Disabled")
+            String.format("\u00A77Your HUD: %s", isEnabled ? "\u00A7aEnabled" : "\u00A77Disabled")
         ), false);
         src.sendSuccess(() -> Component.literal(
-            String.format("§7Global: %s", globalEnabled ? "§aEnabled" : "§cDisabled")
+            String.format("\u00A77Global: %s", globalEnabled ? "\u00A7aEnabled" : "\u00A7cDisabled")
         ), false);
 
         if (hasPermission && isEnabled && globalEnabled) {
-            src.sendSuccess(() -> Component.literal("§a✓ HUD is visible"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7a✓ HUD is visible"), false);
         } else if (!hasPermission) {
-            src.sendSuccess(() -> Component.literal("§c✗ Missing permission: " + ArenaDebugState.PERMISSION_VIEW_HUD), false);
+            src.sendSuccess(() -> Component.literal("\u00A7c✗ Missing permission: " + ArenaDebugState.PERMISSION_VIEW_HUD), false);
         } else if (!globalEnabled) {
-            src.sendSuccess(() -> Component.literal("§c✗ HUD globally disabled"), false);
+            src.sendSuccess(() -> Component.literal("\u00A7c✗ HUD globally disabled"), false);
         } else {
-            src.sendSuccess(() -> Component.literal("§7Use §f/arena hud on§7 to enable"), false);
+            src.sendSuccess(() -> Component.literal("\u00A77Use \u00A7f/arena hud on\u00A77 to enable"), false);
         }
 
         return 1;

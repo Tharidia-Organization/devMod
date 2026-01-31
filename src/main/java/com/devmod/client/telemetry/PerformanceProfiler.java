@@ -4,6 +4,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -24,6 +28,7 @@ import com.devmod.DevMod;
 public class PerformanceProfiler {
 
     public static final PerformanceProfiler INSTANCE = new PerformanceProfiler();
+    private static final Logger LOGGER = LoggerFactory.getLogger(PerformanceProfiler.class);
 
     private static final ResourceLocation LAYER_ID =
         ResourceLocation.fromNamespaceAndPath("devmod", "performance_profiler");
@@ -256,14 +261,14 @@ public class PerformanceProfiler {
 
         int fpsColor = getFpsColor(currentFps);
         graphics.drawString(font, String.format("FPS: %d", currentFps), textX + 4, textY, fpsColor, false);
-        graphics.drawString(font, String.format("§7(min:%d avg:%d max:%d)", minFps, avgFps, maxFps),
+        graphics.drawString(font, String.format("\u00A77(min:%d avg:%d max:%d)", minFps, avgFps, maxFps),
             textX + 50, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
         // Frame time
         int ftColor = getFrameTimeColor(currentFrameTimeMs);
         graphics.drawString(font, String.format("Frame: %.2fms", currentFrameTimeMs), textX + 4, textY, ftColor, false);
-        graphics.drawString(font, String.format("§7(avg:%.1f max:%.1f)", avgFrameTimeMs, maxFrameTimeMs),
+        graphics.drawString(font, String.format("\u00A77(avg:%.1f max:%.1f)", avgFrameTimeMs, maxFrameTimeMs),
             textX + 80, textY, TEXT_GRAY, false);
         textY += LINE_HEIGHT;
 
@@ -446,17 +451,21 @@ public class PerformanceProfiler {
     // === Public API ===
 
     public void toggle() {
-        enabled = !enabled;
-        if (!enabled) {
+        if (enabled) {
+            logSnapshot("toggle_off");
             reset();
+            enabled = false;
+            return;
         }
+        enabled = true;
     }
 
     public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-        if (!enabled) {
+        if (this.enabled && !enabled) {
+            logSnapshot("disabled");
             reset();
         }
+        this.enabled = enabled;
     }
 
     public boolean isEnabled() {
@@ -472,5 +481,37 @@ public class PerformanceProfiler {
         for (int i = 0; i < FRAME_HISTORY_SIZE; i++) {
             frameTimeHistory[i] = 0;
         }
+    }
+
+    private void logSnapshot(String reason) {
+        if (!enabled) {
+            return;
+        }
+        String timings = systemTimingsAvg.entrySet().stream()
+            .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+            .limit(10)
+            .map(entry -> entry.getKey() + "=" + String.format("%.3fms", entry.getValue() / 1_000_000.0))
+            .collect(Collectors.joining(", "));
+
+        String counters = activeCounters.entrySet().stream()
+            .map(entry -> entry.getKey() + "=" + entry.getValue())
+            .collect(Collectors.joining(", "));
+
+        String frameMs = String.format("%.2f", currentFrameTimeMs);
+        String avgFrame = String.format("%.2f", avgFrameTimeMs);
+        String tps = String.format("%.2f", estimatedTps);
+        LOGGER.info(
+            "[PerfSnapshot:{}] fps={} avgFps={} minFps={} maxFps={} frameMs={} avgFrameMs={} tps={} timings=[{}] counters=[{}]",
+            reason,
+            currentFps,
+            avgFps,
+            minFps == Integer.MAX_VALUE ? 0 : minFps,
+            maxFps,
+            frameMs,
+            avgFrame,
+            tps,
+            timings,
+            counters
+        );
     }
 }

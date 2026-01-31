@@ -1,5 +1,6 @@
 package com.devmod.hologram.network;
 
+import java.util.EnumSet;
 import java.util.Objects;
 
 import net.minecraft.server.level.ServerPlayer;
@@ -9,6 +10,8 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import com.devmod.hologram.block.entity.HologramProjectorBlockEntity;
+import com.devmod.hologram.data.EntityFilterType;
+import com.devmod.hologram.data.HologramFilter;
 import com.devmod.hologram.data.HologramRegistry;
 import com.devmod.hologram.runtime.HologramManager;
 import com.devmod.network.ChannelId;
@@ -104,6 +107,17 @@ public final class HologramNetworkHandler extends NetworkHandlerBase implements 
                 }
             }, PayloadLimits.MEDIUM)
         );
+
+        // HOLOGRAM_PRESET: Client -> Server save/load configuration preset
+        event.registrar(ChannelId.HOLOGRAM_PRESET.asString()).playToServer(
+            nn(HologramPresetPayload.TYPE),
+            nn(HologramPresetPayload.STREAM_CODEC),
+            validated((payload, context) -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    handleHologramPreset(player, payload);
+                }
+            }, PayloadLimits.SMALL)
+        );
     }
 
     /**
@@ -141,11 +155,86 @@ public final class HologramNetworkHandler extends NetworkHandlerBase implements 
                 projector.toggleTransparency();
             }
 
+            // Apply filter settings
+            EnumSet<HologramFilter> newFilters = intToFilters(payload.filterBitmask());
+            projector.setActiveFilters(newFilters);
+            projector.setFilterHighlightOnly(payload.filterHighlightOnly());
+
+            // Apply texture mode setting
+            if (projector.isTexturedMode() != payload.texturedMode()) {
+                projector.setTexturedMode(payload.texturedMode());
+            }
+
+            // Apply entity rendering settings
+            if (projector.isShowEntities() != payload.showEntities()) {
+                projector.setShowEntities(payload.showEntities());
+            }
+            if (projector.isFullEntityModels() != payload.fullEntityModels()) {
+                projector.setFullEntityModels(payload.fullEntityModels());
+            }
+            if (projector.getMaxEntityModels() != payload.maxEntityModels()) {
+                projector.setMaxEntityModels(payload.maxEntityModels());
+            }
+
+            // Apply entity filter settings
+            EnumSet<EntityFilterType> newEntityFilters = EntityFilterType.fromBitmask(payload.entityFilterBitmask());
+            projector.setActiveEntityFilters(newEntityFilters);
+
+            // Apply Y-slice settings
+            if (projector.isYSliceEnabled() != payload.ySliceEnabled()) {
+                projector.setYSliceEnabled(payload.ySliceEnabled());
+            }
+            if (projector.getYSliceLevel() != payload.ySliceLevel()) {
+                projector.setYSliceLevel(payload.ySliceLevel());
+            }
+            if (projector.getYSliceThickness() != payload.ySliceThickness()) {
+                projector.setYSliceThickness(payload.ySliceThickness());
+            }
+
             // Force rescan if requested
             if (payload.rescan()) {
                 projector.setupScanRegion();
             }
         }
+    }
+
+    /**
+     * Handle preset save/load from client.
+     */
+    private static void handleHologramPreset(ServerPlayer player, HologramPresetPayload payload) {
+        var level = player.serverLevel();
+        var pos = Objects.requireNonNull(payload.pos(), "pos");
+
+        // Validate distance (max 8 blocks)
+        if (player.blockPosition().distManhattan(pos) > 8) {
+            return;
+        }
+
+        // Validate slot
+        if (!payload.isValidSlot()) {
+            return;
+        }
+
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof HologramProjectorBlockEntity projector) {
+            if (payload.isSave()) {
+                // Save current config to preset slot
+                projector.savePreset(payload.slot());
+            } else {
+                // Load preset from slot
+                projector.loadPreset(payload.slot());
+            }
+        }
+    }
+
+    private static EnumSet<HologramFilter> intToFilters(int value) {
+        EnumSet<HologramFilter> result = EnumSet.noneOf(HologramFilter.class);
+        for (HologramFilter filter : HologramFilter.values()) {
+            if ((value & (1 << filter.ordinal())) != 0) {
+                result.add(filter);
+            }
+        }
+        return result;
     }
 
     /**

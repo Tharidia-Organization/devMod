@@ -149,37 +149,37 @@ public final class NexusCommand {
     private static int help(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§b=== DevMod Nexus ===")), false);
+            Component.literal("\u00A7b=== DevMod Nexus ===")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus tp <zone> §7- teleport to a Nexus zone")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus tp <zone> \u00A77- teleport to a Nexus zone")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus enter §7- enter hub and save return")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus enter \u00A77- enter hub and save return")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus return §7- return to previous location")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus return \u00A77- return to previous location")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus bug <msg> §7- file a bug report")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus bug <msg> \u00A77- file a bug report")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus hub §7- open Testing Hub (F7)")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus hub \u00A77- open Testing Hub (F7)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus riftstamp §7- spawn a RiftStamp portal (admin)")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus riftstamp \u00A77- spawn a RiftStamp portal (admin)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus zones §7- list zone ids")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus zones \u00A77- list zone ids")), false);
         if (source.hasPermission(2)) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7/§fdevmod nexus slot list §7- list hub slots")), false);
+                Component.literal("\u00A77/\u00A7fdevmod nexus slot list \u00A77- list hub slots")), false);
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7/§fdevmod nexus slot info <id> §7- show slot details")), false);
+                Component.literal("\u00A77/\u00A7fdevmod nexus slot info <id> \u00A77- show slot details")), false);
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7/§fdevmod nexus slot link <id> <area> §7- link area to slot")), false);
+                Component.literal("\u00A77/\u00A7fdevmod nexus slot link <id> <area> \u00A77- link area to slot")), false);
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7/§fdevmod nexus slot unlink <id> §7- unlink slot")), false);
+                Component.literal("\u00A77/\u00A7fdevmod nexus slot unlink <id> \u00A77- unlink slot")), false);
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7/§fdevmod nexus teleport <slotId> §7- teleport to slot")), false);
+                Component.literal("\u00A77/\u00A7fdevmod nexus teleport <slotId> \u00A77- teleport to slot")), false);
         }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus status §7- show Nexus state")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus status \u00A77- show Nexus state")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7/§fdevmod nexus rebuild §7- rebuild hub (admin)")), false);
+            Component.literal("\u00A77/\u00A7fdevmod nexus rebuild \u00A77- rebuild hub (admin)")), false);
         return 1;
     }
 
@@ -188,11 +188,11 @@ public final class NexusCommand {
         List<String> zoneIds = getZoneIds(Objects.requireNonNull(source.getServer()));
         if (zoneIds.isEmpty()) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§eZones: §f<none>")), false);
+                Component.literal("\u00A7eZones: \u00A7f<none>")), false);
             return 1;
         }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§eZones: §f" + String.join(", ", zoneIds))), false);
+            Component.literal("\u00A7eZones: \u00A7f" + String.join(", ", zoneIds))), false);
         return 1;
     }
 
@@ -209,7 +209,7 @@ public final class NexusCommand {
 
         if (allSlots.isEmpty()) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§eNo slots defined. Run /devmod nexus rebuild.")), false);
+                Component.literal("\u00A7eNo slots defined. Run /devmod nexus rebuild.")), false);
             return 0;
         }
 
@@ -225,12 +225,12 @@ public final class NexusCommand {
             .toList();
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e=== Nexus Slots (Page " + safePage + "/" + totalPages + ") ===")), false);
+            Component.literal("\u00A7e=== Nexus Slots (Page " + safePage + "/" + totalPages + ") ===")), false);
 
         for (ZoneSlot slot : pageSlots) {
-            String status = slot.hasLinkedArea() ? "§a[LINKED]" : "§7[EMPTY]";
+            String status = slot.hasLinkedArea() ? "\u00A7a[LINKED]" : "\u00A77[EMPTY]";
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§f  " + slot.slotId() + " §7(" + slot.type().name() + ") " + status)), false);
+                Component.literal("\u00A7f  " + slot.slotId() + " \u00A77(" + slot.type().name() + ") " + status)), false);
         }
 
         return 1;
@@ -248,32 +248,32 @@ public final class NexusCommand {
         Optional<ZoneSlot> slotOpt = registry.getSlot(Objects.requireNonNull(slotId));
 
         if (slotOpt.isEmpty()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cSlot not found: " + slotId)));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cSlot not found: " + slotId)));
             return 0;
         }
 
         ZoneSlot slot = slotOpt.get();
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e=== Slot: " + slot.slotId() + " ===")), false);
+            Component.literal("\u00A7e=== Slot: " + slot.slotId() + " ===")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Display Name: §f" + slot.displayName())), false);
+            Component.literal("\u00A77Display Name: \u00A7f" + slot.displayName())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Type: §f" + slot.type().name())), false);
+            Component.literal("\u00A77Type: \u00A7f" + slot.type().name())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Bounds: §f" + formatBounds(slot))), false);
+            Component.literal("\u00A77Bounds: \u00A7f" + formatBounds(slot))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Portal Color: §f" + slot.portalColor().name())), false);
+            Component.literal("\u00A77Portal Color: \u00A7f" + slot.portalColor().name())), false);
 
         if (slot.hasLinkedArea()) {
             AreaRegistry areaRegistry = AreaRegistry.get(server);
             Optional<AreaDefinition> areaOpt = areaRegistry.getArea(Objects.requireNonNull(slot.linkedAreaId()));
             String areaName = areaOpt.map(AreaDefinition::name).orElse("Unknown");
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7Linked Area: §a" + areaName)), false);
+                Component.literal("\u00A77Linked Area: \u00A7a" + areaName)), false);
         } else {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§7Linked Area: §eNone")), false);
+                Component.literal("\u00A77Linked Area: \u00A7eNone")), false);
         }
 
         return 1;
@@ -293,7 +293,7 @@ public final class NexusCommand {
             .findFirst();
 
         if (areaOpt.isEmpty()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cArea not found: " + areaName)));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cArea not found: " + areaName)));
             return 0;
         }
 
@@ -302,11 +302,11 @@ public final class NexusCommand {
 
         if (success) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§aLinked area '" + areaName + "' to slot '" + slotId + "'")), true);
+                Component.literal("\u00A7aLinked area '" + areaName + "' to slot '" + slotId + "'")), true);
             return 1;
         }
 
-        source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to link area to slot.")));
+        source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cFailed to link area to slot.")));
         return 0;
     }
 
@@ -322,11 +322,11 @@ public final class NexusCommand {
 
         if (success) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§aUnlinked area from slot '" + slotId + "'")), true);
+                Component.literal("\u00A7aUnlinked area from slot '" + slotId + "'")), true);
             return 1;
         }
 
-        source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to unlink slot.")));
+        source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cFailed to unlink slot.")));
         return 0;
     }
 
@@ -339,7 +339,7 @@ public final class NexusCommand {
 
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required")));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required")));
             return 0;
         }
 
@@ -347,13 +347,13 @@ public final class NexusCommand {
         ZoneSlotRegistry registry = ZoneSlotRegistry.get(server);
         Optional<ZoneSlot> slotOpt = registry.getSlot(Objects.requireNonNull(slotId));
         if (slotOpt.isEmpty()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cSlot not found: " + slotId)));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cSlot not found: " + slotId)));
             return 0;
         }
 
         ServerLevel nexusLevel = server.getLevel(Objects.requireNonNull(NexusDimensionManager.NEXUS_DIMENSION));
         if (nexusLevel == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cNexus dimension not available.")));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus dimension not available.")));
             return 0;
         }
 
@@ -366,36 +366,36 @@ public final class NexusCommand {
             player.getXRot());
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aTeleported to slot '" + slotId + "'")), false);
+            Component.literal("\u00A7aTeleported to slot '" + slotId + "'")), false);
         return 1;
     }
 
     private static int teleport(CommandContext<CommandSourceStack> ctx, String zoneId) {
         CommandSourceStack source = ctx.getSource();
         if (!Config.NEXUS_ENABLED.get()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cNexus is disabled in config"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus is disabled in config"), "message"));
             return 0;
         }
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
         Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveByNameOrAlias(
             Objects.requireNonNull(source.getServer()), Objects.requireNonNull(zoneId));
         if (zoneOpt.isEmpty()) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown zone '" + zoneId
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown zone '" + zoneId
                 + "'. Use /devmod nexus zones"), "message"));
             return 0;
         }
         ZoneDefinition zone = zoneOpt.get();
         boolean success = NexusDimensionManager.INSTANCE.teleportPlayerToZone(player, zone.zoneId());
         if (!success) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to teleport to '" + zone.zoneId() + "'"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cFailed to teleport to '" + zone.zoneId() + "'"), "message"));
             return 0;
         }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aTeleported to §f" + zone.displayName())), true);
+            Component.literal("\u00A7aTeleported to \u00A7f" + zone.displayName())), true);
         return 1;
     }
 
@@ -418,23 +418,23 @@ public final class NexusCommand {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
         boolean success = NexusDimensionManager.INSTANCE.teleportPlayerToReturn(player);
         if (!success) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cNo return point saved. Use /devmod nexus enter."), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNo return point saved. Use /devmod nexus enter."), "message"));
             return 0;
         }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aReturned to your previous location")), true);
+            Component.literal("\u00A7aReturned to your previous location")), true);
         return 1;
     }
 
     private static int openTestingHubHint(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Open Testing Hub with §fF7§7 or the radial menu")), false);
+            Component.literal("\u00A77Open Testing Hub with \u00A7fF7\u00A77 or the radial menu")), false);
         return 1;
     }
 
@@ -442,16 +442,16 @@ public final class NexusCommand {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
         boolean ok = RiftStampManager.INSTANCE.spawnAtPlayer(player);
         if (!ok) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cFailed to spawn RiftStamp here."), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cFailed to spawn RiftStamp here."), "message"));
             return 0;
         }
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aRiftStamp opened for 60 seconds.")), true);
+            Component.literal("\u00A7aRiftStamp opened for 60 seconds.")), true);
         return 1;
     }
 
@@ -460,12 +460,12 @@ public final class NexusCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         String message = StringArgumentType.getString(ctx, "message");
         if (message.length() < 10) {
-            player.sendSystemMessage(Objects.requireNonNull(Component.literal("§cAdd more detail (min 10 chars)."), "message"));
+            player.sendSystemMessage(Objects.requireNonNull(Component.literal("\u00A7cAdd more detail (min 10 chars)."), "message"));
             return 0;
         }
 
         String subject = message.length() > 50 ? message.substring(0, 47) + "..." : message;
-        player.sendSystemMessage(Objects.requireNonNull(Component.literal("§7Submitting " + category.getDisplayName() + "..."), "message"));
+        player.sendSystemMessage(Objects.requireNonNull(Component.literal("\u00A77Submitting " + category.getDisplayName() + "..."), "message"));
         TicketManager.INSTANCE.createTicket(
             player.getUUID(),
             player.getName().getString(),
@@ -473,10 +473,10 @@ public final class NexusCommand {
             subject,
             message
         ).thenAccept(ticket -> {
-            player.sendSystemMessage(Objects.requireNonNull(Component.literal("§aTicket submitted: §f"
+            player.sendSystemMessage(Objects.requireNonNull(Component.literal("\u00A7aTicket submitted: \u00A7f"
                 + ticket.id().toString().substring(0, 8)), "message"));
         }).exceptionally(e -> {
-            player.sendSystemMessage(Objects.requireNonNull(Component.literal("§cFailed to submit ticket."), "message"));
+            player.sendSystemMessage(Objects.requireNonNull(Component.literal("\u00A7cFailed to submit ticket."), "message"));
             return null;
         });
 
@@ -492,25 +492,25 @@ public final class NexusCommand {
         NexusHubManager.HubStatus hubStatus = NexusHubManager.INSTANCE.getStatus(server);
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e=== Nexus Status ===")), false);
+            Component.literal("\u00A7e=== Nexus Status ===")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Enabled: §f" + Config.NEXUS_ENABLED.get())), false);
+            Component.literal("\u00A77Enabled: \u00A7f" + Config.NEXUS_ENABLED.get())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Loaded: §f" + (level != null))), false);
+            Component.literal("\u00A77Loaded: \u00A7f" + (level != null))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Built: §f" + data.isBuilt() + " §7(v" + data.getVersion() + ")")), false);
+            Component.literal("\u00A77Built: \u00A7f" + data.isBuilt() + " \u00A77(v" + data.getVersion() + ")")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Locked: §f" + data.isLocked())), false);
+            Component.literal("\u00A77Locked: \u00A7f" + data.isLocked())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Build Mode: §f" + Config.NEXUS_BUILD_MODE.get())), false);
+            Component.literal("\u00A77Build Mode: \u00A7f" + Config.NEXUS_BUILD_MODE.get())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Rebuild Policy: §f" + Config.NEXUS_REBUILD_POLICY.get())), false);
+            Component.literal("\u00A77Rebuild Policy: \u00A7f" + Config.NEXUS_REBUILD_POLICY.get())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Palette: §f" + Config.NEXUS_PALETTE_PROFILE.get())), false);
+            Component.literal("\u00A77Palette: \u00A7f" + Config.NEXUS_PALETTE_PROFILE.get())), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§7Slots: §f" + hubStatus.totalSlots()
-                + " §7Linked: §f" + hubStatus.linkedSlots()
-                + " §7Empty: §f" + hubStatus.emptySlots())), false);
+            Component.literal("\u00A77Slots: \u00A7f" + hubStatus.totalSlots()
+                + " \u00A77Linked: \u00A7f" + hubStatus.linkedSlots()
+                + " \u00A77Empty: \u00A7f" + hubStatus.emptySlots())), false);
 
         return 1;
     }
@@ -569,10 +569,10 @@ public final class NexusCommand {
         boolean queued = NexusDimensionManager.INSTANCE.requestRebuild(server, true);
         if (queued) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§aNexus rebuild queued")), false);
+                Component.literal("\u00A7aNexus rebuild queued")), false);
         } else {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§eNexus rebuild already in progress")), false);
+                Component.literal("\u00A7eNexus rebuild already in progress")), false);
         }
         return 1;
     }
@@ -582,7 +582,7 @@ public final class NexusCommand {
         MinecraftServer server = source.getServer();
         NexusDimensionManager.INSTANCE.setHubLocked(server, locked);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(locked ? "§eNexus locked" : "§aNexus unlocked")), false);
+            Component.literal(locked ? "\u00A7eNexus locked" : "\u00A7aNexus unlocked")), false);
         return 1;
     }
 
@@ -590,7 +590,7 @@ public final class NexusCommand {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            source.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer required"), "message"));
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
 
@@ -598,7 +598,7 @@ public final class NexusCommand {
         com.devmod.runtime.network.AdminInstanceNetworkHandler.sendSyncToPlayer(player);
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§aOpening Instance Control Panel...")), false);
+            Component.literal("\u00A7aOpening Instance Control Panel...")), false);
         return 1;
     }
 

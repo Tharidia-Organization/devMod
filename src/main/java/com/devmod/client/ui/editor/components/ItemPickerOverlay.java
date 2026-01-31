@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ScaledCoord;
@@ -214,7 +215,7 @@ public class ItemPickerOverlay extends BaseOverlay {
         int innerW = width - padding * 2;
 
         // === Title ===
-        safeGraphics.drawString(safeFont, "Select Item", innerX, innerY, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, "Select Item", innerX, innerY, DesignTokens.Text.TITLE(), false);
         innerY += ScaledCoord.scaleDim(14);
 
         // === Search box ===
@@ -228,11 +229,13 @@ public class ItemPickerOverlay extends BaseOverlay {
         String placeholder = "Search... @mod #tag $tooltip";
         String displayText = safeQueryRender.isEmpty() && !searchFocused ? placeholder : safeQueryRender;
         int textColor = safeQueryRender.isEmpty() && !searchFocused ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
-        safeGraphics.drawString(safeFont, displayText, innerX + 4, innerY + 5, textColor, false);
+        int maxSearchWidth = Math.max(0, innerW - 8);
+        String displayClamped = truncateToWidth(safeFont, displayText, maxSearchWidth);
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, displayClamped, innerX + 4, innerY + 5, textColor, false);
 
         // Cursor
         if (searchFocused && (cursorBlink / 15) % 2 == 0) {
-            int cursorX = innerX + 4 + safeFont.width(safeQueryRender);
+            int cursorX = innerX + 4 + UIScaleManager.getScaledStringWidth(safeFont, truncateToWidth(safeFont, safeQueryRender, maxSearchWidth));
             safeGraphics.fill(cursorX, innerY + 3, cursorX + 1, innerY + searchH - 3, DesignTokens.Text.PRIMARY());
         }
 
@@ -282,7 +285,7 @@ public class ItemPickerOverlay extends BaseOverlay {
         // === Footer info ===
         int count = currentTab == 0 ? filteredItems.size() : filteredTags.size();
         String info = count + (currentTab == 0 ? " items" : " tags");
-        safeGraphics.drawString(safeFont, info, x + width - padding - safeFont.width(info),
+        UIScaleManager.drawScaledString(safeGraphics, safeFont, info, x + width - padding - UIScaleManager.getScaledStringWidth(safeFont, info),
             y + height - padding - 8, DesignTokens.Text.MUTED(), false);
     }
 
@@ -368,7 +371,7 @@ public class ItemPickerOverlay extends BaseOverlay {
             }
 
             // Tag icon (# symbol)
-            safeGraphics.drawString(safeFont, "#", x + 4, rowY + (rowHeight - 8) / 2,
+            UIScaleManager.drawScaledString(safeGraphics, safeFont, "#", x + 4, rowY + (rowHeight - 8) / 2,
                 DesignTokens.Accent.ORANGE(), false);
 
             // Tag name
@@ -376,13 +379,13 @@ public class ItemPickerOverlay extends BaseOverlay {
             if (tagName.startsWith("minecraft:")) {
                 tagName = tagName.substring("minecraft:".length());
             }
-            safeGraphics.drawString(safeFont, tagName, x + 14, rowY + (rowHeight - 8) / 2,
+            UIScaleManager.drawScaledString(safeGraphics, safeFont, tagName, x + 14, rowY + (rowHeight - 8) / 2,
                 DesignTokens.Text.PRIMARY(), false);
 
             // Item count
             int itemCount = getTagItemCount(tag);
             String countStr = "(" + itemCount + ")";
-            safeGraphics.drawString(safeFont, countStr, x + w - 10 - safeFont.width(countStr),
+            UIScaleManager.drawScaledString(safeGraphics, safeFont, countStr, x + w - 10 - UIScaleManager.getScaledStringWidth(safeFont, countStr),
                 rowY + (rowHeight - 8) / 2, DesignTokens.Text.MUTED(), false);
         }
 
@@ -569,5 +572,18 @@ public class ItemPickerOverlay extends BaseOverlay {
         if (callback != null) {
             callback.accept(selected);
         }
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || UIScaleManager.getScaledStringWidth(font, text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (UIScaleManager.getScaledStringWidth(font, trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 }

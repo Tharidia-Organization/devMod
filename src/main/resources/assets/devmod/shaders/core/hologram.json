@@ -1,0 +1,36 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "one_minus_srcalpha"
+    },
+    "vertex": "devmod:hologram",
+    "fragment": "devmod:hologram",
+    "attributes": [
+        "Position",
+        "UV0",
+        "Color"
+    ],
+    "samplers": [
+        { "name": "Sampler0" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "GameTime", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "Alpha", "type": "float", "count": 1, "values": [ 0.8 ] },
+        { "name": "GlitchIntensity", "type": "float", "count": 1, "values": [ 0.3 ] },
+        { "name": "ScanLineSpeed", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "ScanLineDensity", "type": "float", "count": 1, "values": [ 30.0 ] },
+        { "name": "GlowIntensity", "type": "float", "count": 1, "values": [ 0.4 ] },
+        { "name": "PulseSpeed", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "FadeInProgress", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "WavePhase", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "WaveIntensity", "type": "float", "count": 1, "values": [ 0.3 ] },
+        { "name": "MaxY", "type": "float", "count": 1, "values": [ 64.0 ] },
+        { "name": "HoloColor", "type": "float", "count": 3, "values": [ 0.2, 0.8, 1.0 ] },
+        { "name": "GlowColor", "type": "float", "count": 3, "values": [ 0.4, 0.9, 1.0 ] },
+        { "name": "TexturedMode", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "TextureBlend", "type": "float", "count": 1, "values": [ 0.3 ] }
+    ]
+}

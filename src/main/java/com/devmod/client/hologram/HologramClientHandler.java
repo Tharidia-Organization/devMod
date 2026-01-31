@@ -1,10 +1,7 @@
 package com.devmod.client.hologram;
 
-import net.minecraft.client.Minecraft;
-
 import com.devmod.hologram.network.HologramSyncPayload;
 import com.devmod.hologram.network.OpenHologramEditorPayload;
-
 /**
  * Client-side handler for hologram network payloads.
  */
@@ -15,10 +12,9 @@ public final class HologramClientHandler {
      * Handles OpenHologramEditorPayload - opens the editor screen.
      */
     public static void handleOpenEditor(OpenHologramEditorPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> {
-            mc.setScreen(new HologramEditorScreen(payload.definition()));
-        });
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "hologram_editor",
+            () -> new HologramEditorScreen(payload.definition()));
     }
 
     /**

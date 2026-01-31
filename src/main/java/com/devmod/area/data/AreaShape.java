@@ -7,13 +7,11 @@ import javax.annotation.Nonnull;
 import io.netty.buffer.ByteBuf;
 
 import com.google.errorprone.annotations.InlineMe;
-
 import com.mojang.serialization.Codec;
 
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
-
 /**
  * Defines the geometric shape of an area.
  */

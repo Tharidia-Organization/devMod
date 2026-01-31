@@ -19,7 +19,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
@@ -27,11 +26,11 @@ import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.testing.ActiveTestHudOverlay;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class TestingHub extends Screen {
 
@@ -151,13 +150,16 @@ public class TestingHub extends Screen {
 
     private void initPanels() {
         @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
-        // Calculate panel widths
-        int categoryWidth = Math.max(180, (int)(hubWidth * 0.22f));
-        int toolsWidth = Math.max(170, (int)(hubWidth * 0.25f));
-        int detailWidth = hubWidth - categoryWidth - toolsWidth - PANEL_GAP * 2;
+        // Calculate panel widths with scaling
+        int scaledPanelGap = UIScaleManager.scale(PANEL_GAP);
+        int categoryWidth = Math.max(UIScaleManager.scale(180), (int)(hubWidth * 0.22f));
+        int toolsWidth = Math.max(UIScaleManager.scale(170), (int)(hubWidth * 0.25f));
+        int detailWidth = hubWidth - categoryWidth - toolsWidth - scaledPanelGap * 2;
 
-        int contentY = hubY + HEADER_HEIGHT;
-        int contentHeight = hubHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+        int scaledHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+        int scaledFooterHeight = UIScaleManager.scale(FOOTER_HEIGHT);
+        int contentY = hubY + scaledHeaderHeight;
+        int contentHeight = hubHeight - scaledHeaderHeight - scaledFooterHeight;
 
         // Initialize panels
         categoryPanel = new CategoryPanel(
@@ -168,14 +170,14 @@ public class TestingHub extends Screen {
         );
 
         detailPanel = new TestDetailPanel(
-            hubX + categoryWidth + PANEL_GAP, contentY,
+            hubX + categoryWidth + scaledPanelGap, contentY,
             detailWidth, contentHeight,
             uiFont,
             this::onVerdictGiven
         );
 
         toolsPanel = new QuickToolsPanel(
-            hubX + categoryWidth + detailWidth + PANEL_GAP * 2, contentY,
+            hubX + categoryWidth + detailWidth + scaledPanelGap * 2, contentY,
             toolsWidth, contentHeight,
             uiFont, state,
             this::onToolToggled,
@@ -183,8 +185,8 @@ public class TestingHub extends Screen {
         );
 
         footer = new ProgressFooter(
-            hubX, hubY + hubHeight - FOOTER_HEIGHT,
-            hubWidth, FOOTER_HEIGHT,
+            hubX, hubY + hubHeight - scaledFooterHeight,
+            hubWidth, scaledFooterHeight,
             uiFont,
             this::onSaveReport,
             this::onMinimize
@@ -220,27 +222,27 @@ public class TestingHub extends Screen {
 
     private void renderSessionStart(GuiGraphics graphics, int mouseX, int mouseY) {
         @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
-        // Central panel for session start
-        int panelWidth = 350;
-        int panelHeight = 200;
+        // Central panel for session start with scaling
+        int panelWidth = UIScaleManager.scale(350);
+        int panelHeight = UIScaleManager.scale(200);
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 
         AxiomRenderer.drawPanel(graphics, uiFont, panelX, panelY, panelWidth, panelHeight, "Start Testing Session");
 
-        int contentX = panelX + DesignTokens.Spacing.PANEL_PADDING;
-        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 10;
+        int contentX = panelX + UIScaleManager.scale(DesignTokens.Spacing.PANEL_PADDING);
+        int contentY = panelY + UIScaleManager.scale(DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 10);
 
         // Instructions
         graphics.drawString(uiFont, "Welcome to DevMod QA Testing!", contentX, contentY, DesignTokens.Text.PRIMARY(), false);
-        contentY += 16;
+        contentY += UIScaleManager.scale(16);
 
         graphics.drawString(uiFont, "Enter your name to start tracking tests.", contentX, contentY, DesignTokens.Text.SECONDARY(), false);
-        contentY += 30;
+        contentY += UIScaleManager.scale(30);
 
         // Name label
-        graphics.drawString(uiFont, "Tester Name:", contentX, contentY + 6, DesignTokens.Text.SECONDARY(), false);
-        contentY += 40;
+        graphics.drawString(uiFont, "Tester Name:", contentX, contentY + UIScaleManager.scale(6), DesignTokens.Text.SECONDARY(), false);
+        contentY += UIScaleManager.scale(40);
 
         if (testerNameField != null) {
             AxiomRenderer.drawInputBackground(graphics, testerNameField.getX(), testerNameField.getY(),
@@ -248,8 +250,8 @@ public class TestingHub extends Screen {
         }
 
         // Buttons
-        int buttonWidth = 120;
-        int buttonGap = 20;
+        int buttonWidth = UIScaleManager.scale(120);
+        int buttonGap = UIScaleManager.scale(20);
         int buttonsX = panelX + (panelWidth - buttonWidth * 2 - buttonGap) / 2;
 
         // Start New
@@ -268,8 +270,8 @@ public class TestingHub extends Screen {
         }
 
         // Hint
-        int hintY = panelY + panelHeight - 20;
-        AxiomRenderer.drawHint(graphics, uiFont, panelX + 10, hintY, "Press Enter to start, ESC to close");
+        int hintY = panelY + panelHeight - UIScaleManager.scale(20);
+        AxiomRenderer.drawHint(graphics, uiFont, panelX + UIScaleManager.scale(10), hintY, "Press Enter to start, ESC to close");
     }
 
     private void renderHub(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -322,30 +324,34 @@ public class TestingHub extends Screen {
 
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
         @Nonnull Font uiFont = Objects.requireNonNull(font, "font");
+        int scaledHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+
         // Background header
-        graphics.fill(hubX, hubY, hubX + hubWidth, hubY + HEADER_HEIGHT, DesignTokens.Background.HEADER());
+        graphics.fill(hubX, hubY, hubX + hubWidth, hubY + scaledHeaderHeight, DesignTokens.Background.HEADER());
 
         // Bottom border
-        graphics.fill(hubX, hubY + HEADER_HEIGHT - 1, hubX + hubWidth, hubY + HEADER_HEIGHT, DesignTokens.Border.DEFAULT());
+        graphics.fill(hubX, hubY + scaledHeaderHeight - 1, hubX + hubWidth, hubY + scaledHeaderHeight, DesignTokens.Border.DEFAULT());
 
         // Title
-        graphics.drawString(uiFont, "DEVMOD TESTING HUB", hubX + 12, hubY + 10, DesignTokens.Text.TITLE(), false);
+        graphics.drawString(uiFont, "DEVMOD TESTING HUB", hubX + UIScaleManager.scale(12), hubY + UIScaleManager.scale(10), DesignTokens.Text.TITLE(), false);
 
         // Session info
         String tester = "Tester: " + TestingSession.INSTANCE.getTesterName();
         int testerWidth = uiFont.width(tester);
-        graphics.drawString(uiFont, tester, hubX + hubWidth - testerWidth - 80, hubY + 10, DesignTokens.Text.MUTED(), false);
+        graphics.drawString(uiFont, tester, hubX + hubWidth - testerWidth - UIScaleManager.scale(80), hubY + UIScaleManager.scale(10), DesignTokens.Text.MUTED(), false);
 
         int buttonHeight = EditorButton.Size.SMALL.height();
-        int buttonY = hubY + (HEADER_HEIGHT - buttonHeight) / 2;
+        int buttonY = hubY + (scaledHeaderHeight - buttonHeight) / 2;
 
         // Close button [X]
-        int closeX = hubX + hubWidth - HEADER_BUTTON_WIDTH - HEADER_BUTTON_GAP;
-        headerCloseButton.render(graphics, closeX, buttonY, HEADER_BUTTON_WIDTH, buttonHeight, mouseX, mouseY);
+        int scaledButtonWidth = UIScaleManager.scale(HEADER_BUTTON_WIDTH);
+        int scaledButtonGap = UIScaleManager.scale(HEADER_BUTTON_GAP);
+        int closeX = hubX + hubWidth - scaledButtonWidth - scaledButtonGap;
+        headerCloseButton.render(graphics, closeX, buttonY, scaledButtonWidth, buttonHeight, mouseX, mouseY);
 
         // Minimize button [-]
-        int minX = closeX - HEADER_BUTTON_WIDTH - HEADER_BUTTON_GAP;
-        headerMinimizeButton.render(graphics, minX, buttonY, HEADER_BUTTON_WIDTH, buttonHeight, mouseX, mouseY);
+        int minX = closeX - scaledButtonWidth - scaledButtonGap;
+        headerMinimizeButton.render(graphics, minX, buttonY, scaledButtonWidth, buttonHeight, mouseX, mouseY);
     }
 
     // === INPUT HANDLING ===
@@ -693,12 +699,16 @@ public class TestingHub extends Screen {
 
     private int calculateHubWidth() {
         int preferred = (int)(width * 0.88);
-        return Math.max(MIN_HUB_WIDTH, Math.min(MAX_HUB_WIDTH, preferred));
+        int scaledMin = UIScaleManager.scale(MIN_HUB_WIDTH);
+        int scaledMax = UIScaleManager.scale(MAX_HUB_WIDTH);
+        return Math.max(scaledMin, Math.min(scaledMax, preferred));
     }
 
     private int calculateHubHeight() {
         int preferred = (int)(height * 0.85);
-        return Math.max(MIN_HUB_HEIGHT, Math.min(MAX_HUB_HEIGHT, preferred));
+        int scaledMin = UIScaleManager.scale(MIN_HUB_HEIGHT);
+        int scaledMax = UIScaleManager.scale(MAX_HUB_HEIGHT);
+        return Math.max(scaledMin, Math.min(scaledMax, preferred));
     }
 
     private void showNotification(String message) {

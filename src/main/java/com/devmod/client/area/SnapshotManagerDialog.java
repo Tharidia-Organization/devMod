@@ -22,9 +22,11 @@ import com.devmod.area.network.CaptureSnapshotPayload;
 import com.devmod.area.network.DeleteSnapshotPayload;
 import com.devmod.area.network.RestoreSnapshotPayload;
 import com.devmod.area.network.SnapshotListPayload.SnapshotSummary;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.BaseOverlay;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 /**
  * Dialog for managing area snapshots.
@@ -142,15 +144,15 @@ public final class SnapshotManagerDialog extends BaseOverlay {
     @Override
     protected void renderContent(GuiGraphics graphics, Font font, int panelX, int panelY,
                                   int panelWidth, int panelHeight, int mouseX, int mouseY) {
-        int padding = 12;
+        int padding = ScaledCoord.scaleDim(12);
         int contentX = panelX + padding;
         int contentY = panelY + padding;
         int contentWidth = panelWidth - padding * 2;
 
         // Title
         String title = Component.translatable("area.snapshot.title").getString();
-        graphics.drawString(Objects.requireNonNull(font), title, contentX, contentY, DesignTokens.Text.PRIMARY());
-        contentY += 24;
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), title, contentX, contentY, DesignTokens.Text.PRIMARY());
+        contentY += ScaledCoord.scaleDim(24);
 
         if (isConfirmDeleteMode) {
             renderConfirmDeleteMode(graphics, font, contentX, contentY, contentWidth, mouseX, mouseY);
@@ -163,15 +165,18 @@ public final class SnapshotManagerDialog extends BaseOverlay {
 
     private void renderListMode(GuiGraphics graphics, Font font, int contentX, int contentY,
                                  int contentWidth, int panelY, int panelHeight, int mouseX, int mouseY) {
+        int sListItemHeight = ScaledCoord.scaleDim(LIST_ITEM_HEIGHT);
+        int sButtonHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
+
         // Snapshot count
         String countText = snapshots.isEmpty()
             ? Component.translatable("area.snapshot.empty").getString()
             : snapshots.size() + " snapshot(s)";
-        graphics.drawString(Objects.requireNonNull(font), countText, contentX, contentY, DesignTokens.Text.MUTED());
-        contentY += 16;
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), countText, contentX, contentY, DesignTokens.Text.MUTED());
+        contentY += ScaledCoord.scaleDim(16);
 
         // Snapshot list
-        int listHeight = LIST_ITEM_HEIGHT * MAX_VISIBLE_ITEMS;
+        int listHeight = sListItemHeight * MAX_VISIBLE_ITEMS;
         graphics.fill(contentX, contentY, contentX + contentWidth, contentY + listHeight, DesignTokens.Background.PANEL());
         graphics.renderOutline(contentX, contentY, contentWidth, listHeight, DesignTokens.Border.DEFAULT());
 
@@ -179,37 +184,37 @@ public final class SnapshotManagerDialog extends BaseOverlay {
         for (int i = 0; i < visibleCount; i++) {
             int index = scrollOffset + i;
             SnapshotSummary snapshot = snapshots.get(index);
-            int itemY = contentY + i * LIST_ITEM_HEIGHT;
+            int itemY = contentY + i * sListItemHeight;
 
             boolean selected = snapshot.equals(selectedSnapshot);
             boolean hovered = mouseX >= contentX && mouseX < contentX + contentWidth
-                && mouseY >= itemY && mouseY < itemY + LIST_ITEM_HEIGHT;
+                && mouseY >= itemY && mouseY < itemY + sListItemHeight;
 
-            renderSnapshotItem(graphics, font, snapshot, contentX + 2, itemY + 1,
-                contentWidth - 4, LIST_ITEM_HEIGHT - 2, selected, hovered);
+            renderSnapshotItem(graphics, font, snapshot, contentX + ScaledCoord.scaleDim(2), itemY + ScaledCoord.scaleDim(1),
+                contentWidth - ScaledCoord.scaleDim(4), sListItemHeight - ScaledCoord.scaleDim(2), selected, hovered);
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(Component.literal("^")),
-                contentX + contentWidth / 2, contentY - 8, DesignTokens.Text.MUTED());
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), "^",
+                contentX + contentWidth / 2, contentY - ScaledCoord.scaleDim(8), DesignTokens.Text.MUTED());
         }
         if (scrollOffset + MAX_VISIBLE_ITEMS < snapshots.size()) {
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(Component.literal("v")),
-                contentX + contentWidth / 2, contentY + listHeight + 2, DesignTokens.Text.MUTED());
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), "v",
+                contentX + contentWidth / 2, contentY + listHeight + ScaledCoord.scaleDim(2), DesignTokens.Text.MUTED());
         }
 
         // Action buttons at bottom
-        int btnY = panelY + panelHeight - 44;
-        int btnWidth = 80;
-        int btnSpacing = 8;
+        int btnY = panelY + panelHeight - ScaledCoord.scaleDim(44);
+        int btnWidth = ScaledCoord.scaleDim(80);
+        int btnSpacing = ScaledCoord.scaleDim(8);
         int totalBtnWidth = btnWidth * 4 + btnSpacing * 3;
         int btnX = contentX + (contentWidth - totalBtnWidth) / 2;
 
-        createButton.render(graphics, btnX, btnY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
-        restoreButton.render(graphics, btnX + btnWidth + btnSpacing, btnY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
-        deleteButton.render(graphics, btnX + (btnWidth + btnSpacing) * 2, btnY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
-        closeButton.render(graphics, btnX + (btnWidth + btnSpacing) * 3, btnY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
+        createButton.render(graphics, btnX, btnY, btnWidth, sButtonHeight, mouseX, mouseY);
+        restoreButton.render(graphics, btnX + btnWidth + btnSpacing, btnY, btnWidth, sButtonHeight, mouseX, mouseY);
+        deleteButton.render(graphics, btnX + (btnWidth + btnSpacing) * 2, btnY, btnWidth, sButtonHeight, mouseX, mouseY);
+        closeButton.render(graphics, btnX + (btnWidth + btnSpacing) * 3, btnY, btnWidth, sButtonHeight, mouseX, mouseY);
     }
 
     private void renderSnapshotItem(GuiGraphics graphics, Font font, SnapshotSummary snapshot,
@@ -229,23 +234,26 @@ public final class SnapshotManagerDialog extends BaseOverlay {
         if (desc.length() > 30) {
             desc = desc.substring(0, 27) + "...";
         }
-        graphics.drawString(Objects.requireNonNull(font), desc, x + 4, y + 4, DesignTokens.Text.PRIMARY());
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), desc, x + 4, y + 4, DesignTokens.Text.PRIMARY());
 
         // Date and size on second line
         String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(snapshot.createdAt()));
         String infoStr = dateStr + " | " + snapshot.blockCount() + " blocks | " + snapshot.getFormattedFileSize();
-        graphics.drawString(Objects.requireNonNull(font), infoStr, x + 4, y + 14, DesignTokens.Text.MUTED());
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), infoStr, x + 4, y + 14, DesignTokens.Text.MUTED());
     }
 
     private void renderCreateMode(GuiGraphics graphics, Font font, int contentX, int contentY,
                                    int contentWidth, int mouseX, int mouseY) {
-        graphics.drawString(Objects.requireNonNull(font), Component.translatable("area.snapshot.description").getString() + ":",
+        int sFieldHeight = ScaledCoord.scaleDim(20);
+        int sButtonHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
+
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), Component.translatable("area.snapshot.description").getString() + ":",
             contentX, contentY, DesignTokens.Text.PRIMARY());
-        contentY += 14;
+        contentY += ScaledCoord.scaleDim(14);
 
         EditBox field = descriptionField;
         if (field == null) {
-            field = new EditBox(Objects.requireNonNull(font), contentX, contentY, contentWidth, 20,
+            field = new EditBox(Objects.requireNonNull(font), contentX, contentY, contentWidth, sFieldHeight,
                 Objects.requireNonNull(Component.translatable("area.snapshot.description")));
             field.setMaxLength(128);
             descriptionField = field;
@@ -254,51 +262,56 @@ public final class SnapshotManagerDialog extends BaseOverlay {
         field.setY(contentY);
         field.setWidth(contentWidth);
         field.render(graphics, mouseX, mouseY, 0);
-        contentY += 40;
+        contentY += ScaledCoord.scaleDim(40);
 
         // Buttons
-        int btnWidth = 100;
-        int btnSpacing = 20;
+        int btnWidth = ScaledCoord.scaleDim(100);
+        int btnSpacing = ScaledCoord.scaleDim(20);
         int btnX = contentX + (contentWidth - btnWidth * 2 - btnSpacing) / 2;
 
-        confirmCreateButton.render(graphics, btnX, contentY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
-        cancelCreateButton.render(graphics, btnX + btnWidth + btnSpacing, contentY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
+        confirmCreateButton.render(graphics, btnX, contentY, btnWidth, sButtonHeight, mouseX, mouseY);
+        cancelCreateButton.render(graphics, btnX + btnWidth + btnSpacing, contentY, btnWidth, sButtonHeight, mouseX, mouseY);
     }
 
     private void renderConfirmDeleteMode(GuiGraphics graphics, Font font, int contentX, int contentY,
                                           int contentWidth, int mouseX, int mouseY) {
+        int sButtonHeight = ScaledCoord.scaleDim(BUTTON_HEIGHT);
+
         String confirmMsg = Objects.requireNonNull(Component.translatable("area.snapshot.confirm_delete").getString());
         graphics.drawWordWrap(Objects.requireNonNull(font), Objects.requireNonNull(Component.literal(confirmMsg)),
             contentX, contentY, contentWidth, DesignTokens.Text.PRIMARY());
-        contentY += 50;
+        contentY += ScaledCoord.scaleDim(50);
 
         SnapshotSummary selected = selectedSnapshot;
         if (selected != null) {
             String desc = selected.description().isEmpty() ? "(No description)" : selected.description();
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(Component.literal("\"" + desc + "\"")),
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), "\"" + desc + "\"",
                 contentX + contentWidth / 2, contentY, DesignTokens.Text.MUTED());
         }
-        contentY += 30;
+        contentY += ScaledCoord.scaleDim(30);
 
         // Buttons
-        int btnWidth = 100;
-        int btnSpacing = 20;
+        int btnWidth = ScaledCoord.scaleDim(100);
+        int btnSpacing = ScaledCoord.scaleDim(20);
         int btnX = contentX + (contentWidth - btnWidth * 2 - btnSpacing) / 2;
 
-        confirmDeleteButton.render(graphics, btnX, contentY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
-        cancelDeleteButton.render(graphics, btnX + btnWidth + btnSpacing, contentY, btnWidth, BUTTON_HEIGHT, mouseX, mouseY);
+        confirmDeleteButton.render(graphics, btnX, contentY, btnWidth, sButtonHeight, mouseX, mouseY);
+        cancelDeleteButton.render(graphics, btnX + btnWidth + btnSpacing, contentY, btnWidth, sButtonHeight, mouseX, mouseY);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int screenWidth, int screenHeight) {
         if (!isVisible()) return false;
 
-        int panelX = (screenWidth - getPanelWidth()) / 2;
-        int panelY = (screenHeight - getPanelHeight()) / 2;
-        int padding = 12;
+        int sPanelWidth = ScaledCoord.scaleDim(getPanelWidth());
+        int sPanelHeight = ScaledCoord.scaleDim(getPanelHeight());
+        int panelX = (screenWidth - sPanelWidth) / 2;
+        int panelY = (screenHeight - sPanelHeight) / 2;
+        int padding = ScaledCoord.scaleDim(12);
         int contentX = panelX + padding;
-        int contentY = panelY + padding + 24; // After title
-        int contentWidth = getPanelWidth() - padding * 2;
+        int contentY = panelY + padding + ScaledCoord.scaleDim(24); // After title
+        int contentWidth = sPanelWidth - padding * 2;
+        int sListItemHeight = ScaledCoord.scaleDim(LIST_ITEM_HEIGHT);
 
         if (isConfirmDeleteMode) {
             if (confirmDeleteButton.mouseClicked(mouseX, mouseY, 0)) return true;
@@ -309,12 +322,12 @@ public final class SnapshotManagerDialog extends BaseOverlay {
             if (cancelCreateButton.mouseClicked(mouseX, mouseY, 0)) return true;
         } else {
             // List mode - handle item selection
-            int listY = contentY + 16;
-            int listHeight = LIST_ITEM_HEIGHT * MAX_VISIBLE_ITEMS;
+            int listY = contentY + ScaledCoord.scaleDim(16);
+            int listHeight = sListItemHeight * MAX_VISIBLE_ITEMS;
 
             if (mouseX >= contentX && mouseX < contentX + contentWidth
                 && mouseY >= listY && mouseY < listY + listHeight) {
-                int index = (int) ((mouseY - listY) / LIST_ITEM_HEIGHT) + scrollOffset;
+                int index = (int) ((mouseY - listY) / sListItemHeight) + scrollOffset;
                 if (index >= 0 && index < snapshots.size()) {
                     selectedSnapshot = snapshots.get(index);
                     updateButtonStates();

@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -49,7 +50,7 @@ public final class SimpleHeaderSection implements EditorSection.HeaderSection {
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
         int textY = bounds.y() + textOffsetY;
-        graphics.drawString(font, Objects.requireNonNull(label, "label"),
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(label, "label"),
             bounds.x() + textInsetX, textY, DesignTokens.Text.TITLE(), false);
     }
 

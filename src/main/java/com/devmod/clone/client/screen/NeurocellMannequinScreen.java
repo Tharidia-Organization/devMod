@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.clone.block.entity.NeurocellMannequinBlockEntity;
 import com.devmod.clone.client.util.PlayerUuidLookup;
@@ -256,8 +257,8 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
                 // Draw label
                 var renderFont = Objects.requireNonNull(this.font);
                 String label = Objects.requireNonNull(armorLabels[i]);
-                int textWidth = renderFont.width(label);
-                graphics.drawString(renderFont, label,
+                int textWidth = UIScaleManager.getScaledStringWidth(renderFont, label);
+                UIScaleManager.drawScaledString(graphics, renderFont, label,
                     leftPos + 8 + (16 - textWidth) / 2,
                     topPos + armorY[i] + 4,
                     DesignTokens.Neurocell.SLOT_LABEL, false);
@@ -277,8 +278,8 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
                 // Draw label
                 var renderFont = Objects.requireNonNull(this.font);
                 String label = Objects.requireNonNull(handLabels[i]);
-                int textWidth = renderFont.width(label);
-                graphics.drawString(renderFont, label,
+                int textWidth = UIScaleManager.getScaledStringWidth(renderFont, label);
+                UIScaleManager.drawScaledString(graphics, renderFont, label,
                     leftPos + 152 + (16 - textWidth) / 2,
                     topPos + handY[i] + 4,
                     DesignTokens.Neurocell.SLOT_LABEL, false);
@@ -291,27 +292,27 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
         var renderFont = Objects.requireNonNull(this.font);
 
         // Title (centered)
-        Component titleComponent = Objects.requireNonNull(this.title);
-        int titleWidth = renderFont.width(titleComponent);
-        graphics.drawString(renderFont, titleComponent, (imageWidth - titleWidth) / 2, this.titleLabelY,
+        String titleStr = Objects.requireNonNull(this.title).getString();
+        int titleWidth = UIScaleManager.getScaledStringWidth(renderFont, titleStr);
+        UIScaleManager.drawScaledString(graphics, renderFont, titleStr, (imageWidth - titleWidth) / 2, this.titleLabelY,
             DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Inventory label
-        graphics.drawString(renderFont, Objects.requireNonNull(this.playerInventoryTitle),
+        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(this.playerInventoryTitle).getString(),
             this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Slot labels
-        graphics.drawString(renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.armor")),
+        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.armor")).getString(),
             8, 78, DesignTokens.Neurocell.LABEL_TEXT, false);
-        graphics.drawString(renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.hands")),
+        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.hands")).getString(),
             140, 78, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Skin label
-        graphics.drawString(renderFont, "Skin:", 8, 168, DesignTokens.Neurocell.LABEL_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, "Skin:", 8, 168, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Status message
         if (statusMessage != null) {
-            graphics.drawString(renderFont, statusMessage, 8, 152, statusColor, false);
+            UIScaleManager.drawScaledString(graphics, renderFont, statusMessage, 8, 152, statusColor, false);
         }
     }
 

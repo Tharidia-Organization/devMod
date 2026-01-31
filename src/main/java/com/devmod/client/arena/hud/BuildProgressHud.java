@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.arena.BuildPhase;
 import com.devmod.arena.network.BuildProgressPayload;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 public class BuildProgressHud {
@@ -114,54 +115,76 @@ public class BuildProgressHud {
         // Smooth progress animation
         state.displayedProgress += (state.targetProgress - state.displayedProgress) * SMOOTH_SPEED;
 
+        UIScaleManager.update();
+
         // Calculate position (bottom-center)
         Minecraft mc = Minecraft.getInstance();
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-        int x = (screenWidth - BAR_WIDTH) / 2;
-        int y = screenHeight - HUD_OFFSET_Y;
+        int sBarWidth = UIScaleManager.scale(BAR_WIDTH);
+        int sBarHeight = UIScaleManager.scale(BAR_HEIGHT);
+        int sHudOffsetY = UIScaleManager.scale(HUD_OFFSET_Y);
+
+        int x = (screenWidth - sBarWidth) / 2;
+        int y = screenHeight - sHudOffsetY;
 
         // Render with alpha
-        renderProgressBar(graphics, x, y, state, alpha);
+        renderProgressBar(graphics, x, y, sBarWidth, sBarHeight, state, alpha);
     }
 
-    private void renderProgressBar(GuiGraphics graphics, int x, int y, BuildProgressState state, float alpha) {
+    private void renderProgressBar(GuiGraphics graphics, int x, int y,
+                                   int barWidth, int barHeight,
+                                   BuildProgressState state, float alpha) {
         Minecraft mc = Minecraft.getInstance();
         var font = Objects.requireNonNull(mc.font);
+        int sBarBorder = UIScaleManager.scale(BAR_BORDER);
+        int panelOffsetY = UIScaleManager.scale(20);
+        int panelPadding = UIScaleManager.scale(5);
+        int panelHeight = barHeight + UIScaleManager.scale(30);
+        int panelY = y - panelOffsetY;
+
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        if (panelY < safeTop) {
+            panelY = safeTop;
+            y = panelY + panelOffsetY;
+        } else if (panelY + panelHeight > safeBottom) {
+            panelY = safeBottom - panelHeight;
+            y = panelY + panelOffsetY;
+        }
 
         // Background panel
-        int panelY = y - 20;
-        int panelHeight = BAR_HEIGHT + 30;
-        graphics.fill(x - 5, panelY, x + BAR_WIDTH + 5, panelY + panelHeight,
+        graphics.fill(x - panelPadding, panelY, x + barWidth + panelPadding, panelY + panelHeight,
             applyAlpha(BuildProgressHudTheme.Panel.BACKGROUND, alpha));
 
         // Phase text
         String phaseText = Objects.requireNonNull(getPhaseDisplayName(state.phase));
+        phaseText = truncateToWidth(font, phaseText, barWidth);
         int phaseWidth = font.width(phaseText);
-        graphics.drawString(font, phaseText, x + (BAR_WIDTH - phaseWidth) / 2, panelY + 3,
+        graphics.drawString(font, phaseText, x + (barWidth - phaseWidth) / 2, panelY + UIScaleManager.scale(3),
             applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
 
         // Progress bar border
-        graphics.fill(x - BAR_BORDER, y - BAR_BORDER,
-            x + BAR_WIDTH + BAR_BORDER, y + BAR_HEIGHT + BAR_BORDER,
+        graphics.fill(x - sBarBorder, y - sBarBorder,
+            x + barWidth + sBarBorder, y + barHeight + sBarBorder,
             applyAlpha(BuildProgressHudTheme.Panel.BORDER, alpha));
 
         // Progress bar background
-        graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT,
+        graphics.fill(x, y, x + barWidth, y + barHeight,
             applyAlpha(BuildProgressHudTheme.Panel.BAR_EMPTY, alpha));
 
         // Progress bar fill
-        int fillWidth = (int) (BAR_WIDTH * state.displayedProgress);
+        int fillWidth = (int) (barWidth * state.displayedProgress);
         int fillColor = getProgressColor(state);
-        graphics.fill(x, y, x + fillWidth, y + BAR_HEIGHT,
+        graphics.fill(x, y, x + fillWidth, y + barHeight,
             applyAlpha(fillColor, alpha));
 
         // Percentage text
         String percentText = Objects.requireNonNull(String.format("%.1f%%", state.displayedProgress * 100));
         int percentWidth = font.width(percentText);
-        int textX = x + (BAR_WIDTH - percentWidth) / 2;
-        int textY = y + (BAR_HEIGHT - 8) / 2;
+        int textX = x + (barWidth - percentWidth) / 2;
+        int textY = y + (barHeight - UIScaleManager.scale(8)) / 2;
 
         // Shadow
         graphics.drawString(font, percentText, textX + 1, textY + 1,
@@ -172,8 +195,9 @@ public class BuildProgressHud {
 
         // Block count text
         String blockText = Objects.requireNonNull(String.format("%,d / %,d blocks", state.blocksPlaced, state.totalBlocks));
+        blockText = truncateToWidth(font, blockText, barWidth);
         int blockWidth = font.width(blockText);
-        graphics.drawString(font, blockText, x + (BAR_WIDTH - blockWidth) / 2, y + BAR_HEIGHT + 4,
+        graphics.drawString(font, blockText, x + (barWidth - blockWidth) / 2, y + barHeight + UIScaleManager.scale(4),
             applyAlpha(BuildProgressHudTheme.Panel.TEXT, alpha), false);
     }
 
@@ -206,6 +230,19 @@ public class BuildProgressHud {
     private int applyAlpha(int color, float alpha) {
         int a = (int) (((color >> 24) & 0xFF) * alpha);
         return (a << 24) | (color & DesignTokens.Mask.RGB);
+    }
+
+    private String truncateToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 
     @Nullable

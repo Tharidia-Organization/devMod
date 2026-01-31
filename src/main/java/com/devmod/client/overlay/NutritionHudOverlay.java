@@ -15,13 +15,12 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.endurance.ClientNutritionCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.endurance.nutrition.NutritionCategory;
-
 /**
  * HUD overlay displaying nutrition status during Endurance quests.
  *
@@ -179,21 +178,35 @@ public class NutritionHudOverlay {
         // Cache font reference with null safety
         Font font = Objects.requireNonNull(mc.font);
 
+        int sBarWidth = UIScaleManager.scale(BAR_WIDTH);
+        int sBarHeight = UIScaleManager.scale(BAR_HEIGHT);
+        int sBarGap = UIScaleManager.scale(BAR_GAP);
+        int sBarBorder = UIScaleManager.scale(BAR_BORDER);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sLabelWidth = UIScaleManager.scale(LABEL_WIDTH);
+        int sModifierLineHeight = UIScaleManager.scale(MODIFIER_LINE_HEIGHT);
+
         // Calculate panel dimensions (include label width)
-        int panelWidth = LABEL_WIDTH + BAR_WIDTH + PADDING * 2;
-        int barsHeight = (BAR_HEIGHT + BAR_GAP) * NutritionCategory.COUNT - BAR_GAP;
+        int panelWidth = sLabelWidth + sBarWidth + sPadding * 2;
+        int barsHeight = (sBarHeight + sBarGap) * NutritionCategory.COUNT - sBarGap;
 
         // FIX UX #1: Add space for modifier text when active
         int modifierLines = 0;
         if (ClientNutritionCache.isWellFed() || ClientNutritionCache.isMalnourished()) {
             modifierLines = 2; // DMG and SPD lines
         }
-        int panelHeight = barsHeight + PADDING * 2 + (modifierLines * MODIFIER_LINE_HEIGHT);
+        int panelHeight = barsHeight + sPadding * 2 + (modifierLines * sModifierLineHeight);
 
         // FIX AUDIT #5: Use configurable position offsets
         int screenHeight = graphics.guiHeight();
-        int x = offsetX;
-        int y = screenHeight - panelHeight - offsetY;
+        int x = UIScaleManager.scale(offsetX);
+        int y = screenHeight - panelHeight - UIScaleManager.scale(offsetY);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - panelHeight));
 
         // Draw panel background
         graphics.fill(x, y, x + panelWidth, y + panelHeight, COLOR_BACKGROUND);
@@ -211,39 +224,41 @@ public class NutritionHudOverlay {
         }
 
         // Draw border
-        graphics.fill(x - BAR_BORDER, y - BAR_BORDER, x + panelWidth + BAR_BORDER, y, borderColor);
-        graphics.fill(x - BAR_BORDER, y + panelHeight, x + panelWidth + BAR_BORDER, y + panelHeight + BAR_BORDER, borderColor);
-        graphics.fill(x - BAR_BORDER, y, x, y + panelHeight, borderColor);
-        graphics.fill(x + panelWidth, y, x + panelWidth + BAR_BORDER, y + panelHeight, borderColor);
+        graphics.fill(x - sBarBorder, y - sBarBorder, x + panelWidth + sBarBorder, y, borderColor);
+        graphics.fill(x - sBarBorder, y + panelHeight, x + panelWidth + sBarBorder, y + panelHeight + sBarBorder, borderColor);
+        graphics.fill(x - sBarBorder, y, x, y + panelHeight, borderColor);
+        graphics.fill(x + panelWidth, y, x + panelWidth + sBarBorder, y + panelHeight, borderColor);
 
         // Draw each nutrition bar with category label
-        int labelX = x + PADDING;
-        int barX = x + PADDING + LABEL_WIDTH;
-        int barY = y + PADDING;
+        int labelX = x + sPadding;
+        int barX = x + sPadding + sLabelWidth;
+        int barY = y + sPadding;
 
         for (NutritionCategory cat : NutritionCategory.ALL) {
             float value = ClientNutritionCache.getValue(cat);
             // FIX UX #9: Draw category label (first letter)
             String label = cat.getDisplayName().substring(0, 1);
             int labelColor = getCategoryColor(cat, value);
-            graphics.drawString(font, label, labelX, barY - 1, labelColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, labelX, barY - 1, labelColor, false);
             // Draw the bar
-            drawNutritionBar(graphics, barX, barY, cat, value);
-            barY += BAR_HEIGHT + BAR_GAP;
+            drawNutritionBar(graphics, barX, barY, sBarWidth, sBarHeight, cat, value);
+            barY += sBarHeight + sBarGap;
         }
 
         // Draw status icon/text if critical or well-fed
         if (ClientNutritionCache.isCritical()) {
             // Warning indicator
-            graphics.drawString(font, "!", x + panelWidth - 8, y + 2, DesignTokens.Nutrition.HUD_CRITICAL, false);
+            UIScaleManager.drawScaledString(graphics, font, "!", x + panelWidth - UIScaleManager.scale(8), y + UIScaleManager.scale(2),
+                DesignTokens.Nutrition.HUD_CRITICAL, false);
         } else if (ClientNutritionCache.isWellFed()) {
             // Checkmark indicator
-            graphics.drawString(font, "+", x + panelWidth - 8, y + 2, DesignTokens.Nutrition.HUD_WELL_FED, false);
+            UIScaleManager.drawScaledString(graphics, font, "+", x + panelWidth - UIScaleManager.scale(8), y + UIScaleManager.scale(2),
+                DesignTokens.Nutrition.HUD_WELL_FED, false);
         }
 
         // FIX UX #1: Draw modifier text when well-fed or malnourished
         if (modifierLines > 0) {
-            int textY = y + PADDING + barsHeight + 2;
+            int textY = y + sPadding + barsHeight + UIScaleManager.scale(2);
             float dmgMult = ClientNutritionCache.getDamageMultiplier();
             float spdMult = ClientNutritionCache.getSpeedMultiplier();
 
@@ -255,26 +270,27 @@ public class NutritionHudOverlay {
             String dmgText = "DMG: " + (dmgPercent >= 0 ? "+" : "") + dmgPercent + "%";
             int dmgColor = dmgPercent > 0 ? DesignTokens.Nutrition.MOD_POSITIVE
                 : (dmgPercent < 0 ? DesignTokens.Nutrition.MOD_NEGATIVE : DesignTokens.Nutrition.MOD_NEUTRAL);
-            graphics.drawString(font, dmgText, x + PADDING, textY, dmgColor, false);
+            UIScaleManager.drawScaledString(graphics, font, dmgText, x + sPadding, textY, dmgColor, false);
 
             // Speed modifier line
             String spdText = "SPD: " + (spdPercent >= 0 ? "+" : "") + spdPercent + "%";
             int spdColor = spdPercent > 0 ? DesignTokens.Nutrition.MOD_POSITIVE
                 : (spdPercent < 0 ? DesignTokens.Nutrition.MOD_NEGATIVE : DesignTokens.Nutrition.MOD_NEUTRAL);
-            graphics.drawString(font, spdText, x + PADDING, textY + MODIFIER_LINE_HEIGHT, spdColor, false);
+            UIScaleManager.drawScaledString(graphics, font, spdText, x + sPadding, textY + sModifierLineHeight, spdColor, false);
         }
     }
 
     private static void drawNutritionBar(GuiGraphics graphics, int x, int y,
+                                         int barWidth, int barHeight,
                                          NutritionCategory category, float value) {
         // Background
-        graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, DesignTokens.Nutrition.BAR_BG);
+        graphics.fill(x, y, x + barWidth, y + barHeight, DesignTokens.Nutrition.BAR_BG);
 
         // Fill bar with category color
-        int fillWidth = (int) (BAR_WIDTH * Math.max(0, Math.min(1, value)));
+        int fillWidth = (int) (barWidth * Math.max(0, Math.min(1, value)));
         if (fillWidth > 0) {
             int color = getCategoryColor(category, value);
-            graphics.fill(x, y, x + fillWidth, y + BAR_HEIGHT, color);
+            graphics.fill(x, y, x + fillWidth, y + barHeight, color);
         }
 
         // Warning pulse for low values
@@ -283,7 +299,7 @@ public class NutritionHudOverlay {
             float intensity = (float) Math.sin(pulse / 500.0 * Math.PI * 2.0) * 0.3f;
             if (intensity > 0) {
                 int warnColor = applyAlpha(DesignTokens.Nutrition.HUD_CRITICAL, intensity);
-                graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, warnColor);
+                graphics.fill(x, y, x + barWidth, y + barHeight, warnColor);
             }
         }
     }

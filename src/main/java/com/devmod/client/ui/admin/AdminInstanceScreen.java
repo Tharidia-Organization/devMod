@@ -23,7 +23,6 @@ import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.runtime.network.AdminInstanceActionPayload;
 import com.devmod.runtime.network.AdminInstanceSyncPayload;
-
 /**
  * Admin screen for monitoring and controlling instance dimensions.
  * Provides real-time view of all active instances with management controls.
@@ -53,8 +52,10 @@ public class AdminInstanceScreen extends BaseDevModScreen {
     private int scrollOffset = 0;
     private int maxVisibleEntries = 3;
 
-    // Layout cache
+    // Layout cache (scaled dimensions)
     private int panelX, panelY;
+    private int scaledPanelWidth, scaledPanelHeight;
+    private int scaledHeaderHeight, scaledStatsHeight, scaledEntryHeight;
     private int listX, listY, listWidth, listHeight;
 
     // Selected instance for actions
@@ -67,15 +68,23 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
-        panelX = (width - PANEL_WIDTH) / 2;
-        panelY = (height - PANEL_HEIGHT) / 2;
+        // Scale dimensions
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        scaledHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+        scaledStatsHeight = UIScaleManager.scale(STATS_HEIGHT);
+        scaledEntryHeight = UIScaleManager.scale(ENTRY_HEIGHT);
+        int scaledEntryPadding = UIScaleManager.scale(ENTRY_PADDING);
 
-        listX = panelX + ENTRY_PADDING;
-        listY = panelY + HEADER_HEIGHT + STATS_HEIGHT;
-        listWidth = PANEL_WIDTH - (ENTRY_PADDING * 2);
-        listHeight = PANEL_HEIGHT - HEADER_HEIGHT - STATS_HEIGHT - 50;
+        panelX = (width - scaledPanelWidth) / 2;
+        panelY = (height - scaledPanelHeight) / 2;
 
-        maxVisibleEntries = listHeight / ENTRY_HEIGHT;
+        listX = panelX + scaledEntryPadding;
+        listY = panelY + scaledHeaderHeight + scaledStatsHeight;
+        listWidth = scaledPanelWidth - (scaledEntryPadding * 2);
+        listHeight = scaledPanelHeight - scaledHeaderHeight - scaledStatsHeight - UIScaleManager.scale(50);
+
+        maxVisibleEntries = listHeight / scaledEntryHeight;
 
         // Refresh button
         EditorButton refreshButton = EditorButton.builder("admin-instance-refresh",
@@ -84,7 +93,7 @@ public class AdminInstanceScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::requestRefresh)
             .build();
-        addRenderableWidget(new EditorButtonWidget(refreshButton, panelX + PANEL_WIDTH - 80, panelY + 10, 70, 20));
+        addRenderableWidget(new EditorButtonWidget(refreshButton, panelX + scaledPanelWidth - UIScaleManager.scale(80), panelY + UIScaleManager.scale(10), UIScaleManager.scale(70), UIScaleManager.scale(20)));
 
         // Request initial data
         requestRefresh();
@@ -102,39 +111,39 @@ public class AdminInstanceScreen extends BaseDevModScreen {
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, DesignTokens.AdminPanel.PANEL_BG);
+        graphics.fill(panelX, panelY, panelX + scaledPanelWidth, panelY + scaledPanelHeight, DesignTokens.AdminPanel.PANEL_BG);
 
         // Header
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + HEADER_HEIGHT, DesignTokens.AdminPanel.HEADER_BG);
+        graphics.fill(panelX, panelY, panelX + scaledPanelWidth, panelY + scaledHeaderHeight, DesignTokens.AdminPanel.HEADER_BG);
 
         // Title
         Component title = Objects.requireNonNull(Component.translatable("devmod.admin.instance.title"));
-        graphics.drawString(safeFont(), title, panelX + 15, panelY + 18, DesignTokens.Text.WHITE);
+        graphics.drawString(safeFont(), title, panelX + UIScaleManager.scale(15), panelY + UIScaleManager.scale(18), DesignTokens.Text.WHITE);
 
         // Stats bar
-        int statsY = panelY + HEADER_HEIGHT;
-        graphics.fill(panelX, statsY, panelX + PANEL_WIDTH, statsY + STATS_HEIGHT, DesignTokens.AdminPanel.STATS_BG);
+        int statsY = panelY + scaledHeaderHeight;
+        graphics.fill(panelX, statsY, panelX + scaledPanelWidth, statsY + scaledStatsHeight, DesignTokens.AdminPanel.STATS_BG);
 
         String stats = String.format("\u00A7a%d Active \u00A7f| \u00A7b%d Players \u00A7f| \u00A7c%d Pending",
             activeCount, totalPlayers, pendingDestructionCount);
-        graphics.drawString(safeFont(), stats, panelX + 15, statsY + 10, DesignTokens.Text.WHITE);
+        graphics.drawString(safeFont(), stats, panelX + UIScaleManager.scale(15), statsY + UIScaleManager.scale(10), DesignTokens.Text.WHITE);
 
         // Instance list
         renderInstanceList(graphics, mouseX, mouseY);
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(safeFont(), "\u25B2", panelX + PANEL_WIDTH / 2, listY - 10, DesignTokens.Text.MUTED);
+            graphics.drawCenteredString(safeFont(), "\u25B2", panelX + scaledPanelWidth / 2, listY - UIScaleManager.scale(10), DesignTokens.Text.MUTED);
         }
         if (scrollOffset + maxVisibleEntries < instances.size()) {
-            graphics.drawCenteredString(safeFont(), "\u25BC", panelX + PANEL_WIDTH / 2, listY + listHeight + 2, DesignTokens.Text.MUTED);
+            graphics.drawCenteredString(safeFont(), "\u25BC", panelX + scaledPanelWidth / 2, listY + listHeight + UIScaleManager.scale(2), DesignTokens.Text.MUTED);
         }
 
         // Empty state
         if (instances.isEmpty()) {
             graphics.drawCenteredString(safeFont(),
                 Objects.requireNonNull(Component.translatable("devmod.admin.instance.empty")),
-                panelX + PANEL_WIDTH / 2, listY + listHeight / 2, DesignTokens.Text.MUTED);
+                panelX + scaledPanelWidth / 2, listY + listHeight / 2, DesignTokens.Text.MUTED);
         }
     }
 
@@ -143,8 +152,8 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
         for (int i = scrollOffset; i < Math.min(scrollOffset + maxVisibleEntries, instances.size()); i++) {
             AdminInstanceSyncPayload.InstanceSnapshot instance = instances.get(i);
-            renderInstanceEntry(graphics, instance, listX, y, listWidth, ENTRY_HEIGHT - 4, mouseX, mouseY);
-            y += ENTRY_HEIGHT;
+            renderInstanceEntry(graphics, instance, listX, y, listWidth, scaledEntryHeight - UIScaleManager.scale(4), mouseX, mouseY);
+            y += scaledEntryHeight;
         }
     }
 
@@ -162,18 +171,19 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
         // State indicator (colored bar on left)
         int stateColor = getStateColor(instance.stateOrdinal());
-        graphics.fill(x, y, x + 4, y + h, stateColor);
+        graphics.fill(x, y, x + UIScaleManager.scale(4), y + h, stateColor);
 
         // Instance info
-        int textX = x + 12;
-        int textY = y + 6;
+        int textX = x + UIScaleManager.scale(12);
+        int textY = y + UIScaleManager.scale(6);
+        int lineSpacing = UIScaleManager.scale(12);
 
         // State + Arena template
         String header = instance.getStateDisplay() + " \u00A7f" + (instance.arenaTemplate() != null ? instance.arenaTemplate() : "unknown");
         graphics.drawString(safeFont(), header, textX, textY, DesignTokens.Text.WHITE);
 
         // Players
-        textY += 12;
+        textY += lineSpacing;
         String players = "Players: " + instance.getPlayerCountDisplay();
         if (!instance.playerNames().isEmpty()) {
             players += " (" + String.join(", ", instance.playerNames()) + ")";
@@ -181,29 +191,33 @@ public class AdminInstanceScreen extends BaseDevModScreen {
         graphics.drawString(safeFont(), players, textX, textY, DesignTokens.Text.SECONDARY);
 
         // Wave + Duration
-        textY += 12;
+        textY += lineSpacing;
         String info = "Wave: " + instance.getWaveDisplay() + " | Duration: " + instance.getDurationDisplay();
         graphics.drawString(safeFont(), info, textX, textY, DesignTokens.Text.SECONDARY);
 
         // Action buttons
-        int btnY = y + 48;
-        int btnX = x + w - 200;
+        int btnY = y + UIScaleManager.scale(48);
+        int btnX = x + w - UIScaleManager.scale(200);
+        int btnH = UIScaleManager.scale(16);
 
         // End Success button
-        if (renderSmallButton(graphics, "Success", btnX, btnY, 60, 16, mouseX, mouseY, DesignTokens.Semantic.SUCCESS)) {
+        int successW = UIScaleManager.scale(60);
+        if (renderSmallButton(graphics, "Success", btnX, btnY, successW, btnH, mouseX, mouseY, DesignTokens.Semantic.SUCCESS)) {
             // Will be clicked via handleMouseClick
         }
 
         // End Failure button
-        btnX += 65;
-        if (renderSmallButton(graphics, "Fail", btnX, btnY, 45, 16, mouseX, mouseY, DesignTokens.Semantic.ERROR)) {
+        btnX += UIScaleManager.scale(65);
+        int failW = UIScaleManager.scale(45);
+        if (renderSmallButton(graphics, "Fail", btnX, btnY, failW, btnH, mouseX, mouseY, DesignTokens.Semantic.ERROR)) {
             // Will be clicked via handleMouseClick
         }
 
         // Force Destroy button (only for empty instances)
         if (instance.isEmpty()) {
-            btnX += 50;
-            if (renderSmallButton(graphics, "Destroy", btnX, btnY, 55, 16, mouseX, mouseY, DesignTokens.Semantic.WARNING)) {
+            btnX += UIScaleManager.scale(50);
+            int destroyW = UIScaleManager.scale(55);
+            if (renderSmallButton(graphics, "Destroy", btnX, btnY, destroyW, btnH, mouseX, mouseY, DesignTokens.Semantic.WARNING)) {
                 // Will be clicked via handleMouseClick
             }
         }
@@ -239,25 +253,28 @@ public class AdminInstanceScreen extends BaseDevModScreen {
             AdminInstanceSyncPayload.InstanceSnapshot instance = instances.get(i);
             int entryX = listX;
             int entryW = listWidth;
-            int entryH = ENTRY_HEIGHT - 4;
+            int entryH = scaledEntryHeight - UIScaleManager.scale(4);
 
             if (mouseX >= entryX && mouseX < entryX + entryW && mouseY >= y && mouseY < y + entryH) {
                 selectedInstanceId = instance.instanceId();
 
                 // Check button clicks
-                int btnY = y + 48;
-                int btnX = entryX + entryW - 200;
+                int btnY = y + UIScaleManager.scale(48);
+                int btnX = entryX + entryW - UIScaleManager.scale(200);
+                int btnH = UIScaleManager.scale(16);
 
                 // Success button
-                if (mouseX >= btnX && mouseX < btnX + 60 && mouseY >= btnY && mouseY < btnY + 16) {
+                int successW = UIScaleManager.scale(60);
+                if (mouseX >= btnX && mouseX < btnX + successW && mouseY >= btnY && mouseY < btnY + btnH) {
                     sendAction(Objects.requireNonNull(AdminInstanceActionPayload.endSuccess(instance.instanceId())));
                     playClickSound();
                     return true;
                 }
 
                 // Fail button
-                btnX += 65;
-                if (mouseX >= btnX && mouseX < btnX + 45 && mouseY >= btnY && mouseY < btnY + 16) {
+                btnX += UIScaleManager.scale(65);
+                int failW = UIScaleManager.scale(45);
+                if (mouseX >= btnX && mouseX < btnX + failW && mouseY >= btnY && mouseY < btnY + btnH) {
                     sendAction(Objects.requireNonNull(AdminInstanceActionPayload.endFailure(instance.instanceId())));
                     playClickSound();
                     return true;
@@ -265,8 +282,9 @@ public class AdminInstanceScreen extends BaseDevModScreen {
 
                 // Destroy button
                 if (instance.isEmpty()) {
-                    btnX += 50;
-                    if (mouseX >= btnX && mouseX < btnX + 55 && mouseY >= btnY && mouseY < btnY + 16) {
+                    btnX += UIScaleManager.scale(50);
+                    int destroyW = UIScaleManager.scale(55);
+                    if (mouseX >= btnX && mouseX < btnX + destroyW && mouseY >= btnY && mouseY < btnY + btnH) {
                         sendAction(Objects.requireNonNull(AdminInstanceActionPayload.forceDestroy(instance.instanceId())));
                         playClickSound();
                         return true;
@@ -277,7 +295,7 @@ public class AdminInstanceScreen extends BaseDevModScreen {
                 return true;
             }
 
-            y += ENTRY_HEIGHT;
+            y += scaledEntryHeight;
         }
 
         return false;
@@ -359,7 +377,9 @@ public class AdminInstanceScreen extends BaseDevModScreen {
      * Open the admin instance screen.
      */
     public static void open() {
-        net.minecraft.client.Minecraft.getInstance().setScreen(new AdminInstanceScreen());
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "admin_instance",
+            AdminInstanceScreen::new);
     }
 
     // =========================================================================

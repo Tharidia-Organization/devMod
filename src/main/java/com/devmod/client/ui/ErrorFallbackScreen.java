@@ -43,23 +43,23 @@ public final class ErrorFallbackScreen extends Screen {
             return;
         }
 
-        graphics.drawCenteredString(font,
-            Component.translatable("devmod.screen.error.title"),
-            centerX, centerY - 30, DesignTokens.ErrorScreen.TITLE);
+        UIScaleManager.drawScaledCenteredString(graphics, font,
+            Component.translatable("devmod.screen.error.title").getString(),
+            centerX, centerY - UIScaleManager.getScaledLineHeight() * 2, DesignTokens.ErrorScreen.TITLE);
 
         String safeMessage = message;
         if (safeMessage != null && !safeMessage.isBlank()) {
             if (safeMessage.length() > 140) {
                 safeMessage = safeMessage.substring(0, 137) + "...";
             }
-            graphics.drawCenteredString(font,
-                Component.literal(safeMessage),
-                centerX, centerY - 10, DesignTokens.ErrorScreen.TEXT);
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.literal(safeMessage).getString(),
+                centerX, centerY - UIScaleManager.getScaledLineHeight(), DesignTokens.ErrorScreen.TEXT);
         }
 
-        graphics.drawCenteredString(font,
-            Component.translatable("devmod.screen.error.hint"),
-            centerX, centerY + 20, DesignTokens.ErrorScreen.HINT);
+        UIScaleManager.drawScaledCenteredString(graphics, font,
+            Component.translatable("devmod.screen.error.hint").getString(),
+            centerX, centerY + UIScaleManager.getScaledLineHeight(), DesignTokens.ErrorScreen.HINT);
     }
 
     @Override

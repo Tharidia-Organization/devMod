@@ -3,14 +3,13 @@ package com.devmod.client.ui;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-
-import javax.annotation.Nullable;
-
 /**
  * Centralized safe screen opener with fallback error UI.
  */

@@ -30,6 +30,7 @@ import com.devmod.clone.block.CentrifugeBlock;
 import com.devmod.clone.menu.CentrifugeMenu;
 import com.devmod.clone.recipe.CentrifugingRecipe;
 import com.devmod.clone.recipe.CloneRecipeTypes;
+import com.devmod.debug.DiagnosticLogger;
 
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
@@ -123,6 +124,9 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
             progress++;
 
             if (progress >= maxProgress) {
+                DiagnosticLogger.clone("centrifuge: processComplete pos=(%d,%d,%d), item=%s",
+                    worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(),
+                    processingItem.getItem().getDescriptionId());
                 processItem();
                 progress = 0;
                 processingItem = ItemStack.EMPTY;
@@ -213,6 +217,8 @@ public class CentrifugeBlockEntity extends BlockEntity implements MenuProvider, 
         if (active != newActive) {
             active = newActive;
             dirtyActive = true;
+            DiagnosticLogger.clone("centrifuge: active=%s pos=(%d,%d,%d)",
+                newActive, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ());
 
             // Update block state for light level
             Level lvl = level;

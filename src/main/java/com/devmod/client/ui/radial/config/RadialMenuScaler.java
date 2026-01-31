@@ -91,6 +91,12 @@ public final class RadialMenuScaler {
     /** Maximum menu size as proportion of screen. */
     private static final float MAX_SCREEN_RATIO = 0.85f;
 
+    /** Extra radial padding for item ring + hover expansion (reference units). */
+    private static final int ITEM_ENVELOPE_PADDING = RadialMenuConstants.ITEM_RING_OFFSET
+        + RadialMenuConstants.ITEM_HOVER_OFFSET
+        + RadialMenuConstants.ITEM_BASE_SIZE
+        + RadialMenuConstants.ITEM_HOVER_SIZE_BONUS;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // COMPUTED VALUES (updated each frame)
     // ═══════════════════════════════════════════════════════════════════════════
@@ -116,30 +122,24 @@ public final class RadialMenuScaler {
      */
     public static void update() {
         UIScaleManager.update();
-
-        // Get available space
-        int screenWidth = UIScaleManager.getScaledWidth();
-        int screenHeight = UIScaleManager.getScaledHeight();
-        int minDimension = Math.min(screenWidth, screenHeight);
-
-        // Calculate safe area for menu
-        int margin = (int) (minDimension * SCREEN_MARGIN_RATIO);
-        int maxMenuDiameter = (int) ((minDimension - margin * 2) * MAX_SCREEN_RATIO);
-        int maxOuterRadius = maxMenuDiameter / 2;
+        int maxOuterForItems = computeMaxOuterRadius();
 
         // Calculate desired outer radius from reference scaled
         int scaledOuter = UIScaleManager.scale(REF_OUTER_RADIUS);
 
-        // Clamp to fit screen while respecting minimums
-        outerRadius = Math.max(MIN_OUTER_RADIUS, Math.min(scaledOuter, maxOuterRadius));
+        int effectiveMinOuter = Math.min(MIN_OUTER_RADIUS, maxOuterForItems);
+        outerRadius = Math.max(effectiveMinOuter, Math.min(scaledOuter, maxOuterForItems));
 
         // Calculate scale factor relative to reference
         scaleFactor = (float) outerRadius / REF_OUTER_RADIUS;
 
         // Calculate other radii proportionally
         innerRadius = Math.max(MIN_INNER_RADIUS, UIScaleManager.snap((int) (outerRadius * INNER_RATIO)));
+        int innerMax = Math.max(12, outerRadius - UIScaleManager.snap(12));
+        innerRadius = Math.min(innerRadius, innerMax);
         itemRadius = UIScaleManager.snap((int) (outerRadius * ITEM_RATIO));
         centerButtonRadius = Math.max(MIN_CENTER_RADIUS, UIScaleManager.snap((int) (innerRadius * CENTER_RATIO)));
+        centerButtonRadius = Math.min(centerButtonRadius, Math.max(8, innerRadius - UIScaleManager.snap(6)));
 
         // Derived values
         favoritesRadius = Math.max(centerButtonRadius + 8, innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
@@ -147,6 +147,15 @@ public final class RadialMenuScaler {
 
         // Item size scales with menu
         itemSize = Math.max(MIN_ITEM_SIZE, scaleConstant(RadialMenuConstants.ITEM_BASE_SIZE));
+
+        // Clamp favorites ring so bubbles fit between hub and inner ring
+        int favoriteBubble = scaleConstant(RadialMenuConstants.FAVORITE_BASE_SIZE + RadialMenuConstants.FAVORITE_SIZE_BONUS);
+        int favoritePadding = scaleConstant(4);
+        int minFav = macroHubRadius + favoriteBubble + favoritePadding;
+        int maxFav = innerRadius - favoriteBubble - favoritePadding;
+        if (maxFav >= minFav) {
+            favoritesRadius = Math.max(minFav, Math.min(favoritesRadius, maxFav));
+        }
     }
 
     /**
@@ -174,12 +183,63 @@ public final class RadialMenuScaler {
                 itemRadius = UIScaleManager.snap((int) (config.itemRadius * userScale));
                 centerButtonRadius = UIScaleManager.snap((int) (config.centerButtonRadius * userScale));
 
-                // Recalculate derived
+                // Clamp to screen envelope and recompute derived values
+                int maxOuterForItems = computeMaxOuterRadius();
+                int effectiveMinOuter = Math.min(MIN_OUTER_RADIUS, maxOuterForItems);
+                outerRadius = Math.max(effectiveMinOuter, Math.min(outerRadius, maxOuterForItems));
+
                 scaleFactor = (float) outerRadius / REF_OUTER_RADIUS;
-                favoritesRadius = Math.max(centerButtonRadius + 8, innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
+
+                int innerMax = Math.max(12, outerRadius - UIScaleManager.snap(12));
+                innerRadius = Math.min(innerRadius, innerMax);
+                innerRadius = Math.max(Math.min(MIN_INNER_RADIUS, innerMax), innerRadius);
+
+                int itemMin = Math.max(8, innerRadius + UIScaleManager.snap(4));
+                int itemMax = Math.max(itemMin, outerRadius - UIScaleManager.snap(4));
+                itemRadius = Math.max(itemMin, Math.min(itemRadius, itemMax));
+
+                centerButtonRadius = Math.min(centerButtonRadius, Math.max(8, innerRadius - UIScaleManager.snap(6)));
+
+                favoritesRadius = Math.max(centerButtonRadius + 8,
+                    innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
                 macroHubRadius = centerButtonRadius + scaleConstant(RadialMenuConstants.MACRO_HUB_OFFSET);
+
+                itemSize = Math.max(MIN_ITEM_SIZE, scaleConstant(RadialMenuConstants.ITEM_BASE_SIZE));
+
+                int favoriteBubble = scaleConstant(RadialMenuConstants.FAVORITE_BASE_SIZE + RadialMenuConstants.FAVORITE_SIZE_BONUS);
+                int favoritePadding = scaleConstant(4);
+                int minFav = macroHubRadius + favoriteBubble + favoritePadding;
+                int maxFav = innerRadius - favoriteBubble - favoritePadding;
+                if (maxFav >= minFav) {
+                    favoritesRadius = Math.max(minFav, Math.min(favoritesRadius, maxFav));
+                }
             }
         }
+    }
+
+    private static int computeMaxOuterRadius() {
+        int screenWidth = UIScaleManager.getScaledWidth();
+        int screenHeight = UIScaleManager.getScaledHeight();
+        int minDimension = Math.min(screenWidth, screenHeight);
+
+        int margin = (int) (minDimension * SCREEN_MARGIN_RATIO);
+        int maxMenuDiameter = (int) ((minDimension - margin * 2) * MAX_SCREEN_RATIO);
+        int maxRadius = Math.max(0, maxMenuDiameter / 2);
+
+        float envelopeRatio = (float) ITEM_ENVELOPE_PADDING / REF_OUTER_RADIUS;
+        int maxOuterForItems = (int) (maxRadius / (1.0f + envelopeRatio));
+        if (maxOuterForItems <= 0) {
+            maxOuterForItems = Math.max(16, maxRadius);
+        }
+        return maxOuterForItems;
+    }
+
+    /**
+     * Outer envelope radius including item ring and hover expansion.
+     */
+    public static int getMenuOuterExtent() {
+        int hoverPad = scaleConstant(RadialMenuConstants.ITEM_HOVER_OFFSET + RadialMenuConstants.ITEM_HOVER_SIZE_BONUS);
+        return outerRadius + getItemRingOffset() + getItemSize() + hoverPad;
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

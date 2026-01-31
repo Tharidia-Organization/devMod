@@ -18,9 +18,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.level.Level;
-
-import com.devmod.npc.dialog.DialogLimits;
-
 /**
  * Schedule constraints for dialog availability.
  * Dialogs can be restricted by in-game time, real-world days, and date ranges.

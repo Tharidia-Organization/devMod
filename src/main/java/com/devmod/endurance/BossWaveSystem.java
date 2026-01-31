@@ -588,7 +588,7 @@ public class BossWaveSystem {
         mob.setGlowingTag(true);
         String generatedName = requireNonNull(mixedData.generatedName(), "generatedName");
         String colorCode = getColorCode(mixedData.blendedColor());
-        String variantPrefix = mixedData.isRareVariant() ? "§d§l" : "§c§l";
+        String variantPrefix = mixedData.isRareVariant() ? "\u00A7d\u00A7l" : "\u00A7c\u00A7l";
         mob.setCustomName(Component.literal(variantPrefix + generatedName + colorCode));
         mob.setCustomNameVisible(true);
 
@@ -655,14 +655,14 @@ public class BossWaveSystem {
         int b = rgb & 0xFF;
 
         // Simple mapping to Minecraft color codes
-        if (r > 200 && g < 100 && b < 100) return "§c"; // Red
-        if (r < 100 && g > 200 && b < 100) return "§a"; // Green
-        if (r < 100 && g < 100 && b > 200) return "§9"; // Blue
-        if (r > 200 && g > 200 && b < 100) return "§e"; // Yellow
-        if (r > 200 && g < 100 && b > 200) return "§d"; // Magenta
-        if (r < 100 && g > 200 && b > 200) return "§b"; // Cyan
-        if (r > 200 && g > 100 && b < 100) return "§6"; // Orange
-        return "§f"; // White default
+        if (r > 200 && g < 100 && b < 100) return "\u00A7c"; // Red
+        if (r < 100 && g > 200 && b < 100) return "\u00A7a"; // Green
+        if (r < 100 && g < 100 && b > 200) return "\u00A79"; // Blue
+        if (r > 200 && g > 200 && b < 100) return "\u00A7e"; // Yellow
+        if (r > 200 && g < 100 && b > 200) return "\u00A7d"; // Magenta
+        if (r < 100 && g > 200 && b > 200) return "\u00A7b"; // Cyan
+        if (r > 200 && g > 100 && b < 100) return "\u00A76"; // Orange
+        return "\u00A7f"; // White default
     }
 
     /**

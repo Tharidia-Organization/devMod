@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -46,7 +47,7 @@ public final class TextNoteSection implements EditorSection.CustomSection {
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-        graphics.drawString(font, Objects.requireNonNull(text, "text"),
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(text, "text"),
             bounds.x() + textInsetX, bounds.y() + textOffsetY, textColor, false);
     }
 }

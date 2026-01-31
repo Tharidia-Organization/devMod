@@ -14,10 +14,9 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.abilities.ClientStaminaCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class StaminaHudOverlay {
@@ -116,8 +115,19 @@ public class StaminaHudOverlay {
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
 
-        int x = (screenWidth - BAR_WIDTH) / 2;
-        int y = screenHeight - 52; // Above hotbar
+        int sBarWidth = UIScaleManager.scale(BAR_WIDTH);
+        int sBarHeight = UIScaleManager.scale(BAR_HEIGHT);
+        int sBarBorder = UIScaleManager.scale(BAR_BORDER);
+        int sIndicatorSize = UIScaleManager.scale(4);
+        int sIndicatorGap = UIScaleManager.scale(2);
+        int sOffsetY = UIScaleManager.scale(52); // Above hotbar
+
+        int x = (screenWidth - sBarWidth) / 2;
+        int y = screenHeight - sOffsetY;
+        int totalHeight = sBarHeight + sIndicatorGap + sIndicatorSize + sBarBorder * 2;
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        y = Math.max(safeTop, Math.min(y, safeBottom - totalHeight));
 
         // Fade effect when near full
         float alpha = 1.0f;
@@ -132,14 +142,14 @@ public class StaminaHudOverlay {
         int borderColor = applyAlpha(COLOR_BORDER, alpha);
 
         graphics.fill(
-            x - BAR_BORDER,
-            y - BAR_BORDER,
-            x + BAR_WIDTH + BAR_BORDER,
-            y + BAR_HEIGHT + BAR_BORDER,
+            x - sBarBorder,
+            y - sBarBorder,
+            x + sBarWidth + sBarBorder,
+            y + sBarHeight + sBarBorder,
             borderColor
         );
 
-        graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, bgColor);
+        graphics.fill(x, y, x + sBarWidth, y + sBarHeight, bgColor);
 
         // Choose color based on stamina level
         int staminaColor;
@@ -166,27 +176,29 @@ public class StaminaHudOverlay {
         staminaColor = applyAlpha(staminaColor, alpha);
 
         // Draw stamina bar
-        int filledWidth = (int) (BAR_WIDTH * Math.max(0, Math.min(1, displayPercent)));
+        int filledWidth = (int) (sBarWidth * Math.max(0, Math.min(1, displayPercent)));
         if (filledWidth > 0) {
-            graphics.fill(x, y, x + filledWidth, y + BAR_HEIGHT, staminaColor);
+            graphics.fill(x, y, x + filledWidth, y + sBarHeight, staminaColor);
         }
 
         // Draw ability cooldown indicators
-        renderCooldownIndicators(graphics, x, y, alpha);
+        renderCooldownIndicators(graphics, x, y, sBarWidth, sBarHeight, sIndicatorSize, sIndicatorGap, alpha);
     }
 
     /**
      * Render small indicators for dash/dodge cooldowns.
      */
-    private static void renderCooldownIndicators(GuiGraphics graphics, int barX, int barY, float alpha) {
+    private static void renderCooldownIndicators(GuiGraphics graphics, int barX, int barY,
+                                                 int barWidth, int barHeight,
+                                                 int indicatorSize, int indicatorGap,
+                                                 float alpha) {
         // Small indicators below the stamina bar
-        int indicatorY = barY + BAR_HEIGHT + 2;
-        int indicatorSize = 4;
+        int indicatorY = barY + barHeight + indicatorGap;
 
         // These would need network sync for actual cooldown data
         // For now, just show placeholder slots
-        int dashX = barX + BAR_WIDTH / 3 - indicatorSize / 2;
-        int dodgeX = barX + 2 * BAR_WIDTH / 3 - indicatorSize / 2;
+        int dashX = barX + barWidth / 3 - indicatorSize / 2;
+        int dodgeX = barX + 2 * barWidth / 3 - indicatorSize / 2;
 
         int readyColor = applyAlpha(COLOR_STAMINA_FULL, alpha);
         int borderCol = applyAlpha(COLOR_BACKGROUND, alpha);

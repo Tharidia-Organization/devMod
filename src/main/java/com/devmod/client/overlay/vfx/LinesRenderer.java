@@ -17,7 +17,14 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 
-import static com.devmod.client.overlay.vfx.ImpactVFXConstants.*;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.COLOR_LINE;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_COUNT;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_LENGTH;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_SEGMENTS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_SIDE_LENGTH;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.LINE_START_OFFSET;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.TWO_PI;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.extractRGB;
 
 /**
  * Renders the connection lines effect for impacts.

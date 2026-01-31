@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
@@ -46,11 +47,11 @@ public final class InfoListSection implements EditorSection.CustomSection {
         int y = bounds.y();
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT,
             DesignTokens.Background.HEADER());
-        graphics.drawString(font, Objects.requireNonNull(title, "title"), bounds.x() + TEXT_INSET_X,
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(title, "title"), bounds.x() + TEXT_INSET_X,
             y + HEADER_TEXT_OFFSET_Y, DesignTokens.Text.TITLE(), false);
         y += EditorDimensions.SECTION_HEADER_HEIGHT;
         for (String line : lines) {
-            graphics.drawString(font, Objects.requireNonNull(line, "line"), bounds.x() + TEXT_INSET_X,
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(line, "line"), bounds.x() + TEXT_INSET_X,
                 y, DesignTokens.Text.SECONDARY(), false);
             y += LINE_HEIGHT;
         }

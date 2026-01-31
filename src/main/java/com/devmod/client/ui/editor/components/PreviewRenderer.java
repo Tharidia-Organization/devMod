@@ -20,6 +20,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -173,9 +174,9 @@ public class PreviewRenderer {
         if (showHint && hintText != null) {
             int hintY = y + size + ScaledCoord.scaleDim(DesignTokens.Spacing.XS);
             String safeHintText = Objects.requireNonNull(hintText, "hintText cannot be null");
-            int hintWidth = font.width(safeHintText);
+            int hintWidth = UIScaleManager.getScaledStringWidth(font, safeHintText);
             int hintX = x + (size - hintWidth) / 2;
-            graphics.drawString(font, safeHintText, hintX, hintY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, safeHintText, hintX, hintY, DesignTokens.Text.MUTED(), false);
         }
 
         // Render carried stack (from vanilla "carried" slot) following the cursor
@@ -289,7 +290,7 @@ public class PreviewRenderer {
                 // Tooltip-like name
                 if (hovered) {
                     String name = safeStack.getHoverName().getString();
-                    graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), name,
+                    UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font cannot be null"), name,
                         rect.x() + rect.width() + ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
                         rect.y(), DesignTokens.Text.PRIMARY(), false);
                 }
@@ -297,9 +298,9 @@ public class PreviewRenderer {
                 String glyph = Objects.requireNonNull(placeholderFor(slot), "placeholder cannot be null");
                 var safeFont = Objects.requireNonNull(font, "font cannot be null");
                 int textColor = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
-                int textX = rect.x() + (slotSize - safeFont.width(glyph)) / 2;
-                int textY = rect.y() + (slotSize - safeFont.lineHeight) / 2;
-                graphics.drawString(safeFont, glyph, textX, textY, textColor, false);
+                int textX = rect.x() + (slotSize - UIScaleManager.getScaledStringWidth(safeFont, glyph)) / 2;
+                int textY = rect.y() + (slotSize - UIScaleManager.getScaledLineHeight()) / 2;
+                UIScaleManager.drawScaledString(graphics, safeFont, glyph, textX, textY, textColor, false);
             }
         }
     }
@@ -309,9 +310,9 @@ public class PreviewRenderer {
             // Show placeholder
             var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
             String placeholder = "?";
-            int textX = x + (size - font.width(placeholder)) / 2;
-            int textY = y + (size - font.lineHeight) / 2;
-            graphics.drawString(font, placeholder, textX, textY, DesignTokens.Text.MUTED(), false);
+            int textX = x + (size - UIScaleManager.getScaledStringWidth(font, placeholder)) / 2;
+            int textY = y + (size - UIScaleManager.getScaledLineHeight()) / 2;
+            UIScaleManager.drawScaledString(graphics, font, placeholder, textX, textY, DesignTokens.Text.MUTED(), false);
             return;
         }
 

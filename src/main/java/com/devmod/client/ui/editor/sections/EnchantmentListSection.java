@@ -24,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -390,14 +391,14 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         // Header
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + HEADER_HEIGHT,
             DesignTokens.Background.HEADER());
-        graphics.drawString(font, title, bounds.x() + TEXT_INSET_X,
+        UIScaleManager.drawScaledString(graphics, font, title, bounds.x() + TEXT_INSET_X,
             y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
 
         // Count active enchantments
         long activeCount = entries.stream().filter(e -> e.currentLevel > 0).count();
         String countText = "(" + activeCount + " active)";
-        int countWidth = font.width(countText);
-        graphics.drawString(font, countText, bounds.x() + bounds.width() - countWidth - TEXT_INSET_X,
+        int countWidth = UIScaleManager.getScaledStringWidth(font, countText);
+        UIScaleManager.drawScaledString(graphics, font, countText, bounds.x() + bounds.width() - countWidth - TEXT_INSET_X,
             y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
 
         y += HEADER_HEIGHT;
@@ -408,7 +409,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         y += searchField.calculateHeight() + SEARCH_BOTTOM_PADDING;
 
         if (filteredEntries.isEmpty()) {
-            graphics.drawString(font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
                 DesignTokens.Text.MUTED(), false);
             return;
         }
@@ -424,7 +425,7 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
             if (!hasGroup) {
                 continue;
             }
-            graphics.drawString(font, group.label, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, group.label, bounds.x() + TEXT_INSET_X, y,
                 DesignTokens.Text.SECONDARY(), false);
             y += GROUP_HEADER_HEIGHT;
             for (EnchantmentEntry entry : filteredEntries) {

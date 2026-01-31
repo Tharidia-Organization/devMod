@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.clone.menu.NeurocellItemMenu;
 
@@ -55,41 +56,39 @@ public class NeurocellItemScreen extends AbstractContainerScreen<NeurocellItemMe
     @Override
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
         var renderFont = Objects.requireNonNull(this.font);
-        var titleComp = Objects.requireNonNull(this.title);
+        String titleStr = Objects.requireNonNull(this.title).getString();
 
         // Title (centered)
-        int titleWidth = renderFont.width(titleComp);
-        graphics.drawString(renderFont, titleComp, (imageWidth - titleWidth) / 2, this.titleLabelY,
+        int titleWidth = UIScaleManager.getScaledStringWidth(renderFont, titleStr);
+        UIScaleManager.drawScaledString(graphics, renderFont, titleStr, (imageWidth - titleWidth) / 2, this.titleLabelY,
             DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Inventory label
-        graphics.drawString(renderFont, Objects.requireNonNull(this.playerInventoryTitle),
+        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(this.playerInventoryTitle).getString(),
             this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Status text below the slot
         ItemStack stack = menu.getContainer().getItem(0);
-        Component status;
+        String statusStr;
         int color;
 
         if (stack.isEmpty()) {
-            status = Objects.requireNonNull(Component.translatable("gui.devmod.item_display.insert_item"));
+            statusStr = Objects.requireNonNull(Component.translatable("gui.devmod.item_display.insert_item")).getString();
             color = DesignTokens.Neurocell.STATUS_EMPTY;
         } else {
-            status = Objects.requireNonNull(Component.translatable("gui.devmod.item_display.displaying",
-                stack.getHoverName().getString()));
+            statusStr = Objects.requireNonNull(Component.translatable("gui.devmod.item_display.displaying",
+                stack.getHoverName().getString())).getString();
             color = DesignTokens.Neurocell.STATUS_READY;
         }
 
         // Center the status text
-        int textWidth = renderFont.width(status);
+        int textWidth = UIScaleManager.getScaledStringWidth(renderFont, statusStr);
         int maxWidth = imageWidth - 16;
         if (textWidth > maxWidth) {
             // Truncate long names
-            String truncated = Objects.requireNonNull(renderFont.plainSubstrByWidth(
-                Objects.requireNonNull(status.getString()), maxWidth - 6)) + "...";
-            status = Objects.requireNonNull(Component.literal(truncated));
-            textWidth = renderFont.width(status);
+            statusStr = Objects.requireNonNull(renderFont.plainSubstrByWidth(statusStr, maxWidth - 6)) + "...";
+            textWidth = UIScaleManager.getScaledStringWidth(renderFont, statusStr);
         }
-        graphics.drawString(renderFont, status, (imageWidth - textWidth) / 2, 58, color, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, statusStr, (imageWidth - textWidth) / 2, 58, color, false);
     }
 }

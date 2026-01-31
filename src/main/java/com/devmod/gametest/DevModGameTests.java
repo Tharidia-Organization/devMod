@@ -28,12 +28,10 @@ import com.devmod.DevMod;
 import com.devmod.combat.HitHelper;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
-import com.devmod.config.Config;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
 import com.devmod.portal.PortalFrameDetector;
 import com.devmod.stats.WeaponStats;
-
 @GameTestHolder(DevMod.MODID)
 @PrefixGameTestTemplate(false)
 public class DevModGameTests {

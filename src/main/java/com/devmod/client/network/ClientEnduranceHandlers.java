@@ -108,7 +108,9 @@ public final class ClientEnduranceHandlers {
             LOGGER.info("[EnduranceQuest][Client] QuestDeath packet received (player=unknown)");
         }
         if (mc != null) {
-            mc.execute(() -> mc.setScreen(new QuestDeathScreen()));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "quest_death",
+                () -> new QuestDeathScreen());
         }
     }
 

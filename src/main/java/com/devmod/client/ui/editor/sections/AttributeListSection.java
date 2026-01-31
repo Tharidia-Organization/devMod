@@ -21,6 +21,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -362,7 +363,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         // Header
         graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + HEADER_HEIGHT,
             DesignTokens.Background.HEADER());
-        graphics.drawString(font, title, bounds.x() + TEXT_INSET_X,
+        UIScaleManager.drawScaledString(graphics, font, title, bounds.x() + TEXT_INSET_X,
             y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
         y += HEADER_HEIGHT;
 
@@ -372,7 +373,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
         y += searchField.calculateHeight() + SEARCH_BOTTOM_PADDING;
 
         if (filteredEntries.isEmpty()) {
-            graphics.drawString(font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
                 DesignTokens.Text.MUTED(), false);
             return;
         }
@@ -388,7 +389,7 @@ public final class AttributeListSection implements EditorSection.CustomSection {
             if (!hasGroup) {
                 continue;
             }
-            graphics.drawString(font, group.label, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, group.label, bounds.x() + TEXT_INSET_X, y,
                 DesignTokens.Text.SECONDARY(), false);
             y += GROUP_HEADER_HEIGHT;
             for (AttributeEntry entry : filteredEntries) {

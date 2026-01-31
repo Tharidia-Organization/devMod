@@ -10,13 +10,12 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.server.level.ServerPlayer;
+
 import com.devmod.endurance.InstanceArenaManager;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
 import com.devmod.runtime.InstanceRegistry;
-
-import net.minecraft.server.level.ServerPlayer;
-
 /**
  * Facade that unifies instance-related operations across multiple services.
  *

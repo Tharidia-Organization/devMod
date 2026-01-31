@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.testing.TestCase;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -82,6 +83,9 @@ public class ActiveTestHudOverlay {
         if (mc.player == null || mc.options.hideGui) return;
         if (mc.screen != null) return; // Don't show when any screen is open
 
+        // Update UIScaleManager for responsive scaling
+        UIScaleManager.update();
+
         final @Nonnull GuiGraphics g = Objects.requireNonNull(graphics, "graphics");
         final @Nonnull Font font = Objects.requireNonNull(mc.font, "font");
 
@@ -121,12 +125,19 @@ public class ActiveTestHudOverlay {
      */
     private static void renderInactiveHint(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
-        int x = 10;
-        int y = screenHeight - 30;
+        int x = UIScaleManager.scale(10);
+        int y = screenHeight - UIScaleManager.scale(30);
 
         String hint = "[F7] Open Testing Hub";
-        g.fill(x - 4, y - 4, x + font.width(hint) + 8, y + 12, TestingUiTheme.Hud.HINT_BG);
-        g.drawString(font, hint, x, y, TEXT_MUTED, false);
+        int hintWidth = font.width(hint);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - hintWidth - 8));
+        y = Math.max(safeTop, Math.min(y, safeBottom - UIScaleManager.scale(14)));
+        g.fill(x - 4, y - 4, x + hintWidth + 8, y + 12, TestingUiTheme.Hud.HINT_BG);
+        UIScaleManager.drawScaledString(g, font, hint, x, y, TEXT_MUTED, false);
     }
 
     /**
@@ -134,23 +145,33 @@ public class ActiveTestHudOverlay {
      */
     private static void renderMinimized(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
-        int x = 10;
-        int y = screenHeight - 50;
+        int x = UIScaleManager.scale(10);
+        int y = screenHeight - UIScaleManager.scale(50);
 
         // Compact bar
-        int barWidth = 160;
-        g.fill(x, y, x + barWidth, y + 18, PANEL_BG);
-        drawBorder(g, x, y, barWidth, 18, PANEL_BORDER);
+        int barWidth = UIScaleManager.scale(160);
+        int barHeight = UIScaleManager.scale(18);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - barWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - barHeight));
+        g.fill(x, y, x + barWidth, y + barHeight, PANEL_BG);
+        drawBorder(g, x, y, barWidth, barHeight, PANEL_BORDER);
 
         // Progress and hint
         float progress = TestingSession.INSTANCE.getProgressPercent() / 100f;
         String progressText = String.format("QA: %.0f%% [Tab to expand]", progress * 100);
-        g.drawString(font, progressText, x + 4, y + 5, TEXT_SECONDARY, false);
+        progressText = truncateToWidth(font, progressText, barWidth - UIScaleManager.scale(8));
+        UIScaleManager.drawScaledString(g, font, progressText, x + 4, y + UIScaleManager.scale(5), TEXT_SECONDARY, false);
 
         // Mini progress bar
         int progressWidth = barWidth - 8;
-        g.fill(x + 4, y + 14, x + 4 + progressWidth, y + 16, PROGRESS_BG);
-        g.fill(x + 4, y + 14, x + 4 + (int)(progressWidth * progress), y + 16,
+        int miniBarY = y + UIScaleManager.scale(14);
+        int miniBarHeight = UIScaleManager.scale(2);
+        g.fill(x + 4, miniBarY, x + 4 + progressWidth, miniBarY + miniBarHeight, PROGRESS_BG);
+        g.fill(x + 4, miniBarY, x + 4 + (int)(progressWidth * progress), miniBarY + miniBarHeight,
                progress >= 1f ? PROGRESS_COMPLETE : PROGRESS_FILL);
     }
 
@@ -159,32 +180,47 @@ public class ActiveTestHudOverlay {
      */
     private static void renderNoActiveTest(@Nonnull GuiGraphics g, @Nonnull Font font) {
         int screenHeight = g.guiHeight();
-        int x = 10;
-        int y = screenHeight - 80;
+        int x = UIScaleManager.scale(10);
+        int y = screenHeight - UIScaleManager.scale(80);
 
-        int height = 60;
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int height = UIScaleManager.scale(60);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - height));
 
         // Panel background
-        g.fill(x, y, x + PANEL_WIDTH, y + height, PANEL_BG);
-        drawBorder(g, x, y, PANEL_WIDTH, height, PANEL_BORDER);
+        g.fill(x, y, x + panelWidth, y + height, PANEL_BG);
+        drawBorder(g, x, y, panelWidth, height, PANEL_BORDER);
 
         // Header
-        g.fill(x, y, x + PANEL_WIDTH, y + HEADER_HEIGHT, PANEL_HEADER_BG);
-        g.drawString(font, "QA Testing - Ready", x + PANEL_PADDING, y + 7, TEXT_TITLE, false);
+        g.fill(x, y, x + panelWidth, y + sHeaderHeight, PANEL_HEADER_BG);
+        int contentWidth = Math.max(0, panelWidth - sPanelPadding * 2);
+        String header = truncateToWidth(font, "QA Testing - Ready", contentWidth);
+        UIScaleManager.drawScaledString(g, font, header, x + sPanelPadding, y + UIScaleManager.scale(7), TEXT_TITLE, false);
 
         // Content
-        int contentY = y + HEADER_HEIGHT + PANEL_PADDING;
+        int contentY = y + sHeaderHeight + sPanelPadding;
 
         // Progress
         int passed = TestingSession.INSTANCE.getPassedTests();
         int total = TestingSession.INSTANCE.getTotalTests();
         String progressText = String.format("Progress: %d/%d tests (%.0f%%)",
             passed, total, TestingSession.INSTANCE.getProgressPercent());
-        g.drawString(font, progressText, x + PANEL_PADDING, contentY, TEXT_PRIMARY, false);
-        contentY += LINE_HEIGHT + 4;
+        progressText = truncateToWidth(font, progressText, contentWidth);
+        UIScaleManager.drawScaledString(g, font, progressText, x + sPanelPadding, contentY, TEXT_PRIMARY, false);
+        contentY += sLineHeight + 4;
 
         // Hint
-        g.drawString(font, "[F7] Open Testing Hub to select a test", x + PANEL_PADDING, contentY, TEXT_MUTED, false);
+        String hint = truncateToWidth(font, "[F7] Open Testing Hub to select a test", contentWidth);
+        UIScaleManager.drawScaledString(g, font, hint, x + sPanelPadding, contentY, TEXT_MUTED, false);
     }
 
     /**
@@ -193,20 +229,34 @@ public class ActiveTestHudOverlay {
     private static void renderActiveTest(@Nonnull GuiGraphics g, @Nonnull Font font) {
         if (activeTest == null) return;
 
+        int screenWidth = g.guiWidth();
         int screenHeight = g.guiHeight();
-        int x = 10;
+        int x = UIScaleManager.scale(10);
+
+        // Scaled layout values
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
         // Calculate dynamic height based on instructions
         String instructionText = Objects.requireNonNullElse(activeTest.getInstructions(), "");
         String[] instructions = instructionText.lines().toArray(String[]::new);
         int instructionLines = Math.min(instructions.length, 6); // Max 6 steps visible
-        int height = HEADER_HEIGHT + PANEL_PADDING * 3 +
-                     LINE_HEIGHT * 2 + // Name + Description
-                     LINE_HEIGHT * instructionLines + // Instructions
-                     20 + // Progress bar
-                     LINE_HEIGHT + 8; // Actions hint
+        int height = sHeaderHeight + sPanelPadding * 3 +
+                     sLineHeight * 2 + // Name + Description
+                     sLineHeight * instructionLines + // Instructions
+                     UIScaleManager.scale(20) + // Progress bar
+                     sLineHeight + UIScaleManager.scale(8); // Actions hint
 
-        int y = screenHeight - height - 20;
+        int y = screenHeight - height - UIScaleManager.scale(20);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - height));
 
         // New test animation (slide in + glow)
         if (showNewTestAnimation) {
@@ -215,57 +265,59 @@ public class ActiveTestHudOverlay {
                 showNewTestAnimation = false;
             } else {
                 // Slide in from left
-                x = (int)(x - 100 * (1f - animTime));
+                x = (int)(x - UIScaleManager.scale(100) * (1f - animTime));
+                x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
                 // Glow effect
                 int glowAlpha = (int)(100 * (1f - animTime));
-                g.fill(x - 2, y - 2, x + PANEL_WIDTH + 4, y + height + 4,
+                g.fill(x - 2, y - 2, x + panelWidth + 4, y + height + 4,
                        (glowAlpha << 24) | TestingUiTheme.Hud.NEW_TEST_GLOW_RGB);
             }
         }
 
         // Panel background
-        g.fill(x, y, x + PANEL_WIDTH, y + height, PANEL_BG);
-        drawBorder(g, x, y, PANEL_WIDTH, height,
+        g.fill(x, y, x + panelWidth, y + height, PANEL_BG);
+        drawBorder(g, x, y, panelWidth, height,
                    activeTest.getStatus() == TestCase.TestStatus.IN_PROGRESS ? TEXT_WARNING : PANEL_BORDER);
 
         // Header with status color
         int headerColor = activeTest.getStatus() == TestCase.TestStatus.IN_PROGRESS
             ? TestingUiTheme.Hud.HEADER_IN_PROGRESS
             : PANEL_HEADER_BG;
-        g.fill(x, y, x + PANEL_WIDTH, y + HEADER_HEIGHT, headerColor);
+        g.fill(x, y, x + panelWidth, y + sHeaderHeight, headerColor);
 
         // Status indicator dot
         int statusColor = activeTest.getStatus().getColor();
-        g.fill(x + PANEL_PADDING, y + 8, x + PANEL_PADDING + 6, y + 14, statusColor);
+        int dotSize = UIScaleManager.scale(6);
+        g.fill(x + sPanelPadding, y + UIScaleManager.scale(8), x + sPanelPadding + dotSize, y + UIScaleManager.scale(14), statusColor);
 
         // Test name
         String testName = Objects.requireNonNullElse(activeTest.getName(), "Unnamed Test");
-        if (font.width(testName) > PANEL_WIDTH - 50) {
-            testName = testName.substring(0, 25) + "...";
-        }
-        g.drawString(font, testName, x + PANEL_PADDING + 10, y + 7, TEXT_TITLE, false);
+        int nameMaxWidth = Math.max(0, panelWidth - UIScaleManager.scale(50));
+        testName = truncateToWidth(font, testName, nameMaxWidth);
+        UIScaleManager.drawScaledString(g, font, testName, x + sPanelPadding + UIScaleManager.scale(10), y + UIScaleManager.scale(7), TEXT_TITLE, false);
 
         // Priority badge
         String priorityBadge = "[" + activeTest.getPriority().name().charAt(0) + "]";
-        int badgeX = x + PANEL_WIDTH - font.width(priorityBadge) - PANEL_PADDING;
-        g.drawString(font, priorityBadge, badgeX, y + 7, activeTest.getPriority().getColor(), false);
+        int badgeX = x + panelWidth - UIScaleManager.getScaledStringWidth(font, priorityBadge) - sPanelPadding;
+        UIScaleManager.drawScaledString(g, font, priorityBadge, badgeX, y + UIScaleManager.scale(7), activeTest.getPriority().getColor(), false);
 
-        int contentY = y + HEADER_HEIGHT + PANEL_PADDING;
+        int contentY = y + sHeaderHeight + sPanelPadding;
 
         // Category
         String category = Objects.requireNonNullElse(activeTest.getCategory(), "Uncategorized");
-        g.drawString(font, category, x + PANEL_PADDING, contentY, TEXT_SECONDARY, false);
-        contentY += LINE_HEIGHT + 2;
+        category = truncateToWidth(font, category, panelWidth - sPanelPadding * 2);
+        UIScaleManager.drawScaledString(g, font, category, x + sPanelPadding, contentY, TEXT_SECONDARY, false);
+        contentY += sLineHeight + 2;
 
         // Description (truncated)
         String desc = Objects.requireNonNullElse(activeTest.getDescription(), "");
-        if (desc.length() > 45) desc = desc.substring(0, 42) + "...";
-        g.drawString(font, desc, x + PANEL_PADDING, contentY, TEXT_MUTED, false);
-        contentY += LINE_HEIGHT + 6;
+        desc = truncateToWidth(font, desc, panelWidth - sPanelPadding * 2);
+        UIScaleManager.drawScaledString(g, font, desc, x + sPanelPadding, contentY, TEXT_MUTED, false);
+        contentY += sLineHeight + UIScaleManager.scale(6);
 
         // Instructions as checklist
-        g.drawString(font, "Steps:", x + PANEL_PADDING, contentY, TEXT_PRIMARY, false);
-        contentY += LINE_HEIGHT;
+        UIScaleManager.drawScaledString(g, font, "Steps:", x + sPanelPadding, contentY, TEXT_PRIMARY, false);
+        contentY += sLineHeight;
 
         for (int i = 0; i < instructionLines; i++) {
             String step = instructions[i].trim();
@@ -286,16 +338,16 @@ public class ActiveTestHudOverlay {
             }
 
             // Truncate long steps
-            if (step.length() > 38) step = step.substring(0, 35) + "...";
-
-            g.drawString(font, checkbox + step, x + PANEL_PADDING + 4, contentY, checkboxColor, false);
-            contentY += LINE_HEIGHT;
+            step = truncateToWidth(font, checkbox + step, panelWidth - sPanelPadding * 2 - UIScaleManager.scale(4));
+            UIScaleManager.drawScaledString(g, font, step, x + sPanelPadding + 4, contentY, checkboxColor, false);
+            contentY += sLineHeight;
         }
 
         if (instructions.length > instructionLines) {
-            g.drawString(font, "... +" + (instructions.length - instructionLines) + " more",
-                x + PANEL_PADDING + 4, contentY, TEXT_MUTED, false);
-            contentY += LINE_HEIGHT;
+            String more = "... +" + (instructions.length - instructionLines) + " more";
+            more = truncateToWidth(font, more, panelWidth - sPanelPadding * 2);
+            UIScaleManager.drawScaledString(g, font, more, x + sPanelPadding + 4, contentY, TEXT_MUTED, false);
+            contentY += sLineHeight;
         }
 
         contentY += 4;
@@ -303,27 +355,44 @@ public class ActiveTestHudOverlay {
         // Progress bar (if test has progress checker)
         if (activeTest.hasProgressChecker() || activeTest.hasAutoValidator()) {
             float progress = activeTest.getCachedProgress();
-            int progressBarWidth = PANEL_WIDTH - PANEL_PADDING * 2;
+            int progressBarWidth = panelWidth - sPanelPadding * 2;
+            int progressBarHeight = UIScaleManager.scale(8);
 
-            g.fill(x + PANEL_PADDING, contentY, x + PANEL_PADDING + progressBarWidth, contentY + 8, PROGRESS_BG);
+            g.fill(x + sPanelPadding, contentY, x + sPanelPadding + progressBarWidth, contentY + progressBarHeight, PROGRESS_BG);
             int fillWidth = (int)(progressBarWidth * progress);
-            g.fill(x + PANEL_PADDING, contentY, x + PANEL_PADDING + fillWidth, contentY + 8,
+            g.fill(x + sPanelPadding, contentY, x + sPanelPadding + fillWidth, contentY + progressBarHeight,
                    progress >= 1f ? PROGRESS_COMPLETE : PROGRESS_FILL);
 
             // Progress percentage
             final String progressText = Objects.requireNonNull(
                 String.format("%.0f%%", progress * 100),
                 "progress text");
-            int textX = x + PANEL_PADDING + progressBarWidth / 2 - font.width(progressText) / 2;
-            g.drawString(font, progressText, textX, contentY, TEXT_PRIMARY, false);
+            int textX = x + sPanelPadding + progressBarWidth / 2 - UIScaleManager.getScaledStringWidth(font, progressText) / 2;
+            UIScaleManager.drawScaledString(g, font, progressText, textX, contentY, TEXT_PRIMARY, false);
 
-            contentY += 12;
+            contentY += UIScaleManager.scale(12);
         }
 
         // Action hints
         String hints = "[1] Pass  [2] Fail  [3] Skip  [F7] Hub";
-        int hintsWidth = font.width(hints);
-        g.drawString(font, hints, x + PANEL_WIDTH / 2 - hintsWidth / 2, contentY, TEXT_MUTED, false);
+        hints = truncateToWidth(font, hints, panelWidth - sPanelPadding * 2);
+        int hintsWidth = UIScaleManager.getScaledStringWidth(font, hints);
+        UIScaleManager.drawScaledString(g, font, hints, x + panelWidth / 2 - hintsWidth / 2, contentY, TEXT_MUTED, false);
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     private static void drawBorder(GuiGraphics g, int x, int y, int width, int height, int color) {

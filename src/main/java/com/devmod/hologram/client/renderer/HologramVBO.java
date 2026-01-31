@@ -28,6 +28,7 @@ public class HologramVBO {
     private VertexBuffer vertexBuffer;
     private VertexFormat.Mode drawMode = VertexFormat.Mode.QUADS;
     private int vertexCount;
+    private boolean texturedMode;
 
     /**
      * Upload mesh data to the GPU.
@@ -43,13 +44,17 @@ public class HologramVBO {
         }
 
         this.drawMode = VertexFormat.Mode.QUADS;
-        VertexFormat format = DefaultVertexFormat.POSITION_COLOR;
+        this.texturedMode = mesh.isTexturedMode();
+
+        // Choose vertex format based on mesh mode and shader availability
+        boolean useUV = HologramShaderRegistry.isTexturedModeSupported();
+        VertexFormat format = useUV ? DefaultVertexFormat.POSITION_TEX_COLOR : DefaultVertexFormat.POSITION_COLOR;
 
         // Build vertices
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder builder = tesselator.begin(drawMode, format);
         PoseStack poseStack = new PoseStack();
-        mesh.render(builder, poseStack);
+        mesh.render(builder, poseStack, useUV);
 
         // Upload to GPU
         MeshData meshData = builder.buildOrThrow();
@@ -61,6 +66,13 @@ public class HologramVBO {
         VertexBuffer.unbind();
 
         meshData.close();
+    }
+
+    /**
+     * Check if this VBO was built in textured mode.
+     */
+    public boolean isTexturedMode() {
+        return texturedMode;
     }
 
     /**
@@ -77,30 +89,40 @@ public class HologramVBO {
 
         RenderSystem.assertOnRenderThread();
 
-        // Setup render state
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(515); // GL_LEQUAL
-        RenderSystem.depthMask(true);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFunc(770, 771); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
-
         // Get current shader
         ShaderInstance shader = RenderSystem.getShader();
         if (shader == null) {
             return;
         }
 
-        // Set shader uniforms
-        shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
-        shader.PROJECTION_MATRIX.set(projectionMatrix);
-        shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, alpha);
+        // Setup render state - state is managed by RenderType in Minecraft's pipeline,
+        // so we use default blend function which is what most RenderTypes expect
+        RenderSystem.enableDepthTest();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc(); // Use Minecraft's default blend function
 
-        // Draw
-        vertexBuffer.bind();
-        shader.apply();
-        vertexBuffer.draw();
-        VertexBuffer.unbind();
-        shader.clear();
+        try {
+            // Set shader uniforms (with null checks for safety)
+            if (shader.MODEL_VIEW_MATRIX != null) {
+                shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
+            }
+            if (shader.PROJECTION_MATRIX != null) {
+                shader.PROJECTION_MATRIX.set(projectionMatrix);
+            }
+            if (shader.COLOR_MODULATOR != null) {
+                shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, alpha);
+            }
+
+            // Draw
+            vertexBuffer.bind();
+            shader.apply();
+            vertexBuffer.draw();
+            VertexBuffer.unbind();
+            shader.clear();
+        } finally {
+            // Restore default render state to avoid affecting subsequent rendering
+            RenderSystem.disableBlend();
+        }
     }
 
     /**

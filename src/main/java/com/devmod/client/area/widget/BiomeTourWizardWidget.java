@@ -16,10 +16,10 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.BiomeTourConfig;
-import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.BiomeTourSection;
 import com.devmod.area.data.BiomeTourSection.TransitionStyle;
-
+import com.devmod.client.ui.editor.core.DesignTokens;
 /**
  * Widget for creating and editing Biome Tours - multi-biome areas with transitions.
  * Displays a list of biome sections with controls to add, remove, and configure each.
@@ -57,7 +57,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         int currentY = getY();
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.title")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -65,7 +65,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         currentY += 12;
 
         // Intro text
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.intro")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
@@ -98,7 +98,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         int addBgColor = addHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(getX(), currentY, getX() + 120, currentY + BUTTON_SIZE, addBgColor);
         graphics.renderOutline(getX(), currentY, 120, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.add_section")),
             getX() + 6, currentY + 5,
             config.getSectionCount() < BiomeTourConfig.MAX_SECTIONS ?
@@ -108,14 +108,14 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         currentY += BUTTON_SIZE + 12;
 
         // Summary
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.total_length", config.getTotalLength())),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
         currentY += 12;
 
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.sections_count", config.getSectionCount())),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -135,14 +135,14 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         }
 
         // Section number
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.section", index + 1)),
             x + 4, y + 4,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
         // Biome name
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             section.getBiomeDisplayName(),
             x + 4, y + 14,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -150,11 +150,11 @@ public class BiomeTourWizardWidget extends AbstractWidget {
 
         // Length
         String lengthText = section.length() + " blocks";
-        graphics.drawString(font, lengthText, x + 100, y + 14, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, lengthText, x + 100, y + 14, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Transition style
         String transitionKey = "area.biome_tour.transition." + section.transition().getId();
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(transitionKey)),
             x + 180, y + 14,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
@@ -167,7 +167,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(removeX, y + 4, removeX + BUTTON_SIZE, y + 4 + BUTTON_SIZE, removeBgColor);
         graphics.renderOutline(removeX, y + 4, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "X", removeX + BUTTON_SIZE / 2, y + 8,
+        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + BUTTON_SIZE / 2, y + 8,
             removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Transition cycle button
@@ -177,7 +177,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         int transBgColor = transHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
         graphics.fill(transX, y + 4, transX + BUTTON_SIZE, y + 4 + BUTTON_SIZE, transBgColor);
         graphics.renderOutline(transX, y + 4, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "T", transX + BUTTON_SIZE / 2, y + 8,
+        UIScaleManager.drawScaledCenteredString(graphics, font, "T", transX + BUTTON_SIZE / 2, y + 8,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 

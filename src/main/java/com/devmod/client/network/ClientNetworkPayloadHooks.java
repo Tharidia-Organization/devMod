@@ -338,28 +338,36 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
 
     @Override
     public void handleHologramOpenScreen(HologramOpenScreenPayload payload) {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        mc.execute(() -> {
-            mc.setScreen(new HologramConfigScreen(
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "hologram_config",
+            () -> new HologramConfigScreen(
                 payload.pos(),
                 payload.scanSize(),
                 payload.blockSize(),
                 payload.rotationEnabled(),
-                payload.transparentMode()
+                payload.transparentMode(),
+                payload.filterBitmask(),
+                payload.filterHighlightOnly(),
+                payload.texturedMode(),
+                payload.showEntities(),
+                payload.fullEntityModels(),
+                payload.maxEntityModels(),
+                payload.entityFilterBitmask(),
+                payload.ySliceEnabled(),
+                payload.ySliceLevel(),
+                payload.ySliceThickness()
             ));
-        });
     }
 
     // ==================== Telepad Config ====================
 
     @Override
     public void handleTelepadOpenScreen(TelepadOpenScreenPayload payload) {
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        mc.execute(() -> {
-            mc.setScreen(new TelepadConfigScreen(
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "telepad_config",
+            () -> new TelepadConfigScreen(
                 payload.pos(),
                 payload.telepadName()
             ));
-        });
     }
 }

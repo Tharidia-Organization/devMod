@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -24,12 +23,11 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
-
 @OnlyIn(Dist.CLIENT)
 public class ArenaTestWizard extends Screen {
 
@@ -538,7 +536,9 @@ public class ArenaTestWizard extends Screen {
      * Opens the wizard screen.
      */
     public static void open(ArenaTemplateRegistry registry, Consumer<TestConfig> onTest) {
-        Minecraft.getInstance().setScreen(new ArenaTestWizard(registry, onTest));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "arena_test_wizard",
+            () -> new ArenaTestWizard(registry, onTest));
     }
 
     // ========== Records ==========

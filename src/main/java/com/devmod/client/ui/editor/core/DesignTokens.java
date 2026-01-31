@@ -3894,6 +3894,8 @@ public final class DesignTokens {
         public static final int ANNOUNCEMENT_TITLE = 0xFFFF88FF;
         /** Hologram background (semi-transparent black) */
         public static final int HOLOGRAM_BG = 0xAA000000;
+        /** Hologram fallback block color (gray) - used when map color is unavailable */
+        public static final int HOLOGRAM_FALLBACK_BLOCK = 0x707070;
 
         // --- Avatar Display ---
         /** Avatar name label (light cyan) - used for TextDisplay over NPCs */

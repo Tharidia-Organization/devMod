@@ -15,9 +15,7 @@ import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
-import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.condition.DialogCondition;
-
 /**
  * Immutable record representing a complete dialog set with multiple nodes.
  * Dialog sets can be presets (built-in, non-modifiable) or custom (user-created).

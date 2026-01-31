@@ -16,7 +16,14 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 
-import static com.devmod.client.overlay.vfx.ImpactVFXConstants.*;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.COLOR_SLASH;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.PI;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.SLASH_HEIGHT;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.SLASH_LENGTH;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.SLASH_SPARK_COUNT;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.SLASH_TRAIL_SEGMENTS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.applyIntensity;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.extractRGB;
 
 /**
  * Renders the slash trail effect for weapon impacts.

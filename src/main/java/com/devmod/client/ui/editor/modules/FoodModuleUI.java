@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.components.SourceBadge;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.sections.ModuleSummarySection;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
+import com.devmod.client.ui.editor.sections.EffectListSection;
 import com.devmod.client.ui.editor.sections.SliderSectionAdapter;
 import com.devmod.client.ui.editor.sections.TextNoteSection;
 import com.devmod.client.ui.editor.sections.ToggleSectionAdapter;
@@ -138,21 +139,11 @@ public class FoodModuleUI {
 
     public List<EditorSection> getEffectsSections() {
         List<EditorSection> sections = new ArrayList<>();
-        sections.add(new SimpleHeaderSection("effects-header", "Food Effects"));
 
         FoodStats stats = core.getStats();
-        if (stats.getEffects().isEmpty()) {
-            sections.add(new TextNoteSection("effects-empty", "No effects configured. Use commands to add effects."));
-        } else {
-            for (int i = 0; i < stats.getEffects().size(); i++) {
-                FoodStats.FoodEffect effect = stats.getEffects().get(i);
-                String info = String.format("%d. %s (Lvl %d, %d ticks, %.0f%%)",
-                    i + 1, effect.effectId, effect.amplifier + 1, effect.duration, effect.probability * 100);
-                sections.add(new TextNoteSection("effect-" + i, info));
-            }
-        }
+        sections.add(new EffectListSection("effects-list", "Food Effects", stats,
+            reason -> module.markDirty(reason)));
 
-        sections.add(new TextNoteSection("effects-note", "Effect editing UI coming soon. Use /devmod food addeffect for now."));
         return sections;
     }
 

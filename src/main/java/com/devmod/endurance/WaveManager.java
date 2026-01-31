@@ -30,6 +30,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import com.devmod.DevMod;
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
@@ -379,6 +380,9 @@ public class WaveManager {
         // Get multiplayer scaling parameters from session
         int playerCount = session.getPlayerCount();
         QuestType questType = session.getQuestType();
+
+        DiagnosticLogger.quest("startWave: wave=%d, players=%d, questType=%s, arenaId=%s",
+            waveNumber, playerCount, questType, arena != null ? arena.getId() : "null");
 
         if (arena == null || handle == null || handle.mobSpawnPositions() == null || handle.mobSpawnPositions().isEmpty()) {
             handleWaveStartFailure(session, "missing_handle_or_spawns");
@@ -1649,6 +1653,9 @@ public class WaveManager {
 
         if (tracked) {
             waveState.recordKill(mobId);
+            DiagnosticLogger.quest("mobKilled: wave=%d, killed=%d/%d, remaining=%d",
+                waveState.waveNumber, waveState.killed, waveState.totalToSpawn,
+                waveState.spawnedMobs.size() - waveState.killed);
 
             // Check if this was a boss wave (using dynamic tension system)
             UUID questId = waveState.quest.getQuestId();

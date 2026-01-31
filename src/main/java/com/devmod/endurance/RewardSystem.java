@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,13 +46,12 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import com.devmod.DevMod;
 import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.notification.NotificationService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-
 public class RewardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardSystem.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -467,7 +465,10 @@ public class RewardSystem {
 
         // Mythic loot (achievement-only)
         lootTables.put(LootTier.MYTHIC, Arrays.asList(
-            new LootEntry(Items.COMMAND_BLOCK, 1, 1), // Placeholder for special items
+            new LootEntry(Items.TOTEM_OF_UNDYING, 1, 2),
+            new LootEntry(Items.ELYTRA, 1, 1),
+            new LootEntry(Items.DRAGON_BREATH, 8, 16),
+            new LootEntry(Items.HEART_OF_THE_SEA, 2, 4),
             new LootEntry(Items.NETHER_STAR, 5, 8)
         ));
     }

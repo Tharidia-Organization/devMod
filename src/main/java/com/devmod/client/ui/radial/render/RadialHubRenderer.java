@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.util.I18n;
 
@@ -194,8 +195,8 @@ public final class RadialHubRenderer {
                         RadialMenuConstants.BORDER_HOVER_BLEND)
                     : RadialMenuConstants.COLOR_BORDER);
             int borderWidth = isSelected
-                ? RadialMenuConstants.BORDER_WIDTH_SELECTED
-                : RadialMenuConstants.BORDER_WIDTH_DEFAULT;
+                ? RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_SELECTED)
+                : RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_DEFAULT);
             RadialGeometry.renderArcOutline(graphics, state.centerX, state.centerY,
                 outerR, segStart, segEnd, borderColor, borderWidth);
 
@@ -242,8 +243,9 @@ public final class RadialHubRenderer {
             String name = Objects.requireNonNull(macro.getName(), "macro name");
             iconText = name.isEmpty() ? "?" : name.substring(0, 1);
         }
-        graphics.drawCenteredString(safeFont, Objects.requireNonNull(iconText, "iconText"), iconX,
-            iconY + RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y, iconColor);
+        float fontScale = resolveFontScale();
+        drawCenteredStringScaled(graphics, safeFont, Objects.requireNonNull(iconText, "iconText"), iconX,
+            iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y), iconColor, fontScale);
     }
 
     /**
@@ -263,8 +265,9 @@ public final class RadialHubRenderer {
 
         // Border
         int closeBorderColor = centerHovered ? RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER : RadialMenuConstants.COLOR_DIVIDER;
+        int borderThickness = RadialMenuScaler.scaleConstant(RadialMenuConstants.RING_BORDER_THICKNESS);
         RadialGeometry.renderRing(graphics, state.centerX, state.centerY,
-            closeBtnRadius - RadialMenuConstants.RING_BORDER_THICKNESS,
+            closeBtnRadius - borderThickness,
             closeBtnRadius, closeBorderColor);
 
         // Icon
@@ -287,8 +290,9 @@ public final class RadialHubRenderer {
         }
 
         if (centerIcon != null) {
-            graphics.drawCenteredString(safeFont, centerIcon, state.centerX,
-                state.centerY + RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y, centerIconColor);
+            float fontScale = resolveFontScale();
+            drawCenteredStringScaled(graphics, safeFont, centerIcon, state.centerX,
+                state.centerY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y), centerIconColor, fontScale);
         }
     }
 
@@ -298,9 +302,10 @@ public final class RadialHubRenderer {
     private static void renderOuterRing(GuiGraphics graphics, HubState state) {
         int ringColor = RadialGeometry.blendColors(RadialMenuConstants.COLOR_DIVIDER,
             state.selectedMacro.getColor(), RadialMenuConstants.OUTER_RING_BLEND);
+        int borderThickness = RadialMenuScaler.scaleConstant(RadialMenuConstants.RING_BORDER_THICKNESS);
         RadialGeometry.renderRing(graphics, state.centerX, state.centerY,
             state.macroHubRadius,
-            state.macroHubRadius + RadialMenuConstants.RING_BORDER_THICKNESS,
+            state.macroHubRadius + borderThickness,
             ringColor);
     }
 
@@ -334,5 +339,23 @@ public final class RadialHubRenderer {
      */
     public static String getCenterButtonTooltip() {
         return I18n.translate("devmod.radial.tooltip.close").getString();
+    }
+
+    private static float resolveFontScale() {
+        float scale = RadialMenuScaler.getFontScale();
+        return scale > 0f ? scale : 1f;
+    }
+
+    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+                                                  int x, int y, int color, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            graphics.drawCenteredString(font, text, x, y, color);
+            return;
+        }
+        float inv = 1f / scale;
+        graphics.pose().pushPose();
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawCenteredString(font, text, Math.round(x * inv), Math.round(y * inv), color);
+        graphics.pose().popPose();
     }
 }

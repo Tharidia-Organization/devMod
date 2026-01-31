@@ -20,6 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -183,14 +184,22 @@ public class ZoneEditorScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
+        // Calculate scaled layout for init
+        UIScaleManager.update();
+        int sEditorWidth = UIScaleManager.scale(EDITOR_WIDTH);
+        int sEditorHeight = UIScaleManager.scale(EDITOR_HEIGHT);
+        int sTabHeight = UIScaleManager.scale(TAB_HEIGHT);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sTabSpacing = UIScaleManager.scale(2);
+
         int centerX = this.width / 2;
-        int leftX = centerX - EDITOR_WIDTH / 2;
-        int topY = (this.height - EDITOR_HEIGHT) / 2;
+        int leftX = centerX - sEditorWidth / 2;
+        int topY = (this.height - sEditorHeight) / 2;
 
         // Tab buttons
-        int tabWidth = (EDITOR_WIDTH - PADDING * 2) / TAB_NAMES.length - 2;
-        int tabStartX = leftX + PADDING;
-        int tabY = topY + 30;
+        int tabWidth = (sEditorWidth - sPadding * 2) / TAB_NAMES.length - sTabSpacing;
+        int tabStartX = leftX + sPadding;
+        int tabY = topY + UIScaleManager.scale(30);
 
         for (int i = 0; i < TAB_NAMES.length; i++) {
             final int tabIndex = i;
@@ -201,16 +210,17 @@ public class ZoneEditorScreen extends BaseDevModScreen {
                 .onClick(() -> selectTab(tabIndex))
                 .build();
             this.addRenderableWidget(new EditorButtonWidget(tabButton,
-                tabStartX + i * (tabWidth + 2), tabY, tabWidth, TAB_HEIGHT));
+                tabStartX + i * (tabWidth + sTabSpacing), tabY, tabWidth, sTabHeight));
         }
 
         // Initialize current tab content
         initTabContent(leftX, topY);
 
         // Bottom buttons
-        int buttonY = topY + EDITOR_HEIGHT - 35;
-        int buttonWidth = 80;
-        int spacing = 10;
+        int buttonY = topY + sEditorHeight - UIScaleManager.scale(35);
+        int buttonWidth = UIScaleManager.scale(80);
+        int buttonHeight = UIScaleManager.scale(20);
+        int spacing = UIScaleManager.scale(10);
 
         // Delete button (if allowed)
         if (canDelete && !isNewZone) {
@@ -221,19 +231,19 @@ public class ZoneEditorScreen extends BaseDevModScreen {
                 .size(EditorButton.Size.MEDIUM)
                 .onClick(this::handleDeleteClick)
                 .build();
-            deleteButton = new EditorButtonWidget(delete, leftX + PADDING, buttonY, buttonWidth, 20);
+            deleteButton = new EditorButtonWidget(delete, leftX + sPadding, buttonY, buttonWidth, buttonHeight);
             this.addRenderableWidget(deleteButton);
         }
 
         // Save button
-        int saveX = leftX + EDITOR_WIDTH - PADDING - buttonWidth;
+        int saveX = leftX + sEditorWidth - sPadding - buttonWidth;
         EditorButton saveButton = EditorButton.builder("zone-editor-save",
                 Component.translatable("zone.editor.save").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::saveZone)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(saveButton, saveX, buttonY, buttonWidth, 20));
+        this.addRenderableWidget(new EditorButtonWidget(saveButton, saveX, buttonY, buttonWidth, buttonHeight));
 
         // Cancel button
         EditorButton cancelButton = EditorButton.builder("zone-editor-cancel",
@@ -243,7 +253,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             .onClick(this::onClose)
             .build();
         this.addRenderableWidget(new EditorButtonWidget(cancelButton,
-            saveX - buttonWidth - spacing, buttonY, buttonWidth, 20));
+            saveX - buttonWidth - spacing, buttonY, buttonWidth, buttonHeight));
     }
 
     private void selectTab(int tabIndex) {
@@ -252,10 +262,13 @@ public class ZoneEditorScreen extends BaseDevModScreen {
     }
 
     private void initTabContent(int leftX, int topY) {
-        int contentX = leftX + PADDING;
-        int contentY = topY + 60;
-        int contentWidth = EDITOR_WIDTH - PADDING * 2;
-        int contentHeight = EDITOR_HEIGHT - 110;
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sEditorWidth = UIScaleManager.scale(EDITOR_WIDTH);
+        int sEditorHeight = UIScaleManager.scale(EDITOR_HEIGHT);
+        int contentX = leftX + sPadding;
+        int contentY = topY + UIScaleManager.scale(60);
+        int contentWidth = sEditorWidth - sPadding * 2;
+        int contentHeight = sEditorHeight - UIScaleManager.scale(110);
 
         // Clear widgets
         zoneIdField = null;
@@ -501,32 +514,41 @@ public class ZoneEditorScreen extends BaseDevModScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
+
+        // Calculate scaled dimensions for responsiveness
+        int sEditorWidth = UIScaleManager.scale(EDITOR_WIDTH);
+        int sEditorHeight = UIScaleManager.scale(EDITOR_HEIGHT);
+        int sTabHeight = UIScaleManager.scale(TAB_HEIGHT);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sTabSpacing = UIScaleManager.scale(2);
+
         int centerX = this.width / 2;
-        int leftX = centerX - EDITOR_WIDTH / 2;
-        int topY = (this.height - EDITOR_HEIGHT) / 2;
+        int leftX = centerX - sEditorWidth / 2;
+        int topY = (this.height - sEditorHeight) / 2;
 
         // Background panel
-        graphics.fill(leftX, topY, leftX + EDITOR_WIDTH, topY + EDITOR_HEIGHT, COLOR_EDITOR_BG);
+        graphics.fill(leftX, topY, leftX + sEditorWidth, topY + sEditorHeight, COLOR_EDITOR_BG);
 
         // Border
-        graphics.renderOutline(leftX, topY, EDITOR_WIDTH, EDITOR_HEIGHT, COLOR_EDITOR_BORDER);
+        graphics.renderOutline(leftX, topY, sEditorWidth, sEditorHeight, COLOR_EDITOR_BORDER);
 
         // Title
         String titleText = isNewZone
             ? Objects.requireNonNull(Component.translatable("zone.editor.creating").getString())
             : Objects.requireNonNull(Component.translatable("zone.editor.editing", displayName).getString());
-        graphics.drawCenteredString(safeFont(), titleText, centerX, topY + 10, COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont(), titleText, centerX, topY + UIScaleManager.scale(10), COLOR_TEXT_PRIMARY);
 
         // Tab indicator
-        int tabWidth = (EDITOR_WIDTH - PADDING * 2) / TAB_NAMES.length - 2;
-        int tabStartX = leftX + PADDING;
-        int indicatorX = tabStartX + currentTab * (tabWidth + 2);
-        int indicatorY = topY + 30 + TAB_HEIGHT;
-        graphics.fill(indicatorX, indicatorY, indicatorX + tabWidth, indicatorY + 2, COLOR_TAB_ACTIVE);
+        int tabWidth = (sEditorWidth - sPadding * 2) / TAB_NAMES.length - sTabSpacing;
+        int tabStartX = leftX + sPadding;
+        int indicatorX = tabStartX + currentTab * (tabWidth + sTabSpacing);
+        int indicatorY = topY + UIScaleManager.scale(30) + sTabHeight;
+        graphics.fill(indicatorX, indicatorY, indicatorX + tabWidth, indicatorY + sTabSpacing, COLOR_TAB_ACTIVE);
 
         // Tab-specific content labels
-        int contentX = leftX + PADDING;
-        int contentY = topY + 60;
+        int contentX = leftX + sPadding;
+        int contentY = topY + UIScaleManager.scale(60);
 
         switch (currentTab) {
             case 0 -> renderGeneralLabels(graphics, contentX, contentY);
@@ -536,13 +558,15 @@ public class ZoneEditorScreen extends BaseDevModScreen {
         }
 
         // Color preview (small square)
-        int previewX = leftX + EDITOR_WIDTH - PADDING - 20;
-        int previewY = topY + 10;
-        graphics.fill(previewX, previewY, previewX + 16, previewY + 16, 0xFF000000 | ZONE_COLORS[selectedColorIndex]);
-        graphics.renderOutline(previewX - 1, previewY - 1, 18, 18, COLOR_EDITOR_BORDER);
+        int sPreviewSize = UIScaleManager.scale(16);
+        int sPreviewOffset = UIScaleManager.scale(20);
+        int previewX = leftX + sEditorWidth - sPadding - sPreviewOffset;
+        int previewY = topY + UIScaleManager.scale(10);
+        graphics.fill(previewX, previewY, previewX + sPreviewSize, previewY + sPreviewSize, 0xFF000000 | ZONE_COLORS[selectedColorIndex]);
+        graphics.renderOutline(previewX - 1, previewY - 1, sPreviewSize + 2, sPreviewSize + 2, COLOR_EDITOR_BORDER);
 
         // Summary at bottom
-        int summaryY = topY + EDITOR_HEIGHT - 55;
+        int summaryY = topY + sEditorHeight - UIScaleManager.scale(55);
         String colorName = ZONE_COLOR_NAMES[selectedColorIndex];
         int colorSpace = colorName.indexOf(' ');
         String summary = Objects.requireNonNull(String.format("%s | %s | %dx%dx%d",
@@ -550,7 +574,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             colorSpace > 0 ? colorName.substring(0, colorSpace) : colorName,
             bounds.width(), bounds.height(), bounds.length()
         ));
-        graphics.drawCenteredString(safeFont(), summary, centerX, summaryY, COLOR_TEXT_MUTED);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont(), summary, centerX, summaryY, COLOR_TEXT_MUTED);
 
         renderInputBackgrounds(graphics);
     }
@@ -574,46 +598,46 @@ public class ZoneEditorScreen extends BaseDevModScreen {
     }
 
     private void renderGeneralLabels(GuiGraphics graphics, int x, int y) {
-        graphics.drawString(safeFont(), "Zone ID:", x, y + 5, COLOR_TEXT_MUTED, false);
-        graphics.drawString(safeFont(), "Display:", x, y + 35, COLOR_TEXT_MUTED, false);
-        graphics.drawString(safeFont(), "Hint:", x, y + 65, COLOR_TEXT_MUTED, false);
-        graphics.drawString(safeFont(), "Spawn Offset:", x, y + 105, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone ID:", x, y + 5, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Display:", x, y + 35, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Hint:", x, y + 65, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Spawn Offset:", x, y + 105, COLOR_TEXT_MUTED, false);
 
         // Show current spawn offset
         BlockPos spawn = spawnOffset;
         String spawnText = spawn != null
             ? String.format("(%d, %d, %d)", spawn.getX(), spawn.getY(), spawn.getZ())
             : "(not set)";
-        graphics.drawString(safeFont(), spawnText, x, y + 125, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), spawnText, x, y + 125, COLOR_TEXT_MUTED, false);
 
-        graphics.drawString(safeFont(), "Portal Offset:", x, y + 155, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Portal Offset:", x, y + 155, COLOR_TEXT_MUTED, false);
         BlockPos portal = portalOffset;
         String portalText = portal != null
             ? String.format("(%d, %d, %d)", portal.getX(), portal.getY(), portal.getZ())
             : "(not set)";
-        graphics.drawString(safeFont(), portalText, x, y + 175, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), portalText, x, y + 175, COLOR_TEXT_MUTED, false);
     }
 
     private void renderBoundsLabels(GuiGraphics graphics, int x, int y) {
-        graphics.drawString(safeFont(), "Configure zone boundaries:", x, y - 10, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Configure zone boundaries:", x, y - 10, COLOR_TEXT_PRIMARY, false);
 
         // Instructions
-        graphics.drawString(safeFont(), "Use the fields below to set min/max coordinates.", x, y + 150, COLOR_TEXT_MUTED, false);
-        graphics.drawString(safeFont(), "Tip: use markers to note corner positions.", x, y + 165, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Use the fields below to set min/max coordinates.", x, y + 150, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Tip: use markers to note corner positions.", x, y + 165, COLOR_TEXT_MUTED, false);
     }
 
     private void renderStyleLabels(GuiGraphics graphics, int x, int y) {
-        graphics.drawString(safeFont(), "Select zone color:", x, y - 15, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Select zone color:", x, y - 15, COLOR_TEXT_PRIMARY, false);
 
         // Show selected color preview
         int previewY = y + 100;
-        graphics.drawString(safeFont(), "Selected:", x, previewY, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Selected:", x, previewY, COLOR_TEXT_MUTED, false);
         graphics.fill(x + 60, previewY - 2, x + 90, previewY + 12, 0xFF000000 | ZONE_COLORS[selectedColorIndex]);
-        graphics.drawString(safeFont(), ZONE_COLOR_NAMES[selectedColorIndex], x + 100, previewY, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), ZONE_COLOR_NAMES[selectedColorIndex], x + 100, previewY, COLOR_TEXT_PRIMARY, false);
     }
 
     private void renderOptionsLabels(GuiGraphics graphics, int x, int y) {
-        graphics.drawString(safeFont(), "Zone behavior options:", x, y - 15, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone behavior options:", x, y - 15, COLOR_TEXT_PRIMARY, false);
     }
 
     // ========================================================================

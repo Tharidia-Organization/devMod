@@ -147,6 +147,7 @@ public class PartyScreen extends Screen {
     private int hoveredQuestTab = -1;
 
     private int panelX, panelY;
+    private int scaledPanelWidth, scaledPanelHeight;
     private int originalBlurValue = 0;
 
     // Renderer delegate
@@ -181,9 +182,9 @@ public class PartyScreen extends Screen {
 
     public int getPanelX() { return panelX; }
     public int getPanelY() { return panelY; }
-    public int getPanelWidth() { return PANEL_WIDTH; }
-    public int getPanelHeight() { return PANEL_HEIGHT; }
-    public int getKitRowY() { return panelY + PANEL_HEIGHT - 103; }
+    public int getPanelWidth() { return scaledPanelWidth; }
+    public int getPanelHeight() { return scaledPanelHeight; }
+    public int getKitRowY() { return panelY + scaledPanelHeight - UIScaleManager.scale(103); }
     @Nullable public EditBox getInviteBox() { return inviteBox; }
     @Nullable public EditBox getMobSearchBox() { return mobSearchBox; }
 
@@ -280,9 +281,12 @@ public class PartyScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        UIScaleManager.update();
 
-        int actualWidth = Math.min(PANEL_WIDTH, width - 40);
-        int actualHeight = Math.min(PANEL_HEIGHT, height - 40);
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int actualWidth = Math.min(scaledPanelWidth, width - 40);
+        int actualHeight = Math.min(scaledPanelHeight, height - 40);
         panelX = (width - actualWidth) / 2;
         panelY = (height - actualHeight) / 2;
 
@@ -354,8 +358,8 @@ public class PartyScreen extends Screen {
 
     private void initActionButtons() {
         // Bottom action buttons
-        int buttonY = panelY + PANEL_HEIGHT - 45;
-        int centerX = panelX + PANEL_WIDTH / 2;
+        int buttonY = panelY + scaledPanelHeight - UIScaleManager.scale(45);
+        int centerX = panelX + scaledPanelWidth / 2;
 
         readyButton = EditorButton.builder("ready", getReadyButtonText().getString())
             .style(EditorButton.Style.PRIMARY)
@@ -393,12 +397,12 @@ public class PartyScreen extends Screen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::onCreatePartyClicked)
             .build();
-        createPartyButtonBounds = new ButtonArea(centerX - 80, panelY + PANEL_HEIGHT / 2 + 20, 160, 30);
+        createPartyButtonBounds = new ButtonArea(centerX - UIScaleManager.scale(80), panelY + scaledPanelHeight / 2 + UIScaleManager.scale(20), UIScaleManager.scale(160), UIScaleManager.scale(30));
     }
 
     private void initKitButtons() {
         int kitY = getKitRowY();
-        int rightX = panelX + PANEL_WIDTH - 15;
+        int rightX = panelX + scaledPanelWidth - UIScaleManager.scale(15);
         int btnH = 18;
         int navW = 22;
         int editW = 40;
@@ -808,8 +812,10 @@ public class PartyScreen extends Screen {
             return;
         }
         CustomKit kitToEdit = selectedCustomKit;
-        Minecraft.getInstance().setScreen(
-            new KitSelectionScreen(this, items -> {
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "kit_selection",
+            this,
+            () -> new KitSelectionScreen(this, items -> {
                 savedCustomKits = KitManager.INSTANCE.getAllCustomKits();
                 if (items != null && !items.isEmpty()) {
                     usingCustomKit = true;
@@ -1222,9 +1228,9 @@ public class PartyScreen extends Screen {
 
         // Wave slider
         if (isInParty) {
-            int sliderX = panelX + 115;
-            int sliderY = panelY + PANEL_HEIGHT - 85;
-            int sliderW = 150;
+            int sliderX = panelX + UIScaleManager.scale(115);
+            int sliderY = panelY + scaledPanelHeight - UIScaleManager.scale(85);
+            int sliderW = UIScaleManager.scale(150);
 
             if (mouseX >= sliderX && mouseX < sliderX + sliderW &&
                     mouseY >= sliderY && mouseY < sliderY + 14) {
@@ -1289,9 +1295,9 @@ public class PartyScreen extends Screen {
         }
 
         // Wave slider drag
-        int sliderX = panelX + 115;
-        int sliderY = panelY + PANEL_HEIGHT - 85;
-        int sliderW = 150;
+        int sliderX = panelX + UIScaleManager.scale(115);
+        int sliderY = panelY + scaledPanelHeight - UIScaleManager.scale(85);
+        int sliderW = UIScaleManager.scale(150);
 
         if (mouseX >= sliderX - 10 && mouseX < sliderX + sliderW + 10 &&
                 mouseY >= sliderY - 5 && mouseY < sliderY + 20) {

@@ -158,6 +158,38 @@ class UIScalingComplianceTest {
             }
         }
 
+        @Test
+        @DisplayName("Screen classes using UIScaleManager call update() or extend ModScreen")
+        void screensCallUpdateWhenUsingScale() throws IOException {
+            List<Path> screenFiles = findScreenFiles();
+            List<String> violations = new ArrayList<>();
+
+            for (Path file : screenFiles) {
+                if (isExempt(file)) continue;
+
+                String content = Files.readString(file);
+
+                boolean usesScale = content.contains("UIScaleManager.scale(") ||
+                                   content.contains("UIScaleManager.scaleF(") ||
+                                   content.contains("UIScaleManager.scaleText(");
+                if (!usesScale) continue;
+
+                boolean callsUpdate = content.contains("UIScaleManager.update()");
+                boolean extendsModScreen = content.contains("extends ModScreen");
+                boolean extendsBaseDevModScreen = content.contains("extends BaseDevModScreen");
+
+                if (!callsUpdate && !extendsModScreen && !extendsBaseDevModScreen) {
+                    violations.add(file.getFileName().toString());
+                }
+            }
+
+            if (!violations.isEmpty()) {
+                fail("Screen classes using UIScaleManager without update() or ModScreen base:\n  - " +
+                    String.join("\n  - ", violations) +
+                    "\n\nAdd UIScaleManager.update() or extend ModScreen.");
+            }
+        }
+
         private List<Path> findScreenFiles() throws IOException {
             Path uiPath = SRC_PATH.resolve("ui");
             if (!Files.exists(uiPath)) {

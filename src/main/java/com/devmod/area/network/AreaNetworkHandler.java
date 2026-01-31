@@ -32,14 +32,13 @@ import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaRegistry;
 import com.devmod.area.data.AreaShape;
-import com.devmod.area.snapshot.AreaSnapshotManager;
 import com.devmod.area.data.BiomeGenerationConfig;
+import com.devmod.area.snapshot.AreaSnapshotManager;
 import com.devmod.network.ChannelId;
 import com.devmod.network.PayloadValidation;
 import com.devmod.network.handlers.NetworkHandlerBase;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
-
 /**
  * Network handler for Area Builder system payloads.
  * Handles registration and processing of all area-related network messages.

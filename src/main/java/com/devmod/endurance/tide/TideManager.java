@@ -18,6 +18,7 @@ import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.config.gamedesign.GameDesignConfig;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.endurance.EnduranceQuestManager;
 
 public class TideManager {
 
@@ -258,8 +259,7 @@ public class TideManager {
      */
     private float calculateTideBossHealth() {
         // Base health scaled by number of active quest players
-        // This would need to query EnduranceQuestManager for active player count
-        int playerCount = Math.max(1, 4); // Placeholder - would get actual count
+        int playerCount = Math.max(1, EnduranceQuestManager.INSTANCE.getActiveSessions().size());
         return 1000f * playerCount; // 1000 HP per player
     }
 

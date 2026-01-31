@@ -16,7 +16,9 @@ import com.devmod.client.overlay.ImpactHudContentBuilder;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper.BodyPart;
 
-import static com.devmod.client.overlay.vfx.ImpactVFXConstants.*;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_BASE_SIZE;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_CRIT_SIZE;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.GLYPH_CROSS_SIZE;
 
 /**
  * Renders the combat glyph effect for impacts.

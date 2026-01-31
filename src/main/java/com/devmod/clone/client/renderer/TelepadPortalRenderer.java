@@ -1,5 +1,7 @@
 package com.devmod.clone.client.renderer;
 
+import org.joml.Matrix4f;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -7,6 +9,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 
@@ -21,16 +24,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import org.joml.Matrix4f;
-
 import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
-
 @OnlyIn(Dist.CLIENT)
 public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEntity> {
     private static final int OVAL_SEGMENTS = 48;

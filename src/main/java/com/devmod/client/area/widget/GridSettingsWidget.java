@@ -17,6 +17,7 @@ import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.GridSettings;
 import com.devmod.area.data.GridSettings.GridAlignment;
 import com.devmod.area.data.GridSettings.GridSize;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for configuring grid snap settings for area positioning.
@@ -47,7 +48,7 @@ public class GridSettingsWidget extends AbstractWidget {
         int currentY = getY();
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.grid.enable")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -60,8 +61,8 @@ public class GridSettingsWidget extends AbstractWidget {
 
         // If grid is disabled, show "Grid Disabled" message
         if (!settings.enabled()) {
-            graphics.drawString(font,
-                Component.literal("Grid snap disabled"),
+            UIScaleManager.drawScaledString(graphics, font,
+                "Grid snap disabled",
                 getX(), currentY,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
@@ -69,7 +70,7 @@ public class GridSettingsWidget extends AbstractWidget {
         }
 
         // Grid size section
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.grid.size")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         currentY += 14;
@@ -92,7 +93,7 @@ public class GridSettingsWidget extends AbstractWidget {
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             String sizeName = Component.translatable("area.grid.size_" + size.getId()).getString();
-            graphics.drawCenteredString(font, sizeName,
+            UIScaleManager.drawScaledCenteredString(graphics, font, sizeName,
                 btnX + SIZE_BUTTON_WIDTH / 2, currentY + 5,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
@@ -114,7 +115,7 @@ public class GridSettingsWidget extends AbstractWidget {
         currentY += ROW_HEIGHT + 8;
 
         // Alignment section
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.grid.alignment")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         currentY += 14;
@@ -135,7 +136,7 @@ public class GridSettingsWidget extends AbstractWidget {
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             String alignName = Component.translatable("area.grid.alignment." + alignment.getId()).getString();
-            graphics.drawCenteredString(font, alignName,
+            UIScaleManager.drawScaledCenteredString(graphics, font, alignName,
                 btnX + SIZE_BUTTON_WIDTH / 2, currentY + 5,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
@@ -157,8 +158,8 @@ public class GridSettingsWidget extends AbstractWidget {
         graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_HEIGHT, bgColor);
         graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_HEIGHT, AreaBuilderGuiConstants.COLOR_BORDER);
 
-        Component toggleText = Objects.requireNonNull(Component.translatable(value ? "area.toggle.on" : "area.toggle.off"));
-        graphics.drawCenteredString(font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     private void renderToggle(GuiGraphics graphics, String translationKey, boolean value,
@@ -167,7 +168,7 @@ public class GridSettingsWidget extends AbstractWidget {
 
         if (withLabel) {
             var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
-            graphics.drawString(font,
+            UIScaleManager.drawScaledString(graphics, font,
                 Objects.requireNonNull(Component.translatable(Objects.requireNonNull(translationKey))),
                 x + TOGGLE_WIDTH + 8, y + 5,
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY

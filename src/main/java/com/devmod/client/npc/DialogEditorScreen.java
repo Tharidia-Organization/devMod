@@ -75,6 +75,11 @@ public class DialogEditorScreen extends Screen {
     private int nodeScrollOffset = 0;
     private boolean suppressLineUpdate = false;
 
+    // === Scaled layout dimensions (updated each frame for responsiveness) ===
+    private int scaledPadding;
+    private int scaledCol1Width;
+    private int scaledCol3Width;
+
     // === Undo/Redo ===
     private final DialogEditorHistory history = new DialogEditorHistory();
     private DialogEditorHistory.EditorState savedState;
@@ -131,7 +136,7 @@ public class DialogEditorScreen extends Screen {
 
     // === Undo/Redo Helpers ===
 
-    /**
+    /*
      * Captures the current editor state for history.
      */
     private DialogEditorHistory.EditorState captureState() {
@@ -144,7 +149,7 @@ public class DialogEditorScreen extends Screen {
         );
     }
 
-    /**
+    /*
      * Restores the editor to a previous state.
      */
     private void restoreState(DialogEditorHistory.EditorState state) {
@@ -159,12 +164,12 @@ public class DialogEditorScreen extends Screen {
         if (nameField != null) nameField.setValue(dialogName);
         if (entryNodeField != null) entryNodeField.setValue(entryNodeId);
         updateLinesEditor();
-        rebuildNodeButtons(PADDING, PADDING + 30 + 20);
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildNodeButtons(UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
         updateUndoRedoButtons();
     }
 
-    /**
+    /*
      * Pushes current state to history before making changes.
      */
     private void pushHistory() {
@@ -172,21 +177,21 @@ public class DialogEditorScreen extends Screen {
         updateUndoRedoButtons();
     }
 
-    /**
+    /*
      * Performs undo operation.
      */
     private void performUndo() {
         history.undo(captureState()).ifPresent(this::restoreState);
     }
 
-    /**
+    /*
      * Performs redo operation.
      */
     private void performRedo() {
         history.redo(captureState()).ifPresent(this::restoreState);
     }
 
-    /**
+    /*
      * Updates undo/redo button states.
      */
     private void updateUndoRedoButtons() {
@@ -194,7 +199,7 @@ public class DialogEditorScreen extends Screen {
         if (redoButtonWidget != null) redoButtonWidget.getButton().setEnabled(history.canRedo());
     }
 
-    /**
+    /*
      * Checks if there are unsaved changes.
      */
     private boolean isDirty() {
@@ -212,17 +217,24 @@ public class DialogEditorScreen extends Screen {
         EditorApplyFeedbackRouter.register(feedbackListener);
         super.init();
 
-        int col1X = PADDING;
-        int col2X = col1X + COL1_WIDTH + PADDING;
-        int col3X = width - COL3_WIDTH - PADDING;
-        int col2Width = col3X - col2X - PADDING;
-        int topY = PADDING + 30;
+        // Calculate scaled layout for init
+        UIScaleManager.update();
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sCol1Width = UIScaleManager.scale(COL1_WIDTH);
+        int sCol3Width = UIScaleManager.scale(COL3_WIDTH);
+        int sButtonHeight = UIScaleManager.scale(BUTTON_HEIGHT);
+
+        int col1X = sPadding;
+        int col2X = col1X + sCol1Width + sPadding;
+        int col3X = width - sCol3Width - sPadding;
+        int col2Width = col3X - col2X - sPadding;
+        int topY = sPadding + UIScaleManager.scale(30);
 
         // === Header Row ===
-        int headerY = PADDING + 5;
+        int headerY = sPadding + UIScaleManager.scale(5);
 
         // Name field
-        nameField = new EditBox(font, col1X + 50, headerY, COL1_WIDTH - 50, 16,
+        nameField = new EditBox(font, col1X + UIScaleManager.scale(50), headerY, sCol1Width - UIScaleManager.scale(50), UIScaleManager.scale(16),
             Component.translatable("gui.devmod.npc.dialog_editor.name"));
         nameField.setValue(dialogName);
         nameField.setMaxLength(DialogLimits.MAX_DIALOG_NAME_LENGTH);
@@ -238,7 +250,7 @@ public class DialogEditorScreen extends Screen {
         addRenderableWidget(nameField);
 
         // Entry node field
-        entryNodeField = new EditBox(font, col2X + 80, headerY, 100, 16,
+        entryNodeField = new EditBox(font, col2X + UIScaleManager.scale(80), headerY, UIScaleManager.scale(100), UIScaleManager.scale(16),
             Component.translatable("gui.devmod.npc.dialog_editor.entry_node"));
         entryNodeField.setValue(entryNodeId);
         entryNodeField.setMaxLength(DialogLimits.MAX_NODE_ID_LENGTH);
@@ -261,7 +273,7 @@ public class DialogEditorScreen extends Screen {
             .enabled(false)
             .onClick(this::performUndo)
             .build();
-        EditorButtonWidget undoWidget = new EditorButtonWidget(undoButton, col3X - 50, headerY, 20, 16);
+        EditorButtonWidget undoWidget = new EditorButtonWidget(undoButton, col3X - UIScaleManager.scale(50), headerY, UIScaleManager.scale(20), UIScaleManager.scale(16));
         undoButtonWidget = undoWidget;
         addRenderableWidget(undoWidget);
 
@@ -272,13 +284,13 @@ public class DialogEditorScreen extends Screen {
             .enabled(false)
             .onClick(this::performRedo)
             .build();
-        EditorButtonWidget redoWidget = new EditorButtonWidget(redoButton, col3X - 25, headerY, 20, 16);
+        EditorButtonWidget redoWidget = new EditorButtonWidget(redoButton, col3X - UIScaleManager.scale(25), headerY, UIScaleManager.scale(20), UIScaleManager.scale(16));
         redoButtonWidget = redoWidget;
         addRenderableWidget(redoWidget);
 
         // === Column 1: Node List ===
-        int listY = topY + 20;
-        int listHeight = height - listY - 60;
+        int listY = topY + UIScaleManager.scale(20);
+        int listHeight = height - listY - UIScaleManager.scale(60);
 
         // Add node button
         EditorButton addNodeButton = EditorButton.builder("dialog-node-add", "+")
@@ -287,7 +299,7 @@ public class DialogEditorScreen extends Screen {
             .tooltip(Component.translatable("gui.devmod.npc.dialog_editor.add_node").getString())
             .onClick(this::addNewNode)
             .build();
-        EditorButtonWidget addNodeWidget = new EditorButtonWidget(addNodeButton, col1X, topY, 30, BUTTON_HEIGHT);
+        EditorButtonWidget addNodeWidget = new EditorButtonWidget(addNodeButton, col1X, topY, UIScaleManager.scale(30), sButtonHeight);
         addNodeButtonWidget = addNodeWidget;
         addRenderableWidget(addNodeWidget);
 
@@ -298,7 +310,7 @@ public class DialogEditorScreen extends Screen {
             .tooltip(Component.translatable("gui.devmod.npc.dialog_editor.remove_node").getString())
             .onClick(this::removeSelectedNode)
             .build();
-        EditorButtonWidget removeNodeWidget = new EditorButtonWidget(removeNodeButton, col1X + 35, topY, 30, BUTTON_HEIGHT);
+        EditorButtonWidget removeNodeWidget = new EditorButtonWidget(removeNodeButton, col1X + UIScaleManager.scale(35), topY, UIScaleManager.scale(30), sButtonHeight);
         removeNodeButtonWidget = removeNodeWidget;
         addRenderableWidget(removeNodeWidget);
 
@@ -312,9 +324,9 @@ public class DialogEditorScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::addLineToSelected)
             .build();
-        addRenderableWidget(new EditorButtonWidget(addLineButton, col2X, topY, 80, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(addLineButton, col2X, topY, UIScaleManager.scale(80), sButtonHeight));
 
-        linesEditor = new MultiLineEditBox(font, col2X, listY, col2Width, listHeight - 40,
+        linesEditor = new MultiLineEditBox(font, col2X, listY, col2Width, listHeight - UIScaleManager.scale(40),
             Component.empty(), Component.empty());
         linesEditor.setValueListener(this::onLinesChanged);
         addRenderableWidget(linesEditor);
@@ -328,7 +340,7 @@ public class DialogEditorScreen extends Screen {
             .tooltip(Component.translatable("gui.devmod.npc.dialog_editor.add_option").getString())
             .onClick(this::addNewOption)
             .build();
-        EditorButtonWidget addOptionWidget = new EditorButtonWidget(addOptionButton, col3X, topY, 30, BUTTON_HEIGHT);
+        EditorButtonWidget addOptionWidget = new EditorButtonWidget(addOptionButton, col3X, topY, UIScaleManager.scale(30), sButtonHeight);
         addOptionButtonWidget = addOptionWidget;
         addRenderableWidget(addOptionWidget);
 
@@ -338,7 +350,7 @@ public class DialogEditorScreen extends Screen {
             .tooltip(Component.translatable("gui.devmod.npc.dialog_editor.remove_option").getString())
             .onClick(this::removeSelectedOption)
             .build();
-        EditorButtonWidget removeOptionWidget = new EditorButtonWidget(removeOptionButton, col3X + 35, topY, 30, BUTTON_HEIGHT);
+        EditorButtonWidget removeOptionWidget = new EditorButtonWidget(removeOptionButton, col3X + UIScaleManager.scale(35), topY, UIScaleManager.scale(30), sButtonHeight);
         removeOptionButtonWidget = removeOptionWidget;
         addRenderableWidget(removeOptionWidget);
 
@@ -348,13 +360,13 @@ public class DialogEditorScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::editSelectedOption)
             .build();
-        addRenderableWidget(new EditorButtonWidget(editOptionButton, col3X + 70, topY, 50, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(editOptionButton, col3X + UIScaleManager.scale(70), topY, UIScaleManager.scale(50), sButtonHeight));
 
         rebuildOptionButtons(col3X, listY);
 
         // === Bottom Buttons ===
-        int bottomY = height - PADDING - BUTTON_HEIGHT;
-        int btnWidth = 80;
+        int bottomY = height - sPadding - sButtonHeight;
+        int btnWidth = UIScaleManager.scale(80);
 
         // Preview button
         EditorButton previewButton = EditorButton.builder("dialog-preview",
@@ -363,7 +375,7 @@ public class DialogEditorScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::previewDialog)
             .build();
-        addRenderableWidget(new EditorButtonWidget(previewButton, PADDING, bottomY, btnWidth, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(previewButton, sPadding, bottomY, btnWidth, sButtonHeight));
 
         // Cancel button
         EditorButton cancelButton = EditorButton.builder("dialog-cancel", Component.translatable("gui.devmod.cancel").getString())
@@ -371,7 +383,7 @@ public class DialogEditorScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        addRenderableWidget(new EditorButtonWidget(cancelButton, width / 2 - btnWidth - 5, bottomY, btnWidth, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(cancelButton, width / 2 - btnWidth - UIScaleManager.scale(5), bottomY, btnWidth, sButtonHeight));
 
         // Save button
         EditorButton saveButton = EditorButton.builder("dialog-save",
@@ -380,7 +392,7 @@ public class DialogEditorScreen extends Screen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::saveAndClose)
             .build();
-        addRenderableWidget(new EditorButtonWidget(saveButton, width / 2 + 5, bottomY, btnWidth, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(saveButton, width / 2 + UIScaleManager.scale(5), bottomY, btnWidth, sButtonHeight));
     }
 
     private void rebuildNodeButtons(int x, int startY) {
@@ -392,6 +404,8 @@ public class DialogEditorScreen extends Screen {
 
         int y = startY;
         int visibleCount = Math.min(nodeIdList.size() - nodeScrollOffset, MAX_VISIBLE_ITEMS);
+        int sCol1Width = UIScaleManager.scale(COL1_WIDTH);
+        int sItemHeight = UIScaleManager.scale(ITEM_HEIGHT);
 
         for (int i = 0; i < visibleCount; i++) {
             int idx = nodeScrollOffset + i;
@@ -406,11 +420,11 @@ public class DialogEditorScreen extends Screen {
                 .toggled(selected)
                 .onClick(() -> selectNode(nodeId))
                 .build();
-            EditorButtonWidget btn = new EditorButtonWidget(nodeButton, x, y, COL1_WIDTH, ITEM_HEIGHT);
+            EditorButtonWidget btn = new EditorButtonWidget(nodeButton, x, y, sCol1Width, sItemHeight);
 
             nodeButtons.add(btn);
             addRenderableWidget(btn);
-            y += ITEM_HEIGHT + 2;
+            y += sItemHeight + UIScaleManager.scale(2);
         }
     }
 
@@ -427,6 +441,8 @@ public class DialogEditorScreen extends Screen {
         if (node == null) return;
 
         int y = startY;
+        int sCol3Width = UIScaleManager.scale(COL3_WIDTH);
+        int sItemHeight = UIScaleManager.scale(ITEM_HEIGHT);
         for (DialogOption opt : node.options()) {
             boolean selected = opt.id().equals(selectedOptionId);
             String label = opt.icon() + " " + truncate(opt.label(), 14);
@@ -437,11 +453,11 @@ public class DialogEditorScreen extends Screen {
                 .toggled(selected)
                 .onClick(() -> selectOption(opt.id()))
                 .build();
-            EditorButtonWidget btn = new EditorButtonWidget(optionButton, x, y, COL3_WIDTH, ITEM_HEIGHT);
+            EditorButtonWidget btn = new EditorButtonWidget(optionButton, x, y, sCol3Width, sItemHeight);
 
             optionButtons.add(btn);
             addRenderableWidget(btn);
-            y += ITEM_HEIGHT + 2;
+            y += sItemHeight + UIScaleManager.scale(2);
         }
     }
 
@@ -449,13 +465,13 @@ public class DialogEditorScreen extends Screen {
         selectedNodeId = nodeId;
         selectedOptionId = null;
         updateLinesEditor();
-        rebuildNodeButtons(PADDING, PADDING + 30 + 20);
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildNodeButtons(UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
     }
 
     private void selectOption(String optionId) {
         selectedOptionId = optionId;
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
     }
 
     private void updateLinesEditor() {
@@ -517,7 +533,7 @@ public class DialogEditorScreen extends Screen {
         editedNodes.put(newId, newNode);
         rebuildNodeList();
         selectNode(newId);
-        rebuildNodeButtons(PADDING, PADDING + 30 + 20);
+        rebuildNodeButtons(UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
         updateUndoRedoButtons();
     }
 
@@ -529,8 +545,8 @@ public class DialogEditorScreen extends Screen {
         rebuildNodeList();
         selectedNodeId = nodeIdList.isEmpty() ? null : nodeIdList.get(0);
         updateLinesEditor();
-        rebuildNodeButtons(PADDING, PADDING + 30 + 20);
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildNodeButtons(UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
         updateUndoRedoButtons();
     }
 
@@ -560,7 +576,7 @@ public class DialogEditorScreen extends Screen {
 
         editedNodes.put(selectedNodeId, node.withAddedOption(newOpt));
         selectedOptionId = optId;
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
         updateUndoRedoButtons();
     }
 
@@ -580,7 +596,7 @@ public class DialogEditorScreen extends Screen {
 
         editedNodes.put(selectedNodeId, node.withOptions(newOptions));
         selectedOptionId = null;
-        rebuildOptionButtons(width - COL3_WIDTH - PADDING, PADDING + 30 + 20);
+        rebuildOptionButtons(width - UIScaleManager.scale(COL3_WIDTH) - UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
         updateUndoRedoButtons();
     }
 
@@ -595,19 +611,22 @@ public class DialogEditorScreen extends Screen {
 
         // Open option editor screen
         if (minecraft != null) {
-            minecraft.setScreen(new DialogOptionEditorScreen(this, opt, updatedOpt -> {
-                pushHistory();
-                List<DialogOption> newOptions = new ArrayList<>();
-                for (DialogOption o : node.options()) {
-                    if (o.id().equals(selectedOptionId)) {
-                        newOptions.add(updatedOpt);
-                    } else {
-                        newOptions.add(o);
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "dialog_option_editor",
+                this,
+                () -> new DialogOptionEditorScreen(this, opt, updatedOpt -> {
+                    pushHistory();
+                    List<DialogOption> newOptions = new ArrayList<>();
+                    for (DialogOption o : node.options()) {
+                        if (o.id().equals(selectedOptionId)) {
+                            newOptions.add(updatedOpt);
+                        } else {
+                            newOptions.add(o);
+                        }
                     }
-                }
-                editedNodes.put(selectedNodeId, node.withOptions(newOptions));
-                updateUndoRedoButtons();
-            }));
+                    editedNodes.put(selectedNodeId, node.withOptions(newOptions));
+                    updateUndoRedoButtons();
+                }));
         }
     }
 
@@ -623,14 +642,17 @@ public class DialogEditorScreen extends Screen {
                 .map(o -> new NpcDialogPayload.NpcDialogOptionData(o.id(), o.label(), o.icon()))
                 .toList();
 
-            minecraft.setScreen(new NpcDialogScreen(
-                minecraft.player.getUUID(),
-                "Preview NPC",
-                dialogSetId,
-                entryNodeId,
-                entryNode.lines(),
-                options
-            ));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "npc_dialog_preview",
+                this,
+                () -> new NpcDialogScreen(
+                    minecraft.player.getUUID(),
+                    "Preview NPC",
+                    dialogSetId,
+                    entryNodeId,
+                    entryNode.lines(),
+                    options
+                ));
         }
     }
 
@@ -668,38 +690,44 @@ public class DialogEditorScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledPadding = UIScaleManager.scale(PADDING);
+        scaledCol1Width = UIScaleManager.scale(COL1_WIDTH);
+        scaledCol3Width = UIScaleManager.scale(COL3_WIDTH);
+
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Column headers
-        int col1X = PADDING;
-        int col2X = col1X + COL1_WIDTH + PADDING;
-        int col3X = width - COL3_WIDTH - PADDING;
-        int topY = PADDING + 30;
+        int col1X = scaledPadding;
+        int col2X = col1X + scaledCol1Width + scaledPadding;
+        int col3X = width - scaledCol3Width - scaledPadding;
+        int topY = scaledPadding + UIScaleManager.scale(30);
 
         // Labels
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.name"),
-            col1X, PADDING + 8, COLOR_LABEL);
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.entry_node"),
-            col2X, PADDING + 8, COLOR_LABEL);
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.name"),
+            col1X, scaledPadding + UIScaleManager.scale(8), COLOR_LABEL);
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.entry_node"),
+            col2X, scaledPadding + UIScaleManager.scale(8), COLOR_LABEL);
 
         // Column titles
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.nodes"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.nodes"),
             col1X, topY + 3, COLOR_TEXT);
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.text"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.text"),
             col2X + 90, topY + 3, COLOR_TEXT);
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.options"),
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.options"),
             col3X + 125, topY + 3, COLOR_TEXT);
 
         // Title (with dirty indicator)
         Component displayTitle = isDirty()
             ? Component.literal("* ").append(title)
             : title;
-        graphics.drawCenteredString(font, displayTitle, width / 2, 5, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, displayTitle, width / 2, 5, COLOR_TEXT);
 
         // Preset warning
         if (originalDialogSet != null && originalDialogSet.isPreset()) {
-            graphics.drawString(font, Component.translatable("gui.devmod.npc.dialog_editor.preset_readonly")
-                .withStyle(s -> s.withColor(COLOR_WARNING)), width / 2 - 80, height - PADDING - 40, COLOR_WARNING);
+            UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.preset_readonly")
+                .withStyle(s -> s.withColor(COLOR_WARNING)), width / 2 - UIScaleManager.scale(80), height - scaledPadding - UIScaleManager.scale(40), COLOR_WARNING);
         }
 
         // Borders between columns
@@ -776,11 +804,11 @@ public class DialogEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mouseX < PADDING + COL1_WIDTH) {
+        if (mouseX < UIScaleManager.scale(PADDING) + UIScaleManager.scale(COL1_WIDTH)) {
             // Scroll node list
             nodeScrollOffset = Math.max(0, Math.min(nodeIdList.size() - MAX_VISIBLE_ITEMS,
                 nodeScrollOffset - (int) scrollY));
-            rebuildNodeButtons(PADDING, PADDING + 30 + 20);
+            rebuildNodeButtons(UIScaleManager.scale(PADDING), UIScaleManager.scale(PADDING + 30 + 20));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);

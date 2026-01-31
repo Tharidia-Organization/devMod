@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
@@ -275,10 +276,10 @@ public class EditorSlider {
         int labelGap = (badgeInfoWidth > 0 && !safeLabel.isEmpty()) ? gap : 0;
         int availableLabelWidth = Math.max(0, labelWidth - badgeInfoWidth - labelGap);
         String displayLabel = safeLabel;
-        int ellipsisWidth = font.width(LABEL_ELLIPSIS);
+        int ellipsisWidth = UIScaleManager.getScaledStringWidth(font, LABEL_ELLIPSIS);
         if (availableLabelWidth <= 0) {
             displayLabel = "";
-        } else if (font.width(displayLabel) > availableLabelWidth) {
+        } else if (UIScaleManager.getScaledStringWidth(font, displayLabel) > availableLabelWidth) {
             int sliceWidth = Math.max(0, availableLabelWidth - ellipsisWidth);
             displayLabel = font.plainSubstrByWidth(displayLabel, sliceWidth);
             if (!displayLabel.isEmpty() && availableLabelWidth >= ellipsisWidth) {
@@ -301,11 +302,11 @@ public class EditorSlider {
         if (showLabel) {
             int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             if (!displayLabel.isEmpty()) {
-                graphics.drawString(font, displayLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+                UIScaleManager.drawScaledString(graphics, font, displayLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
             }
 
             // Track position after label for badges/buttons
-            int afterLabelX = x + font.width(displayLabel);
+            int afterLabelX = x + UIScaleManager.getScaledStringWidth(font, displayLabel);
             if (badgeInfoWidth > 0 && !displayLabel.isEmpty()) {
                 afterLabelX += gap;
             }
@@ -372,7 +373,7 @@ public class EditorSlider {
             String valueText = String.format(safeFormat, value) + safeSuffix;
             int valueX = trackX + trackWidth + EditorSpacing.S;
             int valueColor = enabled ? DesignTokens.Text.VALUE() : DesignTokens.Text.MUTED();
-            graphics.drawString(font, valueText, valueX, y + TEXT_OFFSET_Y, valueColor, false);
+            UIScaleManager.drawScaledString(graphics, font, valueText, valueX, y + TEXT_OFFSET_Y, valueColor, false);
         }
 
         // Focus ring (per spec Section 4.2)

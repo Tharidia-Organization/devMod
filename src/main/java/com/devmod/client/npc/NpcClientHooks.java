@@ -24,23 +24,24 @@ public final class NpcClientHooks {
      */
     public static void openConfigScreen(OpenNpcConfigPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> {
-            NpcConfiguration config = payload.config();
-            if (config == null) {
-                if (mc.player == null) {
-                    return;
-                }
-                config = NpcConfiguration.createDefault(
-                    mc.player.getName().getString(),
-                    mc.player.getUUID()
-                );
+        NpcConfiguration config = payload.config();
+        if (config == null) {
+            if (mc.player == null) {
+                return;
             }
-            mc.setScreen(new NpcConfigScreen(
-                config,
+            config = NpcConfiguration.createDefault(
+                mc.player.getName().getString(),
+                mc.player.getUUID()
+            );
+        }
+        NpcConfiguration finalConfig = config;
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "npc_config",
+            () -> new NpcConfigScreen(
+                finalConfig,
                 payload.hand(),
                 payload.existingNpcId()
             ));
-        });
     }
 
     /**
@@ -48,11 +49,12 @@ public final class NpcClientHooks {
      * Called when OpenDialogEditorPayload is received.
      */
     public static void openDialogEditor(OpenDialogEditorPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.setScreen(new DialogEditorScreen(
-            payload.dialogSetId(),
-            payload.dialogSet()
-        )));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "dialog_editor",
+            () -> new DialogEditorScreen(
+                payload.dialogSetId(),
+                payload.dialogSet()
+            ));
     }
 
     /**
@@ -60,14 +62,15 @@ public final class NpcClientHooks {
      * Called when NpcDialogPayload is received.
      */
     public static void openNpcDialog(NpcDialogPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.setScreen(new NpcDialogScreen(
-            payload.npcId(),
-            payload.npcName(),
-            payload.dialogSetId(),
-            payload.currentNodeId(),
-            payload.lines(),
-            payload.options()
-        )));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "npc_dialog",
+            () -> new NpcDialogScreen(
+                payload.npcId(),
+                payload.npcName(),
+                payload.dialogSetId(),
+                payload.currentNodeId(),
+                payload.lines(),
+                payload.options()
+            ));
     }
 }

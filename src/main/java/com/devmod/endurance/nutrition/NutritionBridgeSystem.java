@@ -11,11 +11,6 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
-
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,7 +20,10 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
-
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 /**
  * Bridge system that connects Easy-Diet nutrition data with DevMod Endurance quests.
  *

@@ -21,6 +21,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
@@ -143,43 +144,7 @@ public class TelemetryEvents {
         if (target.level().isClientSide()) return;
 
         DamageSource source = event.getSource();
-        Entity attacker = source.getEntity();
-        double hpBefore = target.getHealth();
-        double hpAfter = Math.max(0, hpBefore - event.getAmount());
-        double distance = attacker != null ? attacker.distanceTo(target) : -1;
-
-        // Retrieve body part AND armor pen bonus from context (already calculated by DamageHandler)
-        // This ensures 100% consistency between damage calculation and telemetry logging
-        String part = "UNKNOWN";
-        float armorPenBonus = 0f;
-        var hitInfo = com.devmod.combat.HitData.retrieve(target);
-        if (hitInfo != null) {
-            part = hitInfo.bodyPart().name();
-            armorPenBonus = hitInfo.armorPenBonus();
-        } else if (attacker instanceof LivingEntity livingAttacker) {
-            // Fallback: calculate body part if context not available (non-combat damage)
-            LOGGER.debug("[Telemetry] HitData miss for {}, using fallback raycast", target.getUUID());
-            part = com.devmod.combat.HitHelper.rayTraceBodyPartAABB(livingAttacker, target).name();
-            // No armor pen data available in fallback
-        }
-
-        // MODDED COMPATIBILITY: Log even if event is canceled (Better Combat, other combat mods)
-        // This ensures we don't lose telemetry data when mods cancel events
-        TelemetryService.INSTANCE.logHit(target.level(), attacker, target, source, event.getAmount(), hpBefore, hpAfter, part, distance, armorPenBonus);
-
-        // Player attribute telemetry: record health change
-        if (target instanceof ServerPlayer player) {
-            PlayerAttributeTelemetryService.INSTANCE.recordHealthChange(
-                player, (float) hpBefore, (float) hpAfter, source.getMsgId());
-        }
-
-        // M41: Track damage for dungeon runs
-        if (target instanceof ServerPlayer player) {
-            com.devmod.telemetry.dungeon.DungeonRunService.INSTANCE.onDamageTaken(player, event.getAmount());
-        }
-        if (attacker instanceof ServerPlayer player) {
-            com.devmod.telemetry.dungeon.DungeonRunService.INSTANCE.onDamageDealt(player, event.getAmount());
-        }
+        Entity attacker = com.devmod.telemetry.damage.DamageAttributionResolver.resolveAttacker(source);
 
         // Mark damage-over-time effects as "hit" (poison, wither, etc.)
         if (attacker == null && source.type().msgId().contains("magic")) {
@@ -190,6 +155,72 @@ public class TelemetryEvents {
                     TelemetryService.INSTANCE.logSkillHit(target, skillId);
                 }
             }
+        }
+    }
+
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
+    public static void onDamagePost(LivingDamageEvent.Post event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide()) return;
+
+        DamageSource source = event.getSource();
+        Entity attacker = com.devmod.telemetry.damage.DamageAttributionResolver.resolveAttacker(source);
+        float actualDamage = event.getNewDamage();
+        if (actualDamage <= 0f) {
+            return;
+        }
+
+        double hpAfter = target.getHealth();
+        double hpBefore = hpAfter + actualDamage;
+        if (target.isDeadOrDying()) {
+            hpBefore = actualDamage;
+        }
+        double distance = attacker != null ? attacker.distanceTo(target) : -1;
+
+        // Retrieve body part AND armor pen bonus from context (already calculated by DamageHandler)
+        String part = "UNKNOWN";
+        float armorPenBonus = 0f;
+        net.minecraft.world.item.Item weaponOverride = null;
+        var hitInfo = com.devmod.combat.HitData.retrieve(target);
+        if (hitInfo != null) {
+            part = hitInfo.bodyPart().name();
+            armorPenBonus = hitInfo.armorPenBonus();
+            weaponOverride = hitInfo.weaponItem();
+        } else if (attacker instanceof LivingEntity livingAttacker) {
+            LOGGER.debug("[Telemetry] HitData miss for {}, using fallback raycast", target.getUUID());
+            part = com.devmod.combat.HitHelper.rayTraceBodyPartAABB(livingAttacker, target).name();
+        }
+        if (weaponOverride == null) {
+            weaponOverride = com.devmod.telemetry.damage.DamageAttributionResolver
+                .resolveWeaponOverride(source, attacker);
+        }
+
+        if (Config.TELEMETRY_VALIDATION_ENABLED.get()) {
+            double expectedBefore = target.isDeadOrDying() ? actualDamage : hpAfter + actualDamage;
+            if (Math.abs(expectedBefore - hpBefore) > 0.01) {
+                LOGGER.debug("[Telemetry] hpBefore mismatch: expected={} actual={} target={}",
+                    expectedBefore, hpBefore, target.getUUID());
+            }
+            if (hpBefore < hpAfter) {
+                LOGGER.debug("[Telemetry] hpBefore < hpAfter for {} (before={}, after={})",
+                    target.getUUID(), hpBefore, hpAfter);
+            }
+            if (attacker instanceof ServerPlayer && weaponOverride == null) {
+                LOGGER.debug("[Telemetry] Missing weaponOverride for player={} dmgType={}",
+                    attacker.getUUID(), source.getMsgId());
+            }
+        }
+
+        TelemetryService.INSTANCE.logHit(target.level(), attacker, target, source,
+            actualDamage, hpBefore, hpAfter, part, distance, armorPenBonus, weaponOverride);
+
+        if (target instanceof ServerPlayer player) {
+            PlayerAttributeTelemetryService.INSTANCE.recordHealthChange(
+                player, (float) hpBefore, (float) hpAfter, source.getMsgId());
+            com.devmod.telemetry.dungeon.DungeonRunService.INSTANCE.onDamageTaken(player, actualDamage);
+        }
+        if (attacker instanceof ServerPlayer player) {
+            com.devmod.telemetry.dungeon.DungeonRunService.INSTANCE.onDamageDealt(player, actualDamage);
         }
     }
 

@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 
@@ -88,20 +89,20 @@ public class PlaceholderModule implements EditorModule {
             ? "Layout: " + layout.getScreenSize().name()
             : "Layout: not initialized";
 
-        graphics.drawString(font, "Editor state: Not supported for this item", x, y, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Editor state: Not supported for this item", x, y, DesignTokens.Text.SECONDARY(), false);
         y += 15;
 
-        graphics.drawString(font, "Item: " + (item.isEmpty() ? "None" : item.getHoverName().getString()),
+        UIScaleManager.drawScaledString(graphics, font, "Item: " + (item.isEmpty() ? "None" : item.getHoverName().getString()),
                            x, y, DesignTokens.Text.PRIMARY(), false);
         y += 15;
 
-        graphics.drawString(font, layoutInfo, x, y, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, font, layoutInfo, x, y, DesignTokens.Text.MUTED(), false);
         y += 20;
 
-        graphics.drawString(font, "Why: item is not in editable tags or supported module not yet implemented.",
+        UIScaleManager.drawScaledString(graphics, font, "Why: item is not in editable tags or supported module not yet implemented.",
                            x, y, DesignTokens.Text.MUTED(), false);
         y += 15;
-        graphics.drawString(font, "Add to editable tags (melee/ranged/shields) or whitelist to enable editing.",
+        UIScaleManager.drawScaledString(graphics, font, "Add to editable tags (melee/ranged/shields) or whitelist to enable editing.",
                            x, y, DesignTokens.Text.MUTED(), false);
     }
 

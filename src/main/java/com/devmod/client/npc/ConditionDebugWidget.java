@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.npc.dialog.condition.ConditionDebugResult;
 import com.devmod.npc.dialog.condition.DialogCondition;
@@ -174,7 +175,7 @@ public class ConditionDebugWidget extends AbstractWidget {
 
         // Header
         String header = debugResult != null ? "Debug Results" : (condition != null ? "Condition Structure" : "No Condition");
-        graphics.drawString(font, header, getX() + PADDING, getY() + PADDING, COLOR_HEADER);
+        UIScaleManager.drawScaledString(graphics, font, header, getX() + PADDING, getY() + PADDING, COLOR_HEADER);
 
         // Content area with clipping
         int contentX = getX() + PADDING;
@@ -194,14 +195,14 @@ public class ConditionDebugWidget extends AbstractWidget {
                 int textX = contentX + indent;
 
                 if (line.isHeader) {
-                    graphics.drawString(font, text, textX, y, line.color);
+                    UIScaleManager.drawScaledString(graphics, font, text, textX, y, line.color);
                 } else {
                     // Truncate long text
                     int maxWidth = contentWidth - indent - PADDING;
-                    if (font.width(text) > maxWidth) {
-                        text = font.plainSubstrByWidth(text, maxWidth - font.width("...")) + "...";
+                    if (UIScaleManager.getScaledStringWidth(font, text) > maxWidth) {
+                        text = font.plainSubstrByWidth(text, maxWidth - UIScaleManager.getScaledStringWidth(font, "...")) + "...";
                     }
-                    graphics.drawString(font, text, textX, y, line.color);
+                    UIScaleManager.drawScaledString(graphics, font, text, textX, y, line.color);
                 }
             }
             y += LINE_HEIGHT;

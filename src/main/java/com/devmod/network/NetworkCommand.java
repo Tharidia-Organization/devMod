@@ -66,26 +66,26 @@ public final class NetworkCommand {
             : 0.0;
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e=== Network Payload Metrics ===")), false);
+            Component.literal("\u00A7e=== Network Payload Metrics ===")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Processed: §f%,d", processed))), false);
+            Component.literal(String.format("\u00A77Processed: \u00A7f%,d", processed))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Size Rejections: §c%,d", sizeRejections))), false);
+            Component.literal(String.format("\u00A77Size Rejections: \u00A7c%,d", sizeRejections))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Rate Limit Rejections: §c%,d", rateLimitRejections))), false);
+            Component.literal(String.format("\u00A77Rate Limit Rejections: \u00A7c%,d", rateLimitRejections))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7IP Rate Limit Rejections: §c%,d", ipRateLimitRejections))), false);
+            Component.literal(String.format("\u00A77IP Rate Limit Rejections: \u00A7c%,d", ipRateLimitRejections))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Forced Disconnects: §c%,d", disconnects))), false);
+            Component.literal(String.format("\u00A77Forced Disconnects: \u00A7c%,d", disconnects))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Rejection Rate: §f%.2f%%", rejectionRate))), false);
+            Component.literal(String.format("\u00A77Rejection Rate: \u00A7f%.2f%%", rejectionRate))), false);
 
         // IP rate limiter stats
         IpRateLimiter.Stats ipStats = IpRateLimiter.INSTANCE.getStats();
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e--- IP Rate Limiter ---")), false);
+            Component.literal("\u00A7e--- IP Rate Limiter ---")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Tracked IPs: §f%d §7| Blocked: §c%d",
+            Component.literal(String.format("\u00A77Tracked IPs: \u00A7f%d \u00A77| Blocked: \u00A7c%d",
                 ipStats.trackedIps(), ipStats.blockedIps()))), false);
 
         LOGGER.debug("Network stats command executed: {} processed, {} rejections", processed, totalRejections);
@@ -102,16 +102,16 @@ public final class NetworkCommand {
         String summary = PayloadValidation.getMetricsSummary();
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§e=== Detailed Network Metrics ===")), false);
+            Component.literal("\u00A7e=== Detailed Network Metrics ===")), false);
 
         // Split and send each line
         for (String line : Splitter.on('\n').split(summary)) {
             if (!line.isBlank()) {
                 String formattedLine = line
-                    .replace("===", "§e===")
-                    .replace("Processed:", "§7Processed: §f")
-                    .replace("rejections:", "§7rejections: §c")
-                    .replace("by type:", "§7by type:");
+                    .replace("===", "\u00A7e===")
+                    .replace("Processed:", "\u00A77Processed: \u00A7f")
+                    .replace("rejections:", "\u00A77rejections: \u00A7c")
+                    .replace("by type:", "\u00A77by type:");
                 source.sendSuccess(() -> Objects.requireNonNull(
                     Component.literal(formattedLine)), false);
             }
@@ -122,34 +122,34 @@ public final class NetworkCommand {
 
         if (!metrics.sizeRejectionsByType().isEmpty()) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§e--- Size Rejections by Type ---")), false);
+                Component.literal("\u00A7e--- Size Rejections by Type ---")), false);
             for (Map.Entry<String, AtomicLong> entry : metrics.sizeRejectionsByType().entrySet()) {
                 String type = entry.getKey();
                 long count = PayloadValidation.getSizeRejectionCount(type);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal(String.format("§7  %s: §c%d", type, count))), false);
+                    Component.literal(String.format("\u00A77  %s: \u00A7c%d", type, count))), false);
             }
         }
 
         if (!metrics.rateLimitRejectionsByType().isEmpty()) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§e--- Rate Limit Rejections by Type ---")), false);
+                Component.literal("\u00A7e--- Rate Limit Rejections by Type ---")), false);
             for (Map.Entry<String, AtomicLong> entry : metrics.rateLimitRejectionsByType().entrySet()) {
                 String type = entry.getKey();
                 long count = PayloadValidation.getRateLimitRejectionCount(type);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal(String.format("§7  %s: §c%d", type, count))), false);
+                    Component.literal(String.format("\u00A77  %s: \u00A7c%d", type, count))), false);
             }
         }
 
         if (!metrics.ipRateLimitRejectionsByType().isEmpty()) {
             source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("§e--- IP Rate Limit Rejections by Type ---")), false);
+                Component.literal("\u00A7e--- IP Rate Limit Rejections by Type ---")), false);
             for (Map.Entry<String, AtomicLong> entry : metrics.ipRateLimitRejectionsByType().entrySet()) {
                 String type = entry.getKey();
                 long count = PayloadValidation.getIpRateLimitRejectionCount(type);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal(String.format("§7  %s: §c%d", type, count))), false);
+                    Component.literal(String.format("\u00A77  %s: \u00A7c%d", type, count))), false);
             }
         }
 
@@ -174,9 +174,9 @@ public final class NetworkCommand {
         IpRateLimiter.INSTANCE.reset();
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("§a[Network] All payload metrics reset.")), true);
+            Component.literal("\u00A7a[Network] All payload metrics reset.")), true);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7Cleared: %,d processed, %,d rejections",
+            Component.literal(String.format("\u00A77Cleared: %,d processed, %,d rejections",
                 preProcessed, preRejections))), false);
 
         LOGGER.info("Network metrics reset via command by {}: {} processed, {} rejections cleared",
@@ -207,19 +207,19 @@ public final class NetworkCommand {
         String healthColor;
         if (rejectionRate > 10.0 || disconnects > 5 || ipStats.blockedIps() > 10) {
             healthStatus = "DEGRADED";
-            healthColor = "§c";
+            healthColor = "\u00A7c";
         } else if (rejectionRate > 2.0 || disconnects > 0 || ipStats.blockedIps() > 0) {
             healthStatus = "CAUTION";
-            healthColor = "§e";
+            healthColor = "\u00A7e";
         } else {
             healthStatus = "HEALTHY";
-            healthColor = "§a";
+            healthColor = "\u00A7a";
         }
 
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7[Network] Status: %s%s", healthColor, healthStatus))), false);
+            Component.literal(String.format("\u00A77[Network] Status: %s%s", healthColor, healthStatus))), false);
         source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal(String.format("§7  Rejection Rate: §f%.2f%% §7| Disconnects: §f%d §7| Blocked IPs: §f%d",
+            Component.literal(String.format("\u00A77  Rejection Rate: \u00A7f%.2f%% \u00A77| Disconnects: \u00A7f%d \u00A77| Blocked IPs: \u00A7f%d",
                 rejectionRate, disconnects, ipStats.blockedIps()))), false);
 
         return 1;

@@ -13,11 +13,13 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.radial.RadialActionSafety;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.util.I18n;
 
@@ -69,27 +71,30 @@ public final class RadialTooltipRenderer {
 
         if (tooltip == null || tooltip.isEmpty()) return;
 
-        int padding = RadialMenuConstants.TOOLTIP_PADDING;
-        int border = RadialMenuConstants.TOOLTIP_BORDER_THICKNESS;
+        float fontScale = resolveFontScale();
+        int padding = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_PADDING);
+        int border = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_BORDER_THICKNESS);
         int maxWidth = Math.max(80, context.screenWidth - (padding + border) * 2 - 8);
-        List<String> lines = wrapTooltipLines(font, tooltip, maxWidth);
+        int maxWidthFont = toFontWidth(maxWidth, fontScale);
+        List<String> lines = wrapTooltipLines(font, tooltip, maxWidthFont);
         if (lines.isEmpty()) return;
-        int tooltipWidth = 0;
+        int tooltipWidthFont = 0;
         for (String line : lines) {
-            tooltipWidth = Math.max(tooltipWidth, font.width(Objects.requireNonNull(line)));
+            tooltipWidthFont = Math.max(tooltipWidthFont, font.width(Objects.requireNonNull(line)));
         }
+        int tooltipWidth = Math.round(tooltipWidthFont * fontScale);
 
         int tooltipX = context.centerX - tooltipWidth / 2;
-        int tooltipY = context.centerY + context.outerRadius + RadialMenuConstants.TOOLTIP_OFFSET_Y;
+        int tooltipY = context.centerY + context.outerRadius + RadialMenuScaler.getTooltipOffsetY();
 
-        int lineHeight = font.lineHeight;
+        int lineHeight = scaledLineHeight(font, fontScale);
         int textHeight = lineHeight * lines.size();
         int maxX = context.screenWidth - tooltipWidth - padding - border;
         tooltipX = Math.max(padding + border, Math.min(tooltipX, maxX));
 
         int maxY = context.screenHeight - textHeight - padding - border;
         if (tooltipY > maxY) {
-            tooltipY = context.centerY - context.outerRadius - RadialMenuConstants.TOOLTIP_OFFSET_Y - textHeight;
+            tooltipY = context.centerY - context.outerRadius - RadialMenuScaler.getTooltipOffsetY() - textHeight;
         }
         tooltipY = Math.max(padding + border, Math.min(tooltipY, maxY));
 
@@ -106,7 +111,7 @@ public final class RadialTooltipRenderer {
         // Text
         int lineY = tooltipY;
         for (String line : lines) {
-            graphics.drawString(font, line, tooltipX, lineY, context.theme.textPrimary, false);
+            drawStringScaled(graphics, font, line, tooltipX, lineY, context.theme.textPrimary, false, fontScale);
             lineY += lineHeight;
         }
     }
@@ -136,7 +141,7 @@ public final class RadialTooltipRenderer {
 
         for (String word : words) {
             String prefix = carryFormat;
-            if (word.startsWith("§")) {
+            if (word.startsWith("\u00A7")) {
                 prefix = "";
             }
             String candidate = current.length() == 0
@@ -166,7 +171,7 @@ public final class RadialTooltipRenderer {
     private static String lastFormatCode(String line) {
         String last = "";
         for (int i = 0; i + 1 < line.length(); i++) {
-            if (line.charAt(i) == '§') {
+            if (line.charAt(i) == '\u00A7') {
                 last = line.substring(i, i + 2);
                 i++;
             }
@@ -234,7 +239,7 @@ public final class RadialTooltipRenderer {
                 if (reason == null || reason.isBlank()) {
                     tooltip += "\n" + I18n.translate("devmod.radial.tooltip.unavailable").getString();
                 } else {
-                    tooltip += "\n§c" + reason;
+                    tooltip += "\n\u00A7c" + reason;
                 }
             }
             if (editMode) {
@@ -275,7 +280,8 @@ public final class RadialTooltipRenderer {
     public static void renderHelpText(GuiGraphics graphics, Font font,
                                        int screenWidth, int screenHeight,
                                        List<String> lines, long openTime,
-                                       RadialMenuConfig.ColorTheme theme) {
+                                       RadialMenuConfig.ColorTheme theme,
+                                       int minY) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(lines, "lines cannot be null");
@@ -283,19 +289,49 @@ public final class RadialTooltipRenderer {
 
         if (lines.isEmpty()) return;
 
+        float fontScale = resolveFontScale();
+        int margin = RadialMenuScaler.scaleConstant(8);
+        int maxWidth = Math.max(80, UIScaleManager.getSafeWidth() - margin * 2);
+        int maxWidthFont = toFontWidth(maxWidth, fontScale);
+        List<String> wrappedLines = new java.util.ArrayList<>();
+        for (String line : lines) {
+            if (line == null || line.isEmpty()) {
+                wrappedLines.add("");
+                continue;
+            }
+            wrappedLines.addAll(wrapLine(font, line, maxWidthFont));
+        }
+        if (wrappedLines.isEmpty()) return;
+
         float helpAlpha = Math.min(1f,
             (System.currentTimeMillis() - openTime) / (float) RadialMenuConstants.HELP_FADE_DURATION_MS);
         int textAlpha = (int) (RadialMenuConstants.HELP_TEXT_ALPHA * helpAlpha);
         int helpColor = (textAlpha << 24) | (theme.textSecondary & DesignTokens.Mask.RGB);
 
-        int lineHeight = font.lineHeight + 2;
-        int lineCount = lines.size();
-        int startY = screenHeight - RadialMenuConstants.HELP_TEXT_MARGIN_BOTTOM
-            - (lineCount - 1) * lineHeight;
+        int lineHeight = scaledLineHeight(font, fontScale) + RadialMenuScaler.scaleConstant(2);
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        int topBound = Math.max(margin, Math.max(safeTop, minY));
+        int bottomLimit = Math.min(safeBottom, screenHeight - margin)
+            - RadialMenuScaler.scaleConstant(RadialMenuConstants.HELP_TEXT_MARGIN_BOTTOM);
+        int availableHeight = bottomLimit - topBound;
+        if (availableHeight < 0) return;
+        int maxLines = Math.max(1, availableHeight / Math.max(1, lineHeight) + 1);
+        int lineCount = Math.min(wrappedLines.size(), maxLines);
+        boolean truncated = lineCount < wrappedLines.size();
+        List<String> renderLines = new java.util.ArrayList<>(wrappedLines.subList(0, lineCount));
+        if (truncated && !renderLines.isEmpty()) {
+            int lastIndex = renderLines.size() - 1;
+            String last = renderLines.get(lastIndex);
+            String withEllipsis = truncateToWidth(font, last + "…", maxWidthFont);
+            renderLines.set(lastIndex, withEllipsis);
+        }
+        int startY = bottomLimit - (lineCount - 1) * lineHeight;
+        startY = Math.max(topBound, startY);
         int x = screenWidth / 2;
         int y = startY;
-        for (String line : lines) {
-            graphics.drawCenteredString(font, Objects.requireNonNull(line), x, y, helpColor);
+        for (String line : renderLines) {
+            drawCenteredStringScaled(graphics, font, Objects.requireNonNull(line), x, y, helpColor, fontScale);
             y += lineHeight;
         }
     }
@@ -312,7 +348,7 @@ public final class RadialTooltipRenderer {
      * @param navigationStack  stack of parent categories
      * @param currentCategory  current category (or null)
      */
-    public static void renderBreadcrumb(GuiGraphics graphics, Font font,
+    public static void renderBreadcrumb(GuiGraphics graphics, Font font, int screenWidth,
                                          List<RadialCategory> navigationStack,
                                          @Nullable RadialCategory currentCategory) {
         Objects.requireNonNull(graphics, "graphics cannot be null");
@@ -321,17 +357,18 @@ public final class RadialTooltipRenderer {
 
         if (navigationStack.isEmpty() && currentCategory == null) return;
 
-        StringBuilder breadcrumb = new StringBuilder("§7");
-        for (RadialCategory cat : navigationStack) {
-            breadcrumb.append(cat.getName()).append(" > ");
-        }
-        if (currentCategory != null) {
-            breadcrumb.append("§f").append(currentCategory.getName());
-        }
+        float fontScale = resolveFontScale();
+        int x = RadialMenuScaler.scaleConstant(RadialMenuConstants.BREADCRUMB_X);
+        int y = RadialMenuScaler.scaleConstant(RadialMenuConstants.BREADCRUMB_Y);
+        int margin = RadialMenuScaler.scaleConstant(6);
+        int maxWidth = Math.max(40, screenWidth - x - margin);
+        if (maxWidth <= 0) return;
 
-        graphics.drawString(font, breadcrumb.toString(),
-            RadialMenuConstants.BREADCRUMB_X, RadialMenuConstants.BREADCRUMB_Y,
-            RadialMenuConstants.BREADCRUMB_COLOR, true);
+        int maxWidthFont = toFontWidth(maxWidth, fontScale);
+        String breadcrumb = buildBreadcrumb(font, navigationStack, currentCategory, maxWidthFont);
+        if (breadcrumb.isEmpty()) return;
+
+        drawStringScaled(graphics, font, breadcrumb, x, y, RadialMenuConstants.BREADCRUMB_COLOR, true, fontScale);
     }
 
     // ================================================================
@@ -350,16 +387,27 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(font, "font cannot be null");
 
         String editText = Objects.requireNonNull(I18n.translate("devmod.radial.edit_mode").getString());
-        int textWidth = font.width(editText);
 
+        float fontScale = resolveFontScale();
         int centerX = screenWidth / 2;
-        graphics.fill(centerX - textWidth / 2 - RadialMenuConstants.EDIT_MODE_PADDING_X,
-            RadialMenuConstants.EDIT_MODE_BG_TOP_Y,
-            centerX + textWidth / 2 + RadialMenuConstants.EDIT_MODE_PADDING_X,
-            RadialMenuConstants.EDIT_MODE_BG_BOTTOM_Y,
+        int paddingX = RadialMenuScaler.scaleConstant(RadialMenuConstants.EDIT_MODE_PADDING_X);
+        int bgTopY = RadialMenuScaler.scaleConstant(RadialMenuConstants.EDIT_MODE_BG_TOP_Y);
+        int bgBottomY = RadialMenuScaler.scaleConstant(RadialMenuConstants.EDIT_MODE_BG_BOTTOM_Y);
+        int textY = RadialMenuScaler.scaleConstant(RadialMenuConstants.EDIT_MODE_TEXT_Y);
+        int margin = RadialMenuScaler.scaleConstant(8);
+        int maxTextWidth = Math.max(40, screenWidth - margin * 2 - paddingX * 2);
+        if (maxTextWidth <= 0) return;
+        int maxTextWidthFont = toFontWidth(maxTextWidth, fontScale);
+        String displayText = truncateToWidth(font, editText, maxTextWidthFont);
+        int textWidth = scaledWidth(font, displayText, fontScale);
+
+        graphics.fill(centerX - textWidth / 2 - paddingX,
+            bgTopY,
+            centerX + textWidth / 2 + paddingX,
+            bgBottomY,
             RadialMenuConstants.EDIT_MODE_BG_COLOR);
-        graphics.drawCenteredString(font, editText, centerX,
-            RadialMenuConstants.EDIT_MODE_TEXT_Y, RadialMenuConstants.EDIT_MODE_TEXT_COLOR);
+        drawCenteredStringScaled(graphics, font, displayText, centerX,
+            textY, RadialMenuConstants.EDIT_MODE_TEXT_COLOR, fontScale);
     }
 
     /**
@@ -385,10 +433,16 @@ public final class RadialTooltipRenderer {
         float alpha = 1f - Math.max(0f, (elapsed - fadeStart) / (float) fadeDuration);
         if (alpha <= 0) return;
 
+        float fontScale = resolveFontScale();
         int color = ((int) (alpha * 255) << 24) | RadialMenuConstants.THEME_INDICATOR_COLOR;
+        int margin = RadialMenuScaler.scaleConstant(8);
+        int maxTextWidth = Math.max(40, screenWidth - margin * 2);
+        if (maxTextWidth <= 0) return;
         String themeText = Objects.requireNonNull(I18n.translate("devmod.radial.theme_indicator", themeName).getString());
-        graphics.drawCenteredString(font, themeText, screenWidth / 2,
-            RadialMenuConstants.THEME_INDICATOR_Y, color);
+        int maxTextWidthFont = toFontWidth(maxTextWidth, fontScale);
+        String displayText = truncateToWidth(font, themeText, maxTextWidthFont);
+        drawCenteredStringScaled(graphics, font, displayText, screenWidth / 2,
+            RadialMenuScaler.scaleConstant(RadialMenuConstants.THEME_INDICATOR_Y), color, fontScale);
     }
 
     // ================================================================
@@ -465,17 +519,28 @@ public final class RadialTooltipRenderer {
         Objects.requireNonNull(searchResults, "searchResults cannot be null");
 
         if (searchBoxAnimation < RadialMenuConstants.SEARCH_ANIMATION_EPSILON) return;
+        float fontScale = resolveFontScale();
 
         // Darken background
         int overlayAlpha = (int) (RadialMenuConstants.SEARCH_OVERLAY_ALPHA * searchBoxAnimation);
         graphics.fill(0, 0, config.screenWidth, config.screenHeight, (overlayAlpha << 24));
 
-        // Search box
-        int boxWidth = (int) (RadialMenuConstants.SEARCH_BOX_WIDTH * searchBoxAnimation);
-        int boxHeight = RadialMenuConstants.SEARCH_BOX_HEIGHT;
+        // Search box - scale all dimensions and clamp to screen
+        int margin = RadialMenuScaler.scaleConstant(8);
+        int scaledBoxWidth = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_WIDTH);
+        int maxBoxWidth = Math.max(60, config.screenWidth - margin * 2);
+        int baseBoxWidth = Math.min(scaledBoxWidth, maxBoxWidth);
+        int boxWidth = Math.max(1, (int) (baseBoxWidth * searchBoxAnimation));
+        int boxHeight = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_HEIGHT);
         int boxX = config.centerX - boxWidth / 2;
-        int boxY = RadialMenuConstants.SEARCH_BOX_Y;
-        int border = RadialMenuConstants.SEARCH_BOX_BORDER;
+        int boxY = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_Y);
+        int border = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_BORDER);
+        int minX = margin;
+        int maxX = config.screenWidth - margin - boxWidth;
+        boxX = clamp(boxX, minX, Math.max(minX, maxX));
+        int minY = margin;
+        int maxY = config.screenHeight - margin - boxHeight;
+        boxY = clamp(boxY, minY, Math.max(minY, maxY));
 
         // Box border and background
         graphics.fill(boxX - border, boxY - border, boxX + boxWidth + border, boxY + boxHeight + border,
@@ -483,35 +548,65 @@ public final class RadialTooltipRenderer {
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, RadialMenuConstants.SEARCH_BOX_BG);
 
         // Search label and text
-        String displayText = !searchQuery.isEmpty()
-            ? searchQuery
-            : I18n.translate("devmod.radial.search.placeholder").getString();
+        int textOffsetXBase = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X);
+        int textOffsetX = Math.min(textOffsetXBase, Math.max(2, boxWidth / 4));
+        int textOffsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y);
+        int textMaxWidth = Math.max(0, boxWidth - textOffsetX * 2);
+        int textMaxWidthFont = toFontWidth(textMaxWidth, fontScale);
         String searchPrefix = I18n.translate("devmod.radial.search.prefix").getString();
-        graphics.drawString(font, searchPrefix + displayText,
-            boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X,
-            boxY + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y,
-            config.theme.textPrimary);
+        String displayPrefix = truncateToWidth(font, searchPrefix, textMaxWidthFont);
+        int prefixWidth = font.width(displayPrefix);
+        int maxQueryWidth = Math.max(0, textMaxWidthFont - prefixWidth);
+        String placeholder = I18n.translate("devmod.radial.search.placeholder").getString();
+        String displayText = searchQuery.isEmpty()
+            ? truncateToWidth(font, placeholder, maxQueryWidth)
+            : truncateToWidth(font, searchQuery, maxQueryWidth);
+        String displayQuery = searchQuery.isEmpty() ? "" : displayText;
+        drawStringScaled(graphics, font, displayPrefix + displayText,
+            boxX + textOffsetX,
+            boxY + textOffsetY,
+            config.theme.textPrimary,
+            false,
+            fontScale);
 
         // Blinking cursor
         if (!searchQuery.isEmpty() &&
             (System.currentTimeMillis() / RadialMenuConstants.SEARCH_CURSOR_BLINK_MS) % 2 == 0) {
-            int cursorX = boxX + RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_X + font.width(searchPrefix + searchQuery);
-            graphics.fill(cursorX, boxY + RadialMenuConstants.SEARCH_CURSOR_Y_START,
-                cursorX + RadialMenuConstants.SEARCH_CURSOR_WIDTH,
-                boxY + RadialMenuConstants.SEARCH_CURSOR_Y_END, config.theme.textPrimary);
+            int cursorX = boxX + textOffsetX + scaledWidth(font, displayPrefix + displayQuery, fontScale);
+            int cursorYStart = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_CURSOR_Y_START);
+            int cursorYEnd = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_CURSOR_Y_END);
+            int cursorWidth = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_CURSOR_WIDTH);
+            int maxCursorX = boxX + boxWidth - border - cursorWidth;
+            cursorX = Math.min(cursorX, maxCursorX);
+            graphics.fill(cursorX, boxY + cursorYStart,
+                cursorX + cursorWidth,
+                boxY + cursorYEnd, config.theme.textPrimary);
         }
 
-        // Results
-        int resultY = boxY + boxHeight + RadialMenuConstants.SEARCH_RESULTS_TOP_GAP;
-        for (int i = 0; i < searchResults.size(); i++) {
+        // Results - scale all dimensions
+        int resultsTopGap = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULTS_TOP_GAP);
+        int resultY = boxY + boxHeight + resultsTopGap;
+        int resultHeight = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULT_HEIGHT);
+        int resultTextOffsetX = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X);
+        int resultTextOffsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y);
+        int resultStatusOffsetX = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X);
+        int resultGap = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_RESULT_GAP);
+        int iconOffset = RadialMenuScaler.scaleConstant(4);
+        int iconTextGap = RadialMenuScaler.scaleConstant(18);
+
+        int availableHeight = config.screenHeight - margin - resultY;
+        int maxResults = Math.max(0, (availableHeight + (resultGap - resultHeight)) / Math.max(1, resultGap));
+        int resultsToRender = Math.min(searchResults.size(), maxResults);
+
+        for (int i = 0; i < resultsToRender; i++) {
             SearchResultDisplay result = searchResults.get(i);
             boolean selected = (i == selectedResultIndex);
 
             int resultBg = selected ? config.theme.selected : RadialMenuConstants.SEARCH_RESULT_BG;
-            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + RadialMenuConstants.SEARCH_RESULT_HEIGHT, resultBg);
+            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + resultHeight, resultBg);
 
-            int iconX = boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X;
-            int iconY = resultY + 4;
+            int iconX = boxX + resultTextOffsetX;
+            int iconY = resultY + iconOffset;
             if (!result.iconStack().isEmpty()) {
                 graphics.renderItem(result.iconStack(), iconX, iconY);
             }
@@ -521,20 +616,27 @@ public final class RadialTooltipRenderer {
             if (!result.macroName().isBlank()) {
                 context = result.macroName() + " / " + result.categoryName();
             }
-            String catName = "§7[" + context + "]";
-            graphics.drawString(font, result.name + " " + catName,
-                boxX + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_X + 18,
-                resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y,
-                textColor);
+            String catName = "\u00A77[" + context + "]";
+            int textX = boxX + resultTextOffsetX + iconTextGap;
+            int rightPadding = result.isToggle && result.isActive ? resultStatusOffsetX : resultTextOffsetX;
+            int maxTextWidth = Math.max(0, boxWidth - (resultTextOffsetX + iconTextGap + rightPadding));
+            int maxTextWidthFont = toFontWidth(maxTextWidth, fontScale);
+            String line = result.name + " " + catName;
+            String displayLine = truncateToWidth(font, line, maxTextWidthFont);
+            drawStringScaled(graphics, font, displayLine, textX, resultY + resultTextOffsetY, textColor, false, fontScale);
 
             if (result.isToggle && result.isActive) {
-                int statusColor = result.canExecute() ? config.theme.active : RadialMenuConstants.COLOR_INACTIVE;
-                graphics.drawString(font, I18n.translate("devmod.radial.status.on").getString(),
-                    boxX + boxWidth - RadialMenuConstants.SEARCH_RESULT_STATUS_OFFSET_X,
-                    resultY + RadialMenuConstants.SEARCH_RESULT_TEXT_OFFSET_Y, statusColor);
+                String statusText = I18n.translate("devmod.radial.status.on").getString();
+                int statusWidth = scaledWidth(font, statusText, fontScale);
+                int statusX = boxX + boxWidth - resultStatusOffsetX;
+                int minGap = RadialMenuScaler.scaleConstant(6);
+                if (statusX - textX - minGap >= statusWidth) {
+                    int statusColor = result.canExecute() ? config.theme.active : RadialMenuConstants.COLOR_INACTIVE;
+                    drawStringScaled(graphics, font, statusText, statusX, resultY + resultTextOffsetY, statusColor, false, fontScale);
+                }
             }
 
-            resultY += RadialMenuConstants.SEARCH_RESULT_GAP;
+            resultY += resultGap;
         }
     }
 
@@ -590,5 +692,181 @@ public final class RadialTooltipRenderer {
 
     private static String formatRisk(RadialActionSafety.RiskLevel riskLevel) {
         return I18n.translate("devmod.radial.risk." + riskLevel.getId()).getString();
+    }
+
+    private static String buildBreadcrumb(Font font, List<RadialCategory> navigationStack,
+                                           @Nullable RadialCategory currentCategory, int maxWidth) {
+        List<String> segments = new java.util.ArrayList<>();
+        for (RadialCategory cat : navigationStack) {
+            String name = Objects.requireNonNullElse(cat.getName(), "");
+            segments.add("\u00A77" + name);
+        }
+        if (currentCategory != null) {
+            String name = Objects.requireNonNullElse(currentCategory.getName(), "");
+            segments.add("\u00A7f" + name);
+        }
+        if (segments.isEmpty()) {
+            return "";
+        }
+
+        String full = joinWithSeparator(segments);
+        if (font.width(full) <= maxWidth) {
+            return full;
+        }
+
+        int sepWidth = font.width(" > ");
+        List<String> tail = new java.util.ArrayList<>();
+        int usedWidth = 0;
+        for (int i = segments.size() - 1; i >= 0; i--) {
+            String seg = segments.get(i);
+            int segWidth = font.width(seg);
+            int addWidth = segWidth + (tail.isEmpty() ? 0 : sepWidth);
+            if (usedWidth + addWidth <= maxWidth) {
+                tail.add(0, seg);
+                usedWidth += addWidth;
+            } else {
+                break;
+            }
+        }
+
+        if (tail.isEmpty()) {
+            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+        }
+        if (tail.size() == segments.size()) {
+            return joinWithSeparator(tail);
+        }
+
+        String ellipsis = "\u00A77...";
+        int ellipsisWidth = font.width(ellipsis);
+        int available = maxWidth - ellipsisWidth - sepWidth;
+        if (available <= 0) {
+            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+        }
+
+        while (!tail.isEmpty() && font.width(joinWithSeparator(tail)) > available) {
+            tail.remove(0);
+        }
+        if (tail.isEmpty()) {
+            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+        }
+
+        String tailString = joinWithSeparator(tail);
+        if (font.width(tailString) > available) {
+            tailString = truncateFormattedSegment(font, tail.get(tail.size() - 1), available);
+        }
+
+        return ellipsis + " > " + tailString;
+    }
+
+    private static String joinWithSeparator(List<String> segments) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < segments.size(); i++) {
+            if (i > 0) {
+                builder.append(" > ");
+            }
+            builder.append(segments.get(i));
+        }
+        return builder.toString();
+    }
+
+    private static String truncateFormattedSegment(Font font, String segment, int maxWidth) {
+        if (font.width(segment) <= maxWidth) {
+            return segment;
+        }
+        int idx = 0;
+        StringBuilder prefix = new StringBuilder();
+        while (idx + 1 < segment.length() && segment.charAt(idx) == '\u00A7') {
+            prefix.append(segment, idx, idx + 2);
+            idx += 2;
+        }
+        String plain = segment.substring(idx);
+        String truncated = truncateToWidth(font, plain, Math.max(0, maxWidth - font.width(prefix.toString())));
+        return prefix + truncated;
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || text.isEmpty()) {
+            return "";
+        }
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        if (ellipsisWidth > maxWidth) {
+            return "";
+        }
+
+        int targetWidth = Math.max(0, maxWidth - ellipsisWidth);
+        StringBuilder builder = new StringBuilder();
+        int width = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == '\u00A7' && i + 1 < text.length()) {
+                builder.append(c).append(text.charAt(i + 1));
+                i++;
+                continue;
+            }
+            int charWidth = font.width(String.valueOf(c));
+            if (width + charWidth > targetWidth) {
+                break;
+            }
+            builder.append(c);
+            width += charWidth;
+        }
+        return builder + ellipsis;
+    }
+
+    private static float resolveFontScale() {
+        float scale = RadialMenuScaler.getFontScale();
+        return scale > 0f ? scale : 1f;
+    }
+
+    private static int toFontWidth(int width, float scale) {
+        if (scale <= 0f) {
+            return width;
+        }
+        return Math.max(0, Math.round(width / scale));
+    }
+
+    private static int scaledWidth(Font font, String text, float scale) {
+        return Math.round(font.width(text) * scale);
+    }
+
+    private static int scaledLineHeight(Font font, float scale) {
+        return Math.max(1, Math.round(font.lineHeight * scale));
+    }
+
+    private static void drawStringScaled(GuiGraphics graphics, Font font, String text,
+                                          int x, int y, int color, boolean shadow, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            graphics.drawString(font, text, x, y, color, shadow);
+            return;
+        }
+        float inv = 1f / scale;
+        graphics.pose().pushPose();
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawString(font, text, Math.round(x * inv), Math.round(y * inv), color, shadow);
+        graphics.pose().popPose();
+    }
+
+    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+                                                  int x, int y, int color, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            graphics.drawCenteredString(font, text, x, y, color);
+            return;
+        }
+        float inv = 1f / scale;
+        graphics.pose().pushPose();
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawCenteredString(font, text, Math.round(x * inv), Math.round(y * inv), color);
+        graphics.pose().popPose();
+    }
+
+    private static int clamp(int value, int min, int max) {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
     }
 }

@@ -134,50 +134,55 @@ public final class ImpactHudContentBuilder {
             : List.of();
         float dps = showDps ? ImpactDpsTracker.getCurrentDps(data.getAttackerUUID()) : 0f;
 
-        List<HudLine> historyLines = new ArrayList<>();
-        if (showHistory) {
-            int added = 0;
-            for (ImpactData impact : recent) {
-                if (impact == null) {
-                    continue;
-                }
-                if (impact == data && recent.size() > 1) {
-                    continue;
-                }
-                float damage = impact.hasActualDamage() ? impact.getActualDamageDealt() : impact.getBreakdown().getFinalDamage();
-                String partKey = "devmod.bodypart." + impact.getBodyPart().name().toLowerCase(Locale.ROOT);
-                Component line = I18n.translate("devmod.hud.history_line",
-                    impact.getTargetName(),
-                    I18n.translate(partKey),
-                    format.formatValue(damage));
-                historyLines.add(new HudLine(line, Colors.MUTED, LineType.MUTED, Spacing.NONE));
-                if (++added >= ImpactHistory.getMaxEntries()) {
-                    break;
+        ArrayList<HudLine> historyLines = LINE_LIST_POOL.acquire();
+        ArrayList<HudLine> lines = LINE_LIST_POOL.acquire();
+        try {
+            if (showHistory) {
+                int added = 0;
+                for (ImpactData impact : recent) {
+                    if (impact == null) {
+                        continue;
+                    }
+                    if (impact == data && recent.size() > 1) {
+                        continue;
+                    }
+                    float damage = impact.hasActualDamage() ? impact.getActualDamageDealt() : impact.getBreakdown().getFinalDamage();
+                    String partKey = "devmod.bodypart." + impact.getBodyPart().name().toLowerCase(Locale.ROOT);
+                    Component line = I18n.translate("devmod.hud.history_line",
+                        impact.getTargetName(),
+                        I18n.translate(partKey),
+                        format.formatValue(damage));
+                    historyLines.add(new HudLine(line, Colors.MUTED, LineType.MUTED, Spacing.NONE));
+                    if (++added >= ImpactHistory.getMaxEntries()) {
+                        break;
+                    }
                 }
             }
-        }
 
-        List<HudLine> lines = new ArrayList<>();
-        if (dps > 0.05f) {
-            lines.add(new HudLine(
-                I18n.translate("devmod.hud.dps", format.formatValue(dps)),
-                Colors.VALUE,
-                LineType.VALUE,
-                historyLines.isEmpty() ? Spacing.NONE : Spacing.SMALL
+            if (dps > 0.05f) {
+                lines.add(new HudLine(
+                    I18n.translate("devmod.hud.dps", format.formatValue(dps)),
+                    Colors.VALUE,
+                    LineType.VALUE,
+                    historyLines.isEmpty() ? Spacing.NONE : Spacing.SMALL
+                ));
+            }
+            lines.addAll(historyLines);
+
+            if (lines.isEmpty()) {
+                return Optional.empty();
+            }
+
+            return Optional.of(new HudSection(
+                I18n.translate("devmod.hud.history_title"),
+                lines,
+                false,
+                Spacing.SMALL
             ));
+        } finally {
+            LINE_LIST_POOL.release(historyLines);
+            LINE_LIST_POOL.release(lines);
         }
-        lines.addAll(historyLines);
-
-        if (lines.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(new HudSection(
-            I18n.translate("devmod.hud.history_title"),
-            lines,
-            false,
-            Spacing.SMALL
-        ));
     }
 
     private static boolean isHistoryEnabled() {
@@ -213,10 +218,20 @@ public final class ImpactHudContentBuilder {
     private static HudSection buildMainSectionImpl(ImpactData data, NumberFormat format,
                                                    DetailLevel detail, List<HudLine> lines) {
         if (detail != DetailLevel.MINIMAL) {
+            lines.add(new HudLine(
+                I18n.translate("devmod.hud.target", data.getTargetName()),
+                Colors.NORMAL,
+                LineType.NORMAL,
+                Spacing.SMALL
+            ));
+        }
+
+        if (detail != DetailLevel.MINIMAL) {
+            String partKey = "devmod.bodypart." + data.getBodyPart().name().toLowerCase(Locale.ROOT);
             Component partHit = Objects.requireNonNull(I18n.translate("devmod.hud.part_hit"), "partHitLabel")
                 .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
                 .append(Objects.requireNonNull(
-                    Objects.requireNonNull(I18n.literal(data.getBodyPart().name()), "partHitName")
+                    Objects.requireNonNull(I18n.translate(partKey), "partHitName")
                         .withStyle(style -> style.withColor(data.getBodyPartColor() & DesignTokens.Mask.RGB)),
                     "partHitNameStyled"))
                 .append(Objects.requireNonNull(I18n.literal(" ("), "partHitOpen"))
@@ -325,48 +340,51 @@ public final class ImpactHudContentBuilder {
             return Optional.empty();
         }
 
-        List<HudLine> lines = new ArrayList<>();
+        ArrayList<HudLine> lines = LINE_LIST_POOL.acquire();
+        try {
+            if (data.isEpicFightCombat()) {
+                String animName = data.getEpicFightAnimationName();
+                if (animName != null && !animName.isEmpty()) {
+                    lines.add(new HudLine(
+                        I18n.translate("devmod.hud.epic_fight_animation", animName),
+                        Colors.MUTED,
+                        LineType.MUTED,
+                        Spacing.NONE
+                    ));
+                } else {
+                    lines.add(new HudLine(
+                        I18n.translate("devmod.hud.epic_fight_combat"),
+                        Colors.MUTED,
+                        LineType.MUTED,
+                        Spacing.NONE
+                    ));
+                }
+            }
 
-        if (data.isEpicFightCombat()) {
-            String animName = data.getEpicFightAnimationName();
-            if (animName != null && !animName.isEmpty()) {
+            if (data.hasPehkuiModification()) {
+                float scale = data.getPehkuiVisualScale() != null ? data.getPehkuiVisualScale() : 1.0f;
                 lines.add(new HudLine(
-                    I18n.translate("devmod.hud.epic_fight_animation", animName),
-                    Colors.MUTED,
-                    LineType.MUTED,
-                    Spacing.NONE
-                ));
-            } else {
-                lines.add(new HudLine(
-                    I18n.translate("devmod.hud.epic_fight_combat"),
+                    I18n.translate("devmod.hud.pehkui_scale", format.formatValue(scale)),
                     Colors.MUTED,
                     LineType.MUTED,
                     Spacing.NONE
                 ));
             }
-        }
 
-        if (data.hasPehkuiModification()) {
-            float scale = data.getPehkuiVisualScale() != null ? data.getPehkuiVisualScale() : 1.0f;
-            lines.add(new HudLine(
-                I18n.translate("devmod.hud.pehkui_scale", format.formatValue(scale)),
-                Colors.MUTED,
-                LineType.MUTED,
-                Spacing.NONE
+            if (lines.size() == 2) {
+                HudLine last = lines.get(1);
+                lines.set(1, last.withSpacing(Spacing.SMALL));
+            }
+
+            return Optional.of(new HudSection(
+                I18n.translate("devmod.hud.mod_specifics"),
+                lines,
+                false,
+                Spacing.LARGE
             ));
+        } finally {
+            LINE_LIST_POOL.release(lines);
         }
-
-        if (lines.size() == 2) {
-            HudLine last = lines.get(1);
-            lines.set(1, last.withSpacing(Spacing.SMALL));
-        }
-
-        return Optional.of(new HudSection(
-            I18n.translate("devmod.hud.mod_specifics"),
-            lines,
-            false,
-            Spacing.LARGE
-        ));
     }
 
     /**

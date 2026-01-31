@@ -26,15 +26,15 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
+import com.devmod.endurance.analytics.QuestResult;
+import com.devmod.endurance.analytics.WaveSummary;
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.lifecycle.QuestContext;
 import com.devmod.endurance.lifecycle.QuestEventBus;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent;
 import com.devmod.endurance.lifecycle.WaveContext;
-import com.devmod.endurance.combat.ComboSystemFacade;
-import com.devmod.endurance.combat.api.IComboSession;
-import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
-import com.devmod.endurance.analytics.QuestResult;
-import com.devmod.endurance.analytics.WaveSummary;
 import com.devmod.endurance.nutrition.NutritionBridgeSystem;
 import com.devmod.mailbox.template.MessageTemplateRegistry;
 import com.devmod.notification.NotificationService;
@@ -43,7 +43,6 @@ import com.devmod.telemetry.duckdb.aggregation.AggregationConfig;
 import com.devmod.telemetry.duckdb.aggregation.TelemetryAggregatorRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
-
 @EventBusSubscriber(modid = "devmod")
 public class EnduranceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventHandler.class);

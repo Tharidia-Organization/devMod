@@ -20,18 +20,17 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ClientShopCache;
 import com.devmod.endurance.RequestShopSyncPayload;
 import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.ShopPurchasePayload;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class EnduranceShopScreen extends Screen {
     private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
@@ -195,43 +194,46 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private void renderHeader(GuiGraphics graphics) {
+        var safeFont = Objects.requireNonNull(font);
         // Title
-        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.endurance.shop_title").getString()), width / 2, 10, COLOR_ACCENT);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.shop_title").getString()), width / 2, 10, COLOR_ACCENT);
 
         // Currency display
         int currencyY = 10;
         int currencyX = width - 200;
+        int lineHeight = UIScaleManager.getScaledLineHeight();
 
         // Tokens
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.tokens").getString()) + ": " + playerTokens,
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.reward.tokens").getString()) + ": " + playerTokens,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.TOKENS));
-        currencyY += 12;
+        currencyY += lineHeight;
 
         // Coins
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.coins").getString()) + ": " + playerCoins,
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.reward.coins").getString()) + ": " + playerCoins,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.COINS));
-        currencyY += 12;
+        currencyY += lineHeight;
 
         // Prestige
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.prestige").getString()) + ": " + playerPrestige,
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.reward.prestige").getString()) + ": " + playerPrestige,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.PRESTIGE));
-        currencyY += 12;
+        currencyY += lineHeight;
 
         // Gems
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.gems").getString()) + ": " + playerGems,
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.reward.gems").getString()) + ": " + playerGems,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.GEMS));
-        currencyY += 12;
+        currencyY += lineHeight;
 
         // Blood Gems
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems").getString()) + ": " + playerBloodGems,
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.reward.blood_gems").getString()) + ": " + playerBloodGems,
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.BLOOD_GEMS));
     }
 
     private void renderCategorySidebar(GuiGraphics graphics, int mouseX, int mouseY) {
+        var safeFont = Objects.requireNonNull(font);
         graphics.fill(0, 40, CATEGORY_WIDTH, height - 50, COLOR_CATEGORY_BG);
 
         // Category header
-        graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
 
         // Category buttons (custom rendered)
         int catY = 60;
@@ -272,8 +274,8 @@ public class EnduranceShopScreen extends Screen {
         // Badge showing completion
         if (challengeCount > 0) {
             int badgeColor = completedCount == challengeCount ? COLOR_SUCCESS : COLOR_ACCENT;
-            int badgeX = catBtnX + catBtnW - Objects.requireNonNull(font).width(badge) - 5;
-            graphics.drawString(Objects.requireNonNull(font), badge, badgeX, catY + (catBtnH - 8) / 2, badgeColor);
+            int badgeX = catBtnX + catBtnW - UIScaleManager.getScaledStringWidth(safeFont, badge) - 5;
+            UIScaleManager.drawScaledString(graphics, safeFont, badge, badgeX, catY + (catBtnH - 8) / 2, badgeColor);
         }
     }
 
@@ -318,15 +320,16 @@ public class EnduranceShopScreen extends Screen {
         List<ClientChallengeCache.ChallengeDisplayData> challenges = getChallengeSnapshot();
 
         // Title
+        var safeFont = Objects.requireNonNull(font);
         String title = Objects.requireNonNull(I18n.translate("devmod.endurance.daily_challenges").getString());
-        graphics.drawCenteredString(Objects.requireNonNull(font), title, listX + listWidth / 2, listY, COLOR_ACCENT);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, title, listX + listWidth / 2, listY, COLOR_ACCENT);
         listY += 20;
         listHeight -= 20;
 
         if (challenges.isEmpty()) {
             // No challenges available
             String noData = Objects.requireNonNull(I18n.translate("devmod.endurance.no_challenges").getString());
-            graphics.drawCenteredString(Objects.requireNonNull(font), noData, listX + listWidth / 2, listY + 50, COLOR_TEXT_DIM);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, noData, listX + listWidth / 2, listY + 50, COLOR_TEXT_DIM);
             return;
         }
 
@@ -370,16 +373,17 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(x, y, x + 4, y + itemHeight, challenge.difficultyColor());
 
         // Challenge name (Component from record)
+        var safeFont = Objects.requireNonNull(font);
         int nameColor = isCompleted ? COLOR_SUCCESS : COLOR_TEXT;
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(challenge.name()), x + 10, y + 5, nameColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, challenge.name(), x + 10, y + 5, nameColor);
 
         // Description (Component from record)
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(challenge.description()), x + 10, y + 18, COLOR_TEXT_DIM);
+        UIScaleManager.drawScaledString(graphics, safeFont, challenge.description(), x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Difficulty badge (using difficultyName from record)
         String diffBadge = "[" + challenge.difficultyName() + "]";
-        int diffBadgeX = x + itemWidth - Objects.requireNonNull(font).width(diffBadge) - 10;
-        graphics.drawString(Objects.requireNonNull(font), diffBadge, diffBadgeX, y + 5, challenge.difficultyColor());
+        int diffBadgeX = x + itemWidth - UIScaleManager.getScaledStringWidth(safeFont, diffBadge) - 10;
+        UIScaleManager.drawScaledString(graphics, safeFont, diffBadge, diffBadgeX, y + 5, challenge.difficultyColor());
 
         // Progress bar using getProgress() method
         int barX = x + 10;
@@ -398,20 +402,20 @@ public class EnduranceShopScreen extends Screen {
 
         // Progress text using getProgressText() method
         String progressText = challenge.getProgressText();
-        graphics.drawString(Objects.requireNonNull(font), progressText, barX + barWidth + 5, barY, COLOR_TEXT);
+        UIScaleManager.drawScaledString(graphics, safeFont, progressText, barX + barWidth + 5, barY, COLOR_TEXT);
 
         // Reward text using getRewardText() method
         String rewardText = challenge.getRewardText();
         int rewardColor = isCompleted ? COLOR_TEXT_DIM : COLOR_ACCENT;
-        graphics.drawString(Objects.requireNonNull(font), rewardText, x + 10, y + itemHeight - 15, rewardColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, rewardText, x + 10, y + itemHeight - 15, rewardColor);
 
         // Completed/Rewarded status
         if (challenge.rewarded()) {
             String claimed = Objects.requireNonNull(I18n.translate("devmod.endurance.reward_claimed").getString());
-            graphics.drawString(Objects.requireNonNull(font), claimed, x + itemWidth - font.width(claimed) - 10, y + itemHeight - 15, COLOR_SUCCESS);
+            UIScaleManager.drawScaledString(graphics, safeFont, claimed, x + itemWidth - UIScaleManager.getScaledStringWidth(safeFont, claimed) - 10, y + itemHeight - 15, COLOR_SUCCESS);
         } else if (isCompleted) {
             String claimable = Objects.requireNonNull(I18n.translate("devmod.endurance.claim_reward").getString());
-            graphics.drawString(Objects.requireNonNull(font), claimable, x + itemWidth - font.width(claimable) - 10, y + itemHeight - 15, COLOR_YELLOW);
+            UIScaleManager.drawScaledString(graphics, safeFont, claimable, x + itemWidth - UIScaleManager.getScaledStringWidth(safeFont, claimable) - 10, y + itemHeight - 15, COLOR_YELLOW);
         }
     }
 
@@ -437,39 +441,41 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(x, y, x + width, y + ITEM_HEIGHT, bgColor);
 
         // Category color indicator
+        var safeFont = Objects.requireNonNull(font);
         int catColor = getCategoryColor(item.getCategory());
         graphics.fill(x, y, x + 4, y + ITEM_HEIGHT, catColor);
 
         // Item name (truncated to prevent overflow)
         int nameColor = maxedOut ? COLOR_TEXT_DIM : COLOR_TEXT;
         String displayName = truncateText(getItemName(item), width - 100); // Leave room for owned count
-        graphics.drawString(Objects.requireNonNull(font), displayName, x + 10, y + 5, nameColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, displayName, x + 10, y + 5, nameColor);
 
         // Description (truncated to prevent overflow)
         String description = truncateText(getItemDescription(item), width - 20);
-        graphics.drawString(Objects.requireNonNull(font), description, x + 10, y + 18, COLOR_TEXT_DIM);
+        UIScaleManager.drawScaledString(graphics, safeFont, description, x + 10, y + 18, COLOR_TEXT_DIM);
 
         // Price
         int currencyColor = getCurrencyColor(item.getCurrency());
         String priceText = item.getPrice() + " " + getCurrencyLabel(item.getCurrency());
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
-        graphics.drawString(Objects.requireNonNull(font), priceText, x + 10, y + 35, priceColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, priceText, x + 10, y + 35, priceColor);
 
         // Owned count
         String ownedText = Objects.requireNonNull(I18n.translate("devmod.ui.owned").getString()) + ": " + owned + "/" + item.getMaxPurchases();
         int ownedColor = maxedOut ? COLOR_SUCCESS : COLOR_TEXT_DIM;
-        graphics.drawString(Objects.requireNonNull(font), ownedText, x + width - font.width(ownedText) - 10, y + 5, ownedColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, ownedText, x + width - UIScaleManager.getScaledStringWidth(safeFont, ownedText) - 10, y + 5, ownedColor);
 
         // Status indicator
         if (maxedOut) {
-            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.max").getString()), x + width - 30, y + ITEM_HEIGHT - 15, COLOR_SUCCESS);
+            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.max").getString()), x + width - 30, y + ITEM_HEIGHT - 15, COLOR_SUCCESS);
         } else if (!canAfford) {
             String cantAfford = Objects.requireNonNull(I18n.translate("devmod.reward.cannot_afford").getString());
-            graphics.drawString(Objects.requireNonNull(font), cantAfford, x + width - font.width(cantAfford) - 10, y + ITEM_HEIGHT - 15, COLOR_ERROR);
+            UIScaleManager.drawScaledString(graphics, safeFont, cantAfford, x + width - UIScaleManager.getScaledStringWidth(safeFont, cantAfford) - 10, y + ITEM_HEIGHT - 15, COLOR_ERROR);
         }
     }
 
     private void renderItemDetails(GuiGraphics graphics, RewardSystem.ShopItem item) {
+        var safeFont = Objects.requireNonNull(font);
         int panelX = width - 210;
         int panelY = 50;
         int panelWidth = 200;
@@ -480,12 +486,12 @@ public class EnduranceShopScreen extends Screen {
         int y = panelY + 10;
 
         // Item name
-        graphics.drawCenteredString(Objects.requireNonNull(font), getItemName(item), panelX + panelWidth / 2, y, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, getItemName(item), panelX + panelWidth / 2, y, COLOR_TEXT);
         y += 20;
 
         // Category
         int catColor = getCategoryColor(item.getCategory());
-        graphics.drawCenteredString(Objects.requireNonNull(font), getCategoryLabel(item.getCategory()), panelX + panelWidth / 2, y, catColor);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, getCategoryLabel(item.getCategory()), panelX + panelWidth / 2, y, catColor);
         y += 25;
 
         // Divider
@@ -496,25 +502,26 @@ public class EnduranceShopScreen extends Screen {
         String desc = getItemDescription(item);
         int maxWidth = panelWidth - 20;
         List<String> lines = wrapText(desc, maxWidth);
+        int lineHeight = UIScaleManager.getScaledLineHeight();
         for (String line : lines) {
-            graphics.drawString(Objects.requireNonNull(font), line, panelX + 10, y, COLOR_TEXT_DIM);
-            y += 11;
+            UIScaleManager.drawScaledString(graphics, safeFont, line, panelX + 10, y, COLOR_TEXT_DIM);
+            y += lineHeight;
         }
         y += 10;
 
         // Price details
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
-        y += 12;
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.price").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
+        y += lineHeight;
         int currencyColor = getCurrencyColor(item.getCurrency());
-        graphics.drawString(Objects.requireNonNull(font), "  " + item.getPrice() + " " + getCurrencyLabel(item.getCurrency()),
+        UIScaleManager.drawScaledString(graphics, safeFont, "  " + item.getPrice() + " " + getCurrencyLabel(item.getCurrency()),
             panelX + 10, y, currencyColor);
         y += 20;
 
         // Purchase info
         int owned = playerPurchases.getOrDefault(item.getId(), 0);
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.shop.purchases").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
-        y += 12;
-        graphics.drawString(Objects.requireNonNull(font), "  " + owned + " / " + item.getMaxPurchases(),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.shop.purchases").getString()) + ":", panelX + 10, y, COLOR_ACCENT);
+        y += lineHeight;
+        UIScaleManager.drawScaledString(graphics, safeFont, "  " + owned + " / " + item.getMaxPurchases(),
             panelX + 10, y, owned >= item.getMaxPurchases() ? COLOR_SUCCESS : COLOR_TEXT_DIM);
     }
 
@@ -549,12 +556,14 @@ public class EnduranceShopScreen extends Screen {
      * Render a custom styled button.
      */
     private void renderButton(GuiGraphics graphics, int x, int y, int w, int h, String text, boolean hovered, int color) {
+        var safeFont = Objects.requireNonNull(font);
+        String safeText = Objects.requireNonNull(text);
         int bgColor = hovered ? color : DesignTokens.Surface.LEVEL_0;
         graphics.fill(x, y, x + w, y + h, bgColor);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
-        int textX = x + (w - Objects.requireNonNull(font).width(Objects.requireNonNull(text))) / 2;
+        int textX = x + (w - UIScaleManager.getScaledStringWidth(safeFont, safeText)) / 2;
         int textY = y + (h - 8) / 2;
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(text), textX, textY,
+        UIScaleManager.drawScaledString(graphics, safeFont, safeText, textX, textY,
             hovered ? DesignTokens.Text.WHITE : color, false);
     }
 

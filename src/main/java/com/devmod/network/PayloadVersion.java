@@ -1,8 +1,6 @@
 package com.devmod.network;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-
 /**
  * Utilities for reading and writing payload protocol versions.
  *

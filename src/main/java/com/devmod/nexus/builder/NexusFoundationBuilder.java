@@ -6,9 +6,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.devmod.runtime.NexusBuildStep;
-import com.devmod.runtime.NexusPalette;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.nexus.NexusDecorBlocks;
 import com.devmod.nexus.data.ZoneSlotPresets;
-
+import com.devmod.runtime.NexusBuildStep;
+import com.devmod.runtime.NexusPalette;
 /**
  * Builds the minimal foundation structure for the Nexus hub.
  * This replaces the 2705-line NexusHubBuilder with a simple foundation.

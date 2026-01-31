@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
@@ -100,7 +101,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         // Header background
         graphics.fill(x, y, x + width, y + EditorDimensions.SECTION_HEADER_HEIGHT, DesignTokens.Background.HEADER());
         String title = "DEBUG INFO";
-        graphics.drawString(font, title, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, font, title, x + DesignTokens.Spacing.SM, y + HEADER_TEXT_OFFSET_Y,
             DesignTokens.Accent.CYAN(), false);
 
         int btnX = x + width - BUTTON_WIDTH - DesignTokens.Spacing.SM;
@@ -111,15 +112,15 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
         graphics.fill(btnX, btnY, btnX + BUTTON_WIDTH, btnY + BUTTON_HEIGHT, btnBg);
         AxiomRenderer.drawBorder(graphics, btnX, btnY, BUTTON_WIDTH, BUTTON_HEIGHT, DesignTokens.Border.ACCENT());
         String buttonText = "Copy Debug";
-        int textX = btnX + (BUTTON_WIDTH - font.width(buttonText)) / 2;
+        int textX = btnX + (BUTTON_WIDTH - UIScaleManager.getScaledStringWidth(font, buttonText)) / 2;
         int textY = btnY + BUTTON_TEXT_OFFSET_Y;
-        graphics.drawString(font, buttonText, textX, textY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, buttonText, textX, textY, DesignTokens.Text.PRIMARY(), false);
 
         int contentY = y + EditorDimensions.SECTION_HEADER_HEIGHT + DesignTokens.Spacing.SM;
         int indentX = x + DesignTokens.Spacing.SM;
 
         for (String line : infoLines) {
-            graphics.drawString(font, line, indentX, contentY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, line, indentX, contentY, DesignTokens.Text.SECONDARY(), false);
             contentY += LINE_HEIGHT;
         }
 
@@ -133,15 +134,15 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private int renderComparisonBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "Value comparisons", x, y, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Value comparisons", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (comparisons.isEmpty()) {
-            graphics.drawString(safeFont, "(none)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "(none)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         boolean hasServerBaseline = comparisons.stream().anyMatch(c -> !Double.isNaN(c.serverValue()));
         if (!hasServerBaseline) {
-            graphics.drawString(safeFont, "(Server/config baseline not available — showing item only)", x + DETAIL_INSET, y,
+            UIScaleManager.drawScaledString(graphics, safeFont, "(Server/config baseline not available — showing item only)", x + DETAIL_INSET, y,
                 DesignTokens.Text.MUTED(), false);
             y += LINE_HEIGHT;
         }
@@ -159,7 +160,7 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
             String line = String.format("%-18s orig:%7s srv:%7s cur:%7s%s",
                 comp.attributeName(), orig, srv, cur, suffix);
-            graphics.drawString(safeFont, line, x, y, color, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, line, x, y, color, false);
             y += LINE_HEIGHT;
         }
         return y;
@@ -171,14 +172,14 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private int renderHistoryBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "Session log", x, y, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Session log", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (changeLog.isEmpty()) {
-            graphics.drawString(safeFont, "(no entries)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "(no entries)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String entry : changeLog) {
-            graphics.drawString(safeFont, entry, x + DETAIL_INSET, y, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, entry, x + DETAIL_INSET, y, DesignTokens.Text.SECONDARY(), false);
             y += LINE_HEIGHT;
         }
         return y;
@@ -186,14 +187,14 @@ public final class DebugInfoSection implements EditorSection.CustomSection {
 
     private int renderNbtBlock(GuiGraphics graphics, Font font, int x, int y) {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
-        graphics.drawString(safeFont, "NBT data", x, y, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "NBT data", x, y, DesignTokens.Text.TITLE(), false);
         y += LINE_HEIGHT;
         if (nbtLines.isEmpty()) {
-            graphics.drawString(safeFont, "(empty)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "(empty)", x + DETAIL_INSET, y, DesignTokens.Text.MUTED(), false);
             return y + LINE_HEIGHT;
         }
         for (String line : nbtLines) {
-            graphics.drawString(safeFont, line, x + DETAIL_INSET, y, DesignTokens.Text.FORMULA(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, line, x + DETAIL_INSET, y, DesignTokens.Text.FORMULA(), false);
             y += LINE_HEIGHT;
         }
         return y;

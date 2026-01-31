@@ -72,6 +72,9 @@ public class Impact3DPanelManager {
         if (mc.player == null) return;
 
         Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
+        if (hitPoint.distanceToSqr(Objects.requireNonNull(cameraPos)) > MAX_RENDER_DISTANCE_SQ) {
+            return;
+        }
         Vec3 panelPosition = resolvePanelPosition(mc, hitPoint, cameraPos);
 
         // Create and add the new panel

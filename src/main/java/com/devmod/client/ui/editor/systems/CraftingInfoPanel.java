@@ -22,6 +22,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
@@ -278,7 +279,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         int valueTitleH = ScaledCoord.scaleDim(VALUE_TITLE_HEIGHT);
 
         int cursorY = y + padding;
-        g.drawString(safeFont, TITLE_RECIPE_TEXT, x + padding, cursorY, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(g, safeFont, TITLE_RECIPE_TEXT, x + padding, cursorY, DesignTokens.Text.TITLE(), false);
         drawRecipeSelector(g, safeFont,
             x + panelW - padding - ScaledCoord.scaleDim(RECIPE_SELECTOR_WIDTH),
             cursorY - ScaledCoord.scaleDim(RECIPE_SELECTOR_Y_OFFSET),
@@ -288,7 +289,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         renderCraftingGrid(g, safeFont, x + padding, cursorY);
         cursorY += gridSize + padding;
 
-        g.drawString(safeFont, TITLE_VALUE_TEXT, x + padding, cursorY, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(g, safeFont, TITLE_VALUE_TEXT, x + padding, cursorY, DesignTokens.Text.TITLE(), false);
         cursorY += valueTitleH;
         // Track ingredient area for scroll handling
         this.ingredientAreaX = x + padding;
@@ -299,7 +300,7 @@ public class CraftingInfoPanel extends BaseOverlay {
 
         // Close hint at bottom left, Edit button at bottom right
         int bottomY = y + panelH - padding - safeFont.lineHeight;
-        g.drawString(safeFont, CLOSE_HINT_TEXT, x + padding, bottomY, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(g, safeFont, CLOSE_HINT_TEXT, x + padding, bottomY, DesignTokens.Text.MUTED(), false);
 
         // Edit Recipe button - positioned at bottom right, same line as close hint
         int editBtnW = ScaledCoord.scaleDim(70);
@@ -334,7 +335,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Arrow
         int arrowX = x + gridSize + ScaledCoord.scaleDim(GRID_ARROW_OFFSET);
         int arrowY = y + cellSize;
-        g.drawString(safeFont, ARROW_GLYPH, arrowX, arrowY + ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
+        UIScaleManager.drawScaledString(g, safeFont, ARROW_GLYPH, arrowX, arrowY + ScaledCoord.scaleDim(DesignTokens.Spacing.SM),
             DesignTokens.Text.SECONDARY(), false);
 
         // Result
@@ -369,7 +370,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         Font safeFont = Objects.requireNonNull(font, "font cannot be null");
 
         int lineY = y;
-        g.drawString(safeFont, INGREDIENTS_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(g, safeFont, INGREDIENTS_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
         int headerHeight = ScaledCoord.scaleDim(INGREDIENT_HEADER_HEIGHT);
         lineY += headerHeight;
 
@@ -394,16 +395,16 @@ public class CraftingInfoPanel extends BaseOverlay {
             IngredientValue ing = analysis.ingredients().get(i);
             int rowY = lineY + (i - startIndex) * ingredientLineHeight + offsetY;
             String line = String.format(Locale.ROOT, "• %dx %s", ing.count(), ing.item().getHoverName().getString());
-            g.drawString(safeFont, line, x + ScaledCoord.scaleDim(INGREDIENT_TEXT_OFFSET), rowY,
+            UIScaleManager.drawScaledString(g, safeFont, line, x + ScaledCoord.scaleDim(INGREDIENT_TEXT_OFFSET), rowY,
                 DesignTokens.Text.PRIMARY(), false);
 
             String rarityTag = String.format(Locale.ROOT, "(%s)", ing.rarity().getDisplayName());
             int tagX = x + ScaledCoord.scaleDim(INGREDIENT_TAG_OFFSET);
-            g.drawString(safeFont, rarityTag, tagX, rowY, ing.rarity().getColor(), false);
+            UIScaleManager.drawScaledString(g, safeFont, rarityTag, tagX, rowY, ing.rarity().getColor(), false);
 
             String valueStr = String.format(Locale.ROOT, "+%d", ing.value());
             int valueX = x + ScaledCoord.scaleDim(INGREDIENT_VALUE_OFFSET);
-            g.drawString(safeFont, valueStr, valueX, rowY, DesignTokens.Text.VALUE(), false);
+            UIScaleManager.drawScaledString(g, safeFont, valueStr, valueX, rowY, DesignTokens.Text.VALUE(), false);
         }
 
         g.disableScissor();
@@ -415,13 +416,13 @@ public class CraftingInfoPanel extends BaseOverlay {
             lineY + SUMMARY_SEPARATOR_HEIGHT, DesignTokens.Border.SEPARATOR());
         lineY += ScaledCoord.scaleDim(DesignTokens.Spacing.MD);
 
-        g.drawString(safeFont, TOTAL_VALUE_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
-        g.drawString(safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
+        UIScaleManager.drawScaledString(g, safeFont, TOTAL_VALUE_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(g, safeFont, String.valueOf(analysis.totalValue()), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
             lineY, DesignTokens.Text.VALUE(), false);
         lineY += ScaledCoord.scaleDim(SUMMARY_LINE_HEIGHT);
 
-        g.drawString(safeFont, RARITY_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
-        g.drawString(safeFont, analysis.rarityTier().getDisplayName(), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
+        UIScaleManager.drawScaledString(g, safeFont, RARITY_LABEL, x, lineY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(g, safeFont, analysis.rarityTier().getDisplayName(), x + ScaledCoord.scaleDim(SUMMARY_VALUE_OFFSET),
             lineY, analysis.rarityTier().getColor(), false);
     }
 
@@ -607,7 +608,7 @@ public class CraftingInfoPanel extends BaseOverlay {
         // Label
         String label = (selectedRecipeIndex + 1) + "/" + recipes.size();
         int labelX = prevX + btnW + gap;
-        g.drawString(safeFont, label, labelX, boxY + ScaledCoord.scaleDim(RECIPE_SELECTOR_LABEL_Y),
+        UIScaleManager.drawScaledString(g, safeFont, label, labelX, boxY + ScaledCoord.scaleDim(RECIPE_SELECTOR_LABEL_Y),
             DesignTokens.Text.SECONDARY(), false);
 
         // Next button using EditorButton

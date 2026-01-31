@@ -323,12 +323,12 @@ public final class MailboxCommands {
 
     private static int showMailboxHelp(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§e=== Mailbox Admin Commands ==="), false);
-        source.sendSuccess(() -> Component.literal("§7/mailbox stats §f- Show mailbox statistics"), false);
-        source.sendSuccess(() -> Component.literal("§7/mailbox send <uuid> <subject> <body> §f- Send message"), false);
-        source.sendSuccess(() -> Component.literal("§7/mailbox broadcast <subject> <body> §f- Broadcast to all"), false);
-        source.sendSuccess(() -> Component.literal("§7/mailbox inbox <uuid> §f- View player inbox"), false);
-        source.sendSuccess(() -> Component.literal("§7/mailbox purge <uuid> §f- Delete all player messages"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== Mailbox Admin Commands ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/mailbox stats \u00A7f- Show mailbox statistics"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/mailbox send <uuid> <subject> <body> \u00A7f- Send message"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/mailbox broadcast <subject> <body> \u00A7f- Broadcast to all"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/mailbox inbox <uuid> \u00A7f- View player inbox"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/mailbox purge <uuid> \u00A7f- Delete all player messages"), false);
         return 1;
     }
 
@@ -339,24 +339,24 @@ public final class MailboxCommands {
             MailboxManager.INSTANCE.getTotalUnreadCount(),
             (total, unread) -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§e=== Mailbox Statistics ===")
+                    Component.literal("\u00A7e=== Mailbox Statistics ===")
                 ), false);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Total messages: §f" + total)
+                    Component.literal("\u00A77Total messages: \u00A7f" + total)
                 ), false);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Unread messages: §f" + unread)
+                    Component.literal("\u00A77Unread messages: \u00A7f" + unread)
                 ), false);
 
                 MailboxConfig config = MailboxConfig.INSTANCE;
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Max per player: §f" + config.getMaxMessagesPerPlayer())
+                    Component.literal("\u00A77Max per player: \u00A7f" + config.getMaxMessagesPerPlayer())
                 ), false);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Retention days: §f" + config.getMessageRetentionDays())
+                    Component.literal("\u00A77Retention days: \u00A7f" + config.getMessageRetentionDays())
                 ), false);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7API enabled: §f" + config.isApiEnabled())
+                    Component.literal("\u00A77API enabled: \u00A7f" + config.isApiEnabled())
                 ), false);
 
                 return null;
@@ -378,12 +378,12 @@ public final class MailboxCommands {
         MailboxManager.INSTANCE.sendAdminMessage(senderName, targetUuid, subject, body, null)
             .thenAccept(messageId -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§aMessage sent to " + targetUuid + " (ID: " + messageId + ")")
+                    Component.literal("\u00A7aMessage sent to " + targetUuid + " (ID: " + messageId + ")")
                 ), false);
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to send message: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to send message: " + e.getMessage())
                 ));
                 return null;
             });
@@ -401,12 +401,12 @@ public final class MailboxCommands {
         MailboxManager.INSTANCE.broadcast(senderName, subject, body, MessageType.ADMIN)
             .thenAccept(count -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§aBroadcast sent to " + count + " players")
+                    Component.literal("\u00A7aBroadcast sent to " + count + " players")
                 ), false);
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to broadcast: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to broadcast: " + e.getMessage())
                 ));
                 return null;
             });
@@ -422,36 +422,36 @@ public final class MailboxCommands {
         CompletableFuture<?> inboxFuture = MailboxManager.INSTANCE.getMessages(targetUuid)
             .thenAccept(messages -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§e=== Inbox for " + targetUuid + " ===")
+                    Component.literal("\u00A7e=== Inbox for " + targetUuid + " ===")
                 ), false);
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Total: §f" + messages.size() + " messages")
+                    Component.literal("\u00A77Total: \u00A7f" + messages.size() + " messages")
                 ), false);
 
                 int unread = (int) messages.stream().filter(m -> m.readAt() == null).count();
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§7Unread: §f" + unread)
+                    Component.literal("\u00A77Unread: \u00A7f" + unread)
                 ), false);
 
                 source.sendSuccess(() -> Objects.requireNonNull(Component.literal("")), false);
 
                 messages.stream().limit(10).forEach(msg -> {
-                    String readStatus = msg.readAt() == null ? "§c[UNREAD]" : "§a[READ]";
+                    String readStatus = msg.readAt() == null ? "\u00A7c[UNREAD]" : "\u00A7a[READ]";
                     String attachStatus = msg.hasAttachment() && !msg.attachmentClaimed()
-                        ? " §6[ATTACHMENT]" : "";
+                        ? " \u00A76[ATTACHMENT]" : "";
 
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal(readStatus + " §f" + msg.subject() + attachStatus)
+                        Component.literal(readStatus + " \u00A7f" + msg.subject() + attachStatus)
                     ), false);
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal("  §8ID: " + msg.id().toString().substring(0, 8) +
+                        Component.literal("  \u00A78ID: " + msg.id().toString().substring(0, 8) +
                             " | From: " + msg.senderName() + " | Type: " + msg.messageType())
                     ), false);
                 });
 
                 if (messages.size() > 10) {
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal("§7... and " + (messages.size() - 10) + " more")
+                        Component.literal("\u00A77... and " + (messages.size() - 10) + " more")
                     ), false);
                 }
             });
@@ -476,12 +476,12 @@ public final class MailboxCommands {
             })
             .thenAccept(count -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§aPurged " + count + " messages from " + targetUuid)
+                    Component.literal("\u00A7aPurged " + count + " messages from " + targetUuid)
                 ), false);
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to purge: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to purge: " + e.getMessage())
                 ));
                 return null;
             });
@@ -495,13 +495,13 @@ public final class MailboxCommands {
 
     private static int showNewsHelp(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§e=== News Admin Commands ==="), false);
-        source.sendSuccess(() -> Component.literal("§7/news list §f- List all news articles"), false);
-        source.sendSuccess(() -> Component.literal("§7/news create <category> <title> <content> §f- Create article"), false);
-        source.sendSuccess(() -> Component.literal("§7/news delete <id> §f- Delete article"), false);
-        source.sendSuccess(() -> Component.literal("§7/news publish <id> §f- Publish unpublished article"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== News Admin Commands ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/news list \u00A7f- List all news articles"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/news create <category> <title> <content> \u00A7f- Create article"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/news delete <id> \u00A7f- Delete article"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/news publish <id> \u00A7f- Publish unpublished article"), false);
         source.sendSuccess(() -> Component.literal(""), false);
-        source.sendSuccess(() -> Component.literal("§eCategories: §f" +
+        source.sendSuccess(() -> Component.literal("\u00A7eCategories: \u00A7f" +
             String.join(", ", Arrays.stream(NewsCategory.values()).map(Enum::name).toList())), false);
         return 1;
     }
@@ -512,18 +512,18 @@ public final class MailboxCommands {
         CompletableFuture<?> newsFuture = NewsManager.getInstance().getAllNews()
             .thenAccept(articles -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§e=== News Articles (" + articles.size() + ") ===")
+                    Component.literal("\u00A7e=== News Articles (" + articles.size() + ") ===")
                 ), false);
 
                 articles.forEach(article -> {
-                    String status = article.publishedAt() != null ? "§a[PUBLISHED]" : "§c[DRAFT]";
-                    String activeStatus = article.active() ? "" : " §8[INACTIVE]";
+                    String status = article.publishedAt() != null ? "\u00A7a[PUBLISHED]" : "\u00A7c[DRAFT]";
+                    String activeStatus = article.active() ? "" : " \u00A78[INACTIVE]";
 
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal(status + activeStatus + " §e[" + article.category() + "] §f" + article.title())
+                        Component.literal(status + activeStatus + " \u00A7e[" + article.category() + "] \u00A7f" + article.title())
                     ), false);
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal("  §8ID: " + article.id().toString().substring(0, 8) +
+                        Component.literal("  \u00A78ID: " + article.id().toString().substring(0, 8) +
                             " | By: " + article.authorName() + " | Priority: " + article.priority())
                     ), false);
                 });
@@ -546,7 +546,7 @@ public final class MailboxCommands {
             category = NewsCategory.valueOf(categoryStr.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             source.sendFailure(Objects.requireNonNull(
-                Component.literal("§cInvalid category: " + categoryStr + ". Valid: " +
+                Component.literal("\u00A7cInvalid category: " + categoryStr + ". Valid: " +
                     String.join(", ", Arrays.stream(NewsCategory.values()).map(Enum::name).toList()))
             ));
             return 0;
@@ -564,12 +564,12 @@ public final class MailboxCommands {
         NewsManager.getInstance().createArticle(article)
             .thenRun(() -> {
                 source.sendSuccess(() -> Objects.requireNonNull(
-                    Component.literal("§aNews article created: " + article.id())
+                    Component.literal("\u00A7aNews article created: " + article.id())
                 ), false);
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to create article: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to create article: " + e.getMessage())
                 ));
                 return null;
             });
@@ -586,17 +586,17 @@ public final class MailboxCommands {
             .thenAccept(success -> {
                 if (success) {
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal("§aNews article deleted: " + articleId)
+                        Component.literal("\u00A7aNews article deleted: " + articleId)
                     ), false);
                 } else {
                     source.sendFailure(Objects.requireNonNull(
-                        Component.literal("§cArticle not found: " + articleId)
+                        Component.literal("\u00A7cArticle not found: " + articleId)
                     ));
                 }
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to delete article: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to delete article: " + e.getMessage())
                 ));
                 return null;
             });
@@ -613,7 +613,7 @@ public final class MailboxCommands {
             .thenCompose(opt -> {
                 if (opt.isEmpty()) {
                     source.sendFailure(Objects.requireNonNull(
-                        Component.literal("§cArticle not found: " + articleId)
+                        Component.literal("\u00A7cArticle not found: " + articleId)
                     ));
                     return CompletableFuture.completedFuture(false);
                 }
@@ -621,7 +621,7 @@ public final class MailboxCommands {
                 NewsArticle article = opt.get();
                 if (article.publishedAt() != null) {
                     source.sendFailure(Objects.requireNonNull(
-                        Component.literal("§cArticle already published: " + articleId)
+                        Component.literal("\u00A7cArticle already published: " + articleId)
                     ));
                     return CompletableFuture.completedFuture(false);
                 }
@@ -631,13 +631,13 @@ public final class MailboxCommands {
             .thenAccept(success -> {
                 if (success) {
                     source.sendSuccess(() -> Objects.requireNonNull(
-                        Component.literal("§aNews article published: " + articleId)
+                        Component.literal("\u00A7aNews article published: " + articleId)
                     ), false);
                 }
             })
             .exceptionally(e -> {
                 source.sendFailure(Objects.requireNonNull(
-                    Component.literal("§cFailed to publish article: " + e.getMessage())
+                    Component.literal("\u00A7cFailed to publish article: " + e.getMessage())
                 ));
                 return null;
             });
@@ -669,7 +669,7 @@ public final class MailboxCommands {
         // since we only need the side effect (error message to source)
         future.exceptionally(e -> {
             source.sendFailure(Objects.requireNonNull(
-                Component.literal("§c" + failureMessage + ": " + e.getMessage())
+                Component.literal("\u00A7c" + failureMessage + ": " + e.getMessage())
             ));
             return null;
         });

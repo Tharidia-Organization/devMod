@@ -205,7 +205,7 @@ public class PerkSelectionScreen extends Screen {
             float titleAlpha = (fadeProgress - 0.3f) / 0.7f;
             String title = Objects.requireNonNull(I18n.translate("devmod.endurance.wave_complete", waveNumber).getString());
             int titleColor = applyAlpha(COLOR_ACCENT, titleAlpha);
-            graphics.drawCenteredString(Objects.requireNonNull(font), title, width / 2, 40, titleColor);
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), title, width / 2, 40, titleColor);
         }
 
         renderCountdown(graphics, fadeProgress);
@@ -246,7 +246,7 @@ public class PerkSelectionScreen extends Screen {
 
         // Keybind hints
         if (fadeProgress > 0.8f) {
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.perk.keybind_hint").getString()),
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.perk.keybind_hint").getString()),
                 width / 2, height - 25, applyAlpha(DesignTokens.Text.MUTED, fadeProgress));
         }
 
@@ -283,25 +283,25 @@ public class PerkSelectionScreen extends Screen {
 
         // === HEADER ROW: Perk name + Tier badge ===
         String tierText = Objects.requireNonNull(perk.tierName());
-        int tierBadgeW = safeFont.width(tierText) + 8;
+        int tierBadgeW = UIScaleManager.getScaledStringWidth(safeFont, tierText) + 8;
         int tierBadgeH = 14;
 
         // Tier badge (top right)
         g.fill(cardX + cardW - tierBadgeW - contentPadding, textY,
                cardX + cardW - contentPadding, textY + tierBadgeH,
                applyAlpha(perk.tierColor() | DesignTokens.Mask.ALPHA, alpha * 0.85f));
-        g.drawString(safeFont, tierText, cardX + cardW - tierBadgeW - contentPadding + 4, textY + 3,
+        UIScaleManager.drawScaledString(g, safeFont, tierText, cardX + cardW - tierBadgeW - contentPadding + 4, textY + 3,
                      applyAlpha(COLOR_TEXT, alpha));
 
         // Perk name (left, truncated to avoid tier badge)
         int maxNameWidth = cardW - tierBadgeW - contentPadding * 3;
         String perkName = truncateText(perk.name(), maxNameWidth);
-        g.drawString(safeFont, perkName, cardX + contentPadding, textY + 2, applyAlpha(COLOR_TEXT, alpha));
+        UIScaleManager.drawScaledString(g, safeFont, perkName, cardX + contentPadding, textY + 2, applyAlpha(COLOR_TEXT, alpha));
         textY += 18;
 
         // === CATEGORY ROW ===
         String categoryName = truncateText(perk.categoryName(), cardW - contentPadding * 2);
-        g.drawString(safeFont, categoryName, cardX + contentPadding, textY,
+        UIScaleManager.drawScaledString(g, safeFont, categoryName, cardX + contentPadding, textY,
                      applyAlpha(perk.categoryColor() | DesignTokens.Mask.ALPHA, alpha));
         textY += 14;
 
@@ -312,7 +312,7 @@ public class PerkSelectionScreen extends Screen {
             int tagColor = perk.required()
                 ? EnduranceUiTheme.PerkSelection.TAG_REQUIRED
                 : EnduranceUiTheme.PerkSelection.TAG_OPTIONAL;
-            g.drawString(safeFont, tagText + " " + tagLabel, cardX + contentPadding, textY, applyAlpha(tagColor, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, tagText + " " + tagLabel, cardX + contentPadding, textY, applyAlpha(tagColor, alpha));
             textY += 12;
         }
 
@@ -323,7 +323,7 @@ public class PerkSelectionScreen extends Screen {
         int linesRendered = 0;
         for (String line : lines) {
             if (textY > maxDescY || linesRendered >= MAX_DESCRIPTION_LINES) break;
-            g.drawString(safeFont, line, cardX + contentPadding, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, line, cardX + contentPadding, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
             textY += 10;
             linesRendered++;
         }
@@ -332,7 +332,7 @@ public class PerkSelectionScreen extends Screen {
         int bottomInfoY = cardY + cardH - buttonAreaHeight - 14;
         if (perk.stackable()) {
             String stackText = "Stacks: " + perk.currentStacks() + "/" + perk.maxStacks();
-            g.drawString(safeFont, stackText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_ACCENT, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, stackText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_ACCENT, alpha));
             bottomInfoY -= 12;
         }
 
@@ -344,27 +344,27 @@ public class PerkSelectionScreen extends Screen {
             if (perk.newSynergyCount() > 0) {
                 // Completing a synergy - highlight!
                 String synergyBadge = "\u2605 SYNERGY!"; // ★ SYNERGY!
-                g.drawString(safeFont, synergyBadge, cardX + contentPadding, bottomInfoY,
+                UIScaleManager.drawScaledString(g, safeFont, synergyBadge, cardX + contentPadding, bottomInfoY,
                     applyAlpha(EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE, alpha));
                 bottomInfoY -= 11;
             } else if (perk.isRecommended()) {
                 String recBadge = "\u2192 Recommended"; // → Recommended
-                g.drawString(safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
+                UIScaleManager.drawScaledString(g, safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
                 bottomInfoY -= 11;
             }
 
             // Show synergy hint on hover
             if (hovered && !perk.synergyHint().isEmpty()) {
                 String hint = perk.synergyHint();
-                if (safeFont.width(Objects.requireNonNull(hint)) > cardW - contentPadding * 2) {
+                if (UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(hint)) > cardW - contentPadding * 2) {
                     hint = truncateText(hint, cardW - contentPadding * 2);
                 }
-                g.drawString(safeFont, hint, cardX + contentPadding, bottomInfoY, applyAlpha(synergyColor, alpha));
+                UIScaleManager.drawScaledString(g, safeFont, hint, cardX + contentPadding, bottomInfoY, applyAlpha(synergyColor, alpha));
             }
         } else if (hovered && !perk.description().isEmpty()) {
             // Show stat hint only if not stackable (to avoid overlap)
             String hintText = "\u2191 " + getCompactStatHint(perk); // ↑ prefix
-            g.drawString(safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, hintText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
         }
     }
 
@@ -424,7 +424,7 @@ public class PerkSelectionScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
 
         // Title
-        g.drawString(safeFont, I18n.translate("devmod.perk.quick_compare").getString(), panelX + 8, panelY + 6, applyAlpha(COLOR_ACCENT, alpha));
+        UIScaleManager.drawScaledString(g, safeFont, I18n.translate("devmod.perk.quick_compare").getString(), panelX + 8, panelY + 6, applyAlpha(COLOR_ACCENT, alpha));
 
         // List all perks with their key stat
         int lineY = panelY + 22;
@@ -440,7 +440,7 @@ public class PerkSelectionScreen extends Screen {
             // Synergy indicator (star if completing synergy, dot otherwise)
             if (perk.newSynergyCount() > 0) {
                 // Gold star for synergy completion
-                g.drawString(safeFont, "\u2605", panelX + 6, lineY,
+                UIScaleManager.drawScaledString(g, safeFont, "\u2605", panelX + 6, lineY,
                     applyAlpha(EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE, alpha));
             } else {
                 // Tier indicator (colored dot)
@@ -450,33 +450,33 @@ public class PerkSelectionScreen extends Screen {
 
             // Perk name (truncated - keep at least 6 chars for readability)
             String name = Objects.requireNonNull(perk.name());
-            if (safeFont.width(name) > 90) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, name) > 90) {
                 String ellipsis = "...";
                 int minChars = Math.min(6, name.length());
-                while (safeFont.width(name + ellipsis) > 90 && name.length() > minChars) {
+                while (UIScaleManager.getScaledStringWidth(safeFont, name + ellipsis) > 90 && name.length() > minChars) {
                     name = name.substring(0, name.length() - 1);
                 }
                 name += ellipsis;
             }
             int nameColor = isHovered ? applyAlpha(COLOR_TEXT, alpha) : applyAlpha(COLOR_TEXT_DIM, alpha);
-            g.drawString(safeFont, name, panelX + 18, lineY, nameColor);
+            UIScaleManager.drawScaledString(g, safeFont, name, panelX + 18, lineY, nameColor);
 
             // Synergy score indicator (if any)
             if (perk.synergyScore() > 0) {
                 String synergyStr = "S:" + perk.synergyScore();
                 int synergyColor = applyAlpha(getSynergyColor(perk), alpha);
-                g.drawString(safeFont, synergyStr, panelX + 115, lineY, synergyColor);
+                UIScaleManager.drawScaledString(g, safeFont, synergyStr, panelX + 115, lineY, synergyColor);
             } else if (perk.stackable() && perk.currentStacks() > 0) {
                 // Stack indicator if applicable (only if no synergy score)
                 String stackStr = "x" + perk.currentStacks();
-                g.drawString(safeFont, stackStr, panelX + 115, lineY, applyAlpha(COLOR_SUCCESS, alpha));
+                UIScaleManager.drawScaledString(g, safeFont, stackStr, panelX + 115, lineY, applyAlpha(COLOR_SUCCESS, alpha));
             }
 
             // Key stat hint (right-aligned)
             String statHint = Objects.requireNonNull(getCompactStatHint(perk));
             int statColor = applyAlpha(getCategoryStatColor(perk), alpha);
-            int statX = panelX + panelW - safeFont.width(statHint) - 10;
-            g.drawString(safeFont, statHint, statX, lineY, statColor);
+            int statX = panelX + panelW - UIScaleManager.getScaledStringWidth(safeFont, statHint) - 10;
+            UIScaleManager.drawScaledString(g, safeFont, statHint, statX, lineY, statColor);
 
             lineY += 20;
         }
@@ -502,7 +502,7 @@ public class PerkSelectionScreen extends Screen {
 
         for (String word : words) {
             String test = current.isEmpty() ? word : current + " " + word;
-            if (safeFont.width(Objects.requireNonNull(test)) > maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(test)) > maxWidth) {
                 if (!current.isEmpty()) {
                     lines.add(current.toString());
                     current = new StringBuilder(word);
@@ -550,7 +550,7 @@ public class PerkSelectionScreen extends Screen {
         }
         String text = Objects.requireNonNull(I18n.ui("selection_time_remaining", remaining).getString());
         var safeFont = Objects.requireNonNull(font, "font");
-        int textWidth = safeFont.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(safeFont, text);
         int x = width - textWidth - COUNTDOWN_MARGIN;
         int y = COUNTDOWN_MARGIN;
 
@@ -559,7 +559,7 @@ public class PerkSelectionScreen extends Screen {
 
         float pulse = countdown.getPulse();
         int textColor = applyAlpha(countdown.getColor(), fadeProgress * pulse);
-        graphics.drawString(safeFont, text, x, y, textColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, text, x, y, textColor, false);
     }
 
     private void renderPerkButtons(GuiGraphics graphics, int mouseX, int mouseY, long elapsed) {
@@ -756,7 +756,9 @@ public class PerkSelectionScreen extends Screen {
                 }
                 org.slf4j.LoggerFactory.getLogger("PerkSelectionScreen")
                     .info("[PerkSelect] Opening checkpoint screen (no screen active)");
-                mc.setScreen(new WaveCheckpointScreen());
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "wave_checkpoint",
+                    () -> new WaveCheckpointScreen());
             }
         }));
     }

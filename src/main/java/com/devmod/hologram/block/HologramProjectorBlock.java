@@ -1,5 +1,7 @@
 package com.devmod.hologram.block;
 
+import java.util.EnumSet;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -21,8 +23,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import com.devmod.hologram.block.entity.HologramProjectorBlockEntity;
+import com.devmod.hologram.data.EntityFilterType;
+import com.devmod.hologram.data.HologramFilter;
 import com.devmod.hologram.network.HologramOpenScreenPayload;
 import com.devmod.network.NetworkHandler;
 
@@ -32,6 +38,15 @@ import com.devmod.network.NetworkHandler;
  */
 public final class HologramProjectorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<HologramProjectorBlock> CODEC = simpleCodec(HologramProjectorBlock::new);
+    private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 8, 16);
+
+    private static int filtersToInt(EnumSet<HologramFilter> filters) {
+        int result = 0;
+        for (HologramFilter filter : filters) {
+            result |= (1 << filter.ordinal());
+        }
+        return result;
+    }
 
     public HologramProjectorBlock(Properties properties) {
         super(properties);
@@ -68,6 +83,13 @@ public final class HologramProjectorBlock extends HorizontalDirectionalBlock imp
     }
 
     @Override
+    @Nonnull
+    protected VoxelShape getShape(@Nonnull BlockState state, @Nonnull BlockGetter level,
+                                   @Nonnull BlockPos pos, @Nonnull CollisionContext context) {
+        return SHAPE;
+    }
+
+    @Override
     protected float getShadeBrightness(@Nonnull BlockState state, @Nonnull BlockGetter level, @Nonnull BlockPos pos) {
         return 1.0f;
     }
@@ -99,7 +121,17 @@ public final class HologramProjectorBlock extends HorizontalDirectionalBlock imp
                     projector.getScanSize(),
                     projector.getBlockSize(),
                     projector.isRotationEnabled(),
-                    projector.isTransparentMode()
+                    projector.isTransparentMode(),
+                    filtersToInt(projector.getActiveFilters()),
+                    projector.isFilterHighlightOnly(),
+                    projector.isTexturedMode(),
+                    projector.isShowEntities(),
+                    projector.isFullEntityModels(),
+                    projector.getMaxEntityModels(),
+                    EntityFilterType.toBitmask(projector.getActiveEntityFilters()),
+                    projector.isYSliceEnabled(),
+                    projector.getYSliceLevel(),
+                    projector.getYSliceThickness()
                 );
                 NetworkHandler.sendHologramOpenScreen(serverPlayer, payload);
                 return InteractionResult.SUCCESS;

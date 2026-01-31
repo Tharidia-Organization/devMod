@@ -64,7 +64,7 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, DesignTokens.Border.DEFAULT());
 
         // Title with mob name
-        String title = Objects.requireNonNull("§l" + mob.getName().getString());
+        String title = Objects.requireNonNull("\u00A7l" + mob.getName().getString());
         var safeFont = Objects.requireNonNull(font);
         graphics.drawString(safeFont, title, panelX + 12, panelY + 6, DesignTokens.Text.PRIMARY(), false);
 
@@ -89,7 +89,7 @@ public class MobConfigScreenRenderer {
             graphics.fill(x, y, x + fillW, y + h, color);
         }
         AxiomRenderer.drawBorder(graphics, x, y, w, h, DesignTokens.Border.MUTED());
-        graphics.drawString(Objects.requireNonNull(font), "§c❤", x + 2, y + 1, DesignTokens.Text.WHITE, false);
+        graphics.drawString(Objects.requireNonNull(font), "\u00A7c❤", x + 2, y + 1, DesignTokens.Text.WHITE, false);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -179,9 +179,9 @@ public class MobConfigScreenRenderer {
 
         boolean hovering = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, boxW, boxH);
         if (hovering && !state.isDraggingPreview) {
-            graphics.drawString(safeFont, "§8Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, DesignTokens.Text.MUTED(), false);
+            graphics.drawString(safeFont, "\u00A78Drag: rotate | Scroll: zoom", x + 4, y + boxH - 12, DesignTokens.Text.MUTED(), false);
         } else if (state.isDraggingPreview) {
-            graphics.drawString(safeFont, "§a↻ Rotating...", x + 4, y + boxH - 12, DesignTokens.Accent.GREEN(), false);
+            graphics.drawString(safeFont, "\u00A7a↻ Rotating...", x + 4, y + boxH - 12, DesignTokens.Accent.GREEN(), false);
         }
 
         if (Math.abs(state.previewZoom - 1.0f) > 0.05f) {
@@ -407,7 +407,7 @@ public class MobConfigScreenRenderer {
         if (userPresetNames.length > 0 || MobPresetManager.canAddPreset()) {
             int userY = presetY + 2 * (presetH + gap) + 6;
 
-            graphics.drawString(safeFont, "§7My:", x, userY, DesignTokens.Text.MUTED(), false);
+            graphics.drawString(safeFont, "\u00A77My:", x, userY, DesignTokens.Text.MUTED(), false);
 
             int saveBtnX = x + 20;
             boolean saveHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, saveBtnX, userY - 1, 12, 10);
@@ -539,14 +539,14 @@ public class MobConfigScreenRenderer {
         }
 
         if (state.hoveredPreset >= 0 && state.hoveredPreset < MobConfigScreenState.PRESET_DESCRIPTIONS.size()) {
-            String presetTip = "§e" + MobConfigScreenState.PRESET_NAMES.get(state.hoveredPreset)
-                + "§r: " + MobConfigScreenState.PRESET_DESCRIPTIONS.get(state.hoveredPreset);
+            String presetTip = "\u00A7e" + MobConfigScreenState.PRESET_NAMES.get(state.hoveredPreset)
+                + "\u00A7r: " + MobConfigScreenState.PRESET_DESCRIPTIONS.get(state.hoveredPreset);
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY + 15, presetTip);
         }
 
         String[] userPresetNames = MobPresetManager.getPresetNames();
         if (state.hoveredUserPreset >= 0 && state.hoveredUserPreset < userPresetNames.length) {
-            String userTip = "§6" + userPresetNames[state.hoveredUserPreset] + "§r: Click to apply, Right-click to delete";
+            String userTip = "\u00A76" + userPresetNames[state.hoveredUserPreset] + "\u00A7r: Click to apply, Right-click to delete";
             AxiomRenderer.drawTooltip(graphics, safeFont, mouseX + 10, mouseY + 15, userTip);
         }
     }
@@ -565,7 +565,7 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.Accent.ORANGE());
 
         var safeFont = Objects.requireNonNull(font);
-        String title = "§e\u26A0 Unsaved Changes";
+        String title = "\u00A7e\u26A0 Unsaved Changes";
         int titleW = safeFont.width(title);
         graphics.drawString(safeFont, title, dx + (DIALOG_WIDTH - titleW) / 2, dy + 10, DesignTokens.Text.PRIMARY(), false);
 
@@ -621,7 +621,7 @@ public class MobConfigScreenRenderer {
         }
 
         if (inputText.isEmpty()) {
-            graphics.drawString(safeFont, "§7Enter preset name...", inputX + 4, inputY + 4, DesignTokens.Text.MUTED(), false);
+            graphics.drawString(safeFont, "\u00A77Enter preset name...", inputX + 4, inputY + 4, DesignTokens.Text.MUTED(), false);
         }
 
         int btnW = 60;
@@ -637,7 +637,7 @@ public class MobConfigScreenRenderer {
         drawStyledButton(graphics, btnsX + btnW + btnGap, btnsY, btnW, btnH, "Cancel", cancelHovered, DesignTokens.Accent.RED(), true);
 
         int remaining = 10 - MobPresetManager.getPresetCount();
-        graphics.drawString(safeFont, "§7" + remaining + " slots left", dx + dw - 50, dy + dh - 10, DesignTokens.Text.MUTED(), false);
+        graphics.drawString(safeFont, "\u00A77" + remaining + " slots left", dx + dw - 50, dy + dh - 10, DesignTokens.Text.MUTED(), false);
     }
 
     public void drawDeletePresetDialog(GuiGraphics graphics, int screenWidth, int screenHeight, int mouseX, int mouseY) {
@@ -652,7 +652,7 @@ public class MobConfigScreenRenderer {
         AxiomRenderer.drawBorder(graphics, dx, dy, dw, dh, DesignTokens.Accent.RED());
 
         var safeFont = Objects.requireNonNull(font);
-        String title = "§cDelete Preset?";
+        String title = "\u00A7cDelete Preset?";
         graphics.drawString(safeFont, title, dx + (dw - safeFont.width(title)) / 2, dy + 8, DesignTokens.Accent.RED(), false);
 
         String msg = "Delete \"" + state.deleteConfirmPreset + "\"?";

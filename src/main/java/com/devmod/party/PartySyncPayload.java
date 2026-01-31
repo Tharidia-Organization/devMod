@@ -324,11 +324,11 @@ public record PartySyncPayload(
          * Get display status string.
          */
         public String getStatusDisplay() {
-            if (!isOnline) return "§7[OFFLINE]";
-            if (isSpectator) return "§7[SPECTATOR]";
-            if (isLeader) return "§6[LEADER]";
-            if (isReady) return "§a[READY]";
-            return "§c[NOT READY]";
+            if (!isOnline) return "\u00A77[OFFLINE]";
+            if (isSpectator) return "\u00A77[SPECTATOR]";
+            if (isLeader) return "\u00A76[LEADER]";
+            if (isReady) return "\u00A7a[READY]";
+            return "\u00A7c[NOT READY]";
         }
     }
 

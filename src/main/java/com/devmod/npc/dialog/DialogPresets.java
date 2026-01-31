@@ -8,12 +8,9 @@ import java.util.Set;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.resources.ResourceLocation;
-
 import com.devmod.DevMod;
 import com.devmod.npc.dialog.action.DialogAction;
 import com.devmod.npc.dialog.condition.DialogCondition;
-
 /**
  * Built-in dialog presets that are available to all NPCs.
  * Presets are non-modifiable and always available.

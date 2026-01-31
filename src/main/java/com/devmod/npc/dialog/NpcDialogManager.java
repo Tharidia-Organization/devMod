@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.DevMod;
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.npc.data.NpcConfiguration;
 import com.devmod.npc.data.NpcRegistry;
 import com.devmod.npc.dialog.condition.DialogCondition;
@@ -83,7 +84,7 @@ public class NpcDialogManager {
             DevMod.LOGGER.debug("Dialog {} unavailable for NPC {}: {}", dialogSetId, npcId, reason);
             // Send unavailability message to player
             if (reason != null) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§7" + config.displayName() + ": §c" + reason));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00A77" + config.displayName() + ": \u00A7c" + reason));
             }
             return null;
         }
@@ -129,6 +130,9 @@ public class NpcDialogManager {
 
         DevMod.LOGGER.debug("Opened dialog for {} with NPC {} at node {}",
             player.getName().getString(), npcId, visibleNode.id());
+
+        DiagnosticLogger.npc("openDialog: player=%s, npcId=%s, dialogSet=%s, node=%s, options=%d",
+            player.getName().getString(), npcId, dialogSetId, visibleNode.id(), visibleOptions.size());
 
         // Post dialog opened event
         DialogEventBus.post(new DialogEvent.Opened(
@@ -195,7 +199,7 @@ public class NpcDialogManager {
             DevMod.LOGGER.debug("Dialog {} unavailable for NPC {}: {}", dialogSetId, npcId, reason);
             // Send unavailability message to player
             if (reason != null) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§7" + npcName + ": §c" + reason));
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal("\u00A77" + npcName + ": \u00A7c" + reason));
             }
             return null;
         }
@@ -241,6 +245,9 @@ public class NpcDialogManager {
 
         DevMod.LOGGER.debug("Opened dialog for {} with NPC {} at node {}",
             player.getName().getString(), npcId, visibleNode.id());
+
+        DiagnosticLogger.npc("openDialogBySetId: player=%s, npcId=%s, dialogSet=%s, node=%s, options=%d",
+            player.getName().getString(), npcId, dialogSetId, visibleNode.id(), visibleOptions.size());
 
         // Post dialog opened event
         DialogEventBus.post(new DialogEvent.Opened(
@@ -354,6 +361,8 @@ public class NpcDialogManager {
         );
 
         // Execute action
+        DiagnosticLogger.npc("processAction: player=%s, npcId=%s, node=%s, option=%s (%s)",
+            player.getName().getString(), npcId, nodeId, optionId, option.label());
         option.action().execute(player, context);
 
         // Post option selected event
@@ -413,6 +422,7 @@ public class NpcDialogManager {
         NpcDialogSession removed = activeSessions.remove(playerId);
         if (removed != null) {
             DevMod.LOGGER.debug("Closed dialog session for player {}", playerId);
+            DiagnosticLogger.npc("closeDialog: player=%s, npcId=%s, reason=%s", playerId, removed.npcId(), reason);
 
             // Post dialog closed event
             DialogEventBus.post(new DialogEvent.Closed(

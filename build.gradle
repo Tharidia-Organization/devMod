@@ -9,6 +9,9 @@ plugins {
     id 'com.github.spotbugs' version '6.0.7'  // SpotBugs static analysis
 }
 
+// Optional: shared JaCoCo rules + coverageSummary task.
+apply from: 'jacoco-coverage-rules.gradle'
+
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.*
 import org.gradle.api.file.DirectoryProperty
@@ -648,95 +651,7 @@ spotbugsTest {
     enabled = false
 }
 
-// DD41: Coverage Policy Configuration
-// - 80% line coverage for core logic (cleanup, template, validation)
-// - 60% line coverage for MC-dependent code (monitor, world, entity)
-// - 50% line coverage for network/UI code
-jacoco {
-    toolVersion = "0.8.11"
-}
-
-jacocoTestReport {
-    dependsOn "test", "classes", "generateBuildProperties"
-    reports {
-        xml.required = true
-        html.required = true
-        csv.required = false
-    }
-
-    // Exclude Minecraft-dependent and generated code from coverage reports
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                // Generated code
-                '**/mixin/**',
-                '**/generated/**',
-                // Minecraft integration (lower coverage expected)
-                '**/client/**',
-                '**/network/**',
-                '**/integration/**'
-            ])
-        }))
-    }
-}
-
-jacocoTestCoverageVerification {
-    dependsOn jacocoTestReport
-    violationRules {
-        // DD41: Core logic - 80% line coverage
-        rule {
-            enabled = true
-            element = 'PACKAGE'
-            includes = [
-                'com.devmod.arena.cleanup.*',
-                'com.devmod.arena.template.*',
-                'com.devmod.arena.registry.*',
-                'com.devmod.arena.validation.*',
-                'com.devmod.arena.builder.*'
-            ]
-            limit {
-                counter = 'LINE'
-                value = 'COVEREDRATIO'
-                minimum = 0.80
-            }
-        }
-
-        // DD41: MC-dependent code - 60% line coverage
-        rule {
-            enabled = true
-            element = 'PACKAGE'
-            includes = [
-                'com.devmod.arena.monitor.*',
-                'com.devmod.arena.world.*',
-                'com.devmod.arena.entity.*'
-            ]
-            limit {
-                counter = 'LINE'
-                value = 'COVEREDRATIO'
-                minimum = 0.60
-            }
-        }
-
-        // DD41: Network/UI code - 50% line coverage
-        rule {
-            enabled = true
-            element = 'PACKAGE'
-            includes = [
-                'com.devmod.arena.ui.*',
-                'com.devmod.arena.hud.*',
-                'com.devmod.arena.dashboard.*'
-            ]
-            limit {
-                counter = 'LINE'
-                value = 'COVEREDRATIO'
-                minimum = 0.50
-            }
-        }
-    }
-}
-
-// Run coverage verification on check task
-check.dependsOn jacocoTestCoverageVerification
+// DD41: Coverage policy lives in jacoco-coverage-rules.gradle
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
@@ -846,8 +761,12 @@ def designTokenColorAllowlist = [
     // Hologram system - colors for hologram rendering and state enums
     'src/main/java/com/devmod/hologram/data/HologramStyle.java',
     'src/main/java/com/devmod/hologram/data/HologramState.java',
+    'src/main/java/com/devmod/hologram/data/HologramFilter.java', // Ore filter highlight colors
+    'src/main/java/com/devmod/hologram/data/EntityFilterType.java', // Entity type filter colors
     'src/main/java/com/devmod/hologram/item/HologramPlacerItem.java',
     'src/main/java/com/devmod/hologram/runtime/HologramManager.java', // Minecraft section sign formatting colors
+    'src/main/java/com/devmod/hologram/client/renderer/HologramEntityData.java', // Entity type indicator colors
+    'src/main/java/com/devmod/hologram/client/screen/HologramConfigScreen.java', // Filter button colors
     // Client UI screens - TODO: migrate to DesignTokens incrementally
     'src/main/java/com/devmod/client/hologram/HologramEditorScreen.java',
     'src/main/java/com/devmod/client/template/TemplateEditorScreen.java',

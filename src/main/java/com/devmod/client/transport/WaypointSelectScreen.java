@@ -12,7 +12,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
@@ -23,12 +22,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.network.TransportWaypointSelectPayload;
-
 /**
  * Waypoint selection screen for personal saved waypoints.
  *
@@ -72,6 +71,11 @@ public class WaypointSelectScreen extends BaseDevModScreen {
     private int panelTop;
     private int listTop;
     private int listHeight;
+
+    // Scaled dimensions (updated in initContent for responsiveness)
+    private int scaledPanelWidth;
+    private int scaledPanelHeight;
+    private int scaledItemHeight;
 
     // Widgets
     @Nullable private EditBox searchBox;
@@ -123,15 +127,21 @@ public class WaypointSelectScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
+        // Scale dimensions
+        UIScaleManager.update();
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        scaledItemHeight = UIScaleManager.scale(ITEM_HEIGHT);
+
         // Calculate panel position
-        panelLeft = (width - PANEL_WIDTH) / 2;
-        panelTop = (height - PANEL_HEIGHT) / 2;
-        listTop = panelTop + 65;
-        listHeight = ITEM_HEIGHT * VISIBLE_ITEMS;
+        panelLeft = (width - scaledPanelWidth) / 2;
+        panelTop = (height - scaledPanelHeight) / 2;
+        listTop = panelTop + UIScaleManager.scale(65);
+        listHeight = scaledItemHeight * VISIBLE_ITEMS;
 
         // Search box
         var renderFont = Objects.requireNonNull(this.font, "font");
-        var search = new EditBox(renderFont, panelLeft + 15, panelTop + 35, PANEL_WIDTH - 30, 20,
+        var search = new EditBox(renderFont, panelLeft + UIScaleManager.scale(15), panelTop + UIScaleManager.scale(35), scaledPanelWidth - UIScaleManager.scale(30), UIScaleManager.scale(20),
             Objects.requireNonNull(Component.translatable("screen.devmod.waypoint_select.search")));
         search.setHint(Objects.requireNonNull(Component.translatable("screen.devmod.waypoint_select.search_hint")));
         search.setMaxLength(50);
@@ -142,8 +152,10 @@ public class WaypointSelectScreen extends BaseDevModScreen {
         searchBox = search;
         addRenderableWidget(search);
 
-        int buttonWidth = (PANEL_WIDTH - 60) / 3;
-        int buttonY = panelTop + PANEL_HEIGHT - 35;
+        int buttonWidth = (scaledPanelWidth - UIScaleManager.scale(60)) / 3;
+        int buttonY = panelTop + scaledPanelHeight - UIScaleManager.scale(35);
+
+        int sButtonHeight = UIScaleManager.scale(20);
 
         // Teleport button
         EditorButton teleportButton = EditorButton.builder("waypoint-select-teleport",
@@ -153,7 +165,7 @@ public class WaypointSelectScreen extends BaseDevModScreen {
             .enabled(false)
             .onClick(this::teleportToSelected)
             .build();
-        teleportButtonWidget = new EditorButtonWidget(teleportButton, panelLeft + 15, buttonY, buttonWidth, 20);
+        teleportButtonWidget = new EditorButtonWidget(teleportButton, panelLeft + UIScaleManager.scale(15), buttonY, buttonWidth, sButtonHeight);
         addRenderableWidget(teleportButtonWidget);
 
         // Delete button
@@ -164,7 +176,7 @@ public class WaypointSelectScreen extends BaseDevModScreen {
             .enabled(false)
             .onClick(this::deleteSelected)
             .build();
-        deleteButtonWidget = new EditorButtonWidget(deleteButton, panelLeft + 20 + buttonWidth, buttonY, buttonWidth, 20);
+        deleteButtonWidget = new EditorButtonWidget(deleteButton, panelLeft + UIScaleManager.scale(20) + buttonWidth, buttonY, buttonWidth, sButtonHeight);
         addRenderableWidget(deleteButtonWidget);
 
         // Cancel button
@@ -174,7 +186,7 @@ public class WaypointSelectScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        cancelButtonWidget = new EditorButtonWidget(cancelButton, panelLeft + 25 + buttonWidth * 2, buttonY, buttonWidth, 20);
+        cancelButtonWidget = new EditorButtonWidget(cancelButton, panelLeft + UIScaleManager.scale(25) + buttonWidth * 2, buttonY, buttonWidth, sButtonHeight);
         addRenderableWidget(cancelButtonWidget);
 
         // Auto-select first available waypoint
@@ -223,31 +235,34 @@ public class WaypointSelectScreen extends BaseDevModScreen {
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var renderFont = Objects.requireNonNull(this.font, "font");
+        int sInset = UIScaleManager.scale(10);
+        int sItemInset = UIScaleManager.scale(12);
+        int sItemPadding = UIScaleManager.scale(2);
 
         // Panel background
         int bgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_2 & 0xFFFFFF);
-        graphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, bgColor);
+        graphics.fill(panelLeft, panelTop, panelLeft + scaledPanelWidth, panelTop + scaledPanelHeight, bgColor);
 
         // Panel border
         int borderColor = (0xFF << 24) | (color.getColorValue() & 0xFFFFFF);
-        renderBorder(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT, borderColor);
+        renderBorder(graphics, panelLeft, panelTop, scaledPanelWidth, scaledPanelHeight, borderColor);
 
         // Title
         Component title = Objects.requireNonNull(Component.translatable("screen.devmod.waypoint_select.title"));
-        int titleWidth = renderFont.width(Objects.requireNonNull(title));
-        graphics.drawString(renderFont, Objects.requireNonNull(title), panelLeft + (PANEL_WIDTH - titleWidth) / 2, panelTop + 10, DesignTokens.Text.PRIMARY, true);
+        int titleWidth = UIScaleManager.getScaledStringWidth(renderFont, Objects.requireNonNull(title));
+        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(title), panelLeft + (scaledPanelWidth - titleWidth) / 2, panelTop + UIScaleManager.scale(10), DesignTokens.Text.PRIMARY, true);
 
         // Waypoint count
         String countText = Objects.requireNonNull(String.format("%d waypoints", filteredWaypoints.size()));
         if (!searchFilter.isEmpty()) {
             countText += String.format(" (filtered from %d)", allWaypoints.size());
         }
-        int countWidth = renderFont.width(countText);
-        graphics.drawString(renderFont, countText, panelLeft + (PANEL_WIDTH - countWidth) / 2, panelTop + 58, DesignTokens.Text.SECONDARY, false);
+        int countWidth = UIScaleManager.getScaledStringWidth(renderFont, countText);
+        UIScaleManager.drawScaledString(graphics, renderFont, countText, panelLeft + (scaledPanelWidth - countWidth) / 2, panelTop + UIScaleManager.scale(58), DesignTokens.Text.SECONDARY);
 
         // List background
         int listBgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_1 & 0xFFFFFF);
-        graphics.fill(panelLeft + 10, listTop, panelLeft + PANEL_WIDTH - 10, listTop + listHeight, listBgColor);
+        graphics.fill(panelLeft + sInset, listTop, panelLeft + scaledPanelWidth - sInset, listTop + listHeight, listBgColor);
 
         // Render visible waypoints
         hoveredIndex = -1;
@@ -256,31 +271,31 @@ public class WaypointSelectScreen extends BaseDevModScreen {
         if (filteredWaypoints.isEmpty()) {
             // Empty state
             String emptyText = searchFilter.isEmpty() ? "No waypoints saved" : "No matching waypoints";
-            int emptyWidth = renderFont.width(emptyText);
-            graphics.drawString(renderFont, emptyText, panelLeft + (PANEL_WIDTH - emptyWidth) / 2, listTop + listHeight / 2 - 5, DesignTokens.Text.MUTED, false);
+            int emptyWidth = UIScaleManager.getScaledStringWidth(renderFont, emptyText);
+            UIScaleManager.drawScaledString(graphics, renderFont, emptyText, panelLeft + (scaledPanelWidth - emptyWidth) / 2, listTop + listHeight / 2 - UIScaleManager.scale(5), DesignTokens.Text.MUTED);
         } else {
             for (int i = 0; i < visibleCount; i++) {
                 int wpIndex = scrollOffset + i;
                 WaypointEntry wp = filteredWaypoints.get(wpIndex);
-                int itemY = listTop + i * ITEM_HEIGHT;
+                int itemY = listTop + i * scaledItemHeight;
 
                 // Check hover
-                boolean hovered = mouseX >= panelLeft + 10 && mouseX < panelLeft + PANEL_WIDTH - 10
-                    && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                boolean hovered = mouseX >= panelLeft + sInset && mouseX < panelLeft + scaledPanelWidth - sInset
+                    && mouseY >= itemY && mouseY < itemY + scaledItemHeight;
                 if (hovered) {
                     hoveredIndex = wpIndex;
                 }
 
-                renderWaypointItem(graphics, wp, panelLeft + 12, itemY + 2, PANEL_WIDTH - 24, ITEM_HEIGHT - 4, hovered);
+                renderWaypointItem(graphics, wp, panelLeft + sItemInset, itemY + sItemPadding, scaledPanelWidth - sItemInset * 2, scaledItemHeight - sItemPadding * 2, hovered);
             }
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + PANEL_WIDTH / 2, listTop - 8, DesignTokens.Text.SECONDARY);
+            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("^")), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.SECONDARY);
         }
         if (scrollOffset + VISIBLE_ITEMS < filteredWaypoints.size()) {
-            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + PANEL_WIDTH / 2, listTop + listHeight + 2, DesignTokens.Text.SECONDARY);
+            graphics.drawCenteredString(renderFont, Objects.requireNonNull(Component.literal("v")), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY);
         }
 
         renderInputBackgrounds(graphics);
@@ -319,29 +334,29 @@ public class WaypointSelectScreen extends BaseDevModScreen {
         // Waypoint name
         int textColor = available ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED;
         String displayName = wp.name().isEmpty() ? "Unnamed" : wp.name();
-        graphics.drawString(renderFont, displayName, x + 8, y + 3, textColor, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, displayName, x + 8, y + 3, textColor);
 
         // Category badge (if present)
         if (!wp.category().isEmpty()) {
             String catText = "[" + wp.category() + "]";
-            int catWidth = renderFont.width(catText);
+            int catWidth = UIScaleManager.getScaledStringWidth(renderFont, catText);
             int catX = x + width - catWidth - 4;
-            graphics.drawString(renderFont, catText, catX, y + 3, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, renderFont, catText, catX, y + 3, DesignTokens.Text.MUTED);
         }
 
         // Coordinates
         String coordText = wp.getCoordinatesString();
-        graphics.drawString(renderFont, coordText, x + 8, y + 13, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, renderFont, coordText, x + 8, y + 13, DesignTokens.Text.SECONDARY);
 
         // Dimension
         String dimText = Objects.requireNonNull(wp.getFormattedDimension());
-        int dimWidth = renderFont.width(dimText);
-        graphics.drawString(renderFont, dimText, x + width - dimWidth - 4, y + 13, DesignTokens.Text.MUTED, false);
+        int dimWidth = UIScaleManager.getScaledStringWidth(renderFont, dimText);
+        UIScaleManager.drawScaledString(graphics, renderFont, dimText, x + width - dimWidth - 4, y + 13, DesignTokens.Text.MUTED);
 
         // Availability status
         if (!available) {
             String unavailText = "Unavailable";
-            graphics.drawString(renderFont, unavailText, x + 8, y + 23, DesignTokens.Semantic.ERROR, false);
+            UIScaleManager.drawScaledString(graphics, renderFont, unavailText, x + 8, y + 23, DesignTokens.Semantic.ERROR);
         }
     }
 
@@ -416,7 +431,8 @@ public class WaypointSelectScreen extends BaseDevModScreen {
 
     @Override
     protected boolean handleMouseScroll(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mouseX >= panelLeft + 10 && mouseX < panelLeft + PANEL_WIDTH - 10
+        int sInset = UIScaleManager.scale(10);
+        if (mouseX >= panelLeft + sInset && mouseX < panelLeft + scaledPanelWidth - sInset
             && mouseY >= listTop && mouseY < listTop + listHeight) {
 
             if (scrollY > 0 && scrollOffset > 0) {
@@ -553,6 +569,8 @@ public class WaypointSelectScreen extends BaseDevModScreen {
      * Opens this screen.
      */
     public static void open(@Nonnull UUID sourceNodeId, @Nonnull List<WaypointEntry> waypoints, @Nonnull TransportColor color) {
-        Minecraft.getInstance().setScreen(new WaypointSelectScreen(sourceNodeId, waypoints, color));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "waypoint_select",
+            () -> new WaypointSelectScreen(sourceNodeId, waypoints, color));
     }
 }

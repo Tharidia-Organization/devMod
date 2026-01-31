@@ -1,8 +1,8 @@
 package com.devmod.client.vfx.effekseer.api;
 
-import Effekseer.swig.EffekseerBackendCore;
-
 import com.devmod.client.vfx.effekseer.util.Helpers;
+
+import Effekseer.swig.EffekseerBackendCore;
 
 public class Effekseer extends SafeFinalized<EffekseerBackendCore> {
     public Effekseer() {

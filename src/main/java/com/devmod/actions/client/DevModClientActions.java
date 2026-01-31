@@ -76,6 +76,7 @@ import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.telemetry.FpsTracker;
 import com.devmod.client.telemetry.PerformanceProfiler;
 import com.devmod.client.testing.QATestingScreen;
+import com.devmod.client.testing.UIResponsivenessTestScreen;
 import com.devmod.client.testing.TestingSession;
 import com.devmod.client.testing.TutorialManager;
 import com.devmod.client.ui.RoomBoundsEditorScreen;
@@ -201,7 +202,9 @@ public final class DevModClientActions {
             .menuPath("Root/Home")
             .icon(Items.COMPASS)
             .precondition(ActionPreconditions.clientOnly().and(ActionPreconditions.screenClosed()))
-            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.client.ui.radial.RadialMenuScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "radial_menu",
+                () -> new com.devmod.client.ui.radial.RadialMenuScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_SETTINGS_OPEN)
@@ -211,7 +214,9 @@ public final class DevModClientActions {
             .menuPath("Root/Config/Settings")
             .icon(Items.COMPARATOR)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new UnifiedSettingsScreen(null)))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "settings",
+                () -> new UnifiedSettingsScreen(null)))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_RADIAL_SETTINGS_OPEN)
@@ -221,8 +226,9 @@ public final class DevModClientActions {
             .menuPath("Root/Config/Radial Menu")
             .icon(Items.COMPASS)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(
-                new UnifiedSettingsScreen(null, SettingsCategory.RADIAL)))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "radial_settings",
+                () -> new UnifiedSettingsScreen(null, SettingsCategory.RADIAL)))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_KEYBINDS_OPEN)
@@ -239,7 +245,10 @@ public final class DevModClientActions {
                         () -> new net.minecraft.client.gui.screens.Screen(
                             java.util.Objects.requireNonNull(Component.empty(), "emptyTitle")) {});
                 var options = java.util.Objects.requireNonNull(mc.options, "options");
-                mc.setScreen(new KeyBindsScreen(java.util.Objects.requireNonNull(parent, "parent"), options));
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "keybinds",
+                    parent,
+                    () -> new KeyBindsScreen(java.util.Objects.requireNonNull(parent, "parent"), options));
             })
             .build());
 
@@ -343,8 +352,21 @@ public final class DevModClientActions {
             .handler(context -> {
                 net.minecraft.client.gui.screens.Screen parent =
                     context.getPayload(net.minecraft.client.gui.screens.Screen.class);
-                Minecraft.getInstance().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(parent));
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "telemetry_dashboard",
+                    parent,
+                    () -> new com.devmod.client.ui.screens.TelemetryDashboardScreen(parent));
             })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_EDITOR_HUB_OPEN)
+            .labelKey("devmod.radial.item.editor_hub")
+            .descriptionKey("devmod.radial.item.editor_hub.desc")
+            .category(ActionCategory.TOOLS)
+            .menuPath("Root/Tools/Editors/Editor Hub")
+            .icon(Items.BOOKSHELF)
+            .precondition(screenPrecondition())
+            .handler(context -> openItemEditorTab(context, EditorStartTab.GENERAL))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_MOB_CONFIG_OPEN)
@@ -374,7 +396,9 @@ public final class DevModClientActions {
             .menuPath("Root/Arena/Bounds/Editor")
             .icon(Items.STRUCTURE_BLOCK)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new RoomBoundsEditorScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "room_bounds_editor",
+                () -> new RoomBoundsEditorScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_ROOM_BOUNDS_POINT_A)
@@ -435,7 +459,21 @@ public final class DevModClientActions {
             .menuPath("Root/Testing/QA Suite")
             .icon(Items.BOOK)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new QATestingScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "qa_testing",
+                () -> new QATestingScreen()))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_RESPONSIVENESS_TEST_OPEN)
+            .labelKey("devmod.action.ui_responsiveness_test")
+            .descriptionKey("devmod.action.ui_responsiveness_test.desc")
+            .category(ActionCategory.TESTING)
+            .menuPath("Root/Testing/UI Responsiveness")
+            .icon(Items.MAP)
+            .precondition(screenPrecondition())
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "ui_responsiveness_test",
+                () -> new UIResponsivenessTestScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.QA_SESSION_START)
@@ -528,7 +566,9 @@ public final class DevModClientActions {
             .menuPath("Root/Testing/Quick Test Wizard")
             .icon(Items.LIGHTNING_ROD)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new QuickTestWizard()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "quick_test_wizard",
+                () -> new QuickTestWizard()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN)
@@ -548,7 +588,9 @@ public final class DevModClientActions {
             .menuPath("Root/Testing/Badge Tests")
             .icon(Items.NETHER_STAR)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new com.devmod.client.testing.BadgeTestScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "badge_tests",
+                () -> new com.devmod.client.testing.BadgeTestScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_VOXELLAB_UI_TESTS_OPEN)
@@ -558,7 +600,9 @@ public final class DevModClientActions {
             .menuPath("Root/Developer/VoxelLab UI")
             .icon(Items.GLOW_ITEM_FRAME)
             .precondition(developerModePrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new VoxelLabUiTestScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "voxellab_ui_tests",
+                () -> new VoxelLabUiTestScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_VOXELLAB_OPEN)
@@ -568,7 +612,9 @@ public final class DevModClientActions {
             .menuPath("Root/Developer/VoxelLab")
             .icon(Items.PINK_CONCRETE)
             .precondition(developerModePrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new VoxelLabScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "voxellab",
+                () -> new VoxelLabScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_PARTY_OPEN)
@@ -578,7 +624,9 @@ public final class DevModClientActions {
             .menuPath("Root/Play/Party")
             .icon(Items.PLAYER_HEAD)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new PartyScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "party_screen",
+                () -> new PartyScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_NOTIFICATION_CENTER_OPEN)
@@ -633,7 +681,9 @@ public final class DevModClientActions {
             .menuPath("Root/Play/Quest Tools/Quest Editor")
             .icon(Items.FEATHER)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new QuestEditorScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "quest_editor",
+                () -> new QuestEditorScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_ENDURANCE_EDITOR_OPEN)
@@ -643,7 +693,9 @@ public final class DevModClientActions {
             .menuPath("Root/Play/Quest Tools/Endurance Editor")
             .icon(Items.GOLDEN_HELMET)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new QuestEditorScreen(true)))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "endurance_editor",
+                () -> new QuestEditorScreen(true)))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_ENDURANCE_SCREEN_OPEN)
@@ -653,7 +705,9 @@ public final class DevModClientActions {
             .menuPath("Root/Play/Endurance/Start")
             .icon(Items.GOLDEN_HELMET)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new EnduranceQuestScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "endurance_quest",
+                () -> new EnduranceQuestScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_QUEST_DEATH_OPEN)
@@ -667,7 +721,9 @@ public final class DevModClientActions {
                     context -> ClientQuestCache.isAwaitingRespawn(),
                     "devmod.action.requires_respawn"
                 )))
-            .handler(context -> Minecraft.getInstance().setScreen(new QuestDeathScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "quest_death",
+                () -> new QuestDeathScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_PERK_SELECTION_OPEN)
@@ -696,7 +752,9 @@ public final class DevModClientActions {
                     context -> ClientQuestCache.hasActiveQuest(),
                     "devmod.action.requires_active_quest"
                 )))
-            .handler(context -> Minecraft.getInstance().setScreen(new WaveCheckpointScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "wave_checkpoint",
+                () -> new WaveCheckpointScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_QUEST_COMPLETION_OPEN)
@@ -721,7 +779,9 @@ public final class DevModClientActions {
             .menuPath("Root/Play/Endurance/Shop")
             .icon(Items.EMERALD)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new EnduranceShopScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "endurance_shop",
+                () -> new EnduranceShopScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_STAMINA_EDITOR_OPEN)
@@ -731,7 +791,9 @@ public final class DevModClientActions {
             .menuPath("Root/Combat/Abilities/Stamina Editor")
             .icon(Items.HONEY_BOTTLE)
             .precondition(screenPrecondition())
-            .handler(context -> Minecraft.getInstance().setScreen(new StaminaSystemEditor()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "stamina_editor",
+                () -> new StaminaSystemEditor()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_WELCOME_OPEN)
@@ -741,7 +803,9 @@ public final class DevModClientActions {
             .menuPath("Root/Config/Welcome")
             .icon(Items.BOOK)
             .precondition(ActionPreconditions.clientOnly())
-            .handler(context -> Minecraft.getInstance().setScreen(new WelcomeScreen()))
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "welcome",
+                () -> new WelcomeScreen()))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_SEASON_PASS_OPEN)
@@ -820,7 +884,7 @@ public final class DevModClientActions {
                 DebugRenderer.INSTANCE.toggle();
                 Config.DEBUG_OVERLAY_ENABLED.set(DebugRenderer.INSTANCE.isEnabled());
                 SettingsManager.INSTANCE.markDirty();
-                String status = DebugRenderer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = DebugRenderer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.debug_overlay_status", status), true);
                 if (context.getPlayer() != null) {
                     checkOverlayCount(context.getPlayer());
@@ -839,7 +903,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 ImpactHudOverlay.toggle();
                 Config.IMPACT_HUD_ENABLED.set(ImpactHudOverlay.isEnabled());
-                String status = ImpactHudOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = ImpactHudOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.impact_hud_status", status), true);
             })
             .build());
@@ -855,7 +919,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 ImpactHudController.INSTANCE.toggle();
-                String status = ImpactHudController.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = ImpactHudController.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.impact.controller_status", status), true);
             })
             .build());
@@ -870,7 +934,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 ImpactHudController.INSTANCE.toggle3dPanels();
-                String status = Impact3DPanelManager.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = Impact3DPanelManager.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.impact_3d_status", status), true);
             })
             .build());
@@ -986,7 +1050,7 @@ public final class DevModClientActions {
                     ModConfig.setShowRender(true);
                 }
                 SettingsManager.INSTANCE.markDirty();
-                String status = ModConfig.isShowBodyPartBoxes() ? "§aON" : "§cOFF";
+                String status = ModConfig.isShowBodyPartBoxes() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.body_parts_status", status), true);
             })
             .build());
@@ -1129,7 +1193,7 @@ public final class DevModClientActions {
                 }
                 LightLevelOverlay.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = LightLevelOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = LightLevelOverlay.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.light_overlay_status", status), true);
                 if (context.getPlayer() != null) {
                     checkOverlayCount(context.getPlayer());
@@ -1277,10 +1341,10 @@ public final class DevModClientActions {
             .handler(context -> {
                 RoomBoundsVisualizer.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = RoomBoundsVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = RoomBoundsVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 int roomCount = RoomBoundsVisualizer.INSTANCE.getRoomCount();
                 int gapCount = RoomBoundsVisualizer.INSTANCE.getGapCount();
-                String gapInfo = gapCount > 0 ? " §c" + gapCount + " gaps!" : " §a0 gaps";
+                String gapInfo = gapCount > 0 ? " \u00A7c" + gapCount + " gaps!" : " \u00A7a0 gaps";
                 context.sendSuccess(I18n.translate("devmod.render.room_bounds_status", status, roomCount, gapInfo), true);
             })
             .build());
@@ -1311,7 +1375,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 RoomBoundsVisualizer.INSTANCE.toggleGapDetection();
                 SettingsManager.INSTANCE.markDirty();
-                String status = RoomBoundsVisualizer.INSTANCE.isShowingGaps() ? "§aON" : "§cOFF";
+                String status = RoomBoundsVisualizer.INSTANCE.isShowingGaps() ? "\u00A7aON" : "\u00A7cOFF";
                 int gapCount = RoomBoundsVisualizer.INSTANCE.getGapCount();
                 context.sendSuccess(I18n.translate("devmod.render.room_gaps_status", status, gapCount), true);
             })
@@ -1342,7 +1406,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 PathfindingDebugger.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = PathfindingDebugger.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = PathfindingDebugger.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.pathfinding_status", status), true);
             })
             .build());
@@ -1358,7 +1422,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 LineOfSightVisualizer.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = LineOfSightVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = LineOfSightVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.los_status", status), true);
             })
             .build());
@@ -1374,7 +1438,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 AggroRangeVisualizer.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = AggroRangeVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = AggroRangeVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.aggro_range_status", status), true);
             })
             .build());
@@ -1390,7 +1454,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 VerticalLevelsVisualizer.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = VerticalLevelsVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = VerticalLevelsVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.vertical_status", status), true);
             })
             .build());
@@ -1406,7 +1470,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 SafeSpotVisualizer.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = SafeSpotVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = SafeSpotVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 int spotCount = SafeSpotVisualizer.INSTANCE.getSafeSpotCount();
                 context.sendSuccess(I18n.translate("devmod.render.safe_spots_status", status, spotCount), true);
             })
@@ -1422,7 +1486,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 AttributeMonitoringSystem.INSTANCE.toggle();
-                String status = AttributeMonitoringSystem.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = AttributeMonitoringSystem.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 int trackedCount = AttributeMonitoringSystem.INSTANCE.getTrackedCount();
                 context.sendSuccess(I18n.translate("devmod.render.attr_monitor_status", status, trackedCount), true);
             })
@@ -1438,7 +1502,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 FpsTracker.INSTANCE.toggle();
-                String status = FpsTracker.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = FpsTracker.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.fps_tracker_status", status), true);
             })
             .build());
@@ -1453,7 +1517,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 PerformanceProfiler.INSTANCE.toggle();
-                String status = PerformanceProfiler.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = PerformanceProfiler.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.profiler_status", status), true);
             })
             .build());
@@ -1469,7 +1533,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 EntityDensityOverlay.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = EntityDensityOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = EntityDensityOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.entity_density_status", status), true);
             })
             .build());
@@ -1485,7 +1549,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 BossPhaseOverlay.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = BossPhaseOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = BossPhaseOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.boss_phase_status", status), true);
             })
             .build());
@@ -1501,7 +1565,7 @@ public final class DevModClientActions {
             .handler(context -> {
                 SkillEfficacyOverlay.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = SkillEfficacyOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = SkillEfficacyOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.skill_efficacy_status", status), true);
             })
             .build());
@@ -1528,7 +1592,7 @@ public final class DevModClientActions {
                 }
                 SpawnabilityOverlay.INSTANCE.toggle();
                 SettingsManager.INSTANCE.markDirty();
-                String status = SpawnabilityOverlay.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = SpawnabilityOverlay.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 var stats = SpawnabilityOverlay.INSTANCE.getStats();
                 context.sendSuccess(I18n.translate("devmod.render.spawnability_status", status, stats.hostileSpawnBlocks()), true);
             })
@@ -1544,7 +1608,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 ChunkPerformanceVisualizer.INSTANCE.toggle();
-                String status = ChunkPerformanceVisualizer.INSTANCE.isEnabled() ? "§aON" : "§cOFF";
+                String status = ChunkPerformanceVisualizer.INSTANCE.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.chunk_perf_status", status), true);
             })
             .build());
@@ -1559,7 +1623,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 EconomyOverlay.toggle();
-                String status = EconomyOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = EconomyOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.economy_status", status), true);
             })
             .build());
@@ -1625,7 +1689,7 @@ public final class DevModClientActions {
                 com.devmod.client.effects.ShakeEffect testShake =
                     com.devmod.client.effects.ShakeManager.createMediumHit(player.position());
                 com.devmod.client.effects.ShakeManager.INSTANCE.addShake(testShake);
-                context.sendSuccess(Component.literal("§e[DevMod] §fScreen shake test triggered! Active shakes: §a" +
+                context.sendSuccess(Component.literal("\u00A7e[DevMod] \u00A7fScreen shake test triggered! Active shakes: \u00A7a" +
                     com.devmod.client.effects.ShakeManager.INSTANCE.getActiveCount()), true);
             })
             .build());
@@ -1640,7 +1704,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 QuickHelpOverlay.toggle();
-                String status = QuickHelpOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = QuickHelpOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.quick_help_status", status), true);
             })
             .build());
@@ -1655,7 +1719,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 QuestHudOverlay.toggle();
-                String status = QuestHudOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = QuestHudOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.quest_hud_status", status), true);
             })
             .build());
@@ -1670,7 +1734,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 EnduranceQuestOverlay.toggle();
-                String status = EnduranceQuestOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = EnduranceQuestOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.endurance_hud_status", status), true);
             })
             .build());
@@ -1684,7 +1748,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 EnduranceQuestOverlay.toggleDetails();
-                String detailStatus = EnduranceQuestOverlay.isShowingDetails() ? "§aDetailed" : "§7Compact";
+                String detailStatus = EnduranceQuestOverlay.isShowingDetails() ? "\u00A7aDetailed" : "\u00A77Compact";
                 context.sendSuccess(I18n.translate("devmod.render.endurance_details", detailStatus), true);
             })
             .build());
@@ -1699,7 +1763,7 @@ public final class DevModClientActions {
             .precondition(ActionPreconditions.clientOnly())
             .handler(context -> {
                 PartyHudOverlay.toggle();
-                String status = PartyHudOverlay.isEnabled() ? "§aON" : "§cOFF";
+                String status = PartyHudOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.party_hud_status", status), true);
             })
             .build());
@@ -2478,7 +2542,10 @@ public final class DevModClientActions {
                 )))
             .handler(context -> {
                 if (!context.isConfirmed()) {
-                    Minecraft.getInstance().setScreen(new QuestExitConfirmScreen(Minecraft.getInstance().screen));
+                    com.devmod.client.ui.ScreenSafety.openSafe(
+                        "quest_exit_confirm",
+                        Minecraft.getInstance().screen,
+                        () -> new QuestExitConfirmScreen(Minecraft.getInstance().screen));
                     return;
                 }
                 QuestActionPayload.Action action = resolveExitAction(context);
@@ -2600,16 +2667,22 @@ public final class DevModClientActions {
             return;
         }
         if (heldItem.getItem() instanceof ArmorItem) {
-            Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "item_editor_armor",
+                () -> new ItemEditorScreen(heldItem, EditorStartTab.ARMOR));
         } else {
-            Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "item_editor_weapon",
+                () -> new ItemEditorScreen(heldItem, EditorStartTab.WEAPON));
         }
     }
 
     private static void openItemEditorTab(ActionContext context, EditorStartTab tab) {
         ItemStack payloadItem = context.getPayload(ItemStack.class);
         if (payloadItem != null && !payloadItem.isEmpty()) {
-            Minecraft.getInstance().setScreen(new ItemEditorScreen(payloadItem.copy(), tab));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "item_editor",
+                () -> new ItemEditorScreen(payloadItem.copy(), tab));
             return;
         }
 
@@ -2622,20 +2695,26 @@ public final class DevModClientActions {
             context.sendSuccess(I18n.translate("devmod.message.must_hold_item"), true);
             return;
         }
-        Minecraft.getInstance().setScreen(new ItemEditorScreen(heldItem, tab));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "item_editor",
+            () -> new ItemEditorScreen(heldItem, tab));
     }
 
     private static void openMobConfig(ActionContext context) {
         Minecraft mc = Minecraft.getInstance();
         net.minecraft.world.entity.Mob payloadMob = context.getPayload(net.minecraft.world.entity.Mob.class);
         if (payloadMob != null) {
-            mc.setScreen(new MobConfigScreen(payloadMob));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "mob_config",
+                () -> new MobConfigScreen(payloadMob));
             return;
         }
 
         if (mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult entityHit) {
             if (entityHit.getEntity() instanceof net.minecraft.world.entity.Mob mob) {
-                mc.setScreen(new MobConfigScreen(mob));
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "mob_config",
+                    () -> new MobConfigScreen(mob));
             } else {
                 context.sendSuccess(I18n.translate("devmod.render.target_not_mob"), true);
             }
@@ -2646,26 +2725,33 @@ public final class DevModClientActions {
 
     private static void openMobEquipment(ActionContext context) {
         Minecraft mc = Minecraft.getInstance();
-        net.minecraft.client.gui.screens.Screen parent = mc.screen;
-        net.minecraft.world.entity.Mob mob = null;
+        net.minecraft.client.gui.screens.Screen parentScreen = mc.screen;
+        net.minecraft.world.entity.Mob targetMob = null;
 
         net.minecraft.world.entity.Mob payloadMob = context.getPayload(net.minecraft.world.entity.Mob.class);
         if (payloadMob != null) {
-            mob = payloadMob;
+            targetMob = payloadMob;
         } else if (mc.screen instanceof MobConfigScreen screen) {
-            mob = screen.getMob();
-            parent = screen;
+            targetMob = screen.getMob();
+            parentScreen = screen;
         } else if (mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult entityHit
-            && entityHit.getEntity() instanceof net.minecraft.world.entity.Mob targetMob) {
-            mob = targetMob;
+            && entityHit.getEntity() instanceof net.minecraft.world.entity.Mob hitMob) {
+            targetMob = hitMob;
         }
 
-        if (mob == null) {
+        if (targetMob == null) {
             context.sendFailure(Component.translatable("devmod.action.mob_equipment.requires_target"));
             return;
         }
 
-        mc.setScreen(new MobEquipmentScreen(mob, parent));
+        // Create effectively final copies for lambda
+        final net.minecraft.world.entity.Mob finalMob = targetMob;
+        final net.minecraft.client.gui.screens.Screen finalParent = parentScreen;
+
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "mob_equipment",
+            finalParent,
+            () -> new MobEquipmentScreen(finalMob, finalParent));
     }
 
     private static void openPerkSelection(ActionContext context) {
@@ -2677,8 +2763,10 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.perk_selection.missing"));
             return;
         }
-        Minecraft.getInstance().setScreen(new PerkSelectionScreen(
-            payload.waveNumber(), payload.choices(), payload.expiresAt()));
+        final PerkChoicesPayload finalPayload = payload;
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "perk_selection",
+            () -> new PerkSelectionScreen(finalPayload.waveNumber(), finalPayload.choices(), finalPayload.expiresAt()));
     }
 
     private static void openQuestCompletion(ActionContext context) {
@@ -2690,7 +2778,10 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.quest_completion.missing"));
             return;
         }
-        Minecraft.getInstance().setScreen(new QuestCompletionScreen(payload));
+        final QuestCompletionPayload finalPayload = payload;
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "quest_completion",
+            () -> new QuestCompletionScreen(finalPayload));
     }
 
     private static void openPartyInvite(ActionContext context) {
@@ -2702,7 +2793,10 @@ public final class DevModClientActions {
             context.sendFailure(Component.translatable("devmod.action.party_invite.missing"));
             return;
         }
-        Minecraft.getInstance().setScreen(InvitePopupScreen.fromActionData(payload));
+        final PartyInviteActionData finalPayload = payload;
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "party_invite",
+            () -> InvitePopupScreen.fromActionData(finalPayload));
     }
 
     private static void openArenaQuickTestWizard(ActionContext context) {
@@ -2730,17 +2824,13 @@ public final class DevModClientActions {
     }
 
     private static void openTestingHub(ActionContext context) {
-        Minecraft mc = Minecraft.getInstance();
         if (TestingHubState.INSTANCE.isMinimized()) {
             TestingHub.restoreFromHud();
             return;
         }
-        try {
-            mc.setScreen(new TestingHub());
-        } catch (Exception e) {
-            DevMod.LOGGER.error("[DevMod] Error opening Testing Hub: {}", e.getMessage(), e);
-            context.sendFailure(I18n.translate("devmod.message.error_opening_hub", e.getMessage()));
-        }
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "testing_hub",
+            () -> new TestingHub());
     }
 
     private static QuestActionPayload.Action resolveContinueAction(ActionContext context) {
@@ -2778,7 +2868,7 @@ public final class DevModClientActions {
             PacketDistributor.sendToServer(new DebugTogglePayload(feature.getId()));
         }
         boolean enabled = !wasEnabled;
-        String status = enabled ? "§aON" : "§cOFF";
+        String status = enabled ? "\u00A7aON" : "\u00A7cOFF";
         context.sendSuccess(I18n.translate("devmod.render.native_debug_status", feature.getDisplayName(), status), true);
     }
 
@@ -2930,7 +3020,7 @@ public final class DevModClientActions {
         if (!enable) {
             currentHeatmapIndex = -1;
         }
-        String status = enable ? "§aON" : "§cOFF";
+        String status = enable ? "\u00A7aON" : "\u00A7cOFF";
         context.sendSuccess(I18n.translate("devmod.render.heatmap_toggle_status", status), true);
     }
 
@@ -2943,7 +3033,7 @@ public final class DevModClientActions {
         } else if (currentHeatmapIndex == index) {
             currentHeatmapIndex = -1;
         }
-        String status = enable ? "§aON" : "§cOFF";
+        String status = enable ? "\u00A7aON" : "\u00A7cOFF";
         context.sendSuccess(I18n.translate("devmod.render.heatmap_type_toggle_status", type.name(), status), true);
     }
 

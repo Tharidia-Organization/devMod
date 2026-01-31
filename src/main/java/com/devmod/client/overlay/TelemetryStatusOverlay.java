@@ -72,18 +72,26 @@ public class TelemetryStatusOverlay {
         int screenWidth = graphics.guiWidth();
 
         // Position: top-right corner, but offset down if ImpactHudOverlay is visible
-        int panelWidth = 120;
-        int panelHeight = 32;
-        int panelX = screenWidth - panelWidth - 5;
-        int panelY = 5;
+        int panelWidth = Math.min(UIScaleManager.scale(120), UIScaleManager.getSafeWidth());
+        int panelHeight = Math.min(UIScaleManager.scale(32), UIScaleManager.getSafeHeight());
+        int panelX = screenWidth - panelWidth - UIScaleManager.scale(5);
+        int panelY = UIScaleManager.scale(5);
 
         // Check if ImpactHudOverlay is active and adjust Y position to avoid overlap
         if (ImpactHudOverlay.isEnabled() && ImpactData.get() != null) {
             // ImpactHudOverlay uses approx height 150-200px, position below it
-            panelY = ImpactHudOverlay.getLastPanelBottom() + 8;
+            panelY = ImpactHudOverlay.getLastPanelBottom() + UIScaleManager.scale(8);
             // Fallback if panel info not available
-            if (panelY < 50) panelY = 160;
+            if (panelY < UIScaleManager.scale(50)) {
+                panelY = UIScaleManager.scale(160);
+            }
         }
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // Draw panel background
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BG);
@@ -93,31 +101,32 @@ public class TelemetryStatusOverlay {
         drawBorder(graphics, panelX, panelY, panelWidth, panelHeight, borderColor);
 
         // Recording indicator (pulsing dot)
-        int dotX = panelX + 6;
-        int dotY = panelY + 6;
+        int dotX = panelX + UIScaleManager.scale(6);
+        int dotY = panelY + UIScaleManager.scale(6);
         int dotColor = recording ? getRecordingDotColor() : PAUSED_COLOR;
-        graphics.fill(dotX, dotY, dotX + 6, dotY + 6, dotColor);
+        int dotSize = UIScaleManager.scale(6);
+        graphics.fill(dotX, dotY, dotX + dotSize, dotY + dotSize, dotColor);
 
         // Status text
         String statusText = recording ? "REC" : "PAUSED";
-        graphics.drawString(font, statusText, dotX + 10, dotY - 1, recording ? RECORDING_COLOR : PAUSED_COLOR, false);
+        UIScaleManager.drawScaledString(graphics, font, statusText, dotX + UIScaleManager.scale(10), dotY - 1,
+            recording ? RECORDING_COLOR : PAUSED_COLOR, false);
 
         // Room info (keep at least 6 chars for readability)
         String roomText = currentRoom != null && !currentRoom.isEmpty()
             ? currentRoom
             : "No room";
-        if (roomText.length() > 14) {
-            int truncateAt = Math.max(6, 11); // Keep at least 6 chars
-            roomText = roomText.substring(0, truncateAt) + "...";
-        }
-        graphics.drawString(font, roomText, panelX + 6, panelY + 16, TEXT_MUTED, false);
+        int roomMaxWidth = Math.max(0, panelWidth - UIScaleManager.scale(12));
+        roomText = truncateToWidth(font, roomText, roomMaxWidth);
+        UIScaleManager.drawScaledString(graphics, font, roomText, panelX + UIScaleManager.scale(6), panelY + UIScaleManager.scale(16), TEXT_MUTED, false);
 
         // Recording time
         if (recording && recordingStartTime > 0) {
             long elapsed = System.currentTimeMillis() - recordingStartTime;
             String timeText = Objects.requireNonNull(formatTime(elapsed), "time text");
-            int timeWidth = font.width(timeText);
-            graphics.drawString(font, timeText, panelX + panelWidth - timeWidth - 6, panelY + 6, TEXT_NORMAL, false);
+            int timeWidth = UIScaleManager.getScaledStringWidth(font, timeText);
+            UIScaleManager.drawScaledString(graphics, font, timeText, panelX + panelWidth - timeWidth - UIScaleManager.scale(6),
+                panelY + UIScaleManager.scale(6), TEXT_NORMAL, false);
         }
     }
 
@@ -141,6 +150,19 @@ public class TelemetryStatusOverlay {
         graphics.fill(x, y + height - 1, x + width, y + height, color);
         graphics.fill(x, y, x + 1, y + height, color);
         graphics.fill(x + width - 1, y, x + width, y + height, color);
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 
     // === Public API ===

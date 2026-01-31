@@ -208,9 +208,9 @@ public enum Curse {
      */
     public String getFormattedName() {
         String tierColor = switch (getTier()) {
-            case MINOR -> "§a";
-            case MAJOR -> "§6";
-            case CURSED -> "§c§l";
+            case MINOR -> "\u00A7a";
+            case MAJOR -> "\u00A76";
+            case CURSED -> "\u00A7c\u00A7l";
         };
         return tierColor + getDisplayName();
     }

@@ -18,6 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.GridSettings;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for configuring area dimensions with sliders.
@@ -53,7 +54,7 @@ public class DimensionsWidget extends AbstractWidget {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.tab.dimensions")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -79,7 +80,7 @@ public class DimensionsWidget extends AbstractWidget {
         Component summary = Objects.requireNonNull(Component.translatable("area.dimensions.summary",
             widthValue, lengthValue, heightValue,
             (long) widthValue * lengthValue * heightValue));
-        graphics.drawString(font, Objects.requireNonNull(summary), getX(), summaryY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(summary), getX(), summaryY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 
     private void renderSlider(GuiGraphics graphics, String label, int value, int min, int max,
@@ -87,7 +88,7 @@ public class DimensionsWidget extends AbstractWidget {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
 
         // Label
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.dimensions." + label.toLowerCase(Locale.ROOT))),
             labelX, y + 6,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -107,7 +108,7 @@ public class DimensionsWidget extends AbstractWidget {
         // Value text
         String valueText = String.valueOf(value);
         int valueX = sliderX + sliderWidth + 8;
-        graphics.drawString(Objects.requireNonNull(font), valueText, valueX, y + 6, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), valueText, valueX, y + 6, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     @Override

@@ -19,8 +19,16 @@ public final class EffekseerClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(EffekseerClient.class);
     private static final String DLL_NAME = "EffekseerNativeForJava";
     private static boolean initialized;
+    private static boolean nativeAvailable = false;
 
     private EffekseerClient() {
+    }
+
+    /**
+     * Returns true if Effekseer native library was loaded successfully.
+     */
+    public static boolean isAvailable() {
+        return nativeAvailable;
     }
 
     public static void init() {
@@ -36,12 +44,18 @@ public final class EffekseerClient {
     }
 
     public static ParticleEmitter play(ResourceLocation effect, ParticleEmitter.Type type) {
+        if (!nativeAvailable) {
+            return ParticleEmitter.dummy(type);
+        }
         return Optional.ofNullable(EffectRegistry.get(effect))
             .map(def -> def.play(type))
             .orElseGet(() -> ParticleEmitter.dummy(type));
     }
 
     public static ParticleEmitter play(ResourceLocation effect, ParticleEmitter.Type type, ResourceLocation emitterName) {
+        if (!nativeAvailable) {
+            return ParticleEmitter.dummy(type);
+        }
         return Optional.ofNullable(EffectRegistry.get(effect))
             .map(def -> def.play(type, emitterName))
             .orElseGet(() -> ParticleEmitter.dummy(type));
@@ -62,9 +76,22 @@ public final class EffekseerClient {
             } else {
                 LOGGER.info("[Effekseer] Loading native library at {}", dll.getCanonicalPath());
             }
+
+            // Validate file is actually a native library (not a Git LFS pointer)
+            // Git LFS pointers are small text files ~130 bytes
+            if (dll.length() < 1024) {
+                LOGGER.error("[Effekseer] Native library file too small ({}b) - likely a Git LFS pointer. " +
+                    "Run 'git lfs pull' to fetch actual binaries. Effects disabled.", dll.length());
+                return;
+            }
+
             System.load(dll.getCanonicalPath());
-        } catch (IOException | UnsatisfiedLinkError e) {
-            throw new ExceptionInInitializerError(e);
+            nativeAvailable = true;
+            LOGGER.info("[Effekseer] Native library loaded successfully");
+        } catch (IOException e) {
+            LOGGER.error("[Effekseer] Failed to install native library: {}. Effects disabled.", e.getMessage());
+        } catch (UnsatisfiedLinkError e) {
+            LOGGER.error("[Effekseer] Failed to load native library: {}. Effects disabled.", e.getMessage());
         }
     }
 }

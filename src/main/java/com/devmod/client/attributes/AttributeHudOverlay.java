@@ -19,6 +19,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.attributes.AttributeLogEntry;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
@@ -74,140 +75,166 @@ public class AttributeHudOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 
+        // Update UIScaleManager for responsive scaling
+        UIScaleManager.update();
+
         Font font = Objects.requireNonNull(mc.font);
         int screenWidth = mc.getWindow().getGuiScaledWidth();
 
-        // Panel position (right side)
-        int panelX = screenWidth - PANEL_WIDTH - PANEL_MARGIN;
-        int panelY = PANEL_MARGIN;
+        // Scaled layout values
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelMargin = UIScaleManager.scale(PANEL_MARGIN);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sSectionGap = UIScaleManager.scale(SECTION_GAP);
 
         // Calculate dynamic height
-        int panelHeight = calculatePanelHeight();
+        int panelHeight = calculatePanelHeight(sLineHeight, sPadding, sSectionGap);
+
+        // Panel position (right side)
+        int panelX = screenWidth - panelWidth - sPanelMargin;
+        int panelY = sPanelMargin;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // === BACKGROUND ===
-        renderBackground(graphics, panelX, panelY, PANEL_WIDTH, panelHeight);
+        renderBackground(graphics, panelX, panelY, panelWidth, panelHeight);
 
         // === CONTENT ===
-        int y = panelY + PADDING;
-        int textX = panelX + PADDING;
-        int contentWidth = PANEL_WIDTH - PADDING * 2;
+        int y = panelY + sPadding;
+        int textX = panelX + sPadding;
+        int contentWidth = panelWidth - sPadding * 2;
 
         // TITLE
-        graphics.drawString(font, I18n.translate("devmod.attribute_monitor.title").getString(), textX, y, TITLE_COLOR, false);
-        y += LINE_HEIGHT + 2;
+        String title = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.title").getString(), contentWidth);
+        graphics.drawString(font, title, textX, y, TITLE_COLOR, false);
+        y += sLineHeight + UIScaleManager.scale(2);
 
         // Separator line
         graphics.fill(textX, y, textX + contentWidth, y + 1, PANEL_BORDER);
-        y += SECTION_GAP;
+        y += sSectionGap;
 
         // === TARGET PRIMARIO ===
         TrackedEntity target = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
         if (target != null && target.isValid()) {
-            y = renderTargetSection(graphics, font, textX, y, contentWidth, target);
+            y = renderTargetSection(graphics, font, textX, y, contentWidth, target, sLineHeight, sSectionGap);
         } else {
-            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.no_target").getString(), textX, y, TEXT_GRAY, false);
-            y += LINE_HEIGHT + SECTION_GAP;
+            String noTarget = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.no_target").getString(), contentWidth);
+            graphics.drawString(font, noTarget, textX, y, TEXT_GRAY, false);
+            y += sLineHeight + sSectionGap;
         }
 
         // Separator
         graphics.fill(textX, y, textX + contentWidth, y + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A47));
-        y += SECTION_GAP;
+        y += sSectionGap;
 
         // === TRACKED ENTITIES ===
-        y = renderTrackedListSection(graphics, font, textX, y);
+        y = renderTrackedListSection(graphics, font, textX, y, contentWidth, sLineHeight, sSectionGap);
 
         // Separator
         graphics.fill(textX, y, textX + contentWidth, y + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A47));
-        y += SECTION_GAP;
+        y += sSectionGap;
 
         // === LOG HISTORY ===
-        renderLogSection(graphics, font, textX, y, contentWidth);
+        renderLogSection(graphics, font, textX, y, contentWidth, sLineHeight);
     }
 
-    private static int calculatePanelHeight() {
-        int height = PADDING * 2 + LINE_HEIGHT + 2 + SECTION_GAP; // Title
+    private static int calculatePanelHeight(int sLineHeight, int sPadding, int sSectionGap) {
+        int height = sPadding * 2 + sLineHeight + UIScaleManager.scale(2) + sSectionGap; // Title
 
         TrackedEntity target = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
         if (target != null && target.isValid()) {
-            height += LINE_HEIGHT * 9 + SECTION_GAP; // Target section
+            height += sLineHeight * 9 + sSectionGap; // Target section
         } else {
-            height += LINE_HEIGHT + SECTION_GAP;
+            height += sLineHeight + sSectionGap;
         }
 
-        height += SECTION_GAP; // Separator
+        height += sSectionGap; // Separator
 
         // Tracked list (max 5)
         int trackedCount = Math.min(AttributeMonitoringSystem.INSTANCE.getTrackedCount(), 5);
-        height += LINE_HEIGHT + (LINE_HEIGHT * trackedCount) + SECTION_GAP;
+        height += sLineHeight + (sLineHeight * trackedCount) + sSectionGap;
 
-        height += SECTION_GAP; // Separator
+        height += sSectionGap; // Separator
 
         // Log (max 8 entries)
         int logCount = Math.min(AttributeMonitoringSystem.INSTANCE.getLogHistory().size(), 8);
-        height += LINE_HEIGHT + (LINE_HEIGHT * Math.max(logCount, 1)) + SECTION_GAP;
+        height += sLineHeight + (sLineHeight * Math.max(logCount, 1)) + sSectionGap;
 
         return height;
     }
 
-    private static int renderTargetSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, TrackedEntity target) {
+    private static int renderTargetSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, TrackedEntity target, int sLineHeight, int sSectionGap) {
         // Target name
-        String nameStr = "§f" + target.getEntityName();
+        String nameStr = "\u00A7f" + target.getEntityName();
         String losTag = target.hasLineOfSight()
             ? I18n.translate("devmod.attribute_monitor.los").getString()
             : I18n.translate("devmod.attribute_monitor.blocked").getString();
         nameStr += " " + losTag;
+        nameStr = truncateToWidth(font, nameStr, width);
         graphics.drawString(font, nameStr, x, y, TEXT_WHITE, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Health bar
         float healthPercent = target.getHealthPercent();
         int healthColor = healthPercent > 50 ? TEXT_GREEN : (healthPercent > 25 ? TEXT_YELLOW : TEXT_RED);
         String healthStr = I18n.translate("devmod.attribute_monitor.health",
             target.getCurrentHealth(), target.getMaxHealth(), healthPercent).getString();
+        healthStr = truncateToWidth(font, healthStr, width);
         graphics.drawString(font, healthStr, x, y, healthColor, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Graphical health bar
         int barWidth = width - 4;
-        int barHeight = 4;
+        int barHeight = UIScaleManager.scale(4);
         int barX = x + 2;
         graphics.fill(barX, y, barX + barWidth, y + barHeight, OverlayTheme.Progress.BG);
         int filledWidth = (int) (barWidth * (healthPercent / 100f));
         graphics.fill(barX, y, barX + filledWidth, y + barHeight, healthColor); // Fill
-        y += barHeight + 4;
+        y += barHeight + UIScaleManager.scale(4);
 
         // Armor
         String armorStr = I18n.translate("devmod.attribute_monitor.armor",
             target.getArmorValue(), target.getArmorToughness()).getString();
+        armorStr = truncateToWidth(font, armorStr, width);
         graphics.drawString(font, armorStr, x, y, TEXT_GRAY, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Attack stats
         String attackStr = I18n.translate("devmod.attribute_monitor.attack",
             target.getAttackDamage(), target.getAttackSpeed()).getString();
+        attackStr = truncateToWidth(font, attackStr, width);
         graphics.drawString(font, attackStr, x, y, TEXT_ORANGE, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Movement
         String moveStr = I18n.translate("devmod.attribute_monitor.movement",
             target.getMovementSpeed(), target.getKnockbackResistance() * 100).getString();
+        moveStr = truncateToWidth(font, moveStr, width);
         graphics.drawString(font, moveStr, x, y, TEXT_GRAY, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Distance
         double dist = target.getDistanceToPlayer();
         String distStr = I18n.translate("devmod.attribute_monitor.distance", dist).getString();
+        distStr = truncateToWidth(font, distStr, width);
         graphics.drawString(font, distStr, x, y, TEXT_GRAY, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         // Pehkui (if present)
         if (target.hasPehkuiModification()) {
             Float scale = target.getPehkuiScale();
             String scaleStr = I18n.translate("devmod.attribute_monitor.pehkui_scale", scale != null ? scale : 1f).getString();
+            scaleStr = truncateToWidth(font, scaleStr, width);
             graphics.drawString(font, scaleStr, x, y, OverlayTheme.Attribute.SCALE, false);
-            y += LINE_HEIGHT;
+            y += sLineHeight;
         }
 
         // Health delta
@@ -217,23 +244,26 @@ public class AttributeHudOverlay {
                 ? "devmod.attribute_monitor.health_delta.positive"
                 : "devmod.attribute_monitor.health_delta.negative";
             String deltaStr = I18n.translate(deltaKey, delta).getString();
+            deltaStr = truncateToWidth(font, deltaStr, width);
             graphics.drawString(font, deltaStr, x, y, delta > 0 ? TEXT_GREEN : TEXT_RED, false);
-            y += LINE_HEIGHT;
+            y += sLineHeight;
         }
 
-        return y + SECTION_GAP;
+        return y + sSectionGap;
     }
 
-    private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y) {
+    private static int renderTrackedListSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int sLineHeight, int sSectionGap) {
         List<TrackedEntity> tracked = AttributeMonitoringSystem.INSTANCE.getTrackedEntities();
 
         String header = I18n.translate("devmod.attribute_monitor.tracked_entities", tracked.size()).getString();
+        header = truncateToWidth(font, header, width);
         graphics.drawString(font, header, x, y, TEXT_YELLOW, false);
-        y += LINE_HEIGHT;
+        y += sLineHeight;
 
         if (tracked.isEmpty()) {
-            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.none").getString(), x + 4, y, TEXT_GRAY, false);
-            y += LINE_HEIGHT;
+            String noneText = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.none").getString(), width - UIScaleManager.scale(4));
+            graphics.drawString(font, noneText, x + UIScaleManager.scale(4), y, TEXT_GRAY, false);
+            y += sLineHeight;
         } else {
             TrackedEntity primary = AttributeMonitoringSystem.INSTANCE.getPrimaryTarget();
             int shown = 0;
@@ -241,35 +271,38 @@ public class AttributeHudOverlay {
                 if (shown >= 5) break;
 
                 boolean isPrimary = entity == primary;
-                String prefix = isPrimary ? "§b> " : "§7  ";
-                String losIndicator = entity.hasLineOfSight() ? "§a●" : "§c●";
+                String prefix = isPrimary ? "\u00A7b> " : "\u00A77  ";
+                String losIndicator = entity.hasLineOfSight() ? "\u00A7a●" : "\u00A7c●";
 
-                String entryStr = String.format("%s%s %s §7(%.0f%%)",
+                String entryStr = String.format("%s%s %s \u00A77(%.0f%%)",
                     prefix, losIndicator, entity.getEntityName(), entity.getHealthPercent());
+                entryStr = truncateToWidth(font, entryStr, width);
                 graphics.drawString(font, entryStr, x, y, TEXT_WHITE, false);
-                y += LINE_HEIGHT;
+                y += sLineHeight;
                 shown++;
             }
 
             if (tracked.size() > 5) {
-                graphics.drawString(font,
-                    I18n.translate("devmod.attribute_monitor.more", tracked.size() - 5).getString(),
-                    x, y, TEXT_GRAY, false);
-                y += LINE_HEIGHT;
+                String moreText = I18n.translate("devmod.attribute_monitor.more", tracked.size() - 5).getString();
+                moreText = truncateToWidth(font, moreText, width);
+                graphics.drawString(font, moreText, x, y, TEXT_GRAY, false);
+                y += sLineHeight;
             }
         }
 
-        return y + SECTION_GAP;
+        return y + sSectionGap;
     }
 
-    private static void renderLogSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width) {
+    private static void renderLogSection(GuiGraphics graphics, @Nonnull Font font, int x, int y, int width, int sLineHeight) {
         List<AttributeLogEntry> logs = AttributeMonitoringSystem.INSTANCE.getLogHistory();
 
-        graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log_history").getString(), x, y, TEXT_GRAY, false);
-        y += LINE_HEIGHT;
+        String logTitle = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.log_history").getString(), width);
+        graphics.drawString(font, logTitle, x, y, TEXT_GRAY, false);
+        y += sLineHeight;
 
         if (logs.isEmpty()) {
-            graphics.drawString(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), x + 4, y,
+            String noneText = truncateToWidth(font, I18n.translate("devmod.attribute_monitor.log.none").getString(), width - UIScaleManager.scale(4));
+            graphics.drawString(font, noneText, x + UIScaleManager.scale(4), y,
                 OverlayTheme.Attribute.EMPTY_LOG, false);
         } else {
             int shown = 0;
@@ -285,15 +318,27 @@ public class AttributeHudOverlay {
                 String fullStr = timeStr + log.getFormattedMessage();
 
                 // Truncate if too long
-                if (font.width(fullStr) > width) {
-                    fullStr = fullStr.substring(0, Math.min(fullStr.length(), 35)) + "...";
-                }
-
+                fullStr = truncateToWidth(font, fullStr, width);
                 graphics.drawString(font, fullStr, x, y, color, false);
-                y += LINE_HEIGHT;
+                y += sLineHeight;
                 shown++;
             }
         }
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     private static void renderBackground(GuiGraphics graphics, int x, int y, int width, int height) {

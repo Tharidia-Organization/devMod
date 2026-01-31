@@ -21,12 +21,10 @@ import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.endurance.EnduranceEventHandler;
 import com.devmod.endurance.combat.api.IComboSession;
-import com.devmod.endurance.combat.core.ComboSessionImpl;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
 import com.devmod.stats.ArmorStats;
-
 public final class ShieldBlockHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldBlockHandler.class);
     private static final float DEFAULT_SHIELD_RADIUS = 1.2f;

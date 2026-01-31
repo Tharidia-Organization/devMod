@@ -12,20 +12,23 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.level.block.Blocks;
+
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-
-import com.devmod.config.Config;
 
 import com.devmod.DevMod;
 import com.devmod.area.builder.AreaBuildTaskManager;
 import com.devmod.area.data.AreaDefinition;
 import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaRegistry;
+import com.devmod.config.Config;
 import com.devmod.nexus.builder.NexusFoundationBuilder;
 import com.devmod.nexus.data.SlotType;
 import com.devmod.nexus.data.ZoneSlot;
@@ -33,17 +36,13 @@ import com.devmod.nexus.data.ZoneSlotPresets;
 import com.devmod.nexus.data.ZoneSlotRegistry;
 import com.devmod.runtime.NexusDimensionManager;
 import com.devmod.runtime.NexusPortalManager;
+import com.devmod.shared.SharedColorTokens;
 import com.devmod.template.runtime.TemplateManager;
 import com.devmod.transport.TransportRegistry;
 import com.devmod.transport.bridge.NexusTransportBridge;
 import com.devmod.zone.data.ZoneBounds;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
-import com.devmod.shared.SharedColorTokens;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.Blocks;
-
 /**
  * Central manager for the Nexus hub system.
  * Orchestrates slot management, area linking, and module integration.

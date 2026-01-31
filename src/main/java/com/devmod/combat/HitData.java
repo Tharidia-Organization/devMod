@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.world.item.Item;
+
 import net.minecraft.world.entity.Entity;
 
 public class HitData {
@@ -22,7 +24,7 @@ public class HitData {
      * @param target Any entity (LivingEntity, Mob, custom modded entities)
      */
     public static synchronized void store(Entity target, HitHelper.BodyPart bodyPart, boolean isRanged) {
-        store(target, bodyPart, isRanged, 0f);
+        store(target, bodyPart, isRanged, 0f, null);
     }
 
     /**
@@ -34,8 +36,9 @@ public class HitData {
      * @param isRanged Whether this was a ranged attack
      * @param armorPenBonus The calculated armor penetration bonus damage
      */
-    public static synchronized void store(Entity target, HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus) {
-        CONTEXT.put(target.getUUID(), new HitInfo(bodyPart, isRanged, armorPenBonus, 0f, System.currentTimeMillis()));
+    public static synchronized void store(Entity target, HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus,
+                                          @Nullable Item weaponItem) {
+        CONTEXT.put(target.getUUID(), new HitInfo(bodyPart, isRanged, armorPenBonus, 0f, weaponItem, System.currentTimeMillis()));
     }
 
     /**
@@ -54,6 +57,7 @@ public class HitData {
                 existing.isRanged(),
                 existing.armorPenBonus(),
                 armorReduction,
+                existing.weaponItem(),
                 existing.timestamp()
             ));
         }
@@ -99,5 +103,6 @@ public class HitData {
      * @param armorReduction The custom armor reduction percentage (0.0 - 0.8)
      * @param timestamp When this hit was recorded
      */
-    public record HitInfo(HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus, float armorReduction, long timestamp) {}
+    public record HitInfo(HitHelper.BodyPart bodyPart, boolean isRanged, float armorPenBonus,
+                          float armorReduction, @Nullable Item weaponItem, long timestamp) {}
 }

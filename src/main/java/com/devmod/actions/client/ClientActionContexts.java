@@ -41,8 +41,9 @@ public final class ClientActionContexts {
                     player.connection.sendCommand(java.util.Objects.requireNonNull(command, "command"));
                 }
             });
-        builder.commandPrompt(command -> mc.setScreen(new ChatScreen("/"
-            + java.util.Objects.requireNonNull(command, "command"))));
+        builder.commandPrompt(command -> com.devmod.client.ui.ScreenSafety.openSafe(
+            "chat_command",
+            () -> new ChatScreen("/" + java.util.Objects.requireNonNull(command, "command"))));
         builder.payload(payload);
         return builder.build();
     }

@@ -11,7 +11,6 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -21,6 +20,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
@@ -28,7 +28,6 @@ import com.devmod.mailbox.client.ClientNewsCache;
 import com.devmod.mailbox.client.MailboxUiTheme;
 import com.devmod.mailbox.network.payload.NewsReadPayload;
 import com.devmod.mailbox.network.payload.NewsSyncPayload.NewsArticleData;
-
 /**
  * News center screen for viewing announcements and updates.
  */
@@ -196,13 +195,13 @@ public class NewsScreen extends Screen {
         int headerY = panelY + 10;
 
         // Title with icon
-        graphics.drawString(getFont(), "📰 News Center", panelX + 15, headerY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), "📰 News Center", panelX + 15, headerY, DesignTokens.Text.PRIMARY(), false);
 
         // Unread count
         int unread = ClientNewsCache.getUnreadCount();
         if (unread > 0) {
             String badge = "(" + unread + " new)";
-            graphics.drawString(getFont(), badge, panelX + 120, headerY, DesignTokens.Accent.GOLD(), false);
+            UIScaleManager.drawScaledString(graphics, getFont(), badge, panelX + 120, headerY, DesignTokens.Accent.GOLD(), false);
         }
 
         // Separator
@@ -251,9 +250,9 @@ public class NewsScreen extends Screen {
         // Empty state
         if (articles.isEmpty()) {
             String emptyText = "No articles";
-            int textX = listX + (LIST_WIDTH - getFont().width(emptyText)) / 2;
+            int textX = listX + (LIST_WIDTH - UIScaleManager.getScaledStringWidth(getFont(), emptyText)) / 2;
             int textY = listY + listHeight / 2;
-            graphics.drawString(getFont(), emptyText, textX, textY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, getFont(), emptyText, textX, textY, DesignTokens.Text.MUTED(), false);
             return -1;
         }
 
@@ -296,11 +295,11 @@ public class NewsScreen extends Screen {
             // Title
             String title = truncate(article.title(), 22);
             int textColor = article.isRead() ? DesignTokens.Text.MUTED() : DesignTokens.Text.PRIMARY();
-            graphics.drawString(getFont(), title, listX + 22, itemY + 6, textColor, false);
+            UIScaleManager.drawScaledString(graphics, getFont(), title, listX + 22, itemY + 6, textColor, false);
 
             // Category + date
             String meta = article.getCategoryName() + " • " + DATE_FORMAT.format(Instant.ofEpochMilli(article.publishedAtMillis()));
-            graphics.drawString(getFont(), truncate(meta, 26), listX + 22, itemY + 20, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, getFont(), truncate(meta, 26), listX + 22, itemY + 20, DesignTokens.Text.SECONDARY(), false);
         }
 
         // Scrollbar
@@ -328,9 +327,9 @@ public class NewsScreen extends Screen {
 
         if (selected == null) {
             String noSelection = "Select an article";
-            int textX = detailX + (DETAIL_WIDTH - getFont().width(noSelection)) / 2;
+            int textX = detailX + (DETAIL_WIDTH - UIScaleManager.getScaledStringWidth(getFont(), noSelection)) / 2;
             int textY = detailY + detailHeight / 2;
-            graphics.drawString(getFont(), noSelection, textX, textY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, getFont(), noSelection, textX, textY, DesignTokens.Text.MUTED(), false);
             return;
         }
 
@@ -339,20 +338,20 @@ public class NewsScreen extends Screen {
         // Category badge
         String category = Objects.requireNonNull(selected.getCategoryName(), "categoryName");
         int catColor = getCategoryColor(selected.categoryOrdinal());
-        int catWidth = getFont().width(category) + 10;
+        int catWidth = UIScaleManager.getScaledStringWidth(getFont(), category) + 10;
         graphics.fill(detailX, y, detailX + catWidth, y + 14, catColor);
-        graphics.drawString(getFont(), category, detailX + 5, y + 3, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), category, detailX + 5, y + 3, DesignTokens.Text.PRIMARY(), false);
         y += 20;
 
         // Title
-        graphics.drawString(getFont(), selected.title(), detailX, y, DesignTokens.Text.PRIMARY(), false);
-        y += 14;
+        UIScaleManager.drawScaledString(graphics, getFont(), selected.title(), detailX, y, DesignTokens.Text.PRIMARY(), false);
+        y += UIScaleManager.getScaledLineHeight();
 
         // Author and date
         String author = selected.authorName() != null ? selected.authorName() : "DevMod Team";
         String dateStr = DATE_FORMAT.format(Instant.ofEpochMilli(selected.publishedAtMillis()));
         String meta = "By " + author + " • " + dateStr;
-        graphics.drawString(getFont(), meta, detailX, y, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), meta, detailX, y, DesignTokens.Text.SECONDARY(), false);
         y += 20;
 
         // Separator
@@ -363,18 +362,19 @@ public class NewsScreen extends Screen {
         List<String> lines = wrapText(selected.content(), DETAIL_WIDTH - 10);
         int maxY = detailY + detailHeight - 20;
 
+        int lineHeight = UIScaleManager.getScaledLineHeight();
         for (int i = detailScrollOffset; i < lines.size() && y < maxY; i++) {
-            graphics.drawString(getFont(), lines.get(i), detailX, y, DesignTokens.Text.PRIMARY(), false);
-            y += 12;
+            UIScaleManager.drawScaledString(graphics, getFont(), lines.get(i), detailX, y, DesignTokens.Text.PRIMARY(), false);
+            y += lineHeight;
         }
 
         // Scroll indicator
-        if (lines.size() > (maxY - detailY - 60) / 12) {
+        if (lines.size() > (maxY - detailY - 60) / lineHeight) {
             if (detailScrollOffset > 0) {
-                graphics.drawString(getFont(), "▲", detailX + DETAIL_WIDTH - 15, detailY, DesignTokens.Text.MUTED(), false);
+                UIScaleManager.drawScaledString(graphics, getFont(), "▲", detailX + DETAIL_WIDTH - 15, detailY, DesignTokens.Text.MUTED(), false);
             }
-            if (detailScrollOffset < lines.size() - (maxY - detailY - 60) / 12) {
-                graphics.drawString(getFont(), "▼", detailX + DETAIL_WIDTH - 15, maxY - 10, DesignTokens.Text.MUTED(), false);
+            if (detailScrollOffset < lines.size() - (maxY - detailY - 60) / lineHeight) {
+                UIScaleManager.drawScaledString(graphics, getFont(), "▼", detailX + DETAIL_WIDTH - 15, maxY - 10, DesignTokens.Text.MUTED(), false);
             }
         }
     }
@@ -501,7 +501,7 @@ public class NewsScreen extends Screen {
         for (String word : words) {
             if (currentLine.isEmpty()) {
                 currentLine.append(word);
-            } else if (getFont().width(currentLine + " " + word) <= maxWidth) {
+            } else if (UIScaleManager.getScaledStringWidth(getFont(), currentLine + " " + word) <= maxWidth) {
                 currentLine.append(" ").append(word);
             } else {
                 lines.add(currentLine.toString());
@@ -520,7 +520,6 @@ public class NewsScreen extends Screen {
      * Open the news screen.
      */
     public static void open() {
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new NewsScreen());
+        com.devmod.client.ui.ScreenSafety.openSafe("news", () -> new NewsScreen());
     }
 }

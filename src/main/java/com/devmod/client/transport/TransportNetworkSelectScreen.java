@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
@@ -18,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -26,7 +26,6 @@ import com.devmod.transport.network.TransportNetworkListPayload;
 import com.devmod.transport.network.TransportNetworkListPayload.NetworkNodeInfo;
 import com.devmod.transport.network.TransportWaypointSelectPayload;
 import com.devmod.util.I18n;
-
 /**
  * Network destination selection screen for transport nodes.
  *
@@ -70,6 +69,11 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
     private int listTop;
     private int listHeight;
 
+    // Scaled dimensions (updated in initContent for responsiveness)
+    private int scaledPanelWidth;
+    private int scaledPanelHeight;
+    private int scaledItemHeight;
+
     // Widgets
     @Nullable private EditorButtonWidget teleportButtonWidget;
     @Nullable private EditorButtonWidget cancelButtonWidget;
@@ -87,14 +91,21 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
 
     @Override
     protected void initContent() {
-        // Calculate panel position
-        panelLeft = (width - PANEL_WIDTH) / 2;
-        panelTop = (height - PANEL_HEIGHT) / 2;
-        listTop = panelTop + 40;
-        listHeight = ITEM_HEIGHT * VISIBLE_ITEMS;
+        // Scale dimensions
+        UIScaleManager.update();
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        scaledItemHeight = UIScaleManager.scale(ITEM_HEIGHT);
 
-        int buttonWidth = (PANEL_WIDTH - 50) / 2;
-        int buttonY = panelTop + PANEL_HEIGHT - 35;
+        // Calculate panel position
+        panelLeft = (width - scaledPanelWidth) / 2;
+        panelTop = (height - scaledPanelHeight) / 2;
+        listTop = panelTop + UIScaleManager.scale(40);
+        listHeight = scaledItemHeight * VISIBLE_ITEMS;
+
+        int buttonWidth = (scaledPanelWidth - UIScaleManager.scale(50)) / 2;
+        int buttonY = panelTop + scaledPanelHeight - UIScaleManager.scale(35);
+        int sButtonHeight = UIScaleManager.scale(20);
 
         // Teleport button
         EditorButton teleportButton = EditorButton.builder("transport-network-teleport",
@@ -104,7 +115,7 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
             .enabled(false)
             .onClick(this::teleportToSelected)
             .build();
-        teleportButtonWidget = new EditorButtonWidget(teleportButton, panelLeft + 15, buttonY, buttonWidth, 20);
+        teleportButtonWidget = new EditorButtonWidget(teleportButton, panelLeft + UIScaleManager.scale(15), buttonY, buttonWidth, sButtonHeight);
         addRenderableWidget(teleportButtonWidget);
 
         // Cancel button
@@ -114,7 +125,7 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        cancelButtonWidget = new EditorButtonWidget(cancelButton, panelLeft + 20 + buttonWidth + 10, buttonY, buttonWidth, 20);
+        cancelButtonWidget = new EditorButtonWidget(cancelButton, panelLeft + UIScaleManager.scale(20) + buttonWidth + UIScaleManager.scale(10), buttonY, buttonWidth, sButtonHeight);
         addRenderableWidget(cancelButtonWidget);
 
         // Auto-select first available node
@@ -129,27 +140,31 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        int sInset = UIScaleManager.scale(10);
+        int sItemInset = UIScaleManager.scale(12);
+        int sItemPadding = UIScaleManager.scale(2);
+
         // Panel background
         int bgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_2 & 0xFFFFFF);
-        graphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, bgColor);
+        graphics.fill(panelLeft, panelTop, panelLeft + scaledPanelWidth, panelTop + scaledPanelHeight, bgColor);
 
         // Panel border
         int borderColor = (0xFF << 24) | (color.getColorValue() & 0xFFFFFF);
-        renderBorder(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT, borderColor);
+        renderBorder(graphics, panelLeft, panelTop, scaledPanelWidth, scaledPanelHeight, borderColor);
 
         // Title
         Component title = Component.translatable("screen.devmod.transport_network_select.title", networkName);
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, panelLeft + (PANEL_WIDTH - titleWidth) / 2, panelTop + 10, DesignTokens.Text.PRIMARY, true);
+        int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
+        UIScaleManager.drawScaledString(graphics, font, title, panelLeft + (scaledPanelWidth - titleWidth) / 2, panelTop + UIScaleManager.scale(10), DesignTokens.Text.PRIMARY, true);
 
         // Node count info
         String countText = String.format("%d nodes (%d available)", nodes.size(),
             (int) nodes.stream().filter(NetworkNodeInfo::available).count());
-        graphics.drawString(font, countText, panelLeft + 15, panelTop + 26, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, countText, panelLeft + UIScaleManager.scale(15), panelTop + UIScaleManager.scale(26), DesignTokens.Text.SECONDARY);
 
         // List background
         int listBgColor = (BACKGROUND_ALPHA << 24) | (DesignTokens.Bg.LEVEL_1 & 0xFFFFFF);
-        graphics.fill(panelLeft + 10, listTop, panelLeft + PANEL_WIDTH - 10, listTop + listHeight, listBgColor);
+        graphics.fill(panelLeft + sInset, listTop, panelLeft + scaledPanelWidth - sInset, listTop + listHeight, listBgColor);
 
         // Render visible nodes
         hoveredIndex = -1;
@@ -158,24 +173,24 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
         for (int i = 0; i < visibleCount; i++) {
             int nodeIndex = scrollOffset + i;
             NetworkNodeInfo node = nodes.get(nodeIndex);
-            int itemY = listTop + i * ITEM_HEIGHT;
+            int itemY = listTop + i * scaledItemHeight;
 
             // Check hover
-            boolean hovered = mouseX >= panelLeft + 10 && mouseX < panelLeft + PANEL_WIDTH - 10
-                && mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+            boolean hovered = mouseX >= panelLeft + sInset && mouseX < panelLeft + scaledPanelWidth - sInset
+                && mouseY >= itemY && mouseY < itemY + scaledItemHeight;
             if (hovered) {
                 hoveredIndex = nodeIndex;
             }
 
-            renderNodeItem(graphics, node, panelLeft + 12, itemY + 2, PANEL_WIDTH - 24, ITEM_HEIGHT - 4, hovered);
+            renderNodeItem(graphics, node, panelLeft + sItemInset, itemY + sItemPadding, scaledPanelWidth - sItemInset * 2, scaledItemHeight - sItemPadding * 2, hovered);
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(font, Component.literal("^"), panelLeft + PANEL_WIDTH / 2, listTop - 8, DesignTokens.Text.SECONDARY);
+            graphics.drawCenteredString(font, Component.literal("^"), panelLeft + scaledPanelWidth / 2, listTop - UIScaleManager.scale(8), DesignTokens.Text.SECONDARY);
         }
         if (scrollOffset + VISIBLE_ITEMS < nodes.size()) {
-            graphics.drawCenteredString(font, Component.literal("v"), panelLeft + PANEL_WIDTH / 2, listTop + listHeight + 2, DesignTokens.Text.SECONDARY);
+            graphics.drawCenteredString(font, Component.literal("v"), panelLeft + scaledPanelWidth / 2, listTop + listHeight + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY);
         }
     }
 
@@ -211,34 +226,34 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
         // Node name
         int textColor = available ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED;
         String displayName = node.displayName().isEmpty() ? "Unnamed" : node.displayName();
-        graphics.drawString(font, displayName, x + 8, y + 4, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, displayName, x + 8, y + 4, textColor);
 
         // Coordinates
         String coordText = node.getCoordinatesString();
-        graphics.drawString(font, coordText, x + 8, y + 14, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, coordText, x + 8, y + 14, DesignTokens.Text.SECONDARY);
 
         // Dimension (right side)
         String dimText = formatDimension(node.dimension());
-        int dimWidth = font.width(dimText);
-        graphics.drawString(font, dimText, x + width - dimWidth - 4, y + 4, DesignTokens.Text.MUTED, false);
+        int dimWidth = UIScaleManager.getScaledStringWidth(font, dimText);
+        UIScaleManager.drawScaledString(graphics, font, dimText, x + width - dimWidth - 4, y + 4, DesignTokens.Text.MUTED);
 
         // Availability status
         if (!available) {
             String unavailText = "Unavailable";
-            int unavailWidth = font.width(unavailText);
-            graphics.drawString(font, unavailText, x + width - unavailWidth - 4, y + 14, DesignTokens.Semantic.ERROR, false);
+            int unavailWidth = UIScaleManager.getScaledStringWidth(font, unavailText);
+            UIScaleManager.drawScaledString(graphics, font, unavailText, x + width - unavailWidth - 4, y + 14, DesignTokens.Semantic.ERROR);
         } else if (node.distanceBlocks() >= 0) {
             String distText = node.distanceBlocks() + "m";
-            int distWidth = font.width(distText);
-            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
+            int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
         } else if (node.distanceBlocks() == -2) {
             String distText = I18n.translate("devmod.transport.distance.cross_dim_badge").getString();
-            int distWidth = font.width(distText);
-            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
+            int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
         } else {
             String distText = I18n.translate("devmod.transport.distance.unknown").getString();
-            int distWidth = font.width(distText);
-            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
+            int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
         }
     }
 
@@ -307,7 +322,8 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
     @Override
     protected boolean handleMouseScroll(double mouseX, double mouseY, double scrollX, double scrollY) {
         // Check if mouse is over the list area
-        if (mouseX >= panelLeft + 10 && mouseX < panelLeft + PANEL_WIDTH - 10
+        int sInset = UIScaleManager.scale(10);
+        if (mouseX >= panelLeft + sInset && mouseX < panelLeft + scaledPanelWidth - sInset
             && mouseY >= listTop && mouseY < listTop + listHeight) {
 
             if (scrollY > 0 && scrollOffset > 0) {
@@ -405,7 +421,9 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
      * Opens this screen from a payload.
      */
     public static void open(@Nonnull UUID sourceNodeId, @Nonnull TransportNetworkListPayload payload) {
-        Minecraft.getInstance().setScreen(new TransportNetworkSelectScreen(sourceNodeId, payload));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "transport_network_select",
+            () -> new TransportNetworkSelectScreen(sourceNodeId, payload));
     }
 
     /**

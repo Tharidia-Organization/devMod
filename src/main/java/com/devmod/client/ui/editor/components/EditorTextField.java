@@ -11,6 +11,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 
@@ -142,7 +143,7 @@ public class EditorTextField {
         // Label
         if (label != null && !label.isEmpty()) {
             int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
-            graphics.drawString(font, label, x, currentY, labelColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, currentY, labelColor, false);
             currentY += LABEL_LINE_HEIGHT;
         }
 
@@ -177,11 +178,11 @@ public class EditorTextField {
 
         if (value.isEmpty() && !focused) {
             // Placeholder
-            graphics.drawString(font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(placeholder, "placeholder cannot be null"), textX, textY, DesignTokens.Text.MUTED(), false);
         } else {
             // Actual text
             int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
-            graphics.drawString(font, Objects.requireNonNull(value, "value cannot be null"), textX, textY, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(value, "value cannot be null"), textX, textY, textColor, false);
 
             // Selection highlight
             if (focused && selectionStart >= 0 && selectionStart != cursorPosition) {
@@ -189,8 +190,8 @@ public class EditorTextField {
                 int selEnd = Math.max(selectionStart, cursorPosition);
                 String prefixStart = Objects.requireNonNull(value.substring(0, selStart), "selection prefix cannot be null");
                 String prefixEnd = Objects.requireNonNull(value.substring(0, selEnd), "selection end prefix cannot be null");
-                int selX1 = textX + font.width(prefixStart);
-                int selX2 = textX + font.width(prefixEnd);
+                int selX1 = textX + UIScaleManager.getScaledStringWidth(font, prefixStart);
+                int selX2 = textX + UIScaleManager.getScaledStringWidth(font, prefixEnd);
                 graphics.fill(selX1, currentY + CURSOR_INSET, selX2, currentY + inputHeight - CURSOR_INSET,
                              DesignTokens.withAlpha(DesignTokens.Accent.CYAN(), SELECTION_ALPHA));
             }
@@ -198,7 +199,7 @@ public class EditorTextField {
             // Cursor
             if (focused && cursorVisible) {
                 String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
-                int cursorX = textX + font.width(cursorPrefix);
+                int cursorX = textX + UIScaleManager.getScaledStringWidth(font, cursorPrefix);
                 graphics.fill(cursorX, currentY + CURSOR_INSET, cursorX + CURSOR_WIDTH, currentY + inputHeight - CURSOR_INSET,
                              DesignTokens.Text.PRIMARY());
             }
@@ -476,7 +477,7 @@ public class EditorTextField {
 
         for (int i = 0; i <= value.length(); i++) {
             String prefix = Objects.requireNonNull(value.substring(0, i), "substring cannot be null");
-            int charX = font.width(prefix);
+            int charX = UIScaleManager.getScaledStringWidth(font, prefix);
             int dist = Math.abs(charX - pixelX);
             if (dist < minDist) {
                 minDist = dist;
@@ -490,7 +491,7 @@ public class EditorTextField {
     private void ensureCursorVisible() {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
         String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
-        int cursorX = font.width(cursorPrefix);
+        int cursorX = UIScaleManager.getScaledStringWidth(font, cursorPrefix);
         int visibleWidth = inputBounds.width() - TEXT_PADDING * 2;
 
         if (cursorX - scrollOffset < 0) {

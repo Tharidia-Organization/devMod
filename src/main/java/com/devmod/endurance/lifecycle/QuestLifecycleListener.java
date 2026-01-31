@@ -1,6 +1,12 @@
 package com.devmod.endurance.lifecycle;
 
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.*;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.CheckpointReached;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.PlayerJoinedQuest;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.PlayerLeftQuest;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveCompleted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveStarted;
 
 /**
  * Interface for systems that need to respond to quest lifecycle events.

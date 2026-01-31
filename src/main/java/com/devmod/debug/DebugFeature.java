@@ -30,7 +30,15 @@ public enum DebugFeature {
     LIGHT("Light Levels", "Shows sky light value of blocks"),
     SOLID_FACES("Solid Faces", "Shows solid faces of nearby blocks"),
     CHUNK("Chunk Info", "Shows chunk data (entity ticking, etc.)"),
-    SPAWN_CHUNKS("Spawn Chunks", "Shows spawn chunk boundaries");
+    SPAWN_CHUNKS("Spawn Chunks", "Shows spawn chunk boundaries"),
+
+    // Diagnostic logging (DevMod systems)
+    DIAG_QUEST("Quest Diagnostics", "Logs quest state changes, wave transitions, and spawn events"),
+    DIAG_COMBAT("Combat Diagnostics", "Logs damage calculations, hit detection, and shield blocks"),
+    DIAG_TRANSPORT("Transport Diagnostics", "Logs teleport operations, countdowns, and party sync"),
+    DIAG_ARENA("Arena Diagnostics", "Logs arena template loading, instance creation, and cleanup"),
+    DIAG_CLONE("Clone Diagnostics", "Logs clone machine operations and item processing"),
+    DIAG_NPC("NPC Diagnostics", "Logs dialog triggers and action execution");
 
     private final String displayName;
     private final String description;

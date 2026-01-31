@@ -9,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.transport.TransportState;
 import com.devmod.transport.network.TransportChargeUpdatePayload;
 import com.devmod.transport.network.TransportCountdownPayload;
@@ -35,6 +36,11 @@ public class TransportOverlay implements LayeredDraw.Layer {
     private static final int BAR_WIDTH = 200;
     private static final int BAR_HEIGHT = 10;
     private static final int BAR_BORDER = 2;
+
+    // Scaled dimensions (updated each frame for responsiveness)
+    private int scaledBarWidth;
+    private int scaledBarHeight;
+    private int scaledBarBorder;
 
     private boolean active = false;
     private TransportState state = TransportState.IDLE;
@@ -124,6 +130,13 @@ public class TransportOverlay implements LayeredDraw.Layer {
             return;
         }
 
+        UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledBarWidth = UIScaleManager.scale(BAR_WIDTH);
+        scaledBarHeight = UIScaleManager.scale(BAR_HEIGHT);
+        scaledBarBorder = UIScaleManager.scale(BAR_BORDER);
+
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
         Font font = mc.font;
@@ -139,33 +152,41 @@ public class TransportOverlay implements LayeredDraw.Layer {
         int backgroundColor = (BACKGROUND_ALPHA << 24) | 0x000000;
 
         // Render background panel
-        int panelWidth = BAR_WIDTH + 40;
-        int panelHeight = 60;
+        int panelWidth = scaledBarWidth + UIScaleManager.scale(40);
+        int panelHeight = UIScaleManager.scale(60);
         int panelX = centerX - panelWidth / 2;
         int panelY = centerY - panelHeight / 2;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, borderColor, backgroundColor);
+        int panelCenterX = panelX + panelWidth / 2;
 
         // Render state text (top center of panel)
-        String stateText = cachedStateText;
-        int stateTextWidth = font.width(stateText);
-        graphics.drawString(font, stateText, centerX - stateTextWidth / 2, panelY + 6, primaryColor, true);
+        String stateText = truncateToWidth(font, cachedStateText, panelWidth - UIScaleManager.scale(12));
+        int stateTextWidth = UIScaleManager.getScaledStringWidth(font, stateText);
+        UIScaleManager.drawScaledString(graphics, font, stateText, panelCenterX - stateTextWidth / 2, panelY + UIScaleManager.scale(6), primaryColor, true);
 
         // Render progress bar (center of panel)
-        int barX = centerX - BAR_WIDTH / 2;
-        int barY = panelY + 22;
-        renderProgressBar(graphics, barX, barY, BAR_WIDTH, BAR_HEIGHT, primaryColor, secondaryColor);
+        int barX = panelCenterX - scaledBarWidth / 2;
+        int barY = panelY + UIScaleManager.scale(22);
+        renderProgressBar(graphics, barX, barY, scaledBarWidth, scaledBarHeight, primaryColor, secondaryColor);
 
         // Render percentage text (below progress bar)
-        String percentText = cachedPercentText;
-        int percentTextWidth = font.width(percentText);
-        graphics.drawString(font, percentText, centerX - percentTextWidth / 2, barY + BAR_HEIGHT + 4, 0xFFFFFF, true);
+        String percentText = truncateToWidth(font, cachedPercentText, panelWidth - UIScaleManager.scale(12));
+        int percentTextWidth = UIScaleManager.getScaledStringWidth(font, percentText);
+        UIScaleManager.drawScaledString(graphics, font, percentText, panelCenterX - percentTextWidth / 2, barY + scaledBarHeight + UIScaleManager.scale(4), 0xFFFFFF, true);
 
         // Render destination text (bottom of panel)
         if (!cachedDestinationText.isEmpty()) {
-            int destTextWidth = font.width(cachedDestinationText);
-            graphics.drawString(font, cachedDestinationText, centerX - destTextWidth / 2,
-                panelY + panelHeight - 14, secondaryColor, true);
+            String destText = truncateToWidth(font, cachedDestinationText, panelWidth - UIScaleManager.scale(12));
+            int destTextWidth = UIScaleManager.getScaledStringWidth(font, destText);
+            UIScaleManager.drawScaledString(graphics, font, destText, panelCenterX - destTextWidth / 2,
+                panelY + panelHeight - UIScaleManager.scale(14), secondaryColor, true);
         }
 
         // Render action hint at bottom center of screen
@@ -179,35 +200,53 @@ public class TransportOverlay implements LayeredDraw.Layer {
         // Background
         graphics.fill(x, y, x + width, y + height, bgColor);
 
-        // Border (2 pixel)
-        graphics.fill(x, y, x + width, y + BAR_BORDER, borderColor);  // Top
-        graphics.fill(x, y + height - BAR_BORDER, x + width, y + height, borderColor);  // Bottom
-        graphics.fill(x, y, x + BAR_BORDER, y + height, borderColor);  // Left
-        graphics.fill(x + width - BAR_BORDER, y, x + width, y + height, borderColor);  // Right
+        // Border (scaled)
+        graphics.fill(x, y, x + width, y + scaledBarBorder, borderColor);  // Top
+        graphics.fill(x, y + height - scaledBarBorder, x + width, y + height, borderColor);  // Bottom
+        graphics.fill(x, y, x + scaledBarBorder, y + height, borderColor);  // Left
+        graphics.fill(x + width - scaledBarBorder, y, x + width, y + height, borderColor);  // Right
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     /**
      * Renders the progress bar.
      */
     private void renderProgressBar(GuiGraphics graphics, int x, int y, int width, int height, int primaryColor, int secondaryColor) {
+        int sBorderThin = UIScaleManager.scale(1);
+        int sInset = UIScaleManager.scale(2);
+
         // Background (dark)
         int bgColor = (BACKGROUND_ALPHA << 24) | 0x1a1a1a;
         graphics.fill(x, y, x + width, y + height, bgColor);
 
         // Border
         int borderColor = (BACKGROUND_ALPHA << 24) | (primaryColor & 0xFFFFFF);
-        graphics.fill(x, y, x + width, y + 1, borderColor);  // Top
-        graphics.fill(x, y + height - 1, x + width, y + height, borderColor);  // Bottom
-        graphics.fill(x, y, x + 1, y + height, borderColor);  // Left
-        graphics.fill(x + width - 1, y, x + width, y + height, borderColor);  // Right
+        graphics.fill(x, y, x + width, y + sBorderThin, borderColor);  // Top
+        graphics.fill(x, y + height - sBorderThin, x + width, y + height, borderColor);  // Bottom
+        graphics.fill(x, y, x + sBorderThin, y + height, borderColor);  // Left
+        graphics.fill(x + width - sBorderThin, y, x + width, y + height, borderColor);  // Right
 
         // Progress fill
         float progress = requiredCharge > 0 ? (float) currentCharge / requiredCharge : 0f;
         progress = Math.min(1f, Math.max(0f, progress));
-        int fillWidth = (int) ((width - 4) * progress);
+        int fillWidth = (int) ((width - sInset * 2) * progress);
         if (fillWidth > 0) {
             int fillColor = (0xFF << 24) | (secondaryColor & 0xFFFFFF);
-            graphics.fill(x + 2, y + 2, x + 2 + fillWidth, y + height - 2, fillColor);
+            graphics.fill(x + sInset, y + sInset, x + sInset + fillWidth, y + height - sInset, fillColor);
         }
     }
 
@@ -220,15 +259,28 @@ public class TransportOverlay implements LayeredDraw.Layer {
             return;
         }
 
-        int hintWidth = font.width(hint);
+        int sPadding = UIScaleManager.scale(4);
+        int sVertPadding = UIScaleManager.scale(2);
+        int sBottomOffset = UIScaleManager.scale(40);
+
+        int maxWidth = UIScaleManager.getSafeWidth() - sPadding * 2;
+        hint = truncateToWidth(font, hint, maxWidth);
+        int hintWidth = UIScaleManager.getScaledStringWidth(font, hint);
         int hintX = screenWidth / 2 - hintWidth / 2;
-        int hintY = screenHeight - 40;
+        int hintY = screenHeight - sBottomOffset;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        int lineHeight = UIScaleManager.getScaledLineHeight();
+        hintX = Math.max(safeLeft, Math.min(hintX, safeRight - hintWidth));
+        hintY = Math.max(safeTop, Math.min(hintY, safeBottom - lineHeight - sVertPadding));
 
         // Background for hint
         int bgColor = (BACKGROUND_ALPHA << 24) | 0x000000;
-        graphics.fill(hintX - 4, hintY - 2, hintX + hintWidth + 4, hintY + font.lineHeight + 2, bgColor);
+        graphics.fill(hintX - sPadding, hintY - sVertPadding, hintX + hintWidth + sPadding, hintY + lineHeight + sVertPadding, bgColor);
 
-        graphics.drawString(font, hint, hintX, hintY, color, true);
+        UIScaleManager.drawScaledString(graphics, font, hint, hintX, hintY, color, true);
     }
 
     /**

@@ -3,11 +3,10 @@ package com.devmod.client.ui.testing.pages;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.testing.ToastMessage;
 import com.devmod.client.ui.testing.VoxelLabPage;
 import com.devmod.client.ui.testing.VoxelLabTab;
-import com.devmod.client.ui.testing.ToastMessage;
 import com.devmod.client.ui.testing.panel.PanelContainer;
-
 public abstract class AbstractVoxelLabPage implements VoxelLabPage {
 
     protected final VoxelLabTab tab;

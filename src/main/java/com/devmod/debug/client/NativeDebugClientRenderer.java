@@ -258,14 +258,14 @@ public class NativeDebugClientRenderer {
         List<String> goalLines = new ArrayList<>();
 
         for (WrappedGoal goal : mob.goalSelector.getAvailableGoals()) {
-            String prefix = goal.isRunning() ? "§a▶ " : "§7○ ";
+            String prefix = goal.isRunning() ? "\u00A7a▶ " : "\u00A77○ ";
             String name = goal.getGoal().getClass().getSimpleName();
             goalLines.add(prefix + goal.getPriority() + ": " + name);
         }
 
         // Collect target goals
         for (WrappedGoal goal : mob.targetSelector.getAvailableGoals()) {
-            String prefix = goal.isRunning() ? "§c▶ " : "§8○ ";
+            String prefix = goal.isRunning() ? "\u00A7c▶ " : "\u00A78○ ";
             String name = "[T] " + goal.getGoal().getClass().getSimpleName();
             goalLines.add(prefix + goal.getPriority() + ": " + name);
         }

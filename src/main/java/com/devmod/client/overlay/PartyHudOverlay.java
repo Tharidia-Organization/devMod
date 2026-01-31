@@ -17,17 +17,16 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.network.ClientTensionCache;
 import com.devmod.client.party.ClientPartyCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceQuestState;
 import com.devmod.endurance.QuestSyncPayload;
 import com.devmod.endurance.WaveObjectiveState;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartySyncPayload;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class PartyHudOverlay {
@@ -92,6 +91,19 @@ public class PartyHudOverlay {
         if (members.isEmpty()) return;
 
         Font font = mc.font;
+
+        // Scale all dimensions
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sMemberHeight = UIScaleManager.scale(MEMBER_HEIGHT);
+        int sStatusBarHeight = UIScaleManager.scale(STATUS_BAR_HEIGHT);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sHeaderLineGap = UIScaleManager.scale(HEADER_LINE_GAP);
+        int sHeaderBarHeight = UIScaleManager.scale(HEADER_BAR_HEIGHT);
+        int sHeaderBarGap = UIScaleManager.scale(HEADER_BAR_GAP);
+        int sHeaderBarTopGap = UIScaleManager.scale(HEADER_BAR_TOP_GAP);
+        int sMarginLeft = UIScaleManager.scale(MARGIN_LEFT);
+        int sMarginTop = UIScaleManager.scale(MARGIN_TOP);
 
         // FIX AUDIT #1/#9: Single snapshot for render frame consistency
         // All questData accesses use this snapshot to avoid TOCTOU races.
@@ -167,29 +179,33 @@ public class PartyHudOverlay {
         }
 
         int lineHeight = font.lineHeight;
-        int headerTextHeight = headerLines * lineHeight + (headerLines - 1) * HEADER_LINE_GAP;
+        int headerTextHeight = headerLines * lineHeight + (headerLines - 1) * sHeaderLineGap;
         int barCount = hasQuestData ? 1 + (tensionActive ? 1 : 0) : 0;
         int barBlockHeight = barCount > 0
-            ? (barCount * HEADER_BAR_HEIGHT + (barCount - 1) * HEADER_BAR_GAP)
+            ? (barCount * sHeaderBarHeight + (barCount - 1) * sHeaderBarGap)
             : 0;
-        int headerBlockHeight = PADDING + headerTextHeight
-            + (barCount > 0 ? HEADER_BAR_TOP_GAP + barBlockHeight : 0);
+        int headerBlockHeight = sPadding + headerTextHeight
+            + (barCount > 0 ? sHeaderBarTopGap + barBlockHeight : 0);
 
         // Calculate panel size
-        int panelHeight = headerBlockHeight + visibleCount * MEMBER_HEIGHT + PADDING;
+        int panelHeight = headerBlockHeight + visibleCount * sMemberHeight + sPadding;
         if (hasOverflow) {
-            panelHeight += MEMBER_HEIGHT;
+            panelHeight += sMemberHeight;
         }
 
-        int x = MARGIN_LEFT;
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-        int maxY = screenHeight - panelHeight - 10;
-        int y = Math.min(MARGIN_TOP, maxY);
-        y = Math.max(10, y);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+
+        int x = Math.max(safeLeft, Math.min(sMarginLeft, safeRight - panelWidth));
+        int maxY = safeBottom - panelHeight - UIScaleManager.scale(10);
+        int y = Math.min(sMarginTop, maxY);
+        y = Math.max(safeTop, y);
 
         // Panel background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, PANEL_BG);
-        graphics.renderOutline(x, y, PANEL_WIDTH, panelHeight, PANEL_BORDER);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
+        graphics.renderOutline(x, y, panelWidth, panelHeight, PANEL_BORDER);
 
         // Header
         String headerLeft = "Party " + members.size();
@@ -204,21 +220,21 @@ public class PartyHudOverlay {
             headerRight = waveLabel;
         }
         var safeFont = Objects.requireNonNull(font);
-        int headerX = x + PADDING;
-        int headerY = y + PADDING;
-        graphics.drawString(safeFont, headerLeft, headerX, headerY, TEXT_SECONDARY);
+        int headerX = x + sPadding;
+        int headerY = y + sPadding;
+        UIScaleManager.drawScaledString(graphics, safeFont, headerLeft, headerX, headerY, TEXT_SECONDARY);
         if (!headerRight.isEmpty()) {
-            int rightWidth = safeFont.width(headerRight);
-            int rightX = x + PANEL_WIDTH - PADDING - rightWidth;
-            graphics.drawString(safeFont, headerRight, rightX, headerY, TEXT_SECONDARY);
+            int rightWidth = UIScaleManager.getScaledStringWidth(safeFont, headerRight);
+            int rightX = x + panelWidth - sPadding - rightWidth;
+            UIScaleManager.drawScaledString(graphics, safeFont, headerRight, rightX, headerY, TEXT_SECONDARY);
         }
 
         int lineIndex = 1;
         if (hasQuestData && questData != null) {
             String runLabel = "Run " + formatDuration(questData.sessionDurationMs());
-            runLabel = fitToWidth(safeFont, runLabel, PANEL_WIDTH - PADDING * 2 - 50);
-            int runY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-            graphics.drawString(safeFont, runLabel, headerX, runY, TEXT_SECONDARY);
+            runLabel = fitToWidth(safeFont, runLabel, panelWidth - sPadding * 2 - UIScaleManager.scale(50));
+            int runY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+            UIScaleManager.drawScaledString(graphics, safeFont, runLabel, headerX, runY, TEXT_SECONDARY);
 
             String tensionLabel = "";
             int tensionColor = TEXT_SECONDARY;
@@ -232,15 +248,15 @@ public class PartyHudOverlay {
                 tensionColor = ClientTensionCache.getDisplayColor();
             }
             if (!tensionLabel.isEmpty()) {
-                int tensionWidth = safeFont.width(tensionLabel);
-                int tensionX = x + PANEL_WIDTH - PADDING - tensionWidth;
-                graphics.drawString(safeFont, tensionLabel, tensionX, runY, tensionColor);
+                int tensionWidth = UIScaleManager.getScaledStringWidth(safeFont, tensionLabel);
+                int tensionX = x + panelWidth - sPadding - tensionWidth;
+                UIScaleManager.drawScaledString(graphics, safeFont, tensionLabel, tensionX, runY, tensionColor);
             }
             lineIndex++;
 
             if (syncStale) {
-                int syncY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-                graphics.drawString(safeFont, "SYNC " + syncSeconds + "s", headerX, syncY, STATUS_OFFLINE);
+                int syncY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+                UIScaleManager.drawScaledString(graphics, safeFont, "SYNC " + syncSeconds + "s", headerX, syncY, STATUS_OFFLINE);
                 lineIndex++;
             }
 
@@ -285,53 +301,53 @@ public class PartyHudOverlay {
                     }
                 }
             }
-            int detailY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-            int rightWidth = detailRight.isEmpty() ? 0 : safeFont.width(detailRight);
-            int leftMax = PANEL_WIDTH - PADDING * 2 - (rightWidth > 0 ? rightWidth + 6 : 0);
+            int detailY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+            int rightWidth = detailRight.isEmpty() ? 0 : UIScaleManager.getScaledStringWidth(safeFont, detailRight);
+            int leftMax = panelWidth - sPadding * 2 - (rightWidth > 0 ? rightWidth + UIScaleManager.scale(6) : 0);
             detailLeft = fitToWidth(safeFont, detailLeft, leftMax);
-            graphics.drawString(safeFont, detailLeft, headerX, detailY, detailColor);
+            UIScaleManager.drawScaledString(graphics, safeFont, detailLeft, headerX, detailY, detailColor);
             if (!detailRight.isEmpty()) {
-                int rightX = x + PANEL_WIDTH - PADDING - rightWidth;
-                graphics.drawString(safeFont, detailRight, rightX, detailY, TEXT_SECONDARY);
+                int rightX = x + panelWidth - sPadding - rightWidth;
+                UIScaleManager.drawScaledString(graphics, safeFont, detailRight, rightX, detailY, TEXT_SECONDARY);
             }
             lineIndex++;
 
             if (showWaiting) {
-                String waitingText = fitToWidth(safeFont, waitingLabel, PANEL_WIDTH - PADDING * 2);
-                int waitingY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-                graphics.drawString(safeFont, waitingText, headerX, waitingY, TEXT_SECONDARY);
+                String waitingText = fitToWidth(safeFont, waitingLabel, panelWidth - sPadding * 2);
+                int waitingY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+                UIScaleManager.drawScaledString(graphics, safeFont, waitingText, headerX, waitingY, TEXT_SECONDARY);
                 lineIndex++;
             }
 
             if (showNext) {
-                String nextText = fitToWidth(safeFont, nextLabel, PANEL_WIDTH - PADDING * 2);
-                int actionY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-                graphics.drawString(safeFont, nextText, headerX, actionY, STATUS_READY);
+                String nextText = fitToWidth(safeFont, nextLabel, panelWidth - sPadding * 2);
+                int actionY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+                UIScaleManager.drawScaledString(graphics, safeFont, nextText, headerX, actionY, STATUS_READY);
                 lineIndex++;
             }
 
             if (hasModifiers) {
                 String modsText = buildModifiersText(modifiers);
-                modsText = fitToWidth(safeFont, modsText, PANEL_WIDTH - PADDING * 2);
-                int modsY = headerY + lineIndex * (lineHeight + HEADER_LINE_GAP);
-                graphics.drawString(safeFont, modsText, headerX, modsY, TEXT_SECONDARY);
+                modsText = fitToWidth(safeFont, modsText, panelWidth - sPadding * 2);
+                int modsY = headerY + lineIndex * (lineHeight + sHeaderLineGap);
+                UIScaleManager.drawScaledString(graphics, safeFont, modsText, headerX, modsY, TEXT_SECONDARY);
                 lineIndex++;
             }
         }
 
         if (hasQuestData && barCount > 0) {
-            int barX = x + PADDING;
-            int barY = headerY + headerTextHeight + HEADER_BAR_TOP_GAP;
-            int barWidth = PANEL_WIDTH - PADDING * 2;
+            int barX = x + sPadding;
+            int barY = headerY + headerTextHeight + sHeaderBarTopGap;
+            int barWidth = panelWidth - sPadding * 2;
             if (tensionActive) {
-                graphics.fill(barX, barY, barX + barWidth, barY + HEADER_BAR_HEIGHT, STATUS_BAR_BG);
+                graphics.fill(barX, barY, barX + barWidth, barY + sHeaderBarHeight, STATUS_BAR_BG);
                 int fill = Math.round(barWidth * ClientTensionCache.getTensionPercent());
                 if (fill > 0) {
-                    graphics.fill(barX, barY, barX + fill, barY + HEADER_BAR_HEIGHT, ClientTensionCache.getDisplayColor());
+                    graphics.fill(barX, barY, barX + fill, barY + sHeaderBarHeight, ClientTensionCache.getDisplayColor());
                 }
-                barY += HEADER_BAR_HEIGHT + HEADER_BAR_GAP;
+                barY += sHeaderBarHeight + sHeaderBarGap;
             }
-            graphics.fill(barX, barY, barX + barWidth, barY + HEADER_BAR_HEIGHT, STATUS_BAR_BG);
+            graphics.fill(barX, barY, barX + barWidth, barY + sHeaderBarHeight, STATUS_BAR_BG);
             // FIX AUDIT2 #4: Use snapshot-based getWaveProgress for frame consistency
             float progress = atCheckpoint ? gateProgress : ClientQuestCache.getWaveProgress(questData);
             int fill = Math.round(barWidth * Math.min(1f, Math.max(0f, progress)));
@@ -340,7 +356,7 @@ public class PartyHudOverlay {
                 color = readyCount >= gateTotal ? STATUS_READY : STATUS_WAITING;
             }
             if (fill > 0) {
-                graphics.fill(barX, barY, barX + fill, barY + HEADER_BAR_HEIGHT, color);
+                graphics.fill(barX, barY, barX + fill, barY + sHeaderBarHeight, color);
             }
         }
 
@@ -348,44 +364,47 @@ public class PartyHudOverlay {
         int memberY = y + headerBlockHeight;
         for (int i = 0; i < visibleCount; i++) {
             PartySyncPayload.PartyMemberInfo member = members.get(i);
-            renderMember(graphics, font, member, x + PADDING, memberY, atCheckpoint);
-            memberY += MEMBER_HEIGHT;
+            renderMember(graphics, font, member, x + sPadding, memberY, atCheckpoint, panelWidth, sPadding, sStatusBarHeight);
+            memberY += sMemberHeight;
         }
 
         if (hasOverflow) {
             String moreText = "+" + (totalMembers - visibleCount) + " more";
-            graphics.drawString(safeFont, moreText, x + PADDING, memberY + 4, TEXT_SECONDARY);
+            UIScaleManager.drawScaledString(graphics, safeFont, moreText, x + sPadding, memberY + UIScaleManager.scale(4), TEXT_SECONDARY);
         }
     }
 
     private static void renderMember(GuiGraphics graphics, Font font,
                                       PartySyncPayload.PartyMemberInfo member,
-                                      int x, int y, boolean atCheckpoint) {
+                                      int x, int y, boolean atCheckpoint,
+                                      int panelWidth, int sPadding, int sStatusBarHeight) {
         // Status indicator (colored dot)
         int statusColor = getStatusColor(member, atCheckpoint);
-        graphics.fill(x, y + 2, x + 4, y + 6, statusColor);
+        int sDotSize = UIScaleManager.scale(4);
+        graphics.fill(x, y + UIScaleManager.scale(2), x + sDotSize, y + UIScaleManager.scale(6), statusColor);
 
         // Leader star
         String prefix = member.isLeader() ? "\u2605 " : "";
         int nameColor = member.isLeader() ? COLOR_LEADER :
                        (member.isOnline() ? TEXT_PRIMARY : COLOR_OFFLINE);
 
-        // Player name (truncated if too long)
-        String name = prefix + truncateName(member.playerName(), 10);
-        graphics.drawString(Objects.requireNonNull(font), name, x + 8, y, nameColor);
-
         // Status label
         String statusLabel = Objects.requireNonNull(getStatusLabel(member, atCheckpoint), "statusLabel");
-        int statusWidth = font.width(statusLabel);
-        int statusX = x + (PANEL_WIDTH - PADDING * 2) - statusWidth;
-        graphics.drawString(Objects.requireNonNull(font), statusLabel, statusX, y, statusColor);
+        int statusWidth = UIScaleManager.getScaledStringWidth(font, statusLabel);
+        int statusX = x + (panelWidth - sPadding * 2) - statusWidth;
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), statusLabel, statusX, y, statusColor);
+
+        // Player name (truncate to avoid overlap with status)
+        int nameMaxWidth = Math.max(0, statusX - (x + UIScaleManager.scale(8)) - UIScaleManager.scale(4));
+        String name = fitToWidth(Objects.requireNonNull(font), prefix + member.playerName(), nameMaxWidth);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), name, x + UIScaleManager.scale(8), y, nameColor);
 
         // Status bar (represents readiness/offline state)
         int barX = x;
-        int barY = y + 10;
-        int barWidth = PANEL_WIDTH - PADDING * 2 - 8;
+        int barY = y + UIScaleManager.scale(10);
+        int barWidth = panelWidth - sPadding * 2 - UIScaleManager.scale(8);
 
-        graphics.fill(barX, barY, barX + barWidth, barY + STATUS_BAR_HEIGHT, STATUS_BAR_BG);
+        graphics.fill(barX, barY, barX + barWidth, barY + sStatusBarHeight, STATUS_BAR_BG);
 
         if (member.isOnline()) {
             int fillWidth = barWidth;
@@ -397,11 +416,11 @@ public class PartyHudOverlay {
                 fillWidth = barWidth / 3;
                 fillColor = STATUS_WAITING;
             }
-            graphics.fill(barX, barY, barX + fillWidth, barY + STATUS_BAR_HEIGHT, fillColor);
+            graphics.fill(barX, barY, barX + fillWidth, barY + sStatusBarHeight, fillColor);
         } else {
             // Offline members: short red bar to signal unavailable
             int fillWidth = barWidth / 4;
-            graphics.fill(barX, barY, barX + fillWidth, barY + STATUS_BAR_HEIGHT, STATUS_OFFLINE);
+            graphics.fill(barX, barY, barX + fillWidth, barY + sStatusBarHeight, STATUS_OFFLINE);
         }
     }
 

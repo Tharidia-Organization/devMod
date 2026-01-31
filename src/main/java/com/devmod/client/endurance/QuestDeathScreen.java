@@ -19,15 +19,14 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class QuestDeathScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestDeathScreen.class);
@@ -106,6 +105,9 @@ public class QuestDeathScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
 
@@ -122,23 +124,25 @@ public class QuestDeathScreen extends Screen {
 
         int centerX = width / 2;
         int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int panelX = centerX - sPanelWidth / 2;
+        int panelY = centerY - sPanelHeight / 2;
 
         // Panel with glow
-        renderPanel(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+        renderPanel(graphics, panelX, panelY, sPanelWidth, sPanelHeight, fadeProgress);
 
         // Content
         if (fadeProgress > 0.3f) {
             float contentAlpha = (fadeProgress - 0.3f) / 0.7f;
-            renderContent(graphics, panelX, panelY, contentAlpha, elapsed);
+            renderContent(graphics, panelX, panelY, sPanelWidth, sPanelHeight, contentAlpha, elapsed);
         }
 
         // Keybind hints
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
             int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint").getString()), centerX, panelY + PANEL_HEIGHT + 5, hintColor);
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
+                Objects.requireNonNull(I18n.translate("devmod.death.keybind_hint").getString()),
+                centerX, panelY + sPanelHeight + UIScaleManager.scale(5), hintColor);
         }
 
         // ESC blocked message (overlays the hint when ESC is pressed)
@@ -146,7 +150,9 @@ public class QuestDeathScreen extends Screen {
             long escElapsed = System.currentTimeMillis() - lastEscPressTime;
             float escAlpha = 1.0f - (escElapsed / (float) ESC_MESSAGE_DURATION);
             int escColor = applyAlpha(COLOR_WARNING, escAlpha);
-            graphics.drawCenteredString(Objects.requireNonNull(font), Objects.requireNonNull(I18n.translate("devmod.endurance.must_choose").getString()), centerX, panelY + PANEL_HEIGHT + 18, escColor);
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
+                Objects.requireNonNull(I18n.translate("devmod.endurance.must_choose").getString()),
+                centerX, panelY + sPanelHeight + UIScaleManager.scale(18), escColor);
         }
 
         if (elapsed > FADE_IN_DURATION + 300) {
@@ -173,7 +179,7 @@ public class QuestDeathScreen extends Screen {
         g.fill(x + w - 2, y, x + w, y + h, borderColor);   // Right
     }
 
-    private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
+    private void renderContent(GuiGraphics g, int panelX, int panelY, int sPanelWidth, int sPanelHeight, float alpha, long elapsed) {
         var safeFont = Objects.requireNonNull(font);
         // Pulsing skull effect
         float pulse = (float) (Math.sin(elapsed / (double) SKULL_PULSE_PERIOD * Math.PI * 2) * 0.3 + 0.7);
@@ -181,60 +187,74 @@ public class QuestDeathScreen extends Screen {
 
         // Skull icon (Unicode)
         String skull = "☠";
-        int skullX = panelX + PANEL_WIDTH / 2 - safeFont.width(skull) * 2;
+        int skullX = panelX + sPanelWidth / 2 - safeFont.width(skull) * 2;
         g.pose().pushPose();
-        g.pose().translate(skullX, panelY + 20, 0);
+        g.pose().translate(skullX, panelY + UIScaleManager.scale(20), 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
         g.drawString(safeFont, skull, 0, 0, skullColor, true);
         g.pose().popPose();
 
-        int y = panelY + 75;
+        int y = panelY + UIScaleManager.scale(75);
+        int sInset = UIScaleManager.scale(30);
 
         // "YOU DIED" text
-        g.drawCenteredString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.you_died").getString()), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_DEATH, alpha));
-        y += 25;
+        UIScaleManager.drawScaledCenteredString(g, safeFont,
+            Objects.requireNonNull(I18n.translate("devmod.endurance.you_died").getString()),
+            panelX + sPanelWidth / 2, y, applyAlpha(COLOR_DEATH, alpha));
+        y += UIScaleManager.scale(25);
 
         // Wave info
         String waveText = endlessMode
             ? I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " (" + I18n.translate("devmod.endurance.endless_mode").getString() + ")"
             : I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " / " + totalWaves;
-        g.drawCenteredString(safeFont, waveText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 18;
+        UIScaleManager.drawScaledCenteredString(g, safeFont, waveText,
+            panelX + sPanelWidth / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        y += UIScaleManager.scale(18);
 
         // Points earned
         String pointsText = I18n.translate("devmod.endurance.points").getString() + ": " + pointsEarned;
-        g.drawCenteredString(safeFont, pointsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_GOLD, alpha));
-        y += 18;
+        UIScaleManager.drawScaledCenteredString(g, safeFont, pointsText,
+            panelX + sPanelWidth / 2, y, applyAlpha(COLOR_GOLD, alpha));
+        y += UIScaleManager.scale(18);
 
         // Deaths this run
         String deathsText = I18n.translate("devmod.endurance.deaths").getString() + ": " + deathsThisRun;
-        g.drawCenteredString(safeFont, deathsText, panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_WARNING, alpha));
-        y += 30;
+        UIScaleManager.drawScaledCenteredString(g, safeFont, deathsText,
+            panelX + sPanelWidth / 2, y, applyAlpha(COLOR_WARNING, alpha));
+        y += UIScaleManager.scale(30);
 
         // Separator
         int sepColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
-        g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
-        y += 15;
+        g.fill(panelX + sInset, y, panelX + sPanelWidth - sInset, y + 1, sepColor);
+        y += UIScaleManager.scale(15);
 
         // Options explanation
-        g.drawCenteredString(safeFont, Objects.requireNonNull(I18n.ui("choose_fate").getString()), panelX + PANEL_WIDTH / 2, y, applyAlpha(COLOR_TEXT, alpha));
-        y += 18;
+        UIScaleManager.drawScaledCenteredString(g, safeFont,
+            Objects.requireNonNull(I18n.ui("choose_fate").getString()),
+            panelX + sPanelWidth / 2, y, applyAlpha(COLOR_TEXT, alpha));
+        y += UIScaleManager.scale(18);
 
         // Respawn info
-        g.drawString(safeFont, "• " + I18n.ui("respawn_info").getString(), panelX + 30, y, applyAlpha(COLOR_SUCCESS, alpha));
-        y += 12;
-        g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(), panelX + 30, y, applyAlpha(COLOR_WARNING, alpha));
-        y += 12;
-        g.drawString(safeFont, "  " + I18n.ui("respawn_countdown").getString(), panelX + 30, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 12;
+        UIScaleManager.drawScaledString(g, safeFont, "• " + I18n.ui("respawn_info").getString(),
+            panelX + sInset, y, applyAlpha(COLOR_SUCCESS, alpha), false);
+        y += UIScaleManager.scale(12);
+        UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(),
+            panelX + sInset, y, applyAlpha(COLOR_WARNING, alpha), false);
+        y += UIScaleManager.scale(12);
+        UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.ui("respawn_countdown").getString(),
+            panelX + sInset, y, applyAlpha(COLOR_TEXT_DIM, alpha), false);
+        y += UIScaleManager.scale(12);
         // UX Q2: Show respawn location to reduce uncertainty
-        g.drawString(safeFont, "  " + I18n.ui("respawn_location").getString(), panelX + 30, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 18;
+        UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.ui("respawn_location").getString(),
+            panelX + sInset, y, applyAlpha(COLOR_TEXT_DIM, alpha), false);
+        y += UIScaleManager.scale(18);
 
         // Give up info
-        g.drawString(safeFont, "• " + I18n.ui("giveup_info").getString(), panelX + 30, y, applyAlpha(COLOR_DEATH, alpha));
-        y += 12;
-        g.drawString(safeFont, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned), panelX + 30, y, applyAlpha(COLOR_GOLD, alpha));
+        UIScaleManager.drawScaledString(g, safeFont, "• " + I18n.ui("giveup_info").getString(),
+            panelX + sInset, y, applyAlpha(COLOR_DEATH, alpha), false);
+        y += UIScaleManager.scale(12);
+        UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned),
+            panelX + sInset, y, applyAlpha(COLOR_GOLD, alpha), false);
     }
 
     private int applyAlpha(int color, float alpha) {
@@ -244,19 +264,22 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
         int centerX = width / 2;
         int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
-        int buttonWidth = PANEL_WIDTH - DesignTokens.Space.PANEL_PADDING * 5;
-        int respawnY = panelY + PANEL_HEIGHT - 70;
-        int giveUpY = panelY + PANEL_HEIGHT - 40;
+        int panelX = centerX - sPanelWidth / 2;
+        int panelY = centerY - sPanelHeight / 2;
+        int buttonWidth = sPanelWidth - UIScaleManager.scale(DesignTokens.Space.PANEL_PADDING * 5);
+        int sButtonHeight = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int respawnY = panelY + sPanelHeight - UIScaleManager.scale(70);
+        int giveUpY = panelY + sPanelHeight - UIScaleManager.scale(40);
 
         if (respawnButton != null) {
-            respawnButton.render(graphics, panelX + 20, respawnY, buttonWidth, DesignTokens.Component.BUTTON_HEIGHT_LG, mouseX, mouseY);
+            respawnButton.render(graphics, panelX + UIScaleManager.scale(20), respawnY, buttonWidth, sButtonHeight, mouseX, mouseY);
         }
         if (giveUpButton != null) {
-            giveUpButton.render(graphics, panelX + 20, giveUpY, buttonWidth, DesignTokens.Component.BUTTON_HEIGHT_LG, mouseX, mouseY);
+            giveUpButton.render(graphics, panelX + UIScaleManager.scale(20), giveUpY, buttonWidth, sButtonHeight, mouseX, mouseY);
         }
     }
 

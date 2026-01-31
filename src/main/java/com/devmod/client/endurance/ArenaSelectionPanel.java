@@ -18,6 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.arena.policy.TemplateSuggestion;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.RequestArenaSuggestionsPayload;
@@ -217,10 +218,10 @@ public class ArenaSelectionPanel {
         graphics.renderOutline(x, y, width, height, DesignTokens.Border.DEFAULT);
 
         // Title
-        graphics.drawString(safeFont, "Arena", x + 6, y + 4, DesignTokens.Text.PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Arena", x + 6, y + 4, DesignTokens.Text.PRIMARY, false);
 
         if (suggestions.isEmpty()) {
-            graphics.drawString(safeFont, "Select a mob...", x + 6, y + 18, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Select a mob...", x + 6, y + 18, DesignTokens.Text.MUTED, false);
             return;
         }
 
@@ -230,21 +231,21 @@ public class ArenaSelectionPanel {
             int textY = y + 18;
             int maxNameLen = showPreview ? 14 : 20;
             String displayName = truncate(current.templateName(), maxNameLen);
-            graphics.drawString(safeFont, displayName, x + 6, textY, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, displayName, x + 6, textY, DesignTokens.Text.PRIMARY, false);
 
             // Score indicator
             String scoreText = String.format("%.1f", current.compatibilityScore());
             int scoreColor = current.compatibilityScore() >= 8 ? DesignTokens.Semantic.SUCCESS
                 : current.compatibilityScore() >= 4 ? DesignTokens.Semantic.WARNING
                 : DesignTokens.Text.SECONDARY;
-            graphics.drawString(safeFont, scoreText, x + textAreaWidth - 24, textY, scoreColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, scoreText, x + textAreaWidth - 24, textY, scoreColor, false);
 
             // Auto/Manual indicator
             String currentSelection = selectedTemplateId;
             boolean isAuto = currentSelection == null || currentSelection.equals(autoSelectedTemplateId);
             String modeText = isAuto ? "[Auto]" : "[Manual]";
             int modeColor = isAuto ? DesignTokens.Accent.PRIMARY : DesignTokens.Semantic.WARNING;
-            graphics.drawString(safeFont, modeText, x + 6, textY + 12, modeColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, modeText, x + 6, textY + 12, modeColor, false);
 
             // 3D Preview
             if (showPreview && previewRenderer.hasTemplate()) {
@@ -265,7 +266,7 @@ public class ArenaSelectionPanel {
 
         // Dropdown arrow
         String arrow = expanded ? "\u25B2" : "\u25BC";
-        graphics.drawString(safeFont, arrow, x + textAreaWidth - 8, y + 4, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, arrow, x + textAreaWidth - 8, y + 4, DesignTokens.Text.SECONDARY, false);
 
         // Expanded dropdown
         if (expanded) {
@@ -308,18 +309,18 @@ public class ArenaSelectionPanel {
                 ? DesignTokens.Text.PRIMARY
                 : DesignTokens.Text.MUTED;
             String displayName = truncate(suggestion.templateName(), 18);
-            graphics.drawString(font, displayName, x + 6, itemY + 3, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, displayName, x + 6, itemY + 3, textColor, false);
 
             // Size and score
             String info = suggestion.size() + "b";
             if (suggestion.isCompatible()) {
                 info += String.format(" (%.1f)", suggestion.compatibilityScore());
             }
-            graphics.drawString(font, info, x + 6, itemY + 13, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, info, x + 6, itemY + 13, DesignTokens.Text.SECONDARY, false);
 
             // Incompatibility warning
             if (!suggestion.isCompatible()) {
-                graphics.drawString(font, "\u26A0", x + width - 16, itemY + 6,
+                UIScaleManager.drawScaledString(graphics, font, "\u26A0", x + width - 16, itemY + 6,
                     DesignTokens.Semantic.ERROR, false);
             }
         }

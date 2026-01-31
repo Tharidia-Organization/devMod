@@ -337,37 +337,41 @@ public class DebugGeometryBatcher {
 
         // Setup render state
         RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(515); // GL_LEQUAL
-        RenderSystem.depthMask(true);
         RenderSystem.enableBlend();
-        RenderSystem.blendFunc(770, 771); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
+        RenderSystem.defaultBlendFunc();
         RenderSystem.lineWidth(2.0f);
 
-        poseStack.pushPose();
-        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        try {
+            poseStack.pushPose();
+            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
 
-        Matrix4f modelView = poseStack.last().pose();
-        Matrix4f projection = RenderSystem.getProjectionMatrix();
+            Matrix4f modelView = poseStack.last().pose();
+            Matrix4f projection = RenderSystem.getProjectionMatrix();
 
-        // Render solid boxes
-        if (solidBoxVBO != null && solidBoxVertexCount > 0) {
-            RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
-            renderVBO(solidBoxVBO, modelView, projection);
+            // Render solid boxes
+            if (solidBoxVBO != null && solidBoxVertexCount > 0) {
+                RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+                renderVBO(solidBoxVBO, modelView, projection);
+            }
+
+            // Render wireframe boxes
+            if (wireframeVBO != null && wireframeVertexCount > 0) {
+                RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+                renderVBO(wireframeVBO, modelView, projection);
+            }
+
+            // Render lines
+            if (lineVBO != null && lineVertexCount > 0) {
+                RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+                renderVBO(lineVBO, modelView, projection);
+            }
+
+            poseStack.popPose();
+        } finally {
+            // Restore default render state
+            RenderSystem.disableBlend();
+            RenderSystem.lineWidth(1.0f);
         }
-
-        // Render wireframe boxes
-        if (wireframeVBO != null && wireframeVertexCount > 0) {
-            RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
-            renderVBO(wireframeVBO, modelView, projection);
-        }
-
-        // Render lines
-        if (lineVBO != null && lineVertexCount > 0) {
-            RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
-            renderVBO(lineVBO, modelView, projection);
-        }
-
-        poseStack.popPose();
     }
 
     private void renderVBO(@Nonnull VertexBuffer vbo, @Nonnull Matrix4f modelView, @Nonnull Matrix4f projection) {

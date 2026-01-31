@@ -10,11 +10,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
-import com.devmod.network.PayloadValidation;
-import com.devmod.npc.dialog.DialogSet;
-import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.network.PayloadSizeUtil;
-
+import com.devmod.network.PayloadValidation;
+import com.devmod.npc.dialog.DialogLimits;
+import com.devmod.npc.dialog.DialogSet;
 /**
  * Server -> Client payload to open the dialog editor screen.
  */

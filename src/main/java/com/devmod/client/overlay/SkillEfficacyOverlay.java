@@ -67,46 +67,56 @@ public class SkillEfficacyOverlay {
         int screenHeight = graphics.guiHeight();
 
         // Position: right side, below center
-        int panelX = screenWidth - PANEL_WIDTH - 10;
+        int panelWidth = Math.min(UIScaleManager.scale(PANEL_WIDTH), UIScaleManager.getSafeWidth());
+        int panelX = screenWidth - panelWidth - UIScaleManager.scale(10);
         int panelY = screenHeight / 2;
+        int panelHeight = calculatePanelHeight(recentSkillsCount());
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
-        renderSkillPanel(graphics, font, panelX, panelY);
+        renderSkillPanel(graphics, font, panelX, panelY, panelWidth);
     }
 
-    private static void renderSkillPanel(GuiGraphics graphics, Font font, int x, int y) {
+    private static void renderSkillPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth) {
         List<SkillTrackingService.SkillStats> recentSkills =
             SkillTrackingService.INSTANCE.getRecentSkills(MAX_SKILLS_SHOWN);
 
         int panelHeight = calculatePanelHeight(recentSkills.size());
+        int panelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, PANEL_BG);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
 
         // Border
-        drawBorder(graphics, x, y, PANEL_WIDTH, panelHeight, PANEL_BORDER);
+        drawBorder(graphics, x, y, panelWidth, panelHeight, PANEL_BORDER);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int textX = x + panelPadding;
+        int textY = y + panelPadding;
 
         // Title
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, "Skill Efficacy", textX, textY, TEXT_TITLE, false);
-        textY += LINE_HEIGHT + 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, "Skill Efficacy", textX, textY, TEXT_TITLE, false);
+        textY += lineHeight + UIScaleManager.scale(2);
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1,
+        graphics.fill(x + 4, textY, x + panelWidth - 4, textY + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
         textY += 4;
 
         if (recentSkills.isEmpty()) {
-            graphics.drawString(safeFont, "No skills used yet", textX, textY, TEXT_MUTED, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "No skills used yet", textX, textY, TEXT_MUTED, false);
             return;
         }
 
         // Skill entries
         for (SkillTrackingService.SkillStats skill : recentSkills) {
             renderSkillEntry(graphics, font, textX, textY, skill);
-            textY += LINE_HEIGHT * 2 + 2;
+            textY += lineHeight * 2 + UIScaleManager.scale(2);
         }
     }
 
@@ -115,26 +125,26 @@ public class SkillEfficacyOverlay {
         var safeFont = Objects.requireNonNull(font);
         // Skill name
         String name = truncateName(skill.skillId(), 15);
-        graphics.drawString(safeFont, "[" + name + "]", x, y, TEXT_NORMAL, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "[" + name + "]", x, y, TEXT_NORMAL, false);
 
         // Hit rate
         float hitRate = skill.getHitRate();
         int hitColor = hitRate >= 0.7f ? TEXT_VALUE : hitRate >= 0.4f ? TEXT_WARNING : TEXT_DANGER;
         String hitText = String.format("Hit: %d/%d (%.0f%%)",
             skill.hits(), skill.uses(), hitRate * 100);
-        graphics.drawString(safeFont, hitText, x + 100, y, hitColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, hitText, x + UIScaleManager.scale(100), y, hitColor, false);
 
-        y += LINE_HEIGHT;
+        y += UIScaleManager.scale(LINE_HEIGHT);
 
         // Damage
         String dmgText = String.format("Dmg: %.1f", skill.totalDamage());
-        graphics.drawString(safeFont, dmgText, x + 10, y, TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, dmgText, x + UIScaleManager.scale(10), y, TEXT_MUTED, false);
 
         // Cooldown or last use
         long lastUseMs = skill.lastUseMs();
         long elapsedSec = (System.currentTimeMillis() - lastUseMs) / 1000;
         String timeText = elapsedSec < 60 ? elapsedSec + "s ago" : (elapsedSec / 60) + "m ago";
-        graphics.drawString(safeFont, timeText, x + 100, y, TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, timeText, x + UIScaleManager.scale(100), y, TEXT_MUTED, false);
     }
 
     private static String truncateName(String name, int maxLen) {
@@ -163,17 +173,25 @@ public class SkillEfficacyOverlay {
     }
 
     private static int calculatePanelHeight(int skillCount) {
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Title
+        int padding = UIScaleManager.scale(PANEL_PADDING);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int height = padding * 2;
+        height += lineHeight + 2;  // Title
         height += 4;                // Separator
 
         if (skillCount == 0) {
-            height += LINE_HEIGHT;  // "No skills" message
+            height += lineHeight;  // "No skills" message
         } else {
-            height += skillCount * (LINE_HEIGHT * 2 + 2);
+            height += skillCount * (lineHeight * 2 + 2);
         }
 
         return height;
+    }
+
+    private static int recentSkillsCount() {
+        List<SkillTrackingService.SkillStats> recentSkills =
+            SkillTrackingService.INSTANCE.getRecentSkills(MAX_SKILLS_SHOWN);
+        return recentSkills != null ? recentSkills.size() : 0;
     }
 
     private static void drawBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {

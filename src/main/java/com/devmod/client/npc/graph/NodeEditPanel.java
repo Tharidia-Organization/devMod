@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.npc.dialog.DialogNode;
@@ -168,18 +169,19 @@ public class NodeEditPanel extends AbstractWidget {
 
         // Header
         graphics.fill(getX(), getY(), getX() + width, getY() + HEADER_HEIGHT, COLOR_HEADER);
-        graphics.drawString(
+        UIScaleManager.drawScaledString(
+            graphics,
             minecraft.font,
             nodeId != null ? "Node: " + truncate(nodeId, 15) : "No Selection",
             getX() + PADDING,
             getY() + (HEADER_HEIGHT - 8) / 2,
-            COLOR_TEXT,
-            false
+            COLOR_TEXT
         );
 
         if (dialogNode == null) {
             // Empty state
-            graphics.drawCenteredString(
+            UIScaleManager.drawScaledCenteredString(
+                graphics,
                 minecraft.font,
                 "Select a node to view details",
                 getX() + width / 2,
@@ -200,25 +202,25 @@ public class NodeEditPanel extends AbstractWidget {
         int y = getY() + HEADER_HEIGHT + PADDING - scrollOffset;
 
         // Node ID
-        graphics.drawString(minecraft.font, "ID:", getX() + PADDING, y, COLOR_TEXT_DIM, false);
+        UIScaleManager.drawScaledString(graphics, minecraft.font, "ID:", getX() + PADDING, y, COLOR_TEXT_DIM);
         y += LINE_HEIGHT;
-        graphics.drawString(minecraft.font, nodeId, getX() + PADDING, y, COLOR_TEXT, false);
+        UIScaleManager.drawScaledString(graphics, minecraft.font, nodeId, getX() + PADDING, y, COLOR_TEXT);
         y += LINE_HEIGHT + PADDING;
 
         // Lines section
-        graphics.drawString(minecraft.font, "Lines (" + dialogNode.lines().size() + "):", getX() + PADDING, y, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, minecraft.font, "Lines (" + dialogNode.lines().size() + "):", getX() + PADDING, y, COLOR_ACCENT);
         y += LINE_HEIGHT;
 
         List<String> lines = dialogNode.lines();
         for (int i = 0; i < lines.size(); i++) {
             String line = truncate(lines.get(i), 25);
-            graphics.drawString(minecraft.font, (i + 1) + ". " + line, getX() + PADDING, y, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, minecraft.font, (i + 1) + ". " + line, getX() + PADDING, y, COLOR_TEXT_DIM);
             y += LINE_HEIGHT;
         }
         y += PADDING;
 
         // Options section
-        graphics.drawString(minecraft.font, "Options (" + dialogNode.options().size() + "):", getX() + PADDING, y, COLOR_ACCENT, false);
+        UIScaleManager.drawScaledString(graphics, minecraft.font, "Options (" + dialogNode.options().size() + "):", getX() + PADDING, y, COLOR_ACCENT);
         y += LINE_HEIGHT;
 
         List<DialogOption> options = dialogNode.options();
@@ -228,11 +230,11 @@ public class NodeEditPanel extends AbstractWidget {
             String actionType = getActionTypeName(opt);
 
             // Option label
-            graphics.drawString(minecraft.font, opt.icon() + " " + label, getX() + PADDING, y, COLOR_TEXT, false);
+            UIScaleManager.drawScaledString(graphics, minecraft.font, opt.icon() + " " + label, getX() + PADDING, y, COLOR_TEXT);
             y += LINE_HEIGHT;
 
             // Action type
-            graphics.drawString(minecraft.font, "  → " + actionType, getX() + PADDING, y, COLOR_TEXT_DIM, false);
+            UIScaleManager.drawScaledString(graphics, minecraft.font, "  -> " + actionType, getX() + PADDING, y, COLOR_TEXT_DIM);
             y += LINE_HEIGHT;
         }
 

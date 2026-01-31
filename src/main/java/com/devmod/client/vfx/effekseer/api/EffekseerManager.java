@@ -4,9 +4,9 @@ import java.nio.FloatBuffer;
 
 import org.joml.Matrix4f;
 
-import Effekseer.swig.EffekseerManagerCore;
-
 import com.devmod.client.vfx.effekseer.util.Helpers;
+
+import Effekseer.swig.EffekseerManagerCore;
 
 public class EffekseerManager extends SafeFinalized<EffekseerManagerCore> {
     private static final ThreadLocal<float[]> MATRIX_BUFFER = ThreadLocal.withInitial(() -> new float[16]);

@@ -255,25 +255,29 @@ public abstract class BaseDevModScreen extends Screen {
 
         Component errorTitle = Objects.requireNonNull(
             Component.translatable("devmod.screen.error.title"), "errorTitle");
-        graphics.drawCenteredString(safeFont, errorTitle, centerX, centerY - 30, DesignTokens.ErrorScreen.TITLE);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, errorTitle.getString(),
+            centerX, centerY - UIScaleManager.getScaledLineHeight() * 2, DesignTokens.ErrorScreen.TITLE);
 
         // Error message
         if (errorMessage != null) {
             Component msgComponent = Objects.requireNonNull(
                 Component.literal(errorMessage), "msgComponent");
-            graphics.drawCenteredString(safeFont, msgComponent, centerX, centerY - 10, DesignTokens.ErrorScreen.TEXT);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, msgComponent.getString(),
+                centerX, centerY - UIScaleManager.getScaledLineHeight(), DesignTokens.ErrorScreen.TEXT);
         }
 
         // Instructions
         Component escHint = Objects.requireNonNull(
             Component.translatable("devmod.screen.error.hint"), "escHint");
-        graphics.drawCenteredString(safeFont, escHint, centerX, centerY + 20, DesignTokens.ErrorScreen.HINT);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, escHint.getString(),
+            centerX, centerY + UIScaleManager.getScaledLineHeight(), DesignTokens.ErrorScreen.HINT);
 
         // Retry hint if not maxed out
         if (errorCount < MAX_ERROR_COUNT) {
             Component retryHint = Objects.requireNonNull(
                 Component.translatable("devmod.screen.error.retry"), "retryHint");
-            graphics.drawCenteredString(safeFont, retryHint, centerX, centerY + 40, DesignTokens.ErrorScreen.HINT);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, retryHint.getString(),
+                centerX, centerY + UIScaleManager.getScaledLineHeight() * 2, DesignTokens.ErrorScreen.HINT);
         }
     }
 
@@ -288,7 +292,7 @@ public abstract class BaseDevModScreen extends Screen {
             return;
         }
 
-        int msgWidth = safeFont.width(safeMessage);
+        int msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage);
         int msgX = (width - msgWidth) / 2;
         int msgY = height - 50;
 
@@ -296,7 +300,16 @@ public abstract class BaseDevModScreen extends Screen {
         graphics.fill(msgX - 6, msgY - 4, msgX + msgWidth + 6, msgY + 12, DesignTokens.ErrorScreen.STATUS_BG);
 
         // Text
-        graphics.drawString(safeFont, safeMessage, msgX, msgY, statusColor, false);
+        float textScale = UIScaleManager.getTextScale();
+        if (Math.abs(textScale - 1.0f) < 0.01f) {
+            graphics.drawString(safeFont, safeMessage, msgX, msgY, statusColor, false);
+            return;
+        }
+        graphics.pose().pushPose();
+        graphics.pose().translate(msgX, msgY, 0);
+        graphics.pose().scale(textScale, textScale, 1.0f);
+        graphics.drawString(safeFont, safeMessage, 0, 0, statusColor, false);
+        graphics.pose().popPose();
     }
 
     // ============================================================================

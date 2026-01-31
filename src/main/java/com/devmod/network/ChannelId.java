@@ -179,6 +179,7 @@ public enum ChannelId {
     HOLOGRAM_SAVE(163, Direction.CLIENT_TO_SERVER, "SaveHologramPayload"),
     HOLOGRAM_DELETE(164, Direction.CLIENT_TO_SERVER, "DeleteHologramPayload"),
     HOLOGRAM_SYNC(165, Direction.SERVER_TO_CLIENT, "HologramSyncPayload"),
+    HOLOGRAM_PRESET(166, Direction.CLIENT_TO_SERVER, "HologramPresetPayload"),
 
     // ============================================================================
     // CLONE MODULE CHANNELS (170-179)

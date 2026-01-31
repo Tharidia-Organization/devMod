@@ -29,6 +29,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
+import com.devmod.blocks.ModBlocks;
 import com.devmod.transport.TransportColor;
 import com.devmod.transport.TransportData;
 import com.devmod.transport.TransportRegistry;
@@ -286,7 +287,7 @@ public final class RiftGateManager {
      */
     private void buildGateStructure(ServerLevel level, BlockPos basePos) {
         BlockState frame = Blocks.CRYING_OBSIDIAN.defaultBlockState();
-        BlockState portal = Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState(); // Placeholder
+        BlockState portal = ModBlocks.NEXUS_PORTAL.get().defaultBlockState();
         BlockState base = Blocks.POLISHED_BLACKSTONE.defaultBlockState();
         int flags = 2 | 16; // UPDATE | NO_OBSERVER
 

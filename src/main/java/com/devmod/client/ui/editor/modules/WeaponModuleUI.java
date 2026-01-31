@@ -17,6 +17,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -891,12 +892,12 @@ public class WeaponModuleUI {
 
             // Header
             graphics.fill(x, y, x + width, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
-            graphics.drawString(font, "Damage Attributes", x + TEXT_INSET_X,
+            UIScaleManager.drawScaledString(graphics, font, "Damage Attributes", x + TEXT_INSET_X,
                 y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
             int activeCount = core.getStats().getCustomAttributeModifiers().size();
             String countText = "(" + activeCount + " active)";
-            int countWidth = font.width(countText);
-            graphics.drawString(font, countText, x + width - countWidth - TEXT_INSET_X,
+            int countWidth = UIScaleManager.getScaledStringWidth(font, countText);
+            UIScaleManager.drawScaledString(graphics, font, countText, x + width - countWidth - TEXT_INSET_X,
                 y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
             y += HEADER_HEIGHT + DesignTokens.Spacing.SM;
 
@@ -914,7 +915,7 @@ public class WeaponModuleUI {
                     boolean hovered = row.contains(mouseX, mouseY);
                     int bg = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT();
                     graphics.fill(row.x(), row.y(), row.right(), row.bottom(), bg);
-                    graphics.drawString(font, option.display(), row.x() + 4, row.y() + 3,
+                    UIScaleManager.drawScaledString(graphics, font, option.display(), row.x() + 4, row.y() + 3,
                         DesignTokens.Text.PRIMARY(), false);
                     suggestionHits.add(new SuggestionHit(row, option));
                     listY += SUGGESTION_ROW_HEIGHT;
@@ -926,14 +927,14 @@ public class WeaponModuleUI {
 
             String opLabel = operationLabel();
             String actionLabel = selectedIndex >= 0 ? "Update" : "Add";
-            int actionWidth = Math.max(50, font.width(actionLabel) + ACTION_PADDING_X * 2);
-            int opWidth = Math.max(90, font.width(opLabel) + ACTION_PADDING_X * 2);
-            int labelWidth = font.width("Operation") + 6;
+            int actionWidth = Math.max(50, UIScaleManager.getScaledStringWidth(font, actionLabel) + ACTION_PADDING_X * 2);
+            int opWidth = Math.max(90, UIScaleManager.getScaledStringWidth(font, opLabel) + ACTION_PADDING_X * 2);
+            int labelWidth = UIScaleManager.getScaledStringWidth(font, "Operation") + 6;
             int opX = x + TEXT_INSET_X + labelWidth;
             int actionX = x + width - TEXT_INSET_X - actionWidth;
             int opY = y;
 
-            graphics.drawString(font, "Operation", x + TEXT_INSET_X, opY + 3, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, "Operation", x + TEXT_INSET_X, opY + 3, DesignTokens.Text.MUTED(), false);
             operationBounds = new ResponsiveLayout.Rect(opX, opY, opWidth, ACTION_ROW_HEIGHT);
             renderMiniButton(graphics, font, operationBounds, opLabel, operationBounds.contains(mouseX, mouseY), true);
             actionBounds = new ResponsiveLayout.Rect(actionX, opY, actionWidth, ACTION_ROW_HEIGHT);
@@ -946,7 +947,7 @@ public class WeaponModuleUI {
             entryHits.clear();
             List<WeaponStats.AttributeModifierData> entries = core.getStats().getCustomAttributeModifiers();
             if (entries.isEmpty()) {
-                graphics.drawString(font, EMPTY_LIST_TEXT, x + TEXT_INSET_X, y,
+                UIScaleManager.drawScaledString(graphics, font, EMPTY_LIST_TEXT, x + TEXT_INSET_X, y,
                     DesignTokens.Text.MUTED(), false);
                 return;
             }
@@ -963,7 +964,7 @@ public class WeaponModuleUI {
                 String opText = operationLabel(entry.operation);
                 String valueText = formatValue(entry.amount);
                 String line = entry.attributeId + " " + opText + " " + valueText;
-                graphics.drawString(font, line, row.x() + 4, row.y() + 3, DesignTokens.Text.PRIMARY(), false);
+                UIScaleManager.drawScaledString(graphics, font, line, row.x() + 4, row.y() + 3, DesignTokens.Text.PRIMARY(), false);
                 ResponsiveLayout.Rect remove = new ResponsiveLayout.Rect(
                     row.right() - ENTRY_REMOVE_WIDTH, row.y(), ENTRY_REMOVE_WIDTH, ENTRY_ROW_HEIGHT);
                 renderMiniButton(graphics, font, remove, "X", remove.contains(mouseX, mouseY), true);
@@ -1162,9 +1163,9 @@ public class WeaponModuleUI {
             int border = hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT();
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), border);
             int textColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
-            int textX = rect.x() + (rect.width() - font.width(label)) / 2;
+            int textX = rect.x() + (rect.width() - UIScaleManager.getScaledStringWidth(font, label)) / 2;
             int textY = rect.y() + (rect.height() - 8) / 2;
-            graphics.drawString(font, label, textX, textY, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, textX, textY, textColor, false);
         }
 
         private record AttributeOption(String id, String display, String search) {}
@@ -1202,10 +1203,10 @@ public class WeaponModuleUI {
             var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
             float dps = core.computeDps(module.getItem());
             String dpsText = String.format("DPS: %.1f", dps);
-            int textWidth = font.width(Objects.requireNonNull(dpsText));
+            int textWidth = UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(dpsText));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + TEXT_OFFSET_Y;
-            graphics.drawString(font, dpsText, x, y, DesignTokens.Text.VALUE(), false);
+            UIScaleManager.drawScaledString(graphics, font, dpsText, x, y, DesignTokens.Text.VALUE(), false);
         }
     }
 

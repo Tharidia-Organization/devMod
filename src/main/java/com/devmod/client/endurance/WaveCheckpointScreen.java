@@ -19,16 +19,15 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 
 public class WaveCheckpointScreen extends Screen {
@@ -148,6 +147,9 @@ public class WaveCheckpointScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+
         if (!renderLogged) {
             LOGGER.info("[CheckpointScreen] First render call!");
             renderLogged = true;
@@ -170,16 +172,16 @@ public class WaveCheckpointScreen extends Screen {
         graphics.pose().scale(scaleProgress, scaleProgress, 1.0f);
         graphics.pose().translate(-centerX, -centerY, 0);
 
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int panelX = centerX - sPanelWidth / 2;
+        int panelY = centerY - sPanelHeight / 2;
 
         // === Panel Background with Gradient ===
-        renderPanelWithGradient(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+        renderPanelWithGradient(graphics, panelX, panelY, sPanelWidth, sPanelHeight, fadeProgress);
 
         // === Header (animated) ===
         if (elapsed > HEADER_REVEAL_DELAY) {
             float headerAlpha = Math.min(1.0f, (elapsed - HEADER_REVEAL_DELAY) / 300.0f);
-            renderHeader(graphics, centerX, panelY, headerAlpha, elapsed);
+            renderHeader(graphics, centerX, panelY, sPanelWidth, headerAlpha, elapsed);
 
             // Play completion sound once
             var mc = minecraft;
@@ -192,13 +194,13 @@ public class WaveCheckpointScreen extends Screen {
 
         // === Statistics (staggered reveal with animated counters) ===
         if (elapsed > STATS_REVEAL_DELAY) {
-            renderAnimatedStats(graphics, panelX, panelY, centerX, elapsed);
+            renderAnimatedStats(graphics, panelX, panelY, centerX, sPanelWidth, elapsed);
         }
 
         // === Style Rank Reveal (dramatic) ===
         if (elapsed > RANK_REVEAL_DELAY) {
             float rankAlpha = Math.min(1.0f, (elapsed - RANK_REVEAL_DELAY) / 400.0f);
-            renderStyleRankReveal(graphics, centerX, panelY + 170, rankAlpha, elapsed);
+            renderStyleRankReveal(graphics, centerX, panelY + UIScaleManager.scale(170), rankAlpha, elapsed);
 
             // Play rank reveal sound once
             var mc2 = minecraft;
@@ -212,14 +214,16 @@ public class WaveCheckpointScreen extends Screen {
 
         // === Progress Bar (for non-endless) ===
         if (!endlessMode && elapsed > RANK_REVEAL_DELAY + 200) {
-            renderProgressBar(graphics, panelX, panelY + 195, PANEL_WIDTH, elapsed);
+            renderProgressBar(graphics, panelX, panelY + UIScaleManager.scale(195), sPanelWidth, elapsed);
         }
 
         // === Hint ===
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
-            graphics.drawCenteredString(Objects.requireNonNull(font), "ESC/F11: Continue  |  F12: Exit", centerX, panelY + PANEL_HEIGHT - 22, hintColor);
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
+                "ESC/F11: Continue  |  F12: Exit",
+                centerX, panelY + sPanelHeight - UIScaleManager.scale(22), hintColor);
         }
 
         graphics.pose().popPose();
@@ -265,16 +269,16 @@ public class WaveCheckpointScreen extends Screen {
         g.fill(x, y, x + w, y + 1, highlightColor);
     }
 
-    private void renderHeader(GuiGraphics g, int centerX, int panelY, float alpha, long elapsed) {
+    private void renderHeader(GuiGraphics g, int centerX, int panelY, int sPanelWidth, float alpha, long elapsed) {
         // Checkmark icon (animated scale)
         float checkScale = 1.0f + 0.1f * (float) Math.sin(elapsed / 200.0);
         String checkMark = "\u2713";
         int checkColor = applyAlpha(COLOR_SUCCESS, alpha);
 
         g.pose().pushPose();
-        g.pose().translate(centerX - 70, panelY + 18, 0);
+        g.pose().translate(centerX - UIScaleManager.scale(70), panelY + UIScaleManager.scale(18), 0);
         g.pose().scale(checkScale * 1.5f, checkScale * 1.5f, 1.0f);
-        g.drawString(Objects.requireNonNull(font), checkMark, 0, 0, checkColor, true);
+        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font), checkMark, 0, 0, checkColor, true);
         g.pose().popPose();
 
         // "WAVE X COMPLETE!" text
@@ -286,19 +290,21 @@ public class WaveCheckpointScreen extends Screen {
             ? (float) Math.sin((elapsed - HEADER_REVEAL_DELAY) / 50.0) * 2
             : 0;
 
-        g.drawCenteredString(Objects.requireNonNull(font), headerText, centerX + 10, (int)(panelY + 18 + bounce), headerColor);
+        UIScaleManager.drawScaledCenteredString(g, Objects.requireNonNull(font), headerText,
+            centerX + UIScaleManager.scale(10), (int)(panelY + UIScaleManager.scale(18) + bounce), headerColor);
 
         // Separator with glow
         int sepColor = applyAlpha(DesignTokens.withAlpha(COLOR_BORDER, DesignTokens.Alpha.A53), alpha);
-        g.fill(centerX - 150, panelY + 38, centerX + 150, panelY + 39, sepColor);
+        int sepHalfWidth = UIScaleManager.scale(150);
+        g.fill(centerX - sepHalfWidth, panelY + UIScaleManager.scale(38), centerX + sepHalfWidth, panelY + UIScaleManager.scale(39), sepColor);
     }
 
-    private void renderAnimatedStats(GuiGraphics g, int panelX, int panelY, int centerX, long elapsed) {
+    private void renderAnimatedStats(GuiGraphics g, int panelX, int panelY, int centerX, int sPanelWidth, long elapsed) {
         long statsElapsed = elapsed - STATS_REVEAL_DELAY;
-        int statsY = panelY + 55;
-        int leftCol = panelX + 35;
-        int rightCol = centerX + 25;
-        int lineHeight = 26;
+        int statsY = panelY + UIScaleManager.scale(55);
+        int leftCol = panelX + UIScaleManager.scale(35);
+        int rightCol = centerX + UIScaleManager.scale(25);
+        int lineHeight = UIScaleManager.scale(26);
 
         // Define stats with their reveal order
         StatEntry[] stats = {
@@ -336,8 +342,8 @@ public class WaveCheckpointScreen extends Screen {
 
     private void renderStatBox(GuiGraphics g, String label, String value, int x, int y, int valueColor, float alpha) {
         // Background box
-        int boxWidth = 140;
-        int boxHeight = 22;
+        int boxWidth = UIScaleManager.scale(140);
+        int boxHeight = UIScaleManager.scale(22);
         int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
         g.fill(x, y, x + boxWidth, y + boxHeight, bgColor);
 
@@ -348,11 +354,13 @@ public class WaveCheckpointScreen extends Screen {
         // Label
         var safeFont = Objects.requireNonNull(font);
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(safeFont, label, x + 5, y + 3, labelColor, false);
+        UIScaleManager.drawScaledString(g, safeFont, label,
+            x + UIScaleManager.scale(5), y + UIScaleManager.scale(3), labelColor, false);
 
         // Value (larger, bold with shadow)
         int valColor = applyAlpha(valueColor, alpha);
-        g.drawString(safeFont, value, x + 5, y + 12, valColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, value,
+            x + UIScaleManager.scale(5), y + UIScaleManager.scale(12), valColor, true);
     }
 
     private void renderStyleRankReveal(GuiGraphics g, int centerX, int y, float alpha, long elapsed) {
@@ -377,13 +385,13 @@ public class WaveCheckpointScreen extends Screen {
         String rankText = Objects.requireNonNull(styleRank.getDisplayName());
         int rankWidth = safeFont.width(rankText);
         int rankColor = applyAlpha(styleRank.getColor(), alpha);
-        g.drawString(safeFont, rankText, -rankWidth / 2, -5, rankColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, rankText, -rankWidth / 2, -5, rankColor, true);
 
         g.pose().popPose();
 
         // "Style Rank" label above
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawCenteredString(safeFont, "STYLE RANK", centerX, y - 15, labelColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "STYLE RANK", centerX, y - 15, labelColor);
     }
 
     private void renderProgressBar(GuiGraphics g, int panelX, int y, int panelWidth, long elapsed) {
@@ -397,7 +405,7 @@ public class WaveCheckpointScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
         String progressText = "Quest Progress: " + waveNumber + "/" + totalWaves;
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawCenteredString(safeFont, progressText, panelX + panelWidth / 2, y - 2, labelColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, progressText, panelX + panelWidth / 2, y - 2, labelColor);
 
         // Bar background
         int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
@@ -447,20 +455,22 @@ public class WaveCheckpointScreen extends Screen {
     }
 
     private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
         int centerX = width / 2;
         int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int panelX = centerX - sPanelWidth / 2;
+        int panelY = centerY - sPanelHeight / 2;
 
-        int buttonWidth = (PANEL_WIDTH - 60) / 2;
-        int buttonHeight = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int buttonY = panelY + PANEL_HEIGHT - 55;
+        int buttonWidth = (sPanelWidth - UIScaleManager.scale(60)) / 2;
+        int buttonHeight = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int buttonY = panelY + sPanelHeight - UIScaleManager.scale(55);
 
         if (continueButton != null) {
-            continueButton.render(graphics, panelX + 25, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+            continueButton.render(graphics, panelX + UIScaleManager.scale(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
         }
         if (exitButton != null) {
-            exitButton.render(graphics, panelX + PANEL_WIDTH - buttonWidth - 25, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+            exitButton.render(graphics, panelX + sPanelWidth - buttonWidth - UIScaleManager.scale(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
         }
     }
 

@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -100,23 +101,23 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
             DesignTokens.withAlpha(accentColor, DesignTokens.Alpha.A27));
 
         // Icon text (emoji/symbol)
-        int iconTextX = iconX + (ICON_SIZE - font.width(safeIcon)) / 2;
+        int iconTextX = iconX + (ICON_SIZE - UIScaleManager.getScaledStringWidth(font, safeIcon)) / 2;
         int iconTextY = iconY + (ICON_SIZE - 8) / 2;
-        graphics.drawString(font, safeIcon, iconTextX, iconTextY, accentColor, false);
+        UIScaleManager.drawScaledString(graphics, font, safeIcon, iconTextX, iconTextY, accentColor, false);
 
         // Title
         int textX = iconX + ICON_SIZE + CARD_PADDING;
-        graphics.drawString(font, safeTitle, textX, lastY + TITLE_Y_OFFSET, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeTitle, textX, lastY + TITLE_Y_OFFSET, DesignTokens.Text.TITLE(), false);
 
         // Description
-        graphics.drawString(font, safeDescription, textX, lastY + DESC_Y_OFFSET, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeDescription, textX, lastY + DESC_Y_OFFSET, DesignTokens.Text.SECONDARY(), false);
 
         // Arrow indicator on hover
         if (hovered) {
             String arrow = "→";
-            int arrowX = lastX + lastWidth - CARD_PADDING - font.width(arrow);
+            int arrowX = lastX + lastWidth - CARD_PADDING - UIScaleManager.getScaledStringWidth(font, arrow);
             int arrowY = lastY + (CARD_HEIGHT - 8) / 2;
-            graphics.drawString(font, arrow, arrowX, arrowY, accentColor, false);
+            UIScaleManager.drawScaledString(graphics, font, arrow, arrowX, arrowY, accentColor, false);
         }
     }
 

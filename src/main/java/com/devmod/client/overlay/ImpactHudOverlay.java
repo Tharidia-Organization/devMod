@@ -1,6 +1,5 @@
 package com.devmod.client.overlay;
 
-import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -9,7 +8,9 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -41,6 +42,8 @@ public class ImpactHudOverlay {
     private static final int LINE_HEIGHT = OverlayTheme.Dimension.LINE_HEIGHT_COMPACT;
     private static final int SECTION_SPACING = 6;
     private static final int PANEL_GAP = 8;
+    private static final int ACCENT_BAR_WIDTH = 4;
+    private static final long FRESH_HIT_PULSE_MS = 350;
 
     private static final ImpactHudContentBuilder.NumberFormat NUMBER_FORMAT =
         new ImpactHudContentBuilder.NumberFormat("%.2f", "%.2f");
@@ -113,31 +116,42 @@ public class ImpactHudOverlay {
         ensureCachedSections(data);
         ImpactHudContentBuilder.HudSection mainSection =
             Objects.requireNonNull(cachedMainSection, "cachedMainSection");
+        ImpactHudContentBuilder.HudSection modSection = cachedModSection;
         ImpactHudContentBuilder.HudSection historySection = getCachedHistorySection(data);
-
-        List<ImpactHudContentBuilder.HudSection> panels = new java.util.ArrayList<>(3);
-        panels.add(mainSection);
-        if (cachedModSection != null) {
-            panels.add(cachedModSection);
-        }
-        if (historySection != null) {
-            panels.add(historySection);
-        }
 
         // Calculate panel dimensions with responsive scaling
         UIScaleManager.update();
-        int panelWidth = UIScaleManager.scale(260);
-        int totalHeight = cachedMainHeight
-            + (cachedModSection != null ? cachedModHeight : 0)
-            + (historySection != null ? cachedHistoryHeight : 0);
-        if (panels.size() > 1) {
-            totalHeight += PANEL_GAP * (panels.size() - 1);
-        }
+        int sPanelWidth = UIScaleManager.scale(260);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sSectionSpacing = UIScaleManager.scale(SECTION_SPACING);
+        int sPanelGap = UIScaleManager.scale(PANEL_GAP);
+        int sAccentBarWidth = UIScaleManager.scale(ACCENT_BAR_WIDTH);
+
+        int mainHeight = calculatePanelHeight(mainSection, sPanelPadding, sLineHeight, sSectionSpacing);
+        int modHeight = modSection != null
+            ? calculatePanelHeight(modSection, sPanelPadding, sLineHeight, sSectionSpacing)
+            : 0;
+        int historyHeight = historySection != null
+            ? calculatePanelHeight(historySection, sPanelPadding, sLineHeight, sSectionSpacing)
+            : 0;
+        int panelCount = 1 + (modSection != null ? 1 : 0) + (historySection != null ? 1 : 0);
+        int totalHeight = mainHeight + modHeight + historyHeight
+            + (panelCount > 1 ? sPanelGap * (panelCount - 1) : 0);
 
         // BUG-008 FIX: Position based on config setting
         int[] position = calculatePanelPosition(screenWidth, screenHeight, panelWidth, totalHeight);
-        int panelX = position[0];
-        int panelY = position[1];
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        int panelX = Math.max(safeLeft, Math.min(position[0], safeRight - panelWidth));
+        int panelY = Math.max(safeTop, Math.min(position[1], safeBottom - totalHeight));
+
+        cachedMainHeight = mainHeight;
+        cachedModHeight = modHeight;
+        cachedHistoryHeight = historyHeight;
 
         // Save position for hit-test
         lastPanelX = panelX;
@@ -156,10 +170,28 @@ public class ImpactHudOverlay {
         float alpha = data.getRemainingAlpha();
         if (alpha <= 0.01f) return;
 
+        float pulse = getFreshHitPulse(data);
+        float emphasis = Math.min(1.0f, (isObserving ? 0.35f : 0.0f) + pulse * 0.45f);
+
         int currentY = panelY;
-        for (ImpactHudContentBuilder.HudSection section : panels) {
-            renderPanel(graphics, font, section, panelX, currentY, panelWidth, alpha);
-            currentY += calculatePanelHeight(section) + PANEL_GAP;
+        renderPanel(graphics, font, mainSection, panelX, currentY, panelWidth, mainHeight,
+            sPanelPadding, sLineHeight, sSectionSpacing, sAccentBarWidth,
+            alpha, data.getBodyPartColor(), emphasis);
+        currentY += mainHeight;
+
+        if (modSection != null) {
+            currentY += sPanelGap;
+            renderPanel(graphics, font, modSection, panelX, currentY, panelWidth, modHeight,
+                sPanelPadding, sLineHeight, sSectionSpacing, sAccentBarWidth,
+                alpha, null, 0f);
+            currentY += modHeight;
+        }
+
+        if (historySection != null) {
+            currentY += sPanelGap;
+            renderPanel(graphics, font, historySection, panelX, currentY, panelWidth, historyHeight,
+                sPanelPadding, sLineHeight, sSectionSpacing, sAccentBarWidth,
+                alpha, null, 0f);
         }
     }
 
@@ -179,13 +211,15 @@ public class ImpactHudOverlay {
             DevMod.LOGGER.debug("[ImpactHudOverlay] Failed to read HUD offsets, using defaults", e);
         }
 
+        int sOffsetX = UIScaleManager.scale(offsetX);
+        int sOffsetY = UIScaleManager.scale(offsetY);
         return switch (pos) {
-            case TOP_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, offsetY };
-            case TOP_LEFT -> new int[] { offsetX, offsetY };
-            case BOTTOM_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, screenHeight - panelHeight - offsetY };
-            case BOTTOM_LEFT -> new int[] { offsetX, screenHeight - panelHeight - offsetY };
-            case CENTER_RIGHT -> new int[] { screenWidth - panelWidth - offsetX, (screenHeight - panelHeight) / 2 };
-            case CENTER_LEFT -> new int[] { offsetX, (screenHeight - panelHeight) / 2 };
+            case TOP_RIGHT -> new int[] { screenWidth - panelWidth - sOffsetX, sOffsetY };
+            case TOP_LEFT -> new int[] { sOffsetX, sOffsetY };
+            case BOTTOM_RIGHT -> new int[] { screenWidth - panelWidth - sOffsetX, screenHeight - panelHeight - sOffsetY };
+            case BOTTOM_LEFT -> new int[] { sOffsetX, screenHeight - panelHeight - sOffsetY };
+            case CENTER_RIGHT -> new int[] { screenWidth - panelWidth - sOffsetX, (screenHeight - panelHeight) / 2 };
+            case CENTER_LEFT -> new int[] { sOffsetX, (screenHeight - panelHeight) / 2 };
         };
     }
 
@@ -198,83 +232,117 @@ public class ImpactHudOverlay {
     }
 
     private static void renderPanel(GuiGraphics g, Font font, ImpactHudContentBuilder.HudSection section,
-                                    int x, int y, int width, float alpha) {
-        int height = calculatePanelHeight(section);
-        renderPanelBackground(g, x, y, width, height, alpha);
+                                    int x, int y, int width, int height,
+                                    int sPanelPadding, int sLineHeight, int sSectionSpacing, int sAccentBarWidth,
+                                    float alpha, @Nullable Integer accentColor, float emphasis) {
+        renderPanelBackground(g, x, y, width, height, sAccentBarWidth, alpha, accentColor, emphasis);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int textX = x + sPanelPadding + (accentColor != null ? sAccentBarWidth : 0);
+        int textY = y + sPanelPadding;
+        int contentWidth = Math.max(0, width - sPanelPadding * 2 - (accentColor != null ? sAccentBarWidth : 0));
 
-        renderSection(g, font, section, x, width, textX, textY, alpha);
+        renderSection(g, font, section, x, width, textX, textY, contentWidth, sLineHeight, sSectionSpacing, alpha);
     }
 
     private static void renderSection(GuiGraphics g, Font font, ImpactHudContentBuilder.HudSection section,
-                                      int panelX, int panelWidth, int textX, int textY, float alpha) {
-        g.drawString(Objects.requireNonNull(font), Objects.requireNonNull(section.title()), textX, textY,
-            applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), false);
-        textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
+                                      int panelX, int panelWidth, int textX, int textY, int contentWidth,
+                                      int sLineHeight, int sSectionSpacing, float alpha) {
+        drawClampedLine(g, font, section.title(), textX, textY,
+            applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), false, contentWidth);
+        textY += sLineHeight + spacingPixels(section.titleSpacing(), sSectionSpacing);
 
         if (section.drawSeparator()) {
-            g.fill(panelX + 4, textY, panelX + panelWidth - 4, textY + 1,
+            int inset = UIScaleManager.scale(4);
+            g.fill(panelX + inset, textY, panelX + panelWidth - inset, textY + 1,
                 applyAlpha(PANEL_BORDER, alpha * 0.5f));
-            textY += SECTION_SPACING;
+            textY += sSectionSpacing;
         }
 
         for (ImpactHudContentBuilder.HudLine line : section.lines()) {
-            renderLine(g, font, line, textX, textY, alpha);
-            textY += LINE_HEIGHT + spacingPixels(line.spacingAfter());
+            renderLine(g, font, line, textX, textY, contentWidth, alpha);
+            textY += sLineHeight + spacingPixels(line.spacingAfter(), sSectionSpacing);
         }
     }
 
     private static void renderLine(GuiGraphics g, Font font, ImpactHudContentBuilder.HudLine line,
-                                   int x, int y, float alpha) {
+                                   int x, int y, int maxWidth, float alpha) {
         var safeFont = Objects.requireNonNull(font);
+        Component text = Objects.requireNonNull(line.text(), "line text");
         if (line.hasShadow()) {
-            g.drawString(safeFont, Objects.requireNonNull(line.text()), x + 1, y, applyAlpha(line.shadowColor(), alpha), false);
+            drawClampedLine(g, safeFont, text, x + 1, y, applyAlpha(line.shadowColor(), alpha), false, maxWidth);
         }
-        g.drawString(safeFont, Objects.requireNonNull(line.text()), x, y, applyAlpha(line.color(), alpha), false);
+        drawClampedLine(g, safeFont, text, x, y, applyAlpha(line.color(), alpha), false, maxWidth);
+    }
+
+    private static void drawClampedLine(GuiGraphics g, Font font, Component text,
+                                        int x, int y, int color, boolean shadow, int maxWidth) {
+        if (maxWidth <= 0) return;
+        var lines = font.split(text, maxWidth);
+        FormattedCharSequence sequence = lines.isEmpty() ? FormattedCharSequence.EMPTY : lines.get(0);
+        g.drawString(font, sequence, x, y, color, shadow);
     }
 
     /**
      * Renders panel background with glow border.
      */
-    private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height, float alpha) {
+    private static void renderPanelBackground(GuiGraphics g, int x, int y, int width, int height,
+                                              int sAccentBarWidth, float alpha,
+                                              @Nullable Integer accentColor, float emphasis) {
+        float glowFactor = Math.min(1.0f, 0.22f + emphasis * 0.45f);
+        float borderFactor = Math.min(1.0f, 0.65f + emphasis * 0.25f);
+        float bgFactor = Math.min(1.0f, 0.9f + emphasis * 0.1f);
+
         // Outer glow (optional, subtle effect)
-        g.fill(x - 1, y - 1, x + width + 1, y + height + 1, applyAlpha(PANEL_BORDER_GLOW, alpha * 0.3f));
+        g.fill(x - 1, y - 1, x + width + 1, y + height + 1, applyAlpha(PANEL_BORDER_GLOW, alpha * glowFactor));
 
         // Main background
-        g.fill(x, y, x + width, y + height, applyAlpha(PANEL_BG, alpha));
+        g.fill(x, y, x + width, y + height, applyAlpha(PANEL_BG, alpha * bgFactor));
 
         // Border
-        int borderColor = applyAlpha(PANEL_BORDER, alpha * 0.8f);
+        int borderColor = applyAlpha(PANEL_BORDER, alpha * borderFactor);
         g.fill(x, y, x + width, y + 1, borderColor);                    // Top
         g.fill(x, y + height - 1, x + width, y + height, borderColor);  // Bottom
         g.fill(x, y, x + 1, y + height, borderColor);                   // Left
         g.fill(x + width - 1, y, x + width, y + height, borderColor);   // Right
+
+        if (accentColor != null && sAccentBarWidth > 0) {
+            int accent = applyAlpha(accentColor, alpha * (0.7f + emphasis * 0.3f));
+            int accentX = x + 1;
+            g.fill(accentX, y + 1, accentX + sAccentBarWidth, y + height - 1, accent);
+        }
     }
 
-    private static int calculatePanelHeight(ImpactHudContentBuilder.HudSection section) {
-        int height = PANEL_PADDING * 2;
+    private static int calculatePanelHeight(ImpactHudContentBuilder.HudSection section,
+                                            int sPanelPadding, int sLineHeight, int sSectionSpacing) {
+        int height = sPanelPadding * 2;
 
-        height += LINE_HEIGHT + spacingPixels(section.titleSpacing());
+        height += sLineHeight + spacingPixels(section.titleSpacing(), sSectionSpacing);
         if (section.drawSeparator()) {
-            height += SECTION_SPACING;
+            height += sSectionSpacing;
         }
 
         for (ImpactHudContentBuilder.HudLine line : section.lines()) {
-            height += LINE_HEIGHT + spacingPixels(line.spacingAfter());
+            height += sLineHeight + spacingPixels(line.spacingAfter(), sSectionSpacing);
         }
 
         return height;
     }
 
-    private static int spacingPixels(ImpactHudContentBuilder.Spacing spacing) {
+    private static int spacingPixels(ImpactHudContentBuilder.Spacing spacing, int sSectionSpacing) {
         return switch (spacing) {
             case NONE -> 0;
-            case SMALL -> 2;
-            case SECTION -> SECTION_SPACING;
-            case LARGE -> 4;
+            case SMALL -> UIScaleManager.scale(2);
+            case SECTION -> sSectionSpacing;
+            case LARGE -> UIScaleManager.scale(4);
         };
+    }
+
+    private static float getFreshHitPulse(ImpactData data) {
+        long ageMs = System.currentTimeMillis() - data.getTimestamp();
+        if (ageMs <= 0 || ageMs >= FRESH_HIT_PULSE_MS) {
+            return 0f;
+        }
+        return 1.0f - (ageMs / (float) FRESH_HIT_PULSE_MS);
     }
 
     private static void ensureCachedSections(ImpactData data) {
@@ -285,8 +353,6 @@ public class ImpactHudOverlay {
 
         cachedMainSection = ImpactHudContentBuilder.buildMainSection(data, NUMBER_FORMAT);
         cachedModSection = ImpactHudContentBuilder.buildModSection(data, NUMBER_FORMAT).orElse(null);
-        cachedMainHeight = calculatePanelHeight(cachedMainSection);
-        cachedModHeight = cachedModSection != null ? calculatePanelHeight(cachedModSection) : 0;
         lastData = data;
         lastRevision = revision;
     }
@@ -296,7 +362,6 @@ public class ImpactHudOverlay {
         long now = System.currentTimeMillis();
         if (data != lastHistoryData || now - lastHistoryBuild >= HISTORY_CACHE_MS) {
             cachedHistorySection = ImpactHudContentBuilder.buildHistorySection(data, NUMBER_FORMAT).orElse(null);
-            cachedHistoryHeight = cachedHistorySection != null ? calculatePanelHeight(cachedHistorySection) : 0;
             lastHistoryBuild = now;
             lastHistoryData = data;
         }

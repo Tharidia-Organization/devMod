@@ -37,8 +37,8 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.arena.api.ArenaHandle;
-import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.arena.builder.ArenaBuilder;
 import com.devmod.arena.builder.AsyncArenaBuildCoordinator;
 import com.devmod.arena.builder.AsyncArenaBuilder;
@@ -62,7 +62,10 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.config.EnduranceConfigManager;
+import com.devmod.endurance.services.InstanceServicesFacade;
+import com.devmod.endurance.services.PlayerStateServicesFacade;
 import com.devmod.mob.EnhancedMobRequirements;
 import com.devmod.mob.EnhancedMobRequirementsRegistry;
 import com.devmod.mob.MobRequirements;
@@ -71,13 +74,10 @@ import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
-import com.devmod.endurance.services.InstanceServicesFacade;
-import com.devmod.endurance.services.PlayerStateServicesFacade;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
 import com.devmod.util.I18n;
-
 public class EnduranceQuestManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestManager.class);
 
@@ -2055,6 +2055,8 @@ public class EnduranceQuestManager {
      */
     public StartQuestResult startQuest(ServerPlayer player, ResourceLocation mobId, QuestSettings settings) {
         UUID playerId = player.getUUID();
+        DiagnosticLogger.quest("startQuest: player=%s, mobId=%s, waves=%d, endless=%s",
+            player.getName().getString(), mobId, settings.totalWaves, settings.endlessMode);
 
         // Get quest template first (before any state modification)
         EnduranceQuest template = questTemplates.get(mobId);
@@ -2148,6 +2150,8 @@ public class EnduranceQuestManager {
         if (player == null || session == null) {
             return;
         }
+        DiagnosticLogger.quest("startPendingInstanceQuest: player=%s, sessionId=%s",
+            player.getName().getString(), session.getPlayerId());
 
         ResourceLocation mobId = session.getPendingMobId();
         QuestSettings settings = session.getPendingSettings();
@@ -2806,6 +2810,7 @@ public class EnduranceQuestManager {
      * Continue to next wave after checkpoint.
      */
     public void continueToNextWave(ServerPlayer player) {
+        DiagnosticLogger.quest("continueToNextWave: player=%s", player.getName().getString());
         sessionHandler.continueToNextWave(player);
     }
 
@@ -2813,6 +2818,7 @@ public class EnduranceQuestManager {
      * Exit at checkpoint (between waves).
      */
     public void exitAtCheckpoint(ServerPlayer player) {
+        DiagnosticLogger.quest("exitAtCheckpoint: player=%s", player.getName().getString());
         sessionHandler.exitAtCheckpoint(player);
     }
 
@@ -2820,6 +2826,8 @@ public class EnduranceQuestManager {
         if (partySession == null || !partySession.isActive()) {
             return;
         }
+        DiagnosticLogger.quest("endPartyRun: partyId=%s, completed=%s, reason=%s, members=%d",
+            partySession.getPartyId(), completed, reason, partySession.getMembers().size());
 
         partySession.end(completed ? PartyQuestSession.Status.COMPLETED : PartyQuestSession.Status.FAILED);
 

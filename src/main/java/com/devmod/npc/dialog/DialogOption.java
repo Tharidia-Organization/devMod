@@ -13,8 +13,6 @@ import net.minecraft.network.codec.StreamCodec;
 
 import com.devmod.npc.dialog.action.DialogAction;
 import com.devmod.npc.dialog.condition.DialogCondition;
-import com.devmod.npc.dialog.DialogLimits;
-
 /**
  * Immutable record representing a dialog option that a player can select.
  * Each option has a label, optional icon, optional visibility condition, and an action.

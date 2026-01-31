@@ -17,12 +17,11 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.testing.IntegratedTestSession;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.testing.TestCase;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class IntegratedTestOverlay {
 
@@ -72,65 +71,81 @@ public class IntegratedTestOverlay {
         Font font = Objects.requireNonNull(mc.font, "font");
         int screenHeight = graphics.guiHeight();
 
-        // Position: Left side, vertically centered
-        int panelX = 5;
-        int panelHeight = calculatePanelHeight(session);
-        int panelY = (screenHeight - panelHeight) / 2;
+        // Scale dimensions
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
-        renderPanel(graphics, Objects.requireNonNull(font, "font"), panelX, panelY, panelHeight, session);
+        // Position: Left side, vertically centered
+        int panelX = UIScaleManager.scale(5);
+        int panelHeight = calculatePanelHeight(session, sPanelPadding, sLineHeight);
+        int panelY = (screenHeight - panelHeight) / 2;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
+
+        renderPanel(graphics, Objects.requireNonNull(font, "font"), panelX, panelY, panelHeight, session,
+                    panelWidth, sPanelPadding, sLineHeight);
     }
 
-    private static int calculatePanelHeight(IntegratedTestSession session) {
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Title
-        height += 4;                // Separator
-        height += LINE_HEIGHT;      // Session type
-        height += LINE_HEIGHT;      // Wave progress
-        height += 8 + 4;            // Progress bar
-        height += LINE_HEIGHT;      // Stats line
-        height += LINE_HEIGHT;      // Duration
+    private static int calculatePanelHeight(IntegratedTestSession session, int sPanelPadding, int sLineHeight) {
+        int height = sPanelPadding * 2;
+        height += sLineHeight + UIScaleManager.scale(2);  // Title
+        height += UIScaleManager.scale(4);                // Separator
+        height += sLineHeight;      // Session type
+        height += sLineHeight;      // Wave progress
+        height += UIScaleManager.scale(8) + UIScaleManager.scale(4);  // Progress bar
+        height += sLineHeight;      // Stats line
+        height += sLineHeight;      // Duration
 
         // Add space for linked test case
         if (session.getLinkedTestCase() != null) {
-            height += 4;            // Separator
-            height += LINE_HEIGHT;  // Test case name
-            height += LINE_HEIGHT;  // Test case status
+            height += UIScaleManager.scale(4);  // Separator
+            height += sLineHeight;  // Test case name
+            height += sLineHeight;  // Test case status
         }
 
-        height += LINE_HEIGHT + 4;  // Hints
+        height += sLineHeight + UIScaleManager.scale(4);  // Hints
         return height;
     }
 
     private static void renderPanel(@Nonnull GuiGraphics graphics, @Nonnull Font font, int x, int y, int height,
-                                     IntegratedTestSession session) {
+                                     IntegratedTestSession session, int panelWidth, int sPanelPadding, int sLineHeight) {
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + height, PANEL_BG);
+        graphics.fill(x, y, x + panelWidth, y + height, PANEL_BG);
 
         // Border
-        drawBorder(graphics, x, y, PANEL_WIDTH, height, PANEL_BORDER);
+        drawBorder(graphics, x, y, panelWidth, height, PANEL_BORDER);
 
         // Accent bar on left
-        graphics.fill(x, y, x + 3, y + height, getSessionColor(session));
+        graphics.fill(x, y, x + UIScaleManager.scale(3), y + height, getSessionColor(session));
 
-        int textX = x + PANEL_PADDING + 3;
-        int textY = y + PANEL_PADDING;
+        int textX = x + sPanelPadding + UIScaleManager.scale(3);
+        int textY = y + sPanelPadding;
+        int contentWidth = Math.max(0, panelWidth - sPanelPadding * 2 - UIScaleManager.scale(3));
 
         // Title
-        graphics.drawString(font, "\u26A1 Test Session", textX, textY, TEXT_TITLE, false);
-        textY += LINE_HEIGHT + 2;
+        String title = truncateToWidth(font, "\u26A1 Test Session", contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, title, textX, textY, TEXT_TITLE, false);
+        textY += sLineHeight + UIScaleManager.scale(2);
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1,
+        graphics.fill(x + UIScaleManager.scale(4), textY, x + panelWidth - UIScaleManager.scale(4), textY + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
-        textY += 4;
+        textY += UIScaleManager.scale(4);
 
         // Session type
         IntegratedTestSession.TestSessionType currentType = session.getCurrentType();
         String typeName = currentType != null
             ? Objects.requireNonNullElse(currentType.getDisplayName(), "Unknown")
             : "Unknown";
-        graphics.drawString(font, typeName, textX, textY, TEXT_NORMAL, false);
-        textY += LINE_HEIGHT;
+        typeName = truncateToWidth(font, typeName, contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, typeName, textX, textY, TEXT_NORMAL, false);
+        textY += sLineHeight;
 
         // Wave progress
         int waves = session.getCompletedWaves();
@@ -138,12 +153,13 @@ public class IntegratedTestOverlay {
         String waveText = target > 0 ?
             String.format("Wave: %d/%d", waves, target) :
             String.format("Wave: %d (Endless)", waves);
-        graphics.drawString(font, waveText, textX, textY, TEXT_VALUE, false);
-        textY += LINE_HEIGHT;
+        waveText = truncateToWidth(font, waveText, contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, waveText, textX, textY, TEXT_VALUE, false);
+        textY += sLineHeight;
 
         // Progress bar
-        int barWidth = PANEL_WIDTH - PANEL_PADDING * 2 - 3;
-        int barHeight = 8;
+        int barWidth = panelWidth - sPanelPadding * 2 - UIScaleManager.scale(3);
+        int barHeight = UIScaleManager.scale(8);
         int barX = textX;
         int barY = textY;
 
@@ -163,7 +179,7 @@ public class IntegratedTestOverlay {
         }
 
         drawBorder(graphics, barX, barY, barWidth, barHeight, DesignTokens.TestingMode.PROGRESS_BORDER);
-        textY += barHeight + 4;
+        textY += barHeight + UIScaleManager.scale(4);
 
         // Stats: Kills
         IntegratedTestSession.SessionResults results = session.getResults();
@@ -171,8 +187,9 @@ public class IntegratedTestOverlay {
         if (results.deaths > 0) {
             statsText += String.format(" | Deaths: %d", results.deaths);
         }
-        graphics.drawString(font, statsText, textX, textY, TEXT_MUTED, false);
-        textY += LINE_HEIGHT;
+        statsText = truncateToWidth(font, statsText, contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, statsText, textX, textY, TEXT_MUTED, false);
+        textY += sLineHeight;
 
         // Duration
         java.time.Instant start = session.getSessionStart();
@@ -181,31 +198,24 @@ public class IntegratedTestOverlay {
             long minutes = seconds / 60;
             seconds = seconds % 60;
             String duration = String.format("Time: %d:%02d", minutes, seconds);
-            graphics.drawString(font, duration, textX, textY, TEXT_MUTED, false);
+            duration = truncateToWidth(font, duration, contentWidth);
+            UIScaleManager.drawScaledString(graphics, font, duration, textX, textY, TEXT_MUTED, false);
         }
-        textY += LINE_HEIGHT;
+        textY += sLineHeight;
 
         // Linked test case (if any)
         TestCase linkedTest = session.getLinkedTestCase();
         if (linkedTest != null) {
             // Separator
-            graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1,
+            graphics.fill(x + UIScaleManager.scale(4), textY, x + panelWidth - UIScaleManager.scale(4), textY + 1,
                 OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
-            textY += 4;
+            textY += UIScaleManager.scale(4);
 
             // Test name (truncated - keep at least 6 chars for readability)
             String testName = Objects.requireNonNull(linkedTest.getName(), "linked test name");
-            int maxTestNameWidth = PANEL_WIDTH - PANEL_PADDING * 2 - 10;
-            if (font.width(testName) > maxTestNameWidth) {
-                String ellipsis = "...";
-                int minChars = Math.min(6, testName.length());
-                while (font.width(testName + ellipsis) > maxTestNameWidth && testName.length() > minChars) {
-                    testName = testName.substring(0, testName.length() - 1);
-                }
-                testName += ellipsis;
-            }
-            graphics.drawString(font, "\u25B6 " + testName, textX, textY, TEXT_NORMAL, false);
-            textY += LINE_HEIGHT;
+            testName = truncateToWidth(font, testName, contentWidth - UIScaleManager.scale(10));
+            UIScaleManager.drawScaledString(graphics, font, "\u25B6 " + testName, textX, textY, TEXT_NORMAL, false);
+            textY += sLineHeight;
 
             // Test status
             var status = linkedTest.getStatus();
@@ -213,13 +223,30 @@ public class IntegratedTestOverlay {
                 ? Objects.requireNonNullElse(status.getDisplayName(), "Unknown")
                 : "Unknown";
             int statusColor = status != null ? status.getColor() : TEXT_NORMAL;
-            graphics.drawString(font, "  Status: " + statusText, textX, textY, statusColor, false);
-            textY += LINE_HEIGHT;
+            String statusLine = truncateToWidth(font, "  Status: " + statusText, contentWidth);
+            UIScaleManager.drawScaledString(graphics, font, statusLine, textX, textY, statusColor, false);
+            textY += sLineHeight;
         }
 
         // Hints
-        textY += 4;
-        graphics.drawString(font, "\u00a77[ESC] Abandon | [B] Boss HUD", textX, textY, TEXT_MUTED, false);
+        textY += UIScaleManager.scale(4);
+        String hint = truncateToWidth(font, "\u00a77[ESC] Abandon | [B] Boss HUD", contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, hint, textX, textY, TEXT_MUTED, false);
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     private static int getSessionColor(IntegratedTestSession session) {

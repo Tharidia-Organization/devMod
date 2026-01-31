@@ -9,7 +9,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Splitter;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -25,7 +24,6 @@ import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.npc.NpcEmotion;
 import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.group.SpeakerLine;
-
 /**
  * Client screen for displaying group dialog conversations.
  * Shows speaker name, portrait area, dialog text, and response options.
@@ -201,7 +199,8 @@ public class GroupDialogScreen extends Screen {
         // Click to continue hint
         if (!showOptions && displayedChars >= currentText.length()) {
             String hint = "Click to continue...";
-            graphics.drawCenteredString(
+            UIScaleManager.drawScaledCenteredString(
+                graphics,
                 font,
                 hint,
                 width / 2,
@@ -217,7 +216,7 @@ public class GroupDialogScreen extends Screen {
         graphics.renderOutline(PADDING, y, width - PADDING * 2, DIALOG_BOX_HEIGHT, COLOR_DIALOG_BORDER);
 
         // Speaker name background
-        int speakerBgWidth = font.width(currentSpeakerName) + 16;
+        int speakerBgWidth = UIScaleManager.getScaledStringWidth(font, currentSpeakerName) + 16;
         graphics.fill(PADDING, y - SPEAKER_NAME_HEIGHT, PADDING + speakerBgWidth, y, COLOR_SPEAKER_BG);
         graphics.renderOutline(PADDING, y - SPEAKER_NAME_HEIGHT, speakerBgWidth, SPEAKER_NAME_HEIGHT, COLOR_DIALOG_BORDER);
     }
@@ -244,13 +243,13 @@ public class GroupDialogScreen extends Screen {
 
         // Draw speaker name
         if (!currentSpeakerName.isEmpty()) {
-            graphics.drawString(
+            UIScaleManager.drawScaledString(
+                graphics,
                 font,
                 currentSpeakerName,
                 PADDING + 8,
                 dialogY - SPEAKER_NAME_HEIGHT + 6,
-                speakerColor,
-                false
+                speakerColor
             );
         }
     }
@@ -265,7 +264,7 @@ public class GroupDialogScreen extends Screen {
 
         List<String> lines = wrapText(displayText, maxWidth);
         for (int i = 0; i < lines.size() && i < 4; i++) {
-            graphics.drawString(font, lines.get(i), textX, textY + i * 14, COLOR_TEXT, false);
+            UIScaleManager.drawScaledString(graphics, font, lines.get(i), textX, textY + i * UIScaleManager.getScaledLineHeight(), COLOR_TEXT);
         }
     }
 
@@ -286,7 +285,7 @@ public class GroupDialogScreen extends Screen {
 
         for (String word : Splitter.on(' ').omitEmptyStrings().split(text)) {
             String testLine = currentLine.isEmpty() ? word : currentLine + " " + word;
-            if (font.width(testLine) <= maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(font, testLine) <= maxWidth) {
                 currentLine = new StringBuilder(testLine);
             } else {
                 if (!currentLine.isEmpty()) {
@@ -417,18 +416,20 @@ public class GroupDialogScreen extends Screen {
         int totalLines,
         @Nonnull List<DialogOption> options
     ) {
-        Minecraft.getInstance().setScreen(new GroupDialogScreen(
-            sessionId,
-            dialogId,
-            dialogName,
-            participantNames,
-            currentSpeakerId,
-            currentSpeakerName,
-            currentText,
-            currentEmotion,
-            lineIndex,
-            totalLines,
-            options
-        ));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "group_dialog",
+            () -> new GroupDialogScreen(
+                sessionId,
+                dialogId,
+                dialogName,
+                participantNames,
+                currentSpeakerId,
+                currentSpeakerName,
+                currentText,
+                currentEmotion,
+                lineIndex,
+                totalLines,
+                options
+            ));
     }
 }

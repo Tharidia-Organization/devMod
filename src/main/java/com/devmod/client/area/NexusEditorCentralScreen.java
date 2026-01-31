@@ -15,6 +15,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.network.OpenEditorCentralPayload.AreaSummary;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.network.PromoteMainHubPayload;
 import com.devmod.area.network.RequestOpenAreaBuilderPayload;
 import com.devmod.area.network.SnapshotListPayload.SnapshotSummary;
@@ -183,17 +184,19 @@ public class NexusEditorCentralScreen extends BaseDevModScreen {
         graphics.renderOutline(panelLeft, panelTop, panelWidth, panelHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
         // Title
-        graphics.drawCenteredString(
+        UIScaleManager.drawScaledCenteredString(
+            graphics,
             Objects.requireNonNull(this.font),
-            Objects.requireNonNull(Component.translatable("area.editor_central.title")),
+            Component.translatable("area.editor_central.title").getString(),
             centerX, panelTop + 12,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
 
         // Welcome message
-        graphics.drawCenteredString(
+        UIScaleManager.drawScaledCenteredString(
+            graphics,
             Objects.requireNonNull(this.font),
-            Objects.requireNonNull(Component.translatable("area.editor_central.welcome")),
+            Component.translatable("area.editor_central.welcome").getString(),
             centerX, panelTop + 30,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
@@ -205,9 +208,10 @@ public class NexusEditorCentralScreen extends BaseDevModScreen {
             AreaBuilderGuiConstants.COLOR_BORDER);
 
         if (areas.isEmpty()) {
-            graphics.drawCenteredString(
+            UIScaleManager.drawScaledCenteredString(
+                graphics,
                 Objects.requireNonNull(this.font),
-                Objects.requireNonNull(Component.translatable("area.editor_central.empty_list")),
+                Component.translatable("area.editor_central.empty_list").getString(),
                 centerX, listTop + listHeight / 2 - 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
@@ -230,20 +234,21 @@ public class NexusEditorCentralScreen extends BaseDevModScreen {
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(Objects.requireNonNull(this.font),
-                Objects.requireNonNull(Component.literal("^")), centerX, listTop - 8,
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(this.font),
+                "^", centerX, listTop - 8,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
         }
         if (scrollOffset + visibleItems < areas.size()) {
-            graphics.drawCenteredString(Objects.requireNonNull(this.font),
-                Objects.requireNonNull(Component.literal("v")), centerX, listTop + listHeight + 2,
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(this.font),
+                "v", centerX, listTop + listHeight + 2,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
         }
 
         // Area count
-        graphics.drawCenteredString(
+        UIScaleManager.drawScaledCenteredString(
+            graphics,
             Objects.requireNonNull(this.font),
-            Objects.requireNonNull(Component.translatable("area.editor_central.area_count", areas.size())),
+            Component.translatable("area.editor_central.area_count", areas.size()).getString(),
             centerX, panelTop + panelHeight - FOOTER_HEIGHT - 10,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
@@ -283,12 +288,12 @@ public class NexusEditorCentralScreen extends BaseDevModScreen {
         if (area.isMainHub()) {
             label = label + " [" + Component.translatable("area.editor_central.main_hub_label").getString() + "]";
         }
-        graphics.drawString(Objects.requireNonNull(this.font), label, x + 6, y + 6,
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(this.font), label, x + 6, y + 6,
             selected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         String dims = Objects.requireNonNull(String.format("%dx%dx%d", area.width(), area.length(), area.height()));
-        int dimsWidth = Objects.requireNonNull(this.font).width(dims);
-        graphics.drawString(Objects.requireNonNull(this.font), dims, x + width - dimsWidth - 6, y + 6,
+        int dimsWidth = UIScaleManager.getScaledStringWidth(Objects.requireNonNull(this.font), dims);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(this.font), dims, x + width - dimsWidth - 6, y + 6,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
     }
 

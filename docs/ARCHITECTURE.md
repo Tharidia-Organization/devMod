@@ -1,8 +1,8 @@
 # Architettura DevMod
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
-DevMod e' una mod NeoForge 1.21.1 con separazione fra runtime server, layer client e servizi trasversali (network, config, telemetry, storage). L'entrypoint server e' `DevMod`, mentre il layer client e' inizializzato in `DevModClient`.
+DevMod e' una mod NeoForge 1.21.1 con separazione fra runtime server, layer client e servizi trasversali (network, config, telemetry, persistence). L'entrypoint server e' `DevMod`, mentre il layer client e' inizializzato in `DevModClient`.
 
 ## Vista d'insieme
 
@@ -13,6 +13,7 @@ flowchart TB
             Arena["Arena Templates"]
             Endurance["Endurance Quest"]
             Combat["Combat + Collision"]
+            Actions["Actions + Abilities"]
             Clone["Clone System"]
             Portal["Custom Portal"]
             Transport["Unified Transport"]
@@ -21,7 +22,7 @@ flowchart TB
             Nexus["Nexus Hub"]
             NPC["NPC + Dialog"]
             Hologram["Hologram Projector"]
-            Mailbox["Mailbox/News/Tasks"]
+            Mailbox["Mailbox + Notification"]
             Telemetry["Telemetry Pipeline"]
         end
 
@@ -47,7 +48,7 @@ flowchart TB
 
     subgraph External["External Tools"]
         Dashboard["Telemetry Dashboard"]
-        AdminPanel["Mailbox Admin Panel"]
+        AdminPanel["Mailbox/Admin Panel"]
     end
 
     Combat --> Telemetry
@@ -67,33 +68,39 @@ flowchart TB
 - `DevMod` registra registries (blocchi, item, attributi, data components), config e moduli.
 - `DevModClient` inizializza keybind, bridge UI client e hook di rete lato client.
 - Moduli principali bootstrap: Portal, Hologram, Clone, NPC, Debug, Area, Zone, Transport, Nexus decor.
-- L2: arena template registry e config reload per Arena/Endurance/Nexus.
+- Layer runtime: arena template registry e config reload per Arena/Endurance/Nexus.
 
 ## Struttura del codice (macro)
 
 ```
 com/devmod/
-├── arena/        # template, builder, policy, telemetry
-├── endurance/    # quest, wave, perk, reward, challenge
-├── combat/       # combat flow, tracking, shield
+├── arena/        # template, builder, policy, autosmoke, telemetry
+├── endurance/    # quest, wave, perk, reward, challenge, WIS
+├── combat/       # combat flow, shield, impact, stats
 ├── collision/    # body-part, OBB, hit detection
+├── actions/      # action registry, radial actions, keybind
+├── abilities/    # stamina, dash/dodge, payload
 ├── clone/        # telepad, neurocell, reformer, macchine
 ├── portal/       # custom portal + rune blocks
 ├── transport/    # Warp Core unificato
-├── area/         # Area Builder e Nexus Editor Central
+├── area/         # Area Builder, templates, snapshot, editor central
 ├── zone/         # Zone marker/editor
 ├── npc/          # NPC + dialog system
 ├── hologram/     # proiettore 3D
+├── nexus/        # hub, slot system, palette, runtime
 ├── mailbox/      # mailbox/news/task/ticket + API
-├── telemetry/    # NDJSON + DuckDB
-├── client/       # UI, overlay, rendering
+├── notification/ # notification center
+├── telemetry/    # NDJSON + DuckDB + dashboard
 ├── network/      # payload registry + validation
+├── config/       # config specs e loader
+├── client/       # UI, overlay, rendering
+├── compat/       # integrazioni soft con mod esterne
 └── util/         # utilities condivise
 ```
 
 ## Flussi chiave
 
-- **Arena**: template registry -> policy resolver -> builder -> dimensione/area -> telemetry.
+- **Arena**: template registry -> policy resolver -> builder -> instance/nexus -> telemetry.
 - **Endurance**: start session -> wave loop -> perk/reward -> telemetry + personal records.
 - **Combat**: hit detection (body-part + OBB) -> damage breakdown -> HUD impact + telemetry.
 - **Mailbox**: API + persistence DuckDB -> UI client + admin panel.

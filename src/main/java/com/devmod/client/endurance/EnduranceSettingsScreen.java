@@ -317,7 +317,10 @@ public class EnduranceSettingsScreen extends Screen {
      */
     private void openMobPoolEditor() {
         if (minecraft != null) {
-            minecraft.setScreen(new MobPoolEditorScreen(this));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "mob_pool_editor",
+                this,
+                () -> new MobPoolEditorScreen(this));
         }
     }
 
@@ -553,13 +556,13 @@ public class EnduranceSettingsScreen extends Screen {
         graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, DesignTokens.Accent.PRIMARY);
 
         // Title
-        graphics.drawString(font, I18n.translate("devmod.endurance.settings.title").getString(),
+        UIScaleManager.drawScaledString(graphics, font, I18n.translate("devmod.endurance.settings.title").getString(),
             PADDING, 12, DesignTokens.Text.PRIMARY, false);
 
         // Subtitle
         if (activeSection >= 0 && activeSection < sections.size()) {
             String sectionName = sections.get(activeSection).name;
-            graphics.drawString(font, I18n.ui("category", sectionName).getString(),
+            UIScaleManager.drawScaledString(graphics, font, I18n.ui("category", sectionName).getString(),
                 PADDING, 26, DesignTokens.Text.SECONDARY, false);
         }
 
@@ -603,12 +606,12 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Section name
             int textColor = isActive ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-            graphics.drawString(font, section.name, sidebarX + 12, y + 10, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, section.name, sidebarX + 12, y + 10, textColor, false);
 
             // Item count badge
             String countStr = String.valueOf(section.items.size());
             int countX = sidebarX + SIDEBAR_WIDTH - 20;
-            graphics.drawString(font, countStr, countX, y + 10, DesignTokens.Text.MUTED, false);
+            UIScaleManager.drawScaledString(graphics, font, countStr, countX, y + 10, DesignTokens.Text.MUTED, false);
 
             y += tabH + 2;
         }
@@ -635,11 +638,11 @@ public class EnduranceSettingsScreen extends Screen {
 
                 // Show checkmark for recently saved items
                 if (wasRecentlySaved(item.getConfigKey())) {
-                    graphics.drawString(font, "\u2713", contentX + contentW - 20, y + 2, COLOR_SAVED, false);
+                    UIScaleManager.drawScaledString(graphics, font, "\u2713", contentX + contentW - 20, y + 2, COLOR_SAVED, false);
                 }
                 // Show warning indicator for modified items
                 else if (isModified(item.getConfigKey())) {
-                    graphics.drawString(font, "\u25CF", contentX + contentW - 20, y + 2, COLOR_WARNING, false);
+                    UIScaleManager.drawScaledString(graphics, font, "\u25CF", contentX + contentW - 20, y + 2, COLOR_WARNING, false);
                 }
             }
             y += item.getHeight() + SLIDER_SPACING;
@@ -669,14 +672,14 @@ public class EnduranceSettingsScreen extends Screen {
         int textY = footerY + 18;
         if (pendingChangesCount > 0) {
             String pendingMsg = I18n.translate("devmod.settings.pending", pendingChangesCount).getString();
-            graphics.drawString(font, pendingMsg, footerX + PADDING, textY, COLOR_WARNING, false);
+            UIScaleManager.drawScaledString(graphics, font, pendingMsg, footerX + PADDING, textY, COLOR_WARNING, false);
         } else {
             String noChangesMsg = I18n.translate("devmod.settings.no_changes").getString();
             // Show green if recently saved, otherwise muted
             boolean recentlySaved = !recentlySavedKeys.isEmpty() &&
                 (System.currentTimeMillis() - lastSaveTime <= SAVE_FEEDBACK_DURATION_MS);
             int statusColor = recentlySaved ? COLOR_SAVED : DesignTokens.Text.MUTED;
-            graphics.drawString(font, noChangesMsg, footerX + PADDING, textY, statusColor, false);
+            UIScaleManager.drawScaledString(graphics, font, noChangesMsg, footerX + PADDING, textY, statusColor, false);
         }
 
         // Buttons - right aligned
@@ -947,7 +950,7 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Slider track
             int sliderX = x + 140;
@@ -969,7 +972,7 @@ public class EnduranceSettingsScreen extends Screen {
 
             // Value display
             String valueStr = String.format(format, value * displayScale);
-            graphics.drawString(font, valueStr, sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, valueStr, sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
@@ -1069,7 +1072,7 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Slider track
             int sliderX = x + 140;
@@ -1090,7 +1093,7 @@ public class EnduranceSettingsScreen extends Screen {
             graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, DesignTokens.Text.WHITE);
 
             // Value display
-            graphics.drawString(font, String.valueOf(value), sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, String.valueOf(value), sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
@@ -1186,7 +1189,7 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            graphics.drawString(font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
 
             // Toggle box
             int toggleX = x + 140;
@@ -1206,7 +1209,7 @@ public class EnduranceSettingsScreen extends Screen {
             String status = enabled
                 ? I18n.translate("devmod.overlay.on").getString()
                 : I18n.translate("devmod.overlay.off").getString();
-            graphics.drawString(font, status, toggleX + toggleW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, status, toggleX + toggleW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
@@ -1302,9 +1305,9 @@ public class EnduranceSettingsScreen extends Screen {
             graphics.renderOutline(btnX, btnY, btnW, btnH, hovered ? DesignTokens.Accent.PRIMARY : DesignTokens.Border.DEFAULT);
 
             // Label (centered)
-            int textX = btnX + (btnW - font.width(label)) / 2;
+            int textX = btnX + (btnW - UIScaleManager.getScaledStringWidth(font, label)) / 2;
             int textColor = hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-            graphics.drawString(font, label, textX, btnY + 7, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, textX, btnY + 7, textColor, false);
         }
 
         @Override

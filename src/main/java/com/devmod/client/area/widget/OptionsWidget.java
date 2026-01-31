@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.AreaOptions;
 import com.devmod.area.data.AreaOptions.WallStyle;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for configuring area construction options.
@@ -45,7 +46,7 @@ public class OptionsWidget extends AbstractWidget {
         int currentY = getY();
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.tab.options")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -53,7 +54,7 @@ public class OptionsWidget extends AbstractWidget {
         currentY += 16;
 
         // Structure toggles
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.options.section.structure")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         currentY += 14;
@@ -74,7 +75,7 @@ public class OptionsWidget extends AbstractWidget {
         currentY += ROW_HEIGHT + 8;
 
         // Wall style section
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.options.wall_style")),
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -100,7 +101,7 @@ public class OptionsWidget extends AbstractWidget {
             if (styleName.length() > 10) {
                 styleName = styleName.substring(0, 8) + "..";
             }
-            graphics.drawCenteredString(font, styleName,
+            UIScaleManager.drawScaledCenteredString(graphics, font, styleName,
                 btnX + STYLE_BUTTON_WIDTH / 2, currentY + 5,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
@@ -116,7 +117,7 @@ public class OptionsWidget extends AbstractWidget {
         currentY += ROW_HEIGHT + 8;
 
         // Additional options
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.options.section.gameplay")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         currentY += 14;
@@ -148,11 +149,11 @@ public class OptionsWidget extends AbstractWidget {
         graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_HEIGHT,
             AreaBuilderGuiConstants.COLOR_BORDER);
 
-        Component toggleText = Objects.requireNonNull(Component.translatable(value ? "area.toggle.on" : "area.toggle.off"));
-        graphics.drawCenteredString(font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Label
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(Objects.requireNonNull(translationKey))),
             x + TOGGLE_WIDTH + 8, y + 5,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY

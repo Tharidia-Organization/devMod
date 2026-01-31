@@ -260,10 +260,10 @@ public class TelemetryService {
 
     public void logHit(Level level, Entity attacker, LivingEntity target, DamageSource source,
                        double amount, double hpBefore, double hpAfter, String bodyPart,
-                       double distance, double armorPenBonus) {
+                       double distance, double armorPenBonus, @Nullable net.minecraft.world.item.Item weaponOverride) {
         if (logHandlers != null) {
             logHandlers.logHit(level, attacker, target, source, amount, hpBefore, hpAfter,
-                              bodyPart, distance, armorPenBonus);
+                              bodyPart, distance, armorPenBonus, weaponOverride);
         }
     }
 

@@ -464,7 +464,9 @@ public class CombatRecapScreen extends Screen {
     public static void open() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
-            mc.setScreen(new CombatRecapScreen());
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "combat_recap",
+                () -> new CombatRecapScreen());
         }
     }
 }

@@ -22,10 +22,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.endurance.ui.MobListPanel;
 import com.devmod.client.endurance.ui.MobStatsPanel;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.EnduranceMobConfigSyncPayload;
@@ -41,7 +41,6 @@ import com.devmod.notification.Notification;
 import com.devmod.notification.NotificationCategory;
 import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
-
 /**
  * Screen for editing the Endurance mob pool configuration.
  *
@@ -797,11 +796,11 @@ public class MobPoolEditorScreen extends Screen {
         var safeFont = font;
         if (safeFont != null) {
             String title = Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.title").getString());
-            graphics.drawString(safeFont, title, width / 2 - safeFont.width(title) / 2, 12, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, title, width / 2, 12, DesignTokens.Text.PRIMARY);
 
             // Changes indicator
             if (hasChanges) {
-                graphics.drawString(safeFont, "*", width / 2 + safeFont.width(title) / 2 + 4, 12, DesignTokens.Semantic.WARNING, false);
+                UIScaleManager.drawScaledString(graphics, safeFont, "*", width / 2 + UIScaleManager.getScaledStringWidth(safeFont, title) / 2 + 4, 12, DesignTokens.Semantic.WARNING, false);
             }
         }
 
@@ -838,8 +837,8 @@ public class MobPoolEditorScreen extends Screen {
             safeFont.plainSubstrByWidth(Objects.requireNonNull(nsLabelRaw, "nsLabelRaw"), layout.namespaceW - 14),
             "nsLabel");
         int textColor = dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-        graphics.drawString(safeFont, nsLabel, layout.namespaceX + 4, layout.namespaceY + 5, textColor, false);
-        graphics.drawString(safeFont, "\u25BC", layout.namespaceX + layout.namespaceW - 12, layout.namespaceY + 5,
+        UIScaleManager.drawScaledString(graphics, safeFont, nsLabel, layout.namespaceX + 4, layout.namespaceY + 5, textColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "\u25BC", layout.namespaceX + layout.namespaceW - 12, layout.namespaceY + 5,
             dropdownHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY, false);
 
         // Search box
@@ -860,15 +859,15 @@ public class MobPoolEditorScreen extends Screen {
             safeFont.plainSubstrByWidth(Objects.requireNonNull(tierLabelRaw, "tierLabelRaw"), layout.tierW - 14),
             "tierLabel");
         int tierColor = tierHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-        graphics.drawString(safeFont, tierLabel, layout.tierX + 4, layout.tierY + 5, tierColor, false);
-        graphics.drawString(safeFont, "\u25BC", layout.tierX + layout.tierW - 12, layout.tierY + 5,
+        UIScaleManager.drawScaledString(graphics, safeFont, tierLabel, layout.tierX + 4, layout.tierY + 5, tierColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "\u25BC", layout.tierX + layout.tierW - 12, layout.tierY + 5,
             tierHovered ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY, false);
 
         var listPanel = mobListPanel;
         if (listPanel != null) {
             String countText = listPanel.getFilteredMobCount() + "/" + listPanel.getTotalMobCount();
-            int countX = layout.panelX + layout.panelWidth - safeFont.width(countText) - 4;
-            graphics.drawString(safeFont, countText, countX, layout.tierY + 5, DesignTokens.Text.SECONDARY, false);
+            int countX = layout.panelX + layout.panelWidth - UIScaleManager.getScaledStringWidth(safeFont, countText) - 4;
+            UIScaleManager.drawScaledString(graphics, safeFont, countText, countX, layout.tierY + 5, DesignTokens.Text.SECONDARY, false);
         }
     }
 
@@ -903,7 +902,7 @@ public class MobPoolEditorScreen extends Screen {
             }
 
             int textColor = selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY;
-            graphics.drawString(safeFont, ns, dropdownX + 6, itemY + 4, textColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, ns, dropdownX + 6, itemY + 4, textColor, false);
         }
     }
 
@@ -937,7 +936,7 @@ public class MobPoolEditorScreen extends Screen {
 
             String label = formatTierLabel(option);
             int textColor = selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY;
-            graphics.drawString(safeFont, label, dropdownX + 6, itemY + 4, textColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, label, dropdownX + 6, itemY + 4, textColor, false);
             itemY += itemHeight;
         }
     }
@@ -958,7 +957,7 @@ public class MobPoolEditorScreen extends Screen {
         String displayText = Objects.requireNonNull(
             safeFont.plainSubstrByWidth(Objects.requireNonNull(text, "text"), width - 20),
             "displayText");
-        graphics.drawString(safeFont, displayText, x + 4, y + 5, textColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, displayText, x + 4, y + 5, textColor, false);
 
         if (!searchQuery.isEmpty()) {
             int clearWidth = 14;
@@ -968,7 +967,7 @@ public class MobPoolEditorScreen extends Screen {
                 : DesignTokens.withAlpha(DesignTokens.Surface.LEVEL_1, 0x55);
             graphics.fill(clearX, y + 1, x + width - 1, y + height - 1, clearBg);
             int clearColor = clearHover ? DesignTokens.Semantic.ERROR : DesignTokens.Text.SECONDARY;
-            graphics.drawString(safeFont, "x", clearX + 4, y + 5, clearColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "x", clearX + 4, y + 5, clearColor, false);
         }
     }
 
@@ -1011,7 +1010,7 @@ public class MobPoolEditorScreen extends Screen {
         var listPanel = mobListPanel;
         if (font != null && listPanel != null) {
             String countText = listPanel.getFilteredMobCount() + "/" + listPanel.getTotalMobCount();
-            countReserve = font.width(countText) + 6;
+            countReserve = UIScaleManager.getScaledStringWidth(font, countText) + 6;
         }
 
         int tierW = Math.max(60, innerWidth - countReserve);
@@ -1092,7 +1091,7 @@ public class MobPoolEditorScreen extends Screen {
         graphics.hLine(0, width, sectionY, DesignTokens.Border.DEFAULT);
 
         // Title
-        graphics.drawString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.global_multipliers").getString()),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.global_multipliers").getString()),
             PADDING, sectionY + 6, DesignTokens.Text.SECONDARY, false);
 
         // Sliders
@@ -1106,7 +1105,7 @@ public class MobPoolEditorScreen extends Screen {
 
         // Affix weights
         int affixLabelY = sliderY + 20;
-        graphics.drawString(safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.affix_weights").getString()),
+        UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.mob_editor.affix_weights").getString()),
             PADDING, affixLabelY, DesignTokens.Text.SECONDARY, false);
 
         int affixY = affixLabelY + 12;
@@ -1138,7 +1137,7 @@ public class MobPoolEditorScreen extends Screen {
 
         // Label (highlight on hover)
         int labelColor = (isHovered || isActive) ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-        graphics.drawString(safeFont, label, x, y, labelColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label, x, y, labelColor, false);
 
         // Track background (highlight on hover)
         int trackBgColor = isHovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_0;
@@ -1160,7 +1159,7 @@ public class MobPoolEditorScreen extends Screen {
         // Value (highlight on hover)
         String valueStr = String.format("%.1fx", value);
         int valueColor = (isHovered || isActive) ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY;
-        graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
     }
 
     private void renderAffixSlider(GuiGraphics graphics, @Nonnull Font safeFont, int x, int y, int width,
@@ -1178,7 +1177,7 @@ public class MobPoolEditorScreen extends Screen {
 
         String label = formatAffixLabel(affix);
         int labelColor = (hovered || active) ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-        graphics.drawString(safeFont, label, x, y, labelColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, label, x, y, labelColor, false);
 
         int trackBg = hovered ? DesignTokens.Surface.LEVEL_2 : DesignTokens.Surface.LEVEL_0;
         graphics.fill(trackX, trackY, trackX + trackW, trackY + trackH, trackBg);
@@ -1196,7 +1195,7 @@ public class MobPoolEditorScreen extends Screen {
 
         String valueStr = (value <= 0.01f && !hovered && !active) ? "OFF" : String.format("%.2fx", value);
         int valueColor = (hovered || active) ? DesignTokens.Text.WHITE : DesignTokens.Text.SECONDARY;
-        graphics.drawString(safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, valueStr, trackX + trackW + 4, y, valueColor, false);
     }
 
     private String formatAffixLabel(SpawnAffix affix) {
@@ -1280,7 +1279,7 @@ public class MobPoolEditorScreen extends Screen {
         String syncing = I18n.translate("devmod.endurance.mob_editor.syncing").getString();
         int syncX = PADDING + 88;
         int syncY = btnY + 7;
-        graphics.drawString(safeFont, syncing, syncX, syncY, DesignTokens.Text.MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, syncing, syncX, syncY, DesignTokens.Text.MUTED, false);
     }
 
     // ========== Input Handling ==========

@@ -22,11 +22,10 @@ import net.minecraft.world.level.Level;
 
 import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
 public class MutatorSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(MutatorSystem.class);
 

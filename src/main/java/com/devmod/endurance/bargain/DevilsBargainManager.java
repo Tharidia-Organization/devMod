@@ -15,11 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -33,6 +28,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 public class DevilsBargainManager implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
 
@@ -239,14 +238,14 @@ public class DevilsBargainManager implements QuestLifecycleListener {
         }
 
         // Send offerings to player
-        StringBuilder message = new StringBuilder("§5§l⛧ DEVIL'S BARGAIN ⛧§r\n");
-        message.append("§7Choose a curse for greater rewards:\n");
+        StringBuilder message = new StringBuilder("\u00A75\u00A7l⛧ DEVIL'S BARGAIN ⛧\u00A7r\n");
+        message.append("\u00A77Choose a curse for greater rewards:\n");
         for (int i = 0; i < offerings.size(); i++) {
             Curse curse = offerings.get(i);
-            message.append(String.format("§7[%d] %s §7- %s §e(%.2fx)%n",
+            message.append(String.format("\u00A77[%d] %s \u00A77- %s \u00A7e(%.2fx)%n",
                 i + 1, curse.getFormattedName(), curse.getDescription(), curse.getRewardMultiplier()));
         }
-        message.append("§8Skip with /bargain skip");
+        message.append("\u00A78Skip with /bargain skip");
 
         sendMessage(player, message.toString());
 
@@ -313,19 +312,19 @@ public class DevilsBargainManager implements QuestLifecycleListener {
     public boolean acceptCurse(ServerPlayer player, UUID questId, int curseIndex) {
         CurseSession session = sessions.get(requireQuestId(questId));
         if (session == null || !session.isAltarActive()) {
-            sendMessage(player, "§cNo altar active!");
+            sendMessage(player, "\u00A7cNo altar active!");
             return false;
         }
 
         List<Curse> offered = session.getOfferedCurses();
         if (curseIndex < 0 || curseIndex >= offered.size()) {
-            sendMessage(player, "§cInvalid curse selection!");
+            sendMessage(player, "\u00A7cInvalid curse selection!");
             return false;
         }
 
         Curse curse = offered.get(curseIndex);
         if (!session.addCurse(curse)) {
-            sendMessage(player, "§cCannot accept this curse!");
+            sendMessage(player, "\u00A7cCannot accept this curse!");
             return false;
         }
 
@@ -350,7 +349,7 @@ public class DevilsBargainManager implements QuestLifecycleListener {
             }
         }
 
-        sendMessage(player, String.format("§5⛧ %s §7accepted! Total reward: §e%.2fx",
+        sendMessage(player, String.format("\u00A75⛧ %s \u00A77accepted! Total reward: \u00A7e%.2fx",
             curse.getFormattedName(), session.getTotalRewardMultiplier()));
 
         return true;
@@ -367,7 +366,7 @@ public class DevilsBargainManager implements QuestLifecycleListener {
 
         session.setAltarActive(false);
 
-        sendMessage(player, "§7You resist the bargain... for now.");
+        sendMessage(player, "\u00A77You resist the bargain... for now.");
 
         if (player.level() instanceof ServerLevel level) {
             playSound(level, resolveBlockPos(player), SoundEvents.BEACON_DEACTIVATE, SoundSource.BLOCKS, 1.0f, 1.0f);
@@ -433,7 +432,7 @@ public class DevilsBargainManager implements QuestLifecycleListener {
         // Burning Soul - ignite every 30 seconds (600 ticks)
         if (session.hasCurse(Curse.BURNING_SOUL) && gameTime % 600 == 0) {
             player.igniteForSeconds(5);
-            sendMessage(player, "§c§oYour soul burns...");
+            sendMessage(player, "\u00A7c\u00A7oYour soul burns...");
         }
 
         // Visual indicator for cursed players (occasional particles)

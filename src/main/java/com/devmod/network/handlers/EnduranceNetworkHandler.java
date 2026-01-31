@@ -24,7 +24,6 @@ import com.devmod.arena.policy.TemplateSuggestion;
 import com.devmod.endurance.ArenaSuggestionsPayload;
 import com.devmod.endurance.BossAlertPayload;
 import com.devmod.endurance.CustomKit;
-import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.EnduranceConfigSyncPayload;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager;
@@ -56,6 +55,7 @@ import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.config.ConfigProposalManager;
 import com.devmod.endurance.config.ConfigScope;
 import com.devmod.endurance.config.EnduranceMobConfig;
@@ -77,7 +77,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 
 import static com.devmod.network.PayloadValidation.validated;
-
 /**
  * P2: Domain-specific network handler for endurance quest system payloads.
  * Handles quest lifecycle, perks, shop, and wave directives.

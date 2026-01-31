@@ -35,7 +35,7 @@ public class BadgeTestScreen extends Screen {
     private final List<PositionedButton> buttons = new ArrayList<>();
 
     public BadgeTestScreen() {
-        super(Objects.requireNonNull(Component.literal("Badge Popup Tests")));
+        super(Objects.requireNonNull(Component.translatable("devmod.testing.badge_tests.title")));
     }
 
     @Nonnull
@@ -76,7 +76,7 @@ public class BadgeTestScreen extends Screen {
         for (BadgeRarity rarity : BadgeRarity.values()) {
             final BadgeRarity finalRarity = rarity;
             Component buttonText = Objects.requireNonNull(
-                Component.literal("Test " + rarity.getDisplayName() + " Badge")
+                Component.translatable("devmod.testing.badge_tests.button.test_rarity", rarity.getDisplayName())
             );
             EditorButton.Style style = EditorButton.Style.PRIMARY;
             Integer accent = DesignTokens.Mask.ALPHA | rarity.getColor();
@@ -104,7 +104,7 @@ public class BadgeTestScreen extends Screen {
         // Test all badges button
         PositionedButton testAllButton = createButton(
             "badge-test-all",
-            Objects.requireNonNull(Component.literal("Test ALL Badges (Queue)")),
+            Objects.requireNonNull(Component.translatable("devmod.testing.badge_tests.button.test_all")),
             this::testAllBadges,
             centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
             EditorButton.Style.PRIMARY, null
@@ -116,7 +116,7 @@ public class BadgeTestScreen extends Screen {
         // Clear queue button
         PositionedButton clearButton = createButton(
             "badge-clear-queue",
-            Objects.requireNonNull(Component.literal("Clear Queue")),
+            Objects.requireNonNull(Component.translatable("devmod.testing.badge_tests.button.clear")),
             ClientNotificationManager.INSTANCE::clear,
             centerX - BUTTON_WIDTH / 2, y, BUTTON_WIDTH, BUTTON_HEIGHT,
             EditorButton.Style.GHOST, null
@@ -128,7 +128,7 @@ public class BadgeTestScreen extends Screen {
         // Back button
         PositionedButton backButton = createButton(
             "badge-back",
-            Objects.requireNonNull(Component.literal("Back")),
+            Objects.requireNonNull(Component.translatable("devmod.testing.badge_tests.button.back")),
             this::onClose,
             centerX - 50, y, 100, 20,
             EditorButton.Style.GHOST, null
@@ -150,12 +150,12 @@ public class BadgeTestScreen extends Screen {
 
         // Subtitle
         graphics.drawCenteredString(font,
-            "Click a button to test badge popup",
+            Component.translatable("devmod.testing.badge_tests.subtitle"),
             this.width / 2, 40, DesignTokens.Text.MUTED);
 
         // Queue status
         int unreadCount = ClientNotificationManager.INSTANCE.getUnreadCount();
-        String queueText = "Unread: " + unreadCount;
+        Component queueText = Component.translatable("devmod.testing.badge_tests.unread", unreadCount);
         graphics.drawCenteredString(font, queueText, this.width / 2, this.height - 30,
             unreadCount > 0 ? TestingUiTheme.Badge.UNREAD : DesignTokens.Text.MUTED);
 

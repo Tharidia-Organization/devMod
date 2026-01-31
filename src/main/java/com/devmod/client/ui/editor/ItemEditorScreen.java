@@ -43,10 +43,10 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.FooterComponent;
 import com.devmod.client.ui.editor.components.HeaderComponent;
 import com.devmod.client.ui.editor.components.LeftColumnComponent;
@@ -98,7 +98,6 @@ import com.devmod.recipe.RecipeConfigManager;
 import com.devmod.stats.ArmorStats;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DatapackIO;
-
 @OnlyIn(Dist.CLIENT)
 public class ItemEditorScreen extends Screen implements InputRouter.InputContext {
 
@@ -191,7 +190,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int DEV_PANEL_LINE_STEP = 10;
     private static final int DEV_PANEL_BG = DesignTokens.ItemEditor.DEV_PANEL_BG;
     private static final int DEV_PANEL_TITLE_COLOR = DesignTokens.ItemEditor.DEV_PANEL_TITLE;
-    private static final String DEV_PANEL_TITLE_TEXT = "§b[Dev Mode]";
+    private static final String DEV_PANEL_TITLE_TEXT = "\u00A7b[Dev Mode]";
     private static final int STATUS_TICKS_DURATION = 60;
     private static final int HOTBAR_WIDTH = 182;
     private static final int HOTBAR_SLOT_SIZE = 20;
@@ -1035,7 +1034,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                          DesignTokens.Bg.LEVEL_2);
             AxiomRenderer.drawBorder(graphics, leftPanel.x(), leftPanel.y(),
                                     leftPanel.width(), leftPanel.height(), DesignTokens.Stroke.DEFAULT);
-            graphics.drawString(safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + FAVORITES_TITLE_OFFSET_X,
+            UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + FAVORITES_TITLE_OFFSET_X,
                 leftPanel.y() + FAVORITES_TITLE_OFFSET_Y,
                                DesignTokens.Text.SECONDARY(), false);
 
@@ -1058,7 +1057,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                             label, leftPanel.x(), rowY, leftPanel.width(), rowHeight, TooltipManager.TooltipPosition.AUTO);
                     }
                 }
-                graphics.drawString(safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
+                UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
                     rowY + FAVORITES_ROW_TEXT_OFFSET_Y,
                     hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
             }
@@ -1073,7 +1072,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 int btnX = leftPanel.x() + FAVORITES_PIN_BUTTON_OFFSET_X;
                 graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, DesignTokens.Button.NORMAL());
                 AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, DesignTokens.Stroke.DEFAULT);
-                graphics.drawString(safeFont, pinLabel, btnX + FAVORITES_PIN_TEXT_OFFSET_X,
+                UIScaleManager.drawScaledString(graphics, safeFont, pinLabel, btnX + FAVORITES_PIN_TEXT_OFFSET_X,
                     btnY + FAVORITES_PIN_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
             }
         }
@@ -1086,7 +1085,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                              DesignTokens.Bg.LEVEL_2);
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
                                         rightPanel.width(), rightPanel.height(), DesignTokens.Stroke.DEFAULT);
-                graphics.drawString(safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + DEV_PANEL_TEXT_OFFSET_X,
+                UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + DEV_PANEL_TEXT_OFFSET_X,
                     rightPanel.y() + DEV_PANEL_TEXT_OFFSET_Y,
                                    DesignTokens.Text.SECONDARY(), false);
             }
@@ -1118,7 +1117,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void renderStatusMessage(GuiGraphics graphics) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         String safeMessage = Objects.requireNonNull(statusMessage, "statusMessage cannot be null");
-        int msgWidth = safeFont.width(safeMessage) + STATUS_MESSAGE_PADDING_X * 2;
+        int msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + STATUS_MESSAGE_PADDING_X * 2;
         int msgX = (width - msgWidth) / 2;
         int msgY = height - STATUS_MESSAGE_BOTTOM_OFFSET;
         float fontScale = Typography.withUiScale(1.0f);
@@ -1126,7 +1125,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int paddingX = STATUS_MESSAGE_PADDING_X;
         int paddingY = STATUS_MESSAGE_PADDING_Y;
         int msgHeight = safeFont.lineHeight + paddingY * 2;
-        msgWidth = safeFont.width(safeMessage) + paddingX * 2;
+        msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + paddingX * 2;
         msgX = Math.max(STATUS_MESSAGE_SCREEN_MARGIN, Math.min(width - msgWidth - STATUS_MESSAGE_SCREEN_MARGIN, msgX));
 
         graphics.fill(msgX, msgY, msgX + msgWidth, msgY + msgHeight, STATUS_MESSAGE_BG);
@@ -1145,7 +1144,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(x, y, x + panelWidth, y + panelHeight, DesignTokens.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, DesignTokens.Stroke.DEFAULT);
 
-        graphics.drawString(safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
             DesignTokens.Text.TITLE(), false);
         renderHistoryFilters(graphics, safeFont, x, y, mouseX, mouseY);
         int listY = y + HISTORY_PANEL_LIST_OFFSET_Y + HISTORY_FILTER_HEIGHT;
@@ -1157,7 +1156,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         int visibleLines = listHeight / lineHeight;
         if (entries.isEmpty()) {
-            graphics.drawString(safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
+            UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
                 DesignTokens.Text.MUTED(), false);
         } else {
             int startIndex = Math.max(0, historyScrollOffset / lineHeight);
@@ -1177,7 +1176,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                         DesignTokens.Background.HOVER());
                 }
                 String label = entry.formatLabel();
-                graphics.drawString(safeFont, label, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
+                UIScaleManager.drawScaledString(graphics, safeFont, label, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
                     selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
                 if (hovered) {
                     TooltipManager.INSTANCE.queueTooltip(
@@ -1197,7 +1196,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         String countText = entries.isEmpty()
             ? HISTORY_SHOWING_EMPTY
             : HISTORY_SHOWING_PREFIX + Math.min(visibleLines, entries.size()) + HISTORY_SHOWING_SEPARATOR + entries.size();
-        graphics.drawString(safeFont, countText, x + HISTORY_PANEL_TEXT_OFFSET_X, footerY,
+        UIScaleManager.drawScaledString(graphics, safeFont, countText, x + HISTORY_PANEL_TEXT_OFFSET_X, footerY,
             DesignTokens.Text.MUTED(), false);
 
         // Clear button
@@ -1209,7 +1208,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
         AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, DesignTokens.Stroke.DEFAULT);
         int clearColor = entries.isEmpty() ? DesignTokens.Text.DISABLED() : DesignTokens.Text.PRIMARY();
-        graphics.drawString(safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
             clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
 
         // Rollback button
@@ -1223,7 +1222,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(rollbackX, rollbackY, rollbackX + rollbackW, rollbackY + rollbackH, rollbackBg);
         AxiomRenderer.drawBorder(graphics, rollbackX, rollbackY, rollbackW, rollbackH, DesignTokens.Stroke.DEFAULT);
         int rollbackColor = canRollback ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
-        graphics.drawString(safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X,
             rollbackY + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y, rollbackColor, false);
     }
 
@@ -1234,7 +1233,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int cursorY = y + HISTORY_PANEL_TITLE_OFFSET_Y + HISTORY_FILTER_OFFSET_Y;
         for (HistoryFilter filter : HistoryFilter.values()) {
             String label = filter.label;
-            int width = font.width(label) + 10;
+            int width = UIScaleManager.getScaledStringWidth(font, label) + 10;
             ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(cursorX, cursorY, width, HISTORY_FILTER_HEIGHT);
             boolean selected = historyFilter == filter;
             boolean hovered = rect.contains(mouseX, mouseY);
@@ -1242,7 +1241,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bg);
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), DesignTokens.Stroke.DEFAULT);
             int color = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
-            graphics.drawString(font, label, rect.x() + 5, rect.y() + 2, color, false);
+            UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 5, rect.y() + 2, color, false);
             historyFilterHits.add(new HistoryFilterHit(filter, rect));
             cursorX = rect.right() + HISTORY_FILTER_GAP;
         }
@@ -1384,22 +1383,22 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), DesignTokens.Accent.PRIMARY);
 
         int textY = devArea.y() + DEV_PANEL_TEXT_OFFSET_Y;
-        graphics.drawString(safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY,
+        UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY,
             DEV_PANEL_TITLE_COLOR, false);
         textY += DEV_PANEL_TITLE_LINE_STEP;
 
         EditorCache.CacheStats stats = EditorCache.INSTANCE.getStats();
-        graphics.drawString(safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
-        graphics.drawString(safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
 
-        graphics.drawString(safeFont, "Size: " + layout.getScreenSize(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Size: " + layout.getScreenSize(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, DesignTokens.Text.SECONDARY(), false);
         textY += DEV_PANEL_LINE_STEP;
-        graphics.drawString(safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
             textY, DesignTokens.Text.SECONDARY(), false);
     }
 
@@ -1423,7 +1422,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         String text = LOCAL_ONLY_BANNER_TEXT;
         int textY = bannerY + Math.max(0, (bannerHeight - safeFont.lineHeight) / 2);
-        graphics.drawString(safeFont, text, bannerX + padX, textY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, text, bannerX + padX, textY, DesignTokens.Text.PRIMARY(), false);
     }
 
     private boolean hasBlockingOverlay() {

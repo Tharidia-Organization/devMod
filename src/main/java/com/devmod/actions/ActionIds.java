@@ -17,6 +17,7 @@ public final class ActionIds {
     public static final String UI_ITEM_EDITOR_OPEN_FUEL = "devmod.ui.item_editor.open_fuel";
     public static final String UI_ITEM_EDITOR_OPEN_USABLE = "devmod.ui.item_editor.open_usable";
     public static final String UI_TELEMETRY_DASHBOARD_OPEN = "devmod.ui.telemetry_dashboard.open";
+    public static final String UI_EDITOR_HUB_OPEN = "devmod.ui.editor_hub.open";
     public static final String UI_MOB_CONFIG_OPEN = "devmod.ui.mob_config.open";
     public static final String UI_MOB_EQUIPMENT_OPEN = "devmod.ui.mob_equipment.open";
     public static final String UI_ROOM_BOUNDS_EDITOR_OPEN = "devmod.ui.room_bounds_editor.open";
@@ -29,6 +30,7 @@ public final class ActionIds {
     public static final String UI_BADGE_TESTS_OPEN = "devmod.ui.badge_tests.open";
     public static final String UI_VOXELLAB_UI_TESTS_OPEN = "devmod.ui.voxellab_ui_tests.open";
     public static final String UI_QA_TESTING_OPEN = "devmod.ui.qa_testing.open";
+    public static final String UI_RESPONSIVENESS_TEST_OPEN = "devmod.ui.responsiveness_test.open";
     public static final String UI_KEYBINDS_OPEN = "devmod.ui.keybinds.open";
     public static final String UI_PARTY_OPEN = "devmod.ui.party.open";
     public static final String UI_PARTY_INVITE_POPUP_OPEN = "devmod.ui.party_invite_popup.open";

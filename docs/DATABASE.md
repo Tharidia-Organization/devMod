@@ -1,6 +1,6 @@
 # Database (DuckDB)
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 DevMod usa DuckDB embedded per telemetry, analytics e componenti di audit. La creazione delle tabelle avviene in due punti:
 

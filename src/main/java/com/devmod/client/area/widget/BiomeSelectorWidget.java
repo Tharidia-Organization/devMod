@@ -21,6 +21,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.builder.BiomeRegistry;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for selecting biomes from a searchable list.
@@ -114,7 +115,7 @@ public class BiomeSelectorWidget extends AbstractWidget {
         updateLayout(font.lineHeight);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.tab.biome")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -133,8 +134,8 @@ public class BiomeSelectorWidget extends AbstractWidget {
             AreaBuilderGuiConstants.COLOR_BORDER);
 
         if (filteredBiomes.isEmpty()) {
-            graphics.drawCenteredString(font,
-                Objects.requireNonNull(Component.translatable("area.biome.empty")),
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.translatable("area.biome.empty").getString(),
                 getX() + getWidth() / 2, listY + listHeight / 2 - 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
         }
@@ -158,14 +159,14 @@ public class BiomeSelectorWidget extends AbstractWidget {
             }
 
             // Biome name
-            graphics.drawString(font, biome.displayName(), getX() + 4, itemY + 6,
+            UIScaleManager.drawScaledString(graphics, font, biome.displayName(), getX() + 4, itemY + 6,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
             // Mod indicator
             if (!biome.isVanilla()) {
                 String modIndicator = "[" + biome.modId() + "]";
-                int modWidth = font.width(modIndicator);
-                graphics.drawString(font, modIndicator,
+                int modWidth = UIScaleManager.getScaledStringWidth(font, modIndicator);
+                UIScaleManager.drawScaledString(graphics, font, modIndicator,
                     getX() + getWidth() - modWidth - 4, itemY + 6, AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             }
         }
@@ -187,7 +188,7 @@ public class BiomeSelectorWidget extends AbstractWidget {
         // Selected biome info
         int infoY = listY + listHeight + 8;
         String selectedName = BiomeRegistry.getBiomeDisplayName(Objects.requireNonNull(selectedBiome));
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.selected_biome", selectedName)),
             getX(), infoY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY

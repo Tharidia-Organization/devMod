@@ -107,7 +107,9 @@ public final class ImpactHudController {
 
         if (newMode != displayMode) {
             setDisplayMode(newMode);
-            LOGGER.debug("Context changed to {}, display mode now: {}", contextMode, newMode);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Context changed to {}, display mode now: {}", contextMode, newMode);
+            }
         }
     }
 
@@ -169,8 +171,10 @@ public final class ImpactHudController {
         // Combat session tracking (for recap feature)
         CombatSessionTracker.INSTANCE.recordHit(impactData);
 
-        LOGGER.debug("Impact routed: mode={}, target={}, damage={}",
-            mode, impactData.getTargetName(), impactData.getBreakdown().getFinalDamage());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Impact routed: mode={}, target={}, damage={}",
+                mode, impactData.getTargetName(), impactData.getBreakdown().getFinalDamage());
+        }
     }
 
     /**
@@ -213,7 +217,9 @@ public final class ImpactHudController {
             modeChangeListener.accept(mode);
         }
 
-        LOGGER.debug("Display mode changed: {} -> {}", oldMode, mode);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Display mode changed: {} -> {}", oldMode, mode);
+        }
     }
 
     /**

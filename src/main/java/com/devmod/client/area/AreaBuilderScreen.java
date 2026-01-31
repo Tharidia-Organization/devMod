@@ -9,6 +9,7 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +17,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
-
-import org.lwjgl.glfw.GLFW;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.aesthetic.AreaBuilderNaming;
@@ -36,6 +36,7 @@ import com.devmod.area.data.AreaOptions;
 import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaShape;
 import com.devmod.area.data.BiomeGenerationConfig;
+import com.devmod.area.data.GridSettings;
 import com.devmod.area.network.AreaPreviewPayload;
 import com.devmod.area.network.BuildAreaPayload;
 import com.devmod.area.network.BuildStatusPayload;
@@ -50,7 +51,6 @@ import com.devmod.area.network.SaveAreaResultPayload;
 import com.devmod.area.network.TemplateDataPayload;
 import com.devmod.area.network.TemplateListPayload;
 import com.devmod.area.network.ZoneListPayload;
-import com.devmod.area.data.GridSettings;
 import com.devmod.client.area.widget.BiomeConfigWidget;
 import com.devmod.client.area.widget.BiomeSelectorWidget;
 import com.devmod.client.area.widget.CustomNbtWidget;
@@ -62,14 +62,12 @@ import com.devmod.client.area.widget.PathWaypointWidget;
 import com.devmod.client.area.widget.ShapeConfigWidget;
 import com.devmod.client.area.widget.TemplateSelectorWidget;
 import com.devmod.client.area.widget.ZoneSelectorWidget;
-
-import net.minecraft.nbt.CompoundTag;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.BaseDevModScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
-
 /**
  * Area Builder screen - the main interface for configuring and building areas.
  * Contains 5 tabs: Shape, Dimensions, Materials, Biome, Options.
@@ -148,6 +146,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     // CRIT-06 fix: Track build state for pause/resume UI
     private boolean buildActive = false;
     private boolean buildPaused = false;
+    private boolean zoneListRequested = false;
 
     // Template UI
     @Nullable private TemplateSelectorWidget templateSelector;
@@ -199,6 +198,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     }
 
     private Layout layout() {
+        UIScaleManager.update();
         int fontHeight = this.font != null ? this.font.lineHeight : 9;
         return Layout.forScreen(this.width, this.height, fontHeight);
     }
@@ -206,8 +206,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     @Override
     protected void initContent() {
         Layout layout = layout();
-        int tabWidth = AreaBuilderGuiConstants.TAB_WIDTH;
-        int tabHeight = AreaBuilderGuiConstants.TAB_HEIGHT;
+        int tabWidth = AreaBuilderGuiConstants.scaledTabWidth();
+        int tabHeight = AreaBuilderGuiConstants.scaledTabHeight();
+        int tabSpacing = AreaBuilderGuiConstants.scaledTabSpacing();
         int tabStartX = layout.tabStartX;
         int tabY = layout.tabY;
 
@@ -239,7 +240,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
                 .build();
 
             this.addRenderableWidget(new EditorButtonWidget(tabButton,
-                tabStartX + i * (tabWidth + AreaBuilderGuiConstants.TAB_SPACING), tabY, tabWidth, tabHeight));
+                tabStartX + i * (tabWidth + tabSpacing), tabY, tabWidth, tabHeight));
         }
 
         // Initialize current tab content
@@ -247,8 +248,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
         // Bottom buttons
         actionButtonY = layout.buttonY;
-        actionButtonWidth = AreaBuilderGuiConstants.BUTTON_WIDTH;
-        actionButtonSpacing = AreaBuilderGuiConstants.BUTTON_SPACING;
+        actionButtonWidth = AreaBuilderGuiConstants.scaledButtonWidth();
+        actionButtonSpacing = AreaBuilderGuiConstants.scaledButtonSpacing();
         int totalButtonsWidth = actionButtonWidth * 3 + actionButtonSpacing * 2;
         actionButtonsStartX = (this.width - totalButtonsWidth) / 2;
 
@@ -260,7 +261,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .onClick(this::requestPreview)
             .build();
         previewButton = new EditorButtonWidget(preview, actionButtonsStartX, actionButtonY,
-            actionButtonWidth, AreaBuilderGuiConstants.BUTTON_HEIGHT);
+            actionButtonWidth, AreaBuilderGuiConstants.scaledButtonHeight());
         this.addRenderableWidget(previewButton);
 
         // Save button
@@ -272,7 +273,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .build();
         saveButton = new EditorButtonWidget(save,
             actionButtonsStartX + (actionButtonWidth + actionButtonSpacing) * 2, actionButtonY, actionButtonWidth,
-            AreaBuilderGuiConstants.BUTTON_HEIGHT);
+            AreaBuilderGuiConstants.scaledButtonHeight());
         this.addRenderableWidget(saveButton);
 
         // CRIT-06 fix: Pause button (initially hidden)
@@ -284,7 +285,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .build();
         EditorButtonWidget pauseBtn = new EditorButtonWidget(pause,
             actionButtonsStartX + (actionButtonWidth + actionButtonSpacing) * 3, actionButtonY, actionButtonWidth,
-            AreaBuilderGuiConstants.BUTTON_HEIGHT);
+            AreaBuilderGuiConstants.scaledButtonHeight());
         pauseBtn.visible = false;
         this.addRenderableWidget(pauseBtn);
         pauseButton = pauseBtn;
@@ -298,7 +299,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .build();
         EditorButtonWidget resumeBtn = new EditorButtonWidget(resume,
             actionButtonsStartX + (actionButtonWidth + actionButtonSpacing) * 3, actionButtonY, actionButtonWidth,
-            AreaBuilderGuiConstants.BUTTON_HEIGHT);
+            AreaBuilderGuiConstants.scaledButtonHeight());
         resumeBtn.visible = false;
         this.addRenderableWidget(resumeBtn);
         resumeButton = resumeBtn;
@@ -306,9 +307,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         updateActionButtons();
 
         // Template buttons (left side of action bar)
-        int templateBtnWidth = 70;
-        int templateBtnSpacing = 4;
-        int templateBtnX = actionButtonsStartX - templateBtnWidth * 2 - templateBtnSpacing - 20;
+        int templateBtnWidth = UIScaleManager.scale(70);
+        int templateBtnSpacing = UIScaleManager.scale(4);
+        int templateBtnX = actionButtonsStartX - templateBtnWidth * 2 - templateBtnSpacing - UIScaleManager.scale(20);
 
         EditorButton loadTemplate = EditorButton.builder("area-builder-load-template",
                 Component.translatable("area.builder.load_template").getString())
@@ -317,7 +318,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .onClick(this::toggleTemplateSelector)
             .build();
         this.addRenderableWidget(new EditorButtonWidget(loadTemplate, templateBtnX, actionButtonY,
-            templateBtnWidth, AreaBuilderGuiConstants.BUTTON_HEIGHT));
+            templateBtnWidth, AreaBuilderGuiConstants.scaledButtonHeight()));
 
         EditorButton saveTemplate = EditorButton.builder("area-builder-save-template",
                 Component.translatable("area.builder.save_template").getString())
@@ -327,10 +328,13 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .build();
         this.addRenderableWidget(new EditorButtonWidget(saveTemplate,
             templateBtnX + templateBtnWidth + templateBtnSpacing, actionButtonY,
-            templateBtnWidth, AreaBuilderGuiConstants.BUTTON_HEIGHT));
+            templateBtnWidth, AreaBuilderGuiConstants.scaledButtonHeight()));
 
-        // Request zone list from server for zone selector
-        PacketDistributor.sendToServer(new RequestZoneListPayload());
+        // Request zone list from server for zone selector (only once per screen instance)
+        if (!zoneListRequested) {
+            zoneListRequested = true;
+            PacketDistributor.sendToServer(new RequestZoneListPayload());
+        }
     }
 
     private void selectTab(int tabIndex) {
@@ -372,7 +376,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             .build();
         buildButton = new EditorButtonWidget(build,
             actionButtonsStartX + actionButtonWidth + actionButtonSpacing, actionButtonY, actionButtonWidth,
-            AreaBuilderGuiConstants.BUTTON_HEIGHT);
+            AreaBuilderGuiConstants.scaledButtonHeight());
         addRenderableWidget(buildButton);
     }
 
@@ -596,10 +600,11 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         );
 
         // Highlight current tab
-        int tabWidth = AreaBuilderGuiConstants.TAB_WIDTH;
-        int tabHeight = AreaBuilderGuiConstants.TAB_HEIGHT;
-        int activeTabX = layout.tabStartX + currentTab * (tabWidth + AreaBuilderGuiConstants.TAB_SPACING);
-        graphics.fill(activeTabX, layout.tabY + tabHeight - 2, activeTabX + tabWidth, layout.tabY + tabHeight,
+        int tabWidth = AreaBuilderGuiConstants.scaledTabWidth();
+        int tabHeight = AreaBuilderGuiConstants.scaledTabHeight();
+        int tabSpacing = AreaBuilderGuiConstants.scaledTabSpacing();
+        int activeTabX = layout.tabStartX + currentTab * (tabWidth + tabSpacing);
+        graphics.fill(activeTabX, layout.tabY + tabHeight - UIScaleManager.scale(2), activeTabX + tabWidth, layout.tabY + tabHeight,
             AreaBuilderGuiConstants.COLOR_TAB_ACTIVE);
 
         // Summary bar at bottom
@@ -640,7 +645,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * UX-01 fix: Renders a semi-transparent overlay with spinner animation during save.
      */
     private void renderSavingOverlay(GuiGraphics graphics) {
@@ -693,9 +698,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         super.renderBackground(Objects.requireNonNull(graphics), mouseX, mouseY, partialTick);
         Layout layout = layout();
         graphics.fill(0, 0, this.width, this.height, AreaBuilderGuiConstants.COLOR_BACKGROUND);
-        graphics.fill(0, layout.actionBarY, this.width, layout.actionBarY + AreaBuilderGuiConstants.ACTION_BAR_HEIGHT,
+        graphics.fill(0, layout.actionBarY, this.width, layout.actionBarY + AreaBuilderGuiConstants.scaledActionBarHeight(),
             AreaBuilderGuiConstants.COLOR_PANEL);
-        graphics.fill(0, layout.actionBarY, this.width, layout.actionBarY + 1, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(0, layout.actionBarY, this.width, layout.actionBarY + UIScaleManager.scale(1), AreaBuilderGuiConstants.COLOR_BORDER);
     }
 
     @Override
@@ -748,8 +753,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
         if (ctrlHeld && keyCode == GLFW.GLFW_KEY_Z) {
             if (shiftHeld) {
-                // Ctrl+Shift+Z = Redo (not implemented yet - would need redo stack)
-                LOGGER.debug("[AreaBuilder] Redo hotkey pressed (not yet implemented)");
+                // Ctrl+Shift+Z = Redo - use Snapshot Manager for multi-step history
+                showStatus(Component.translatable("area.builder.redo_use_snapshots").getString(),
+                    AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             } else {
                 // Ctrl+Z = Undo (restore last snapshot)
                 requestUndoViaSnapshot();
@@ -758,8 +764,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
 
         if (ctrlHeld && keyCode == GLFW.GLFW_KEY_Y) {
-            // Ctrl+Y = Redo (not implemented yet - would need redo stack)
-            LOGGER.debug("[AreaBuilder] Redo hotkey pressed (not yet implemented)");
+            // Ctrl+Y = Redo - use Snapshot Manager for multi-step history
+            showStatus(Component.translatable("area.builder.redo_use_snapshots").getString(),
+                AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             return true;
         }
 
@@ -772,7 +779,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    /**
+    /*
      * UX-06 fix: Requests undo by restoring the most recent snapshot.
      * Sends a request to the server to get the latest snapshot for this area.
      */
@@ -981,7 +988,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         // Defer build until we receive save result with authoritative ID
     }
 
-    /**
+    /*
      * Applies server save result (authoritative ID/revision) to the local screen state.
      */
     public void handleSaveResult(@Nonnull SaveAreaResultPayload payload) {
@@ -1023,7 +1030,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * Handles build status updates from the server.
      * Called by AreaClientHooks when BuildStatusPayload is received.
      *
@@ -1075,7 +1082,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * CRIT-06 fix: Updates pause/resume button visibility based on build state.
      */
     private void updateBuildControlButtons() {
@@ -1092,7 +1099,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * CRIT-06 fix: Pauses the current build.
      */
     private void pauseBuild() {
@@ -1103,7 +1110,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         PacketDistributor.sendToServer(new PauseBuildPayload(areaId));
     }
 
-    /**
+    /*
      * CRIT-06 fix: Resumes a paused build.
      */
     private void resumeBuild() {
@@ -1208,7 +1215,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         PacketDistributor.sendToServer(new RequestTemplateListPayload());
     }
 
-    /**
+    /*
      * Updates the zone selector with the list of zones from the server.
      * Called from AreaClientHooks when ZoneListPayload is received.
      *
@@ -1220,7 +1227,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /**
+    /*
      * Updates the template list from the server.
      * Called from AreaClientHooks when TemplateListPayload is received.
      *
@@ -1237,7 +1244,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         LOGGER.debug("[AreaBuilder] Received {} templates from server (cached)", templates.size());
     }
 
-    /**
+    /*
      * Invalidates the template cache. Call after saving or deleting templates.
      */
     public static void invalidateTemplateCache() {
@@ -1245,7 +1252,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         templateCacheTime = 0L;
     }
 
-    /**
+    /*
      * Applies a template's configuration to this screen.
      * Called from AreaClientHooks when TemplateDataPayload is received.
      *
@@ -1304,20 +1311,20 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
 
         private static Layout forScreen(int screenWidth, int screenHeight, int fontHeight) {
-            int padding = AreaBuilderGuiConstants.CONTENT_PADDING;
+            int padding = AreaBuilderGuiConstants.scaledContentPadding();
             int titleY = padding;
             int nameLabelY = titleY + fontHeight + (padding / 2);
             int nameFieldX = padding;
             int nameFieldY = nameLabelY + fontHeight + (padding / 2);
             int nameFieldWidth = screenWidth - padding * 2;
-            int tabY = nameFieldY + AreaBuilderGuiConstants.FIELD_HEIGHT + padding;
-            int tabStartX = (screenWidth - AreaBuilderGuiConstants.getTabBarWidth()) / 2;
+            int tabY = nameFieldY + AreaBuilderGuiConstants.scaledFieldHeight() + padding;
+            int tabStartX = (screenWidth - AreaBuilderGuiConstants.scaledTabBarWidth()) / 2;
             int contentX = padding;
-            int contentY = tabY + AreaBuilderGuiConstants.TAB_HEIGHT + padding;
+            int contentY = tabY + AreaBuilderGuiConstants.scaledTabHeight() + padding;
             int contentWidth = screenWidth - padding * 2;
-            int actionBarY = screenHeight - padding - AreaBuilderGuiConstants.ACTION_BAR_HEIGHT;
+            int actionBarY = screenHeight - padding - AreaBuilderGuiConstants.scaledActionBarHeight();
             int contentHeight = actionBarY - contentY - padding;
-            int buttonY = actionBarY + (AreaBuilderGuiConstants.ACTION_BAR_HEIGHT - AreaBuilderGuiConstants.BUTTON_HEIGHT) / 2;
+            int buttonY = actionBarY + (AreaBuilderGuiConstants.scaledActionBarHeight() - AreaBuilderGuiConstants.scaledButtonHeight()) / 2;
             return new Layout(titleY, nameLabelY, nameFieldX, nameFieldY, nameFieldWidth,
                 tabY, tabStartX, contentX, contentY, contentWidth, contentHeight, actionBarY, buttonY);
         }

@@ -93,15 +93,19 @@ public class MobEquipmentScreen extends Screen {
     @Override
     protected void init() {
         if (font == null) return;
+        UIScaleManager.update();
 
         applyButton.onClick(this::save);
         backButton.onClick(this::requestClose);
         discardButton.onClick(this::discardAndClose);
         cancelDiscardButton.onClick(() -> showingConfirmDialog = false);
 
-        int panelX = (this.width - PANEL_WIDTH) / 2;
-        int panelY = (this.height - PANEL_HEIGHT) / 2;
-        int inputX = panelX + PANEL_WIDTH - DesignTokens.Spacing.PANEL_PADDING - INPUT_WIDTH;
+        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int scaledInputWidth = UIScaleManager.scale(INPUT_WIDTH);
+        int panelX = (this.width - scaledPanelWidth) / 2;
+        int panelY = (this.height - scaledPanelHeight) / 2;
+        int inputX = panelX + scaledPanelWidth - UIScaleManager.scale(DesignTokens.Spacing.PANEL_PADDING) - scaledInputWidth;
 
         // Start after header
         int fieldY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 20;

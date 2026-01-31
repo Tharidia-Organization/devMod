@@ -137,7 +137,8 @@ public class QuestCompletionScreen extends Screen {
         if (fadeProgress > 0.8f) {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
             int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
-            graphics.drawCenteredString(Objects.requireNonNull(font), "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
+            UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
+                "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
         }
 
         renderButtons(graphics, mouseX, mouseY);
@@ -181,22 +182,22 @@ public class QuestCompletionScreen extends Screen {
 
         // Title
         String title = data.endlessMode() ? "ENDLESS MODE COMPLETE!" : "QUEST COMPLETE!";
-        g.drawCenteredString(safeFont, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
         y += 18;
 
         // Quest name and wave info (truncated to fit panel width)
         String questName = truncateText(data.questName(), PANEL_WIDTH - 40);
-        g.drawCenteredString(safeFont, Objects.requireNonNull(questName), centerX, y, applyAlpha(COLOR_TEXT, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, Objects.requireNonNull(questName), centerX, y, applyAlpha(COLOR_TEXT, alpha));
         y += 14;
 
         String waveInfo = data.endlessMode()
             ? "Reached Wave " + data.finalWave()
             : "Completed " + data.finalWave() + "/" + data.totalWaves() + " waves";
-        g.drawCenteredString(safeFont, waveInfo, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, waveInfo, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 14;
 
         // Duration
-        g.drawCenteredString(safeFont, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 16;
 
         boolean hasRunInfo = (data.templateId() != null && !data.templateId().isBlank())
@@ -205,19 +206,19 @@ public class QuestCompletionScreen extends Screen {
             || (data.arenaId() != null && !data.arenaId().isBlank());
 
         if (hasRunInfo) {
-            g.drawCenteredString(safeFont, "-- RUN INFO --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "-- RUN INFO --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
             y += 14;
 
             if (data.templateId() != null && !data.templateId().isBlank()) {
                 String templateLine = "Template: " + data.templateId() + " v" + data.templateVersion();
-                g.drawCenteredString(safeFont,
+                UIScaleManager.drawScaledCenteredString(g, safeFont,
                     Objects.requireNonNull(truncateText(templateLine, PANEL_WIDTH - 60), "templateLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
                 y += 12;
             }
             if (data.policyId() != null && !data.policyId().isBlank()) {
                 String policyLine = "Policy: " + data.policyId() + " v" + data.policyVersion();
-                g.drawCenteredString(safeFont,
+                UIScaleManager.drawScaledCenteredString(g, safeFont,
                     Objects.requireNonNull(truncateText(policyLine, PANEL_WIDTH - 60), "policyLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
                 y += 12;
@@ -227,19 +228,19 @@ public class QuestCompletionScreen extends Screen {
                 ? data.difficultyLabel() : "standard";
             String mode = data.questTypeLabel() != null && !data.questTypeLabel().isBlank()
                 ? data.questTypeLabel() : "endurance";
-            g.drawCenteredString(safeFont, "Difficulty: " + difficulty + " | Mode: " + mode,
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "Difficulty: " + difficulty + " | Mode: " + mode,
                 centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
             y += 12;
 
             if (data.instanceId() != null && !data.instanceId().isBlank()) {
                 String runLine = "Run ID: " + data.instanceId();
-                g.drawCenteredString(safeFont,
+                UIScaleManager.drawScaledCenteredString(g, safeFont,
                     Objects.requireNonNull(truncateText(runLine, PANEL_WIDTH - 60), "runLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
                 y += 12;
             } else if (data.arenaId() != null && !data.arenaId().isBlank()) {
                 String arenaLine = "Arena ID: " + data.arenaId();
-                g.drawCenteredString(safeFont,
+                UIScaleManager.drawScaledCenteredString(g, safeFont,
                     Objects.requireNonNull(truncateText(arenaLine, PANEL_WIDTH - 60), "arenaLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
                 y += 12;
@@ -255,84 +256,84 @@ public class QuestCompletionScreen extends Screen {
         y += 15;
 
         // === REWARDS SECTION ===
-        g.drawCenteredString(safeFont, "-- REWARDS --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "-- REWARDS --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
         y += 18;
 
         // Tokens (animated)
         String tokenText = "\u2B50 " + animatedTokens + " Tokens";
-        g.drawCenteredString(safeFont, tokenText, centerX, y, applyAlpha(COLOR_GOLD, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, tokenText, centerX, y, applyAlpha(COLOR_GOLD, alpha));
         y += 14;
 
         // Show multipliers if significant
         if (data.styleMultiplier() > 1.0f || data.mutatorMultiplier() > 1.0f) {
             String multText = Objects.requireNonNull(String.format("(Base: %d | Style: x%.1f | Mutator: x%.1f)",
                 data.baseTokens(), data.styleMultiplier(), data.mutatorMultiplier()));
-            g.drawCenteredString(safeFont, multText, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, multText, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
             y += 14;
         }
 
         // Blood Gems
         if (data.bloodGemsEarned() > 0) {
             String gemText = "\u2666 " + animatedGems + " Blood Gems";
-            g.drawCenteredString(safeFont, gemText, centerX, y, applyAlpha(COLOR_GEM, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, gemText, centerX, y, applyAlpha(COLOR_GEM, alpha));
             y += 14;
         }
 
         // Prestige points
         if (data.prestigeEarned() > 0) {
-            g.drawCenteredString(safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(COLOR_GEM, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(COLOR_GEM, alpha));
             y += 14;
         }
         y += 8;
 
         // === BONUSES ===
         if (data.noHitBonus() || data.speedBonus() || data.activeMutators() > 0) {
-            g.drawCenteredString(safeFont, "-- BONUSES --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "-- BONUSES --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
             y += 16;
 
             if (data.noHitBonus()) {
-                g.drawCenteredString(safeFont, "\u2714 No Hit Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 No Hit Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
                 y += 12;
             }
             if (data.speedBonus()) {
-                g.drawCenteredString(safeFont, "\u2714 Speed Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 Speed Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
                 y += 12;
             }
             if (data.activeMutators() > 0) {
-                g.drawCenteredString(safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(COLOR_ORANGE, alpha));
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(COLOR_ORANGE, alpha));
                 y += 12;
             }
             y += 6;
         }
 
         // === STATS ===
-        g.drawCenteredString(safeFont, "-- STATS --", centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "-- STATS --", centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
         y += 16;
 
         int leftX = panelX + 50;
         int rightX = centerX + 20;
 
         // Two column layout
-        g.drawString(safeFont, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha));
-        g.drawString(safeFont, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha));
+        UIScaleManager.drawScaledString(g, safeFont, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
+        UIScaleManager.drawScaledString(g, safeFont, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha), false);
         y += 12;
 
-        g.drawString(safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha));
-        g.drawString(safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), rightX, y, applyAlpha(data.getStyleRank().getColor(), alpha));
+        UIScaleManager.drawScaledString(g, safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
+        UIScaleManager.drawScaledString(g, safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), rightX, y, applyAlpha(data.getStyleRank().getColor(), alpha), false);
         y += 12;
 
         if (data.totalDamageTaken() > 0) {
-            g.drawString(safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
         }
         if (data.deaths() > 0) {
-            g.drawString(safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
+            UIScaleManager.drawScaledString(g, safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
         }
         y += 18;
 
         // === ACHIEVEMENTS ===
         List<String> achievements = data.achievementNames();
         if (!achievements.isEmpty()) {
-            g.drawCenteredString(safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
             y += 14;
 
             int maxY = panelY + PANEL_HEIGHT - 60;
@@ -341,10 +342,10 @@ public class QuestCompletionScreen extends Screen {
                 if (y > maxY) {
                     // Show indicator for remaining achievements
                     int remaining = achievements.size() - achievementsShown;
-                    g.drawCenteredString(safeFont, "+" + remaining + " more...", centerX, y, applyAlpha(DesignTokens.Text.MUTED, alpha));
+                    UIScaleManager.drawScaledCenteredString(g, safeFont, "+" + remaining + " more...", centerX, y, applyAlpha(DesignTokens.Text.MUTED, alpha));
                     break;
                 }
-                g.drawCenteredString(safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(COLOR_ORANGE, alpha));
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(COLOR_ORANGE, alpha));
                 y += 11;
                 achievementsShown++;
             }

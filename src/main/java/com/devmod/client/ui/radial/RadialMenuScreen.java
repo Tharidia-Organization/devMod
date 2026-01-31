@@ -33,13 +33,13 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionCategory;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionResult;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.radial.animation.RadialAnimator;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuScaler;
@@ -52,16 +52,17 @@ import com.devmod.client.ui.radial.render.RadialHubRenderer;
 import com.devmod.client.ui.radial.render.RadialTooltipRenderer;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public final class RadialMenuScreen extends Screen {
     private static final Set<String> FOCUSED_ACTION_IDS = Set.of(
         ActionIds.UI_TESTING_HUB_OPEN,
         ActionIds.UI_QA_TESTING_OPEN,
+        ActionIds.UI_RESPONSIVENESS_TEST_OPEN,
         ActionIds.UI_ITEM_EDITOR_OPEN_AUTO,
         ActionIds.UI_MOB_CONFIG_OPEN,
         ActionIds.UI_MOB_EQUIPMENT_OPEN,
         ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+        ActionIds.UI_EDITOR_HUB_OPEN,
         ActionIds.UI_ENDURANCE_SCREEN_OPEN,
         ActionIds.UI_ENDURANCE_EDITOR_OPEN,
         ActionIds.UI_PARTY_OPEN,
@@ -781,7 +782,8 @@ public final class RadialMenuScreen extends Screen {
             double favX = centerX + Math.cos(favMidAngle) * favoritesRadius;
             double favY = centerY + Math.sin(favMidAngle) * favoritesRadius;
             double favDist = Math.hypot(mouseX - favX, mouseY - favY);
-            if (favDist > RadialMenuConstants.FAVORITE_HIT_RADIUS) {
+            int favHitRadius = RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_HIT_RADIUS);
+            if (favDist > favHitRadius) {
                 selectedFavoriteIndex = RadialMenuConstants.NO_SELECTION;
                 return;
             }
@@ -968,6 +970,7 @@ public final class RadialMenuScreen extends Screen {
                 }
                 if (menuPath != null) {
                     if (menuPath.startsWith("Root/Tools/Mob Editor")
+                        || menuPath.startsWith("Root/Tools/Editors")
                         || menuPath.startsWith("Root/Tools/Testing")
                         || menuPath.startsWith("Root/Tools/Commands")
                         || menuPath.startsWith("Root/Arena/Ops")
@@ -1085,8 +1088,9 @@ public final class RadialMenuScreen extends Screen {
         int numFavorites = favorites.size();
         double segmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
         double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
-        int ringInner = Math.max(0, favoritesRadius - 1);
-        int ringOuter = favoritesRadius + 1;
+        int ringThickness = Math.max(1, RadialMenuScaler.scaleConstant(2));
+        int ringInner = Math.max(0, favoritesRadius - ringThickness);
+        int ringOuter = favoritesRadius + ringThickness;
         int ringColor = com.devmod.client.ui.radial.render.RadialGeometry.applyAlpha(
             RadialMenuConstants.COLOR_DIVIDER, 120);
         com.devmod.client.ui.radial.render.RadialGeometry.renderRing(graphics, centerX, centerY,
@@ -1101,8 +1105,9 @@ public final class RadialMenuScreen extends Screen {
             int favX = (int)(centerX + Math.cos(midAngle) * favoritesRadius);
             int favY = (int)(centerY + Math.sin(midAngle) * favoritesRadius);
 
-            int size = RadialMenuConstants.FAVORITE_BASE_SIZE +
-                (int) (RadialMenuConstants.FAVORITE_SIZE_BONUS * anim);
+            int baseSize = RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_BASE_SIZE);
+            int bonusSize = RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_SIZE_BONUS);
+            int size = baseSize + (int) (bonusSize * anim);
 
             // Star background
             int bgColor = selected
@@ -1115,17 +1120,27 @@ public final class RadialMenuScreen extends Screen {
             if (!iconStack.isEmpty()) {
                 graphics.pose().pushPose();
                 graphics.pose().translate(
-                    favX + RadialMenuConstants.FAVORITE_ICON_OFFSET_X,
-                    favY + RadialMenuConstants.FAVORITE_ICON_OFFSET_Y,
+                    favX + RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_ICON_OFFSET_X),
+                    favY + RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_ICON_OFFSET_Y),
                     0);
                 graphics.pose().scale(RadialMenuConstants.FAVORITE_ICON_SCALE,
                     RadialMenuConstants.FAVORITE_ICON_SCALE, 1f);
                 graphics.renderItem(iconStack, 0, 0);
                 graphics.pose().popPose();
             } else {
-                graphics.drawCenteredString(safeFont, "*", favX,
-                    favY + RadialMenuConstants.FAVORITE_STAR_OFFSET_Y,
-                    RadialMenuConstants.FAVORITE_STAR_COLOR);
+                int starY = favY + RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_STAR_OFFSET_Y);
+                float fontScale = RadialMenuScaler.getFontScale();
+                if (fontScale <= 0f || Math.abs(fontScale - 1f) < 0.001f) {
+                    graphics.drawCenteredString(safeFont, "*", favX, starY,
+                        RadialMenuConstants.FAVORITE_STAR_COLOR);
+                } else {
+                    float inv = 1f / fontScale;
+                    graphics.pose().pushPose();
+                    graphics.pose().scale(fontScale, fontScale, 1f);
+                    graphics.drawCenteredString(safeFont, "*", Math.round(favX * inv),
+                        Math.round(starY * inv), RadialMenuConstants.FAVORITE_STAR_COLOR);
+                    graphics.pose().popPose();
+                }
             }
         }
     }
@@ -1288,14 +1303,16 @@ public final class RadialMenuScreen extends Screen {
     private void renderHelpText(GuiGraphics graphics) {
         if (!config.showKeyHints) return;
         @Nonnull Font safeFont = requireFont();
+        int helpTop = centerY + RadialMenuScaler.getMenuOuterExtent()
+            + RadialMenuScaler.scaleConstant(6);
         RadialTooltipRenderer.renderHelpText(graphics, safeFont, width, height,
-            buildHelpLines(), openTime, config.theme);
+            buildHelpLines(), openTime, config.theme, helpTop);
     }
 
     private void renderBreadcrumb(GuiGraphics graphics) {
         @Nonnull Font safeFont = requireFont();
         RadialTooltipRenderer.renderBreadcrumb(graphics, safeFont,
-            new ArrayList<>(navigationStack), currentCategory);
+            width, new ArrayList<>(navigationStack), currentCategory);
     }
 
     private void renderEditModeIndicator(GuiGraphics graphics) {
@@ -1814,7 +1831,10 @@ public final class RadialMenuScreen extends Screen {
     }
 
     private void openItemDetails(RadialMenuItem item, RadialActionSafety.RiskLevel riskLevel) {
-        Minecraft.getInstance().setScreen(new RadialActionDetailScreen(this, item, riskLevel));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "radial_action_detail",
+            this,
+            () -> new RadialActionDetailScreen(this, item, riskLevel));
     }
 
     private void navigateTo(RadialCategory category) {
@@ -2079,7 +2099,7 @@ public final class RadialMenuScreen extends Screen {
                 continue;
             }
             if (added > 0) {
-                line.append(" §8| ");
+                line.append(" \u00A78| ");
             }
             String key = i < config.input.macroKeys.length ? keyName(config.input.macroKeys[i]) : String.valueOf(i + 1);
             String name = truncateLabel(action.getLabel().getString(), 14);
@@ -2108,7 +2128,7 @@ public final class RadialMenuScreen extends Screen {
         if (names.isEmpty()) {
             return "";
         }
-        return I18n.translate("devmod.radial.help.recent", String.join(" §8| §f", names)).getString();
+        return I18n.translate("devmod.radial.help.recent", String.join(" \u00A78| \u00A7f", names)).getString();
     }
 
     private static String truncateLabel(String label, int maxLength) {

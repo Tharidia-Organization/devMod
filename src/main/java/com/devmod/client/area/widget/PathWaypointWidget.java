@@ -23,6 +23,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.builder.AreaShapeGenerator;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -174,14 +175,14 @@ public class PathWaypointWidget extends AbstractWidget {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.path.waypoints")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
 
         // Corridor width label and input
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.path.corridor_width")),
             getX(), getY() + 22,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -190,8 +191,8 @@ public class PathWaypointWidget extends AbstractWidget {
 
         // Waypoint list header
         int listY = getY() + 60;
-        graphics.drawString(font,
-            Objects.requireNonNull(Component.literal("Waypoints (relative to center):").withStyle(s -> s.withColor(AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY))),
+        UIScaleManager.drawScaledString(graphics, font,
+            "Waypoints (relative to center):",
             getX(), listY - 12,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
@@ -211,7 +212,7 @@ public class PathWaypointWidget extends AbstractWidget {
             int rowY = listY + i * ROW_HEIGHT + 3;
 
             // Index
-            graphics.drawString(font,
+            UIScaleManager.drawScaledString(graphics, font,
                 String.valueOf(idx + 1) + ".",
                 getX() + 4, rowY + 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -219,7 +220,7 @@ public class PathWaypointWidget extends AbstractWidget {
 
             // Coordinates
             String coordText = String.format("(%+d, %+d, %+d)", entry.x, entry.y, entry.z);
-            graphics.drawString(font, coordText, getX() + 25, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + 25, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
             // Delete button (only if more than 2 waypoints)
             if (waypoints.size() > 2) {
@@ -229,21 +230,21 @@ public class PathWaypointWidget extends AbstractWidget {
                                   mouseY >= btnY && mouseY < btnY + BUTTON_SIZE;
                 int btnColor = hovered ? DesignTokens.AreaBuilder.DELETE_BTN_HOVER : DesignTokens.AreaBuilder.DELETE_BTN;
                 graphics.fill(btnX, btnY, btnX + BUTTON_SIZE, btnY + BUTTON_SIZE, btnColor);
-                graphics.drawCenteredString(font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
+                UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
             }
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
         if (scrollOffset + MAX_VISIBLE_WAYPOINTS < waypoints.size()) {
-            graphics.drawCenteredString(font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
 
         // Add waypoint section
         int addY = listY + listHeight + 10;
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.path.add_waypoint")),
             getX(), addY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -251,15 +252,15 @@ public class PathWaypointWidget extends AbstractWidget {
 
         // X/Y/Z labels and inputs
         int inputY = addY + 15;
-        graphics.drawString(font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         xInput.setY(inputY);
         xInput.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawString(font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         yInput.setY(inputY);
         yInput.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawString(font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         zInput.setY(inputY);
         zInput.render(graphics, mouseX, mouseY, partialTick);
 
@@ -273,12 +274,12 @@ public class PathWaypointWidget extends AbstractWidget {
         graphics.fill(addBtnX, addBtnY, addBtnX + addBtnW, addBtnY + addBtnH,
             addHovered ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(addBtnX, addBtnY, addBtnW, addBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Info text
         int infoY = inputY + 25;
-        graphics.drawString(font,
-            Objects.requireNonNull(Component.literal("Total waypoints: " + waypoints.size()).withStyle(s -> s.withColor(AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY))),
+        UIScaleManager.drawScaledString(graphics, font,
+            "Total waypoints: " + waypoints.size(),
             getX(), infoY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );

@@ -4,7 +4,7 @@ DevMod e' una mod NeoForge per Minecraft 1.21.1 pensata come toolkit di sviluppo
 
 ## Cosa offre (high level)
 
-- **Arena & Endurance**: generazione di arene da template, policy di selezione, autosmoke, quest endurance a wave con perk, reward e challenge.
+- **Arena & Endurance**: generazione di arene da template, policy di selezione, autosmoke, quest endurance a wave con perk, reward, challenge e WIS.
 - **Combat & Collision**: body-part detection, OBB hitbox, breakdown danni, HUD impatti e strumenti di debug visivo.
 - **Tooling in-game**: menu radiale, editor per weapon/armor/recipe, pannelli UI e overlay di profiling.
 - **Sistemi world**: Nexus hub, Area Builder, Zone Marker/Editor, portali custom e sistema di trasporto unificato (Warp Core).
@@ -39,7 +39,7 @@ DevMod e' una mod NeoForge per Minecraft 1.21.1 pensata come toolkit di sviluppo
 
 ## Documentazione
 
-La documentazione completa e aggiornata e' in `docs/README.md`.
+La documentazione completa e aggiornata e' in `docs/README.md` (ultimo aggiornamento: 2026-01-31).
 
 ## Meta
 

@@ -5,7 +5,6 @@ import java.util.Locale;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
@@ -27,7 +26,6 @@ import com.devmod.transport.TransportData;
 import com.devmod.transport.TransportMode;
 import com.devmod.transport.network.TransportConfigOpenPayload;
 import com.devmod.transport.network.TransportConfigSavePayload;
-
 /**
  * Configuration screen for transport nodes.
  *
@@ -69,6 +67,12 @@ public class TransportConfigScreen extends Screen {
     private final boolean hasLinkedNode;
     private final int frameCount;
 
+    // Scaled dimensions (updated in init for responsiveness)
+    private int scaledPanelWidth;
+    private int scaledPanelHeight;
+    private int panelLeft;
+    private int panelTop;
+
     // Widgets
     @Nullable private EditBox networkNameField;
     @Nullable private EditBox displayNameField;
@@ -96,30 +100,38 @@ public class TransportConfigScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        UIScaleManager.update();
+
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
 
         int centerX = width / 2;
         int centerY = height / 2;
-        int panelLeft = centerX - PANEL_WIDTH / 2;
-        int panelTop = centerY - PANEL_HEIGHT / 2;
+        panelLeft = centerX - scaledPanelWidth / 2;
+        panelTop = centerY - scaledPanelHeight / 2;
 
-        int widgetWidth = PANEL_WIDTH - 40;
-        int currentY = panelTop + 30;
+        int widgetWidth = scaledPanelWidth - UIScaleManager.scale(40);
+        int currentY = panelTop + UIScaleManager.scale(30);
+
+        int sWidgetPadding = UIScaleManager.scale(20);
+        int sWidgetHeight = UIScaleManager.scale(20);
+        int sRowSpacing = UIScaleManager.scale(26);
 
         // Mode selector
         modeButton = CycleButton.<TransportMode>builder(m -> Component.translatable("transport.mode." + m.getSerializedName()))
             .withValues(TransportMode.values())
             .withInitialValue(mode)
-            .create(panelLeft + 20, currentY, widgetWidth, 20,
+            .create(panelLeft + sWidgetPadding, currentY, widgetWidth, sWidgetHeight,
                 Component.translatable("screen.devmod.transport_config.mode"),
                 (btn, value) -> {
                     mode = value;
                     updateWidgetVisibility();
                 });
         addRenderableWidget(modeButton);
-        currentY += 26;
+        currentY += sRowSpacing;
 
         // Network name field (only for NETWORK mode)
-        networkNameField = new EditBox(font, panelLeft + 20, currentY, widgetWidth, 20,
+        networkNameField = new EditBox(font, panelLeft + sWidgetPadding, currentY, widgetWidth, sWidgetHeight,
             Component.translatable("screen.devmod.transport_config.network_name"));
         networkNameField.setMaxLength(TransportConfigSavePayload.MAX_NETWORK_NAME_LENGTH);
         networkNameField.setValue(networkName);
@@ -128,21 +140,21 @@ public class TransportConfigScreen extends Screen {
         networkNameField.setTextColor(DesignTokens.Text.PRIMARY);
         networkNameField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(networkNameField);
-        currentY += 26;
+        currentY += sRowSpacing;
 
         // Selection mode (only for NETWORK mode)
         selectionModeButton = CycleButton.<TransportData.NetworkSelectionMode>builder(
             m -> Component.translatable("transport.selection." + m.name().toLowerCase(Locale.ROOT)))
             .withValues(TransportData.NetworkSelectionMode.values())
             .withInitialValue(selectionMode)
-            .create(panelLeft + 20, currentY, widgetWidth, 20,
+            .create(panelLeft + sWidgetPadding, currentY, widgetWidth, sWidgetHeight,
                 Component.translatable("screen.devmod.transport_config.selection"),
                 (btn, value) -> selectionMode = value);
         addRenderableWidget(selectionModeButton);
-        currentY += 26;
+        currentY += sRowSpacing;
 
         // Display name field
-        displayNameField = new EditBox(font, panelLeft + 20, currentY, widgetWidth, 20,
+        displayNameField = new EditBox(font, panelLeft + sWidgetPadding, currentY, widgetWidth, sWidgetHeight,
             Component.translatable("screen.devmod.transport_config.display_name"));
         displayNameField.setMaxLength(TransportConfigSavePayload.MAX_DISPLAY_NAME_LENGTH);
         displayNameField.setValue(displayName);
@@ -151,35 +163,35 @@ public class TransportConfigScreen extends Screen {
         displayNameField.setTextColor(DesignTokens.Text.PRIMARY);
         displayNameField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(displayNameField);
-        currentY += 26;
+        currentY += sRowSpacing;
 
         // Color selector
         colorButton = CycleButton.<TransportColor>builder(c -> Component.literal(c.getDisplayName()))
             .withValues(TransportColor.values())
             .withInitialValue(color)
-            .create(panelLeft + 20, currentY, widgetWidth, 20,
+            .create(panelLeft + sWidgetPadding, currentY, widgetWidth, sWidgetHeight,
                 Component.translatable("screen.devmod.transport_config.color"),
                 (btn, value) -> color = value);
         addRenderableWidget(colorButton);
-        currentY += 32;
+        currentY += UIScaleManager.scale(32);
 
         // Save and Cancel buttons
-        int buttonHeight = EditorButton.Size.MEDIUM.height();
-        int buttonGap = DesignTokens.Spacing.SM;
+        int buttonHeight = UIScaleManager.scale(EditorButton.Size.MEDIUM.height());
+        int buttonGap = UIScaleManager.scale(DesignTokens.Spacing.SM);
         int buttonWidth = (widgetWidth - buttonGap) / 2;
         saveButton = EditorButton.builder("transport_save", Component.translatable("gui.devmod.save").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::save)
             .build();
-        addRenderableWidget(new EditorButtonWidget(saveButton, panelLeft + 20, currentY, buttonWidth, buttonHeight));
+        addRenderableWidget(new EditorButtonWidget(saveButton, panelLeft + sWidgetPadding, currentY, buttonWidth, buttonHeight));
 
         cancelButton = EditorButton.builder("transport_cancel", Component.translatable("gui.cancel").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::cancel)
             .build();
-        addRenderableWidget(new EditorButtonWidget(cancelButton, panelLeft + 20 + buttonWidth + buttonGap, currentY,
+        addRenderableWidget(new EditorButtonWidget(cancelButton, panelLeft + sWidgetPadding + buttonWidth + buttonGap, currentY,
             buttonWidth, buttonHeight));
 
         // Update widget visibility based on initial mode
@@ -208,32 +220,29 @@ public class TransportConfigScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         int centerX = width / 2;
-        int centerY = height / 2;
-        int panelLeft = centerX - PANEL_WIDTH / 2;
-        int panelTop = centerY - PANEL_HEIGHT / 2;
 
         // Render panel background
-        graphics.fill(panelLeft, panelTop, panelLeft + PANEL_WIDTH, panelTop + PANEL_HEIGHT, PANEL_BG);
+        graphics.fill(panelLeft, panelTop, panelLeft + scaledPanelWidth, panelTop + scaledPanelHeight, PANEL_BG);
 
         // Render panel border (color based on node color)
         int borderColor = color.getColorWithAlpha();
-        renderBorder(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT, borderColor, 2);
+        renderBorder(graphics, panelLeft, panelTop, scaledPanelWidth, scaledPanelHeight, borderColor, UIScaleManager.scale(2));
 
         // Render title
         Component title = Component.translatable("screen.devmod.transport_config");
-        int titleWidth = font.width(title);
-        graphics.drawString(font, title, centerX - titleWidth / 2, panelTop + 8, DesignTokens.Text.PRIMARY, false);
+        int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
+        UIScaleManager.drawScaledString(graphics, font, title, centerX - titleWidth / 2, panelTop + UIScaleManager.scale(8), DesignTokens.Text.PRIMARY);
 
         renderInputBackgrounds(graphics);
 
         // Render info section at bottom
-        int infoY = panelTop + PANEL_HEIGHT - 40;
+        int infoY = panelTop + scaledPanelHeight - UIScaleManager.scale(40);
         String infoText = String.format("Charge: %d ticks | Cooldown: %d ticks | Frames: %d",
             chargeTime, cooldownTime, frameCount);
-        graphics.drawString(font, infoText, panelLeft + 10, infoY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, font, infoText, panelLeft + UIScaleManager.scale(10), infoY, DesignTokens.Text.SECONDARY);
 
         if (hasLinkedNode) {
-            graphics.drawString(font, "Linked", panelLeft + PANEL_WIDTH - 50, infoY, DesignTokens.Semantic.SUCCESS, false);
+            UIScaleManager.drawScaledString(graphics, font, "Linked", panelLeft + scaledPanelWidth - UIScaleManager.scale(50), infoY, DesignTokens.Semantic.SUCCESS);
         }
 
         // Render widgets
@@ -333,6 +342,8 @@ public class TransportConfigScreen extends Screen {
      * Opens this screen from a payload received from the server.
      */
     public static void open(@Nonnull TransportConfigOpenPayload payload) {
-        Minecraft.getInstance().setScreen(new TransportConfigScreen(payload));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "transport_config",
+            () -> new TransportConfigScreen(payload));
     }
 }

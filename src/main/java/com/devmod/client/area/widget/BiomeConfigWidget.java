@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.data.BiomeGenerationConfig;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.BiomeGenerationConfig.TerrainStyle;
 import com.devmod.client.ui.AxiomRenderer;
 
@@ -107,7 +108,7 @@ public class BiomeConfigWidget extends AbstractWidget {
             : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
 
         // Seed section
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome.seed"), "seedLabel"),
             getX(), seedLabelY,
             primaryColor
@@ -129,12 +130,12 @@ public class BiomeConfigWidget extends AbstractWidget {
         graphics.fill(randomButtonX, seedFieldY, randomButtonX + BUTTON_WIDTH, seedFieldY + BUTTON_HEIGHT, randomBg);
         graphics.renderOutline(randomButtonX, seedFieldY, BUTTON_WIDTH, BUTTON_HEIGHT,
             AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font,
-            Objects.requireNonNull(Component.translatable("area.biome.random_seed"), "randomSeed"),
+        UIScaleManager.drawScaledCenteredString(graphics, font,
+            Component.translatable("area.biome.random_seed").getString(),
             randomButtonX + BUTTON_WIDTH / 2, seedFieldY + 5, primaryColor);
 
         // Terrain style section
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome.terrain_style"), "terrainStyle"),
             getX(), terrainLabelY,
             primaryColor
@@ -163,10 +164,8 @@ public class BiomeConfigWidget extends AbstractWidget {
             graphics.renderOutline(btnX, terrainButtonsY, BUTTON_WIDTH, BUTTON_HEIGHT,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
-            graphics.drawCenteredString(font,
-                Objects.requireNonNull(
-                    Component.translatable("area.biome.terrain." + style.getSerializedName()),
-                    "terrainLabel"),
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.translatable("area.biome.terrain." + style.getSerializedName()).getString(),
                 btnX + BUTTON_WIDTH / 2, terrainButtonsY + 5,
                 isSelected ? primaryColor : secondaryColor);
 
@@ -209,13 +208,12 @@ public class BiomeConfigWidget extends AbstractWidget {
         graphics.renderOutline(toggleX, y, TOGGLE_WIDTH, BUTTON_HEIGHT,
             AreaBuilderGuiConstants.COLOR_BORDER);
 
-        Component toggleText = Objects.requireNonNull(
-            Component.translatable(value ? "area.toggle.on" : "area.toggle.off"), "toggleText");
+        String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
         int toggleColor = enabled ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
-        graphics.drawCenteredString(font, toggleText, toggleX + TOGGLE_WIDTH / 2, y + 5, toggleColor);
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, toggleX + TOGGLE_WIDTH / 2, y + 5, toggleColor);
 
         // Label
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(translationKey), "toggleLabel"),
             toggleX + TOGGLE_WIDTH + 8, y + 5,
             enabled ? AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED

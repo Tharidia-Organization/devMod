@@ -16,10 +16,9 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class QuickHelpOverlay {
@@ -64,35 +63,43 @@ public class QuickHelpOverlay {
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         // Calculate panel size
-        int panelWidth = 280;
+        int panelWidth = Math.min(UIScaleManager.scale(280), UIScaleManager.getSafeWidth());
         int panelHeight = calculatePanelHeight();
 
         // Position: center-right of screen
-        int panelX = screenWidth - panelWidth - 20;
+        int panelX = screenWidth - panelWidth - UIScaleManager.scale(20);
         int panelY = (screenHeight - panelHeight) / 2;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // Draw panel background
         graphics.fill(panelX - 1, panelY - 1, panelX + panelWidth + 1, panelY + panelHeight + 1, PANEL_BORDER);
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BG);
 
-        int y = panelY + PANEL_PADDING;
-        int x = panelX + PANEL_PADDING;
+        int sPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int y = panelY + sPadding;
+        int x = panelX + sPadding;
         // Title
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawCenteredString(safeFont, "DevMod Quick Help (F1)", panelX + panelWidth / 2, y, TEXT_TITLE);
-        y += LINE_HEIGHT + 6;
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, "DevMod Quick Help (F1)", panelX + panelWidth / 2, y, TEXT_TITLE);
+        y += sLineHeight + UIScaleManager.scale(6);
 
         // Separator
         graphics.fill(panelX + 10, y, panelX + panelWidth - 10, y + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
-        y += 6;
+        y += UIScaleManager.scale(6);
 
         // Core Controls
         y = renderCategory(graphics, font, x, y, "Core Controls");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_SETTINGS_KEY, "Settings Panel");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Weapon Editor");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_DASHBOARD_KEY, "Telemetry Dashboard");
-        y += 4;
+        y += UIScaleManager.scale(4);
 
         // Debug Overlays
         y = renderCategory(graphics, font, x, y, "Debug Overlays");
@@ -100,14 +107,14 @@ public class QuickHelpOverlay {
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Light Levels");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_HEATMAP_KEY, "Heatmaps");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "Room Bounds");
-        y += 4;
+        y += UIScaleManager.scale(4);
 
         // Spatial Analysis
         y = renderCategory(graphics, font, x, y, "Spatial & AI");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Pathfinding");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LOS_KEY, "Line of Sight");
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Safe Spots");
-        y += 4;
+        y += UIScaleManager.scale(4);
 
         // Quest System
         y = renderCategory(graphics, font, x, y, "Quest System");
@@ -123,13 +130,13 @@ public class QuickHelpOverlay {
         y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PROFILER_KEY, "Profiler");
 
         // Footer hint
-        y += 8;
-        graphics.drawCenteredString(safeFont, "Press K for full settings", panelX + panelWidth / 2, y, OverlayTheme.Help.HINT);
+        y += UIScaleManager.scale(8);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, "Press K for full settings", panelX + panelWidth / 2, y, OverlayTheme.Help.HINT);
     }
 
     private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, String name) {
-        graphics.drawString(Objects.requireNonNull(font), name, x, y, TEXT_CATEGORY, false);
-        return y + LINE_HEIGHT + 2;
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), name, x, y, TEXT_CATEGORY, false);
+        return y + UIScaleManager.scale(LINE_HEIGHT) + UIScaleManager.scale(2);
     }
 
     private static int renderKeybind(GuiGraphics graphics, Font font, int x, int y,
@@ -142,28 +149,47 @@ public class QuickHelpOverlay {
         var safeFont = Objects.requireNonNull(font);
         // Key badge
         String keyName = Objects.requireNonNull(key.getTranslatedKeyMessage().getString());
-        int keyBgWidth = Math.max(KEY_WIDTH, safeFont.width(keyName) + 8);
+        int keyBgWidth = Math.max(UIScaleManager.scale(KEY_WIDTH), UIScaleManager.getScaledStringWidth(safeFont, keyName) + UIScaleManager.scale(8));
 
-        graphics.fill(x, y - 1, x + keyBgWidth, y + LINE_HEIGHT - 1, OverlayTheme.Help.KEY_BG);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        graphics.fill(x, y - 1, x + keyBgWidth, y + lineHeight - 1, OverlayTheme.Help.KEY_BG);
 
-        int keyTextX = x + (keyBgWidth - safeFont.width(Objects.requireNonNull(keyName))) / 2;
-        graphics.drawString(safeFont, keyName, keyTextX, y, TEXT_KEY, false);
+        int keyTextX = x + (keyBgWidth - UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(keyName))) / 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, keyName, keyTextX, y, TEXT_KEY, false);
 
         // Description
-        graphics.drawString(safeFont, description, x + keyBgWidth + 8, y, TEXT_DESC, false);
+        int maxWidth = UIScaleManager.getSafeWidth() - UIScaleManager.scale(PANEL_PADDING) * 2;
+        int available = Math.max(0, maxWidth - (keyBgWidth + UIScaleManager.scale(8)));
+        String display = truncateToWidth(safeFont, description, available);
+        UIScaleManager.drawScaledString(graphics, safeFont, display, x + keyBgWidth + UIScaleManager.scale(8), y, TEXT_DESC, false);
 
-        return y + LINE_HEIGHT + 1;
+        return y + UIScaleManager.scale(LINE_HEIGHT) + UIScaleManager.scale(1);
     }
 
     private static int calculatePanelHeight() {
         // Title + separator + 4 categories with entries + footer
-        return PANEL_PADDING * 2
-            + LINE_HEIGHT + 6     // Title
-            + 6                    // Separator
-            + (LINE_HEIGHT + 2) * 4  // 4 category headers
-            + (LINE_HEIGHT + 1) * 16 // 16 keybinds
-            + 4 * 4                // 4 category spacings
-            + LINE_HEIGHT + 8;     // Footer
+        int padding = UIScaleManager.scale(PANEL_PADDING);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        return padding * 2
+            + lineHeight + UIScaleManager.scale(6)     // Title
+            + UIScaleManager.scale(6)                  // Separator
+            + (lineHeight + UIScaleManager.scale(2)) * 4  // 4 category headers
+            + (lineHeight + UIScaleManager.scale(1)) * 16 // 16 keybinds
+            + UIScaleManager.scale(4) * 4              // 4 category spacings
+            + lineHeight + UIScaleManager.scale(8);    // Footer
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 
     // === Public API ===

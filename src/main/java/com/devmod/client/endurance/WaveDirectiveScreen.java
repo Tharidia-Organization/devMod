@@ -113,7 +113,7 @@ public class WaveDirectiveScreen extends Screen {
             graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, lineColor);
         }
 
-        graphics.drawCenteredString(font, Objects.requireNonNull(I18n.translate("devmod.endurance.directive.choose_title").getString()),
+        UIScaleManager.drawScaledCenteredString(graphics, font, Objects.requireNonNull(I18n.translate("devmod.endurance.directive.choose_title").getString()),
             width / 2, panelY + 6, DesignTokens.Text.PRIMARY);
         renderCountdown(graphics, font, panelX, panelY, PANEL_WIDTH);
 
@@ -129,24 +129,26 @@ public class WaveDirectiveScreen extends Screen {
             graphics.fill(cardX - 1, y - 1, cardX + cardWidth + 1, y + CARD_HEIGHT + 1, borderColor);
             graphics.fill(cardX, y, cardX + cardWidth, y + CARD_HEIGHT, cardColor);
 
+            var safeFont = Objects.requireNonNull(font, "font");
             String name = choice.name() != null ? choice.name()
                 : Objects.requireNonNull(I18n.translate("devmod.endurance.directive.fallback_name").getString());
-            graphics.drawString(Objects.requireNonNull(font, "font"), name, cardX + 8, y + 6,
+            UIScaleManager.drawScaledString(graphics, safeFont, name, cardX + 8, y + 6,
                 DesignTokens.Text.PRIMARY, false);
 
             String desc = choice.description() != null ? choice.description() : "";
             List<String> lines = wrapText(font, desc, cardWidth - 120);
+            int lineHeight = UIScaleManager.getScaledLineHeight();
             for (int lineIndex = 0; lineIndex < Math.min(2, lines.size()); lineIndex++) {
-                graphics.drawString(Objects.requireNonNull(font, "font"),
+                UIScaleManager.drawScaledString(graphics, safeFont,
                     Objects.requireNonNull(lines.get(lineIndex), "lineText"),
-                    cardX + 8, y + 20 + lineIndex * 10, DesignTokens.Text.SECONDARY, false);
+                    cardX + 8, y + 20 + lineIndex * lineHeight, DesignTokens.Text.SECONDARY, false);
             }
 
             String rewardText = Objects.requireNonNull(I18n.translate(
                 "devmod.endurance.directive.reward_multiplier",
                 String.format("%.2f", choice.rewardMultiplier())
             ).getString());
-            graphics.drawString(Objects.requireNonNull(font, "font"), rewardText,
+            UIScaleManager.drawScaledString(graphics, safeFont, rewardText,
                 cardX + 8, y + CARD_HEIGHT - 16,
                 DesignTokens.Semantic.WARNING, false);
 
@@ -218,7 +220,7 @@ public class WaveDirectiveScreen extends Screen {
                 continue;
             }
             String candidate = current + " " + word;
-            if (font.width(candidate) > maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(font, candidate) > maxWidth) {
                 lines.add(current.toString());
                 current = new StringBuilder(word);
             } else {
@@ -259,7 +261,7 @@ public class WaveDirectiveScreen extends Screen {
             return;
         }
         String text = Objects.requireNonNull(I18n.ui("selection_time_remaining", remaining).getString());
-        int textWidth = font.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
         int x = panelX + panelWidth - textWidth - COUNTDOWN_PADDING;
         int y = panelY + 6;
 
@@ -268,6 +270,6 @@ public class WaveDirectiveScreen extends Screen {
 
         float pulse = countdown.getPulse();
         int textColor = DesignTokens.withAlpha(countdown.getColor(), (int) (255 * pulse));
-        graphics.drawString(font, text, x, y, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, textColor, false);
     }
 }

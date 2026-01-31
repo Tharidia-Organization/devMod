@@ -88,7 +88,7 @@ public final class DamageTypeConfig {
     }
 
     // Default label for unknown/unmapped damage types
-    private static final String UNKNOWN_DAMAGE_LABEL = "§7Unknown Damage";
+    private static final String UNKNOWN_DAMAGE_LABEL = "\u00A77Unknown Damage";
 
     /**
      * Gets the display label for a damage type.
@@ -139,7 +139,7 @@ public final class DamageTypeConfig {
 
     /**
      * Formats an unknown damage type into a readable label.
-     * Converts "minecraft:some_damage" -> "§7Some Damage"
+     * Converts "minecraft:some_damage" -> "\u00A77Some Damage"
      */
     private String formatUnknownLabel(String resourceLocation) {
         if (resourceLocation == null || resourceLocation.isEmpty()) {
@@ -154,7 +154,7 @@ public final class DamageTypeConfig {
         }
 
         // Convert snake_case to Title Case
-        StringBuilder result = new StringBuilder("§7");
+        StringBuilder result = new StringBuilder("\u00A77");
         boolean capitalizeNext = true;
         for (int i = 0; i < path.length(); i++) {
             char c = path.charAt(i);
@@ -226,70 +226,70 @@ public final class DamageTypeConfig {
         damageLabels = new LinkedHashMap<>(); // LinkedHashMap preserves insertion order
 
         // === Fire damage types ===
-        damageLabels.put("minecraft:on_fire", "§6Fire Damage");
-        damageLabels.put("minecraft:in_fire", "§6In Fire");
-        damageLabels.put("minecraft:lava", "§cLava Damage");
-        damageLabels.put("minecraft:campfire", "§6Campfire");
-        damageLabels.put("minecraft:hot_floor", "§6Hot Floor");
+        damageLabels.put("minecraft:on_fire", "\u00A76Fire Damage");
+        damageLabels.put("minecraft:in_fire", "\u00A76In Fire");
+        damageLabels.put("minecraft:lava", "\u00A7cLava Damage");
+        damageLabels.put("minecraft:campfire", "\u00A76Campfire");
+        damageLabels.put("minecraft:hot_floor", "\u00A76Hot Floor");
 
         // === Environmental ===
-        damageLabels.put("minecraft:fall", "§eFall Damage");
-        damageLabels.put("minecraft:drown", "§bDrowning");
-        damageLabels.put("minecraft:in_wall", "§8Suffocation");
-        damageLabels.put("minecraft:cactus", "§2Cactus");
-        damageLabels.put("minecraft:fell_out_of_world", "§0Void Damage");
-        damageLabels.put("minecraft:lightning_bolt", "§eLightning");
-        damageLabels.put("minecraft:starve", "§4Starvation");
-        damageLabels.put("minecraft:freeze", "§bFreezing");
-        damageLabels.put("minecraft:cramming", "§7Cramming");
-        damageLabels.put("minecraft:sweet_berry_bush", "§2Berry Bush");
-        damageLabels.put("minecraft:stalagmite", "§7Stalagmite");
-        damageLabels.put("minecraft:fly_into_wall", "§7Fly Into Wall");
-        damageLabels.put("minecraft:outside_border", "§4World Border");
-        damageLabels.put("minecraft:dry_out", "§eDrying Out");
+        damageLabels.put("minecraft:fall", "\u00A7eFall Damage");
+        damageLabels.put("minecraft:drown", "\u00A7bDrowning");
+        damageLabels.put("minecraft:in_wall", "\u00A78Suffocation");
+        damageLabels.put("minecraft:cactus", "\u00A72Cactus");
+        damageLabels.put("minecraft:fell_out_of_world", "\u00A70Void Damage");
+        damageLabels.put("minecraft:lightning_bolt", "\u00A7eLightning");
+        damageLabels.put("minecraft:starve", "\u00A74Starvation");
+        damageLabels.put("minecraft:freeze", "\u00A7bFreezing");
+        damageLabels.put("minecraft:cramming", "\u00A77Cramming");
+        damageLabels.put("minecraft:sweet_berry_bush", "\u00A72Berry Bush");
+        damageLabels.put("minecraft:stalagmite", "\u00A77Stalagmite");
+        damageLabels.put("minecraft:fly_into_wall", "\u00A77Fly Into Wall");
+        damageLabels.put("minecraft:outside_border", "\u00A74World Border");
+        damageLabels.put("minecraft:dry_out", "\u00A7eDrying Out");
 
         // === Effect-based ===
-        damageLabels.put("minecraft:wither", "§5Wither");
-        damageLabels.put("minecraft:magic", "§dMagic Damage");
-        damageLabels.put("minecraft:indirect_magic", "§dIndirect Magic");
-        damageLabels.put("minecraft:dragon_breath", "§5Dragon Breath");
+        damageLabels.put("minecraft:wither", "\u00A75Wither");
+        damageLabels.put("minecraft:magic", "\u00A7dMagic Damage");
+        damageLabels.put("minecraft:indirect_magic", "\u00A7dIndirect Magic");
+        damageLabels.put("minecraft:dragon_breath", "\u00A75Dragon Breath");
 
         // === Explosions ===
-        damageLabels.put("minecraft:explosion", "§cExplosion");
-        damageLabels.put("minecraft:player_explosion", "§cExplosion");
-        damageLabels.put("minecraft:bad_respawn_point", "§cBad Respawn Point");
+        damageLabels.put("minecraft:explosion", "\u00A7cExplosion");
+        damageLabels.put("minecraft:player_explosion", "\u00A7cExplosion");
+        damageLabels.put("minecraft:bad_respawn_point", "\u00A7cBad Respawn Point");
 
         // === Projectiles ===
-        damageLabels.put("minecraft:arrow", "§7Arrow");
-        damageLabels.put("minecraft:trident", "§3Trident");
-        damageLabels.put("minecraft:fireball", "§cFireball");
-        damageLabels.put("minecraft:unattributed_fireball", "§cFireball");
-        damageLabels.put("minecraft:wither_skull", "§5Wither Skull");
-        damageLabels.put("minecraft:mob_projectile", "§7Mob Projectile");
-        damageLabels.put("minecraft:thrown", "§fThrown Object");
-        damageLabels.put("minecraft:wind_charge", "§fWind Charge");
-        damageLabels.put("minecraft:spit", "§aLlama Spit");
-        damageLabels.put("minecraft:fireworks", "§dFireworks");
+        damageLabels.put("minecraft:arrow", "\u00A77Arrow");
+        damageLabels.put("minecraft:trident", "\u00A73Trident");
+        damageLabels.put("minecraft:fireball", "\u00A7cFireball");
+        damageLabels.put("minecraft:unattributed_fireball", "\u00A7cFireball");
+        damageLabels.put("minecraft:wither_skull", "\u00A75Wither Skull");
+        damageLabels.put("minecraft:mob_projectile", "\u00A77Mob Projectile");
+        damageLabels.put("minecraft:thrown", "\u00A7fThrown Object");
+        damageLabels.put("minecraft:wind_charge", "\u00A7fWind Charge");
+        damageLabels.put("minecraft:spit", "\u00A7aLlama Spit");
+        damageLabels.put("minecraft:fireworks", "\u00A7dFireworks");
 
         // === Mob-specific ===
-        damageLabels.put("minecraft:sonic_boom", "§9Sonic Boom");
-        damageLabels.put("minecraft:thorns", "§aThorns");
-        damageLabels.put("minecraft:sting", "§eBee Sting");
+        damageLabels.put("minecraft:sonic_boom", "\u00A79Sonic Boom");
+        damageLabels.put("minecraft:thorns", "\u00A7aThorns");
+        damageLabels.put("minecraft:sting", "\u00A7eBee Sting");
 
         // === Falling objects ===
-        damageLabels.put("minecraft:falling_anvil", "§8Falling Anvil");
-        damageLabels.put("minecraft:falling_block", "§8Falling Block");
-        damageLabels.put("minecraft:falling_stalactite", "§7Falling Stalactite");
+        damageLabels.put("minecraft:falling_anvil", "\u00A78Falling Anvil");
+        damageLabels.put("minecraft:falling_block", "\u00A78Falling Block");
+        damageLabels.put("minecraft:falling_stalactite", "\u00A77Falling Stalactite");
 
         // === Generic/Combat ===
-        damageLabels.put("minecraft:generic", "§7Generic Damage");
-        damageLabels.put("minecraft:generic_kill", "§4Instant Kill");
-        damageLabels.put("minecraft:mob_attack", "§cMob Attack");
-        damageLabels.put("minecraft:mob_attack_no_aggro", "§7Mob Attack");
-        damageLabels.put("minecraft:player_attack", "§cPlayer Attack");
+        damageLabels.put("minecraft:generic", "\u00A77Generic Damage");
+        damageLabels.put("minecraft:generic_kill", "\u00A74Instant Kill");
+        damageLabels.put("minecraft:mob_attack", "\u00A7cMob Attack");
+        damageLabels.put("minecraft:mob_attack_no_aggro", "\u00A77Mob Attack");
+        damageLabels.put("minecraft:player_attack", "\u00A7cPlayer Attack");
 
         // === Special: Mace Smash (detected separately in DamageHandler) ===
-        damageLabels.put("devmod:mace_smash", "§d§lMACE SMASH!");
+        damageLabels.put("devmod:mace_smash", "\u00A7d\u00A7lMACE SMASH!");
 
         LOGGER.debug("[DevMod] Initialized {} default damage type mappings", damageLabels.size());
     }

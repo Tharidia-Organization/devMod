@@ -15,32 +15,32 @@ public record AttributeLogEntry(
      */
     public enum Type {
         // Tracking
-        ENTITY_DETECTED("§a[+]", AttributeLogColors.GREEN),
-        ENTITY_LOST("§c[-]", AttributeLogColors.RED),
-        TARGET_CHANGED("§e[T]", AttributeLogColors.YELLOW),
+        ENTITY_DETECTED("\u00A7a[+]", AttributeLogColors.GREEN),
+        ENTITY_LOST("\u00A7c[-]", AttributeLogColors.RED),
+        TARGET_CHANGED("\u00A7e[T]", AttributeLogColors.YELLOW),
 
         // Combat
-        DAMAGE_DEALT("§c[DMG]", AttributeLogColors.LIGHT_RED),
-        DAMAGE_RECEIVED("§4[HIT]", AttributeLogColors.DARK_RED),
-        KILL("§6[KILL]", AttributeLogColors.ORANGE),
+        DAMAGE_DEALT("\u00A7c[DMG]", AttributeLogColors.LIGHT_RED),
+        DAMAGE_RECEIVED("\u00A74[HIT]", AttributeLogColors.DARK_RED),
+        KILL("\u00A76[KILL]", AttributeLogColors.ORANGE),
 
         // Status
-        HEALTH_LOW("§c[LOW]", AttributeLogColors.RED),
-        HEALTH_CRITICAL("§4[CRIT]", AttributeLogColors.CRITICAL_RED),
-        HEALING("§a[HEAL]", AttributeLogColors.GREEN),
+        HEALTH_LOW("\u00A7c[LOW]", AttributeLogColors.RED),
+        HEALTH_CRITICAL("\u00A74[CRIT]", AttributeLogColors.CRITICAL_RED),
+        HEALING("\u00A7a[HEAL]", AttributeLogColors.GREEN),
 
         // LoS
-        LOS_GAINED("§a[LoS+]", AttributeLogColors.LIGHT_GREEN),
-        LOS_LOST("§7[LoS-]", AttributeLogColors.GRAY),
+        LOS_GAINED("\u00A7a[LoS+]", AttributeLogColors.LIGHT_GREEN),
+        LOS_LOST("\u00A77[LoS-]", AttributeLogColors.GRAY),
 
         // Movement
-        TELEPORT("§d[TP]", AttributeLogColors.MAGENTA),
-        AGGRO("§c[AGGRO]", AttributeLogColors.RED),
+        TELEPORT("\u00A7d[TP]", AttributeLogColors.MAGENTA),
+        AGGRO("\u00A7c[AGGRO]", AttributeLogColors.RED),
 
         // System
-        INFO("§7[i]", AttributeLogColors.GRAY),
-        WARNING("§e[!]", AttributeLogColors.YELLOW),
-        ERROR("§c[X]", AttributeLogColors.RED);
+        INFO("\u00A77[i]", AttributeLogColors.GRAY),
+        WARNING("\u00A7e[!]", AttributeLogColors.YELLOW),
+        ERROR("\u00A7c[X]", AttributeLogColors.RED);
 
         private final String prefix;
         private final int color;
@@ -70,7 +70,7 @@ public record AttributeLogEntry(
      * Ottiene il messaggio formattato con prefisso colorato.
      */
     public String getFormattedMessage() {
-        return type.getPrefix() + " §f" + message;
+        return type.getPrefix() + " \u00A7f" + message;
     }
 
     /**

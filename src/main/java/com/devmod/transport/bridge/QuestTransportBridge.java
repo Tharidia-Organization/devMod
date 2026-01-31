@@ -37,8 +37,8 @@ import com.devmod.transport.executor.RecoveryManager;
  *   <li>Arrival tracking for coordinated starts</li>
  * </ul>
  *
- * <p><b>NOTE:</b> Party and EnduranceQuest integration is stubbed until
- * PartyManager and EnduranceQuestManager are fully implemented.
+ * <p>Integrates with PartyManager and EnduranceQuestManager for coordinated
+ * group teleportation and quest session management.
  */
 public final class QuestTransportBridge {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuestTransportBridge.class);

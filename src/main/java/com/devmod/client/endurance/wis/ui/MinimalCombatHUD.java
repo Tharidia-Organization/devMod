@@ -13,6 +13,7 @@ import com.devmod.client.endurance.wis.WaveBriefingData;
 import com.devmod.client.endurance.wis.WaveIntelligenceManager;
 import com.devmod.client.endurance.wis.WavePhase;
 import com.devmod.client.endurance.wis.WaveTelemetryCollector;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -71,7 +72,7 @@ public class MinimalCombatHUD {
         String[] lines = buildHudLines(wis, collector);
         int maxWidth = MIN_WIDTH;
         for (String line : lines) {
-            maxWidth = Math.max(maxWidth, font.width(Objects.requireNonNull(line)) + PADDING * 2);
+            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + PADDING * 2);
         }
 
         int hudHeight = (font.lineHeight + 2) * lines.length + PADDING * 2;
@@ -112,7 +113,7 @@ public class MinimalCombatHUD {
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
             int color = i == 0 ? accentColor : (i == 1 ? dimColor : textColor);
-            graphics.drawString(font, line, hudX + PADDING, y, color, false);
+            UIScaleManager.drawScaledString(graphics, font, line, hudX + PADDING, y, color, false);
             y += font.lineHeight + 2;
         }
     }
@@ -183,7 +184,7 @@ public class MinimalCombatHUD {
 
         int maxWidth = 0;
         for (String line : extLines) {
-            maxWidth = Math.max(maxWidth, font.width(Objects.requireNonNull(line)) + PADDING * 2);
+            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + PADDING * 2);
         }
 
         int hudHeight = (font.lineHeight + 2) * extLines.length + PADDING * 2;
@@ -198,7 +199,7 @@ public class MinimalCombatHUD {
         int textColor = (alphaBits & DesignTokens.Mask.ALPHA) | (DesignTokens.Text.SECONDARY & DesignTokens.Mask.RGB);
         int y = hudY + PADDING;
         for (String line : extLines) {
-            graphics.drawString(font, line, hudX + PADDING, y, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, line, hudX + PADDING, y, textColor, false);
             y += font.lineHeight + 2;
         }
     }

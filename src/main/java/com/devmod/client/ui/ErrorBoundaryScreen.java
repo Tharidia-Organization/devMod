@@ -201,11 +201,13 @@ public abstract class ErrorBoundaryScreen extends Screen {
         // Title
         Component errorTitle = Component.translatable("gui.devmod.error.title")
             .withStyle(SharedColorTokens.Chat.RED, ChatFormatting.BOLD);
-        graphics.drawCenteredString(font, errorTitle, centerX, boxY + 15, ERROR_TEXT_COLOR);
+        UIScaleManager.drawScaledCenteredString(graphics, font, errorTitle.getString(),
+            centerX, boxY + UIScaleManager.scale(12), ERROR_TEXT_COLOR);
 
         // Screen name
         String screenName = getClass().getSimpleName();
-        graphics.drawCenteredString(font, screenName, centerX, boxY + 35, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, screenName,
+            centerX, boxY + UIScaleManager.scale(30), DesignTokens.Text.SECONDARY);
 
         // Error message
         String errorMsg = lastError != null ? lastError.getMessage() : "Unknown error";
@@ -215,21 +217,32 @@ public abstract class ErrorBoundaryScreen extends Screen {
         if (errorMsg.length() > 60) {
             errorMsg = errorMsg.substring(0, 57) + "...";
         }
-        graphics.drawCenteredString(font, errorMsg, centerX, boxY + 55, DesignTokens.Text.MUTED);
+        UIScaleManager.drawScaledCenteredString(graphics, font, errorMsg,
+            centerX, boxY + UIScaleManager.scale(48), DesignTokens.Text.MUTED);
 
         // Stack trace (limited)
         if (lastError != null) {
             List<String> stackLines = getStackTraceLines(lastError, MAX_STACK_LINES);
-            int lineY = boxY + 75;
+            int lineY = boxY + UIScaleManager.scale(64);
             for (String line : stackLines) {
-                graphics.drawString(font, line, boxX + 10, lineY, DesignTokens.Text.MUTED);
-                lineY += 12;
+                float textScale = UIScaleManager.getTextScale();
+                if (Math.abs(textScale - 1.0f) < 0.01f) {
+                    graphics.drawString(font, line, boxX + 10, lineY, DesignTokens.Text.MUTED);
+                } else {
+                    graphics.pose().pushPose();
+                    graphics.pose().translate(boxX + 10, lineY, 0);
+                    graphics.pose().scale(textScale, textScale, 1.0f);
+                    graphics.drawString(font, line, 0, 0, DesignTokens.Text.MUTED);
+                    graphics.pose().popPose();
+                }
+                lineY += UIScaleManager.getScaledLineHeight();
             }
         }
 
         // Error count
         String countText = String.format("Errors: %d / %d", errorCount, MAX_ERRORS_BEFORE_LOCKOUT);
-        graphics.drawCenteredString(font, countText, centerX, boxY + boxHeight - 25, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, countText,
+            centerX, boxY + boxHeight - UIScaleManager.scale(22), DesignTokens.Text.SECONDARY);
 
         // Render buttons
         super.render(graphics, mouseX, mouseY, partialTick);

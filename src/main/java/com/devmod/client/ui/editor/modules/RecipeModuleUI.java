@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorTextField;
@@ -274,7 +275,7 @@ public class RecipeModuleUI {
 
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             String name = Objects.requireNonNull(item.getHoverName().getString(), "itemName");
-            graphics.drawString(font, name, bounds.x() + 44, bounds.y() + 12, DesignTokens.Text.PRIMARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, name, bounds.x() + 44, bounds.y() + 12, DesignTokens.Text.PRIMARY(), false);
         }
     }
 
@@ -327,7 +328,7 @@ public class RecipeModuleUI {
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + bounds.width() - 4, bounds.y() + 20,
                 DesignTokens.Background.INPUT());
-            graphics.drawString(font, Objects.requireNonNull(selected.getId(), "categoryId"), bounds.x() + 8, bounds.y() + 6,
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(selected.getId(), "categoryId"), bounds.x() + 8, bounds.y() + 6,
                 DesignTokens.Text.PRIMARY(), false);
         }
 
@@ -366,21 +367,21 @@ public class RecipeModuleUI {
 
             if (result.valid()) {
                 int color = result.hasWarnings() ? DesignTokens.Text.WARNING() : DesignTokens.Accent.GREEN();
-                graphics.drawString(font, Objects.requireNonNull(result.getSummary(), "summary"), bounds.x() + 8, y, color, false);
+                UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(result.getSummary(), "summary"), bounds.x() + 8, y, color, false);
 
                 y += 12;
                 for (String warning : result.warnings()) {
-                    graphics.drawString(font, Objects.requireNonNull("- " + warning, "warning"),
+                    UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull("- " + warning, "warning"),
                         bounds.x() + 12, y, DesignTokens.Text.MUTED(), false);
                     y += 10;
                 }
             } else {
-                graphics.drawString(font, Objects.requireNonNull(result.getSummary(), "summary"),
+                UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(result.getSummary(), "summary"),
                     bounds.x() + 8, y, DesignTokens.Accent.RED(), false);
 
                 y += 12;
                 for (String error : result.errors()) {
-                    graphics.drawString(font, Objects.requireNonNull("- " + error, "error"),
+                    UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull("- " + error, "error"),
                         bounds.x() + 12, y, DesignTokens.Accent.RED(), false);
                     y += 10;
                 }

@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.UiSounds;
@@ -60,8 +61,9 @@ public class TicketCommentScreen extends Screen {
         if (ticket == null) {
             return;
         }
-        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-        mc.setScreen(new TicketCommentScreen(parent, ticket.id(), ticket.subject()));
+        com.devmod.client.ui.ScreenSafety.openSafe("ticket_comment",
+            parent,
+            () -> new TicketCommentScreen(parent, ticket.id(), ticket.subject()));
     }
 
     @Nonnull
@@ -120,14 +122,14 @@ public class TicketCommentScreen extends Screen {
         graphics.fill(panelX + PANEL_WIDTH - 1, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, borderColor);
 
         String titleLabel = Objects.requireNonNull(Component.translatable("devmod.ticket.comment.title"), "title").getString();
-        graphics.drawString(getFont(), titleLabel, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, getFont(), titleLabel, panelX + 15, panelY + 15, DesignTokens.Text.PRIMARY(), false);
 
         if (!subject.isBlank()) {
             String subjectLabel = Component.translatable("devmod.ticket.comment.subject", subject).getString();
-            graphics.drawString(getFont(), subjectLabel, panelX + 15, panelY + 35, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, getFont(), subjectLabel, panelX + 15, panelY + 35, DesignTokens.Text.MUTED(), false);
         }
 
-        graphics.drawString(getFont(),
+        UIScaleManager.drawScaledString(graphics, getFont(),
             Component.translatable("devmod.ticket.comment.label").getString(),
             panelX + 15, panelY + 70, DesignTokens.Text.SECONDARY(), false);
 
@@ -164,7 +166,7 @@ public class TicketCommentScreen extends Screen {
             statusMessage = null;
             return;
         }
-        graphics.drawString(getFont(), statusMessage, panelX + 15, panelY + PANEL_HEIGHT - 55, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, getFont(), statusMessage, panelX + 15, panelY + PANEL_HEIGHT - 55, statusColor, false);
     }
 
     private void setStatusMessage(String message, int color) {

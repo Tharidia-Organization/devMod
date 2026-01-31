@@ -93,11 +93,24 @@ public class BossPhaseOverlay {
         Font font = mc.font;
         int screenWidth = graphics.guiWidth();
 
-        // Position: centered, below boss bar
-        int panelX = (screenWidth - PANEL_WIDTH) / 2;
-        int panelY = 32; // Below vanilla boss bar
+        // Scale dimensions
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int panelHeight = calculatePanelHeight(sPanelPadding, sLineHeight);
 
-        renderBossPanel(graphics, font, panelX, panelY);
+        // Position: centered, below boss bar
+        int panelX = (screenWidth - panelWidth) / 2;
+        int panelY = UIScaleManager.scale(32); // Below vanilla boss bar
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
+
+        renderBossPanel(graphics, font, panelX, panelY, panelWidth, sPanelPadding, sLineHeight);
     }
 
     private static void updateBossCache(Minecraft mc) {
@@ -136,34 +149,38 @@ public class BossPhaseOverlay {
         return UnifiedBossDetector.INSTANCE.isBoss(entity);
     }
 
-    private static void renderBossPanel(GuiGraphics graphics, Font font, int x, int y) {
+    private static void renderBossPanel(GuiGraphics graphics, Font font, int x, int y,
+                                         int sPanelWidth, int sPanelPadding, int sLineHeight) {
         var safeFont = Objects.requireNonNull(font);
-        int panelHeight = calculatePanelHeight();
+        int panelHeight = calculatePanelHeight(sPanelPadding, sLineHeight);
+        int contentWidth = Math.max(0, sPanelWidth - sPanelPadding * 2);
 
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, PANEL_BG);
+        graphics.fill(x, y, x + sPanelWidth, y + panelHeight, PANEL_BG);
 
         // Border
-        drawBorder(graphics, x, y, PANEL_WIDTH, panelHeight, PANEL_BORDER);
+        drawBorder(graphics, x, y, sPanelWidth, panelHeight, PANEL_BORDER);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int textX = x + sPanelPadding;
+        int textY = y + sPanelPadding;
 
         // Title
-        graphics.drawString(safeFont, "Boss Analysis", textX, textY, TEXT_TITLE, false);
-        textY += LINE_HEIGHT + 2;
+        String title = truncateToWidth(safeFont, "Boss Analysis", contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, title, textX, textY, TEXT_TITLE, false);
+        textY += sLineHeight + UIScaleManager.scale(2);
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1, OverlayTheme.Border.divider(PANEL_BORDER));
-        textY += 4;
+        graphics.fill(x + UIScaleManager.scale(4), textY, x + sPanelWidth - UIScaleManager.scale(4), textY + 1, OverlayTheme.Border.divider(PANEL_BORDER));
+        textY += UIScaleManager.scale(4);
 
         // Boss name
-        graphics.drawString(safeFont, cachedBossName, textX, textY, TEXT_NORMAL, false);
-        textY += LINE_HEIGHT;
+        String bossName = truncateToWidth(safeFont, cachedBossName, contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, bossName, textX, textY, TEXT_NORMAL, false);
+        textY += sLineHeight;
 
         // HP Bar visual
-        int barWidth = PANEL_WIDTH - PANEL_PADDING * 2;
-        int barHeight = 6;
+        int barWidth = sPanelWidth - sPanelPadding * 2;
+        int barHeight = UIScaleManager.scale(6);
         int barX = textX;
         int barY = textY;
 
@@ -177,40 +194,58 @@ public class BossPhaseOverlay {
 
         // Border
         drawBorder(graphics, barX, barY, barWidth, barHeight, OverlayTheme.Border.MUTED);
-        textY += barHeight + 4;
+        textY += barHeight + UIScaleManager.scale(4);
 
         // HP percentage
         String hpText = String.format("HP: %.1f%%", cachedBossHpPercent * 100);
         int hpTextColor = cachedBossHpPercent > 0.5 ? TEXT_VALUE :
                           cachedBossHpPercent > 0.25 ? TEXT_WARNING : TEXT_DANGER;
-        graphics.drawString(safeFont, hpText, textX, textY, hpTextColor, false);
-        textY += LINE_HEIGHT;
+        hpText = truncateToWidth(safeFont, hpText, contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, hpText, textX, textY, hpTextColor, false);
+        textY += sLineHeight;
 
         // Phase info (if tracked)
         LivingEntity boss = cachedBoss;
         if (boss != null) {
             Optional<String> phase = BossPhaseService.INSTANCE.getCurrentPhase(boss.getUUID());
             if (phase.isPresent()) {
-                graphics.drawString(safeFont, "Phase: " + phase.get(), textX, textY, TEXT_VALUE, false);
-                textY += LINE_HEIGHT;
+                String phaseText = truncateToWidth(safeFont, "Phase: " + phase.get(), contentWidth);
+                UIScaleManager.drawScaledString(graphics, safeFont, phaseText, textX, textY, TEXT_VALUE, false);
+                textY += sLineHeight;
             }
         }
 
         // Phase thresholds hint
         String thresholdHint = getPhaseThresholdHint(cachedBossHpPercent);
         if (!thresholdHint.isEmpty()) {
-            graphics.drawString(safeFont, thresholdHint, textX, textY, TEXT_MUTED, false);
+            thresholdHint = truncateToWidth(safeFont, thresholdHint, contentWidth);
+            UIScaleManager.drawScaledString(graphics, safeFont, thresholdHint, textX, textY, TEXT_MUTED, false);
         }
     }
 
-    private static int calculatePanelHeight() {
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Title
-        height += 4;                // Separator
-        height += LINE_HEIGHT;      // Boss name
-        height += 6 + 4;            // HP bar
-        height += LINE_HEIGHT;      // HP percentage
-        height += LINE_HEIGHT;      // Phase or threshold hint
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
+    }
+
+    private static int calculatePanelHeight(int sPanelPadding, int sLineHeight) {
+        int height = sPanelPadding * 2;
+        height += sLineHeight + UIScaleManager.scale(2);  // Title
+        height += UIScaleManager.scale(4);                // Separator
+        height += sLineHeight;      // Boss name
+        height += UIScaleManager.scale(6) + UIScaleManager.scale(4);  // HP bar
+        height += sLineHeight;      // HP percentage
+        height += sLineHeight;      // Phase or threshold hint
         return height;
     }
 

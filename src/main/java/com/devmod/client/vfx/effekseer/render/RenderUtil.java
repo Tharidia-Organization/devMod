@@ -2,32 +2,31 @@ package com.devmod.client.vfx.effekseer.render;
 
 import java.util.Optional;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-
 import org.lwjgl.opengl.GL11;
+
+import com.mojang.blaze3d.pipeline.RenderTarget;
 
 import net.minecraft.client.Minecraft;
 
-import static org.lwjgl.opengl.GL11.glGetInteger;
-import static org.lwjgl.opengl.GL11.glPixelStorei;
 import static org.lwjgl.opengl.GL11.GL_PACK_ALIGNMENT;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_ROW_LENGTH;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_PIXELS;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_SKIP_ROWS;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_BINDING_2D;
+import static org.lwjgl.opengl.GL11.glGetInteger;
+import static org.lwjgl.opengl.GL11.glPixelStorei;
+import static org.lwjgl.opengl.GL30.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL30.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL30.GL_DRAW_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL30.GL_DRAW_FRAMEBUFFER_BINDING;
+import static org.lwjgl.opengl.GL30.GL_NEAREST;
 import static org.lwjgl.opengl.GL30.GL_READ_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL30.GL_READ_FRAMEBUFFER_BINDING;
 import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 import static org.lwjgl.opengl.GL30.glBindTexture;
 import static org.lwjgl.opengl.GL30.glBlitFramebuffer;
-import static org.lwjgl.opengl.GL30.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL30.GL_DEPTH_BUFFER_BIT;
-import static org.lwjgl.opengl.GL30.GL_NEAREST;
-
 public final class RenderUtil {
     public static final Minecraft MC = Minecraft.getInstance();
 

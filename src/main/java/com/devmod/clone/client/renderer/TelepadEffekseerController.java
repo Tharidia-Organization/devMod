@@ -5,8 +5,6 @@ import java.util.WeakHashMap;
 
 import javax.annotation.Nullable;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -18,6 +16,8 @@ import com.devmod.client.vfx.effekseer.EffekseerClient;
 import com.devmod.client.vfx.effekseer.api.ParticleEmitter;
 import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
+
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
  * Controls the Effekseer spiral effect above the telepad.

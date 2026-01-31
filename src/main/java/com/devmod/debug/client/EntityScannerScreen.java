@@ -38,11 +38,11 @@ public class EntityScannerScreen extends Screen {
     private int scrollOffset = 0;
 
     public EntityScannerScreen(BlockPos scannerPos) {
-        super(Component.literal("Entity Scanner"));
+        super(Component.translatable("devmod.debug.entity_scanner.title"));
         this.scannerPos = scannerPos;
     }
 
-    /**
+    /*
      * Update with new scan data.
      */
     public void updateScanData(EntityScanDataPayload data) {
@@ -287,7 +287,7 @@ public class EntityScannerScreen extends Screen {
         return text.substring(0, maxLen - 2) + "..";
     }
 
-    /**
+    /*
      * Get the scanner position this screen is connected to.
      */
     public BlockPos getScannerPos() {

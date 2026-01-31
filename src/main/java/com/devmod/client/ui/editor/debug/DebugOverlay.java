@@ -11,6 +11,7 @@ import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.Bounds;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.RenderObjectPool;
@@ -206,7 +207,7 @@ public final class DebugOverlay {
             // Render overflow indicator at bottom of content area
             graphics.fill(contentBounds.x(), contentBounds.bottom() - OVERFLOW_BAR_HEIGHT,
                 contentBounds.right(), contentBounds.bottom(), COLOR_OVERFLOW);
-            graphics.drawString(safeFont, warning.type().getIcon() + " " + warning.message(),
+            UIScaleManager.drawScaledString(graphics, safeFont, warning.type().getIcon() + " " + warning.message(),
                 contentBounds.x() + OVERFLOW_TEXT_OFFSET_X, contentBounds.bottom() - OVERFLOW_TEXT_OFFSET_Y,
                 warning.type().getColor(), false);
         }
@@ -264,13 +265,13 @@ public final class DebugOverlay {
         graphics.hLine(panelX, panelX + panelWidth, footerTop, COLOR_ZONE_BOUNDARY);
 
         if (detailLevel == DetailLevel.HIGH) {
-            graphics.drawString(safeFont, "HEADER", panelX + ZONE_LABEL_OFFSET, panelY + ZONE_LABEL_OFFSET,
+            UIScaleManager.drawScaledString(graphics, safeFont, "HEADER", panelX + ZONE_LABEL_OFFSET, panelY + ZONE_LABEL_OFFSET,
                 COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "LEFT", panelX + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
+            UIScaleManager.drawScaledString(graphics, safeFont, "LEFT", panelX + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
                 COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "CONTENT", leftRight + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
+            UIScaleManager.drawScaledString(graphics, safeFont, "CONTENT", leftRight + ZONE_LABEL_OFFSET, headerBottom + ZONE_LABEL_OFFSET,
                 COLOR_INFO_TEXT, false);
-            graphics.drawString(safeFont, "FOOTER", panelX + ZONE_LABEL_OFFSET, footerTop + ZONE_LABEL_OFFSET,
+            UIScaleManager.drawScaledString(graphics, safeFont, "FOOTER", panelX + ZONE_LABEL_OFFSET, footerTop + ZONE_LABEL_OFFSET,
                 COLOR_INFO_TEXT, false);
         }
     }
@@ -356,7 +357,7 @@ public final class DebugOverlay {
         int y = infoY + INFO_PANEL_PADDING;
         for (String line : lines) {
             int color = line.startsWith("\u26A0") ? COLOR_WARNING : COLOR_INFO_TEXT;
-            graphics.drawString(safeFont, line, infoX + INFO_PANEL_PADDING, y, color, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, line, infoX + INFO_PANEL_PADDING, y, color, false);
             y += INFO_PANEL_LINE_HEIGHT;
         }
 
@@ -467,7 +468,7 @@ public final class DebugOverlay {
             if (hovered || detailLevel == DetailLevel.HIGH) {
                 String name = reporter.getDebugName();
                 if (name != null && !name.isEmpty()) {
-                    graphics.drawString(safeFont, name, bounds.x() + REPORTER_LABEL_OFFSET, bounds.y() + REPORTER_LABEL_OFFSET,
+                    UIScaleManager.drawScaledString(graphics, safeFont, name, bounds.x() + REPORTER_LABEL_OFFSET, bounds.y() + REPORTER_LABEL_OFFSET,
                         COLOR_INFO_TEXT, false);
                 }
 
@@ -475,7 +476,7 @@ public final class DebugOverlay {
                 if (hovered) {
                     String details = reporter.getDebugDetails();
                     if (details != null) {
-                        graphics.drawString(safeFont, details, bounds.x() + REPORTER_LABEL_OFFSET,
+                        UIScaleManager.drawScaledString(graphics, safeFont, details, bounds.x() + REPORTER_LABEL_OFFSET,
                             bounds.y() + REPORTER_DETAIL_OFFSET_Y, COLOR_INFO_TEXT, false);
                     }
                 }
@@ -502,7 +503,7 @@ public final class DebugOverlay {
 
             // Warning icon and message
             String text = warning.type().getIcon() + ": " + warning.message();
-            graphics.drawString(safeFont, text, warning.x(), warning.y() - WARNING_LABEL_OFFSET_Y,
+            UIScaleManager.drawScaledString(graphics, safeFont, text, warning.x(), warning.y() - WARNING_LABEL_OFFSET_Y,
                 warning.type().getColor(), false);
         }
     }

@@ -23,6 +23,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.network.TemplateListPayload.TemplateSummary;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -153,7 +154,7 @@ public class TemplateSelectorWidget extends AbstractWidget {
         updateLayout(font.lineHeight);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.template.select")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -172,8 +173,8 @@ public class TemplateSelectorWidget extends AbstractWidget {
 
         if (filteredTemplates.isEmpty()) {
             String msgKey = allTemplates.isEmpty() ? "area.template.loading" : "area.template.empty";
-            graphics.drawCenteredString(font,
-                Objects.requireNonNull(Component.translatable(msgKey)),
+            UIScaleManager.drawScaledCenteredString(graphics, font,
+                Component.translatable(msgKey).getString(),
                 getX() + getWidth() / 2, listY + listHeight / 2 - 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             return;
@@ -198,13 +199,13 @@ public class TemplateSelectorWidget extends AbstractWidget {
             }
 
             // Template name
-            graphics.drawString(font, template.name(), getX() + 4, itemY + 4,
+            UIScaleManager.drawScaledString(graphics, font, template.name(), getX() + 4, itemY + 4,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
                           : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
             // Shape + Author info
             String info = template.shape().getSerializedName() + " - " + template.author();
-            graphics.drawString(font, info, getX() + 4, itemY + 14,
+            UIScaleManager.drawScaledString(graphics, font, info, getX() + 4, itemY + 14,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
 
             // Delete button [X] on hover (only if delete callback is set)
@@ -221,7 +222,7 @@ public class TemplateSelectorWidget extends AbstractWidget {
                 // X symbol
                 int xColor = btnHovered ? DesignTokens.AreaBuilder.DANGER_ICON_HOVER
                     : DesignTokens.AreaBuilder.DANGER_ICON;
-                graphics.drawCenteredString(font, "×", btnX + DELETE_BTN_SIZE / 2, btnY + 4, xColor);
+                UIScaleManager.drawScaledCenteredString(graphics, font, "×", btnX + DELETE_BTN_SIZE / 2, btnY + 4, xColor);
             }
         }
 

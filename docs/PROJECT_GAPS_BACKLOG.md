@@ -1,6 +1,6 @@
 # Project Gaps Backlog
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 Backlog delle lacune principali individuate dopo la documentazione completa. Le priorita sono orientative.
 
@@ -8,7 +8,7 @@ Backlog delle lacune principali individuate dopo la documentazione completa. Le 
 
 Nessuna lacuna P0 aperta al momento.
 
-## Completed (2026-01-15)
+## Completed (2026-01-31)
 
 1) Zone Editor completato
 - Stato: offset spawn/portal coerenti con hub, UI aggiornata, stringhe placeholder rimosse.
@@ -34,42 +34,34 @@ Nessuna lacuna P0 aperta al momento.
 - Stato: spec API completa con auth, endpoint, payload e note operative.
 - File: `docs/MAILBOX_ADMIN_API.md`, `docs/OPERATIONS.md`
 
+7) Config reference dettagliata
+- Stato: tabella completa chiavi/default/enum per TOML runtime.
+- File: `docs/CONFIGURATION.md`, `src/main/java/com/devmod/config/`, `src/main/java/com/devmod/portal/PortalConfig.java`
+
+8) Network payload spec
+- Stato: tabella completa ChannelId -> payload -> direction.
+- File: `docs/NETWORK.md`, `src/main/java/com/devmod/network/ChannelId.java`
+
+9) Test coverage report aggiornato
+- Stato: JaCoCo report + coverageSummary generati, verifica soglie OK.
+- File: `docs/TEST_COVERAGE_REPORT.md`, `build/reports/jacoco/test/html/index.html`
+
+10) Runbook e release
+- Stato: ripristinati runbook operativi e checklist release.
+- File: `docs/runbook/arena-alerts.md`, `docs/runbook/VERIFY.md`, `docs/runbook/RELEASE_CHECKLIST.md`
+
+11) Asset credits completi
+- Stato: fonti esterne registrate e paths tracciati.
+- File: `docs/ASSETS_CREDITS.md`
+
 ## P1 - Asset e contenuti incompleti
 
 Nessuna lacuna P1 asset aperta al momento.
 
-## P1 - Documentazione tecnica mancante
-
-7) Config reference dettagliata
-- Evidenza: docs elenca file ma non i campi.
-- Target: creare reference per `Config`, `GameMechanicsConfig`, `PortalConfig`, `EditorClientConfig` e JSON runtime.
-- File: `src/main/java/com/devmod/config/`, `src/main/resources/config/devmod/`, `docs/CONFIGURATION.md`
-- Done quando: tabella completa di chiavi e default.
-
-8) Network payload spec
-- Evidenza: doc range canali senza payload/limiti/validation per canale.
-- Target: tabella payload con limiti e direction.
-- File: `src/main/java/com/devmod/network/ChannelId.java`, `src/main/java/com/devmod/network/PayloadValidation.java`, `docs/NETWORK.md`
-- Done quando: mapping completo canale -> payload -> limiti.
-
 ## P2 - Testing e runbook
 
-9) Test coverage report aggiornato
-- Evidenza: report testing storici archiviati.
-- Target: nuovo report con coverage attuale, suite, comandi.
-- File: `src/test/java/`, `docs/`
-- Done quando: report aggiornato e linkato da `docs/README.md`.
-
-10) Runbook e release
-- Evidenza: checklist/runbook storici archiviati.
-- Target: ripristinare runbook operativo e checklist release aggiornati.
-- File: `docs/`
-- Done quando: procedure attuali documentate e verificate.
+Nessuna lacuna P2 aperta al momento.
 
 ## P3 - Qualita e governance
 
-11) Asset credits completi
-- Evidenza: crediti parziali (solo icone radial).
-- Target: inventario completo delle fonti asset.
-- File: `docs/ASSETS_CREDITS.md`, `src/main/resources/assets/devmod/`
-- Done quando: tutte le fonti asset tracciate.
+Nessuna lacuna P3 aperta al momento.

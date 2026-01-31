@@ -16,6 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.compat.Compat;
 import com.devmod.mailbox.MessageType;
@@ -162,10 +163,10 @@ public final class MailboxUiSkin {
 
     public static void drawText(GuiGraphics graphics, Font font, String text, int x, int y, int color, boolean shadow) {
         if (!isFeatheredTheme()) {
-            graphics.drawString(font, text, x, y, color, shadow);
+            UIScaleManager.drawScaledString(graphics, font, text, x, y, color, shadow);
             return;
         }
-        graphics.drawString(font, stylize(text), x, y, color, shadow);
+        UIScaleManager.drawScaledString(graphics, font, stylize(text).getString(), x, y, color, shadow);
     }
 
     public static Component styledComponent(String text) {
@@ -174,9 +175,9 @@ public final class MailboxUiSkin {
 
     public static int textWidth(Font font, String text) {
         if (!isFeatheredTheme()) {
-            return font.width(text);
+            return UIScaleManager.getScaledStringWidth(font, text);
         }
-        return font.width(stylize(text));
+        return UIScaleManager.getScaledStringWidth(font, stylize(text).getString());
     }
 
     public static String trimToWidth(Font font, String text, int maxWidth) {

@@ -76,6 +76,11 @@ public class DialogPreviewScreen extends Screen {
     private CycleButton<String> nodeSelector;
     private final List<String> nodeIds = new ArrayList<>();
 
+    // === Scaled layout dimensions (updated in render for responsiveness) ===
+    private int scaledDialogWidth;
+    private int scaledDialogHeight;
+    private int scaledPadding;
+
     public DialogPreviewScreen(
         @Nonnull DialogSet dialogSet,
         @Nonnull String speakerName,
@@ -95,34 +100,41 @@ public class DialogPreviewScreen extends Screen {
         super.init();
         optionButtons.clear();
 
+        // Calculate scaled values for init
+        UIScaleManager.update();
+
         // Play dialog open sound (BIBBIA ESTETICA R2)
         if (minecraft != null && minecraft.level != null) {
             NpcSounds.playPhaseClient(minecraft.level, NpcSounds.Phase.DIALOG_OPEN);
         }
 
         // Node selector at top
-        int selectorWidth = 200;
+        int selectorWidth = UIScaleManager.scale(200);
+        int selectorY = UIScaleManager.scale(10);
+        int selectorHeight = UIScaleManager.scale(20);
         nodeSelector = CycleButton.<String>builder(id -> Component.literal(id))
             .withValues(nodeIds)
             .withInitialValue(currentNodeId)
             .create(
                 (width - selectorWidth) / 2,
-                10,
+                selectorY,
                 selectorWidth,
-                20,
+                selectorHeight,
                 Component.translatable("gui.devmod.npc.dialog.preview.node"),
                 (btn, value) -> goToNode(value)
             );
         addRenderableWidget(nodeSelector);
 
         // Reset button
+        int smallBtnWidth = UIScaleManager.scale(60);
+        int smallBtnHeight = UIScaleManager.scale(20);
         EditorButton resetButton = EditorButton.builder("dialog-preview-reset",
                 Component.translatable("gui.devmod.npc.dialog.preview.reset").getString())
             .style(EditorButton.Style.NORMAL)
             .size(EditorButton.Size.SMALL)
             .onClick(() -> goToNode(dialogSet.entryNodeId()))
             .build();
-        addRenderableWidget(new EditorButtonWidget(resetButton, width - 70, 10, 60, 20));
+        addRenderableWidget(new EditorButtonWidget(resetButton, width - UIScaleManager.scale(70), selectorY, smallBtnWidth, smallBtnHeight));
 
         // Back button
         EditorButton backButton = EditorButton.builder("dialog-preview-back",
@@ -131,7 +143,7 @@ public class DialogPreviewScreen extends Screen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::onClose)
             .build();
-        addRenderableWidget(new EditorButtonWidget(backButton, 10, 10, 60, 20));
+        addRenderableWidget(new EditorButtonWidget(backButton, selectorY, selectorY, smallBtnWidth, smallBtnHeight));
 
         rebuildOptionButtons();
     }
@@ -145,9 +157,15 @@ public class DialogPreviewScreen extends Screen {
 
         if (currentNode == null) return;
 
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
-        int buttonY = dialogY + DIALOG_HEIGHT + 10;
-        int buttonX = (width - BUTTON_WIDTH) / 2;
+        // Calculate scaled values
+        int sDialogHeight = UIScaleManager.scale(DIALOG_HEIGHT);
+        int sButtonWidth = UIScaleManager.scale(BUTTON_WIDTH);
+        int sButtonHeight = UIScaleManager.scale(BUTTON_HEIGHT);
+        int sButtonSpacing = UIScaleManager.scale(BUTTON_SPACING);
+
+        int dialogY = (height - sDialogHeight) / 2;
+        int buttonY = dialogY + sDialogHeight + UIScaleManager.scale(10);
+        int buttonX = (width - sButtonWidth) / 2;
 
         List<DialogOption> options = currentNode.options();
         for (int i = 0; i < options.size(); i++) {
@@ -161,7 +179,7 @@ public class DialogPreviewScreen extends Screen {
                 .onClick(() -> selectOption(options.get(index)))
                 .build();
             EditorButtonWidget button = new EditorButtonWidget(optionButton,
-                buttonX, buttonY + i * (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT);
+                buttonX, buttonY + i * (sButtonHeight + sButtonSpacing), sButtonWidth, sButtonHeight);
 
             button.visible = textFullyRevealed;
             optionButtons.add(button);
@@ -239,43 +257,49 @@ public class DialogPreviewScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledDialogWidth = UIScaleManager.scale(DIALOG_WIDTH);
+        scaledDialogHeight = UIScaleManager.scale(DIALOG_HEIGHT);
+        scaledPadding = UIScaleManager.scale(PADDING);
+
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int dialogX = (width - scaledDialogWidth) / 2;
+        int dialogY = (height - scaledDialogHeight) / 2;
 
         renderDialogPanel(graphics, dialogX, dialogY);
 
         var safeFont = Objects.requireNonNull(font, "font");
 
         // Speaker name
-        graphics.drawString(safeFont, speakerName, dialogX + PADDING, dialogY + PADDING - 4, COLOR_SPEAKER);
+        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + scaledPadding, dialogY + scaledPadding - UIScaleManager.scale(4), COLOR_SPEAKER);
 
         // Preview badge
         String previewBadge = "[PREVIEW]";
-        int badgeWidth = safeFont.width(previewBadge);
-        graphics.drawString(safeFont, previewBadge, dialogX + DIALOG_WIDTH - PADDING - badgeWidth, dialogY + PADDING - 4, COLOR_PREVIEW_BADGE);
+        int badgeWidth = UIScaleManager.getScaledStringWidth(safeFont, previewBadge);
+        UIScaleManager.drawScaledString(graphics, safeFont, previewBadge, dialogX + scaledDialogWidth - scaledPadding - badgeWidth, dialogY + scaledPadding - UIScaleManager.scale(4), COLOR_PREVIEW_BADGE);
 
         // Separator line
         int borderColor = textFullyRevealed ? COLOR_BORDER_IDLE : COLOR_BORDER_TALKING;
-        graphics.fill(dialogX + PADDING, dialogY + PADDING + 10,
-            dialogX + DIALOG_WIDTH - PADDING, dialogY + PADDING + 11, borderColor);
+        graphics.fill(dialogX + scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(10),
+            dialogX + scaledDialogWidth - scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(11), borderColor);
 
         // Dialog text
-        renderDialogText(graphics, dialogX + PADDING, dialogY + PADDING + 20);
+        renderDialogText(graphics, dialogX + scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(20));
 
         // Skip hint
         if (!textFullyRevealed) {
             String hint = "[Click to skip]";
-            int hintWidth = safeFont.width(hint);
-            graphics.drawString(safeFont, hint, dialogX + DIALOG_WIDTH - PADDING - hintWidth,
-                dialogY + DIALOG_HEIGHT - PADDING, COLOR_TEXT_DIM);
+            int hintWidth = UIScaleManager.getScaledStringWidth(safeFont, hint);
+            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + scaledDialogWidth - scaledPadding - hintWidth,
+                dialogY + scaledDialogHeight - scaledPadding, COLOR_TEXT_DIM);
         }
 
         // Node info at bottom
         if (currentNode != null) {
             String nodeInfo = "Node: " + currentNodeId + " | Options: " + currentNode.options().size();
-            graphics.drawString(safeFont, nodeInfo, dialogX + PADDING, dialogY + DIALOG_HEIGHT - PADDING, COLOR_TEXT_DIM);
+            UIScaleManager.drawScaledString(graphics, safeFont, nodeInfo, dialogX + scaledPadding, dialogY + scaledDialogHeight - scaledPadding, COLOR_TEXT_DIM);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -284,29 +308,30 @@ public class DialogPreviewScreen extends Screen {
     private void renderDialogPanel(GuiGraphics graphics, int x, int y) {
         int borderColor = textFullyRevealed ? COLOR_BORDER_IDLE : COLOR_BORDER_TALKING;
         int glowColor = NpcState.TALKING.getSecondaryWithAlpha(0x88);
+        int glowOffset = UIScaleManager.scale(2);
 
         // Glow effect
-        graphics.fill(x - 2, y - 2, x + DIALOG_WIDTH + 2, y + DIALOG_HEIGHT + 2, glowColor);
+        graphics.fill(x - glowOffset, y - glowOffset, x + scaledDialogWidth + glowOffset, y + scaledDialogHeight + glowOffset, glowColor);
         // Background
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, COLOR_PANEL_BG);
+        graphics.fill(x, y, x + scaledDialogWidth, y + scaledDialogHeight, COLOR_PANEL_BG);
         // Borders
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + 1, borderColor);
-        graphics.fill(x, y + DIALOG_HEIGHT - 1, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, borderColor);
-        graphics.fill(x, y, x + 1, y + DIALOG_HEIGHT, borderColor);
-        graphics.fill(x + DIALOG_WIDTH - 1, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, borderColor);
+        graphics.fill(x, y, x + scaledDialogWidth, y + 1, borderColor);
+        graphics.fill(x, y + scaledDialogHeight - 1, x + scaledDialogWidth, y + scaledDialogHeight, borderColor);
+        graphics.fill(x, y, x + 1, y + scaledDialogHeight, borderColor);
+        graphics.fill(x + scaledDialogWidth - 1, y, x + scaledDialogWidth, y + scaledDialogHeight, borderColor);
     }
 
     private void renderDialogText(GuiGraphics graphics, int x, int y) {
         if (currentNode == null) {
-            graphics.drawString(font, "[No node selected]", x, y, COLOR_TEXT_DIM);
+            UIScaleManager.drawScaledString(graphics, font, "[No node selected]", x, y, COLOR_TEXT_DIM);
             return;
         }
 
         var safeFont = Objects.requireNonNull(font, "font");
         int charsDrawn = 0;
         int currentY = y;
-        int lineHeight = safeFont.lineHeight + 2;
-        int maxWidth = DIALOG_WIDTH - PADDING * 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight();
+        int maxWidth = scaledDialogWidth - scaledPadding * 2;
 
         for (String line : currentNode.lines()) {
             if (line.isEmpty()) {
@@ -321,7 +346,7 @@ public class DialogPreviewScreen extends Screen {
 
                 if (charsToShow > 0) {
                     String visibleText = wrappedLine.substring(0, charsToShow);
-                    graphics.drawString(safeFont, visibleText, x, currentY, COLOR_TEXT);
+                    UIScaleManager.drawScaledString(graphics, safeFont, visibleText, x, currentY, COLOR_TEXT);
                 }
 
                 charsDrawn += lineLength;
@@ -341,7 +366,7 @@ public class DialogPreviewScreen extends Screen {
 
         for (String word : line.split(" ", -1)) {
             String test = current.length() == 0 ? word : current + " " + word;
-            if (safeFont.width(test) <= maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(safeFont, test) <= maxWidth) {
                 if (current.length() > 0) current.append(" ");
                 current.append(word);
             } else {

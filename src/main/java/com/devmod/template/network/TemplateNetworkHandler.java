@@ -7,19 +7,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
 
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
 import com.devmod.template.data.RoomTemplate;
 import com.devmod.template.data.TemplateRegistry;
 import com.devmod.template.runtime.TemplateManager;
-
 /**
  * Network handler for Room Templates system.
  * Registers payloads and handles server-side processing.

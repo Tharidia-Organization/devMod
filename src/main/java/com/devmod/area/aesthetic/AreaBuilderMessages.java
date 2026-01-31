@@ -32,19 +32,19 @@ public final class AreaBuilderMessages {
     // ============================================================================
 
     /** Success message format (green) */
-    public static final String SUCCESS_FORMAT = PREFIX + "§a%s§r";
+    public static final String SUCCESS_FORMAT = PREFIX + "\u00A7a%s\u00A7r";
 
     /** Info message format (yellow) */
-    public static final String INFO_FORMAT = PREFIX + "§e%s§r";
+    public static final String INFO_FORMAT = PREFIX + "\u00A7e%s\u00A7r";
 
     /** Error message format (red) */
-    public static final String ERROR_FORMAT = PREFIX + "§c%s§r";
+    public static final String ERROR_FORMAT = PREFIX + "\u00A7c%s\u00A7r";
 
     /** Progress message format (cyan + percentage) */
-    public static final String PROGRESS_FORMAT = PREFIX + "§b%s§r §7(%d%%)";
+    public static final String PROGRESS_FORMAT = PREFIX + "\u00A7b%s\u00A7r \u00A77(%d%%)";
 
     /** Warning message format (gold) */
-    public static final String WARNING_FORMAT = PREFIX + "§6%s§r";
+    public static final String WARNING_FORMAT = PREFIX + "\u00A76%s\u00A7r";
 
     // ============================================================================
     // PREDEFINED MESSAGES (localization keys)

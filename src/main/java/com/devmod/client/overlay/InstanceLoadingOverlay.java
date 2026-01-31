@@ -56,25 +56,38 @@ public class InstanceLoadingOverlay {
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
+        // Scale dimensions
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int panelHeight = Math.min(sPanelHeight, UIScaleManager.getSafeHeight());
+
         // Update spinner
         spinnerAngle += deltaTracker.getGameTimeDeltaTicks() * 8;
 
         // Center panel
-        int panelX = (screenWidth - PANEL_WIDTH) / 2;
-        int panelY = (screenHeight - PANEL_HEIGHT) / 2;
+        int panelX = (screenWidth - panelWidth) / 2;
+        int panelY = (screenHeight - panelHeight) / 2;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // Semi-transparent background overlay
         graphics.fill(0, 0, screenWidth, screenHeight,
             OverlayTheme.withAlpha(OverlayTheme.Utility.BLACK, OverlayTheme.Alpha.SUBTLE));
 
         // Panel background
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, DesignTokens.Stroke.DEFAULT);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, DesignTokens.Background.PANEL_SOLID);
+        int sBorder = UIScaleManager.scale(2);
+        graphics.fill(panelX - sBorder, panelY - sBorder, panelX + panelWidth + sBorder, panelY + panelHeight + sBorder, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, DesignTokens.Background.PANEL_SOLID);
 
         // Spinner
-        int spinnerCenterX = panelX + 30;
-        int spinnerCenterY = panelY + PANEL_HEIGHT / 2;
-        int spinnerRadius = 12;
+        int spinnerCenterX = panelX + UIScaleManager.scale(30);
+        int spinnerCenterY = panelY + panelHeight / 2;
+        int spinnerRadius = UIScaleManager.scale(12);
 
         for (int i = 0; i < 8; i++) {
             float angle = (float) Math.toRadians(spinnerAngle + i * 45);
@@ -82,24 +95,48 @@ public class InstanceLoadingOverlay {
             int dotY = spinnerCenterY + (int) (Math.sin(angle) * spinnerRadius);
             int alpha = 255 - (i * 28);
             int dotColor = OverlayTheme.withAlpha(DesignTokens.Semantic.INFO, alpha);
-            graphics.fill(dotX - 2, dotY - 2, dotX + 2, dotY + 2, dotColor);
+            int sDotSize = UIScaleManager.scale(2);
+            graphics.fill(dotX - sDotSize, dotY - sDotSize, dotX + sDotSize, dotY + sDotSize, dotColor);
         }
 
         // Title
+        int textOffsetX = UIScaleManager.scale(55);
+        int textX = panelX + textOffsetX;
+        int contentRight = panelX + panelWidth - UIScaleManager.scale(10);
+        int maxTextWidth = Math.max(0, contentRight - textX);
         String title = I18n.translate("devmod.loading.preparing_quest").getString();
-        graphics.drawString(font, "§l" + title, panelX + 55, panelY + 15, DesignTokens.Text.PRIMARY);
+        title = truncateToWidth(font, title, maxTextWidth);
+        UIScaleManager.drawScaledString(graphics, font, "\u00A7l" + title, textX, panelY + UIScaleManager.scale(15), DesignTokens.Text.PRIMARY);
 
         // Status message
-        graphics.drawString(font, statusMessage, panelX + 55, panelY + 32, DesignTokens.Text.SECONDARY);
+        String statusLine = truncateToWidth(font, statusMessage, maxTextWidth);
+        UIScaleManager.drawScaledString(graphics, font, statusLine, textX, panelY + UIScaleManager.scale(32), DesignTokens.Text.SECONDARY);
 
         // Elapsed time
         long elapsed = System.currentTimeMillis() - startTime;
         String timeText = String.format("%.1fs", elapsed / 1000.0);
-        graphics.drawString(font, timeText, panelX + 55, panelY + 50, DesignTokens.Text.MUTED);
+        String timeLine = truncateToWidth(font, timeText, maxTextWidth);
+        UIScaleManager.drawScaledString(graphics, font, timeLine, textX, panelY + UIScaleManager.scale(50), DesignTokens.Text.MUTED);
 
         // Hint
         String hint = I18n.translate("devmod.loading.please_wait").getString();
-        graphics.drawCenteredString(font, "§8" + hint, panelX + PANEL_WIDTH / 2, panelY + PANEL_HEIGHT - 12, DesignTokens.Text.MUTED);
+        hint = truncateToWidth(font, hint, panelWidth - UIScaleManager.scale(12));
+        UIScaleManager.drawScaledCenteredString(graphics, font, "\u00A78" + hint, panelX + panelWidth / 2, panelY + panelHeight - UIScaleManager.scale(12), DesignTokens.Text.MUTED);
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
     }
 
     // === Public API ===

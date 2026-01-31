@@ -13,18 +13,17 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
-import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import com.devmod.clone.block.CloneMachineBlock;
 import com.devmod.config.Config;
 import com.devmod.runtime.network.AdminInstanceNetworkHandler;
-
 /**
  * Admin Terminal block for monitoring and controlling instance dimensions.
  * Right-click to open the Admin Instance Panel.

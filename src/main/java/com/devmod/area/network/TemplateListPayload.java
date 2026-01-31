@@ -14,10 +14,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.area.data.AreaShape;
 import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
-import com.devmod.area.data.AreaShape;
-
 /**
  * Server -> Client: Template list for template selection UI.
  * Contains list of template summaries with basic info.

@@ -1,13 +1,11 @@
 package com.devmod.client.gametest;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
 import com.devmod.client.rendering.DebugRenderer;
 import com.devmod.client.ui.hub.TestingHub;
-
 public final class TestHarnessClientDelegate {
 
     private TestHarnessClientDelegate() {} // Utility class
@@ -77,8 +75,9 @@ public final class TestHarnessClientDelegate {
     // ==================== Screens ====================
 
     public static void openTestingHub() {
-        Minecraft.getInstance().execute(() ->
-            Minecraft.getInstance().setScreen(new TestingHub()));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "testing_hub",
+            () -> new TestingHub());
     }
 
     // ==================== Info ====================

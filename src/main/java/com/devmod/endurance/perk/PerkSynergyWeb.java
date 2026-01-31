@@ -19,11 +19,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
-
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -36,7 +31,10 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 import com.devmod.endurance.PerkSynergySystem;
 import com.devmod.endurance.PerkSystem;
-
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 public class PerkSynergyWeb implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 
@@ -617,8 +615,8 @@ public class PerkSynergyWeb implements QuestLifecycleListener {
 
                 // Notify player
                 Component message = Objects.requireNonNull(
-                    Component.literal("§d§l[DISCOVERY] §r§5" + getPerkName(hidden.perkId()) +
-                        " §r§7unlocked! §a+" + hidden.discoveryXp() + " Discovery XP"),
+                    Component.literal("\u00A7d\u00A7l[DISCOVERY] \u00A7r\u00A75" + getPerkName(hidden.perkId()) +
+                        " \u00A7r\u00A77unlocked! \u00A7a+" + hidden.discoveryXp() + " Discovery XP"),
                     "discoveryMessage"
                 );
                 player.displayClientMessage(message, false);
@@ -668,8 +666,8 @@ public class PerkSynergyWeb implements QuestLifecycleListener {
 
         // Visual feedback
         Component message = Objects.requireNonNull(
-            Component.literal("§4§l[SACRIFICE] §r§c" + recipe.description +
-                " §r§7→ §a" + getPerkName(recipe.resultPerkId)),
+            Component.literal("\u00A74\u00A7l[SACRIFICE] \u00A7r\u00A7c" + recipe.description +
+                " \u00A7r\u00A77→ \u00A7a" + getPerkName(recipe.resultPerkId)),
             "sacrificeMessage"
         );
         player.displayClientMessage(message, false);
@@ -715,7 +713,7 @@ public class PerkSynergyWeb implements QuestLifecycleListener {
                         long have = combo.requiredPerks.stream().filter(simulated::contains).count();
                         long need = combo.requiredPerks.size();
                         if (have > 0 && have < need) {
-                            hiddenHints.add("§8[" + have + "/" + need + " toward a hidden perk...]");
+                            hiddenHints.add("\u00A78[" + have + "/" + need + " toward a hidden perk...]");
                         }
                     }
                 }

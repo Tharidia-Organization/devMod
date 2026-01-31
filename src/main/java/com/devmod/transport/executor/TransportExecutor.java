@@ -23,6 +23,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.transport.TransportData;
 import com.devmod.transport.TransportMode;
 import com.devmod.transport.TransportRegistry;
@@ -95,6 +96,8 @@ public final class TransportExecutor {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
+        DiagnosticLogger.transport("startCharging: player=%s, node=%s, mode=%s",
+            player.getName().getString(), node.displayName(), node.mode());
 
         ServerLevel level = serverPlayer.serverLevel();
         long currentTick = level.getGameTime();
@@ -176,6 +179,8 @@ public final class TransportExecutor {
         if (!(entity.level() instanceof ServerLevel level)) {
             return false;
         }
+        DiagnosticLogger.transport("executeTeleport: entity=%s, source=%s, mode=%s",
+            entity.getName().getString(), source.displayName(), source.mode());
 
         TransportRegistry registry = TransportRegistry.get(level);
 

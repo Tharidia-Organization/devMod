@@ -1,6 +1,6 @@
 # Glossario
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 ## Arena
 
@@ -19,6 +19,7 @@
 | WaveManager | Spawn e progressione wave | `src/main/java/com/devmod/endurance/WaveManager.java` |
 | PerkSystem | Perk roguelike | `src/main/java/com/devmod/endurance/PerkSystem.java` |
 | RewardSystem | Reward e shop | `src/main/java/com/devmod/endurance/RewardSystem.java` |
+| WIS (Wave Intelligence System) | Debrief e HUD wave | `src/main/java/com/devmod/client/endurance/wis/WaveIntelligenceManager.java` |
 
 ## Combat & Collision
 
@@ -49,7 +50,16 @@
 | Termine | Definizione | File |
 |---|---|---|
 | Area Builder | Sistema build aree | `src/main/java/com/devmod/area/` |
+| AreaSnapshot | Snapshot di area | `src/main/java/com/devmod/area/snapshot/AreaSnapshot.java` |
 | Zone Marker | Marker data-driven | `src/main/java/com/devmod/zone/` |
+
+## Nexus
+
+| Termine | Definizione | File |
+|---|---|---|
+| ZoneSlot | Slot nel Nexus hub | `src/main/java/com/devmod/nexus/data/ZoneSlot.java` |
+| SlotType | Tipi slot hub | `src/main/java/com/devmod/nexus/data/SlotType.java` |
+| ZoneSlotRegistry | Registry slot | `src/main/java/com/devmod/nexus/data/ZoneSlotRegistry.java` |
 
 ## NPC
 
@@ -77,6 +87,13 @@
 |---|---|---|
 | ChannelId | ID canali payload | `src/main/java/com/devmod/network/ChannelId.java` |
 | NetworkHandler | Registrazione payload | `src/main/java/com/devmod/network/NetworkHandler.java` |
+
+## Notification
+
+| Termine | Definizione | File |
+|---|---|---|
+| NotificationService | Routing notifiche | `src/main/java/com/devmod/notification/NotificationService.java` |
+| NotificationRouter | Regole routing | `src/main/java/com/devmod/notification/NotificationRouter.java` |
 
 ## Abbreviazioni
 

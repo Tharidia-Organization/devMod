@@ -24,6 +24,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -143,7 +144,7 @@ public class CustomNbtWidget extends AbstractWidget {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.custom.title")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -151,7 +152,7 @@ public class CustomNbtWidget extends AbstractWidget {
 
         // Preset selector
         int presetY = getY() + 18;
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.custom.preset")),
             getX(), presetY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -169,16 +170,15 @@ public class CustomNbtWidget extends AbstractWidget {
             int bgColor = selected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                           (hovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL);
             graphics.fill(presetBtnX, presetY - 2, presetBtnX + btnWidth, presetY + 12, bgColor);
-            graphics.drawString(font, presetName, presetBtnX + 4, presetY, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            UIScaleManager.drawScaledString(graphics, font, presetName, presetBtnX + 4, presetY, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
             presetBtnX += btnWidth + 4;
         }
 
         // Position list header
         int listY = getY() + 45;
-        graphics.drawString(font,
-            Objects.requireNonNull(Component.literal("Positions (relative to center): " + positions.size() + "/" + MAX_POSITIONS)
-                .withStyle(s -> s.withColor(AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY))),
+        UIScaleManager.drawScaledString(graphics, font,
+            "Positions (relative to center): " + positions.size() + "/" + MAX_POSITIONS,
             getX(), listY - 12,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
@@ -198,7 +198,7 @@ public class CustomNbtWidget extends AbstractWidget {
             int rowY = listY + i * ROW_HEIGHT + 2;
 
             // Index
-            graphics.drawString(font,
+            UIScaleManager.drawScaledString(graphics, font,
                 String.valueOf(idx + 1) + ".",
                 getX() + 4, rowY + 4,
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -206,7 +206,7 @@ public class CustomNbtWidget extends AbstractWidget {
 
             // Coordinates
             String coordText = String.format("(%+d, %+d, %+d)", pos.getX(), pos.getY(), pos.getZ());
-            graphics.drawString(font, coordText, getX() + 30, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + 30, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
             // Delete button
             int btnX = getX() + getWidth() - BUTTON_SIZE - 8;
@@ -215,20 +215,20 @@ public class CustomNbtWidget extends AbstractWidget {
                               mouseY >= btnY && mouseY < btnY + BUTTON_SIZE;
             int btnColor = hovered ? DesignTokens.AreaBuilder.DELETE_BTN_HOVER : DesignTokens.AreaBuilder.DELETE_BTN;
             graphics.fill(btnX, btnY, btnX + BUTTON_SIZE, btnY + BUTTON_SIZE, btnColor);
-            graphics.drawCenteredString(font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            graphics.drawCenteredString(font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
         if (scrollOffset + MAX_VISIBLE_POSITIONS < positions.size()) {
-            graphics.drawCenteredString(font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
 
         // Add position section
         int addY = listY + listHeight + 10;
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.custom.add_position")),
             getX(), addY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
@@ -236,15 +236,15 @@ public class CustomNbtWidget extends AbstractWidget {
 
         // X/Y/Z labels and inputs
         int inputY = addY + 15;
-        graphics.drawString(font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         xInput.setY(inputY);
         xInput.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawString(font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         yInput.setY(inputY);
         yInput.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.drawString(font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         zInput.setY(inputY);
         zInput.render(graphics, mouseX, mouseY, partialTick);
 
@@ -258,7 +258,7 @@ public class CustomNbtWidget extends AbstractWidget {
         graphics.fill(addBtnX, addBtnY, addBtnX + addBtnW, addBtnY + addBtnH,
             addHovered ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(addBtnX, addBtnY, addBtnW, addBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Clear all button
         int clearBtnX = getX() + getWidth() - 60;
@@ -270,7 +270,7 @@ public class CustomNbtWidget extends AbstractWidget {
         graphics.fill(clearBtnX, clearBtnY, clearBtnX + clearBtnW, clearBtnY + clearBtnH,
             clearHovered ? DesignTokens.AreaBuilder.DELETE_BTN : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(clearBtnX, clearBtnY, clearBtnW, clearBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        graphics.drawCenteredString(font, "Clear All", clearBtnX + clearBtnW / 2, clearBtnY + 3, DesignTokens.AreaBuilder.TEXT_WHITE);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "Clear All", clearBtnX + clearBtnW / 2, clearBtnY + 3, DesignTokens.AreaBuilder.TEXT_WHITE);
     }
 
     @Override

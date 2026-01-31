@@ -433,7 +433,9 @@ public class RenderEvents {
         if (mc.screen instanceof net.minecraft.client.gui.screens.DeathScreen
             && com.devmod.client.endurance.ClientQuestCache.shouldSuppressVanillaDeathScreen()) {
             LOGGER.info("[EnduranceQuest][Client] Replacing vanilla DeathScreen with QuestDeathScreen");
-            mc.setScreen(new com.devmod.client.endurance.QuestDeathScreen());
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "quest_death",
+                () -> new com.devmod.client.endurance.QuestDeathScreen());
         }
 
         // === KEYBIND HANDLING (correct way for NeoForge) ===

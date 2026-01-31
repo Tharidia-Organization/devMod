@@ -136,6 +136,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
         // Render notifications
         Iterator<ResonanceNotification> iter = activeNotifications.iterator();
         int offsetY = 0;
+        int sOffsetStep = UIScaleManager.scale(40);
         while (iter.hasNext()) {
             ResonanceNotification notif = iter.next();
             if (notif.isExpired()) {
@@ -144,7 +145,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
             }
 
             renderNotification(graphics, notif, screenWidth, screenHeight, offsetY);
-            offsetY += 40;
+            offsetY += sOffsetStep;
         }
 
         // Pop shake transform
@@ -189,7 +190,9 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
         // Calculate position (center of screen, offset up from center)
         String text = Objects.requireNonNull(notif.text, "text");
-        int textWidth = font.width(text);
+        int maxWidth = Math.max(0, UIScaleManager.getSafeWidth() - UIScaleManager.scale(16));
+        String display = truncateToWidth(font, text, maxWidth);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, display);
         float x = screenWidth / 2f;
         float y = screenHeight / 3f + offsetY;
 
@@ -204,24 +207,25 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
             int glowColor = OverlayTheme.withAlpha(notif.color, glowAlpha);
             for (int i = 3; i >= 1; i--) {
                 int offset = i * 2;
-                graphics.drawString(font, text, -textWidth / 2 - offset, -offset, glowColor, false);
-                graphics.drawString(font, text, -textWidth / 2 + offset, -offset, glowColor, false);
-                graphics.drawString(font, text, -textWidth / 2 - offset, offset, glowColor, false);
-                graphics.drawString(font, text, -textWidth / 2 + offset, offset, glowColor, false);
+                UIScaleManager.drawScaledString(graphics, font, display, -textWidth / 2 - offset, -offset, glowColor, false);
+                UIScaleManager.drawScaledString(graphics, font, display, -textWidth / 2 + offset, -offset, glowColor, false);
+                UIScaleManager.drawScaledString(graphics, font, display, -textWidth / 2 - offset, offset, glowColor, false);
+                UIScaleManager.drawScaledString(graphics, font, display, -textWidth / 2 + offset, offset, glowColor, false);
             }
         }
 
         // Draw main text
         int textAlpha = (int) (alpha * 255);
         int textColor = OverlayTheme.withAlpha(notif.color, textAlpha);
-        graphics.drawString(font, text, -textWidth / 2, 0, textColor, true);
+        UIScaleManager.drawScaledString(graphics, font, display, -textWidth / 2, 0, textColor, true);
 
         // Draw style bonus below
         String bonusText = "+" + notif.styleBonus + " STYLE";
-        int bonusWidth = font.width(bonusText);
+        bonusText = truncateToWidth(font, bonusText, maxWidth);
+        int bonusWidth = UIScaleManager.getScaledStringWidth(font, bonusText);
         int bonusAlpha = (int) (alpha * 200);
         int bonusColor = OverlayTheme.withAlpha(OverlayTheme.Text.PRIMARY, bonusAlpha);
-        graphics.drawString(font, bonusText, -bonusWidth / 2, 15, bonusColor, false);
+        UIScaleManager.drawScaledString(graphics, font, bonusText, -bonusWidth / 2, UIScaleManager.scale(15), bonusColor, false);
 
         graphics.pose().popPose();
     }
@@ -242,6 +246,19 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
             shakeOffsetY = 0;
             shakeIntensity = 0;
         }
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 
     /**

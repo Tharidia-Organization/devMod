@@ -139,10 +139,11 @@ public class WISOverlayHandler {
      * Force open the debrief screen immediately.
      */
     public static void openDebriefScreenNow() {
-        Minecraft mc = Minecraft.getInstance();
         WaveTelemetryCollector collector = ensureCollectorAvailable();
         if (collector != null) {
-            mc.setScreen(new DebriefScreen(collector));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "debrief",
+                () -> new DebriefScreen(collector));
         }
     }
 
@@ -194,7 +195,9 @@ public class WISOverlayHandler {
         }
 
         if (canOpen && collector != null) {
-            mc.setScreen(new DebriefScreen(collector));
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "debrief",
+                () -> new DebriefScreen(collector));
             pendingDebriefOpen = false;
             pendingDebriefRequestedAt = 0L;
         }

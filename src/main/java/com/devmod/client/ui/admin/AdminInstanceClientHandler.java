@@ -31,9 +31,13 @@ public final class AdminInstanceClientHandler {
         }
 
         // If no screen is open or a different screen is open, open the admin screen
-        AdminInstanceScreen newScreen = new AdminInstanceScreen();
-        mc.setScreen(newScreen);
-        newScreen.applySync(payload);
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "admin_instance",
+            () -> {
+                AdminInstanceScreen newScreen = new AdminInstanceScreen();
+                newScreen.applySync(payload);
+                return newScreen;
+            });
     }
 
     /**
@@ -42,7 +46,9 @@ public final class AdminInstanceClientHandler {
     public static void openScreen() {
         Minecraft mc = Minecraft.getInstance();
         if (!(mc.screen instanceof AdminInstanceScreen)) {
-            mc.setScreen(new AdminInstanceScreen());
+            com.devmod.client.ui.ScreenSafety.openSafe(
+                "admin_instance",
+                AdminInstanceScreen::new);
         }
     }
 }

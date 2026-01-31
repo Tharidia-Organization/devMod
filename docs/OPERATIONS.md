@@ -1,6 +1,6 @@
 # Operations e Tooling
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 ## Telemetry
 
@@ -17,10 +17,10 @@ Comandi:
 - `devmod dashboard stop`
 - `devmod dashboard status`
 
-API:
+Endpoint:
 
-- Base URL: `http://127.0.0.1:8642`
-- Spec completa: `docs/TELEMETRY_DASHBOARD_API.md`
+- Base URL: `http://127.0.0.1:8642/dashboard`
+- API: vedere `docs/TELEMETRY_DASHBOARD_API.md`
 
 ## Admin Panel (Mailbox)
 

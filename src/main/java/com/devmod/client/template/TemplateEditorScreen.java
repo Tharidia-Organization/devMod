@@ -204,11 +204,11 @@ public class TemplateEditorScreen extends Screen {
         int infoY = topPos + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.SM;
         String info = String.format("Zone: %s | Size: %dx%d | Templates: %d",
             zoneId, maxX - minX, maxZ - minZ, availableTemplates.size());
-        graphics.drawString(this.font, info, leftPos + PADDING, infoY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, this.font, info, leftPos + PADDING, infoY, DesignTokens.Text.SECONDARY, false);
 
         // Selected template info
         if (selectedTemplateId != null && !selectedTemplateId.isEmpty()) {
-            graphics.drawString(this.font, "Selected: " + selectedTemplateId,
+            UIScaleManager.drawScaledString(graphics, this.font, "Selected: " + selectedTemplateId,
                 leftPos + PADDING, infoY + DesignTokens.Spacing.SM, DesignTokens.Text.PRIMARY, false);
         }
 

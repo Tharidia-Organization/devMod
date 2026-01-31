@@ -1,6 +1,6 @@
 # Telemetry Dashboard API
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 Documento di riferimento per gli endpoint HTTP della dashboard telemetry locale.
 

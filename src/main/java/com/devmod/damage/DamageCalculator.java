@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.combat.HitHelper;
 import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.debug.DiagnosticLogger;
 import com.devmod.config.Config;
 import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.stats.ArmorStats;
@@ -117,6 +118,9 @@ public final class DamageCalculator {
         if (stats.getMagicDamageBonus() > 0) {
             damage *= (1f + stats.getMagicDamageBonus() / 100f);
         }
+
+        DiagnosticLogger.combat("damage: base=%.1f -> final=%.1f (bodyPart=%.2f, armorPen=%.1f, trueDmg=%.1f, armorRed=%.2f)",
+            baseDamage, damage, bodyPartMultiplier, armorPenBonus, trueDamagePortion, armorReduction);
 
         return new CalculationResult(damage, armorPenBonus, trueDamagePortion, armorReduction, bodyPartMultiplier);
     }

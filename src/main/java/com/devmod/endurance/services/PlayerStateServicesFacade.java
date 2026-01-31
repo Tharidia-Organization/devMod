@@ -6,15 +6,14 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.server.level.ServerPlayer;
+
 import com.devmod.endurance.EndurancePlayerStateManager;
 import com.devmod.endurance.EnduranceQuestManager.ActiveQuestSession;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.PlayerInstanceSnapshot;
 import com.devmod.runtime.PlayerInstanceState;
 import com.devmod.runtime.RecoverySystem;
-
-import net.minecraft.server.level.ServerPlayer;
-
 /**
  * Facade that unifies player state management operations.
  *

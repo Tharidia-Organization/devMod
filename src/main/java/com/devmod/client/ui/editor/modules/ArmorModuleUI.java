@@ -13,6 +13,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.components.EditorSlider;
 import com.devmod.client.ui.editor.components.EditorToggle;
@@ -702,10 +703,10 @@ public class ArmorModuleUI {
             var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
             float ehp = core.calculateEHP();
             String text = String.format("EHP: %.1fx", ehp);
-            int textWidth = font.width(Objects.requireNonNull(text, "text"));
+            int textWidth = UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(text, "text"));
             int x = bounds.x() + (bounds.width() - textWidth) / 2;
             int y = bounds.y() + TEXT_OFFSET_Y;
-            graphics.drawString(font, text, x, y, DesignTokens.Text.VALUE(), false);
+            UIScaleManager.drawScaledString(graphics, font, text, x, y, DesignTokens.Text.VALUE(), false);
         }
     }
 }

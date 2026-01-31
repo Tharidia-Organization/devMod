@@ -47,28 +47,32 @@ public class DebugNetworkHandler {
             event.registrar(DEBUG_SYNC.asString()).playToClient(
                 Objects.requireNonNull(DebugSyncPayload.TYPE),
                 Objects.requireNonNull(DebugSyncPayload.STREAM_CODEC),
-                DebugNetworkHandler::handleDebugSync
+                PayloadValidation.validated(DebugNetworkHandler::handleDebugSync,
+                    PayloadValidation.PayloadLimits.SMALL)
             );
 
             // Entity Pathing (server to client) - send path data for debug visualization
             event.registrar(ENTITY_PATHING.asString()).playToClient(
                 Objects.requireNonNull(EntityPathingPayload.TYPE),
                 Objects.requireNonNull(EntityPathingPayload.STREAM_CODEC),
-                DebugNetworkHandler::handleEntityPathing
+                PayloadValidation.validated(DebugNetworkHandler::handleEntityPathing,
+                    PayloadValidation.PayloadLimits.LARGE)
             );
 
             // Entity Scan Data (server to client) - send scanned entity data
             event.registrar(ENTITY_SCAN_DATA.asString()).playToClient(
                 Objects.requireNonNull(EntityScanDataPayload.TYPE),
                 Objects.requireNonNull(EntityScanDataPayload.STREAM_CODEC),
-                DebugNetworkHandler::handleEntityScanData
+                PayloadValidation.validated(DebugNetworkHandler::handleEntityScanData,
+                    PayloadValidation.PayloadLimits.SYNC_MEDIUM)
             );
 
             // Entity Scanner Open (server to client) - open scanner screen
             event.registrar(ENTITY_SCANNER_OPEN.asString()).playToClient(
                 Objects.requireNonNull(EntityScanDataPayload.OpenScreenPayload.TYPE),
                 Objects.requireNonNull(EntityScanDataPayload.OpenScreenPayload.STREAM_CODEC),
-                DebugNetworkHandler::handleEntityScannerOpen
+                PayloadValidation.validated(DebugNetworkHandler::handleEntityScannerOpen,
+                    PayloadValidation.PayloadLimits.SMALL)
             );
 
             LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {})",
@@ -96,10 +100,10 @@ public class DebugNetworkHandler {
                 PacketDistributor.sendToPlayer(player, new DebugSyncPayload(feature.getId(), nowEnabled));
 
                 // Send chat feedback
-                String status = nowEnabled ? "§aENABLED" : "§cDISABLED";
+                String status = nowEnabled ? "\u00A7aENABLED" : "\u00A7cDISABLED";
                 var feedback = Objects.requireNonNull(
                     net.minecraft.network.chat.Component.literal(
-                        "§7[Debug] §f" + feature.getDisplayName() + " " + status
+                        "\u00A77[Debug] \u00A7f" + feature.getDisplayName() + " " + status
                     )
                 );
                 player.sendSystemMessage(feedback);
@@ -125,7 +129,7 @@ public class DebugNetworkHandler {
             java.lang.reflect.Method method = handlerClass.getMethod("handleDebugSync", DebugSyncPayload.class);
             method.invoke(null, payload);
         } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers.
+            LOGGER.trace("[Debug] Client debug sync handler missing: {}", e.getMessage());
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client debug sync unavailable: {}", e.getMessage());
         }
@@ -144,7 +148,7 @@ public class DebugNetworkHandler {
             java.lang.reflect.Method method = handlerClass.getMethod("handleEntityPathing", EntityPathingPayload.class);
             method.invoke(null, payload);
         } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers.
+            LOGGER.trace("[Debug] Client entity pathing handler missing: {}", e.getMessage());
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client entity pathing unavailable: {}", e.getMessage());
         }
@@ -163,7 +167,7 @@ public class DebugNetworkHandler {
             java.lang.reflect.Method method = handlerClass.getMethod("handleScanData", EntityScanDataPayload.class, IPayloadContext.class);
             method.invoke(null, payload, null);
         } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers.
+            LOGGER.trace("[Debug] Client entity scan handler missing: {}", e.getMessage());
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client entity scan data unavailable: {}", e.getMessage());
         }
@@ -182,7 +186,7 @@ public class DebugNetworkHandler {
             java.lang.reflect.Method method = handlerClass.getMethod("handleOpenScreen", EntityScanDataPayload.OpenScreenPayload.class, IPayloadContext.class);
             method.invoke(null, payload, null);
         } catch (ClassNotFoundException e) {
-            // Client handler not available on dedicated servers.
+            LOGGER.trace("[Debug] Client entity scanner open handler missing: {}", e.getMessage());
         } catch (Exception e) {
             LOGGER.debug("[Debug] Client entity scanner open unavailable: {}", e.getMessage());
         }

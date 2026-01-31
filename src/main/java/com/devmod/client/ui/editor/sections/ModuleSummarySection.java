@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -67,19 +68,19 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
         // Title
         String safeTitle = Objects.requireNonNull(title, "title");
-        graphics.drawString(font, safeTitle, x + PADDING, y + 6, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeTitle, x + PADDING, y + 6, DesignTokens.Text.TITLE(), false);
 
         // Stats
         int statY = y + HEADER_HEIGHT;
         for (StatEntry stat : stats) {
             // Label
             String label = Objects.requireNonNull(stat.label, "label");
-            graphics.drawString(font, label, x + PADDING, statY + 3, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, label, x + PADDING, statY + 3, DesignTokens.Text.SECONDARY(), false);
 
             // Value (right-aligned)
             String valueStr = stat.format != null ? String.format(stat.format, stat.value) : String.valueOf(stat.value);
             Objects.requireNonNull(valueStr, "valueStr");
-            int valueWidth = font.width(valueStr);
+            int valueWidth = UIScaleManager.getScaledStringWidth(font, valueStr);
             int valueX = x + w - PADDING - valueWidth;
 
             // Source badge if present - use local capture for null safety
@@ -92,12 +93,12 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
                 graphics.fill(badgeX, badgeY, badgeX + BADGE_WIDTH, badgeY + BADGE_HEIGHT, badgeColor);
                 String badgeText = source.substring(0, Math.min(3, source.length())).toUpperCase(Locale.ROOT);
                 Objects.requireNonNull(badgeText, "badgeText");
-                int badgeTextX = badgeX + (BADGE_WIDTH - font.width(badgeText)) / 2;
-                graphics.drawString(font, badgeText, badgeTextX, badgeY + 2, DesignTokens.Text.WHITE, false);
+                int badgeTextX = badgeX + (BADGE_WIDTH - UIScaleManager.getScaledStringWidth(font, badgeText)) / 2;
+                UIScaleManager.drawScaledString(graphics, font, badgeText, badgeTextX, badgeY + 2, DesignTokens.Text.WHITE, false);
             }
 
             // Value with color
-            graphics.drawString(font, valueStr, valueX, statY + 3, stat.color, false);
+            UIScaleManager.drawScaledString(graphics, font, valueStr, valueX, statY + 3, stat.color, false);
 
             statY += LINE_HEIGHT;
         }

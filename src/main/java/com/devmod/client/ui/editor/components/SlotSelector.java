@@ -14,6 +14,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorConstants;
 import com.devmod.client.ui.editor.core.EditorSounds;
@@ -223,18 +224,18 @@ public final class SlotSelector {
                 // Show placeholder glyph when empty
                 int textColor = isSelected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
                 String placeholder = Objects.requireNonNull(placeholderFor(slotInfo), "placeholder cannot be null");
-                int textX = slotX + (slotSize - font.width(placeholder)) / 2;
-                int textY = slotY + (slotSize - font.lineHeight) / 2;
-                graphics.drawString(font, placeholder, textX, textY, textColor, false);
+                int textX = slotX + (slotSize - UIScaleManager.getScaledStringWidth(font, placeholder)) / 2;
+                int textY = slotY + (slotSize - UIScaleManager.getScaledLineHeight()) / 2;
+                UIScaleManager.drawScaledString(graphics, font, placeholder, textX, textY, textColor, false);
             }
         }
 
         // Render selected slot label below
         if (selectedIndex >= 0 && selectedIndex < slots.size()) {
             String label = Objects.requireNonNull(slots.get(selectedIndex).label(), "label cannot be null");
-            int labelX = x + (width - font.width(label)) / 2;
+            int labelX = x + (width - UIScaleManager.getScaledStringWidth(font, label)) / 2;
             int labelY = slotY + slotSize + innerPadding;
-            graphics.drawString(font, label, labelX, labelY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, label, labelX, labelY, DesignTokens.Text.SECONDARY(), false);
         }
 
         return height;

@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.aesthetic.AreaBuilderIcons;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.AreaShape;
 
 /**
@@ -43,7 +44,7 @@ public class ShapeConfigWidget extends AbstractWidget {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
 
         // Draw title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.tab.shape")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -85,10 +86,10 @@ public class ShapeConfigWidget extends AbstractWidget {
             // Draw shape name
             String name = Objects.requireNonNull(Objects.requireNonNull(
                 Component.translatable("area.shape." + shape.getSerializedName())).getString());
-            int textWidth = font.width(name);
+            int textWidth = UIScaleManager.getScaledStringWidth(font, name);
             int textX = cellX + (cellSize - textWidth) / 2;
             int textY = cellY + cellSize - 20;
-            graphics.drawString(font, name, textX, textY,
+            UIScaleManager.drawScaledString(graphics, font, name, textX, textY,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
             );
         }

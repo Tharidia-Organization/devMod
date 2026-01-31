@@ -37,9 +37,9 @@ public class ClientConfigFeedbackPayload {
 
         // Show action bar message
         if (payload.success()) {
-            String prefix = payload.isGlobal() ? "§6[GLOBAL] " : "§a[OK] ";
+            String prefix = payload.isGlobal() ? "\u00A76[GLOBAL] " : "\u00A7a[OK] ";
             player.displayClientMessage(
-                Objects.requireNonNull(Component.literal(prefix + "§f" + payload.message()), "message"),
+                Objects.requireNonNull(Component.literal(prefix + "\u00A7f" + payload.message()), "message"),
                 true
             );
 
@@ -47,7 +47,7 @@ public class ClientConfigFeedbackPayload {
             player.playSound(Objects.requireNonNull(SoundEvents.EXPERIENCE_ORB_PICKUP, "sound"), 0.5f, 1.2f);
         } else {
             player.displayClientMessage(
-                Objects.requireNonNull(Component.literal("§c[ERROR] §f" + payload.message()), "message"),
+                Objects.requireNonNull(Component.literal("\u00A7c[ERROR] \u00A7f" + payload.message()), "message"),
                 true
             );
 

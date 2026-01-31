@@ -13,13 +13,16 @@ import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.radial.RadialActionSafety;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuScaler;
 
 public final class RadialCategoryRenderer {
     private static final Splitter SPACE_SPLITTER = Splitter.on(' ');
+    private static final double MIN_LABEL_ANGLE = 0.25; // ~14deg; below this show only selected
 
     private RadialCategoryRenderer() {
         // Utility class - no instantiation
@@ -123,7 +126,8 @@ public final class RadialCategoryRenderer {
         int borderCol = selected ? cat.getColor() : RadialMenuConstants.COLOR_BORDER;
         borderCol = RadialGeometry.applyAlpha(borderCol, alphaInt);
         RadialGeometry.renderArcOutline(graphics, config.centerX, config.centerY,
-            config.outerRadius, startAngle, endAngle, borderCol, RadialMenuConstants.BORDER_WIDTH_DEFAULT);
+            config.outerRadius, startAngle, endAngle, borderCol,
+            RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_DEFAULT));
 
         // Divider line
         int dividerColor = RadialGeometry.applyAlpha(RadialMenuConstants.COLOR_BORDER, alphaInt);
@@ -140,14 +144,18 @@ public final class RadialCategoryRenderer {
 
         // Render icon
         renderCategoryIcon(graphics, safeFont, cat, iconX,
-            iconY + RadialMenuConstants.CATEGORY_ICON_OFFSET_Y, selected, alphaInt, config);
+            iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_ICON_OFFSET_Y), selected, alphaInt, config);
 
-        // Category name
+        // Category name (truncate to avoid overlap on small screens/locales)
         int textColor = selected ? RadialMenuConstants.COLOR_TEXT_PRIMARY : RadialMenuConstants.COLOR_TEXT_SECONDARY;
         textColor = RadialGeometry.applyAlpha(textColor, alphaInt);
         @Nonnull String categoryName = Objects.requireNonNull(Objects.requireNonNullElse(cat.getName(), ""), "categoryName");
-        graphics.drawCenteredString(safeFont, categoryName, iconX,
-            iconY + RadialMenuConstants.CATEGORY_LABEL_OFFSET_Y, textColor);
+        int maxLabelWidth = computeCategoryLabelWidth(config.itemRadius, segmentAngle);
+        float fontScale = resolveFontScale();
+        int maxLabelWidthFont = toFontWidth(maxLabelWidth, fontScale);
+        @Nonnull String label = Objects.requireNonNull(truncateLabel(safeFont, categoryName, maxLabelWidthFont), "label");
+        drawCenteredStringScaled(graphics, safeFont, label, iconX,
+            iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_LABEL_OFFSET_Y), textColor, fontScale);
 
         // Active items badge
         int activeCount = cat.countActiveItems();
@@ -155,8 +163,8 @@ public final class RadialCategoryRenderer {
         if (activeCount > 0 && alphaInt > badgeThreshold) { // Only show badges when mostly visible
             int badgeColor = RadialGeometry.applyAlpha(config.theme.active, alphaInt);
             renderBadge(graphics, safeFont,
-                iconX + RadialMenuConstants.CATEGORY_BADGE_OFFSET_X,
-                iconY + RadialMenuConstants.CATEGORY_BADGE_OFFSET_Y,
+                iconX + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_BADGE_OFFSET_X),
+                iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_BADGE_OFFSET_Y),
                 activeCount, badgeColor, config.pulsePhase);
         }
     }
@@ -179,11 +187,12 @@ public final class RadialCategoryRenderer {
             // Only render item stacks when mostly opaque (they don't support alpha well)
             @Nonnull ItemStack safeIconStack = Objects.requireNonNull(iconStack, "iconStack");
             graphics.renderItem(safeIconStack,
-                x + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_X,
-                y + RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_Y);
+                x + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_X),
+                y + RadialMenuScaler.scaleConstant(RadialMenuConstants.CATEGORY_ITEMSTACK_OFFSET_Y));
         } else {
             @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(cat.getIcon(), ""), "iconText");
-            graphics.drawCenteredString(safeFont, iconText, x, y, iconColor);
+            float fontScale = resolveFontScale();
+            drawCenteredStringScaled(graphics, safeFont, iconText, x, y, iconColor, fontScale);
         }
     }
 
@@ -199,15 +208,19 @@ public final class RadialCategoryRenderer {
         int badgeColor = RadialGeometry.blendColors(color, DesignTokens.Text.WHITE,
             pulse * RadialMenuConstants.BADGE_BLEND_FACTOR);
 
+        int badgeHalfWidth = RadialMenuScaler.scaleConstant(RadialMenuConstants.BADGE_HALF_WIDTH);
+        int badgeTopOffset = RadialMenuScaler.scaleConstant(RadialMenuConstants.BADGE_TOP_OFFSET);
+        int badgeBottomOffset = RadialMenuScaler.scaleConstant(RadialMenuConstants.BADGE_BOTTOM_OFFSET);
         graphics.fill(
-            x - RadialMenuConstants.BADGE_HALF_WIDTH,
-            y + RadialMenuConstants.BADGE_TOP_OFFSET,
-            x + RadialMenuConstants.BADGE_HALF_WIDTH,
-            y + RadialMenuConstants.BADGE_BOTTOM_OFFSET,
+            x - badgeHalfWidth,
+            y + badgeTopOffset,
+            x + badgeHalfWidth,
+            y + badgeBottomOffset,
             RadialMenuConstants.BADGE_BG_COLOR);
         @Nonnull String countText = Objects.requireNonNull(String.valueOf(count), "countText");
-        graphics.drawCenteredString(safeFont, countText, x,
-            y + RadialMenuConstants.BADGE_TEXT_OFFSET_Y, badgeColor);
+        float fontScale = resolveFontScale();
+        drawCenteredStringScaled(graphics, safeFont, countText, x,
+            y + RadialMenuScaler.scaleConstant(RadialMenuConstants.BADGE_TEXT_OFFSET_Y), badgeColor, fontScale);
     }
 
     /**
@@ -222,15 +235,16 @@ public final class RadialCategoryRenderer {
     public static void renderRingBorders(GuiGraphics graphics,
                                           int centerX, int centerY,
                                           int innerRadius, int outerRadius) {
+        int borderThickness = RadialMenuScaler.scaleConstant(RadialMenuConstants.RING_BORDER_THICKNESS);
         // Inner ring border
         RadialGeometry.renderRing(graphics, centerX, centerY,
-            innerRadius - RadialMenuConstants.RING_BORDER_THICKNESS,
+            innerRadius - borderThickness,
             innerRadius, RadialMenuConstants.COLOR_INNER_RING);
 
         // Outer ring border
         RadialGeometry.renderRing(graphics, centerX, centerY,
             outerRadius,
-            outerRadius + RadialMenuConstants.RING_BORDER_THICKNESS,
+            outerRadius + borderThickness,
             RadialMenuConstants.COLOR_DIVIDER);
     }
 
@@ -293,8 +307,8 @@ public final class RadialCategoryRenderer {
         double catStartAngle = startOffset + (config.selectedCategoryIndex - 0.5) * segmentAngle;
         double itemAngleStep = segmentAngle / numItems;
 
-        int baseRadius = config.outerRadius + RadialMenuConstants.ITEM_RING_OFFSET;
-        int itemSize = RadialMenuConstants.ITEM_BASE_SIZE;
+        int baseRadius = config.outerRadius + RadialMenuScaler.getItemRingOffset();
+        int itemSize = RadialMenuScaler.getItemSize();
 
         for (int i = 0; i < numItems; i++) {
             RadialMenuItem item = visibleItems.get(i);
@@ -321,12 +335,14 @@ public final class RadialCategoryRenderer {
         double itemAngle = catStartAngle + (index + 0.5) * itemAngleStep;
 
         // Position with slight expansion on hover
+        int hoverOffset = RadialMenuScaler.getItemHoverOffset();
         int itemX = (int) (config.centerX + Math.cos(itemAngle) *
-            (baseRadius + RadialMenuConstants.ITEM_HOVER_OFFSET * itemAnim));
+            (baseRadius + hoverOffset * itemAnim));
         int itemY = (int) (config.centerY + Math.sin(itemAngle) *
-            (baseRadius + RadialMenuConstants.ITEM_HOVER_OFFSET * itemAnim));
+            (baseRadius + hoverOffset * itemAnim));
 
-        int itemRadiusSize = itemSize + (int) (RadialMenuConstants.ITEM_HOVER_SIZE_BONUS * itemAnim);
+        int hoverSizeBonus = RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_HOVER_SIZE_BONUS);
+        int itemRadiusSize = itemSize + (int) (hoverSizeBonus * itemAnim);
 
         // Background
         int bgColor = itemSelected
@@ -351,8 +367,8 @@ public final class RadialCategoryRenderer {
                 RadialMenuConstants.ITEM_DISABLED_BLEND);
         }
         int borderWidth = itemSelected
-            ? RadialMenuConstants.BORDER_WIDTH_SELECTED
-            : RadialMenuConstants.BORDER_WIDTH_DEFAULT;
+            ? RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_SELECTED)
+            : RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_DEFAULT);
         RadialGeometry.renderRing(graphics, itemX, itemY,
             itemRadiusSize - borderWidth, itemRadiusSize, borderColor);
 
@@ -371,8 +387,10 @@ public final class RadialCategoryRenderer {
         // Icon
         renderItemIcon(graphics, safeFont, item, itemX, itemY, itemSelected, canExecute, config.theme);
 
-        // Name (truncated if needed)
-        renderItemName(graphics, safeFont, item, itemX, itemY, itemSelected, isActive, canExecute, config.theme);
+        // Name (truncate to avoid overlap with adjacent items)
+        int maxNameWidth = computeItemNameWidth(baseRadius, itemAngleStep);
+        renderItemName(graphics, safeFont, item, itemX, itemY, config.centerX, config.centerY,
+            itemRadiusSize, itemAngleStep, itemSelected, isActive, canExecute, config.theme, maxNameWidth);
 
         // Toggle status indicator
         renderItemStatus(graphics, safeFont, item, itemX, itemY, isActive, canExecute, config.theme);
@@ -394,16 +412,17 @@ public final class RadialCategoryRenderer {
         ItemStack iconStack = Objects.requireNonNullElse(item.getIconStack(), ItemStack.EMPTY);
         if (!iconStack.isEmpty()) {
             graphics.renderItem(iconStack,
-                x + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_X,
-                y + RadialMenuConstants.ITEM_ICON_STACK_OFFSET_Y);
+                x + RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_ICON_STACK_OFFSET_X),
+                y + RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_ICON_STACK_OFFSET_Y));
         } else {
             int iconColor = selected ? theme.textPrimary : theme.textSecondary;
             if (!canExecute) {
                 iconColor = RadialMenuConstants.COLOR_INACTIVE;
             }
             @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(item.getIconEmoji(), ""), "iconText");
-            graphics.drawCenteredString(safeFont, iconText, x,
-                y + RadialMenuConstants.ITEM_ICON_TEXT_OFFSET_Y, iconColor);
+            float fontScale = resolveFontScale();
+            drawCenteredStringScaled(graphics, safeFont, iconText, x,
+                y + RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_ICON_TEXT_OFFSET_Y), iconColor, fontScale);
         }
     }
 
@@ -412,13 +431,63 @@ public final class RadialCategoryRenderer {
      */
     private static void renderItemName(GuiGraphics graphics, @Nonnull Font font,
                                          RadialMenuItem item, int x, int y,
-                                         boolean selected, boolean isActive, boolean canExecute,
-                                         RadialMenuConfig.ColorTheme theme) {
+                                         int centerX, int centerY, int itemRadiusSize,
+                                         double itemAngleStep, boolean selected, boolean isActive, boolean canExecute,
+                                         RadialMenuConfig.ColorTheme theme, int maxWidth) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         @Nonnull String name = Objects.requireNonNull(Objects.requireNonNullElse(item.getName(), ""), "name");
-        int maxWidth = RadialMenuConstants.ITEM_NAME_MAX_WIDTH;
+        int resolvedMaxWidth = Math.max(RadialMenuScaler.scaleConstant(24), maxWidth);
+        if (selected) {
+            resolvedMaxWidth = Math.max(resolvedMaxWidth,
+                RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_NAME_MAX_WIDTH * 2));
+        }
+        float fontScale = resolveFontScale();
 
-        java.util.List<String> lines = splitNameLines(safeFont, name, maxWidth);
+        if (!selected) {
+            double minAngle = MIN_LABEL_ANGLE / Math.max(0.85, RadialMenuScaler.getScaleFactor());
+            boolean denseLayout = itemAngleStep < minAngle;
+            if (!RadialMenuScaler.showDetailedLabels() || denseLayout) {
+                return;
+            }
+        }
+
+        int dx = x - centerX;
+        int dy = y - centerY;
+        float len = (float) Math.sqrt(dx * dx + dy * dy);
+        if (len <= 0.5f) {
+            return;
+        }
+        float nx = dx / len;
+        float ny = dy / len;
+        int lineHeight = scaledLineHeight(safeFont, fontScale);
+        int radialPadding = Math.max(RadialMenuScaler.scaleConstant(4), Math.round(lineHeight * 0.2f));
+        float radialOffset = itemRadiusSize + radialPadding + (lineHeight / 2f);
+        int anchorX = Math.round(x + nx * radialOffset);
+        int anchorY = Math.round(y + ny * radialOffset);
+
+        int alignMode = Math.abs(nx) < 0.25f ? 0 : (nx > 0f ? 1 : -1);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        int availableWidth;
+        if (alignMode > 0) {
+            availableWidth = Math.max(0, safeRight - anchorX);
+        } else if (alignMode < 0) {
+            availableWidth = Math.max(0, anchorX - safeLeft);
+        } else {
+            availableWidth = Math.max(0, Math.min(anchorX - safeLeft, safeRight - anchorX) * 2);
+        }
+        int effectiveMaxWidth = Math.min(resolvedMaxWidth, availableWidth);
+        if (effectiveMaxWidth <= 0) {
+            return;
+        }
+        int maxWidthFont = toFontWidth(effectiveMaxWidth, fontScale);
+        java.util.List<String> lines = splitNameLines(safeFont, name, maxWidthFont);
+        if (lines.isEmpty()) {
+            return;
+        }
+
         int nameColor = selected
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
@@ -426,19 +495,64 @@ public final class RadialCategoryRenderer {
             nameColor = RadialMenuConstants.COLOR_INACTIVE;
         }
         @Nonnull String line0 = Objects.requireNonNull(lines.get(0), "line0");
+        int totalHeight = lineHeight * lines.size();
+
+        int maxLineWidth = 0;
+        for (String line : lines) {
+            if (line == null) {
+                continue;
+            }
+            maxLineWidth = Math.max(maxLineWidth, scaledWidth(safeFont, line, fontScale));
+        }
+
+        int labelX;
+        if (alignMode > 0) {
+            int minX = safeLeft;
+            int maxX = safeRight - maxLineWidth;
+            labelX = maxX < minX ? clamp(anchorX, safeLeft, safeRight) : clamp(anchorX, minX, maxX);
+        } else if (alignMode < 0) {
+            int minX = safeLeft + maxLineWidth;
+            int maxX = safeRight;
+            labelX = maxX < minX ? clamp(anchorX, safeLeft, safeRight) : clamp(anchorX, minX, maxX);
+        } else {
+            int halfWidth = Math.max(1, maxLineWidth / 2);
+            int minX = safeLeft + halfWidth;
+            int maxX = safeRight - halfWidth;
+            labelX = maxX < minX ? clamp(anchorX, safeLeft, safeRight) : clamp(anchorX, minX, maxX);
+        }
+
+        int labelY = clamp(anchorY - (totalHeight / 2), safeTop, safeBottom - totalHeight);
         if (lines.size() == 1) {
-            graphics.drawCenteredString(safeFont, line0, x,
-                y + RadialMenuConstants.ITEM_NAME_OFFSET_Y, nameColor);
+            if (alignMode == 0) {
+                drawCenteredStringScaled(graphics, safeFont, line0, labelX, labelY, nameColor, fontScale);
+            } else if (alignMode > 0) {
+                drawStringScaled(graphics, safeFont, line0, labelX, labelY, nameColor, fontScale);
+            } else {
+                int lineWidth = scaledWidth(safeFont, line0, fontScale);
+                drawStringScaled(graphics, safeFont, line0, labelX - lineWidth, labelY, nameColor, fontScale);
+            }
             return;
         }
 
-        int lineHeight = safeFont.lineHeight;
-        int line1Y = y + RadialMenuConstants.ITEM_NAME_OFFSET_Y - (lineHeight / 2);
+        int line1Y = labelY;
         int line2Y = line1Y + lineHeight;
         @Nonnull String line1 = line0;
         @Nonnull String line2 = Objects.requireNonNull(lines.get(1), "line2");
-        graphics.drawCenteredString(safeFont, line1, x, line1Y, nameColor);
-        graphics.drawCenteredString(safeFont, line2, x, line2Y, nameColor);
+        if (alignMode == 0) {
+            drawCenteredStringScaled(graphics, safeFont, line1, labelX, line1Y, nameColor, fontScale);
+            drawCenteredStringScaled(graphics, safeFont, line2, labelX, line2Y, nameColor, fontScale);
+            return;
+        }
+
+        int line1Width = scaledWidth(safeFont, line1, fontScale);
+        int line2Width = scaledWidth(safeFont, line2, fontScale);
+        if (alignMode > 0) {
+            drawStringScaled(graphics, safeFont, line1, labelX, line1Y, nameColor, fontScale);
+            drawStringScaled(graphics, safeFont, line2, labelX, line2Y, nameColor, fontScale);
+        } else {
+            drawStringScaled(graphics, safeFont, line1, labelX - line1Width, line1Y, nameColor, fontScale);
+            drawStringScaled(graphics, safeFont, line2, labelX - line2Width, line2Y, nameColor, fontScale);
+        }
     }
 
     private static java.util.List<String> splitNameLines(@Nonnull Font font, @Nonnull String name, int maxWidth) {
@@ -485,6 +599,35 @@ public final class RadialCategoryRenderer {
         return trimmed + ellipsis;
     }
 
+    private static int computeCategoryLabelWidth(int itemRadius, double segmentAngle) {
+        int arcWidth = (int) Math.floor(itemRadius * segmentAngle);
+        int minWidth = RadialMenuScaler.scaleConstant(36);
+        int maxWidth = RadialMenuScaler.scaleConstant(90);
+        int preferred = (int) (arcWidth * 0.75f);
+        return Math.max(minWidth, Math.min(preferred, maxWidth));
+    }
+
+    private static int computeItemNameWidth(int baseRadius, double itemAngleStep) {
+        int arcWidth = (int) Math.floor(baseRadius * itemAngleStep);
+        int preferred = (int) (arcWidth * 0.8f);
+        int baseMax = RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_NAME_MAX_WIDTH);
+        int minWidth = RadialMenuScaler.scaleConstant(24);
+        return Math.max(minWidth, Math.min(preferred, baseMax));
+    }
+
+    private static String truncateLabel(@Nonnull Font font, @Nonnull String label, int maxWidth) {
+        if (font.width(label) <= maxWidth) {
+            return label;
+        }
+        String trimmed = label;
+        String ellipsis = "...";
+        int minChars = Math.min(4, trimmed.length());
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
+    }
+
     private static String joinWords(String[] words, int start, int end) {
         StringBuilder builder = new StringBuilder();
         for (int i = start; i <= end; i++) {
@@ -496,6 +639,58 @@ public final class RadialCategoryRenderer {
         return builder.toString();
     }
 
+    private static float resolveFontScale() {
+        float scale = RadialMenuScaler.getFontScale();
+        return scale > 0f ? scale : 1f;
+    }
+
+    private static int toFontWidth(int width, float scale) {
+        if (scale <= 0f) {
+            return width;
+        }
+        return Math.max(0, Math.round(width / scale));
+    }
+
+    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+                                                  int x, int y, int color, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            graphics.drawCenteredString(font, text, x, y, color);
+            return;
+        }
+        float inv = 1f / scale;
+        graphics.pose().pushPose();
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawCenteredString(font, text, Math.round(x * inv), Math.round(y * inv), color);
+        graphics.pose().popPose();
+    }
+
+    private static int scaledLineHeight(Font font, float scale) {
+        return Math.max(1, Math.round(font.lineHeight * scale));
+    }
+
+    private static int scaledWidth(Font font, String text, float scale) {
+        return Math.round(font.width(text) * scale);
+    }
+
+    private static void drawStringScaled(GuiGraphics graphics, Font font, String text,
+                                          int x, int y, int color, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            graphics.drawString(font, text, x, y, color, false);
+            return;
+        }
+        float inv = 1f / scale;
+        graphics.pose().pushPose();
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawString(font, text, Math.round(x * inv), Math.round(y * inv), color, false);
+        graphics.pose().popPose();
+    }
+
+    private static int clamp(int value, int min, int max) {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+
     /**
      * Renders an item's status indicator (ON/OFF or subcategory arrow).
      */
@@ -503,36 +698,41 @@ public final class RadialCategoryRenderer {
                                           RadialMenuItem item, int x, int y,
                                           boolean isActive, boolean canExecute, RadialMenuConfig.ColorTheme theme) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
+        int statusOffsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_STATUS_OFFSET_Y);
         if (item.isToggle()) {
             @Nonnull String status = isActive ? "ON" : "OFF";
             int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
             if (!canExecute) {
                 statusColor = RadialMenuConstants.COLOR_INACTIVE;
             }
-            graphics.drawCenteredString(safeFont, status, x,
-                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, statusColor);
+            float fontScale = resolveFontScale();
+            drawCenteredStringScaled(graphics, safeFont, status, x,
+                y + statusOffsetY, statusColor, fontScale);
         } else if (item.isSubcategoryLink()) {
             @Nonnull String indicator = ">";
             int indicatorColor = canExecute ? theme.textSecondary : RadialMenuConstants.COLOR_INACTIVE;
-            graphics.drawCenteredString(safeFont, indicator, x,
-                y + RadialMenuConstants.ITEM_STATUS_OFFSET_Y, indicatorColor);
+            float fontScale = resolveFontScale();
+            drawCenteredStringScaled(graphics, safeFont, indicator, x,
+                y + statusOffsetY, indicatorColor, fontScale);
         }
     }
 
     private static void renderRiskBadge(GuiGraphics graphics, @Nonnull Font font, int x, int y,
                                          RadialActionSafety.RiskLevel riskLevel) {
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
-        int badgeX = x + RadialMenuConstants.RISK_BADGE_OFFSET_X;
-        int badgeY = y + RadialMenuConstants.RISK_BADGE_OFFSET_Y;
+        int badgeX = x + RadialMenuScaler.scaleConstant(RadialMenuConstants.RISK_BADGE_OFFSET_X);
+        int badgeY = y + RadialMenuScaler.scaleConstant(RadialMenuConstants.RISK_BADGE_OFFSET_Y);
         int badgeColor = riskLevel == RadialActionSafety.RiskLevel.DANGER
             ? RadialMenuConstants.RISK_BADGE_DANGER_COLOR
             : RadialMenuConstants.RISK_BADGE_CAUTION_COLOR;
         String badgeText = riskLevel == RadialActionSafety.RiskLevel.DANGER ? "!" : "?";
 
-        RadialGeometry.renderCircle(graphics, badgeX, badgeY, RadialMenuConstants.RISK_BADGE_RADIUS,
+        RadialGeometry.renderCircle(graphics, badgeX, badgeY,
+            RadialMenuScaler.scaleConstant(RadialMenuConstants.RISK_BADGE_RADIUS),
             RadialMenuConstants.RISK_BADGE_BG_COLOR);
-        graphics.drawCenteredString(safeFont, badgeText, badgeX,
-            badgeY + RadialMenuConstants.RISK_BADGE_TEXT_OFFSET_Y, badgeColor);
+        float fontScale = resolveFontScale();
+        drawCenteredStringScaled(graphics, safeFont, badgeText, badgeX,
+            badgeY + RadialMenuScaler.scaleConstant(RadialMenuConstants.RISK_BADGE_TEXT_OFFSET_Y), badgeColor, fontScale);
     }
 
     // ================================================================
@@ -570,7 +770,7 @@ public final class RadialCategoryRenderer {
         int glowX = (int) (centerX + Math.cos(midAngle) * itemRadius);
         int glowY = (int) (centerY + Math.sin(midAngle) * itemRadius);
 
-        int glowRadius = (int) (RadialMenuConstants.CATEGORY_GLOW_RADIUS * anim);
+        int glowRadius = (int) (RadialMenuScaler.getCategoryGlowRadius() * anim);
         int glowAlpha = (int) (RadialMenuConstants.CATEGORY_GLOW_ALPHA * anim);
         int glowColorVal = (cat.getColor() & DesignTokens.Mask.RGB) | (glowAlpha << 24);
         RadialGeometry.renderRadialGradient(graphics, glowX, glowY, glowRadius, glowColorVal, DesignTokens.Mask.NONE);

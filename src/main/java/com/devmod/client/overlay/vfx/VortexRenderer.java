@@ -15,7 +15,17 @@ import com.devmod.DevMod;
 import com.devmod.client.rendering.TrigCache;
 import com.devmod.client.rendering.shader.VFXShaderRegistry;
 
-import static com.devmod.client.overlay.vfx.ImpactVFXConstants.*;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.COLOR_CORE_GLOW;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.COLOR_CORE_PRIMARY;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.COLOR_CORE_SECONDARY;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.TWO_PI;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_BASE_RADIUS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_RAY_COUNT;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_RING_COUNT;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_RING_SEGMENTS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_SPIRAL_ROTATIONS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.VORTEX_SPIRAL_SEGMENTS;
+import static com.devmod.client.overlay.vfx.ImpactVFXConstants.extractRGB;
 
 /**
  * Renders the energy vortex effect for impacts.

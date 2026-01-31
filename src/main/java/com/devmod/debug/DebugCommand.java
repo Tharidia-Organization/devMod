@@ -128,16 +128,16 @@ public class DebugCommand {
 
     private static int showHelp(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
-        source.sendSuccess(() -> Component.literal("§e=== DevMod Debug System ==="), false);
-        source.sendSuccess(() -> Component.literal("§7/devdebug <feature> §f- Toggle a debug feature"), false);
-        source.sendSuccess(() -> Component.literal("§7/devdebug list §f- Show all features and status"), false);
-        source.sendSuccess(() -> Component.literal("§7/devdebug off §f- Disable all features"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== DevMod Debug System ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devdebug <feature> \u00A7f- Toggle a debug feature"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devdebug list \u00A7f- Show all features and status"), false);
+        source.sendSuccess(() -> Component.literal("\u00A77/devdebug off \u00A7f- Disable all features"), false);
         source.sendSuccess(() -> Component.literal(""), false);
-        source.sendSuccess(() -> Component.literal("§eAvailable features:"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7eAvailable features:"), false);
 
         for (DebugFeature feature : DebugFeature.values()) {
             source.sendSuccess(() -> Component.literal(
-                "§7- §f" + feature.getId() + " §8(" + feature.getDisplayName() + ")"
+                "\u00A77- \u00A7f" + feature.getId() + " \u00A78(" + feature.getDisplayName() + ")"
             ), false);
         }
 
@@ -154,21 +154,21 @@ public class DebugCommand {
 
         Set<DebugFeature> enabled = DebugManager.INSTANCE.getEnabledFeatures(player);
 
-        source.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Debug Features Status ===")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7e=== Debug Features Status ===")), false);
 
         for (DebugFeature feature : DebugFeature.values()) {
             boolean isEnabled = enabled.contains(feature);
-            String status = isEnabled ? "§a[ON]" : "§c[OFF]";
+            String status = isEnabled ? "\u00A7a[ON]" : "\u00A7c[OFF]";
             String featureName = feature.getDisplayName();
             String description = feature.getDescription();
 
             source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
-                status + " §f" + featureName + " §8- " + description
+                status + " \u00A7f" + featureName + " \u00A78- " + description
             )), false);
         }
 
         source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
-            "§7Active features: §f" + enabled.size() + "/" + DebugFeature.values().length
+            "\u00A77Active features: \u00A7f" + enabled.size() + "/" + DebugFeature.values().length
         )), false);
 
         return 1;
@@ -206,15 +206,15 @@ public class DebugCommand {
         // IMPORTANT: Send sync packet to client to update DebugRenderBools
         PacketDistributor.sendToPlayer(player, new DebugSyncPayload(feature.getId(), nowEnabled));
 
-        String status = nowEnabled ? "§aENABLED" : "§cDISABLED";
+        String status = nowEnabled ? "\u00A7aENABLED" : "\u00A7cDISABLED";
         final DebugFeature finalFeature = feature;
         source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
-            "§7[Debug] §f" + finalFeature.getDisplayName() + " " + status
+            "\u00A77[Debug] \u00A7f" + finalFeature.getDisplayName() + " " + status
         )), false);
 
         if (nowEnabled) {
             source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
-                "§8" + finalFeature.getDescription()
+                "\u00A78" + finalFeature.getDescription()
             )), false);
         }
 
@@ -239,7 +239,7 @@ public class DebugCommand {
         }
 
         source.sendSuccess(() -> Objects.requireNonNull(Component.literal(
-            "§7[Debug] §cDisabled all " + count + " debug features"
+            "\u00A77[Debug] \u00A7cDisabled all " + count + " debug features"
         )), false);
 
         return 1;
@@ -266,14 +266,14 @@ public class DebugCommand {
     private static int runBiomeDiagnostics(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
 
-        source.sendSuccess(() -> Component.literal("§e=== Biome Matching Diagnostics ==="), false);
-        source.sendSuccess(() -> Component.literal("§7Testing against registered mob entities..."), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== Biome Matching Diagnostics ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77Testing against registered mob entities..."), false);
 
         BiomePolicyResolver.DiagnosticSummary summary = BiomePolicyResolver.runDiagnostics();
 
         // Summary stats
         String statsLine = String.format(
-            "§7Total mobs: §f%d §7| Matched: §a%d §7| Unmatched (plains): §c%d",
+            "\u00A77Total mobs: \u00A7f%d \u00A77| Matched: \u00A7a%d \u00A77| Unmatched (plains): \u00A7c%d",
             summary.totalMobs(), summary.matchedMobs(), summary.unmatchedMobs());
         source.sendSuccess(() -> Component.literal(Objects.requireNonNull(statsLine)), false);
 
@@ -282,14 +282,14 @@ public class DebugCommand {
         var results = summary.results();
         if (!results.isEmpty()) {
             source.sendSuccess(() -> Component.literal(""), false);
-            source.sendSuccess(() -> Component.literal("§eMatched mobs:"), false);
+            source.sendSuccess(() -> Component.literal("\u00A7eMatched mobs:"), false);
 
             int shown = 0;
             for (var result : results) {
                 if (shown >= showLimit) {
                     int remaining = results.size() - showLimit;
                     source.sendSuccess(() -> Component.literal(
-                        "§8... and " + remaining + " more"
+                        "\u00A78... and " + remaining + " more"
                     ), false);
                     break;
                 }
@@ -298,7 +298,7 @@ public class DebugCommand {
                     ? assignedBiome.location().getPath()
                     : "plains";
                 String line = String.format(
-                    "  §7%s §8→ §f%s §8(keyword: %s)",
+                    "  \u00A77%s \u00A78→ \u00A7f%s \u00A78(keyword: %s)",
                     result.mobId(), biome, result.matchedKeyword());
                 source.sendSuccess(() -> Component.literal(Objects.requireNonNull(line)), false);
                 shown++;
@@ -309,16 +309,16 @@ public class DebugCommand {
         var issues = summary.potentialIssues();
         if (!issues.isEmpty()) {
             source.sendSuccess(() -> Component.literal(""), false);
-            source.sendSuccess(() -> Component.literal("§6⚠ Keywords with many matches:"), false);
+            source.sendSuccess(() -> Component.literal("\u00A76⚠ Keywords with many matches:"), false);
             for (String issue : issues) {
-                source.sendSuccess(() -> Component.literal("  §7- " + issue), false);
+                source.sendSuccess(() -> Component.literal("  \u00A77- " + issue), false);
             }
         }
 
         // Keywords info
         source.sendSuccess(() -> Component.literal(""), false);
         source.sendSuccess(() -> Component.literal(
-            "§7Registered keywords: §f" + BiomePolicyResolver.getRegisteredKeywords().size()
+            "\u00A77Registered keywords: \u00A7f" + BiomePolicyResolver.getRegisteredKeywords().size()
         ), false);
 
         return 1;
@@ -332,8 +332,8 @@ public class DebugCommand {
         CommandSourceStack source = context.getSource();
         String filter = StringArgumentType.getString(context, "filter").toLowerCase(Locale.ROOT);
 
-        source.sendSuccess(() -> Component.literal("§e=== Biome Matching Diagnostics ==="), false);
-        source.sendSuccess(() -> Component.literal("§7Filter: §f\"" + filter + "\""), false);
+        source.sendSuccess(() -> Component.literal("\u00A7e=== Biome Matching Diagnostics ==="), false);
+        source.sendSuccess(() -> Component.literal("\u00A77Filter: \u00A7f\"" + filter + "\""), false);
 
         BiomePolicyResolver.DiagnosticSummary summary = BiomePolicyResolver.runDiagnostics();
 
@@ -346,26 +346,26 @@ public class DebugCommand {
 
         // Summary stats
         String statsLine = String.format(
-            "§7Showing: §f%d §7of %d matched mobs",
+            "\u00A77Showing: \u00A7f%d \u00A77of %d matched mobs",
             filteredResults.size(), summary.matchedMobs());
         source.sendSuccess(() -> Component.literal(Objects.requireNonNull(statsLine)), false);
 
         if (filteredResults.isEmpty()) {
-            // UX: Yellow (§6) not red - empty search is informational, not an error
-            source.sendSuccess(() -> Component.literal("§6No matches for filter \"" + filter + "\""), false);
+            // UX: Yellow (\u00A76) not red - empty search is informational, not an error
+            source.sendSuccess(() -> Component.literal("\u00A76No matches for filter \"" + filter + "\""), false);
             // UX Q6: Concrete examples are more actionable than abstract hints
-            source.sendSuccess(() -> Component.literal("§7Examples: §fzombie§7, §fdesert§7, §fnether§7, §fice"), false);
+            source.sendSuccess(() -> Component.literal("\u00A77Examples: \u00A7fzombie\u00A77, \u00A7fdesert\u00A77, \u00A7fnether\u00A77, \u00A7fice"), false);
             return 1;
         }
 
         source.sendSuccess(() -> Component.literal(""), false);
-        source.sendSuccess(() -> Component.literal("§eFiltered results:"), false);
+        source.sendSuccess(() -> Component.literal("\u00A7eFiltered results:"), false);
 
         // Show all filtered results (user explicitly filtered, so show everything)
         for (var result : filteredResults) {
             String biome = result.assignedBiome().location().getPath();
             String line = String.format(
-                "  §7%s §8→ §f%s §8(keyword: %s)",
+                "  \u00A77%s \u00A78→ \u00A7f%s \u00A78(keyword: %s)",
                 result.mobId(), biome, result.matchedKeyword());
             source.sendSuccess(() -> Component.literal(Objects.requireNonNull(line)), false);
         }

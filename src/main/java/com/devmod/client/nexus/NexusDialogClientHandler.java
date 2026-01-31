@@ -24,11 +24,13 @@ public final class NexusDialogClientHandler {
         if (mc.player == null) {
             return;
         }
-        mc.setScreen(new NexusDialogScreen(
-            payload.speakerName(),
-            payload.lines(),
-            payload.options()
-        ));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "nexus_dialog",
+            () -> new NexusDialogScreen(
+                payload.speakerName(),
+                payload.lines(),
+                payload.options()
+            ));
     }
 
     /**
@@ -42,7 +44,10 @@ public final class NexusDialogClientHandler {
         switch (payload.action()) {
             case TESTING_HUB -> ClientUiBridge.get().openTestingHub();
             case TELEMETRY_DASHBOARD -> ClientUiBridge.get().openTelemetryDashboard();
-            case LOG_VIEWER -> mc.setScreen(new TelemetryLogViewerScreen(mc.screen));
+            case LOG_VIEWER -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "telemetry_log_viewer",
+                mc.screen,
+                () -> new TelemetryLogViewerScreen(mc.screen));
         }
     }
 

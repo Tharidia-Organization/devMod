@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
 import com.devmod.client.ui.editor.core.ScaledCoord;
@@ -132,9 +133,9 @@ public final class InfoButton {
         // Draw "?" text centered
         String questionMark = "?";
         int textColor = hovered ? DesignTokens.Accent.CYAN() : DesignTokens.Text.SECONDARY();
-        int textX = x + (scaledSize - font.width(questionMark)) / 2;
-        int textY = y + (scaledSize - TEXT_HEIGHT) / 2;
-        graphics.drawString(font, questionMark, textX, textY, textColor, false);
+        int textX = x + (scaledSize - UIScaleManager.getScaledStringWidth(font, questionMark)) / 2;
+        int textY = y + (scaledSize - UIScaleManager.getScaledLineHeight()) / 2;
+        UIScaleManager.drawScaledString(graphics, font, questionMark, textX, textY, textColor, false);
 
         // Queue tooltip if hovered
         if (hovered) {

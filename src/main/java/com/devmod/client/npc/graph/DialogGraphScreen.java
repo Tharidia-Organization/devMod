@@ -3,7 +3,6 @@ package com.devmod.client.npc.graph;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -14,17 +13,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.npc.DialogEditorScreen;
 import com.devmod.client.ui.core.UIScaleManager;
+import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.npc.dialog.DialogNode;
 import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.DialogSet;
 import com.devmod.npc.dialog.action.DialogAction;
 import com.devmod.npc.network.SaveDialogPayload;
-import com.devmod.network.EditorApplyConfirmPayload;
-import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
-
 /**
  * Visual graph editor screen for dialog sets.
  * Shows nodes as boxes connected by lines, with pan/zoom navigation.
@@ -340,23 +338,23 @@ public class DialogGraphScreen extends Screen {
 
         // Zoom indicator
         String zoomText = String.format("%.0f%%", canvas.getZoom() * 100);
-        graphics.drawString(
+        UIScaleManager.drawScaledString(
+            graphics,
             font,
             zoomText,
             width - SIDE_PANEL_WIDTH - 50,
             8,
-            DesignTokens.Text.SECONDARY,
-            false
+            DesignTokens.Text.SECONDARY
         );
 
         // Title in toolbar
-        graphics.drawString(
+        UIScaleManager.drawScaledString(
+            graphics,
             font,
             dialogSet.name(),
-            width / 2 - font.width(dialogSet.name()) / 2,
+            width / 2 - UIScaleManager.getScaledStringWidth(font, dialogSet.name()) / 2,
             8,
-            COLOR_TEXT,
-            false
+            COLOR_TEXT
         );
 
         renderToolbarTooltips(graphics, mouseX, mouseY);
@@ -464,6 +462,9 @@ public class DialogGraphScreen extends Screen {
      * Opens the graph editor for a dialog set.
      */
     public static void open(@Nonnull DialogSet dialogSet, @Nullable Screen parentScreen) {
-        Minecraft.getInstance().setScreen(new DialogGraphScreen(dialogSet, parentScreen));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "dialog_graph",
+            parentScreen,
+            () -> new DialogGraphScreen(dialogSet, parentScreen));
     }
 }

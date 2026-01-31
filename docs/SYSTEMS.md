@@ -1,6 +1,6 @@
 # Sistemi DevMod
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 Questo documento descrive i principali sistemi a runtime e i moduli che compongono la mod.
 
@@ -8,18 +8,18 @@ Questo documento descrive i principali sistemi a runtime e i moduli che compongo
 
 - **Registry**: template caricati da config, validazione e snapshot (`src/main/java/com/devmod/arena/registry/`).
 - **Policy**: selezione template e scoring (`src/main/java/com/devmod/arena/policy/`).
-- **Builder**: build sync/async con controlli di budget e integrita (`src/main/java/com/devmod/arena/builder/`, `src/main/java/com/devmod/arena/validation/`).
+- **Builder**: build sync/async con controlli di budget e integrita (`src/main/java/com/devmod/arena/builder/`).
 - **Autosmoke**: test automatici per template (`src/main/java/com/devmod/arena/autosmoke/`).
-- **Telemetry**: metriche e audit di build (`src/main/java/com/devmod/arena/telemetry/`).
+- **Telemetry**: metriche e audit di build (`src/main/java/com/devmod/arena/logging/`, `src/main/java/com/devmod/arena/metrics/`).
 - **Comandi**: `/arena ...` con permessi e audit (`src/main/java/com/devmod/arena/command/`, `src/main/java/com/devmod/arena/security/`).
 
 ## Endurance Quest
 
 - **Sessioni**: gestione quest e party session (`src/main/java/com/devmod/endurance/`).
 - **Wave loop**: spawn, progressione e checkpoint (`src/main/java/com/devmod/endurance/wave/`).
-- **Perk/Reward/Shop**: progressione roguelike (`src/main/java/com/devmod/endurance/perk/`, reward, shop).
-- **Challenges/Contracts**: contenuti opzionali e sync client.
-- **Telemetry**: eventi endurance, record personali, statistiche.
+- **Perk/Reward/Shop**: progressione roguelike (`src/main/java/com/devmod/endurance/perk/`, `src/main/java/com/devmod/endurance/RewardSystem.java`).
+- **Challenges/Contracts**: contenuti opzionali e sync client (`src/main/java/com/devmod/endurance/challenges/`, `src/main/java/com/devmod/endurance/contracts/`).
+- **WIS**: Wave Intelligence System e debrief UI (`src/main/java/com/devmod/client/endurance/wis/`).
 
 ## Combat + Collision
 
@@ -28,11 +28,16 @@ Questo documento descrive i principali sistemi a runtime e i moduli che compongo
 - **Damage pipeline**: breakdown e integrazione mod (`src/main/java/com/devmod/combat/`, `src/main/java/com/devmod/damage/`).
 - **Impact HUD**: overlay con breakdown danni e history (`src/main/java/com/devmod/client/overlay/`).
 
+## Actions + Abilities
+
+- **Action registry**: azioni per radial menu e comandi (`src/main/java/com/devmod/actions/`).
+- **Abilities**: stamina, dash/dodge e payload (`src/main/java/com/devmod/abilities/`).
+
 ## Clone System
 
 - **Blocchi core**: telepad, imprinter, neurocell, neurolink, reformer, centrifuge.
 - **Macchine Clone**: pulverizer e macchine Oritech-style (blockstate + GeckoLib).
-- **Entity**: `player_clone` e logica companion.
+- **Entity**: `player_clone` e logica companion (`src/main/java/com/devmod/clone/entity/`).
 - **UI/Network**: schermate e payload dedicati.
 - **Workflow modelli**: GeckoLib (vedi `docs/CLONE_MODEL_WORKFLOW.md`).
 
@@ -43,7 +48,8 @@ Questo documento descrive i principali sistemi a runtime e i moduli che compongo
 
 ## Area Builder & Zone System
 
-- **Area Builder**: editor in-world, preview e build task (`src/main/java/com/devmod/area/`).
+- **Area Builder**: editor in-world, preview, template e build task (`src/main/java/com/devmod/area/`).
+- **Snapshot**: cattura e restore aree (`src/main/java/com/devmod/area/snapshot/`).
 - **Nexus Editor Central**: hub di gestione aree.
 - **Zone Marker**: marker item, editor e sync (`src/main/java/com/devmod/zone/`).
 
@@ -56,18 +62,19 @@ Questo documento descrive i principali sistemi a runtime e i moduli che compongo
 ## Hologram
 
 - **Projector**: block entity con scansione terreno.
-- **Rendering**: VBO e meshing per preview 3D.
+- **Rendering**: VBO/mesh per preview 3D.
 
 ## Nexus Hub
 
 - **Dimensione Nexus**: manager runtime e config (tick, rebuild, palette).
-- **Decor blocks**: palette futuristica con slab.
+- **Slot System**: hub modulare con slot e linkage ad aree (`src/main/java/com/devmod/nexus/`).
+- **Decor blocks**: palette futuristica con slab/stairs.
 
 ## Mailbox + Notification
 
 - **Mailbox**: messaggi, news, task tester, ticket.
+- **Notification Center**: routing e preferenze (`src/main/java/com/devmod/notification/`).
 - **API**: admin panel web (`src/main/java/com/devmod/mailbox/api/`).
-- **Notifiche**: centro notifiche e preferenze.
 
 ## Telemetry
 
@@ -80,7 +87,7 @@ Questo documento descrive i principali sistemi a runtime e i moduli che compongo
 - **Menu radiale**: accesso rapido a strumenti e comandi.
 - **Editor**: weapon/armor/recipe, settings unificati.
 - **Debug**: overlay, entity scanner, pathing e profiling.
-- **Testing**: hub QA + GameTest.
+- **Testing**: hub QA + GameTest (`src/main/java/com/devmod/testing/`, `src/main/java/com/devmod/gametest/`).
 
 ## Compat e Integration
 

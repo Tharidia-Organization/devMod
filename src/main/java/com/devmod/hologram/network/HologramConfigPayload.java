@@ -22,6 +22,16 @@ import com.devmod.network.PayloadValidation;
  * @param rotationEnabled Whether the hologram rotates
  * @param transparentMode Whether blocks are rendered semi-transparent
  * @param rescan Whether to trigger a mesh rebuild
+ * @param filterBitmask Bitmask of active filters
+ * @param filterHighlightOnly Whether to show only filtered blocks
+ * @param texturedMode Whether to render with real block textures
+ * @param showEntities Whether to render entities in the hologram
+ * @param fullEntityModels Whether to render full 3D entity models
+ * @param maxEntityModels Maximum number of entities to render as 3D models
+ * @param entityFilterBitmask Bitmask of active entity type filters
+ * @param ySliceEnabled Whether Y-slice mode is enabled
+ * @param ySliceLevel The Y level for the slice
+ * @param ySliceThickness The thickness of the Y-slice
  */
 public record HologramConfigPayload(
     BlockPos pos,
@@ -29,7 +39,17 @@ public record HologramConfigPayload(
     int blockSize,
     boolean rotationEnabled,
     boolean transparentMode,
-    boolean rescan
+    boolean rescan,
+    int filterBitmask,
+    boolean filterHighlightOnly,
+    boolean texturedMode,
+    boolean showEntities,
+    boolean fullEntityModels,
+    int maxEntityModels,
+    int entityFilterBitmask,
+    boolean ySliceEnabled,
+    int ySliceLevel,
+    int ySliceThickness
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     public static final Type<HologramConfigPayload> TYPE =
@@ -45,6 +65,16 @@ public record HologramConfigPayload(
         buf.writeBoolean(payload.rotationEnabled);
         buf.writeBoolean(payload.transparentMode);
         buf.writeBoolean(payload.rescan);
+        buf.writeVarInt(payload.filterBitmask);
+        buf.writeBoolean(payload.filterHighlightOnly);
+        buf.writeBoolean(payload.texturedMode);
+        buf.writeBoolean(payload.showEntities);
+        buf.writeBoolean(payload.fullEntityModels);
+        buf.writeVarInt(payload.maxEntityModels);
+        buf.writeVarInt(payload.entityFilterBitmask);
+        buf.writeBoolean(payload.ySliceEnabled);
+        buf.writeVarInt(payload.ySliceLevel);
+        buf.writeVarInt(payload.ySliceThickness);
     }
 
     private static HologramConfigPayload decode(FriendlyByteBuf buf) {
@@ -54,7 +84,17 @@ public record HologramConfigPayload(
             buf.readVarInt(),
             buf.readBoolean(),
             buf.readBoolean(),
-            buf.readBoolean()
+            buf.readBoolean(),
+            buf.readVarInt(),
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readBoolean(),
+            buf.readVarInt(),
+            buf.readVarInt(),
+            buf.readBoolean(),
+            buf.readVarInt(),
+            buf.readVarInt()
         );
     }
 
@@ -72,6 +112,16 @@ public record HologramConfigPayload(
         size += 1; // rotationEnabled
         size += 1; // transparentMode
         size += 1; // rescan
+        size += PayloadSizeUtil.varIntSize(filterBitmask);
+        size += 1; // filterHighlightOnly
+        size += 1; // texturedMode
+        size += 1; // showEntities
+        size += 1; // fullEntityModels
+        size += PayloadSizeUtil.varIntSize(maxEntityModels);
+        size += PayloadSizeUtil.varIntSize(entityFilterBitmask);
+        size += 1; // ySliceEnabled
+        size += PayloadSizeUtil.varIntSize(ySliceLevel);
+        size += PayloadSizeUtil.varIntSize(ySliceThickness);
         return PayloadSizeUtil.clampToInt(size);
     }
 }

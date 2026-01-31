@@ -89,7 +89,7 @@ public class DebugOverlaysPage implements SettingsPage {
             // ==========================================
             // Section: Minecraft Native Debug API
             // ==========================================
-            graphics.drawString(safeFont, "§6Minecraft Native Debug API", x, currentY, DesignTokens.Heatmap.LIGHT_DARK, false);
+            graphics.drawString(safeFont, "\u00A76Minecraft Native Debug API", x, currentY, DesignTokens.Heatmap.LIGHT_DARK, false);
             currentY += 14;
 
             // Entity Pathing (like DebugUtils)

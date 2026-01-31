@@ -236,35 +236,38 @@ public class ArenaPreviewRenderer {
         // Set shader
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        // Setup render state
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(515); // GL_LEQUAL
-        RenderSystem.depthMask(true);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFunc(770, 771); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
-
         // Get shader
         ShaderInstance shader = RenderSystem.getShader();
         if (shader == null) {
             return;
         }
 
-        // Build matrices
-        Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
-        modelViewMatrix.mul(poseStack.last().pose());
-        Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
+        // Setup render state
+        RenderSystem.enableDepthTest();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
 
-        // Set shader uniforms
-        shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
-        shader.PROJECTION_MATRIX.set(projectionMatrix);
-        shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, 0.9f);
+        try {
+            // Build matrices
+            Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
+            modelViewMatrix.mul(poseStack.last().pose());
+            Matrix4f projectionMatrix = RenderSystem.getProjectionMatrix();
 
-        // Draw
-        vertexBuffer.bind();
-        shader.apply();
-        vertexBuffer.draw();
-        VertexBuffer.unbind();
-        shader.clear();
+            // Set shader uniforms
+            shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
+            shader.PROJECTION_MATRIX.set(projectionMatrix);
+            shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, 0.9f);
+
+            // Draw
+            vertexBuffer.bind();
+            shader.apply();
+            vertexBuffer.draw();
+            VertexBuffer.unbind();
+            shader.clear();
+        } finally {
+            // Restore default render state
+            RenderSystem.disableBlend();
+        }
     }
 
     /**

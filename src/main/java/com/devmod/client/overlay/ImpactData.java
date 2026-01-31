@@ -422,10 +422,10 @@ public class ImpactData {
      */
     public String getBodyPartColorCode() {
         return switch (bodyPart) {
-            case HEAD -> "§b";  // Aqua/Cyan
-            case BODY -> "§a";  // Green
-            case ARMS -> "§e";  // Yellow
-            case LEGS -> "§c";  // Red
+            case HEAD -> "\u00A7b";  // Aqua/Cyan
+            case BODY -> "\u00A7a";  // Green
+            case ARMS -> "\u00A7e";  // Yellow
+            case LEGS -> "\u00A7c";  // Red
         };
     }
 

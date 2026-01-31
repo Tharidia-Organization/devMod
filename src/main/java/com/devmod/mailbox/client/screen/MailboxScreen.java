@@ -14,7 +14,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -34,7 +33,6 @@ import com.devmod.mailbox.client.MailboxUiSkin;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
 import com.devmod.mailbox.network.payload.MailboxStatusPayload;
 import com.devmod.mailbox.network.payload.MailboxSyncPayload.MailboxMessageData;
-
 /**
  * Main mailbox screen for viewing and managing messages.
  */
@@ -642,8 +640,8 @@ public class MailboxScreen extends Screen {
     }
 
     private void onComposeClicked() {
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new MailboxComposeScreen(this));
+        com.devmod.client.ui.ScreenSafety.openSafe("mailbox_compose", this,
+            () -> new MailboxComposeScreen(this));
         UiSounds.click();
     }
 
@@ -787,7 +785,6 @@ public class MailboxScreen extends Screen {
      * Open the mailbox screen.
      */
     public static void open() {
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new MailboxScreen());
+        com.devmod.client.ui.ScreenSafety.openSafe("mailbox", () -> new MailboxScreen());
     }
 }

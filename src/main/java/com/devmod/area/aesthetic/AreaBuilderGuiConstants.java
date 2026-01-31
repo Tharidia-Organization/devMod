@@ -1,5 +1,6 @@
 package com.devmod.area.aesthetic;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -234,5 +235,79 @@ public final class AreaBuilderGuiConstants {
     public static int getTabX(int tabIndex, int centerX) {
         int tabBarStart = centerX - getTabBarWidth() / 2;
         return tabBarStart + tabIndex * (TAB_WIDTH + TAB_SPACING);
+    }
+
+    // ============================================================================
+    // SCALED GETTERS (for UI responsiveness)
+    // ============================================================================
+
+    /** Scaled tab height */
+    public static int scaledTabHeight() {
+        return UIScaleManager.scale(TAB_HEIGHT);
+    }
+
+    /** Scaled tab width */
+    public static int scaledTabWidth() {
+        return UIScaleManager.scale(TAB_WIDTH);
+    }
+
+    /** Scaled tab spacing */
+    public static int scaledTabSpacing() {
+        return UIScaleManager.scale(TAB_SPACING);
+    }
+
+    /** Scaled content padding */
+    public static int scaledContentPadding() {
+        return UIScaleManager.scale(CONTENT_PADDING);
+    }
+
+    /** Scaled button width */
+    public static int scaledButtonWidth() {
+        return UIScaleManager.scale(BUTTON_WIDTH);
+    }
+
+    /** Scaled button height */
+    public static int scaledButtonHeight() {
+        return UIScaleManager.scale(BUTTON_HEIGHT);
+    }
+
+    /** Scaled button spacing */
+    public static int scaledButtonSpacing() {
+        return UIScaleManager.scale(BUTTON_SPACING);
+    }
+
+    /** Scaled field height */
+    public static int scaledFieldHeight() {
+        return UIScaleManager.scale(FIELD_HEIGHT);
+    }
+
+    /** Scaled action bar height */
+    public static int scaledActionBarHeight() {
+        return UIScaleManager.scale(ACTION_BAR_HEIGHT);
+    }
+
+    /** Scaled tab bar width */
+    public static int scaledTabBarWidth() {
+        return (scaledTabWidth() + scaledTabSpacing()) * TAB_COUNT - scaledTabSpacing();
+    }
+
+    /** Scaled list item height */
+    public static int scaledListItemHeight() {
+        return UIScaleManager.scale(LIST_ITEM_HEIGHT);
+    }
+
+    /** Scaled list item spacing */
+    public static int scaledListItemSpacing() {
+        return UIScaleManager.scale(LIST_ITEM_SPACING);
+    }
+
+    /** Scaled grid cell size */
+    public static int scaledGridCellSize() {
+        return UIScaleManager.scale(GRID_CELL_SIZE);
+    }
+
+    /** Scaled grid spacing */
+    public static int scaledGridSpacing() {
+        return UIScaleManager.scale(GRID_SPACING);
     }
 }

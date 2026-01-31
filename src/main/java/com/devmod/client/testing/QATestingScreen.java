@@ -19,18 +19,17 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionContext;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.testing.TutorialManager.TutorialStep;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.testing.TestCase;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class QATestingScreen extends Screen {
 
@@ -268,18 +267,18 @@ public class QATestingScreen extends Screen {
         int y = 70;
 
         // Instructions
-        graphics.drawCenteredString(font, "Welcome to the QA Testing Session", centerX, y, DesignTokens.Text.PRIMARY());
+        UIScaleManager.drawScaledCenteredString(graphics, font, "Welcome to the QA Testing Session", centerX, y, DesignTokens.Text.PRIMARY());
         y += 16;
-        graphics.drawCenteredString(font, "Complete tests to verify all mod features", centerX, y, DesignTokens.Text.SECONDARY());
+        UIScaleManager.drawScaledCenteredString(graphics, font, "Complete tests to verify all mod features", centerX, y, DesignTokens.Text.SECONDARY());
         y += 12;
-        graphics.drawCenteredString(font, "Progress is tracked like achievements", centerX, y, DesignTokens.Text.SECONDARY());
+        UIScaleManager.drawScaledCenteredString(graphics, font, "Progress is tracked like achievements", centerX, y, DesignTokens.Text.SECONDARY());
 
         // Show existing session info if available
         boolean hasExisting = TestingSession.INSTANCE.hasExistingSession() &&
                               TestingSession.INSTANCE.getCompletedTests() > 0;
         if (hasExisting) {
             y = this.height / 2 - 70;
-            graphics.drawCenteredString(font, "Previous Session Found!", centerX, y, DesignTokens.Status.SUCCESS());
+            UIScaleManager.drawScaledCenteredString(graphics, font, "Previous Session Found!", centerX, y, DesignTokens.Status.SUCCESS());
             y += 15;
             final @Nonnull String progress = Objects.requireNonNull(String.format(
                 "Progress: %d/%d tests completed (%.0f%%)",
@@ -287,16 +286,16 @@ public class QATestingScreen extends Screen {
                 TestingSession.INSTANCE.getTotalTests(),
                 TestingSession.INSTANCE.getProgressPercent()
             ), "progress");
-            graphics.drawCenteredString(font, progress, centerX, y, DesignTokens.Text.PRIMARY());
+            UIScaleManager.drawScaledCenteredString(graphics, font, progress, centerX, y, DesignTokens.Text.PRIMARY());
             y += 12;
-            graphics.drawCenteredString(font, "Tester: " + TestingSession.INSTANCE.getTesterName(),
+            UIScaleManager.drawScaledCenteredString(graphics, font, "Tester: " + TestingSession.INSTANCE.getTesterName(),
                 centerX, y, DesignTokens.Text.SECONDARY());
         }
 
         // Stats preview
         y = this.height / 2 + 70;
         int total = TestingSession.INSTANCE.getTotalTests();
-        graphics.drawCenteredString(font, total + " tests across " +
+        UIScaleManager.drawScaledCenteredString(graphics, font, total + " tests across " +
             TestingSession.INSTANCE.getCategories().size() + " categories",
             centerX, y, DesignTokens.Text.MUTED());
     }
@@ -317,30 +316,30 @@ public class QATestingScreen extends Screen {
 
         // Header
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, TestingUiTheme.Panel.HEADER);
-        graphics.drawString(font, "Tutorial Guide", panelX + 8, panelY + 5, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Tutorial Guide", panelX + 8, panelY + 5, DesignTokens.Text.TITLE(), false);
 
         int contentY = panelY + 24;
 
         // Current phase
         TutorialManager.TutorialPhase phase = TutorialManager.INSTANCE.getCurrentPhase();
-        graphics.drawString(font, "Phase: " + phase.getDisplayName(), panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Phase: " + phase.getDisplayName(), panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
         contentY += 12;
-        graphics.drawString(font, phase.getDescription(), panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, font, phase.getDescription(), panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
         contentY += 16;
 
         // Current step instructions
         TutorialStep step = TutorialManager.INSTANCE.getCurrentStep();
         if (step != null) {
-            graphics.drawString(font, "Current Step:", panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, "Current Step:", panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
             contentY += 11;
 
             // Step title
             String titleRaw = step.getTitle();
             @Nonnull String title = Objects.requireNonNull(titleRaw != null ? titleRaw : "", "title");
-            if (font.width(title) > panelWidth - 16) {
+            if (UIScaleManager.getScaledStringWidth(font, title) > panelWidth - 16) {
                 title = title.substring(0, Math.min(title.length(), 22)) + "...";
             }
-            graphics.drawString(font, title, panelX + 8, contentY, DesignTokens.Text.ACCENT(), false);
+            UIScaleManager.drawScaledString(graphics, font, title, panelX + 8, contentY, DesignTokens.Text.ACCENT(), false);
             contentY += 14;
 
             // Step instructions (first 3)
@@ -348,7 +347,7 @@ public class QATestingScreen extends Screen {
             for (int i = 0; i < Math.min(3, instructions.length); i++) {
                 String instr = instructions[i];
                 if (instr.length() > 28) instr = instr.substring(0, 25) + "...";
-                graphics.drawString(font, "- " + instr, panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
+                UIScaleManager.drawScaledString(graphics, font, "- " + instr, panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
                 contentY += 10;
             }
 
@@ -357,7 +356,7 @@ public class QATestingScreen extends Screen {
             String hintRaw = step.getHint();
             @Nonnull String hint = Objects.requireNonNull(hintRaw != null ? hintRaw : "", "hint");
             if (hint.length() > 30) hint = hint.substring(0, 27) + "...";
-            graphics.drawString(font, hint, panelX + 8, contentY, TestingUiTheme.Accent.GOLD, false);
+            UIScaleManager.drawScaledString(graphics, font, hint, panelX + 8, contentY, TestingUiTheme.Accent.GOLD, false);
         }
     }
 
@@ -377,13 +376,13 @@ public class QATestingScreen extends Screen {
 
         // Header
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + 18, TestingUiTheme.Panel.HEADER_ALT);
-        graphics.drawString(font, "Tester Stats", panelX + 8, panelY + 5, TestingUiTheme.Accent.GOLD, false);
+        UIScaleManager.drawScaledString(graphics, font, "Tester Stats", panelX + 8, panelY + 5, TestingUiTheme.Accent.GOLD, false);
 
         int contentY = panelY + 24;
 
         // Level
         int level = TutorialManager.INSTANCE.getLevel();
-        graphics.drawString(font, "Level: " + level, panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Level: " + level, panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
         contentY += 14;
 
         // XP bar
@@ -391,7 +390,7 @@ public class QATestingScreen extends Screen {
         float levelProgress = TutorialManager.INSTANCE.getLevelProgress();
         int xpToNext = TutorialManager.INSTANCE.getXPToNextLevel();
 
-        graphics.drawString(font, "XP: " + xp, panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "XP: " + xp, panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
         contentY += 12;
 
         // Progress bar
@@ -401,22 +400,22 @@ public class QATestingScreen extends Screen {
             TestingUiTheme.Accent.GOLD);
         contentY += 12;
 
-        graphics.drawString(font, xpToNext + " XP to next level", panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, font, xpToNext + " XP to next level", panelX + 8, contentY, DesignTokens.Text.MUTED(), false);
         contentY += 16;
 
         // Achievements count
         int achievements = TutorialManager.INSTANCE.getAchievementCount();
-        graphics.drawString(font, "Achievements: " + achievements, panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Achievements: " + achievements, panelX + 8, contentY, DesignTokens.Text.PRIMARY(), false);
         contentY += 14;
 
         // Suggested test
         TestCase suggested = TutorialManager.INSTANCE.getSuggestedTest();
         if (suggested != null) {
-            graphics.drawString(font, "Suggested:", panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, "Suggested:", panelX + 8, contentY, DesignTokens.Text.SECONDARY(), false);
             contentY += 11;
             String testName = suggested.getName();
             if (testName.length() > 22) testName = testName.substring(0, 19) + "...";
-            graphics.drawString(font, testName, panelX + 8, contentY, DesignTokens.Status.SUCCESS(), false);
+            UIScaleManager.drawScaledString(graphics, font, testName, panelX + 8, contentY, DesignTokens.Status.SUCCESS(), false);
         }
     }
 
@@ -446,11 +445,11 @@ public class QATestingScreen extends Screen {
         AxiomRenderer.drawSeparator(graphics, 0, HEADER_HEIGHT - 1, this.width);
 
         // Title
-        graphics.drawString(font, "DevMod QA Testing", PADDING, 8, DesignTokens.Text.WHITE(), false);
+        UIScaleManager.drawScaledString(graphics, font, "DevMod QA Testing", PADDING, 8, DesignTokens.Text.WHITE(), false);
 
         // Session info
         String sessionInfo = "Tester: " + TestingSession.INSTANCE.getTesterName();
-        graphics.drawString(font, sessionInfo, PADDING, 25, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, sessionInfo, PADDING, 25, DesignTokens.Text.SECONDARY(), false);
 
         // Progress bar in header
         int progressBarWidth = 200;
@@ -460,7 +459,7 @@ public class QATestingScreen extends Screen {
         AxiomRenderer.drawProgressBar(graphics, progressBarX, progressBarY, progressBarWidth, 12, progress, DesignTokens.Status.SUCCESS());
 
         String progressText = String.format("%.0f%% Complete", TestingSession.INSTANCE.getProgressPercent());
-        graphics.drawString(font, progressText, progressBarX, progressBarY + 15, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, progressText, progressBarX, progressBarY + 15, DesignTokens.Text.PRIMARY(), false);
     }
 
     private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -475,7 +474,7 @@ public class QATestingScreen extends Screen {
 
         // Category list header
         int headerY = sidebarY + PADDING;
-        graphics.drawString(font, "Categories", PADDING, headerY, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, "Categories", PADDING, headerY, DesignTokens.Text.TITLE(), false);
         headerY += 20;
 
         Map<String, List<TestCase>> categories = TestingSession.INSTANCE.getCategorizedTests();
@@ -536,13 +535,13 @@ public class QATestingScreen extends Screen {
 
             // Category name
             int textColor = isSelected ? DesignTokens.Text.ACCENT() : DesignTokens.Text.PRIMARY();
-            graphics.drawString(font, displayCategory, PADDING + 5, y + 2, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, displayCategory, PADDING + 5, y + 2, textColor, false);
 
             // Progress indicator
             String progressStr = completed + "/" + tests.size();
             int progressColor = completed == tests.size() ? DesignTokens.Status.SUCCESS() : DesignTokens.Text.MUTED();
-            int progressWidth = font.width(progressStr);
-            graphics.drawString(font, progressStr, SIDEBAR_WIDTH - PADDING - progressWidth - 10, y + 2, progressColor, false);
+            int progressWidth = UIScaleManager.getScaledStringWidth(font, progressStr);
+            UIScaleManager.drawScaledString(graphics, font, progressStr, SIDEBAR_WIDTH - PADDING - progressWidth - 10, y + 2, progressColor, false);
 
             // Progress bar mini
             float catProgress = tests.isEmpty() ? 0 : (float) completed / tests.size();
@@ -576,7 +575,7 @@ public class QATestingScreen extends Screen {
         }
 
         // Title
-        graphics.drawString(font, selectedCategory + " Tests", listX, listY, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, selectedCategory + " Tests", listX, listY, DesignTokens.Text.TITLE(), false);
         listY += 20;
 
         List<TestCase> tests = TestingSession.INSTANCE.getCategorizedTests().get(selectedCategory);
@@ -672,19 +671,19 @@ public class QATestingScreen extends Screen {
 
         // Test name (truncated to fit card width)
         String testName = truncateText(test.getName(), width - 40); // Leave room for priority indicator
-        graphics.drawString(font, testName, x + 12, y + 5, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, testName, x + 12, y + 5, DesignTokens.Text.PRIMARY(), false);
 
         // Description (truncated to fit card width)
         String desc = truncateText(test.getDescription(), width - 24);
-        graphics.drawString(font, desc, x + 12, y + 18, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, desc, x + 12, y + 18, DesignTokens.Text.SECONDARY(), false);
 
         // Status text
         String statusText = "[" + test.getStatus().name() + "]";
-        graphics.drawString(font, statusText, x + 12, y + 32, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, font, statusText, x + 12, y + 32, statusColor, false);
 
         // Auto-validate indicator
         if (test.hasAutoValidator()) {
-            graphics.drawString(font, "[AUTO]", x + 80, y + 32, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, "[AUTO]", x + 80, y + 32, DesignTokens.Text.MUTED(), false);
         }
 
         // Action buttons when hovered
@@ -692,8 +691,8 @@ public class QATestingScreen extends Screen {
             // Quick action hints
             String hint = test.getStatus() == TestCase.TestStatus.PENDING ?
                 "Click to start" : "Click for details";
-            int hintWidth = font.width(hint);
-            graphics.drawString(font, hint, x + width - hintWidth - 25, y + height - 15, DesignTokens.Text.MUTED(), false);
+            int hintWidth = UIScaleManager.getScaledStringWidth(font, hint);
+            UIScaleManager.drawScaledString(graphics, font, hint, x + width - hintWidth - 25, y + height - 15, DesignTokens.Text.MUTED(), false);
         }
 
         // Border
@@ -718,20 +717,20 @@ public class QATestingScreen extends Screen {
         // Test name (truncated to fit panel width)
         int maxTextWidth = detailsWidth - PADDING * 2;
         String detailName = truncateText(test.getName(), maxTextWidth);
-        graphics.drawString(font, detailName, contentX, contentY, DesignTokens.Text.WHITE(), false);
+        UIScaleManager.drawScaledString(graphics, font, detailName, contentX, contentY, DesignTokens.Text.WHITE(), false);
         contentY += 15;
 
         // Status and Priority
         String statusLine = "Status: " + test.getStatus().name() +
                            " | Priority: " + test.getPriority().name();
-        graphics.drawString(font, statusLine, contentX, contentY, test.getStatus().getColor(), false);
+        UIScaleManager.drawScaledString(graphics, font, statusLine, contentX, contentY, test.getStatus().getColor(), false);
         contentY += 20;
 
         // Description (truncated to fit panel width)
         AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Description:");
         contentY += 12;
         String detailDesc = truncateText(test.getDescription(), maxTextWidth);
-        graphics.drawString(font, detailDesc, contentX, contentY, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, detailDesc, contentX, contentY, DesignTokens.Text.SECONDARY(), false);
         contentY += 20;
 
         // Instructions (truncated per line to fit panel width)
@@ -741,7 +740,7 @@ public class QATestingScreen extends Screen {
         String[] lines = test.getInstructions().lines().toArray(String[]::new);
         for (String line : lines) {
             String truncatedLine = truncateText(line, maxTextWidth);
-            graphics.drawString(font, truncatedLine, contentX, contentY, DesignTokens.Text.PRIMARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, truncatedLine, contentX, contentY, DesignTokens.Text.PRIMARY(), false);
             contentY += 12;
         }
         contentY += 10;
@@ -750,7 +749,7 @@ public class QATestingScreen extends Screen {
         if (test.getComments() != null && !test.getComments().isEmpty()) {
             AxiomRenderer.drawSectionHeader(graphics, font, contentX, contentY, "Tester Comments:");
             contentY += 12;
-            graphics.drawString(font, test.getComments(), contentX, contentY, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(graphics, font, test.getComments(), contentX, contentY, DesignTokens.Text.MUTED(), false);
             contentY += 15;
         }
 
@@ -797,12 +796,12 @@ public class QATestingScreen extends Screen {
 
         String stats = String.format("Passed: %d | Failed: %d | Remaining: %d / %d",
             passed, failed, remaining, total);
-        graphics.drawString(font, stats, PADDING, footerY + 12, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, stats, PADDING, footerY + 12, DesignTokens.Text.PRIMARY(), false);
 
         // Keyboard hints
         String hints = "[Enter] Confirm | [1-3] Pass/Fail/Skip | [Esc] Close";
-        int hintsWidth = font.width(hints);
-        graphics.drawString(font, hints, this.width / 2 - hintsWidth / 2, footerY + 12, DesignTokens.Text.MUTED(), false);
+        int hintsWidth = UIScaleManager.getScaledStringWidth(font, hints);
+        UIScaleManager.drawScaledString(graphics, font, hints, this.width / 2 - hintsWidth / 2, footerY + 12, DesignTokens.Text.MUTED(), false);
     }
 
     @Override

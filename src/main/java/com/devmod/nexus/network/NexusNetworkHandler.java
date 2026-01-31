@@ -118,7 +118,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
     }
 
     // ========================================================================
-    // Client Handlers (stub - actual implementation in client package)
+    // Client Handlers
     // ========================================================================
 
     /**

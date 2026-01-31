@@ -7,8 +7,11 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import com.devmod.compat.Compat;
 import com.devmod.compat.CompatModule;
@@ -255,6 +258,38 @@ public class IronsSpellbooksCompat implements CompatModule {
     }
 
     /**
+     * Find the likely casting item in the player's hands.
+     */
+    @Nullable
+    public static ItemStack findCastingItem(Player player) {
+        if (!available || player == null) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack main = player.getMainHandItem();
+        if (isSpellbookItem(main)) {
+            return main;
+        }
+
+        ItemStack off = player.getOffhandItem();
+        if (isSpellbookItem(off)) {
+            return off;
+        }
+
+        return ItemStack.EMPTY;
+    }
+
+    private static boolean isSpellbookItem(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (key != null && MOD_ID.equals(key.getNamespace())) {
+            return true;
+        }
+        String className = stack.getItem().getClass().getName();
+        return className.startsWith("io.redspace.ironsspellbooks");
+    }
+
+    /**
      * Get the spell currently being cast.
      *
      * @param player The player
@@ -355,14 +390,39 @@ public class IronsSpellbooksCompat implements CompatModule {
 
     /**
      * Get mana regeneration rate if available.
-     * This is a placeholder - actual implementation depends on mod API.
+     * Retrieves the MANA_REGEN attribute value from Iron's Spellbooks.
      *
      * @param player The player
      * @return Mana regen per second, or -1 if not available
      */
     public static float getManaRegenRate(Player player) {
-        // This would require additional API access
-        // Placeholder for future implementation
+        if (!available || player == null) {
+            return -1f;
+        }
+
+        try {
+            // Get MANA_REGEN attribute from Iron's Spellbooks AttributeRegistry
+            Class<?> attributeRegistry = Class.forName("io.redspace.ironsspellbooks.api.registry.AttributeRegistry");
+            java.lang.reflect.Field manaRegenField = attributeRegistry.getField("MANA_REGEN");
+            Object manaRegenHolder = manaRegenField.get(null);
+
+            if (manaRegenHolder != null) {
+                // Use reflection to call player.getAttributeValue(holder)
+                java.lang.reflect.Method getAttrValue = Player.class.getMethod("getAttributeValue",
+                    net.minecraft.core.Holder.class);
+                Object result = getAttrValue.invoke(player, manaRegenHolder);
+                if (result instanceof Number) {
+                    return ((Number) result).floatValue();
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            LOGGER.debug("[Compat:irons_spellbooks] AttributeRegistry not found: {}", e.getMessage());
+        } catch (NoSuchFieldException e) {
+            LOGGER.debug("[Compat:irons_spellbooks] MANA_REGEN field not found: {}", e.getMessage());
+        } catch (Exception e) {
+            LOGGER.debug("[Compat:irons_spellbooks] Failed to get mana regen rate: {}", e.getMessage());
+        }
+
         return -1f;
     }
 

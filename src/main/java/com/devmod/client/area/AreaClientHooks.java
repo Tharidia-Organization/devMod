@@ -36,12 +36,13 @@ public final class AreaClientHooks {
      * Called when OpenAreaBuilderPayload is received.
      */
     public static void openBuilderScreen(OpenAreaBuilderPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.setScreen(new AreaBuilderScreen(
-            payload.existingArea(),
-            payload.editorPosition(),
-            payload.isMainHub()
-        )));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "area_builder",
+            () -> new AreaBuilderScreen(
+                payload.existingArea(),
+                payload.editorPosition(),
+                payload.isMainHub()
+            ));
     }
 
     /**
@@ -49,12 +50,13 @@ public final class AreaClientHooks {
      * Called when OpenEditorCentralPayload is received.
      */
     public static void openEditorCentralScreen(OpenEditorCentralPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.setScreen(new NexusEditorCentralScreen(
-            payload.areas(),
-            payload.mainHubId(),
-            payload.canCreateAreas()
-        )));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "nexus_editor_central",
+            () -> new NexusEditorCentralScreen(
+                payload.areas(),
+                payload.mainHubId(),
+                payload.canCreateAreas()
+            ));
     }
 
     /**

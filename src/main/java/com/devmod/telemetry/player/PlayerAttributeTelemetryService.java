@@ -18,7 +18,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import com.devmod.abilities.DashAbilitySystem;
 import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.abilities.StaminaSystem;
-import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.MutatorSystem;
 import com.devmod.endurance.PerkSystem;
 import com.devmod.integration.ModIntegrationManager;
@@ -27,7 +26,6 @@ import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.duckdb.DuckDBConfig;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.telemetry.util.BitPackedFlags;
-
 public class PlayerAttributeTelemetryService {
     private static final Logger LOGGER = LogUtils.getLogger();
 

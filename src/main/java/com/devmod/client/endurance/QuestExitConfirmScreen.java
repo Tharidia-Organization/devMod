@@ -10,15 +10,14 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.ConfirmDialog.Style;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.endurance.QuestActionPayload;
 import com.devmod.util.I18n;
-
 @OnlyIn(Dist.CLIENT)
 public class QuestExitConfirmScreen extends Screen {
 

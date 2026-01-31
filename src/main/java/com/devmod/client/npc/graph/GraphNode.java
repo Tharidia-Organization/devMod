@@ -7,6 +7,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.npc.dialog.DialogNode;
 import com.devmod.npc.dialog.DialogOption;
@@ -278,24 +279,24 @@ public class GraphNode {
 
         // Node ID in header
         String displayId = truncate(nodeId, 20);
-        graphics.drawString(
+        UIScaleManager.drawScaledString(
+            graphics,
             net.minecraft.client.Minecraft.getInstance().font,
             displayId,
             x + 6,
             y + 6,
-            isEntryNode ? COLOR_BORDER_ENTRY : COLOR_TEXT,
-            false
+            isEntryNode ? COLOR_BORDER_ENTRY : COLOR_TEXT
         );
 
         // Entry node indicator
         if (isEntryNode) {
-            graphics.drawString(
+            UIScaleManager.drawScaledString(
+                graphics,
                 net.minecraft.client.Minecraft.getInstance().font,
                 "\u25B6",  // Play symbol
                 x + width - 14,
                 y + 6,
-                COLOR_BORDER_ENTRY,
-                false
+                COLOR_BORDER_ENTRY
             );
         }
 
@@ -308,13 +309,13 @@ public class GraphNode {
             String label = truncate(option.label(), 18);
 
             // Option text
-            graphics.drawString(
+            UIScaleManager.drawScaledString(
+                graphics,
                 net.minecraft.client.Minecraft.getInstance().font,
                 label,
                 x + 6,
                 optionY + i * 18,
-                COLOR_TEXT_DIM,
-                false
+                COLOR_TEXT_DIM
             );
 
             // Output connector
@@ -329,13 +330,13 @@ public class GraphNode {
 
         // Show "+N more" if there are more options
         if (options.size() > 4) {
-            graphics.drawString(
+            UIScaleManager.drawScaledString(
+                graphics,
                 net.minecraft.client.Minecraft.getInstance().font,
                 "+" + (options.size() - 4) + " more...",
                 x + 6,
                 optionY + 4 * 18,
-                COLOR_TEXT_DIM,
-                false
+                COLOR_TEXT_DIM
             );
         }
 

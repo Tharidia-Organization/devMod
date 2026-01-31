@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
 import com.devmod.area.aesthetic.AreaBuilderIcons;
+import com.devmod.client.ui.core.UIScaleManager;
 
 /**
  * Widget for selecting and editing material palettes.
@@ -45,7 +46,7 @@ public class PaletteEditorWidget extends AbstractWidget {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
 
         // Title
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.tab.materials")),
             getX(), getY(),
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
@@ -87,17 +88,17 @@ public class PaletteEditorWidget extends AbstractWidget {
             // Draw preset name
             String name = Objects.requireNonNull(Objects.requireNonNull(
                 Component.translatable("area.preset." + preset)).getString());
-            int textWidth = font.width(name);
+            int textWidth = UIScaleManager.getScaledStringWidth(font, name);
             int textX = cellX + (cellSize - textWidth) / 2;
             int textY = cellY + cellSize - 20;
-            graphics.drawString(font, name, textX, textY,
+            UIScaleManager.drawScaledString(graphics, font, name, textX, textY,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
 
         // Show selected preset info
         int rows = (PRESETS.length + columns - 1) / columns;
         int infoY = startY + rows * (cellSize + spacing) + 6;
-        graphics.drawString(font,
+        UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.builder.selected_preset",
                 Component.translatable("area.preset." + selectedPreset))),
             getX(), infoY,

@@ -53,6 +53,12 @@ public class NpcConfigScreen extends Screen {
     @Nullable private final InteractionHand hand;
     @Nullable private final UUID existingNpcId;
 
+    // === Scaled layout dimensions (updated in render for responsiveness) ===
+    private int scaledPanelWidth;
+    private int scaledPanelHeight;
+    private int scaledPadding;
+    private int scaledRowHeight;
+
     // === Widgets ===
     @Nullable private EditBox nameField;
     @Nullable private EditBox skinNameField;
@@ -80,15 +86,26 @@ public class NpcConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
-        int contentX = panelX + PADDING;
-        int contentY = panelY + PADDING + 20; // +20 for title
-        int labelWidth = 100;
+        // Calculate scaled values for init
+        UIScaleManager.update();
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sRowHeight = UIScaleManager.scale(ROW_HEIGHT);
+        int sFieldWidth = UIScaleManager.scale(FIELD_WIDTH);
+        int sButtonWidth = UIScaleManager.scale(BUTTON_WIDTH);
+        int sButtonHeight = UIScaleManager.scale(BUTTON_HEIGHT);
+        int sFieldHeight = UIScaleManager.scale(18);
+
+        int panelX = (width - sPanelWidth) / 2;
+        int panelY = (height - sPanelHeight) / 2;
+        int contentX = panelX + sPadding;
+        int contentY = panelY + sPadding + UIScaleManager.scale(20); // +20 for title
+        int labelWidth = UIScaleManager.scale(100);
         int fieldX = contentX + labelWidth;
 
         // Display Name
-        nameField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
+        nameField = new EditBox(font, fieldX, contentY, sFieldWidth, sFieldHeight,
             Component.translatable("gui.devmod.npc.config.name"));
         nameField.setMaxLength(NpcConfiguration.MAX_DISPLAY_NAME_LENGTH);
         nameField.setValue(originalConfig.displayName());
@@ -96,10 +113,10 @@ public class NpcConfigScreen extends Screen {
         nameField.setTextColor(DesignTokens.Text.PRIMARY);
         nameField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(nameField);
-        contentY += ROW_HEIGHT;
+        contentY += sRowHeight;
 
         // Skin Player Name
-        skinNameField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
+        skinNameField = new EditBox(font, fieldX, contentY, sFieldWidth, sFieldHeight,
             Component.translatable("gui.devmod.npc.config.skin"));
         skinNameField.setMaxLength(NpcConfiguration.MAX_SKIN_NAME_LENGTH);
         skinNameField.setValue(originalConfig.skinPlayerName() != null ? originalConfig.skinPlayerName() : "");
@@ -107,10 +124,10 @@ public class NpcConfigScreen extends Screen {
         skinNameField.setTextColor(DesignTokens.Text.PRIMARY);
         skinNameField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(skinNameField);
-        contentY += ROW_HEIGHT;
+        contentY += sRowHeight;
 
         // Dialog Set ID
-        dialogSetIdField = new EditBox(font, fieldX, contentY, FIELD_WIDTH, 18,
+        dialogSetIdField = new EditBox(font, fieldX, contentY, sFieldWidth, sFieldHeight,
             Component.translatable("gui.devmod.npc.config.dialog"));
         dialogSetIdField.setMaxLength(NpcConfiguration.MAX_DIALOG_SET_ID_LENGTH);
         dialogSetIdField.setValue(originalConfig.dialogSetId() != null ? originalConfig.dialogSetId() : "");
@@ -118,11 +135,11 @@ public class NpcConfigScreen extends Screen {
         dialogSetIdField.setTextColor(DesignTokens.Text.PRIMARY);
         dialogSetIdField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(dialogSetIdField);
-        contentY += ROW_HEIGHT + 8;
+        contentY += sRowHeight + UIScaleManager.scale(8);
 
         // Behavior section
         NpcBehavior behavior = originalConfig.behavior();
-        int toggleWidth = FIELD_WIDTH + labelWidth;
+        int toggleWidth = sFieldWidth + labelWidth;
 
         floatingToggle = EditorButton.builder("npc-floating",
                 Component.translatable("gui.devmod.npc.config.floating").getString())
@@ -131,8 +148,8 @@ public class NpcConfigScreen extends Screen {
             .toggleable(true)
             .toggled(behavior.floating())
             .build();
-        addRenderableWidget(new EditorButtonWidget(floatingToggle, contentX, contentY, toggleWidth, BUTTON_HEIGHT));
-        contentY += ROW_HEIGHT;
+        addRenderableWidget(new EditorButtonWidget(floatingToggle, contentX, contentY, toggleWidth, sButtonHeight));
+        contentY += sRowHeight;
 
         lookAtPlayerToggle = EditorButton.builder("npc-look-at-player",
                 Component.translatable("gui.devmod.npc.config.look_at_player").getString())
@@ -141,8 +158,8 @@ public class NpcConfigScreen extends Screen {
             .toggleable(true)
             .toggled(behavior.lookAtPlayer())
             .build();
-        addRenderableWidget(new EditorButtonWidget(lookAtPlayerToggle, contentX, contentY, toggleWidth, BUTTON_HEIGHT));
-        contentY += ROW_HEIGHT;
+        addRenderableWidget(new EditorButtonWidget(lookAtPlayerToggle, contentX, contentY, toggleWidth, sButtonHeight));
+        contentY += sRowHeight;
 
         invulnerableToggle = EditorButton.builder("npc-invulnerable",
                 Component.translatable("gui.devmod.npc.config.invulnerable").getString())
@@ -151,8 +168,8 @@ public class NpcConfigScreen extends Screen {
             .toggleable(true)
             .toggled(behavior.invulnerable())
             .build();
-        addRenderableWidget(new EditorButtonWidget(invulnerableToggle, contentX, contentY, toggleWidth, BUTTON_HEIGHT));
-        contentY += ROW_HEIGHT + 8;
+        addRenderableWidget(new EditorButtonWidget(invulnerableToggle, contentX, contentY, toggleWidth, sButtonHeight));
+        contentY += sRowHeight + UIScaleManager.scale(8);
 
         // Appearance section
         NpcAppearance appearance = originalConfig.appearance();
@@ -163,8 +180,8 @@ public class NpcConfigScreen extends Screen {
             .toggleable(true)
             .toggled(appearance.particlesEnabled())
             .build();
-        addRenderableWidget(new EditorButtonWidget(particlesToggle, contentX, contentY, toggleWidth, BUTTON_HEIGHT));
-        contentY += ROW_HEIGHT;
+        addRenderableWidget(new EditorButtonWidget(particlesToggle, contentX, contentY, toggleWidth, sButtonHeight));
+        contentY += sRowHeight;
 
         glowToggle = EditorButton.builder("npc-glow",
                 Component.translatable("gui.devmod.npc.config.glow").getString())
@@ -173,65 +190,72 @@ public class NpcConfigScreen extends Screen {
             .toggleable(true)
             .toggled(appearance.glowEffect())
             .build();
-        addRenderableWidget(new EditorButtonWidget(glowToggle, contentX, contentY, toggleWidth, BUTTON_HEIGHT));
-        contentY += ROW_HEIGHT + 16;
+        addRenderableWidget(new EditorButtonWidget(glowToggle, contentX, contentY, toggleWidth, sButtonHeight));
+        contentY += sRowHeight + UIScaleManager.scale(16);
 
         // Buttons
-        int buttonY = panelY + PANEL_HEIGHT - PADDING - BUTTON_HEIGHT;
-        int confirmX = panelX + PANEL_WIDTH / 2 - BUTTON_WIDTH - 4;
-        int cancelX = panelX + PANEL_WIDTH / 2 + 4;
+        int buttonY = panelY + sPanelHeight - sPadding - sButtonHeight;
+        int confirmX = panelX + sPanelWidth / 2 - sButtonWidth - UIScaleManager.scale(4);
+        int cancelX = panelX + sPanelWidth / 2 + UIScaleManager.scale(4);
 
         confirmButton = EditorButton.builder("npc_confirm", Component.translatable("gui.devmod.confirm").getString())
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onConfirm)
             .build();
-        addRenderableWidget(new EditorButtonWidget(confirmButton, confirmX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(confirmButton, confirmX, buttonY, sButtonWidth, sButtonHeight));
 
         cancelButton = EditorButton.builder("npc_cancel", Component.translatable("gui.devmod.cancel").getString())
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        addRenderableWidget(new EditorButtonWidget(cancelButton, cancelX, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT));
+        addRenderableWidget(new EditorButtonWidget(cancelButton, cancelX, buttonY, sButtonWidth, sButtonHeight));
     }
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+
+        // Update scaled dimensions for responsiveness
+        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        scaledPadding = UIScaleManager.scale(PADDING);
+        scaledRowHeight = UIScaleManager.scale(ROW_HEIGHT);
+
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int panelX = (width - PANEL_WIDTH) / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
+        int panelX = (width - scaledPanelWidth) / 2;
+        int panelY = (height - scaledPanelHeight) / 2;
 
         // Draw panel background
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_PANEL_BG);
+        graphics.fill(panelX, panelY, panelX + scaledPanelWidth, panelY + scaledPanelHeight, COLOR_PANEL_BG);
 
         // Draw border
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + 1, COLOR_BORDER);
-        graphics.fill(panelX, panelY + PANEL_HEIGHT - 1, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_BORDER);
-        graphics.fill(panelX, panelY, panelX + 1, panelY + PANEL_HEIGHT, COLOR_BORDER);
-        graphics.fill(panelX + PANEL_WIDTH - 1, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, COLOR_BORDER);
+        graphics.fill(panelX, panelY, panelX + scaledPanelWidth, panelY + 1, COLOR_BORDER);
+        graphics.fill(panelX, panelY + scaledPanelHeight - 1, panelX + scaledPanelWidth, panelY + scaledPanelHeight, COLOR_BORDER);
+        graphics.fill(panelX, panelY, panelX + 1, panelY + scaledPanelHeight, COLOR_BORDER);
+        graphics.fill(panelX + scaledPanelWidth - 1, panelY, panelX + scaledPanelWidth, panelY + scaledPanelHeight, COLOR_BORDER);
 
         // Draw title
-        graphics.drawCenteredString(font, title, width / 2, panelY + PADDING, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, title, width / 2, panelY + scaledPadding, COLOR_TEXT);
 
         // Draw labels
-        int contentX = panelX + PADDING;
-        int contentY = panelY + PADDING + 20;
+        int contentX = panelX + scaledPadding;
+        int contentY = panelY + scaledPadding + UIScaleManager.scale(20);
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.config.name"), contentX, contentY + 5, COLOR_LABEL);
-        contentY += ROW_HEIGHT;
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.config.name"), contentX, contentY + UIScaleManager.scale(5), COLOR_LABEL);
+        contentY += scaledRowHeight;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.config.skin"), contentX, contentY + 5, COLOR_LABEL);
-        contentY += ROW_HEIGHT;
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.config.skin"), contentX, contentY + UIScaleManager.scale(5), COLOR_LABEL);
+        contentY += scaledRowHeight;
 
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.config.dialog"), contentX, contentY + 5, COLOR_LABEL);
-        contentY += ROW_HEIGHT + 8;
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.config.dialog"), contentX, contentY + UIScaleManager.scale(5), COLOR_LABEL);
+        contentY += scaledRowHeight + UIScaleManager.scale(8);
 
         // Section headers
-        graphics.drawString(font, Component.translatable("gui.devmod.npc.config.behavior")
-            .withStyle(s -> s.withBold(true)), contentX, contentY - 2, COLOR_TEXT);
+        UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.config.behavior")
+            .withStyle(s -> s.withBold(true)), contentX, contentY - UIScaleManager.scale(2), COLOR_TEXT);
 
         renderInputBackgrounds(graphics);
 

@@ -72,7 +72,7 @@ public class StaminaSystemEditor extends Screen {
         int y = (height - panelHeight) / 2;
         
         graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
-        graphics.drawString(font, TITLE_TEXT, x + PANEL_PADDING, y + PANEL_PADDING, TITLE_TEXT_COLOR, false);
+        UIScaleManager.drawScaledString(graphics, font, TITLE_TEXT, x + PANEL_PADDING, y + PANEL_PADDING, TITLE_TEXT_COLOR, false);
         
         // Render fields
         for (int i = 0; i < FIELD_NAMES.length; i++) {
@@ -89,11 +89,11 @@ public class StaminaSystemEditor extends Screen {
                 default -> "0";
             };
             
-            graphics.drawString(font, FIELD_NAMES[i] + ": " + value, x + PANEL_PADDING, fieldY, color, false);
+            UIScaleManager.drawScaledString(graphics, font, FIELD_NAMES[i] + ": " + value, x + PANEL_PADDING, fieldY, color, false);
         }
         
         // Instructions
-        graphics.drawString(font, INSTRUCTIONS_TEXT, x + PANEL_PADDING, y + panelHeight - INSTRUCTIONS_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, font, INSTRUCTIONS_TEXT, x + PANEL_PADDING, y + panelHeight - INSTRUCTIONS_OFFSET_Y,
             INSTRUCTIONS_COLOR, false);
     }
     

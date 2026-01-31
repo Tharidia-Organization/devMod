@@ -10,6 +10,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.debug.DiagnosticLogger;
+
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -103,6 +105,12 @@ public class ShieldDeflector {
             projectile.getType().getDescriptionId(),
             Math.toDegrees(Math.acos(normalizedVelocity.dot(deflectionDir))),
             originalSpeed, newSpeed);
+
+        DiagnosticLogger.combat("shieldDeflect: projectile=%s, owner=%s, angle=%.1f, speed=%.2f->%.2f, returnToSender=%s",
+            projectile.getType().getDescriptionId(),
+            shieldOwner.getName().getString(),
+            Math.toDegrees(Math.acos(normalizedVelocity.dot(deflectionDir))),
+            originalSpeed, newSpeed, returnToSender);
 
         return true;
     }

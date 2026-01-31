@@ -11,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
@@ -377,11 +378,11 @@ public class HeaderComponent {
 
         // X symbol
         String closeSymbol = "✕";
-        int textWidth = font.width(closeSymbol);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, closeSymbol);
         int textX = x + (size - textWidth) / 2;
-        int textY = y + (size - font.lineHeight) / 2;
+        int textY = y + (size - UIScaleManager.getScaledLineHeight()) / 2;
         int textColor = closeButtonHovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
-        graphics.drawString(font, closeSymbol, textX, textY, textColor, false);
+        UIScaleManager.drawScaledString(graphics, font, closeSymbol, textX, textY, textColor, false);
     }
 
     // ═══════════════════════════════════════════════════════════════

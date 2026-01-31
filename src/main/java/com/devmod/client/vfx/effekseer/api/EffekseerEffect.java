@@ -3,9 +3,9 @@ package com.devmod.client.vfx.effekseer.api;
 import java.io.IOException;
 import java.io.InputStream;
 
-import Effekseer.swig.EffekseerEffectCore;
-
 import com.devmod.client.vfx.effekseer.util.Helpers;
+
+import Effekseer.swig.EffekseerEffectCore;
 
 public class EffekseerEffect extends SafeFinalized<EffekseerEffectCore> {
     protected final EffekseerEffectCore impl;

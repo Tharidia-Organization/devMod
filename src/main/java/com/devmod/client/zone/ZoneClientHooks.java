@@ -28,11 +28,13 @@ public final class ZoneClientHooks {
             payload.getZoneId(), payload.markerPosition(), payload.canDelete());
 
         // Open the zone editor screen
-        mc.setScreen(new ZoneEditorScreen(
-            payload.existingZone(),
-            payload.markerPosition(),
-            payload.canDelete()
-        ));
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "zone_editor",
+            () -> new ZoneEditorScreen(
+                payload.existingZone(),
+                payload.markerPosition(),
+                payload.canDelete()
+            ));
     }
 
     /**

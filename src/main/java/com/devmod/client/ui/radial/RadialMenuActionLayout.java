@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,106 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_RADIAL_OPEN
     );
 
+    // Curated radial menu: keep only high-signal overlays + core screens.
+    private static final Set<String> CURATED_ACTIONS = Set.of(
+        // Core screens
+        ActionIds.UI_SETTINGS_OPEN,
+        ActionIds.UI_RADIAL_SETTINGS_OPEN,
+        ActionIds.UI_KEYBINDS_OPEN,
+        ActionIds.UI_TESTING_HUB_OPEN,
+        ActionIds.UI_VOXELLAB_OPEN,
+        ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+        ActionIds.UI_EDITOR_HUB_OPEN,
+        ActionIds.UI_PARTY_OPEN,
+        ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+
+        // Overlays / HUD toggles
+        ActionIds.HUD_QUICK_HELP_TOGGLE,
+        ActionIds.HUD_IMPACT_TOGGLE,
+        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
+        ActionIds.HUD_IMPACT_3D_TOGGLE,
+        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
+        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
+        ActionIds.HUD_IMPACT_PRESET_DETAILED,
+        ActionIds.HUD_IMPACT_PRESET_TRAINING,
+        ActionIds.HUD_IMPACT_SHOW_RECAP,
+        ActionIds.HUD_QUEST_TOGGLE,
+        ActionIds.HUD_ENDURANCE_TOGGLE,
+        ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE,
+        ActionIds.HUD_PARTY_TOGGLE,
+        ActionIds.ARENA_HUD_TOGGLE,
+
+        // Debug overlays
+        ActionIds.DEBUG_OVERLAY_TOGGLE,
+        ActionIds.DEBUG_BODY_PARTS_TOGGLE,
+        ActionIds.DEBUG_OVERLAYS_ENABLE_ALL,
+        ActionIds.DEBUG_OVERLAYS_DISABLE_ALL,
+        ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE,
+        ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_POI_TOGGLE,
+        ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_BEES_TOGGLE,
+        ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE,
+        ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
+        ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
+        ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE,
+        ActionIds.DEBUG_PATHFINDING_TOGGLE,
+        ActionIds.DEBUG_LOS_TOGGLE,
+        ActionIds.DEBUG_AGGRO_RANGE_TOGGLE,
+        ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
+        ActionIds.DEBUG_SAFE_SPOTS_TOGGLE,
+        ActionIds.DEBUG_SPAWNABILITY_TOGGLE,
+        ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE,
+        ActionIds.DEBUG_FPS_TRACKER_TOGGLE,
+        ActionIds.DEBUG_PROFILER_TOGGLE,
+        ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE,
+        ActionIds.DEBUG_CHUNK_PERF_TOGGLE,
+
+        // Combat/analytics overlays
+        ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
+        ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,
+        ActionIds.DEBUG_ECONOMY_TOGGLE,
+        ActionIds.DEBUG_ECONOMY_VIEW_CYCLE,
+        ActionIds.DEBUG_ECONOMY_SORT_CYCLE,
+
+        // Heatmaps
+        ActionIds.DEBUG_HEATMAP_CYCLE,
+        ActionIds.DEBUG_HEATMAP_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
+        ActionIds.DEBUG_HEATMAP_CLEAR_ALL
+    );
+
+    private static final Map<String, String> ACTION_MENU_OVERRIDES = Map.ofEntries(
+        Map.entry(ActionIds.UI_VOXELLAB_OPEN, "Root/Tools/Labs/Voxel Lab"),
+        Map.entry(ActionIds.UI_TESTING_HUB_OPEN, "Root/Tools/Labs/Testing Hub"),
+        Map.entry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, "Root/Telemetry/Dashboard"),
+        Map.entry(ActionIds.UI_EDITOR_HUB_OPEN, "Root/Tools/Editors/Editor Hub"),
+        Map.entry(ActionIds.HUD_QUICK_HELP_TOGGLE, "Root/HUD/Help/Quick Help"),
+        Map.entry(ActionIds.HUD_IMPACT_TOGGLE, "Root/HUD/Impact HUD/Toggle"),
+        Map.entry(ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE, "Root/HUD/Impact HUD/Controller"),
+        Map.entry(ActionIds.HUD_IMPACT_3D_TOGGLE, "Root/HUD/Impact HUD/3D Panels"),
+        Map.entry(ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE, "Root/HUD/Impact HUD/Display Mode"),
+        Map.entry(ActionIds.HUD_IMPACT_PRESET_MINIMAL, "Root/HUD/Impact HUD/Presets/Minimal"),
+        Map.entry(ActionIds.HUD_IMPACT_PRESET_DETAILED, "Root/HUD/Impact HUD/Presets/Detailed"),
+        Map.entry(ActionIds.HUD_IMPACT_PRESET_TRAINING, "Root/HUD/Impact HUD/Presets/Training"),
+        Map.entry(ActionIds.HUD_IMPACT_SHOW_RECAP, "Root/HUD/Impact HUD/Show Recap"),
+        Map.entry(ActionIds.HUD_QUEST_TOGGLE, "Root/HUD/Endurance HUD/Quest"),
+        Map.entry(ActionIds.HUD_ENDURANCE_TOGGLE, "Root/HUD/Endurance HUD/Endurance"),
+        Map.entry(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE, "Root/HUD/Endurance HUD/Details"),
+        Map.entry(ActionIds.HUD_PARTY_TOGGLE, "Root/HUD/Party HUD/Party"),
+        Map.entry(ActionIds.ARENA_HUD_TOGGLE, "Root/HUD/Arena HUD/Toggle")
+    );
+
     private static final Map<String, String> ACTION_VISIBILITY_SUPPLIERS = Map.ofEntries(
         Map.entry(ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON, "isWeaponItem"),
         Map.entry(ActionIds.UI_ITEM_EDITOR_OPEN_ARMOR, "isArmorItem"),
@@ -51,11 +152,11 @@ public final class RadialMenuActionLayout {
 
     private static final Map<MacroCategory, List<String>> CATEGORY_ORDER = Map.of(
         MacroCategory.ANALYZE, List.of("Debug", "Spatial", "Performance"),
-        MacroCategory.TELEMETRY, List.of("Dashboard", "Server Ops", "Exports", "Data Dumps", "Analysis", "Dungeon"),
-        MacroCategory.COMBAT, List.of("Impact HUD", "Diagnostics", "Heatmaps", "Abilities", "Stamina"),
+        MacroCategory.TELEMETRY, List.of("Dashboard"),
+        MacroCategory.COMBAT, List.of("Diagnostics", "Heatmaps"),
         MacroCategory.ARENA, List.of("Ops", "Templates", "Force", "Autosmoke", "HUD", "Bounds"),
-        MacroCategory.PLAY, List.of("Endurance", "Quest Flow", "Quest Tools", "Endurance HUD", "Party", "Leaderboards"),
-        MacroCategory.TOOLS, List.of("Item Editor", "Mob Editor", "Settings", "Testing", "Commands", "Admin", "Nexus")
+        MacroCategory.PLAY, List.of("HUD", "Endurance", "Party"),
+        MacroCategory.TOOLS, List.of("Editors", "Labs", "Settings")
     );
 
     private RadialMenuActionLayout() {}
@@ -88,6 +189,9 @@ public final class RadialMenuActionLayout {
             if (actionId == null || EXCLUDED_ACTIONS.contains(actionId)) {
                 continue;
             }
+            if (!CURATED_ACTIONS.contains(actionId)) {
+                continue;
+            }
 
             MenuTarget target = resolveTarget(action);
             // Maps are pre-populated for all MacroCategory values, so get() is never null
@@ -111,6 +215,7 @@ public final class RadialMenuActionLayout {
         }
 
         sortCategories(result);
+        reorderByUsage(result);
         return result;
     }
 
@@ -138,13 +243,282 @@ public final class RadialMenuActionLayout {
         }
     }
 
+    private static void reorderByUsage(Map<MacroCategory, List<RadialCategory>> result) {
+        reorderHudCategory(result);
+        reorderAnalyzeCategories(result);
+        reorderCombatCategories(result);
+        reorderToolsCategories(result);
+    }
+
+    private static void reorderHudCategory(Map<MacroCategory, List<RadialCategory>> result) {
+        RadialCategory hudCategory = findCategory(result, MacroCategory.PLAY, "HUD");
+        if (hudCategory == null) {
+            return;
+        }
+
+        reorderCategoryItems(hudCategory, List.of(
+            "sub:Impact HUD",
+            "sub:Endurance HUD",
+            "sub:Party HUD",
+            "sub:Arena HUD",
+            "sub:Help"
+        ));
+
+        for (RadialMenuItem item : new ArrayList<>(hudCategory.getItems())) {
+            if (!item.isSubcategoryLink()) {
+                continue;
+            }
+            RadialCategory sub = item.getLinkedSubcategory();
+            if (sub == null) {
+                continue;
+            }
+            switch (sub.getName()) {
+                case "Impact HUD" -> {
+                    reorderCategoryItems(sub, List.of(
+                        ActionIds.HUD_IMPACT_TOGGLE,
+                        "sub:Presets",
+                        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
+                        ActionIds.HUD_IMPACT_3D_TOGGLE,
+                        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
+                        ActionIds.HUD_IMPACT_SHOW_RECAP
+                    ));
+                    reorderSubcategoryByAction(sub, "Presets", List.of(
+                        ActionIds.HUD_IMPACT_PRESET_DETAILED,
+                        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
+                        ActionIds.HUD_IMPACT_PRESET_TRAINING
+                    ));
+                }
+                case "Endurance HUD" -> reorderCategoryItems(sub, List.of(
+                    ActionIds.HUD_ENDURANCE_TOGGLE,
+                    ActionIds.HUD_QUEST_TOGGLE,
+                    ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE
+                ));
+                case "Party HUD" -> reorderCategoryItems(sub, List.of(
+                    ActionIds.HUD_PARTY_TOGGLE
+                ));
+                case "Arena HUD" -> reorderCategoryItems(sub, List.of(
+                    ActionIds.ARENA_HUD_TOGGLE
+                ));
+                case "Help" -> reorderCategoryItems(sub, List.of(
+                    ActionIds.HUD_QUICK_HELP_TOGGLE
+                ));
+                default -> { }
+            }
+        }
+    }
+
+    private static void reorderAnalyzeCategories(Map<MacroCategory, List<RadialCategory>> result) {
+        RadialCategory debug = findCategory(result, MacroCategory.ANALYZE, "Debug");
+        if (debug != null) {
+            reorderCategoryItems(debug, List.of(
+                "sub:Overlays",
+                "sub:AI",
+                "sub:Light",
+                "sub:Native"
+            ));
+
+            reorderSubcategoryByAction(debug, "Overlays", List.of(
+                ActionIds.DEBUG_OVERLAY_TOGGLE,
+                ActionIds.DEBUG_BODY_PARTS_TOGGLE,
+                ActionIds.DEBUG_OVERLAYS_ENABLE_ALL,
+                ActionIds.DEBUG_OVERLAYS_DISABLE_ALL
+            ));
+            reorderSubcategoryByAction(debug, "AI", List.of(
+                ActionIds.DEBUG_PATHFINDING_TOGGLE,
+                ActionIds.DEBUG_LOS_TOGGLE,
+                ActionIds.DEBUG_AGGRO_RANGE_TOGGLE
+            ));
+            reorderSubcategoryByAction(debug, "Light", List.of(
+                ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE
+            ));
+            reorderSubcategoryByAction(debug, "Native", List.of(
+                ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE,
+                ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE,
+                ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE,
+                ActionIds.DEBUG_NATIVE_POI_TOGGLE,
+                ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE,
+                ActionIds.DEBUG_NATIVE_BEES_TOGGLE,
+                ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE,
+                ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE
+            ));
+        }
+
+        RadialCategory spatial = findCategory(result, MacroCategory.ANALYZE, "Spatial");
+        if (spatial != null) {
+            reorderCategoryItems(spatial, List.of(
+                ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
+                ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE,
+                ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
+                ActionIds.DEBUG_SAFE_SPOTS_TOGGLE,
+                ActionIds.DEBUG_SPAWNABILITY_TOGGLE
+            ));
+        }
+
+        RadialCategory performance = findCategory(result, MacroCategory.ANALYZE, "Performance");
+        if (performance != null) {
+            reorderCategoryItems(performance, List.of(
+                ActionIds.DEBUG_FPS_TRACKER_TOGGLE,
+                ActionIds.DEBUG_PROFILER_TOGGLE,
+                ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE,
+                ActionIds.DEBUG_CHUNK_PERF_TOGGLE,
+                ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE
+            ));
+        }
+    }
+
+    private static void reorderCombatCategories(Map<MacroCategory, List<RadialCategory>> result) {
+        RadialCategory diagnostics = findCategory(result, MacroCategory.COMBAT, "Diagnostics");
+        if (diagnostics != null) {
+            reorderCategoryItems(diagnostics, List.of(
+                ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
+                ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,
+                ActionIds.DEBUG_ECONOMY_TOGGLE,
+                ActionIds.DEBUG_ECONOMY_VIEW_CYCLE,
+                ActionIds.DEBUG_ECONOMY_SORT_CYCLE
+            ));
+        }
+
+        RadialCategory heatmaps = findCategory(result, MacroCategory.COMBAT, "Heatmaps");
+        if (heatmaps != null) {
+            reorderCategoryItems(heatmaps, List.of(
+                ActionIds.DEBUG_HEATMAP_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_CYCLE,
+                "sub:Types",
+                ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
+                ActionIds.DEBUG_HEATMAP_CLEAR_ALL
+            ));
+            reorderSubcategoryByAction(heatmaps, "Types", List.of(
+                ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
+                ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE
+            ));
+        }
+    }
+
+    private static void reorderToolsCategories(Map<MacroCategory, List<RadialCategory>> result) {
+        RadialCategory editors = findCategory(result, MacroCategory.TOOLS, "Editors");
+        if (editors != null) {
+            reorderCategoryItems(editors, List.of(
+                ActionIds.UI_EDITOR_HUB_OPEN
+            ));
+        }
+
+        RadialCategory labs = findCategory(result, MacroCategory.TOOLS, "Labs");
+        if (labs != null) {
+            reorderCategoryItems(labs, List.of(
+                ActionIds.UI_TESTING_HUB_OPEN,
+                ActionIds.UI_VOXELLAB_OPEN
+            ));
+        }
+
+        RadialCategory settings = findCategory(result, MacroCategory.TOOLS, "Settings");
+        if (settings != null) {
+            reorderCategoryItems(settings, List.of(
+                ActionIds.UI_SETTINGS_OPEN,
+                ActionIds.UI_KEYBINDS_OPEN,
+                ActionIds.UI_RADIAL_SETTINGS_OPEN
+            ));
+        }
+    }
+
+    @Nullable
+    private static RadialCategory findCategory(Map<MacroCategory, List<RadialCategory>> result,
+                                               MacroCategory macro, String name) {
+        List<RadialCategory> categories = result.get(macro);
+        if (categories == null) {
+            return null;
+        }
+        for (RadialCategory category : categories) {
+            if (name.equalsIgnoreCase(category.getName())) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private static void reorderSubcategoryByAction(RadialCategory category, String subcategoryName, List<String> order) {
+        for (RadialMenuItem item : new ArrayList<>(category.getItems())) {
+            if (!item.isSubcategoryLink()) {
+                continue;
+            }
+            if (!subcategoryName.equalsIgnoreCase(item.getName())) {
+                continue;
+            }
+            RadialCategory sub = item.getLinkedSubcategory();
+            if (sub != null) {
+                reorderCategoryItems(sub, order);
+            }
+            return;
+        }
+    }
+
+    private static void reorderCategoryItems(RadialCategory category, List<String> preferredOrder) {
+        if (category == null || preferredOrder == null || preferredOrder.isEmpty()) {
+            return;
+        }
+        List<RadialMenuItem> items = category.getItems();
+        if (items == null || items.size() <= 1) {
+            return;
+        }
+
+        List<RadialMenuItem> ordered = new ArrayList<>();
+        Set<RadialMenuItem> used = new HashSet<>();
+
+        for (String token : preferredOrder) {
+            RadialMenuItem match = findItem(items, token);
+            if (match != null && used.add(match)) {
+                ordered.add(match);
+            }
+        }
+
+        for (RadialMenuItem item : items) {
+            if (!used.contains(item)) {
+                ordered.add(item);
+            }
+        }
+
+        items.clear();
+        items.addAll(ordered);
+    }
+
+    @Nullable
+    private static RadialMenuItem findItem(List<RadialMenuItem> items, String token) {
+        if (token == null || token.isBlank()) {
+            return null;
+        }
+        String trimmed = token.trim();
+        if (trimmed.startsWith("sub:")) {
+            String name = trimmed.substring(4);
+            for (RadialMenuItem item : items) {
+                if (item.isSubcategoryLink() && name.equalsIgnoreCase(item.getName())) {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        String actionId = trimmed.startsWith("action:") ? trimmed.substring(7) : trimmed;
+        for (RadialMenuItem item : items) {
+            String registryId = item.getAction().getRegistryId();
+            if (registryId != null && registryId.equals(actionId)) {
+                return item;
+            }
+        }
+        return null;
+    }
+
     private static int indexOf(List<String> order, String name) {
         int idx = order.indexOf(name);
         return idx == -1 ? Integer.MAX_VALUE : idx;
     }
 
     private static String safeMenuPath(RadialAction action) {
-        String path = action.getMenuPath();
+        String path = menuPathFor(action);
         if (path == null || path.isBlank()) {
             return "ZZZ/" + action.getId();
         }
@@ -217,7 +591,7 @@ public final class RadialMenuActionLayout {
     }
 
     private static MenuTarget resolveTarget(RadialAction action) {
-        String path = action.getMenuPath();
+        String path = menuPathFor(action);
         List<String> segments = splitPath(path);
 
         String root = segments.isEmpty() ? "" : segments.get(0);
@@ -232,6 +606,21 @@ public final class RadialMenuActionLayout {
         String icon = iconFromName(categoryName);
 
         return new MenuTarget(macro, sanitizeId(categoryName), categoryName, icon, color, subcategories);
+    }
+
+    @Nullable
+    private static String menuPathFor(RadialAction action) {
+        if (action == null) {
+            return null;
+        }
+        String actionId = action.getId();
+        if (actionId != null) {
+            String override = ACTION_MENU_OVERRIDES.get(actionId);
+            if (override != null) {
+                return override;
+            }
+        }
+        return action.getMenuPath();
     }
 
     private static List<String> splitPath(@Nullable String path) {
@@ -260,6 +649,7 @@ public final class RadialMenuActionLayout {
             case "Combat" -> MacroCategory.COMBAT;
             case "Arena" -> MacroCategory.ARENA;
             case "Play", "Endurance" -> MacroCategory.PLAY;
+            case "HUD" -> MacroCategory.PLAY;
             case "Tools", "Config", "Testing", "Developer", "Help", "Admin", "Nexus" -> MacroCategory.TOOLS;
             default -> fallbackMacro(category);
         };
@@ -300,9 +690,12 @@ public final class RadialMenuActionLayout {
                 boolean dropFirst = !category.equals("Play");
                 yield new CategoryTarget(category, restAfter(rest, dropFirst));
             }
+            case "HUD" -> new CategoryTarget("HUD", restMinusLast(rest));
             case "Tools" -> {
                 String first = rest.get(0);
                 String category = switch (first) {
+                    case "Labs" -> "Labs";
+                    case "Editors" -> "Editors";
                     case "Item Editor" -> "Item Editor";
                     case "Mob Config", "Mob Editor" -> "Mob Editor";
                     case "Settings" -> "Settings";
@@ -346,12 +739,9 @@ public final class RadialMenuActionLayout {
             case "Combat" -> {
                 String first = rest.get(0);
                 String category = switch (first) {
-                    case "Impact HUD", "HUD" -> "Impact HUD";
-                    case "Abilities" -> "Abilities";
                     case "Diagnostics" -> "Diagnostics";
                     case "Heatmaps" -> "Heatmaps";
-                    case "Stamina Editor" -> "Stamina";
-                    default -> "Impact HUD";
+                    default -> "Diagnostics";
                 };
                 yield new CategoryTarget(category, restAfter(rest, category.equals(first)));
             }
@@ -430,11 +820,8 @@ public final class RadialMenuActionLayout {
                 default -> DesignTokens.Radial.TELEMETRY_DASHBOARD;
             };
             case COMBAT -> switch (categoryName) {
-                case "Impact HUD" -> DesignTokens.Radial.COMBAT_DAMAGE;
                 case "Diagnostics" -> DesignTokens.Radial.COMBAT_DEBUG;
                 case "Heatmaps" -> DesignTokens.Radial.COMBAT_ACTIONS;
-                case "Abilities" -> DesignTokens.Radial.COMBAT_ABILITIES;
-                case "Stamina" -> DesignTokens.Radial.COMBAT_DEFENSE;
                 default -> DesignTokens.Radial.COMBAT_ACTIONS;
             };
             case ARENA -> switch (categoryName) {
@@ -446,6 +833,7 @@ public final class RadialMenuActionLayout {
                 default -> DesignTokens.Radial.ARENA_MANAGE;
             };
             case PLAY -> switch (categoryName) {
+                case "HUD" -> DesignTokens.Radial.PLAY_COMMS;
                 case "Endurance", "Endurance HUD" -> DesignTokens.Radial.PLAY_SEASON;
                 case "Quest Flow", "Quest Tools" -> DesignTokens.Radial.PLAY_QUESTS;
                 case "Leaderboards" -> DesignTokens.Radial.PLAY_LEADERBOARD;
@@ -453,8 +841,8 @@ public final class RadialMenuActionLayout {
                 default -> DesignTokens.Radial.PLAY_QUESTS;
             };
             case TOOLS -> switch (categoryName) {
-                case "Item Editor" -> DesignTokens.Radial.TOOLS_EDITOR;
-                case "Mob Editor" -> DesignTokens.Radial.TOOLS_UTILITY;
+                case "Labs" -> DesignTokens.Radial.TOOLS_TESTING;
+                case "Editors" -> DesignTokens.Radial.TOOLS_EDITOR;
                 case "Settings" -> DesignTokens.Radial.TOOLS_SETTINGS;
                 case "Testing" -> DesignTokens.Radial.TOOLS_TESTING;
                 case "Commands" -> DesignTokens.Radial.TOOLS_COMMANDS;

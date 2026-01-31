@@ -52,7 +52,7 @@ public class TelemetryLogHandlers {
 
     public void logHit(Level level, Entity attacker, LivingEntity target, DamageSource source,
                        double amount, double hpBefore, double hpAfter, String bodyPart,
-                       double distance, double armorPenBonus) {
+                       double distance, double armorPenBonus, @Nullable net.minecraft.world.item.Item weaponOverride) {
         if (level.isClientSide()) return;
         String room = service.resolveRoom((ServerLevel) level, target.blockPosition());
         String attackerName = attacker != null ? attacker.getName().getString() : source.getMsgId();
@@ -98,9 +98,14 @@ public class TelemetryLogHandlers {
             if (agg != null) {
                 boolean isKill = hpAfter <= 0;
                 boolean isCritical = false; // Server-side doesn't track crits easily
-                String weapon = playerAttacker.getMainHandItem().isEmpty()
-                    ? "fist"
-                    : playerAttacker.getMainHandItem().getItem().toString();
+                String weapon;
+                if (weaponOverride != null) {
+                    weapon = weaponOverride.toString();
+                } else if (playerAttacker.getMainHandItem().isEmpty()) {
+                    weapon = "fist";
+                } else {
+                    weapon = playerAttacker.getMainHandItem().getItem().toString();
+                }
                 // processHit returns false if aggregated (don't write now)
                 aggregated = !agg.processHit(amount, isKill, isCritical, weapon, targetType);
             }
@@ -125,7 +130,7 @@ public class TelemetryLogHandlers {
 
         // Aggregates - delegate to DamageTrackingService
         if (attacker instanceof ServerPlayer player) {
-            DamageTrackingService.INSTANCE.registerWeaponHit(player, amount, hpAfter <= 0);
+            DamageTrackingService.INSTANCE.registerWeaponHit(player, weaponOverride, amount, hpAfter <= 0);
         }
         if (attacker instanceof Mob mobAttacker) {
             DamageTrackingService.INSTANCE.registerMinionDamage(mobAttacker, amount);

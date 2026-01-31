@@ -230,6 +230,7 @@ public class QuestSequenceOverlay {
         var font = Objects.requireNonNull(mc.font, "font");
 
         int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         // Update animation
         if (fadingOut) {
@@ -259,8 +260,10 @@ public class QuestSequenceOverlay {
         if (alpha < 10) return;
 
         // Calculate box size - larger for arrival phase
-        int boxWidth = 240;
-        int baseHeight = currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70;
+        int boxWidth = UIScaleManager.scale(240);
+        int baseHeight = UIScaleManager.scale(
+            currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70);
+        int lineStep = UIScaleManager.scale(10);
         int extraLines = 0;
         if (currentPhase == QuestSequencePayload.Phase.BRIEFING) {
             extraLines += infoLines.size();
@@ -271,9 +274,15 @@ public class QuestSequenceOverlay {
         if (title != null && !title.isBlank() && currentPhase == QuestSequencePayload.Phase.BRIEFING) {
             extraLines += 1;
         }
-        int boxHeight = baseHeight + Math.min(extraLines * 10, 60);
+        int boxHeight = baseHeight + Math.min(extraLines * lineStep, UIScaleManager.scale(60));
         int boxX = (screenWidth - boxWidth) / 2;
-        int boxY = 40;
+        int boxY = UIScaleManager.scale(40);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        boxX = Math.max(safeLeft, Math.min(boxX, safeRight - boxWidth));
+        boxY = Math.max(safeTop, Math.min(boxY, safeBottom - boxHeight));
 
         // Background
         int bgColor = DesignTokens.withAlpha(DesignTokens.Background.PANEL_SOLID,
@@ -288,7 +297,8 @@ public class QuestSequenceOverlay {
         // Phase title
         Component phaseText = Objects.requireNonNull(getPhaseText(), "phase text");
         int textColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
-        graphics.drawCenteredString(font, phaseText, boxX + boxWidth / 2, boxY + 8, textColor);
+        String phaseLabel = truncateToWidth(font, phaseText.getString(), boxWidth - UIScaleManager.scale(20));
+        UIScaleManager.drawScaledCenteredString(graphics, font, phaseLabel, boxX + boxWidth / 2, boxY + UIScaleManager.scale(8), textColor);
 
         // Render based on phase
         if (currentPhase == QuestSequencePayload.Phase.BRIEFING) {
@@ -312,17 +322,19 @@ public class QuestSequenceOverlay {
         var safeFont = Objects.requireNonNull(font, "font");
         if (subtitle != null && !subtitle.isBlank()) {
             String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
+            safeSubtitle = truncateToWidth(safeFont, safeSubtitle, boxWidth - UIScaleManager.scale(20));
             int subtitleColor = DesignTokens.withAlpha(DesignTokens.Text.SECONDARY, alpha);
-            graphics.drawCenteredString(safeFont, safeSubtitle, boxX + boxWidth / 2, boxY + 22, subtitleColor);
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeSubtitle, boxX + boxWidth / 2,
+                boxY + UIScaleManager.scale(22), subtitleColor);
         }
         String countdownText = Objects.requireNonNull(String.valueOf(secondsRemaining), "countdown");
         int countdownColor = getCountdownColor();
         countdownColor = DesignTokens.withAlpha(countdownColor, alpha);
 
         graphics.pose().pushPose();
-        graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
+        graphics.pose().translate(boxX + boxWidth / 2f, boxY + UIScaleManager.scale(32), 0);
         graphics.pose().scale(2f, 2f, 1f);
-        graphics.drawCenteredString(safeFont, countdownText, 0, 0, countdownColor);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, countdownText, 0, 0, countdownColor);
         graphics.pose().popPose();
     }
 
@@ -330,18 +342,20 @@ public class QuestSequenceOverlay {
                                 int boxX, int boxY, int boxWidth, int alpha) {
         var safeFont = Objects.requireNonNull(font, "font");
         int textColor = DesignTokens.withAlpha(DesignTokens.Text.SECONDARY, alpha);
-        int lineY = boxY + 24;
+        int lineY = boxY + UIScaleManager.scale(24);
 
         if (title != null && !title.isBlank()) {
             String safeTitle = Objects.requireNonNull(title, "title");
-            graphics.drawCenteredString(safeFont, safeTitle, boxX + boxWidth / 2, lineY, textColor);
-            lineY += 10;
+            safeTitle = truncateToWidth(safeFont, safeTitle, boxWidth - UIScaleManager.scale(20));
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeTitle, boxX + boxWidth / 2, lineY, textColor);
+            lineY += UIScaleManager.scale(10);
         }
 
         if (subtitle != null && !subtitle.isBlank()) {
             String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
-            graphics.drawCenteredString(safeFont, safeSubtitle, boxX + boxWidth / 2, lineY, textColor);
-            lineY += 10;
+            safeSubtitle = truncateToWidth(safeFont, safeSubtitle, boxWidth - UIScaleManager.scale(20));
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeSubtitle, boxX + boxWidth / 2, lineY, textColor);
+            lineY += UIScaleManager.scale(10);
         }
 
         if (infoLines != null) {
@@ -350,8 +364,9 @@ public class QuestSequenceOverlay {
                 if (safeLine.isBlank()) {
                     continue;
                 }
-                graphics.drawCenteredString(safeFont, safeLine, boxX + boxWidth / 2, lineY, textColor);
-                lineY += 10;
+                safeLine = truncateToWidth(safeFont, safeLine, boxWidth - UIScaleManager.scale(20));
+                UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeLine, boxX + boxWidth / 2, lineY, textColor);
+                lineY += UIScaleManager.scale(10);
             }
         }
     }
@@ -362,9 +377,9 @@ public class QuestSequenceOverlay {
     private void renderGoMessage(GuiGraphics graphics, net.minecraft.client.gui.Font font, int boxX, int boxY, int boxWidth, int alpha) {
         int goColor = DesignTokens.withAlpha(DesignTokens.Semantic.SUCCESS, alpha);
         graphics.pose().pushPose();
-        graphics.pose().translate(boxX + boxWidth / 2f, boxY + 32, 0);
+        graphics.pose().translate(boxX + boxWidth / 2f, boxY + UIScaleManager.scale(32), 0);
         graphics.pose().scale(2f, 2f, 1f);
-        graphics.drawCenteredString(Objects.requireNonNull(font, "font"), "GO!", 0, 0, goColor);
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), "GO!", 0, 0, goColor);
         graphics.pose().popPose();
     }
 
@@ -379,14 +394,16 @@ public class QuestSequenceOverlay {
         String arrivalText = Objects.requireNonNull(arrived + " / " + total + " arrived", "arrival text");
         int arrivalColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
         var safeFont = Objects.requireNonNull(font, "font");
-        graphics.drawCenteredString(safeFont, arrivalText, boxX + boxWidth / 2, boxY + 28, arrivalColor);
+        arrivalText = truncateToWidth(safeFont, arrivalText, boxWidth - UIScaleManager.scale(20));
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, arrivalText, boxX + boxWidth / 2,
+            boxY + UIScaleManager.scale(28), arrivalColor);
 
         // Visual dots for each player
-        int dotSize = 8;
-        int dotSpacing = 12;
+        int dotSize = UIScaleManager.scale(8);
+        int dotSpacing = UIScaleManager.scale(12);
         int totalDotsWidth = total * dotSpacing;
         int startX = boxX + (boxWidth - totalDotsWidth) / 2;
-        int dotY = boxY + 45;
+        int dotY = boxY + UIScaleManager.scale(45);
 
         for (int i = 0; i < total; i++) {
             int dotX = startX + i * dotSpacing;
@@ -401,7 +418,7 @@ public class QuestSequenceOverlay {
             // Checkmark for arrived
             if (isArrived) {
                 int checkColor = DesignTokens.withAlpha(DesignTokens.Text.PRIMARY, alpha);
-                graphics.drawString(safeFont, "✓", dotX + 1, dotY, checkColor);
+                UIScaleManager.drawScaledString(graphics, safeFont, "✓", dotX + UIScaleManager.scale(1), dotY, checkColor);
             }
         }
 
@@ -409,7 +426,9 @@ public class QuestSequenceOverlay {
         if (secondsRemaining <= 10 && secondsRemaining > 0) {
             String timeoutText = Objects.requireNonNull("Timeout in " + secondsRemaining + "s", "timeout text");
             int timeoutColor = DesignTokens.withAlpha(DesignTokens.Accent.GOLD, alpha);
-            graphics.drawCenteredString(safeFont, timeoutText, boxX + boxWidth / 2, boxY + 62, timeoutColor);
+            timeoutText = truncateToWidth(safeFont, timeoutText, boxWidth - UIScaleManager.scale(20));
+            UIScaleManager.drawScaledCenteredString(graphics, safeFont, timeoutText, boxX + boxWidth / 2,
+                boxY + UIScaleManager.scale(62), timeoutColor);
         }
     }
 
@@ -417,10 +436,10 @@ public class QuestSequenceOverlay {
      * Render progress bar at bottom of box.
      */
     private void renderProgressBar(GuiGraphics graphics, int boxX, int boxY, int boxWidth, int boxHeight, int alpha) {
-        int barX = boxX + 10;
-        int barY = boxY + boxHeight - 12;
-        int barWidth = boxWidth - 20;
-        int barHeight = 4;
+        int barX = boxX + UIScaleManager.scale(10);
+        int barY = boxY + boxHeight - UIScaleManager.scale(12);
+        int barWidth = boxWidth - UIScaleManager.scale(20);
+        int barHeight = UIScaleManager.scale(4);
 
         // Bar background
         int barBgColor = DesignTokens.withAlpha(DesignTokens.Background.INPUT, alpha);
@@ -507,5 +526,29 @@ public class QuestSequenceOverlay {
                 yield secondsRemaining > 0 ? 1f - (secondsRemaining / (float) totalSeconds) : 1f;
             }
         };
+    }
+
+    /**
+     * Truncate text to fit within a maximum width.
+     */
+    private static String truncateToWidth(net.minecraft.client.gui.Font font, String text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        int availableWidth = maxWidth - ellipsisWidth;
+        if (availableWidth <= 0) {
+            return ellipsis;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (font.width(sb.toString() + c) > availableWidth) {
+                break;
+            }
+            sb.append(c);
+        }
+        return sb + ellipsis;
     }
 }

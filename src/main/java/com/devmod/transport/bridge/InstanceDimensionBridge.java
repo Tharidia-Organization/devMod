@@ -36,8 +36,8 @@ import com.devmod.transport.executor.RecoveryManager;
  *   <li>Recovery point management for instance exits</li>
  * </ul>
  *
- * <p><b>NOTE:</b> This is a stub implementation. Instance system integration
- * will be added when InstanceManager and InstanceRegistry are implemented.
+ * <p>Integrates with InstanceManager, InstanceRegistry, and DynamicDimensionManager
+ * for seamless instance dimension teleportation and lifecycle management.
  */
 public final class InstanceDimensionBridge {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceDimensionBridge.class);

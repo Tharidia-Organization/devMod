@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import net.minecraft.client.gui.Font;
 
+import com.devmod.client.ui.core.UIScaleManager;
+
 public final class OverflowDetector {
 
     private OverflowDetector() {} // Static utility class
@@ -26,7 +28,7 @@ public final class OverflowDetector {
             return Optional.empty();
         }
 
-        int textWidth = font.width(text);
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
         if (textWidth > maxWidth) {
             String preview = text.length() > 10 ? text.substring(0, 10) + "..." : text;
             return Optional.of(new DebugWarning(

@@ -97,31 +97,45 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         pulsePhase += partialTicks * 0.1f;
         if (pulsePhase > 2 * Math.PI) pulsePhase -= (float) (2 * Math.PI);
 
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sIconSize = UIScaleManager.scale(ICON_SIZE);
+
         // Calculate panel width based on longest contract name
         int maxWidth = 0;
+        int maxMultiplierWidth = 0;
         for (var contract : activeContracts) {
             if (contract == null) continue;
             String nameKey = contract.nameKey();
             String translatedName = Component.translatable(nameKey).getString();
-            int width = font.width(Objects.requireNonNull(translatedName, "Translated name cannot be null"));
+            int width = UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(translatedName, "Translated name cannot be null"));
             if (width > maxWidth) maxWidth = width;
+            String multiplierText = String.format("%.1fx", contract.multiplier());
+            maxMultiplierWidth = Math.max(maxMultiplierWidth, UIScaleManager.getScaledStringWidth(font, multiplierText));
         }
-        int panelWidth = maxWidth + ICON_SIZE + PADDING * 3 + 40; // Extra for multiplier
+        int panelWidth = maxWidth + sIconSize + sPadding * 3 + maxMultiplierWidth + UIScaleManager.scale(6);
+        panelWidth = Math.min(panelWidth, UIScaleManager.getSafeWidth());
 
         // Position in top-right
-        int x = screenWidth - panelWidth - PADDING;
-        int y = PADDING;
+        int x = screenWidth - panelWidth - sPadding;
+        int y = sPadding;
+        int panelHeight = sPadding * 2 + activeContracts.size() * sLineHeight + sLineHeight;
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - panelHeight));
 
         // Draw panel background
-        int panelHeight = PADDING * 2 + activeContracts.size() * LINE_HEIGHT + LINE_HEIGHT; // +1 for total
-        graphics.fill(x - PADDING, y - PADDING,
+        graphics.fill(x - sPadding, y - sPadding,
             x + panelWidth, y + panelHeight,
             OverlayTheme.Panel.BG_STANDARD);
 
         // Draw header
         String headerText = "BLOOD CONTRACTS";
-        graphics.drawString(font, headerText, x, y, OverlayTheme.Contract.HEADER, true);
-        y += LINE_HEIGHT + 2;
+        UIScaleManager.drawScaledString(graphics, font, headerText, x, y, OverlayTheme.Contract.HEADER, true);
+        y += sLineHeight + UIScaleManager.scale(2);
 
         // Violation flash effect
         boolean flashViolation = System.currentTimeMillis() - lastViolationTime < VIOLATION_FLASH_DURATION_MS;
@@ -129,13 +143,14 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         // Draw each contract
         for (var contract : activeContracts) {
             if (contract == null) continue;
-            renderContract(graphics, font, contract, x, y, flashViolation);
-            y += LINE_HEIGHT;
+            renderContract(graphics, font, contract, x, y, panelWidth, sPadding, sLineHeight, sIconSize, flashViolation);
+            y += sLineHeight;
         }
 
         // Draw total multiplier
-        y += 4;
-        graphics.fill(x, y - 2, x + panelWidth - PADDING, y - 1, OverlayTheme.Contract.SEPARATOR);
+        y += UIScaleManager.scale(4);
+        graphics.fill(x, y - UIScaleManager.scale(2), x + panelWidth - sPadding, y - UIScaleManager.scale(1),
+            OverlayTheme.Contract.SEPARATOR);
 
         String totalText = String.format("TOTAL: %.1fx", totalMultiplier);
         int totalColor = totalMultiplier >= 2.0f ? OverlayTheme.Contract.MULTIPLIER_HIGH :
@@ -148,7 +163,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
             totalColor = (alpha << 24) | (totalColor & DesignTokens.Mask.RGB);
         }
 
-        graphics.drawString(font, totalText, x, y + 2, totalColor, true);
+        UIScaleManager.drawScaledString(graphics, font, totalText, x, y + UIScaleManager.scale(2), totalColor, true);
     }
 
     /**
@@ -156,7 +171,9 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
      */
     private void renderContract(@Nonnull GuiGraphics graphics, @Nonnull Font font,
                                 @Nonnull ContractSyncPayload.ContractData contract,
-                                int x, int y, boolean flashViolation) {
+                                int x, int y, int panelWidth, int padding,
+                                int lineHeight, int iconSize,
+                                boolean flashViolation) {
 
         int color = contract.color();
         int alpha = 255;
@@ -170,33 +187,35 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         int fullColor = (alpha << 24) | (color & DesignTokens.Mask.RGB);
 
         // Draw tier icon (colored square)
-        graphics.fill(x, y + 1, x + ICON_SIZE, y + ICON_SIZE + 1, fullColor);
+        graphics.fill(x, y + 1, x + iconSize, y + iconSize + 1, fullColor);
 
         // Draw contract name
         String nameKey = contract.nameKey();
         String name = Objects.requireNonNull(
             Component.translatable(nameKey).getString(),
             "Contract name cannot be null");
-        int nameX = x + ICON_SIZE + 4;
-
-        if (contract.violated()) {
-            // Strikethrough for violated
-            graphics.drawString(font, name, nameX, y, OverlayTheme.Contract.VIOLATED, false);
-            int nameWidth = font.width(name);
-            graphics.fill(nameX, y + 4, nameX + nameWidth, y + 5, OverlayTheme.Contract.STRIKETHROUGH);
-        } else {
-            graphics.drawString(font, name, nameX, y, fullColor, true);
-        }
-
-        // Draw multiplier on right
         String multiplierText = Objects.requireNonNull(
             String.format("%.1fx", contract.multiplier()),
             "Multiplier text cannot be null");
-        int multiplierWidth = font.width(multiplierText);
-        int multiplierX = graphics.guiWidth() - PADDING * 2 - multiplierWidth;
+        int multiplierWidth = UIScaleManager.getScaledStringWidth(font, multiplierText);
+        int nameX = x + iconSize + UIScaleManager.scale(4);
+        int maxNameWidth = Math.max(0, panelWidth - padding * 2 - iconSize - multiplierWidth - UIScaleManager.scale(6));
+        name = truncateToWidth(font, name, maxNameWidth);
+
+        if (contract.violated()) {
+            // Strikethrough for violated
+            UIScaleManager.drawScaledString(graphics, font, name, nameX, y, OverlayTheme.Contract.VIOLATED, false);
+            int nameWidth = UIScaleManager.getScaledStringWidth(font, name);
+            graphics.fill(nameX, y + 4, nameX + nameWidth, y + 5, OverlayTheme.Contract.STRIKETHROUGH);
+        } else {
+            UIScaleManager.drawScaledString(graphics, font, name, nameX, y, fullColor, true);
+        }
+
+        // Draw multiplier on right
+        int multiplierX = x + panelWidth - padding - multiplierWidth;
 
         int multiplierColor = contract.violated() ? OverlayTheme.Contract.VIOLATED_MUTED : OverlayTheme.Contract.MULTIPLIER_TEXT;
-        graphics.drawString(font, multiplierText, multiplierX, y, multiplierColor, false);
+        UIScaleManager.drawScaledString(graphics, font, multiplierText, multiplierX, y, multiplierColor, false);
     }
 
     /**
@@ -211,5 +230,18 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
      */
     public float getTotalMultiplier() {
         return totalMultiplier;
+    }
+
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int minChars = Math.min(4, text.length());
+        String trimmed = text;
+        while (font.width(trimmed + ellipsis) > maxWidth && trimmed.length() > minChars) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed + ellipsis;
     }
 }

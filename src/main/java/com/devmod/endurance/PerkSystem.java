@@ -30,11 +30,10 @@ import com.devmod.arena.policy.ArenaPolicy;
 import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-
 public class PerkSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSystem.class);
 

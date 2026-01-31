@@ -9,13 +9,12 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.devmod.endurance.ArenaContext;
 import com.devmod.endurance.CombatTracker;
-import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.EnduranceQuest;
 import com.devmod.endurance.EnduranceQuestManager.ActiveQuestSession;
 import com.devmod.endurance.MutatorSystem;
 import com.devmod.endurance.WaveManager;
 import com.devmod.endurance.WaveObjectiveState;
-
+import com.devmod.endurance.combat.api.IComboSession;
 /**
  * Immutable context for wave lifecycle events.
  * Contains all information needed by listeners to handle wave start/complete.

@@ -370,14 +370,10 @@ public abstract class RadialAction {
 
         @Override
         public void execute() {
-            Minecraft.getInstance().tell(() -> {
-                try {
-                    Minecraft.getInstance().setScreen(screenFactory.get());
-                } catch (Exception e) {
-                    LOGGER.error("[RadialAction] Failed to open screen: {}", e.getMessage());
-                    Minecraft.getInstance().setScreen(null);
-                }
-            });
+            Minecraft.getInstance().tell(() ->
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "radial_screen_action",
+                    screenFactory));
         }
 
         @Override

@@ -4,7 +4,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
@@ -16,7 +15,6 @@ import com.devmod.npc.dialog.DialogSchedule;
 import com.devmod.npc.dialog.DialogSet;
 import com.devmod.npc.dialog.action.DialogAction;
 import com.devmod.npc.dialog.condition.DialogCondition;
-
 final class DialogPayloadSizing {
 
     private DialogPayloadSizing() {

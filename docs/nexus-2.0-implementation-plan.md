@@ -1,5 +1,8 @@
 # Nexus 2.0 - Piano di Implementazione Step-by-Step
 
+> Ultimo aggiornamento: 2026-01-31
+> Stato: documento di piano (storico). L'implementazione e' presente nel codice; verificare con `docs/IMPLEMENTATION_STATE.md`.
+
 > **IMPORTANTE**: Ogni step deve essere rivisto e approvato prima dell'implementazione.
 > Questo documento serve come guida per l'agent che implementerà il codice.
 

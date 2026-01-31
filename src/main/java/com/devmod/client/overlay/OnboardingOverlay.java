@@ -23,13 +23,12 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.input.KeyInputHandler;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
 import com.devmod.util.I18n;
-
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 
 public class OnboardingOverlay {
@@ -154,51 +153,67 @@ public class OnboardingOverlay {
         // Update animation
         pulseAnimation += deltaTracker.getGameTimeDeltaTicks() * 0.1f;
 
+        // Scale dimensions
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+
         // Calculate panel size
-        int panelHeight = calculatePanelHeight();
+        int panelHeight = calculatePanelHeight(sPanelPadding, sLineHeight);
 
         // Position: top-center of screen
         int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int panelX = (screenWidth - PANEL_WIDTH) / 2;
-        int panelY = 10;
+        int panelX = (screenWidth - panelWidth) / 2;
+        int panelY = UIScaleManager.scale(10);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // Draw panel background with pulse effect
         float pulse = (float) (Math.sin(pulseAnimation) * 0.5 + 0.5);
         int borderPulse = DesignTokens.lerp(BORDER_COLOR, OverlayTheme.Utility.WHITE, pulse * 0.3f);
 
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, borderPulse);
-        graphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelHeight, BG_COLOR);
+        int sBorder = UIScaleManager.scale(2);
+        graphics.fill(panelX - sBorder, panelY - sBorder, panelX + panelWidth + sBorder, panelY + panelHeight + sBorder, borderPulse);
+        graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, BG_COLOR);
 
-        int y = panelY + PANEL_PADDING;
-        int contentX = panelX + PANEL_PADDING;
-        int contentWidth = PANEL_WIDTH - PANEL_PADDING * 2;
+        int y = panelY + sPanelPadding;
+        int contentX = panelX + sPanelPadding;
+        int contentWidth = panelWidth - sPanelPadding * 2;
 
         // Progress bar
         float progress = (float) currentStep / STEPS.length;
         int progressBarWidth = contentWidth;
-        int progressBarHeight = 4;
+        int progressBarHeight = UIScaleManager.scale(4);
         graphics.fill(contentX, y, contentX + progressBarWidth, y + progressBarHeight, PROGRESS_BG);
         int filledWidth = (int) (progressBarWidth * progress);
         if (filledWidth > 0) {
             graphics.fill(contentX, y, contentX + filledWidth, y + progressBarHeight, PROGRESS_FILL);
         }
-        y += progressBarHeight + 8;
+        y += progressBarHeight + UIScaleManager.scale(8);
 
         // Step counter
         String stepText = I18n.translate("devmod.tutorial.step_counter", currentStep + 1, STEPS.length).getString();
         var safeFont = Objects.requireNonNull(font);
-        graphics.drawString(safeFont, stepText, contentX, y, MUTED_COLOR, false);
-        y += LINE_HEIGHT + 4;
+        stepText = truncateToWidth(safeFont, stepText, contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, stepText, contentX, y, MUTED_COLOR, false);
+        y += sLineHeight + UIScaleManager.scale(4);
 
         // Title (translate from i18n key)
         String title = I18n.translate(step.title).getString();
-        graphics.drawString(safeFont, "§l" + title, contentX, y, TITLE_COLOR, false);
-        y += LINE_HEIGHT + 2;
+        title = truncateToWidth(safeFont, title, contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, "\u00A7l" + title, contentX, y, TITLE_COLOR, false);
+        y += sLineHeight + UIScaleManager.scale(2);
 
         // Description (translate from i18n key)
         String description = I18n.translate(step.description).getString();
-        graphics.drawString(safeFont, description, contentX, y, TEXT_COLOR, false);
-        y += LINE_HEIGHT + 8;
+        description = truncateToWidth(safeFont, description, contentWidth);
+        UIScaleManager.drawScaledString(graphics, safeFont, description, contentX, y, TEXT_COLOR, false);
+        y += sLineHeight + UIScaleManager.scale(8);
 
         // Instruction with pulsing highlight (translate from i18n key)
         String instruction = I18n.translate(step.instruction).getString();
@@ -214,37 +229,47 @@ public class OnboardingOverlay {
             instruction = instruction.replace("[KEY]", "[" + unboundText + "]");
         }
 
-        // Truncate instruction if too long (keep at least 20 chars for readability)
+        // Truncate instruction if too long
         String displayInstruction = "▶ " + instruction;
-        int maxInstructionWidth = contentWidth;
-        if (font.width(displayInstruction) > maxInstructionWidth) {
-            int minChars = Math.min(20, instruction.length());
-            while (font.width("▶ " + instruction + "...") > maxInstructionWidth && instruction.length() > minChars) {
-                instruction = instruction.substring(0, instruction.length() - 1);
-            }
-            displayInstruction = "▶ " + instruction + "...";
-        }
+        displayInstruction = truncateToWidth(safeFont, displayInstruction, contentWidth);
 
         // Draw instruction with highlight
         int highlightAlpha = (int) (150 + pulse * 100);
         int highlightColor = OverlayTheme.withAlpha(HINT_COLOR, highlightAlpha);
-        graphics.fill(contentX - 4, y - 2, contentX + contentWidth + 4, y + LINE_HEIGHT + 2, OverlayTheme.Utility.SHADOW);
-        graphics.drawString(font, displayInstruction, contentX, y, highlightColor, false);
-        y += LINE_HEIGHT + 10;
+        int sHighlightPad = UIScaleManager.scale(4);
+        graphics.fill(contentX - sHighlightPad, y - UIScaleManager.scale(2), contentX + contentWidth + sHighlightPad, y + sLineHeight + UIScaleManager.scale(2), OverlayTheme.Utility.SHADOW);
+        UIScaleManager.drawScaledString(graphics, font, displayInstruction, contentX, y, highlightColor, false);
+        y += sLineHeight + UIScaleManager.scale(10);
 
         // Skip/Done button hint
         String skipHint = I18n.translate("devmod.tutorial.skip_hint").getString();
-        graphics.drawString(font, "§8" + skipHint, contentX, y, MUTED_COLOR, false);
+        skipHint = truncateToWidth(safeFont, skipHint, contentWidth);
+        UIScaleManager.drawScaledString(graphics, font, "\u00A78" + skipHint, contentX, y, MUTED_COLOR, false);
     }
 
-    private static int calculatePanelHeight() {
-        return PANEL_PADDING * 2
-            + 4 + 8      // Progress bar + gap
-            + LINE_HEIGHT + 4  // Step counter
-            + LINE_HEIGHT + 2  // Title
-            + LINE_HEIGHT + 8  // Description
-            + LINE_HEIGHT + 10 // Instruction
-            + LINE_HEIGHT;     // Skip hint
+    private static String truncateToWidth(Font font, String text, int maxWidth) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        if (maxWidth <= 0 || font.width(text) <= maxWidth) {
+            return text;
+        }
+        int ellipsisWidth = font.width("...");
+        int allowed = Math.max(0, maxWidth - ellipsisWidth);
+        if (allowed <= 0) {
+            return "...";
+        }
+        return font.plainSubstrByWidth(text, allowed) + "...";
+    }
+
+    private static int calculatePanelHeight(int sPanelPadding, int sLineHeight) {
+        return sPanelPadding * 2
+            + UIScaleManager.scale(4) + UIScaleManager.scale(8)      // Progress bar + gap
+            + sLineHeight + UIScaleManager.scale(4)  // Step counter
+            + sLineHeight + UIScaleManager.scale(2)  // Title
+            + sLineHeight + UIScaleManager.scale(8)  // Description
+            + sLineHeight + UIScaleManager.scale(10) // Instruction
+            + sLineHeight;     // Skip hint
     }
 
     // === Action Detection ===

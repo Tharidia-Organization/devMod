@@ -11,10 +11,11 @@ import org.joml.Quaternionf;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 
 import com.devmod.hologram.block.entity.HologramProjectorBlockEntity;
@@ -31,8 +32,16 @@ import com.devmod.hologram.block.entity.HologramProjectorBlockEntity.BuildState;
  *   <li>READY → Upload mesh to VBO</li>
  *   <li>UPLOADED → Render VBO each frame</li>
  * </ol>
+ *
+ * <p>Entity rendering is delegated to {@link HologramEntityRenderer} for Single Responsibility.
  */
 public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBlockEntity> {
+
+    /** Dedicated renderer for entities within the hologram. */
+    private final HologramEntityRenderer entityRenderer = new HologramEntityRenderer();
+
+    /** Store partial ticks for shader animations. */
+    private float partialTicks = 0.0f;
 
     public HologramRenderer(BlockEntityRendererProvider.Context context) {
         // No resources needed
@@ -74,6 +83,9 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         // Center the hologram
         poseStack.translate(-width / 2.0f, 0.0f, -depth / 2.0f);
 
+        // Store partial ticks for shader animations
+        this.partialTicks = partialTick;
+
         // Build and render using state machine
         buildAndRenderVBO(level, minX, maxX, minZ, maxZ, poseStack, blockEntity);
 
@@ -92,7 +104,7 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             case EMPTY -> startAsyncBuild(level, minX, maxX, minZ, maxZ, blockEntity);
             case BUILDING -> checkBuildProgress(blockEntity);
             case READY -> uploadToVBO(blockEntity);
-            case UPLOADED -> renderVBO(poseStack, blockEntity);
+            case UPLOADED -> renderVBO(poseStack, level, blockEntity);
         }
     }
 
@@ -103,7 +115,24 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
                                   @Nonnull HologramProjectorBlockEntity blockEntity) {
         blockEntity.setBuildState(BuildState.BUILDING);
 
-        CompletableFuture<HologramMesh> buildTask = HologramMeshBuilder.buildAsync(level, minX, maxX, minZ, maxZ)
+        // Determine if textured mode should be used
+        // Auto-disable for large scans (> 128 blocks) for performance
+        int scanSize = blockEntity.getScanSize();
+        boolean texturedMode = blockEntity.isTexturedMode() && scanSize <= 128;
+
+        // Y-slice settings
+        boolean ySliceEnabled = blockEntity.isYSliceEnabled();
+        int ySliceLevel = blockEntity.getYSliceLevel();
+        int ySliceThickness = blockEntity.getYSliceThickness();
+
+        CompletableFuture<HologramMesh> buildTask = HologramMeshBuilder.buildAsync(
+                level, minX, maxX, minZ, maxZ,
+                blockEntity.getActiveFilters(),
+                blockEntity.isFilterHighlightOnly(),
+                texturedMode,
+                ySliceEnabled,
+                ySliceLevel,
+                ySliceThickness)
             .thenApply(mesh -> {
                 blockEntity.setMesh(mesh);
                 blockEntity.setBuildState(BuildState.READY);
@@ -124,7 +153,7 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
     }
 
     /**
-     * Upload mesh to VBO.
+     * Upload mesh to VBO and start fade-in animation.
      */
     private void uploadToVBO(@Nonnull HologramProjectorBlockEntity blockEntity) {
         HologramMesh mesh = blockEntity.getMesh();
@@ -137,29 +166,81 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         vbo.upload(mesh);
         blockEntity.setVBO(vbo);
         blockEntity.setBuildState(BuildState.UPLOADED);
+
+        // Start fade-in animation
+        Level level = blockEntity.getLevel();
+        if (level != null) {
+            blockEntity.startAnimation(level.getGameTime());
+            // Estimate max Y from scan size (actual would require mesh info)
+            blockEntity.setMeshMaxY(level.getMaxBuildHeight() - level.getMinBuildHeight());
+        }
     }
 
     /**
-     * Render the VBO.
+     * Render the VBO with holographic shader effects.
      */
-    private void renderVBO(@Nonnull PoseStack poseStack, @Nonnull HologramProjectorBlockEntity blockEntity) {
+    private void renderVBO(@Nonnull PoseStack poseStack, @Nonnull Level level,
+                           @Nonnull HologramProjectorBlockEntity blockEntity) {
         HologramVBO vbo = blockEntity.getVBO();
         if (vbo == null || !vbo.isValid()) {
             blockEntity.setBuildState(BuildState.EMPTY);
             return;
         }
 
-        // Set shader
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        // Check if VBO is in textured mode
+        boolean texturedMode = vbo.isTexturedMode();
+
+        // Bind block atlas if in textured mode
+        if (texturedMode) {
+            RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+        }
+
+        // Get hologram shader (falls back to position_color if not ready)
+        ShaderInstance shader = HologramShaderRegistry.getShader();
+        if (shader != null) {
+            RenderSystem.setShader(() -> shader);
+
+            // Calculate game time for animations
+            float gameTime = (level.getGameTime() + partialTicks) / 20.0f;
+
+            // Set shader uniforms for holographic effects
+            float alpha = blockEntity.isTransparentMode() ? 0.7f : 0.9f;
+            float glitchIntensity = 0.15f; // Subtle glitch
+            float scanLineSpeed = 1.0f;
+
+            // Cyan hologram color
+            float[] holoColor = {0.2f, 0.85f, 1.0f};
+
+            HologramShaderRegistry.setUniforms(gameTime, alpha, glitchIntensity, scanLineSpeed, holoColor);
+
+            // Set animation uniforms
+            float fadeInProgress = blockEntity.getFadeInProgress(level.getGameTime(), partialTicks);
+            float wavePhase = gameTime; // Wave moves with time
+            float waveIntensity = 0.3f;
+            float maxY = blockEntity.getMeshMaxY();
+
+            HologramShaderRegistry.setAnimationUniforms(fadeInProgress, wavePhase, waveIntensity, maxY);
+
+            // Set textured mode uniforms
+            HologramShaderRegistry.setTexturedModeUniforms(texturedMode, 0.3f);
+        } else {
+            // Fallback to basic shader
+            RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+        }
 
         // Build matrices
         Matrix4f modelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
         modelViewMatrix.mul(poseStack.last().pose());
         Matrix4f projectionMatrix = Objects.requireNonNull(RenderSystem.getProjectionMatrix());
 
-        // Render with transparency if enabled
+        // Render with transparency
         float alpha = blockEntity.isTransparentMode() ? 0.7f : 1.0f;
         vbo.render(modelViewMatrix, Objects.requireNonNull(projectionMatrix), alpha);
+
+        // Delegate entity rendering to dedicated renderer
+        if (blockEntity.isShowEntities()) {
+            entityRenderer.renderEntities(poseStack, level, blockEntity, partialTicks);
+        }
     }
 
     @Override

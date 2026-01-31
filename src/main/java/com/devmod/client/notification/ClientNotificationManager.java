@@ -29,6 +29,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.actions.ActionIds;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionOrigin;
 import com.devmod.client.notification.ui.NotificationBadgeOverlay;
 import com.devmod.client.overlay.ResonanceHudOverlay;
@@ -329,14 +330,14 @@ public class ClientNotificationManager {
         // Title
         int textAlpha = (int) (255 * alpha);
         Component title = buildComponent(banner.notification.titleKey(), banner.notification);
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, y + 8,
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), Objects.requireNonNull(title).getString(), x + 10, y + 8,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
         String msgKey = banner.notification.messageKey();
         if (msgKey != null) {
             Component message = buildComponent(msgKey, banner.notification);
-            graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(message), x + 10, y + 24,
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), Objects.requireNonNull(message).getString(), x + 10, y + 24,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha), true);
         }
     }
@@ -364,7 +365,7 @@ public class ClientNotificationManager {
         // Title
         int textAlpha = (int) (255 * alpha);
         Component title = buildComponent(toast.notification.titleKey(), toast.notification);
-        graphics.drawString(Objects.requireNonNull(font), Objects.requireNonNull(title), x + 10, baseY + 8,
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), Objects.requireNonNull(title).getString(), x + 10, baseY + 8,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, textAlpha), true);
 
         // Message if present
@@ -373,10 +374,10 @@ public class ClientNotificationManager {
             Component message = buildComponent(msgKey, toast.notification);
             int maxWidth = TOAST_WIDTH - 20;
             String text = message.getString();
-            if (font.width(Objects.requireNonNull(text)) > maxWidth) {
+            if (UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(text)) > maxWidth) {
                 text = font.plainSubstrByWidth(Objects.requireNonNull(text), maxWidth - 10) + "...";
             }
-            graphics.drawString(font, text, x + 10, baseY + 24,
+            UIScaleManager.drawScaledString(graphics, font, text, x + 10, baseY + 24,
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, textAlpha), true);
         }
     }

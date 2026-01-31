@@ -142,7 +142,7 @@ public class DamageHandler {
             }
 
             // Store body part, armor pen bonus, AND armor reduction in context for telemetry
-            recordHitData(victim, part, isRanged, armorPenBonus, armorReduction);
+            recordHitData(victim, part, isRanged, armorPenBonus, armorReduction, weapon);
 
             LOGGER.debug("Damage calc: base={}, final={}, armorPen={}, armorReduction={}",
                 originalDamage, newDamage, armorPenBonus, armorReduction);
@@ -195,8 +195,9 @@ public class DamageHandler {
     }
 
     private static void recordHitData(LivingEntity victim, HitHelper.BodyPart part, boolean isRanged,
-                                         float armorPenBonus, float armorReduction) {
-        HitData.store(victim, part, isRanged, armorPenBonus);
+                                         float armorPenBonus, float armorReduction, ItemStack weapon) {
+        HitData.store(victim, part, isRanged, armorPenBonus,
+            weapon != null && !weapon.isEmpty() ? weapon.getItem() : null);
         HitData.storeArmorReduction(victim, armorReduction);
     }
 
@@ -340,12 +341,12 @@ public class DamageHandler {
         var typeHolder = source.typeHolder();
         if (typeHolder.unwrapKey().isPresent()) {
             // Use getLabelWithFallback to always return a readable label
-            // Unknown types will be formatted as "§7Some Damage Type" instead of being skipped
+            // Unknown types will be formatted as "\u00A77Some Damage Type" instead of being skipped
             return DamageTypeConfig.INSTANCE.getLabelWithFallback(typeHolder.unwrapKey().get());
         }
 
         // Fallback for damage sources without a type key (very rare)
-        return "§7Environmental Damage";
+        return "\u00A77Environmental Damage";
     }
 
     // ========== Client-safe helpers ==========

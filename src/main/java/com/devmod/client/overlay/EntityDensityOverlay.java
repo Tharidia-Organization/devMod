@@ -91,10 +91,18 @@ public class EntityDensityOverlay {
 
         Font font = mc.font;
         // Position: right side of screen to avoid FpsTracker overlap (5,5)-(145,90)
-        int panelX = mc.getWindow().getGuiScaledWidth() - PANEL_WIDTH - 10;
-        int panelY = 100; // Below FpsTracker area
+        int panelWidth = Math.min(UIScaleManager.scale(PANEL_WIDTH), UIScaleManager.getSafeWidth());
+        int panelHeight = calculatePanelHeight();
+        int panelX = mc.getWindow().getGuiScaledWidth() - panelWidth - UIScaleManager.scale(10);
+        int panelY = UIScaleManager.scale(100); // Below FpsTracker area
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
-        renderDensityPanel(graphics, font, panelX, panelY);
+        renderDensityPanel(graphics, font, panelX, panelY, panelWidth);
     }
 
     private static void updateEntityScan(Minecraft mc) {
@@ -130,89 +138,93 @@ public class EntityDensityOverlay {
         cachedTotalEntities = cachedHostileCount + cachedPassiveCount + cachedPlayerCount + cachedOtherCount;
     }
 
-    private static void renderDensityPanel(GuiGraphics graphics, Font font, int x, int y) {
+    private static void renderDensityPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth) {
         var safeFont = Objects.requireNonNull(font);
         int panelHeight = calculatePanelHeight();
+        int panelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, PANEL_BG);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
 
         // Border
-        drawBorder(graphics, x, y, PANEL_WIDTH, panelHeight, PANEL_BORDER);
+        drawBorder(graphics, x, y, panelWidth, panelHeight, PANEL_BORDER);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int textX = x + panelPadding;
+        int textY = y + panelPadding;
 
         // Title
-        graphics.drawString(safeFont, "Entity Density", textX, textY, TEXT_TITLE, false);
-        textY += LINE_HEIGHT + 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, "Entity Density", textX, textY, TEXT_TITLE, false);
+        textY += lineHeight + 2;
 
         // Separator
-        graphics.fill(x + 4, textY, x + PANEL_WIDTH - 4, textY + 1,
+        graphics.fill(x + 4, textY, x + panelWidth - 4, textY + 1,
             OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
         textY += 4;
 
         // Room name
-        graphics.drawString(safeFont, "Area: " + cachedRoomName, textX, textY, TEXT_MUTED, false);
-        textY += LINE_HEIGHT + 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, "Area: " + cachedRoomName, textX, textY, TEXT_MUTED, false);
+        textY += lineHeight + 2;
 
         // Total count with color based on density
         int totalColor = getTotalColor(cachedTotalEntities);
         String totalText = String.format("Total: %d entities", cachedTotalEntities);
-        graphics.drawString(safeFont, totalText, textX, textY, totalColor, false);
-        textY += LINE_HEIGHT + 4;
+        UIScaleManager.drawScaledString(graphics, safeFont, totalText, textX, textY, totalColor, false);
+        textY += lineHeight + 4;
 
         // Breakdown
         if (cachedHostileCount > 0) {
-            graphics.drawString(safeFont, String.format("  Hostile: %d", cachedHostileCount),
+            UIScaleManager.drawScaledString(graphics, safeFont, String.format("  Hostile: %d", cachedHostileCount),
                 textX, textY, TEXT_DANGER, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
         }
 
         if (cachedPassiveCount > 0) {
-            graphics.drawString(safeFont, String.format("  Passive: %d", cachedPassiveCount),
+            UIScaleManager.drawScaledString(graphics, safeFont, String.format("  Passive: %d", cachedPassiveCount),
                 textX, textY, TEXT_VALUE, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
         }
 
         if (cachedPlayerCount > 0) {
-            graphics.drawString(safeFont, String.format("  Players: %d", cachedPlayerCount),
+            UIScaleManager.drawScaledString(graphics, safeFont, String.format("  Players: %d", cachedPlayerCount),
                 textX, textY, TEXT_TITLE, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
         }
 
         if (cachedOtherCount > 0) {
-            graphics.drawString(safeFont, String.format("  Other: %d", cachedOtherCount),
+            UIScaleManager.drawScaledString(graphics, safeFont, String.format("  Other: %d", cachedOtherCount),
                 textX, textY, TEXT_MUTED, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
         }
 
         // Warning message if high density
         if (cachedTotalEntities >= DENSITY_DANGER_THRESHOLD) {
             textY += 2;
-            graphics.drawString(safeFont, "HIGH DENSITY!", textX, textY, TEXT_DANGER, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "HIGH DENSITY!", textX, textY, TEXT_DANGER, false);
         } else if (cachedTotalEntities >= DENSITY_WARN_THRESHOLD) {
             textY += 2;
-            graphics.drawString(safeFont, "Moderate density", textX, textY, TEXT_WARNING, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, "Moderate density", textX, textY, TEXT_WARNING, false);
         }
     }
 
     private static int calculatePanelHeight() {
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Title
+        int padding = UIScaleManager.scale(PANEL_PADDING);
+        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int height = padding * 2;
+        height += lineHeight + 2;  // Title
         height += 4;                // Separator
-        height += LINE_HEIGHT + 2;  // Room name
-        height += LINE_HEIGHT + 4;  // Total count
+        height += lineHeight + 2;  // Room name
+        height += lineHeight + 4;  // Total count
 
         // Category rows
-        if (cachedHostileCount > 0) height += LINE_HEIGHT;
-        if (cachedPassiveCount > 0) height += LINE_HEIGHT;
-        if (cachedPlayerCount > 0) height += LINE_HEIGHT;
-        if (cachedOtherCount > 0) height += LINE_HEIGHT;
+        if (cachedHostileCount > 0) height += lineHeight;
+        if (cachedPassiveCount > 0) height += lineHeight;
+        if (cachedPlayerCount > 0) height += lineHeight;
+        if (cachedOtherCount > 0) height += lineHeight;
 
         // Warning message
         if (cachedTotalEntities >= DENSITY_WARN_THRESHOLD) {
-            height += LINE_HEIGHT + 2;
+            height += lineHeight + 2;
         }
 
         return height;

@@ -1,31 +1,35 @@
 # Assets e Data Pack
 
-> Ultimo aggiornamento: 2026-01-15
+> Ultimo aggiornamento: 2026-01-31
 
 ## Assets client
 
 ```
 src/main/resources/assets/devmod/
-├── animations/   # GeckoLib animations
-├── geo/          # GeckoLib geometry
-├── blockstates/  # blockstate JSON (201 file)
-├── models/       # block + item models
-├── textures/     # textures block/item/gui (block 318, item 40)
-├── shaders/      # shader assets (23 file)
-└── lang/         # en_us.json
+├── animations/   # GeckoLib animations (31 file)
+├── geo/          # GeckoLib geometry (31 file)
+├── blockstates/  # blockstate JSON (260 file)
+├── models/       # block + item models (block 528, item 291)
+├── textures/     # textures per categoria {'.DS_Store': 1, 'effect': 1, 'fluid': 116, 'vfx': 5, 'item': 182, 'gui': 78, 'block': 647}
+├── shaders/      # shader assets
+├── effeks/       # Effekseer effects
+├── lang/         # en_us.json
+├── EffekseerNativeForJava.dll
+├── libEffekseerNativeForJava.dylib
+└── libEffekseerNativeForJava.so
 ```
 
 ## Data pack
 
-```
-src/main/resources/data/devmod/
-├── recipe/       # ricette (41 file)
-├── loot_table/   # loot table (7 file)
-├── tags/         # tag item (6 file)
-├── structure/    # strutture (4 file)
-├── presets/      # preset (6 file)
-└── test_templates/ # template test (1 file)
-```
+Conteggi per cartella (src/main/resources/data/devmod/):
+
+- recipe: 41
+- loot_table: 7
+- tags: 6
+- structure: 4
+- presets: 6
+- test_templates: 1
+- damage_type: 1
 
 ## Schema
 

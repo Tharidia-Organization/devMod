@@ -117,22 +117,22 @@ public final class LeaderboardCommands {
 
     public static int showHelp(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack src = ctx.getSource();
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Leaderboard Commands ===")), false);
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7/leaderboard list §8- §fList all categories")), false);
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7/leaderboard top <category> [limit] §8- §fView top players")), false);
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7/leaderboard me [category] §8- §fView your rankings")), false);
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7/leaderboard weekly [category] §8- §fView weekly leaderboard")), false);
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7/leaderboard arena <id> [category] §8- §fArena-specific rankings")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7e=== Leaderboard Commands ===")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77/leaderboard list \u00A78- \u00A7fList all categories")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77/leaderboard top <category> [limit] \u00A78- \u00A7fView top players")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77/leaderboard me [category] \u00A78- \u00A7fView your rankings")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77/leaderboard weekly [category] \u00A78- \u00A7fView weekly leaderboard")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77/leaderboard arena <id> [category] \u00A78- \u00A7fArena-specific rankings")), false);
         return 1;
     }
 
     public static int listCategories(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack src = ctx.getSource();
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Leaderboard Categories ===")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7e=== Leaderboard Categories ===")), false);
         for (LeaderboardCategory cat : LeaderboardCategory.values()) {
-            String direction = cat.isHigherIsBetter() ? "§a↑" : "§c↓";
+            String direction = cat.isHigherIsBetter() ? "\u00A7a↑" : "\u00A7c↓";
             src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
-                "§7%s %s §f%s §8- §7%s",
+                "\u00A77%s %s \u00A7f%s \u00A78- \u00A77%s",
                 direction, cat.name().toLowerCase(Locale.ROOT), cat.getDisplayName(), cat.getDescription()
             )))), false);
         }
@@ -145,7 +145,7 @@ public final class LeaderboardCommands {
         String categoryName = StringArgumentType.getString(ctx, "category");
         LeaderboardCategory category = parseCategory(categoryName);
         if (category == null) {
-            src.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown category: " + categoryName)));
+            src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown category: " + categoryName)));
             return 0;
         }
 
@@ -165,7 +165,7 @@ public final class LeaderboardCommands {
         CommandSourceStack src = ctx.getSource();
 
         if (!(src.getEntity() instanceof ServerPlayer player)) {
-            src.sendFailure(Objects.requireNonNull(Component.literal("§cThis command can only be run by players")));
+            src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cThis command can only be run by players")));
             return 0;
         }
 
@@ -177,14 +177,14 @@ public final class LeaderboardCommands {
             String categoryName = StringArgumentType.getString(ctx, "category");
             specificCategory = parseCategory(categoryName);
             if (specificCategory == null) {
-                src.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown category: " + categoryName)));
+                src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown category: " + categoryName)));
                 return 0;
             }
         } catch (IllegalArgumentException e) {
             LOGGER.trace("Optional 'category' argument not provided for showMe");
         }
 
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Your Rankings ===")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7e=== Your Rankings ===")), false);
 
         if (specificCategory != null) {
             showPlayerCategoryRank(src, playerId, specificCategory);
@@ -204,7 +204,7 @@ public final class LeaderboardCommands {
         try {
             target = EntityArgument.getPlayer(ctx, "player");
         } catch (Exception e) {
-            src.sendFailure(Objects.requireNonNull(Component.literal("§cPlayer not found")));
+            src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer not found")));
             return 0;
         }
 
@@ -216,14 +216,14 @@ public final class LeaderboardCommands {
             String categoryName = StringArgumentType.getString(ctx, "category");
             specificCategory = parseCategory(categoryName);
             if (specificCategory == null) {
-                src.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown category: " + categoryName)));
+                src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown category: " + categoryName)));
                 return 0;
             }
         } catch (IllegalArgumentException e) {
             LOGGER.trace("Optional 'category' argument not provided for showPlayer");
         }
 
-        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§e=== Rankings for " + playerName + " ===")), false);
+        src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7e=== Rankings for " + playerName + " ===")), false);
 
         if (specificCategory != null) {
             showPlayerCategoryRank(src, playerId, specificCategory);
@@ -244,7 +244,7 @@ public final class LeaderboardCommands {
             String categoryName = StringArgumentType.getString(ctx, "category");
             LeaderboardCategory parsed = parseCategory(categoryName);
             if (parsed == null) {
-                src.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown category: " + categoryName)));
+                src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown category: " + categoryName)));
                 return 0;
             }
             category = parsed;
@@ -274,7 +274,7 @@ public final class LeaderboardCommands {
             String categoryName = StringArgumentType.getString(ctx, "category");
             LeaderboardCategory parsed = parseCategory(categoryName);
             if (parsed == null) {
-                src.sendFailure(Objects.requireNonNull(Component.literal("§cUnknown category: " + categoryName)));
+                src.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cUnknown category: " + categoryName)));
                 return 0;
             }
             category = parsed;
@@ -308,11 +308,11 @@ public final class LeaderboardCommands {
     private static void displayLeaderboard(CommandSourceStack src, LeaderboardCategory category,
                                             List<LeaderboardEntry> entries, String scope) {
         src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
-            "§e=== %s - %s ===", category.getDisplayName(), scope
+            "\u00A7e=== %s - %s ===", category.getDisplayName(), scope
         )))), false);
 
         if (entries.isEmpty()) {
-            src.sendSuccess(() -> Objects.requireNonNull(Component.literal("§7No entries yet")), false);
+            src.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A77No entries yet")), false);
             return;
         }
 
@@ -322,7 +322,7 @@ public final class LeaderboardCommands {
             String scoreStr = LeaderboardSystem.formatScore(category, entry.score());
             final int currentRank = rank;
             src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
-                "%s §f#%d §7%s §8- §e%s",
+                "%s \u00A7f#%d \u00A77%s \u00A78- \u00A7e%s",
                 medal, currentRank, entry.playerName(), scoreStr
             )))), false);
             rank++;
@@ -337,17 +337,17 @@ public final class LeaderboardCommands {
         String scoreStr = score > 0 ? LeaderboardSystem.formatScore(category, score) : "-";
 
         src.sendSuccess(() -> Objects.requireNonNull(Component.literal(Objects.requireNonNull(String.format(
-            "§7%s: §f%s §8(§e%s§8)",
+            "\u00A77%s: \u00A7f%s \u00A78(\u00A7e%s\u00A78)",
             category.getDisplayName(), rankStr, scoreStr
         )))), false);
     }
 
     private static String getMedal(int rank) {
         return switch (rank) {
-            case 1 -> "§6\u2B50"; // Gold star
-            case 2 -> "§7\u2B50"; // Silver star
-            case 3 -> "§c\u2B50"; // Bronze star
-            default -> "§8\u25CF"; // Bullet
+            case 1 -> "\u00A76\u2B50"; // Gold star
+            case 2 -> "\u00A77\u2B50"; // Silver star
+            case 3 -> "\u00A7c\u2B50"; // Bronze star
+            default -> "\u00A78\u25CF"; // Bullet
         };
     }
 }

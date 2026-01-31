@@ -108,6 +108,7 @@ public class Config {
     public static final ModConfigSpec.BooleanValue TELEMETRY_DEATHS_ENABLED;
     public static final ModConfigSpec.BooleanValue TELEMETRY_SPAWNS_ENABLED;
     public static final ModConfigSpec.IntValue TELEMETRY_TICK_INTERVAL;
+    public static final ModConfigSpec.BooleanValue TELEMETRY_VALIDATION_ENABLED;
 
     // ============================================
     // COMBAT SETTINGS
@@ -274,6 +275,10 @@ public class Config {
         TELEMETRY_TICK_INTERVAL = BUILDER
                 .comment("Telemetry tick interval (1 = every tick, 20 = every second)")
                 .defineInRange("tickInterval", 20, 1, 100);
+
+        TELEMETRY_VALIDATION_ENABLED = BUILDER
+                .comment("Enable telemetry invariant validation logs (debug only)")
+                .define("validationEnabled", false);
 
         BUILDER.pop();
 

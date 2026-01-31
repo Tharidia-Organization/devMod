@@ -16,6 +16,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
 import com.devmod.client.endurance.ClientQuestCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.quest.QuestData;
@@ -113,26 +114,43 @@ public class QuestHudOverlay {
         QuestData activeQuest = QuestManager.INSTANCE.getActiveQuest();
         if (activeQuest == null) return;
 
+        // Update UIScaleManager for responsive scaling
+        UIScaleManager.update();
+
         Font font = mc.font;
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
 
+        // Scaled layout values
+        int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
+        int sMarginRight = UIScaleManager.scale(MARGIN_RIGHT);
+        int sMarginBottom = UIScaleManager.scale(MARGIN_BOTTOM);
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+
         // Calculate panel dimensions
-        int panelHeight = calculatePanelHeight(activeQuest);
-        int panelX = screenWidth - PANEL_WIDTH - MARGIN_RIGHT;
-        int panelY = screenHeight - panelHeight - MARGIN_BOTTOM - 40; // 40px above hotbar
+        int panelHeight = calculatePanelHeight(activeQuest, sPanelPadding, sLineHeight);
+        int panelX = screenWidth - panelWidth - sMarginRight;
+        int panelY = screenHeight - panelHeight - sMarginBottom - UIScaleManager.scale(40); // 40px above hotbar
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
+        panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
         // Render completion animation (if active)
-        renderCompletionAnimation(graphics, font, panelX, panelY - 20);
+        renderCompletionAnimation(graphics, font, panelX, panelY - UIScaleManager.scale(20), panelWidth);
 
         // Render panel
-        renderQuestPanel(graphics, font, activeQuest, panelX, panelY, PANEL_WIDTH, panelHeight);
+        renderQuestPanel(graphics, font, activeQuest, panelX, panelY, panelWidth, panelHeight, sPanelPadding, sLineHeight);
     }
 
     /**
      * Renders the task completion animation.
      */
-    private static void renderCompletionAnimation(GuiGraphics g, Font font, int x, int y) {
+    private static void renderCompletionAnimation(GuiGraphics g, Font font, int x, int y, int sPanelWidth) {
         long elapsed = System.currentTimeMillis() - lastCompletionTime;
         if (elapsed > COMPLETION_ANIMATION_DURATION || lastCompletedTaskName.isEmpty()) return;
 
@@ -143,22 +161,22 @@ public class QuestHudOverlay {
         float alpha = progress < 0.5f ? 1.0f : 1.0f - (progress - 0.5f) * 2.0f;
 
         // Slide up animation
-        int offsetY = (int) (progress * -10);
+        int offsetY = (int) (progress * UIScaleManager.scaleF(-10));
 
         // Scale animation (pulse effect at start)
         float scale = progress < 0.2f ? 1.0f + (0.2f - progress) * 0.5f : 1.0f;
 
         // Render completion message
-        String message = "\u2713 " + truncateText(lastCompletedTaskName, font, PANEL_WIDTH - 20);
+        String message = "\u2713 " + truncateText(lastCompletedTaskName, font, sPanelWidth - UIScaleManager.scale(20));
         int color = applyAlpha(TEXT_COMPLETED, alpha);
 
         // Apply transformations
         g.pose().pushPose();
-        g.pose().translate(x + PANEL_WIDTH / 2.0f, y + offsetY, 0);
+        g.pose().translate(x + sPanelWidth / 2.0f, y + offsetY, 0);
         g.pose().scale(scale, scale, 1.0f);
         g.pose().translate(-font.width(message) / 2.0f, 0, 0);
 
-        g.drawString(font, message, 0, 0, color, true);
+        UIScaleManager.drawScaledString(g, font, message, 0, 0, color, true);
 
         g.pose().popPose();
     }
@@ -167,33 +185,33 @@ public class QuestHudOverlay {
      * Renders the compact quest panel.
      */
     private static void renderQuestPanel(GuiGraphics g, Font font, QuestData quest,
-                                          int x, int y, int width, int height) {
+                                          int x, int y, int width, int height, int sPanelPadding, int sLineHeight) {
         // Background with border
         renderPanelBackground(g, x, y, width, height);
 
-        int textX = x + PANEL_PADDING;
-        int textY = y + PANEL_PADDING;
+        int textX = x + sPanelPadding;
+        int textY = y + sPanelPadding;
 
         if (minimized) {
             // Minimized mode: icon and name only
-            String title = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - PANEL_PADDING * 2 - 20);
-            g.drawString(font, title, textX, textY, TEXT_TITLE, false);
+            String title = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - sPanelPadding * 2 - UIScaleManager.scale(20));
+            UIScaleManager.drawScaledString(g, font, title, textX, textY, TEXT_TITLE, false);
 
             // Compact progress
             String progress = Objects.requireNonNull(quest.getProgressSummary());
-            int progressWidth = font.width(progress);
-            g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
+            int progressWidth = UIScaleManager.getScaledStringWidth(font, progress);
+            UIScaleManager.drawScaledString(g, font, progress, x + width - sPanelPadding - progressWidth, textY, TEXT_PROGRESS, false);
             return;
         }
 
         // === Header: Nome Quest + Progress ===
-        String questName = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - PANEL_PADDING * 2 - 40);
-        g.drawString(font, questName, textX, textY, TEXT_TITLE, false);
+        String questName = "\u2605 " + truncateText(quest.getName(), Objects.requireNonNull(font), width - sPanelPadding * 2 - UIScaleManager.scale(40));
+        UIScaleManager.drawScaledString(g, font, questName, textX, textY, TEXT_TITLE, false);
 
         String progress = Objects.requireNonNull(quest.getProgressSummary());
-        int progressWidth = font.width(progress);
-        g.drawString(font, progress, x + width - PANEL_PADDING - progressWidth, textY, TEXT_PROGRESS, false);
-        textY += LINE_HEIGHT + 2;
+        int progressWidth = UIScaleManager.getScaledStringWidth(font, progress);
+        UIScaleManager.drawScaledString(g, font, progress, x + width - sPanelPadding - progressWidth, textY, TEXT_PROGRESS, false);
+        textY += sLineHeight + 2;
 
         // Separator line
         g.fill(x + 4, textY, x + width - 4, textY + 1, OverlayTheme.withAlpha(PANEL_BORDER, OverlayTheme.Alpha.GHOST));
@@ -203,29 +221,29 @@ public class QuestHudOverlay {
         QuestTask currentTask = quest.getCurrentTask();
         if (currentTask != null) {
             // Label "Quick Task:"
-            g.drawString(font, "Quick Task:", textX, textY, TEXT_NORMAL, false);
-            textY += LINE_HEIGHT;
+            UIScaleManager.drawScaledString(g, font, "Quick Task:", textX, textY, TEXT_NORMAL, false);
+            textY += sLineHeight;
 
             // Task description (with animated arrow)
             long time = System.currentTimeMillis();
             String arrow = (time / 500) % 2 == 0 ? "\u25B6 " : "\u25B7 "; // Alternating arrow
-            String taskDesc = arrow + truncateText(currentTask.getDescription(), font, width - PANEL_PADDING * 2 - 10);
-            g.drawString(font, taskDesc, textX + 4, textY, TEXT_TASK, false);
-            textY += LINE_HEIGHT + 2;
+            String taskDesc = arrow + truncateText(currentTask.getDescription(), font, width - sPanelPadding * 2 - UIScaleManager.scale(10));
+            UIScaleManager.drawScaledString(g, font, taskDesc, textX + 4, textY, TEXT_TASK, false);
+            textY += sLineHeight + 2;
 
             // Task note (if present)
             if (currentTask.hasNote()) {
-                String noteText = "\u270E " + truncateText(currentTask.getNote(), font, width - PANEL_PADDING * 2 - 10);
-                g.drawString(font, noteText, textX + 4, textY, TEXT_NOTE, false);
-                textY += LINE_HEIGHT;
+                String noteText = "\u270E " + truncateText(currentTask.getNote(), font, width - sPanelPadding * 2 - UIScaleManager.scale(10));
+                UIScaleManager.drawScaledString(g, font, noteText, textX + 4, textY, TEXT_NOTE, false);
+                textY += sLineHeight;
             }
         } else {
             // Quest completed with animation
             long time = System.currentTimeMillis();
             int pulseAlpha = (int) (200 + 55 * Math.sin(time / 300.0));
             int completedColor = (pulseAlpha << 24) | (TEXT_COMPLETED & DesignTokens.Mask.RGB);
-            g.drawString(font, "\u2713 Quest completed!", textX, textY, completedColor, false);
-            textY += LINE_HEIGHT;
+            UIScaleManager.drawScaledString(g, font, "\u2713 Quest completed!", textX, textY, completedColor, false);
+            textY += sLineHeight;
         }
 
         // === Quest Note (if present, at the bottom) ===
@@ -235,15 +253,15 @@ public class QuestHudOverlay {
                 OverlayTheme.withAlpha(PANEL_BORDER, DesignTokens.Alpha.A20));
             textY += 4;
 
-            String questNote = "\u270D " + truncateText(quest.getQuestNote(), font, width - PANEL_PADDING * 2 - 10);
-            g.drawString(font, questNote, textX, textY, TEXT_NOTE, false);
-            textY += LINE_HEIGHT;
+            String questNote = "\u270D " + truncateText(quest.getQuestNote(), font, width - sPanelPadding * 2 - UIScaleManager.scale(10));
+            UIScaleManager.drawScaledString(g, font, questNote, textX, textY, TEXT_NOTE, false);
+            textY += sLineHeight;
         }
 
         // === Keybind hint (always at the bottom) ===
         textY += 2;
         String hint = "[ Editor  ] Completa  \\ Toggle";
-        g.drawString(font, hint, textX, textY, TEXT_HINT, false);
+        UIScaleManager.drawScaledString(g, font, hint, textX, textY, TEXT_HINT, false);
     }
 
     /**
@@ -266,32 +284,32 @@ public class QuestHudOverlay {
     /**
      * Calculates dynamic panel height.
      */
-    private static int calculatePanelHeight(QuestData quest) {
+    private static int calculatePanelHeight(QuestData quest, int sPanelPadding, int sLineHeight) {
         if (minimized) {
-            return PANEL_PADDING * 2 + LINE_HEIGHT;
+            return sPanelPadding * 2 + sLineHeight;
         }
 
-        int height = PANEL_PADDING * 2;
-        height += LINE_HEIGHT + 2;  // Header
-        height += 4;                // Separator
+        int height = sPanelPadding * 2;
+        height += sLineHeight + UIScaleManager.scale(2);  // Header
+        height += UIScaleManager.scale(4);                // Separator
 
         QuestTask currentTask = quest.getCurrentTask();
         if (currentTask != null) {
-            height += LINE_HEIGHT;      // "Task rapida:" label
-            height += LINE_HEIGHT + 2;  // Task description
+            height += sLineHeight;      // "Task rapida:" label
+            height += sLineHeight + UIScaleManager.scale(2);  // Task description
             if (currentTask.hasNote()) {
-                height += LINE_HEIGHT;  // Task note
+                height += sLineHeight;  // Task note
             }
         } else {
-            height += LINE_HEIGHT;      // "Quest completata"
+            height += sLineHeight;      // "Quest completata"
         }
 
         if (quest.hasQuestNote()) {
-            height += 6;                // Separator
-            height += LINE_HEIGHT;      // Quest note
+            height += UIScaleManager.scale(6);                // Separator
+            height += sLineHeight;      // Quest note
         }
 
-        height += LINE_HEIGHT + 2;      // Hint keybind
+        height += sLineHeight + UIScaleManager.scale(2);      // Hint keybind
 
         return height;
     }

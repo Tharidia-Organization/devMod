@@ -100,25 +100,30 @@ public class WelcomeScreen extends Screen {
     protected void init() {
         super.init();
         openTime = System.currentTimeMillis();
+        UIScaleManager.update();
 
-        // Responsive panel dimensions - ensure fit on small screens
-        int actualPanelWidth = Math.min(PANEL_WIDTH, width - 20);
-        int actualPanelHeight = Math.min(PANEL_HEIGHT, height - 20);
+        // Responsive panel dimensions with scaling
+        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int actualPanelWidth = Math.min(scaledPanelWidth, width - UIScaleManager.scale(20));
+        int actualPanelHeight = Math.min(scaledPanelHeight, height - UIScaleManager.scale(20));
         int centerX = width / 2;
         int centerY = height / 2;
         int panelX = centerX - actualPanelWidth / 2;
         int panelY = centerY - actualPanelHeight / 2;
 
         // Tutorial button - positioned relative to actual panel width
-        int buttonWidth = Math.min(170, (actualPanelWidth - 50) / 2);
-        int buttonY = panelY + actualPanelHeight - 75;
+        int margin = UIScaleManager.scale(35);
+        int buttonWidth = Math.min(UIScaleManager.scale(170), (actualPanelWidth - UIScaleManager.scale(50)) / 2);
+        int buttonHeight = UIScaleManager.scale(28);
+        int buttonY = panelY + actualPanelHeight - UIScaleManager.scale(75);
         String tutorialLabel = Objects.requireNonNull(I18n.ui("start_tutorial").getString(), "tutorialLabel");
         EditorButton localTutorialButton = new EditorButton("welcome-start-tutorial", tutorialLabel)
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.LARGE)
             .onClick(this::startTutorial);
         EditorButtonWidget safeTutorialButtonWidget = new EditorButtonWidget(localTutorialButton,
-            panelX + 35, buttonY, buttonWidth, 28);
+            panelX + margin, buttonY, buttonWidth, buttonHeight);
         tutorialButtonWidget = safeTutorialButtonWidget;
         safeTutorialButtonWidget.visible = false;
         addRenderableWidget(safeTutorialButtonWidget);
@@ -130,7 +135,7 @@ public class WelcomeScreen extends Screen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::skip);
         EditorButtonWidget safeSkipButtonWidget = new EditorButtonWidget(localSkipButton,
-            panelX + actualPanelWidth - buttonWidth - 35, buttonY, buttonWidth, 28);
+            panelX + actualPanelWidth - buttonWidth - margin, buttonY, buttonWidth, buttonHeight);
         skipButtonWidget = safeSkipButtonWidget;
         safeSkipButtonWidget.visible = false;
         addRenderableWidget(safeSkipButtonWidget);
@@ -139,8 +144,8 @@ public class WelcomeScreen extends Screen {
         String dontShowLabel = Objects.requireNonNull(I18n.ui("dont_show_again").getString(), "dontShowLabel");
         dontShowToggle = new EditorToggle("welcome-dont-show", dontShowLabel, false)
             .onChange(value -> dontShowAgain = value);
-        dontShowToggleX = panelX + 35;
-        dontShowToggleY = panelY + PANEL_HEIGHT - 40;
+        dontShowToggleX = panelX + margin;
+        dontShowToggleY = panelY + actualPanelHeight - UIScaleManager.scale(40);
         dontShowToggleWidth = buttonWidth * 2;
 
         // Initialize background particles
@@ -227,12 +232,12 @@ public class WelcomeScreen extends Screen {
 
         // === Features Section ===
         if (elapsed > FEATURES_REVEAL_DELAY) {
-            renderFeatures(safeGraphics, panelX, panelY + 75, elapsed);
+            renderFeatures(safeGraphics, panelX, panelY + UIScaleManager.scale(75), scaledPanelWidth, elapsed);
         }
 
         // === Keybinds Section ===
         if (elapsed > KEYBINDS_REVEAL_DELAY) {
-            renderKeybinds(safeGraphics, centerX, panelY + 220, elapsed);
+            renderKeybinds(safeGraphics, centerX, panelY + UIScaleManager.scale(220), elapsed);
         }
 
         // === Buttons hint ===
@@ -301,10 +306,11 @@ public class WelcomeScreen extends Screen {
         @Nonnull Font safeFont = safeFont();
         // Animated "DevMod" logo text
         float logoScale = 1.0f + 0.03f * (float) Math.sin(elapsed / 400.0);
+        float scaledLogoSize = UIScaleManager.scaleF(2.0f);
 
         g.pose().pushPose();
-        g.pose().translate(centerX, panelY + 25, 0);
-        g.pose().scale(logoScale * 2.0f, logoScale * 2.0f, 1.0f);
+        g.pose().translate(centerX, panelY + UIScaleManager.scale(25), 0);
+        g.pose().scale(logoScale * scaledLogoSize, logoScale * scaledLogoSize, 1.0f);
 
         String title = "DevMod";
         int titleWidth = safeFont.width(title);
@@ -315,26 +321,28 @@ public class WelcomeScreen extends Screen {
 
         // Subtitle
         int subtitleColor = applyAlpha(COLOR_SUBTITLE, alpha);
-        g.drawCenteredString(safeFont, "Welcome!", centerX, panelY + 48, subtitleColor);
+        g.drawCenteredString(safeFont, "Welcome!", centerX, panelY + UIScaleManager.scale(48), subtitleColor);
 
         // Separator line
+        int sepWidth = UIScaleManager.scale(180);
         int sepColor = applyAlpha(DesignTokens.withAlpha(DesignTokens.Welcome.BORDER, DesignTokens.Alpha.A40), alpha);
-        g.fill(centerX - 180, panelY + 65, centerX + 180, panelY + 66, sepColor);
+        g.fill(centerX - sepWidth, panelY + UIScaleManager.scale(65), centerX + sepWidth, panelY + UIScaleManager.scale(66), sepColor);
     }
 
-    private void renderFeatures(GuiGraphics g, int panelX, int startY, long elapsed) {
+    private void renderFeatures(GuiGraphics g, int panelX, int startY, int scaledPanelWidth, long elapsed) {
         @Nonnull Font safeFont = safeFont();
         long featureElapsed = elapsed - FEATURES_REVEAL_DELAY;
 
         int y = startY;
-        int x = panelX + 30;
+        int margin = UIScaleManager.scale(30);
+        int x = panelX + margin;
 
         // "Features:" header
         if (featureElapsed > 0) {
             float headerAlpha = Math.min(1.0f, featureElapsed / 200.0f);
             int headerColor = applyAlpha(COLOR_TEXT_DIM, headerAlpha);
             g.drawString(safeFont, "What you get:", x, y, headerColor, false);
-            y += 16;
+            y += UIScaleManager.scale(16);
         }
 
         // Feature list with staggered reveal
@@ -342,37 +350,39 @@ public class WelcomeScreen extends Screen {
             long featureDelay = (i + 1) * FEATURES_STAGGER;
             if (featureElapsed > featureDelay) {
                 float featureAlpha = Math.min(1.0f, (featureElapsed - featureDelay) / 250.0f);
-                renderFeatureItem(g, FEATURES[i], x, y, featureAlpha, elapsed);
-                y += 26;
+                renderFeatureItem(g, FEATURES[i], x, y, scaledPanelWidth - margin * 2, featureAlpha, elapsed);
+                y += UIScaleManager.scale(26);
             }
         }
     }
 
-    private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, float alpha, long elapsed) {
+    private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, int featureWidth, float alpha, long elapsed) {
         @Nonnull Font safeFont = safeFont();
         // Bullet animation
         float bulletPulse = 1.0f + 0.2f * (float) Math.sin(elapsed / 300.0 + feature.name.hashCode());
 
         // Background highlight on hover effect (subtle)
         int bgColor = applyAlpha(DesignTokens.Welcome.SUBTLE, alpha);
-        g.fill(x - 5, y - 2, x + PANEL_WIDTH - 60, y + 20, bgColor);
+        int rowHeight = UIScaleManager.scale(20);
+        g.fill(x - UIScaleManager.scale(5), y - UIScaleManager.scale(2), x + featureWidth, y + rowHeight, bgColor);
 
         // Colored bullet
         int bulletColor = applyAlpha(feature.color, alpha);
         String bullet = "\u25CF"; // Filled circle
         g.pose().pushPose();
-        g.pose().translate(x, y + 4, 0);
+        g.pose().translate(x, y + UIScaleManager.scale(4), 0);
         g.pose().scale(bulletPulse, bulletPulse, 1.0f);
         g.drawString(safeFont, bullet, 0, 0, bulletColor, false);
         g.pose().popPose();
 
         // Feature name
+        int textOffset = UIScaleManager.scale(15);
         int nameColor = applyAlpha(feature.color, alpha);
-        g.drawString(safeFont, feature.name, x + 15, y + 2, nameColor, true);
+        g.drawString(safeFont, feature.name, x + textOffset, y + UIScaleManager.scale(2), nameColor, true);
 
         // Description
         int descColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(safeFont, feature.description, x + 15, y + 12, descColor, false);
+        g.drawString(safeFont, feature.description, x + textOffset, y + UIScaleManager.scale(12), descColor, false);
     }
 
     private void renderKeybinds(GuiGraphics g, int centerX, int startY, long elapsed) {
@@ -381,21 +391,24 @@ public class WelcomeScreen extends Screen {
         float alpha = Math.min(1.0f, keybindElapsed / 300.0f);
 
         // Separator
+        int sepWidth = UIScaleManager.scale(180);
         int sepColor = applyAlpha(DesignTokens.withAlpha(DesignTokens.Welcome.BORDER, DesignTokens.Alpha.A27), alpha);
-        g.fill(centerX - 180, startY, centerX + 180, startY + 1, sepColor);
+        g.fill(centerX - sepWidth, startY, centerX + sepWidth, startY + 1, sepColor);
 
         // Header
         int headerColor = applyAlpha(COLOR_TEXT, alpha);
-        g.drawCenteredString(safeFont, "Suggested Keybinds", centerX, startY + 10, headerColor);
+        g.drawCenteredString(safeFont, "Suggested Keybinds", centerX, startY + UIScaleManager.scale(10), headerColor);
 
         // Keybinds
-        int y = startY + 28;
+        int y = startY + UIScaleManager.scale(28);
+        int keybindOffset = UIScaleManager.scale(120);
+        int lineHeight = UIScaleManager.scale(18);
         for (int i = 0; i < KEYBINDS.length; i++) {
             long kbDelay = i * 120L;
             if (keybindElapsed > kbDelay) {
                 float kbAlpha = Math.min(1.0f, (keybindElapsed - kbDelay) / 200.0f);
-                renderKeybindItem(g, KEYBINDS[i], centerX - 120, y, kbAlpha);
-                y += 18;
+                renderKeybindItem(g, KEYBINDS[i], centerX - keybindOffset, y, kbAlpha);
+                y += lineHeight;
             }
         }
     }
@@ -406,8 +419,10 @@ public class WelcomeScreen extends Screen {
         String keyText = "[" + kb.key + "]";
         int keyWidth = safeFont.width(keyText);
 
+        int padding = UIScaleManager.scale(2);
+        int boxHeight = UIScaleManager.scale(10);
         int boxColor = applyAlpha(DesignTokens.Welcome.SHADOW, alpha);
-        g.fill(x - 2, y - 1, x + keyWidth + 4, y + 10, boxColor);
+        g.fill(x - padding, y - 1, x + keyWidth + padding * 2, y + boxHeight, boxColor);
 
         // Key text
         int keyColor = applyAlpha(COLOR_KEY, alpha);
@@ -415,7 +430,7 @@ public class WelcomeScreen extends Screen {
 
         // Action text
         int actionColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        g.drawString(safeFont, kb.action, x + keyWidth + 10, y, actionColor, false);
+        g.drawString(safeFont, kb.action, x + keyWidth + UIScaleManager.scale(10), y, actionColor, false);
     }
 
     private void renderParticles(GuiGraphics g) {

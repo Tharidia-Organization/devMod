@@ -19,6 +19,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.ItemStack;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorCache;
 import com.devmod.client.ui.editor.core.EditorConstants;
@@ -169,7 +170,7 @@ public abstract class AbstractEditorModule implements EditorModule {
 
             // Render section header label if it's a HeaderSection
             if (section instanceof EditorSection.HeaderSection headerSection) {
-                graphics.drawString(Objects.requireNonNull(font, "font cannot be null"), headerSection.getLabel(),
+                UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font cannot be null"), headerSection.getLabel(),
                     contentBounds.x() + DesignTokens.Spacing.SM,
                     y + (section.getHeight() - 8) / 2,
                     DesignTokens.Text.TITLE(), false);
