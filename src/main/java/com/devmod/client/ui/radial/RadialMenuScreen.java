@@ -33,6 +33,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.actions.ActionCategory;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionResult;
@@ -41,6 +42,7 @@ import com.devmod.client.overlay.OnboardingOverlay;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.radial.animation.RadialAnimator;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
+import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.config.VisibilitySupplierRegistry;
 import com.devmod.client.ui.radial.input.RadialSearchHandler;
 import com.devmod.client.ui.radial.model.MacroCategory;
@@ -189,12 +191,22 @@ public final class RadialMenuScreen extends Screen {
         if (config.usageStats == null) {
             config.usageStats = new HashMap<>();
         }
-        innerRadius = config.innerRadius;
-        outerRadius = config.outerRadius;
-        itemRadius = config.itemRadius;
-        centerButtonRadius = config.centerButtonRadius;
-        favoritesRadius = innerRadius - RadialMenuConstants.FAVORITES_OFFSET;
-        macroHubRadius = centerButtonRadius + RadialMenuConstants.MACRO_HUB_OFFSET;
+        // Layout values are now computed dynamically by RadialMenuScaler
+        updateScaledLayout();
+    }
+
+    /**
+     * Updates layout values from RadialMenuScaler.
+     * Called on init and each render to respond to window changes.
+     */
+    private void updateScaledLayout() {
+        RadialMenuScaler.updateWithConfig(config);
+        innerRadius = RadialMenuScaler.getInnerRadius();
+        outerRadius = RadialMenuScaler.getOuterRadius();
+        itemRadius = RadialMenuScaler.getItemRadius();
+        centerButtonRadius = RadialMenuScaler.getCenterButtonRadius();
+        favoritesRadius = RadialMenuScaler.getFavoritesRadius();
+        macroHubRadius = RadialMenuScaler.getMacroHubRadius();
     }
 
     private void cacheTargetEntity() {
@@ -576,8 +588,10 @@ public final class RadialMenuScreen extends Screen {
         // Track screen open for telemetry
         UiTelemetry.screenOpened("radial", "radial_menu");
 
-        centerX = width / 2;
-        centerY = height / 2;
+        // Initialize responsive layout
+        updateScaledLayout();
+        centerX = RadialMenuScaler.getCenterX();
+        centerY = RadialMenuScaler.getCenterY();
         OnboardingOverlay.onRadialMenuOpened();
 
         // Reset telemetry tracking for this session
@@ -632,8 +646,14 @@ public final class RadialMenuScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
+
+        // Update responsive layout (handles window resize, GUI scale changes)
+        updateScaledLayout();
+        centerX = RadialMenuScaler.getCenterX();
+        centerY = RadialMenuScaler.getCenterY();
 
         // Update animations
         updateAnimations(partialTick);

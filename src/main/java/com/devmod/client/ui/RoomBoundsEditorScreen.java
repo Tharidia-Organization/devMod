@@ -34,6 +34,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.rendering.RoomBoundsVisualizer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -388,14 +389,17 @@ public class RoomBoundsEditorScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         @Nonnull Font safeFont = Objects.requireNonNull(font, "font");
         renderBackground(safeGraphics, mouseX, mouseY, partialTick);
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int centerX = UIScaleManager.getCenterX();
+        int centerY = UIScaleManager.getCenterY();
+        int panelX = centerX - scaledPanelWidth / 2;
+        int panelY = centerY - scaledPanelHeight / 2;
 
         // Panel background
         safeGraphics.fill(panelX - 1, panelY - 1, panelX + PANEL_WIDTH + 1, panelY + PANEL_HEIGHT + 1, PANEL_BORDER);

@@ -200,17 +200,25 @@ public class WaveManager {
         public synchronized void recordKill(UUID mobId) {
             killed++;
             objective.recordKill();
+
+            // Diagnostic logging for wave completion tracking
+            LOGGER.info("[WaveManager] Kill recorded: mob={}, killed={}/{}, spawned={}/{}, pending={}, objComplete={}",
+                mobId, killed, totalToSpawn, spawned, totalToSpawn, hasPendingSpawns(), objective.isComplete());
+
             if (objective.getType() == WaveObjectiveState.Type.ELITE_HUNT) {
                 objective.recordObjectiveKill(mobId);
             }
             if (objective.isComplete() && objective.getType() != WaveObjectiveState.Type.KILL_ALL) {
                 complete = true;
+                LOGGER.info("[WaveManager] Wave {} marked complete (non-KILL_ALL objective)", waveNumber);
             }
             if (objective.getType() == WaveObjectiveState.Type.KILL_ALL
                 && objective.isComplete()
                 && spawned >= totalToSpawn
                 && !hasPendingSpawns()) {
                 complete = true;
+                LOGGER.info("[WaveManager] Wave {} marked complete (KILL_ALL: killed={}, totalToSpawn={})",
+                    waveNumber, killed, totalToSpawn);
             }
         }
 
@@ -228,6 +236,10 @@ public class WaveManager {
                 objective.registerObjectiveTarget(mobId);
             }
             spawned++;
+
+            // Diagnostic logging for mob tracking
+            LOGGER.info("[WaveManager] Mob added to tracking: mobId={}, wave={}, spawned={}/{}, affix={}",
+                mobId, waveNumber, spawned, totalToSpawn, affix);
         }
 
         /**
@@ -1625,7 +1637,17 @@ public class WaveManager {
                                @javax.annotation.Nullable EnduranceQuestManager.ActiveQuestSession session,
                                @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
         WaveState waveState = activeWaves.get(arenaId);
-        if (waveState != null && waveState.spawnedMobs.contains(mobId)) {
+
+        // Diagnostic logging for mob death tracking
+        if (waveState == null) {
+            LOGGER.warn("[WaveManager] handleMobDeath: No wave state for arena {} (mob={})", arenaId, mobId);
+            return;
+        }
+        boolean tracked = waveState.spawnedMobs.contains(mobId);
+        LOGGER.info("[WaveManager] handleMobDeath: mob={}, tracked={}, arenaId={}, spawnedMobsCount={}",
+            mobId, tracked, arenaId, waveState.spawnedMobs.size());
+
+        if (tracked) {
             waveState.recordKill(mobId);
 
             // Check if this was a boss wave (using dynamic tension system)
@@ -1648,6 +1670,9 @@ public class WaveManager {
             if (waveState.isComplete() && session != null) {
                 notifyWaveComplete(session, player, waveState);
             }
+        } else {
+            LOGGER.warn("[WaveManager] handleMobDeath: Mob {} NOT in spawnedMobs list (size={}), wave {}, arena {}",
+                mobId, waveState.spawnedMobs.size(), waveState.waveNumber, arenaId);
         }
     }
 

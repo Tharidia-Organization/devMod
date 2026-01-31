@@ -23,10 +23,12 @@ import com.devmod.network.PayloadValidation;
 /**
  * Server → Client payload to sync network list for selection GUI.
  * Contains information about available transport nodes in a network.
+ * Includes the source node ID so the client can build a selection response.
  *
  * <p>Channel: transport_network_list
  */
 public record TransportNetworkListPayload(
+    UUID sourceNodeId,
     String networkName,
     List<NetworkNodeInfo> nodes
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
@@ -38,6 +40,7 @@ public record TransportNetworkListPayload(
         StreamCodec.of(TransportNetworkListPayload::encode, TransportNetworkListPayload::decode);
 
     private static void encode(ByteBuf buf, TransportNetworkListPayload payload) {
+        UUIDUtil.STREAM_CODEC.encode(Objects.requireNonNull(buf), Objects.requireNonNull(payload.sourceNodeId));
         ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH).encode(
             Objects.requireNonNull(buf),
             TransportPayloadLimits.truncate(payload.networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
@@ -65,9 +68,11 @@ public record TransportNetworkListPayload(
         buf.writeInt(node.z);
         buf.writeByte(node.colorIndex);
         buf.writeBoolean(node.available);
+        buf.writeInt(node.distanceBlocks);
     }
 
     private static TransportNetworkListPayload decode(ByteBuf buf) {
+        UUID sourceNodeId = UUIDUtil.STREAM_CODEC.decode(Objects.requireNonNull(buf));
         String networkName = ByteBufCodecs.stringUtf8(TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
             .decode(Objects.requireNonNull(buf));
         int rawCount = buf.readShort() & 0xFFFF; // unsigned short
@@ -79,7 +84,7 @@ public record TransportNetworkListPayload(
                 nodes.add(node);
             }
         }
-        return new TransportNetworkListPayload(networkName, nodes);
+        return new TransportNetworkListPayload(sourceNodeId, networkName, nodes);
     }
 
     private static NetworkNodeInfo decodeNode(ByteBuf buf) {
@@ -93,7 +98,8 @@ public record TransportNetworkListPayload(
         int z = buf.readInt();
         int colorIndex = buf.readUnsignedByte();
         boolean available = buf.readBoolean();
-        return new NetworkNodeInfo(nodeId, displayName, dimension, x, y, z, colorIndex, available);
+        int distanceBlocks = buf.readInt();
+        return new NetworkNodeInfo(nodeId, displayName, dimension, x, y, z, colorIndex, available, distanceBlocks);
     }
 
     @Override
@@ -105,7 +111,8 @@ public record TransportNetworkListPayload(
     @Override
     public int estimatedSize() {
         int nodeCount = TransportPayloadLimits.clampCount(nodes.size(), TransportPayloadLimits.MAX_NODES);
-        long size = PayloadSizeUtil.estimatedUtfSize(
+        long size = 16; // UUID
+        size += PayloadSizeUtil.estimatedUtfSize(
             TransportPayloadLimits.truncateNullable(networkName, TransportPayloadLimits.MAX_NETWORK_NAME_LENGTH)
         );
         size += 2; // node count (short)
@@ -121,6 +128,7 @@ public record TransportNetworkListPayload(
             size += 4L * 3; // x/y/z
             size += 1; // colorIndex
             size += 1; // available
+            size += 4; // distanceBlocks
         }
         return PayloadSizeUtil.clampToInt(size);
     }
@@ -143,7 +151,8 @@ public record TransportNetworkListPayload(
         int y,
         int z,
         int colorIndex,
-        boolean available
+        boolean available,
+        int distanceBlocks
     ) {
         /**
          * Returns the position as BlockPos.

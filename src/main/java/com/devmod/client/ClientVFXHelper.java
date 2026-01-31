@@ -10,8 +10,10 @@ import com.devmod.client.effects.ShakeManager;
 import com.devmod.client.overlay.HeadshotFlashVFX;
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactData;
+import com.devmod.client.overlay.ImpactEffekseerVFX;
 import com.devmod.client.overlay.ImpactVFX;
 import com.devmod.combat.HitHelper.BodyPart;
+import com.devmod.config.Config;
 import com.devmod.damage.DamageBreakdown;
 
 public final class ClientVFXHelper {
@@ -92,16 +94,33 @@ public final class ClientVFXHelper {
      * Note: Panel spawning is now handled by ImpactHudController.
      */
     public static void addImpactVFX(Vec3 hitPoint, Vec3 slashDirection, ImpactData impactData) {
-        // Trigger headshot flash effect if hit was to the head
+        // Trigger headshot audio feedback if hit was to the head
         if (impactData != null && impactData.getBodyPart() == BodyPart.HEAD && isLocalAttacker(impactData)) {
             HeadshotFlashVFX.trigger();
         }
 
         // Only add VFX effects if we have a hit point
         if (hitPoint != null) {
-            ImpactVFX.addImpact(hitPoint, slashDirection, impactData);
+            if (isEffekseerEnabled()) {
+                // Use Effekseer particle system
+                ImpactEffekseerVFX.playImpactEffect(hitPoint, impactData);
+            } else {
+                // Use legacy CPU/GPU VFX
+                ImpactVFX.addImpact(hitPoint, slashDirection, impactData);
+            }
         }
         // Panel spawning is handled by ImpactHudController.onImpact()
+    }
+
+    /**
+     * Checks if Effekseer VFX is enabled in config.
+     */
+    private static boolean isEffekseerEnabled() {
+        try {
+            return Config.IMPACT_VFX_USE_EFFEKSEER.get();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

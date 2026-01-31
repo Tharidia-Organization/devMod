@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -38,6 +39,12 @@ public class Impact3DRenderer {
     private static final float PADDING = 6f;
     private static final float LINE_HEIGHT = 11f;
     private static final float SECTION_SPACING = 5f;
+    private static final float SCALE_NEAR = 1.0f;
+    private static final float SCALE_FAR = 1.35f;
+    private static final float SCALE_NEAR_DISTANCE = 6.0f;
+    private static final float SCALE_FAR_DISTANCE = 24.0f;
+    private static final float FADE_START_DISTANCE = 32.0f;
+    private static final float FADE_END_DISTANCE = 48.0f;
 
     private Impact3DRenderer() {}
 
@@ -98,9 +105,14 @@ public class Impact3DRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
+        double distance = panelWorldPos.distanceTo(cameraPos);
+        float distanceFade = computeDistanceFade((float) distance);
+        if (distanceFade <= 0.01f) return;
+        float effectiveAlpha = alpha * distanceFade;
+
         // 1. Render connection line from hit point to panel
         if (showConnectionLine) {
-            renderConnectionLine(poseStack, bufferSource, cameraPos, hitPoint, panelWorldPos, alpha);
+            renderConnectionLine(poseStack, bufferSource, cameraPos, hitPoint, panelWorldPos, effectiveAlpha);
         }
 
         // 2. Translate to panel position (relative to camera)
@@ -111,16 +123,19 @@ public class Impact3DRenderer {
         // 3. Calculate billboard rotation (face camera)
         Vec3 toCamera = cameraPos.subtract(panelWorldPos).normalize();
         float yaw = (float) Math.atan2(toCamera.x, toCamera.z);
-        poseStack.mulPose(Objects.requireNonNull(new Quaternionf().rotationY(yaw)));
+        float pitch = (float) Math.atan2(toCamera.y, Math.sqrt(toCamera.x * toCamera.x + toCamera.z * toCamera.z));
+        Quaternionf rotation = new Quaternionf().rotationY(yaw).rotateX(-pitch);
+        poseStack.mulPose(Objects.requireNonNull(rotation));
 
         // 4. Uniform scale for panel - negative Y for vertical flip
-        poseStack.scale(PANEL_SCALE, -PANEL_SCALE, PANEL_SCALE);
+        float scale = PANEL_SCALE * computeScaleMultiplier((float) distance);
+        poseStack.scale(scale, -scale, scale);
 
         // 5. Center panel relative to its width/height
         poseStack.translate(-PANEL_WIDTH_PX / 2, -PANEL_HEIGHT_PX / 2, 0);
 
         // 6. Render panel content
-        renderPanelContent(poseStack, bufferSource, data, layout, detail, alpha, mc.font);
+        renderPanelContent(poseStack, bufferSource, data, layout, detail, effectiveAlpha, mc.font);
 
         poseStack.popPose();
     }
@@ -218,6 +233,28 @@ public class Impact3DRenderer {
             case SECTION -> SECTION_SPACING;
             case LARGE -> 4f;
         };
+    }
+
+    private float computeScaleMultiplier(float distance) {
+        if (distance <= SCALE_NEAR_DISTANCE) {
+            return SCALE_NEAR;
+        }
+        if (distance >= SCALE_FAR_DISTANCE) {
+            return SCALE_FAR;
+        }
+        float t = (distance - SCALE_NEAR_DISTANCE) / (SCALE_FAR_DISTANCE - SCALE_NEAR_DISTANCE);
+        return Mth.lerp(t, SCALE_NEAR, SCALE_FAR);
+    }
+
+    private float computeDistanceFade(float distance) {
+        if (distance <= FADE_START_DISTANCE) {
+            return 1.0f;
+        }
+        if (distance >= FADE_END_DISTANCE) {
+            return 0.0f;
+        }
+        float t = (distance - FADE_START_DISTANCE) / (FADE_END_DISTANCE - FADE_START_DISTANCE);
+        return 1.0f - t;
     }
 
     /**

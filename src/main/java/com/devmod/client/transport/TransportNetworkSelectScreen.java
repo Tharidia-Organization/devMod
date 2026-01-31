@@ -25,6 +25,7 @@ import com.devmod.transport.TransportColor;
 import com.devmod.transport.network.TransportNetworkListPayload;
 import com.devmod.transport.network.TransportNetworkListPayload.NetworkNodeInfo;
 import com.devmod.transport.network.TransportWaypointSelectPayload;
+import com.devmod.util.I18n;
 
 /**
  * Network destination selection screen for transport nodes.
@@ -226,6 +227,18 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
             String unavailText = "Unavailable";
             int unavailWidth = font.width(unavailText);
             graphics.drawString(font, unavailText, x + width - unavailWidth - 4, y + 14, DesignTokens.Semantic.ERROR, false);
+        } else if (node.distanceBlocks() >= 0) {
+            String distText = node.distanceBlocks() + "m";
+            int distWidth = font.width(distText);
+            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
+        } else if (node.distanceBlocks() == -2) {
+            String distText = I18n.translate("devmod.transport.distance.cross_dim_badge").getString();
+            int distWidth = font.width(distText);
+            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
+        } else {
+            String distText = I18n.translate("devmod.transport.distance.unknown").getString();
+            int distWidth = font.width(distText);
+            graphics.drawString(font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED, false);
         }
     }
 
@@ -393,5 +406,12 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
      */
     public static void open(@Nonnull UUID sourceNodeId, @Nonnull TransportNetworkListPayload payload) {
         Minecraft.getInstance().setScreen(new TransportNetworkSelectScreen(sourceNodeId, payload));
+    }
+
+    /**
+     * Opens this screen directly from a payload that includes source node.
+     */
+    public static void open(@Nonnull TransportNetworkListPayload payload) {
+        open(payload.sourceNodeId(), payload);
     }
 }

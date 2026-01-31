@@ -222,6 +222,8 @@ public final class NpcNetworkHandler extends NetworkHandlerBase {
             if (!result.success()) {
                 DevMod.LOGGER.warn("Player {} failed to save dialog set {}: {}",
                     player.getName().getString(), payload.dialogSet().id(), result.message());
+                sendEditorConfirm(player, false, false, "dialog",
+                    payload.dialogSet().id(), result.message());
                 player.sendSystemMessage(Objects.requireNonNull(Component.literal("Dialog save failed: " + result.message())));
                 for (String error : result.errors()) {
                     player.sendSystemMessage(Objects.requireNonNull(Component.literal(" - " + error)));
@@ -231,6 +233,8 @@ public final class NpcNetworkHandler extends NetworkHandlerBase {
 
             DevMod.LOGGER.info("Player {} saved dialog set: {}",
                 player.getName().getString(), payload.dialogSet().id());
+            sendEditorConfirm(player, true, false, "dialog",
+                payload.dialogSet().id(), result.message());
             player.sendSystemMessage(Objects.requireNonNull(Component.literal(result.message())));
         });
     }

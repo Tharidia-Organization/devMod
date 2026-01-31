@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.telemetry.UiTelemetry;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 /**
@@ -199,6 +200,8 @@ public abstract class BaseDevModScreen extends Screen {
 
     @Override
     public final void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
+
         if (hasError) {
             renderErrorFallback(graphics, mouseX, mouseY, partialTick);
             return;
@@ -241,8 +244,8 @@ public abstract class BaseDevModScreen extends Screen {
         graphics.fill(0, 0, width, height, DesignTokens.ErrorScreen.BG);
 
         // Error title
-        int centerX = width / 2;
-        int centerY = height / 2;
+        int centerX = UIScaleManager.getCenterX();
+        int centerY = UIScaleManager.getCenterY();
 
         // Local capture of font for null safety
         final var safeFont = this.font;

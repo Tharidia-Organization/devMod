@@ -21,6 +21,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.party.ArrivalConfirmPayload;
 import com.devmod.party.QuestSequencePayload;
@@ -220,6 +221,7 @@ public class QuestSequenceOverlay {
      * Render the overlay.
      */
     public void render(GuiGraphics graphics, float partialTick) {
+        UIScaleManager.update();
         if (!isActive()) return;
 
         Minecraft mc = Minecraft.getInstance();

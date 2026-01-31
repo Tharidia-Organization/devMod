@@ -11,7 +11,11 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+
 import com.devmod.DevMod;
+import com.devmod.network.PayloadValidation;
 import com.devmod.template.data.RoomTemplate;
 import com.devmod.template.data.TemplateRegistry;
 import com.devmod.template.runtime.TemplateManager;
@@ -36,23 +40,24 @@ public enum TemplateNetworkHandler {
         registrar.playToClient(
             OpenTemplateEditorPayload.TYPE,
             OpenTemplateEditorPayload.STREAM_CODEC,
-            (payload, context) -> {
-                // Client-side handling delegated to client handler
-            }
+            PayloadValidation.validated(TemplateNetworkHandler::handleOpenTemplateEditor,
+                PayloadValidation.PayloadLimits.SYNC_MEDIUM)
         );
 
         // Apply template (C->S)
         registrar.playToServer(
             ApplyTemplatePayload.TYPE,
             ApplyTemplatePayload.STREAM_CODEC,
-            this::handleApplyTemplate
+            PayloadValidation.validated(this::handleApplyTemplate,
+                PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Save template (C->S)
         registrar.playToServer(
             SaveTemplatePayload.TYPE,
             SaveTemplatePayload.STREAM_CODEC,
-            this::handleSaveTemplate
+            PayloadValidation.validated(this::handleSaveTemplate,
+                PayloadValidation.PayloadLimits.XLARGE)
         );
 
         DevMod.LOGGER.debug("[Template] Registered network payloads");
@@ -127,6 +132,22 @@ public enum TemplateNetworkHandler {
                 registry.registerTemplate(template);
                 player.sendSystemMessage(Component.translatable(
                     "message.devmod.template.saved", template.displayName()));
+            }
+        });
+    }
+
+    private static void handleOpenTemplateEditor(OpenTemplateEditorPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        enqueueWork(context, () -> {
+            try {
+                Class<?> handlerClass = Class.forName("com.devmod.client.template.TemplateClientHandler");
+                var method = handlerClass.getMethod("handleOpenEditor", OpenTemplateEditorPayload.class);
+                method.invoke(null, payload);
+            } catch (Exception e) {
+                DevMod.LOGGER.warn("[Template] Failed to open template editor on client", e);
             }
         });
     }

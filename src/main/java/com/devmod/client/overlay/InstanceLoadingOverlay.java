@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.util.I18n;
@@ -45,6 +46,7 @@ public class InstanceLoadingOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!active) return;
 
         Minecraft mc = Minecraft.getInstance();

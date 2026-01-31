@@ -1,9 +1,11 @@
 package com.devmod.client.ui.testing.pages;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.testing.VoxelLabPage;
 import com.devmod.client.ui.testing.VoxelLabTab;
+import com.devmod.client.ui.testing.ToastMessage;
 import com.devmod.client.ui.testing.panel.PanelContainer;
 
 public abstract class AbstractVoxelLabPage implements VoxelLabPage {
@@ -13,6 +15,8 @@ public abstract class AbstractVoxelLabPage implements VoxelLabPage {
 
     protected int x, y, width, height;
     protected boolean initialized = false;
+
+    private final ToastMessage toast = new ToastMessage(1500, 250);
 
     protected AbstractVoxelLabPage(VoxelLabTab tab) {
         this.tab = tab;
@@ -60,6 +64,7 @@ public abstract class AbstractVoxelLabPage implements VoxelLabPage {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (initialized) {
             panelContainer.render(graphics, mouseX, mouseY);
+            renderToast(graphics);
         }
     }
 
@@ -98,6 +103,17 @@ public abstract class AbstractVoxelLabPage implements VoxelLabPage {
             panelContainer.clearPanels();
             buildPanels();
             panelContainer.init();
+        }
+    }
+
+    protected void showToast(String message) {
+        toast.show(message);
+    }
+
+    private void renderToast(GuiGraphics graphics) {
+        var font = Minecraft.getInstance().font;
+        if (font != null) {
+            toast.renderInBounds(graphics, font, x, y, width, height, ToastMessage.Position.TOP_RIGHT);
         }
     }
 }

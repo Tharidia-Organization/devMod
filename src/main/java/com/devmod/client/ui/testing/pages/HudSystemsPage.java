@@ -62,9 +62,6 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     @Nullable
     private EditorButton resetDefaults;
 
-    // Status message
-    private String statusMessage = "";
-    private long statusMessageTime = 0;
 
     public HudSystemsPage() {
         super(VoxelLabTab.HUD_SYSTEMS);
@@ -150,7 +147,6 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
                     () -> safeGetBool(Config.IMPACT_HUD_HISTORY_ENABLED))
                 .addStatus(I18n.translate("devmod.testing.voxel_lab.hud.status.dps").getString(),
                     () -> safeGetBool(Config.IMPACT_HUD_DPS_ENABLED))
-                .messageSupplier(this::getStatusMessage)
                 .build()
         );
     }
@@ -285,15 +281,7 @@ public class HudSystemsPage extends AbstractVoxelLabPage {
     }
 
     private void showStatus(String message) {
-        statusMessage = message;
-        statusMessageTime = System.currentTimeMillis();
-    }
-
-    private String getStatusMessage() {
-        if (!statusMessage.isEmpty() && System.currentTimeMillis() - statusMessageTime > 2000) {
-            statusMessage = "";
-        }
-        return statusMessage;
+        showToast(message);
     }
 
     @Override

@@ -22,6 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.endurance.ui.MobListPanel;
 import com.devmod.client.endurance.ui.MobStatsPanel;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.party.ClientPartyCache;
 import com.devmod.client.ui.ConfirmDialog;
@@ -744,6 +745,7 @@ public class MobPoolEditorScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 

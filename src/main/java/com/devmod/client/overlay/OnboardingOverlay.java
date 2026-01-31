@@ -23,6 +23,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
@@ -135,6 +136,7 @@ public class OnboardingOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!active) return;
 
         Minecraft mc = Minecraft.getInstance();

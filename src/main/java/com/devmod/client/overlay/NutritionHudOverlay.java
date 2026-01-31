@@ -15,6 +15,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.endurance.ClientNutritionCache;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
@@ -161,6 +162,7 @@ public class NutritionHudOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!enabled) return;
 
         // Only show when Easy-Diet is available and we have data

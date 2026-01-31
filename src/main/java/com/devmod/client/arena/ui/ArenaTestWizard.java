@@ -24,6 +24,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
@@ -191,6 +192,7 @@ public class ArenaTestWizard extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Dim background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 

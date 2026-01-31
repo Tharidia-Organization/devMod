@@ -21,6 +21,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.config.GameMechanicsConfig;
@@ -525,6 +526,7 @@ public class EnduranceSettingsScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Background
         graphics.fill(0, 0, width, height, DesignTokens.Bg.LEVEL_0);
 

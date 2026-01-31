@@ -55,6 +55,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.notification.ClientNotificationManager;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
@@ -589,6 +590,7 @@ public class KitSelectionScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Dark background
         graphics.fill(0, 0, width, height, COLOR_BG);
 

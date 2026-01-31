@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -109,14 +110,17 @@ public class OpenExternalConfirmScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int scaledDialogWidth = UIScaleManager.scale(DIALOG_WIDTH);
+        int scaledDialogHeight = UIScaleManager.scale(DIALOG_HEIGHT);
+        int dialogX = UIScaleManager.centerX(scaledDialogWidth);
+        int dialogY = UIScaleManager.centerY(scaledDialogHeight);
 
         // Dialog background
-        graphics.fill(dialogX, dialogY, dialogX + DIALOG_WIDTH, dialogY + DIALOG_HEIGHT, DesignTokens.ExternalConfirm.BG);
-        graphics.renderOutline(dialogX, dialogY, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.ExternalConfirm.BORDER);
+        graphics.fill(dialogX, dialogY, dialogX + scaledDialogWidth, dialogY + scaledDialogHeight, DesignTokens.ExternalConfirm.BG);
+        graphics.renderOutline(dialogX, dialogY, scaledDialogWidth, scaledDialogHeight, DesignTokens.ExternalConfirm.BORDER);
 
         // Null-safe font access
         var renderFont = this.font;
@@ -126,23 +130,23 @@ public class OpenExternalConfirmScreen extends Screen {
         }
 
         // Title
-        graphics.drawCenteredString(renderFont, dialogTitle, width / 2, dialogY + 12, DesignTokens.ExternalConfirm.TITLE);
+        graphics.drawCenteredString(renderFont, dialogTitle, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(12), DesignTokens.ExternalConfirm.TITLE);
 
         // URL (truncated if too long)
         String displayUrl = url;
-        int maxUrlWidth = DIALOG_WIDTH - 20;
+        int maxUrlWidth = scaledDialogWidth - UIScaleManager.scale(20);
         if (renderFont.width(displayUrl) > maxUrlWidth) {
             while (renderFont.width(displayUrl + "...") > maxUrlWidth && displayUrl.length() > 10) {
                 displayUrl = displayUrl.substring(0, displayUrl.length() - 1);
             }
             displayUrl += "...";
         }
-        graphics.drawCenteredString(renderFont, displayUrl, width / 2, dialogY + 32, DesignTokens.ExternalConfirm.URL);
+        graphics.drawCenteredString(renderFont, displayUrl, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(32), DesignTokens.ExternalConfirm.URL);
 
         // Status message (if any)
         String currentStatus = statusMessage;
         if (currentStatus != null) {
-            graphics.drawCenteredString(renderFont, currentStatus, width / 2, dialogY + 50, statusColor);
+            graphics.drawCenteredString(renderFont, currentStatus, UIScaleManager.getCenterX(), dialogY + UIScaleManager.scale(50), statusColor);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);

@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.rendering.LightLevelOverlay;
 import com.devmod.client.rendering.SpawnabilityOverlay;
 import com.devmod.client.ui.overlay.OverlayTheme;
@@ -49,6 +50,7 @@ public final class DynamicRadiusHudOverlay {
     }
 
     private static void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.options.hideGui) return;
 

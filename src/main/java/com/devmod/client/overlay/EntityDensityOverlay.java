@@ -24,6 +24,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
@@ -75,6 +76,7 @@ public class EntityDensityOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!enabled) return;
 
         Minecraft mc = Minecraft.getInstance();

@@ -144,7 +144,11 @@ public class Config {
     public static final ModConfigSpec.BooleanValue IMPACT_VFX_VORTEX_ENABLED;
     public static final ModConfigSpec.BooleanValue IMPACT_VFX_SLASH_ENABLED;
     public static final ModConfigSpec.BooleanValue IMPACT_VFX_LINES_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_GLYPHS_ENABLED;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_GLYPHS_EXCLUSIVE;
     public static final ModConfigSpec.DoubleValue IMPACT_VFX_INTENSITY;
+    public static final ModConfigSpec.BooleanValue IMPACT_VFX_USE_EFFEKSEER;
+    public static final ModConfigSpec.IntValue IMPACT_VFX_EFFEKSEER_PRESET;
     public static final ModConfigSpec.ConfigValue<String> IMPACT_DISPLAY_MODE_DEFAULT;
 
     // ============================================
@@ -382,9 +386,25 @@ public class Config {
                 .comment("Enable impact connection lines VFX")
                 .define("impactVfxLinesEnabled", true);
 
+        IMPACT_VFX_GLYPHS_ENABLED = BUILDER
+                .comment("Enable combat language glyphs (minimal 3D symbols)")
+                .define("impactVfxGlyphsEnabled", true);
+
+        IMPACT_VFX_GLYPHS_EXCLUSIVE = BUILDER
+                .comment("When glyphs are enabled, disable vortex/slash/lines for a clean look")
+                .define("impactVfxGlyphsExclusive", false);
+
         IMPACT_VFX_INTENSITY = BUILDER
                 .comment("Impact VFX intensity multiplier (0.1 = subtle, 1.0 = normal, 2.0 = intense)")
                 .defineInRange("impactVfxIntensity", 1.0, 0.1, 2.0);
+
+        IMPACT_VFX_USE_EFFEKSEER = BUILDER
+                .comment("Use Effekseer particle system for impact effects (requires effect files in assets/devmod/effeks/impact/)")
+                .define("impactVfxUseEffekseer", false);
+
+        IMPACT_VFX_EFFEKSEER_PRESET = BUILDER
+                .comment("Effekseer VFX preset (0=Minimal, 1=Clean, 2=Standard, 3=Intense, 4=Epic, 5=Cinematic)")
+                .defineInRange("impactVfxEffekseerPreset", 2, 0, 5);
 
         IMPACT_DISPLAY_MODE_DEFAULT = BUILDER
                 .comment("Default display mode for Impact HUD (OFF, MINIMAL, DETAILED, ANALYSIS)")

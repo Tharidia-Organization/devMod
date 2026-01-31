@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.compat.mods.epicfight.ClientEpicFightCache;
 import com.devmod.client.endurance.ClientCombatFlowCache;
 import com.devmod.client.endurance.ClientCombatFlowCache.ActionAnnouncement;
@@ -75,6 +76,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         ClientCombatFlowCache cache = ClientCombatFlowCache.INSTANCE;
 
         // Play sounds for state changes BEFORE tickAnimations resets flags

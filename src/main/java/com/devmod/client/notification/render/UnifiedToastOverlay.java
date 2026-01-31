@@ -246,7 +246,7 @@ public class UnifiedToastOverlay {
     private static void renderToast(GuiGraphics graphics, Font font, ToastEntry entry,
                                      int x, int y, int width, float opacity, boolean hovered, long now) {
         Notification notification = entry.notification;
-        int accentColor = NotificationUiTheme.getCategoryColor(notification.category());
+        int accentColor = entry.accentColor;
         int alpha = (int) (opacity * 255);
 
         // Background with hover effect
@@ -291,41 +291,36 @@ public class UnifiedToastOverlay {
         renderCircle(graphics, iconX + ICON_SIZE / 2, iconY + ICON_SIZE / 2, ICON_SIZE / 2 + 2,
                 NotificationUiTheme.withAlpha(accentColor, iconBgAlpha));
 
-        // Icon
-        String icon = Objects.requireNonNull(NotificationUiTheme.getCategoryIcon(notification.category()));
-        int iconTextAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
-        int iconWidth = font.width(icon);
-        graphics.drawString(font, icon, iconX + (ICON_SIZE - iconWidth) / 2, iconY + 8,
-                NotificationUiTheme.withAlpha(accentColor, iconTextAlpha), false);
-
         // Content area
         int contentX = iconX + ICON_SIZE + PADDING;
         int contentWidth = x + width - PADDING - contentX;
 
+        entry.ensureLayout(font, contentWidth);
+
+        // Icon
+        String icon = entry.icon;
+        int iconTextAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
+        int iconWidth = entry.cachedIconWidth;
+        graphics.drawString(font, icon, iconX + (ICON_SIZE - iconWidth) / 2, iconY + 8,
+                NotificationUiTheme.withAlpha(accentColor, iconTextAlpha), false);
+
         // Title
         int titleY = y + PADDING;
-        String title = Objects.requireNonNull(getTitleText(notification));
-        if (font.width(title) > contentWidth) {
-            title = Objects.requireNonNull(font.plainSubstrByWidth(title, contentWidth - 10)) + "...";
-        }
+        String title = entry.cachedTitle;
         int titleAlpha = (alpha * DesignTokens.Alpha.A100) / 255;
         graphics.drawString(font, title, contentX, titleY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, titleAlpha), true);
 
         // Message
         int msgY = titleY + 14;
-        String message = Objects.requireNonNull(getMessageText(notification));
-        if (font.width(message) > contentWidth) {
-            message = Objects.requireNonNull(font.plainSubstrByWidth(message, contentWidth - 10)) + "...";
-        }
+        String message = entry.cachedMessage;
         int msgAlpha = (alpha * 187) / 255;
         graphics.drawString(font, message, contentX, msgY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, msgAlpha), false);
 
         // Category label (bottom right)
-        String category = notification.category().name().substring(0, 1) +
-                notification.category().name().substring(1).toLowerCase(Locale.ROOT);
-        int catWidth = font.width(category);
+        String category = entry.categoryLabel;
+        int catWidth = entry.cachedCategoryWidth;
         int catX = x + width - PADDING - catWidth;
         int catY = y + TOAST_HEIGHT - PADDING - 6;
         int catAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
@@ -446,7 +441,7 @@ public class UnifiedToastOverlay {
     // ============================================================================
 
 
-    private static String getTitleText(Notification notification) {
+    private static String resolveTitleText(Notification notification) {
         String titleKey = notification.titleKey();
         if (titleKey != null && !titleKey.isBlank()) {
             Object[] args = notification.params().values().toArray(new Object[0]);
@@ -481,7 +476,7 @@ public class UnifiedToastOverlay {
         };
     }
 
-    private static String getMessageText(Notification notification) {
+    private static String resolveMessageText(Notification notification) {
         String messageKey = notification.messageKey();
         if (messageKey != null && !messageKey.isBlank()) {
             Object[] args = notification.params().values().toArray(new Object[0]);
@@ -522,8 +517,29 @@ public class UnifiedToastOverlay {
         FINISHED
     }
 
+    private static String truncateToWidth(Font font, String text, int width) {
+        if (width <= 0) {
+            return "";
+        }
+        if (font.width(text) <= width) {
+            return text;
+        }
+        String trimmed = font.plainSubstrByWidth(text, Math.max(0, width - 10));
+        return trimmed + "...";
+    }
+
     private static class ToastEntry {
         final Notification notification;
+        final int accentColor;
+        final String icon;
+        final String baseTitle;
+        final String baseMessage;
+        final String categoryLabel;
+        int cachedContentWidth = -1;
+        String cachedTitle = "";
+        String cachedMessage = "";
+        int cachedCategoryWidth = 0;
+        int cachedIconWidth = 0;
         long startTime;
         long exitStartTime;
         long pausedAt;
@@ -531,6 +547,23 @@ public class UnifiedToastOverlay {
 
         ToastEntry(Notification notification) {
             this.notification = notification;
+            this.accentColor = NotificationUiTheme.getCategoryColor(notification.category());
+            this.icon = Objects.requireNonNull(NotificationUiTheme.getCategoryIcon(notification.category()));
+            this.baseTitle = resolveTitleText(notification);
+            this.baseMessage = resolveMessageText(notification);
+            this.categoryLabel = notification.category().name().substring(0, 1) +
+                notification.category().name().substring(1).toLowerCase(Locale.ROOT);
+        }
+
+        void ensureLayout(Font font, int contentWidth) {
+            if (contentWidth == cachedContentWidth) {
+                return;
+            }
+            cachedContentWidth = contentWidth;
+            cachedTitle = truncateToWidth(font, baseTitle, contentWidth);
+            cachedMessage = truncateToWidth(font, baseMessage, contentWidth);
+            cachedCategoryWidth = font.width(categoryLabel);
+            cachedIconWidth = font.width(icon);
         }
     }
 }

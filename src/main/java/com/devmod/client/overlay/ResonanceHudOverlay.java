@@ -20,6 +20,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 
 @OnlyIn(Dist.CLIENT)
@@ -108,6 +109,7 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
 

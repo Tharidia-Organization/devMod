@@ -39,6 +39,8 @@ public final class ImpactHudButtons {
     private final EditorButton vfxVortexToggle;
     private final EditorButton vfxSlashToggle;
     private final EditorButton vfxLinesToggle;
+    private final EditorButton vfxGlyphsToggle;
+    private final EditorButton vfxGlyphsExclusiveToggle;
 
     // ═══════════════════════════════════════════════════════════════
     // INTENSITY BUTTONS
@@ -72,6 +74,8 @@ public final class ImpactHudButtons {
     private final EditorButton exportPreset;
     private final EditorButton importPreset;
     private final EditorButton resetDefaults;
+    private final EditorButton presetCombatLanguage;
+    private final EditorButton presetCombatLanguageLines;
 
     // Callbacks
     private Consumer<String> statusCallback = s -> {};
@@ -144,6 +148,20 @@ public final class ImpactHudButtons {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE,
                 Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_LINES_ENABLED)));
 
+        vfxGlyphsToggle = new EditorButton("vfx-glyphs", "Glyphs")
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .toggleable(true)
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED)));
+
+        vfxGlyphsExclusiveToggle = new EditorButton("vfx-glyphs-exclusive", "Glyphs Only")
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .toggleable(true)
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_EXCLUSIVE_TOGGLE,
+                Boolean.TRUE.equals(v), getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE)));
+
         // === Intensity ===
         intensityLow = new EditorButton("int-low", "Low")
             .size(EditorButton.Size.SMALL)
@@ -202,6 +220,20 @@ public final class ImpactHudButtons {
             .size(EditorButton.Size.SMALL)
             .icon("\uD83D\uDCE5");
 
+        presetCombatLanguage = new EditorButton("preset-combat-language",
+            com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .tooltip(com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language.tooltip").getString())
+            .icon("\u2728");
+
+        presetCombatLanguageLines = new EditorButton("preset-combat-language-lines",
+            com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language_lines").getString())
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .tooltip(com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language_lines.tooltip").getString())
+            .icon("\u2728");
+
         resetDefaults = new EditorButton("reset", "Reset Defaults")
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.SMALL);
@@ -229,6 +261,8 @@ public final class ImpactHudButtons {
         });
 
         resetDefaults.onClick(this::resetToDefaults);
+        presetCombatLanguage.onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE));
+        presetCombatLanguageLines.onClick(() -> invokeAction(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE_LINES));
 
         return this;
     }
@@ -251,6 +285,17 @@ public final class ImpactHudButtons {
         vfxVortexToggle.toggled(getConfigBool(Config.IMPACT_VFX_VORTEX_ENABLED));
         vfxSlashToggle.toggled(getConfigBool(Config.IMPACT_VFX_SLASH_ENABLED));
         vfxLinesToggle.toggled(getConfigBool(Config.IMPACT_VFX_LINES_ENABLED));
+        vfxGlyphsToggle.toggled(getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED));
+        vfxGlyphsExclusiveToggle.toggled(getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE));
+        boolean glyphsOnly = getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED)
+            && getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE);
+        presetCombatLanguage.style(glyphsOnly ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST);
+        boolean glyphsLines = getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE)
+            && getConfigBool(Config.IMPACT_VFX_LINES_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_VORTEX_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_SLASH_ENABLED);
+        presetCombatLanguageLines.style(glyphsLines ? EditorButton.Style.PRIMARY : EditorButton.Style.GHOST);
 
         double intensity = getConfigDouble(Config.IMPACT_VFX_INTENSITY, 1.0);
         intensityLow.toggled(intensity < 0.7);
@@ -294,6 +339,8 @@ public final class ImpactHudButtons {
     public EditorButton vfxVortexToggle() { return vfxVortexToggle; }
     public EditorButton vfxSlashToggle() { return vfxSlashToggle; }
     public EditorButton vfxLinesToggle() { return vfxLinesToggle; }
+    public EditorButton vfxGlyphsToggle() { return vfxGlyphsToggle; }
+    public EditorButton vfxGlyphsExclusiveToggle() { return vfxGlyphsExclusiveToggle; }
     public EditorButton intensityLow() { return intensityLow; }
     public EditorButton intensityMed() { return intensityMed; }
     public EditorButton intensityHigh() { return intensityHigh; }
@@ -305,6 +352,8 @@ public final class ImpactHudButtons {
     public EditorButton offsetYPlus() { return offsetYPlus; }
     public EditorButton exportPreset() { return exportPreset; }
     public EditorButton importPreset() { return importPreset; }
+    public EditorButton presetCombatLanguage() { return presetCombatLanguage; }
+    public EditorButton presetCombatLanguageLines() { return presetCombatLanguageLines; }
     public EditorButton resetDefaults() { return resetDefaults; }
 
     // ═══════════════════════════════════════════════════════════════
@@ -320,6 +369,21 @@ public final class ImpactHudButtons {
             case BOTTOM_LEFT -> "BL";
             case BOTTOM_RIGHT -> "BR";
         };
+    }
+
+    public String getCombatLanguageStatusLabel() {
+        boolean glyphsOnly = getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED)
+            && getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE);
+        return glyphsOnly ? "Active" : "";
+    }
+
+    public String getCombatLanguageLinesStatusLabel() {
+        boolean glyphsLines = getConfigBool(Config.IMPACT_VFX_GLYPHS_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE)
+            && getConfigBool(Config.IMPACT_VFX_LINES_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_VORTEX_ENABLED)
+            && !getConfigBool(Config.IMPACT_VFX_SLASH_ENABLED);
+        return glyphsLines ? "Active" : "";
     }
 
     private static boolean getConfigBool(ModConfigSpec.BooleanValue config) {

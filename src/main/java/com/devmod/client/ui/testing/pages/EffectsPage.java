@@ -38,6 +38,10 @@ public class EffectsPage extends AbstractVoxelLabPage {
     private EditorButton vfxSlashToggle;
     @Nullable
     private EditorButton vfxLinesToggle;
+    @Nullable
+    private EditorButton vfxGlyphsToggle;
+    @Nullable
+    private EditorButton vfxGlyphsExclusiveToggle;
 
     // Screen effects
     @Nullable
@@ -68,6 +72,8 @@ public class EffectsPage extends AbstractVoxelLabPage {
         EditorButton vfxVortexToggle = Objects.requireNonNull(this.vfxVortexToggle, "vfxVortexToggle");
         EditorButton vfxSlashToggle = Objects.requireNonNull(this.vfxSlashToggle, "vfxSlashToggle");
         EditorButton vfxLinesToggle = Objects.requireNonNull(this.vfxLinesToggle, "vfxLinesToggle");
+        EditorButton vfxGlyphsToggle = Objects.requireNonNull(this.vfxGlyphsToggle, "vfxGlyphsToggle");
+        EditorButton vfxGlyphsExclusiveToggle = Objects.requireNonNull(this.vfxGlyphsExclusiveToggle, "vfxGlyphsExclusiveToggle");
         EditorButton screenShakeToggle = Objects.requireNonNull(this.screenShakeToggle, "screenShakeToggle");
         EditorButton projectileTrailsToggle = Objects.requireNonNull(this.projectileTrailsToggle, "projectileTrailsToggle");
         EditorButton badgePopupToggle = Objects.requireNonNull(this.badgePopupToggle, "badgePopupToggle");
@@ -87,6 +93,7 @@ public class EffectsPage extends AbstractVoxelLabPage {
                 .description(I18n.translate("devmod.testing.voxel_lab.effects.section.vfx_desc").getString())
                 .addButton(vfxMasterToggle)
                 .addRow(vfxVortexToggle, vfxSlashToggle, vfxLinesToggle)
+                .addRow(vfxGlyphsToggle, vfxGlyphsExclusiveToggle)
                 .build()
         );
 
@@ -193,6 +200,24 @@ public class EffectsPage extends AbstractVoxelLabPage {
             .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE,
                 Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_LINES_ENABLED)));
 
+        vfxGlyphsToggle = new EditorButton("toggle-glyphs",
+            I18n.translate("devmod.testing.impact_hud.vfx_glyphs").getString())
+            .toggleable(true)
+            .toggled(safeGetBool(Config.IMPACT_VFX_GLYPHS_ENABLED))
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_GLYPHS_ENABLED)));
+
+        vfxGlyphsExclusiveToggle = new EditorButton("toggle-glyphs-exclusive",
+            I18n.translate("devmod.testing.impact_hud.vfx_glyphs_exclusive").getString())
+            .toggleable(true)
+            .toggled(safeGetBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE))
+            .style(EditorButton.Style.GHOST)
+            .size(EditorButton.Size.SMALL)
+            .onToggle(v -> invokeToggleAction(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_EXCLUSIVE_TOGGLE,
+                Boolean.TRUE.equals(v), safeGetBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE)));
+
         // Intensity presets
         intensityLow = new EditorButton("int-low",
             I18n.translate("devmod.testing.impact_hud.intensity_low").getString())
@@ -257,6 +282,8 @@ public class EffectsPage extends AbstractVoxelLabPage {
         setToggle(vfxVortexToggle, safeGetBool(Config.IMPACT_VFX_VORTEX_ENABLED));
         setToggle(vfxSlashToggle, safeGetBool(Config.IMPACT_VFX_SLASH_ENABLED));
         setToggle(vfxLinesToggle, safeGetBool(Config.IMPACT_VFX_LINES_ENABLED));
+        setToggle(vfxGlyphsToggle, safeGetBool(Config.IMPACT_VFX_GLYPHS_ENABLED));
+        setToggle(vfxGlyphsExclusiveToggle, safeGetBool(Config.IMPACT_VFX_GLYPHS_EXCLUSIVE));
         setToggle(screenShakeToggle, safeGetBool(Config.SCREEN_SHAKE_ENABLED));
         setToggle(projectileTrailsToggle, safeGetBool(Config.PROJECTILE_TRAILS_ENABLED));
         setToggle(badgePopupToggle, safeGetBool(Config.BADGE_POPUP_ENABLED));

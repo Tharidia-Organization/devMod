@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.testing.IntegratedTestSession;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
@@ -57,6 +58,7 @@ public class IntegratedTestOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!enabled) return;
 
         IntegratedTestSession session = IntegratedTestSession.INSTANCE;

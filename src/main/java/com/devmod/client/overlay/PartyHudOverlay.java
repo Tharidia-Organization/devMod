@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.endurance.ClientQuestCache;
 import com.devmod.client.network.ClientTensionCache;
 import com.devmod.client.party.ClientPartyCache;
@@ -74,6 +75,7 @@ public class PartyHudOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!enabled) return;
 
         // Only show when in a party

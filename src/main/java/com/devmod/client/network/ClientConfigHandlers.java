@@ -10,6 +10,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.network.EditorApplyConfirmPayload;
+import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
 import com.devmod.network.GlobalConfigSyncPayload;
 import com.devmod.network.MobConfigConfirmPayload;
 import com.devmod.network.RecipeClientSyncPayload;
@@ -79,6 +80,8 @@ public final class ClientConfigHandlers {
             message = I18n.errorWithDetails("devmod.editor.apply.failed", payload.message());
         }
         player.displayClientMessage(message, false);
+
+        EditorApplyFeedbackRouter.notify(payload);
 
         LOGGER.debug("[DevMod] Editor apply confirm: success={}, global={}, scope={}, item={}",
             payload.success(), payload.global(), payload.scope(), payload.itemId());

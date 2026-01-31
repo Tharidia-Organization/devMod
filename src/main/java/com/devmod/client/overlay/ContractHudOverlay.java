@@ -19,6 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.endurance.contracts.ContractSyncPayload;
@@ -76,6 +77,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, @Nonnull DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (activeContracts.isEmpty()) return;
 
         Minecraft mc = Minecraft.getInstance();

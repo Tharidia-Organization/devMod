@@ -25,6 +25,7 @@ import com.devmod.actions.ActionOrigin;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.actions.client.OnboardingActionPayload;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.components.EditorToggle;
@@ -178,6 +179,7 @@ public class WelcomeScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         @Nonnull Font safeFont = safeFont();
         long elapsed = System.currentTimeMillis() - openTime;
@@ -190,8 +192,8 @@ public class WelcomeScreen extends Screen {
         renderBackground(safeGraphics, mouseX, mouseY, partialTick);
         renderParticles(safeGraphics);
 
-        int centerX = width / 2;
-        int centerY = height / 2;
+        int centerX = UIScaleManager.getCenterX();
+        int centerY = UIScaleManager.getCenterY();
 
         // Apply scale animation to panel
         safeGraphics.pose().pushPose();
@@ -199,11 +201,13 @@ public class WelcomeScreen extends Screen {
         safeGraphics.pose().scale(scaleProgress, scaleProgress, 1.0f);
         safeGraphics.pose().translate(-centerX, -centerY, 0);
 
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = centerY - PANEL_HEIGHT / 2;
+        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int panelX = centerX - scaledPanelWidth / 2;
+        int panelY = centerY - scaledPanelHeight / 2;
 
         // Panel background
-        renderPanelWithGradient(safeGraphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+        renderPanelWithGradient(safeGraphics, panelX, panelY, scaledPanelWidth, scaledPanelHeight, fadeProgress);
 
         // === Title Section ===
         if (elapsed > TITLE_REVEAL_DELAY) {
@@ -235,7 +239,7 @@ public class WelcomeScreen extends Screen {
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(DesignTokens.Welcome.HINT, hintAlpha);
-            safeGraphics.drawCenteredString(safeFont, "Press ESC to skip", centerX, panelY + PANEL_HEIGHT - 15, hintColor);
+            safeGraphics.drawCenteredString(safeFont, "Press ESC to skip", centerX, panelY + scaledPanelHeight - 15, hintColor);
         }
 
         safeGraphics.pose().popPose();

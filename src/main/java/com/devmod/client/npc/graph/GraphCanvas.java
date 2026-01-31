@@ -75,6 +75,10 @@ public class GraphCanvas extends AbstractWidget {
     private Consumer<String> onNodeDoubleClicked;
     @Nullable
     private Runnable onSelectionChanged;
+    @Nullable
+    private ConnectionCreateHandler onConnectionCreate;
+    @Nullable
+    private NodesDeleteHandler onNodesDelete;
 
     @Nullable
     private String lastClickedNodeId;
@@ -355,6 +359,20 @@ public class GraphCanvas extends AbstractWidget {
         notifySelectionChanged();
     }
 
+    /**
+     * Restores selection after reload, keeping only existing nodes.
+     */
+    public void restoreSelection(@Nonnull Set<String> nodeIds) {
+        selectedNodes.clear();
+        for (String nodeId : nodeIds) {
+            if (nodes.containsKey(nodeId)) {
+                selectedNodes.add(nodeId);
+            }
+        }
+        updateNodeSelectionState();
+        notifySelectionChanged();
+    }
+
     private void updateNodeSelectionState() {
         for (Map.Entry<String, GraphNode> entry : nodes.entrySet()) {
             entry.getValue().setSelected(selectedNodes.contains(entry.getKey()));
@@ -573,7 +591,18 @@ public class GraphCanvas extends AbstractWidget {
                 // Check if dropped on a node
                 for (GraphNode node : nodes.values()) {
                     if (node.isMouseOver(gx, gy) && node != connectionSource) {
-                        // TODO: Create connection (would need to modify DialogSet)
+                        if (onConnectionCreate != null) {
+                            List<DialogOption> options = connectionSource.getDialogNode().options();
+                            if (connectionOptionIndex >= 0 && connectionOptionIndex < options.size()) {
+                                String optionId = options.get(connectionOptionIndex).id();
+                                onConnectionCreate.onCreate(
+                                    connectionSource.getNodeId(),
+                                    connectionOptionIndex,
+                                    optionId,
+                                    node.getNodeId()
+                                );
+                            }
+                        }
                         break;
                     }
                 }
@@ -679,7 +708,12 @@ public class GraphCanvas extends AbstractWidget {
 
         // Delete - delete selected nodes
         if (keyCode == 261 && !selectedNodes.isEmpty()) {
-            // TODO: Delete nodes (would need to modify DialogSet)
+            if (onNodesDelete != null) {
+                boolean handled = onNodesDelete.onDelete(Set.copyOf(selectedNodes));
+                if (handled) {
+                    clearSelection();
+                }
+            }
             return true;
         }
 
@@ -718,6 +752,22 @@ public class GraphCanvas extends AbstractWidget {
 
     public void setOnSelectionChanged(Runnable callback) {
         this.onSelectionChanged = callback;
+    }
+
+    public void setOnConnectionCreate(ConnectionCreateHandler handler) {
+        this.onConnectionCreate = handler;
+    }
+
+    public void setOnNodesDelete(NodesDeleteHandler handler) {
+        this.onNodesDelete = handler;
+    }
+
+    public interface ConnectionCreateHandler {
+        boolean onCreate(String sourceNodeId, int optionIndex, String optionId, String targetNodeId);
+    }
+
+    public interface NodesDeleteHandler {
+        boolean onDelete(Set<String> nodeIds);
     }
 
     private void handleNodeClick(String nodeId) {

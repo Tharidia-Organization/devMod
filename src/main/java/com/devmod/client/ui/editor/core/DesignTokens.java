@@ -2580,6 +2580,28 @@ public final class DesignTokens {
             private WeaponTrait() {}
         }
 
+        public static final class ComboTier {
+            public static final int NONE = 0xFF888888;
+            public static final int NICE = 0xFF55FF55;
+            public static final int GREAT = 0xFF55FFFF;
+            public static final int AWESOME = 0xFFFFFF55;
+            public static final int INSANE = 0xFFFF5555;
+            public static final int GODLIKE = 0xFFFF55FF;
+
+            private ComboTier() {}
+        }
+
+        public static final class HitWeight {
+            public static final int GLANCING = 0xFFFFFFFF;
+            public static final int LIGHT = 0xFFFFFFCC;
+            public static final int MEDIUM = 0xFFFFFF88;
+            public static final int HEAVY = 0xFFFFCC44;
+            public static final int CRUSHING = 0xFFFF8822;
+            public static final int OBLITERATING = 0xFFFF4400;
+
+            private HitWeight() {}
+        }
+
         private Combat() {}
     }
 

@@ -230,6 +230,12 @@ public final class TransportExecutor {
             return false;
         }
 
+        if (source.selectionMode() == TransportData.NetworkSelectionMode.MANUAL
+            && entity instanceof ServerPlayer serverPlayer) {
+            TransportNetworkHandler.sendNetworkList(serverPlayer, source, registry);
+            return true;
+        }
+
         // Safe Optional handling to prevent NoSuchElementException
         String networkName = source.getNetworkName().orElse(null);
         if (networkName == null) {

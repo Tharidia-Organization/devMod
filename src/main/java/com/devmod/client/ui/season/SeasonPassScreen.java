@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.season.ClientSeasonPassCache;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.season.RequestSeasonPassPayload;
 import com.devmod.util.I18n;
@@ -162,6 +163,7 @@ public class SeasonPassScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         @Nonnull GuiGraphics g = Objects.requireNonNull(graphics, "graphics");
         @Nonnull Font f = safeFont();
         long elapsed = System.currentTimeMillis() - openTime;

@@ -30,8 +30,6 @@ public class WeaponTraitRegistry {
     @Nonnull
     private static final String MOD_ID = requireNonNull(DevMod.MODID, "DevMod.MODID");
 
-    public static final WeaponTraitRegistry INSTANCE = new WeaponTraitRegistry();
-
     private final Map<ResourceLocation, WeaponTrait> traitById = new HashMap<>();
     private final Map<SoulImprint.ImprintStat, WeaponTrait> traitByStat = new EnumMap<>(SoulImprint.ImprintStat.class);
 
@@ -132,6 +130,9 @@ public class WeaponTraitRegistry {
         .effect(WeaponTrait.TraitEffectType.DAMAGE_PERCENT, 0.08f) // +8% damage (counter-attack focus)
         .color(CombatColors.WeaponTrait.RETALIATING)
         .build();
+
+    // NOTE: INSTANCE must be declared AFTER all trait fields to ensure proper static initialization order
+    public static final WeaponTraitRegistry INSTANCE = new WeaponTraitRegistry();
 
     private WeaponTraitRegistry() {
         registerAll();

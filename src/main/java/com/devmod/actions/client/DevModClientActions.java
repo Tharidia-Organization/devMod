@@ -929,6 +929,32 @@ public final class DevModClientActions {
             })
             .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE)
+            .labelKey("devmod.action.config.impact_vfx.preset.combat_language")
+            .descriptionKey("devmod.action.config.impact_vfx.preset.combat_language.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Effects/Impact VFX/Presets/Combat Language")
+            .icon(Items.AMETHYST_SHARD)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                applyCombatLanguageVfxPreset();
+                context.sendSuccess(I18n.translate("devmod.impact_vfx.preset_applied", "Combat Language"), true);
+            })
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE_LINES)
+            .labelKey("devmod.action.config.impact_vfx.preset.combat_language_lines")
+            .descriptionKey("devmod.action.config.impact_vfx.preset.combat_language_lines.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Effects/Impact VFX/Presets/Combat Language + Lines")
+            .icon(Items.GLOWSTONE_DUST)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                applyCombatLanguageLinesVfxPreset();
+                context.sendSuccess(I18n.translate("devmod.impact_vfx.preset_applied", "Combat Language + Lines"), true);
+            })
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.HUD_IMPACT_SHOW_RECAP)
             .labelKey("devmod.action.impact_show_recap")
             .descriptionKey("devmod.action.impact_show_recap.desc")
@@ -1948,6 +1974,28 @@ public final class DevModClientActions {
             .handler(context -> Config.IMPACT_VFX_LINES_ENABLED.set(!Config.IMPACT_VFX_LINES_ENABLED.get()))
             .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_TOGGLE)
+            .labelKey("devmod.configuration.debug.impactVfxGlyphsEnabled")
+            .descriptionKey("devmod.configuration.debug.impactVfxGlyphsEnabled.tooltip")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Effects/Impact VFX/Glyphs")
+            .icon(Items.AMETHYST_SHARD)
+            .toggle(context -> Config.IMPACT_VFX_GLYPHS_ENABLED.get())
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> Config.IMPACT_VFX_GLYPHS_ENABLED.set(!Config.IMPACT_VFX_GLYPHS_ENABLED.get()))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_EXCLUSIVE_TOGGLE)
+            .labelKey("devmod.configuration.debug.impactVfxGlyphsExclusive")
+            .descriptionKey("devmod.configuration.debug.impactVfxGlyphsExclusive.tooltip")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Effects/Impact VFX/Glyphs Exclusive")
+            .icon(Items.TINTED_GLASS)
+            .toggle(context -> Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.get())
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.set(!Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.get()))
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_LOW)
             .labelKey("devmod.config.impact_vfx.intensity.low")
             .descriptionKey("devmod.config.impact_vfx.intensity.low.desc")
@@ -2820,7 +2868,29 @@ public final class DevModClientActions {
         Config.IMPACT_VFX_VORTEX_ENABLED.set(true);
         Config.IMPACT_VFX_SLASH_ENABLED.set(true);
         Config.IMPACT_VFX_LINES_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.set(false);
         Config.IMPACT_VFX_INTENSITY.set(1.0);
+    }
+
+    private static void applyCombatLanguageVfxPreset() {
+        Config.IMPACT_VFX_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.set(true);
+        Config.IMPACT_VFX_VORTEX_ENABLED.set(false);
+        Config.IMPACT_VFX_SLASH_ENABLED.set(false);
+        Config.IMPACT_VFX_LINES_ENABLED.set(false);
+        Config.IMPACT_VFX_INTENSITY.set(0.8);
+    }
+
+    private static void applyCombatLanguageLinesVfxPreset() {
+        Config.IMPACT_VFX_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_ENABLED.set(true);
+        Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.set(false);
+        Config.IMPACT_VFX_VORTEX_ENABLED.set(false);
+        Config.IMPACT_VFX_SLASH_ENABLED.set(false);
+        Config.IMPACT_VFX_LINES_ENABLED.set(true);
+        Config.IMPACT_VFX_INTENSITY.set(0.9);
     }
 
     private static void cycleHeatmaps(ActionContext context) {

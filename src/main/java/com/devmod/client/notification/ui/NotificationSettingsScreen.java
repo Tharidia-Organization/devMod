@@ -18,6 +18,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.notification.ClientNotificationPreferences;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.notification.NotificationUiTheme;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.notification.NotificationCategory;
@@ -98,6 +99,7 @@ public class NotificationSettingsScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int panelWidth = Math.min(PANEL_MAX_WIDTH, width - 32);

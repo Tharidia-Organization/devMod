@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.testing.IntegratedTestSession;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -156,6 +157,7 @@ public class QuickTestWizard extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Background
         AxiomRenderer.drawScreenBackground(graphics, width, height);
 

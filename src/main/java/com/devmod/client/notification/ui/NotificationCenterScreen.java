@@ -25,6 +25,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.actions.ActionOrigin;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.notification.ClientNotificationManager;
 import com.devmod.client.notification.NotificationActionResolver;
@@ -379,6 +380,7 @@ public class NotificationCenterScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         super.render(graphics, mouseX, mouseY, partialTick);
 
         long now = System.currentTimeMillis();

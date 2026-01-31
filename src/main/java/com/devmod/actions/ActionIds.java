@@ -142,6 +142,10 @@ public final class ActionIds {
     public static final String CONFIG_IMPACT_VFX_VORTEX_TOGGLE = "devmod.config.impact_vfx.vortex.toggle";
     public static final String CONFIG_IMPACT_VFX_SLASH_TOGGLE = "devmod.config.impact_vfx.slash.toggle";
     public static final String CONFIG_IMPACT_VFX_LINES_TOGGLE = "devmod.config.impact_vfx.lines.toggle";
+    public static final String CONFIG_IMPACT_VFX_GLYPHS_TOGGLE = "devmod.config.impact_vfx.glyphs.toggle";
+    public static final String CONFIG_IMPACT_VFX_GLYPHS_EXCLUSIVE_TOGGLE = "devmod.config.impact_vfx.glyphs.exclusive.toggle";
+    public static final String CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE = "devmod.config.impact_vfx.preset.combat_language";
+    public static final String CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE_LINES = "devmod.config.impact_vfx.preset.combat_language_lines";
     public static final String CONFIG_IMPACT_VFX_INTENSITY_LOW = "devmod.config.impact_vfx.intensity.low";
     public static final String CONFIG_IMPACT_VFX_INTENSITY_MED = "devmod.config.impact_vfx.intensity.med";
     public static final String CONFIG_IMPACT_VFX_INTENSITY_HIGH = "devmod.config.impact_vfx.intensity.high";

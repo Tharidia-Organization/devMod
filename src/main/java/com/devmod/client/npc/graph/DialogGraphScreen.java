@@ -10,13 +10,20 @@ import net.minecraft.network.chat.Component;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.npc.DialogEditorScreen;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.npc.dialog.DialogNode;
+import com.devmod.npc.dialog.DialogOption;
 import com.devmod.npc.dialog.DialogSet;
+import com.devmod.npc.dialog.action.DialogAction;
+import com.devmod.npc.network.SaveDialogPayload;
+import com.devmod.network.EditorApplyConfirmPayload;
+import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
 
 /**
  * Visual graph editor screen for dialog sets.
@@ -33,7 +40,12 @@ public class DialogGraphScreen extends Screen {
     private static final int COLOR_TOOLBAR_BG = DesignTokens.Background.HEADER;
     private static final int COLOR_TEXT = DesignTokens.Text.PRIMARY;
 
-    private final DialogSet dialogSet;
+    private DialogSet dialogSet;
+    private final DialogSet originalDialogSet;
+    private final int originalRevision;
+    private final com.devmod.client.ui.testing.ToastMessage toast =
+        new com.devmod.client.ui.testing.ToastMessage(1800, 250);
+    private final EditorApplyFeedbackRouter.Listener feedbackListener = this::handleEditorConfirm;
     @Nullable
     private final Screen parentScreen;
 
@@ -48,6 +60,8 @@ public class DialogGraphScreen extends Screen {
     public DialogGraphScreen(@Nonnull DialogSet dialogSet, @Nullable Screen parentScreen) {
         super(Component.literal("Dialog Graph: " + dialogSet.name()));
         this.dialogSet = dialogSet;
+        this.originalDialogSet = dialogSet;
+        this.originalRevision = dialogSet.revision();
         this.parentScreen = parentScreen;
         this.canvas = new GraphCanvas(0, 0, 0, 0);
         this.nodePanel = new NodeEditPanel(0, 0, 0, 0);
@@ -56,6 +70,7 @@ public class DialogGraphScreen extends Screen {
 
     @Override
     protected void init() {
+        EditorApplyFeedbackRouter.register(feedbackListener);
         // Calculate dimensions
         int canvasWidth = width - SIDE_PANEL_WIDTH;
         int canvasHeight = height - TOOLBAR_HEIGHT;
@@ -65,6 +80,9 @@ public class DialogGraphScreen extends Screen {
         canvas.loadDialogSet(dialogSet);
         canvas.setOnNodeSelected(this::onNodeSelected);
         canvas.setOnNodeDoubleClicked(this::onNodeDoubleClicked);
+        canvas.setOnSelectionChanged(this::onSelectionChanged);
+        canvas.setOnConnectionCreate(this::onConnectionCreate);
+        canvas.setOnNodesDelete(this::onDeleteNodes);
         addRenderableWidget(canvas);
 
         // Create side panel
@@ -192,6 +210,12 @@ public class DialogGraphScreen extends Screen {
         nodePanel.loadNode(nodeId, node);
     }
 
+    private void onSelectionChanged() {
+        if (canvas.getSingleSelectedNode() == null) {
+            nodePanel.clear();
+        }
+    }
+
     private void onNodeDoubleClicked(@Nonnull String nodeId) {
         onEditNode(nodeId);
     }
@@ -205,9 +229,94 @@ public class DialogGraphScreen extends Screen {
     }
 
     private void onSetEntryNode(@Nonnull String nodeId) {
-        // Would need to modify DialogSet - for now just visual feedback
-        canvas.loadDialogSet(dialogSet.withEntryNode(nodeId));
-        canvas.selectNode(nodeId);
+        dialogSet = dialogSet.withEntryNode(nodeId);
+        refreshCanvasWithSelection(java.util.Set.of(nodeId));
+    }
+
+    private boolean onConnectionCreate(
+            String sourceNodeId,
+            int optionIndex,
+            String optionId,
+            String targetNodeId) {
+        DialogNode node = dialogSet.getNode(sourceNodeId).orElse(null);
+        if (node == null) {
+            return false;
+        }
+        if (optionIndex < 0 || optionIndex >= node.options().size()) {
+            return false;
+        }
+
+        java.util.List<DialogOption> options = new java.util.ArrayList<>(node.options());
+        DialogOption option = options.get(optionIndex);
+        if (!option.id().equals(optionId)) {
+            return false;
+        }
+
+        DialogOption updated = option.withAction(new DialogAction.GoToNode(targetNodeId));
+        options.set(optionIndex, updated);
+        dialogSet = dialogSet.withNode(node.withOptions(java.util.List.copyOf(options)));
+        refreshCanvasWithSelection(java.util.Set.of(sourceNodeId, targetNodeId));
+        return true;
+    }
+
+    private boolean onDeleteNodes(java.util.Set<String> nodeIds) {
+        if (nodeIds.isEmpty()) {
+            return false;
+        }
+
+        java.util.Map<String, DialogNode> updatedNodes = new java.util.HashMap<>(dialogSet.nodes());
+        for (String id : nodeIds) {
+            updatedNodes.remove(id);
+        }
+
+        java.util.Map<String, DialogNode> cleanedNodes = new java.util.HashMap<>();
+        for (var entry : updatedNodes.entrySet()) {
+            DialogNode node = entry.getValue();
+            java.util.List<DialogOption> filtered = new java.util.ArrayList<>();
+            for (DialogOption option : node.options()) {
+                if (option.action() instanceof DialogAction.GoToNode goTo
+                    && nodeIds.contains(goTo.nodeId())) {
+                    continue;
+                }
+                filtered.add(option);
+            }
+            if (filtered.size() != node.options().size()) {
+                node = node.withOptions(java.util.List.copyOf(filtered));
+            }
+            cleanedNodes.put(entry.getKey(), node);
+        }
+
+        String entryId = dialogSet.entryNodeId();
+        if (nodeIds.contains(entryId)) {
+            entryId = cleanedNodes.keySet().stream().sorted().findFirst().orElse("");
+        }
+
+        dialogSet = new DialogSet(
+            dialogSet.id(),
+            dialogSet.name(),
+            java.util.Map.copyOf(cleanedNodes),
+            entryId,
+            System.currentTimeMillis(),
+            dialogSet.revision() + 1,
+            dialogSet.isPreset(),
+            dialogSet.ownerUUID(),
+            dialogSet.schedule()
+        );
+
+        refreshCanvasWithSelection(java.util.Set.of());
+        return true;
+    }
+
+    private void refreshCanvasWithSelection(java.util.Set<String> preferredSelection) {
+        java.util.Set<String> previousSelection = canvas.getSelectedNodes();
+        canvas.loadDialogSet(dialogSet);
+        java.util.Set<String> selection = !preferredSelection.isEmpty()
+            ? preferredSelection
+            : previousSelection;
+        canvas.restoreSelection(selection);
+        if (canvas.getSingleSelectedNode() == null) {
+            nodePanel.clear();
+        }
     }
 
     // ========================================================================
@@ -216,6 +325,7 @@ public class DialogGraphScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Dark background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
@@ -250,6 +360,12 @@ public class DialogGraphScreen extends Screen {
         );
 
         renderToolbarTooltips(graphics, mouseX, mouseY);
+
+        var font = this.font;
+        if (font != null) {
+            toast.renderInBounds(graphics, font, 0, 0, width, TOOLBAR_HEIGHT,
+                com.devmod.client.ui.testing.ToastMessage.Position.TOP_RIGHT);
+        }
     }
 
     @Override
@@ -289,11 +405,50 @@ public class DialogGraphScreen extends Screen {
 
     @Override
     public void onClose() {
+        EditorApplyFeedbackRouter.unregister(feedbackListener);
+        persistChangesIfNeeded();
         if (parentScreen != null) {
             minecraft.setScreen(parentScreen);
         } else {
             super.onClose();
         }
+    }
+
+    private void persistChangesIfNeeded() {
+        if (originalDialogSet != null && originalDialogSet.isPreset()) {
+            return;
+        }
+        if (!isDirty()) {
+            return;
+        }
+        if (minecraft == null || minecraft.player == null) {
+            return;
+        }
+        PacketDistributor.sendToServer(new SaveDialogPayload(dialogSet, originalRevision));
+    }
+
+    private boolean isDirty() {
+        if (originalDialogSet == null) {
+            return true;
+        }
+        if (!dialogSet.entryNodeId().equals(originalDialogSet.entryNodeId())) {
+            return true;
+        }
+        if (!dialogSet.nodes().equals(originalDialogSet.nodes())) {
+            return true;
+        }
+        return !dialogSet.name().equals(originalDialogSet.name());
+    }
+
+    private boolean handleEditorConfirm(EditorApplyConfirmPayload payload) {
+        if (!"dialog".equalsIgnoreCase(payload.scope())) {
+            return false;
+        }
+        String msg = payload.success()
+            ? "Dialog saved"
+            : "Dialog save failed: " + payload.message();
+        toast.show(msg);
+        return true;
     }
 
     @Override

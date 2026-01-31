@@ -74,8 +74,8 @@ public final class TransportClientPayloadHooks {
     public static void handleNetworkList(@Nonnull TransportNetworkListPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
-            // TODO: Open TransportNetworkSelectScreen when implemented
-            LOGGER.debug("Received network list: {} nodes in network '{}'",
+            TransportNetworkSelectScreen.open(payload);
+            LOGGER.debug("Opened network select: {} nodes in network '{}'",
                 payload.nodes().size(), payload.networkName());
         });
     }

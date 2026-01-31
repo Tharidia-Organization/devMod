@@ -30,6 +30,7 @@ import com.devmod.actions.ActionType;
 import com.devmod.actions.client.ActionKeybindRegistry;
 import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
@@ -108,6 +109,7 @@ public class RadialActionDetailScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        UIScaleManager.update();
         GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         AxiomRenderer.drawScreenBackground(safeGraphics, width, height);
 

@@ -21,6 +21,7 @@ import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.scroll.Scrollbar;
 import com.devmod.client.ui.unified.SettingsPage;
+import com.devmod.config.Config;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.stats.WeaponStats;
 
@@ -44,6 +45,7 @@ public class CombatSettingsPage implements SettingsPage {
     private final EditorButton impactMinimalBtn = new EditorButton("impact-minimal", "Minimal");
     private final EditorButton impactDetailedBtn = new EditorButton("impact-detailed", "Detailed");
     private final EditorButton impactAnalysisBtn = new EditorButton("impact-analysis", "Analysis");
+    private final EditorButton impactCombatLanguageBtn = new EditorButton("impact-combat-language", "Combat Language");
     @Nullable
     private ImpactDisplayMode cachedImpactMode = null;
 
@@ -200,6 +202,20 @@ public class CombatSettingsPage implements SettingsPage {
                 case ANALYSIS -> "Complete analysis with DPS tracking";
             };
             AxiomRenderer.drawHint(graphics, font, x, currentY, modeDesc);
+            currentY += ROW_HEIGHT + 4;
+
+            boolean combatLanguageActive = Config.IMPACT_VFX_GLYPHS_ENABLED.get()
+                && Config.IMPACT_VFX_GLYPHS_EXCLUSIVE.get();
+            impactCombatLanguageBtn
+                .style(combatLanguageActive ? EditorButton.Style.PRIMARY : EditorButton.Style.NORMAL)
+                .onClick(() -> ActionRegistry.invoke(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE,
+                    ClientActionContexts.forClient(ActionOrigin.UI)));
+            impactCombatLanguageBtn.render(graphics, x, currentY, 160, modeBtnHeight, mouseX, mouseY);
+            if (combatLanguageActive) {
+                graphics.drawString(font, "Active", x + 170, currentY + 6, DesignTokens.Semantic.SUCCESS, false);
+            }
+            currentY += modeBtnHeight + 4;
+            AxiomRenderer.drawHint(graphics, font, x, currentY, "3D Combat Language preset (glyphs only)");
         } finally {
             // Disable scissoring
             graphics.disableScissor();
@@ -233,6 +249,8 @@ public class CombatSettingsPage implements SettingsPage {
         h += ROW_HEIGHT + 4; // Impact HUD Mode header
         h += DesignTokens.Component.BUTTON_HEIGHT_MD + 8; // Mode buttons
         h += ROW_HEIGHT; // Mode description
+        h += DesignTokens.Component.BUTTON_HEIGHT_MD + 4; // Combat Language button
+        h += ROW_HEIGHT; // Combat Language hint
         return h;
     }
 

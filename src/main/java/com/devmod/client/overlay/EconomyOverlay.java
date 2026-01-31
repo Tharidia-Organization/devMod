@@ -22,6 +22,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.economy.EconomyMetricsService;
 
@@ -95,6 +96,7 @@ public class EconomyOverlay {
     }
 
     private static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
+        UIScaleManager.update();
         if (!enabled) return;
 
         Minecraft mc = Minecraft.getInstance();

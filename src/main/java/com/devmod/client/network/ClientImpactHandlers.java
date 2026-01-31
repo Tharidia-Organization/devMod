@@ -12,6 +12,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.overlay.ImpactData;
 import com.devmod.client.overlay.ImpactHistory;
+import com.devmod.client.overlay.ImpactHudService;
 import com.devmod.combat.HitHelper;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.network.ImpactSyncPayload;
@@ -92,25 +93,17 @@ public final class ClientImpactHandlers {
 
     /**
      * Triggers visual effects for the impact.
+     * Both this class and ImpactHudService are @OnlyIn(Dist.CLIENT), so direct calls are safe.
      */
     private static void triggerImpactVfx(ImpactData impactData, Vec3 hitPoint,
                                          @Nullable Vec3 slashDirection, LivingEntity victim) {
-        try {
-            // Use reflection to call ImpactHudService.triggerImpactVfx
-            Class<?> hudServiceClass = Class.forName("com.devmod.client.overlay.ImpactHudService");
-            Class<?> impactDataClass = Class.forName("com.devmod.client.overlay.ImpactData");
-
-            java.lang.reflect.Method vfxMethod = hudServiceClass.getMethod("triggerImpactVfx",
-                impactDataClass, Vec3.class, Vec3.class, LivingEntity.class);
-            vfxMethod.invoke(null, impactData, hitPoint, slashDirection, victim);
-
-            // Trigger damage shake
-            java.lang.reflect.Method shakeMethod = hudServiceClass.getMethod("triggerDamageShakeIfApplicable",
-                LivingEntity.class, HitHelper.BodyPart.class, float.class, float.class, Vec3.class);
-            shakeMethod.invoke(null, victim, impactData.getBodyPart(), impactData.getBodyPartMultiplier(),
-                impactData.getBreakdown().getFinalDamage(), hitPoint);
-        } catch (Exception e) {
-            // VFX failed, but impact data is still stored
-        }
+        ImpactHudService.triggerImpactVfx(impactData, hitPoint, slashDirection, victim);
+        ImpactHudService.triggerDamageShakeIfApplicable(
+            victim,
+            impactData.getBodyPart(),
+            impactData.getBodyPartMultiplier(),
+            impactData.getBreakdown().getFinalDamage(),
+            hitPoint
+        );
     }
 }

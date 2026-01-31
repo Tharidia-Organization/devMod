@@ -24,9 +24,13 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
+import com.devmod.client.ui.editor.EditorApplyFeedbackRouter;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
+import com.devmod.client.ui.testing.ToastMessage;
+import com.devmod.network.EditorApplyConfirmPayload;
 import com.devmod.npc.dialog.DialogLimits;
 import com.devmod.npc.dialog.DialogNode;
 import com.devmod.npc.dialog.DialogOption;
@@ -96,6 +100,8 @@ public class DialogEditorScreen extends Screen {
     private MultiLineEditBox linesEditor;
     private List<EditorButtonWidget> nodeButtons = new ArrayList<>();
     private List<EditorButtonWidget> optionButtons = new ArrayList<>();
+    private final ToastMessage toast = new ToastMessage(1800, 250);
+    private final EditorApplyFeedbackRouter.Listener feedbackListener = this::handleEditorConfirm;
 
     public DialogEditorScreen(
         @Nonnull String dialogSetId,
@@ -203,6 +209,7 @@ public class DialogEditorScreen extends Screen {
 
     @Override
     protected void init() {
+        EditorApplyFeedbackRouter.register(feedbackListener);
         super.init();
 
         int col1X = PADDING;
@@ -660,6 +667,7 @@ public class DialogEditorScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Column headers
@@ -706,6 +714,28 @@ public class DialogEditorScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         renderButtonTooltips(graphics, mouseX, mouseY);
+
+        var safeFont = this.font;
+        if (safeFont != null) {
+            toast.renderInBounds(graphics, safeFont, 0, 0, width, 24, ToastMessage.Position.TOP_RIGHT);
+        }
+    }
+
+    @Override
+    public void onClose() {
+        EditorApplyFeedbackRouter.unregister(feedbackListener);
+        super.onClose();
+    }
+
+    private boolean handleEditorConfirm(@Nonnull EditorApplyConfirmPayload payload) {
+        if (!"dialog".equalsIgnoreCase(payload.scope())) {
+            return false;
+        }
+        String msg = payload.success()
+            ? "Dialog saved"
+            : "Dialog save failed: " + payload.message();
+        toast.show(msg);
+        return true;
     }
 
     private void renderInputBackgrounds(GuiGraphics graphics) {

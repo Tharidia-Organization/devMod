@@ -44,6 +44,11 @@ public class TransportOverlay implements LayeredDraw.Layer {
     private int distance = 0;
     private int ticksSinceLastUpdate = 0;
 
+    private String cachedStateText = "READY";
+    private String cachedPercentText = "0%";
+    private String cachedDestinationText = "";
+    private String cachedActionHint = "Stand still to charge";
+
     private static final int SERVER_UPDATE_TIMEOUT_TICKS = 20;
 
     /**
@@ -56,6 +61,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         this.requiredCharge = payload.requiredCharge();
         this.destinationName = payload.destinationName();
         this.distance = payload.distance();
+        refreshTextCache();
         markUpdated();
     }
 
@@ -69,6 +75,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         if (payload.isComplete()) {
             this.state = TransportState.ACTIVE;
         }
+        refreshTextCache();
         markUpdated();
     }
 
@@ -83,6 +90,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         this.destinationName = "";
         this.distance = 0;
         this.ticksSinceLastUpdate = 0;
+        refreshTextCache();
     }
 
     /**
@@ -139,7 +147,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, borderColor, backgroundColor);
 
         // Render state text (top center of panel)
-        String stateText = getStateText();
+        String stateText = cachedStateText;
         int stateTextWidth = font.width(stateText);
         graphics.drawString(font, stateText, centerX - stateTextWidth / 2, panelY + 6, primaryColor, true);
 
@@ -149,19 +157,15 @@ public class TransportOverlay implements LayeredDraw.Layer {
         renderProgressBar(graphics, barX, barY, BAR_WIDTH, BAR_HEIGHT, primaryColor, secondaryColor);
 
         // Render percentage text (below progress bar)
-        int percent = requiredCharge > 0 ? (currentCharge * 100) / requiredCharge : 0;
-        String percentText = percent + "%";
+        String percentText = cachedPercentText;
         int percentTextWidth = font.width(percentText);
         graphics.drawString(font, percentText, centerX - percentTextWidth / 2, barY + BAR_HEIGHT + 4, 0xFFFFFF, true);
 
         // Render destination text (bottom of panel)
-        if (!destinationName.isEmpty()) {
-            String destText = destinationName;
-            if (distance > 0) {
-                destText += " (" + distance + "m)";
-            }
-            int destTextWidth = font.width(destText);
-            graphics.drawString(font, destText, centerX - destTextWidth / 2, panelY + panelHeight - 14, secondaryColor, true);
+        if (!cachedDestinationText.isEmpty()) {
+            int destTextWidth = font.width(cachedDestinationText);
+            graphics.drawString(font, cachedDestinationText, centerX - destTextWidth / 2,
+                panelY + panelHeight - 14, secondaryColor, true);
         }
 
         // Render action hint at bottom center of screen
@@ -211,7 +215,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
      * Renders the action hint at the bottom of the screen.
      */
     private void renderActionHint(GuiGraphics graphics, Font font, int screenWidth, int screenHeight, int color) {
-        String hint = getActionHint();
+        String hint = cachedActionHint;
         if (hint.isEmpty()) {
             return;
         }
@@ -271,6 +275,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         this.currentCharge = payload.totalSeconds() - payload.secondsRemaining();
         this.requiredCharge = payload.totalSeconds();
         this.destinationName = payload.secondsRemaining() + "s";
+        refreshTextCache();
         markUpdated();
     }
 
@@ -290,10 +295,25 @@ public class TransportOverlay implements LayeredDraw.Layer {
         this.currentCharge = payload.arrivedCount();
         this.requiredCharge = payload.expectedCount();
         this.destinationName = "Party: " + payload.arrivedCount() + "/" + payload.expectedCount();
+        refreshTextCache();
         markUpdated();
     }
 
     private void markUpdated() {
         ticksSinceLastUpdate = 0;
+    }
+
+    private void refreshTextCache() {
+        cachedStateText = getStateText();
+        cachedActionHint = getActionHint();
+        int percent = requiredCharge > 0 ? (currentCharge * 100) / requiredCharge : 0;
+        cachedPercentText = percent + "%";
+        if (destinationName.isEmpty()) {
+            cachedDestinationText = "";
+        } else if (distance > 0) {
+            cachedDestinationText = destinationName + " (" + distance + "m)";
+        } else {
+            cachedDestinationText = destinationName;
+        }
     }
 }

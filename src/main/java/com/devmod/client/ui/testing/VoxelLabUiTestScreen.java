@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.client.overlay.Impact3DPanelManager;
 import com.devmod.client.overlay.ImpactHudOverlay;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.testing.panel.CollapsiblePanel;
@@ -52,9 +53,11 @@ public class VoxelLabUiTestScreen extends Screen {
     private final List<DemoButton> demoButtons = new ArrayList<>();
     private boolean demosBuilt = false;
 
-    // Status message
-    private String statusMessage = "";
-    private long statusMessageTime = 0;
+    private final ToastMessage toast = new ToastMessage(1500, 250);
+    private int sidebarX;
+    private int sidebarY;
+    private int sidebarWidth;
+    private int sidebarHeight;
 
     public VoxelLabUiTestScreen() {
         super(java.util.Objects.requireNonNull(Component.literal("Voxel Lab"), "title"));
@@ -77,12 +80,13 @@ public class VoxelLabUiTestScreen extends Screen {
         buildPanels();
 
         // Position container
-        int sidebarX = width - SIDEBAR_WIDTH - PADDING;
-        int sidebarY = PADDING;
-        int sidebarHeight = height - PADDING * 2;
+        sidebarX = width - SIDEBAR_WIDTH - PADDING;
+        sidebarY = PADDING;
+        sidebarWidth = SIDEBAR_WIDTH;
+        sidebarHeight = height - PADDING * 2;
 
         panelContainer
-            .bounds(sidebarX, sidebarY, SIDEBAR_WIDTH, sidebarHeight)
+            .bounds(sidebarX, sidebarY, sidebarWidth, sidebarHeight)
             .init();
 
         // Initial sync
@@ -115,12 +119,64 @@ public class VoxelLabUiTestScreen extends Screen {
             .titleColor(DesignTokens.Text.SECONDARY())
             .addButton(impactButtons.vfxMasterToggle())
             .addRow(impactButtons.vfxVortexToggle(), impactButtons.vfxSlashToggle(), impactButtons.vfxLinesToggle())
+            .addRow(impactButtons.vfxGlyphsToggle(), impactButtons.vfxGlyphsExclusiveToggle())
             .addSpacer(4)
             .addRow(impactButtons.intensityLow(), impactButtons.intensityMed(), impactButtons.intensityHigh(), impactButtons.intensityMax())
+            .addSpacer(4)
+            .addRow(impactButtons.presetCombatLanguage(), impactButtons.presetCombatLanguageLines())
             .build();
 
         panelContainer.addPanel(
             new CollapsiblePanel("collapsible-vfx", "VFX Effects", vfxContent, PanelConstants.COLOR_CYAN)
+        );
+
+        panelContainer.addPanel(
+            com.devmod.client.ui.testing.panel.StatusPanel.builder("status-combat-language")
+                .addStatus(new com.devmod.client.ui.testing.panel.StatusPanel.StatusItem(
+                    com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language").getString(),
+                    () -> !impactButtons.getCombatLanguageStatusLabel().isEmpty(),
+                    com.devmod.client.ui.editor.core.DesignTokens.Testing.CYAN,
+                    com.devmod.client.ui.editor.core.DesignTokens.Text.MUTED(),
+                    com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language.tooltip").getString()))
+                .addStatus(new com.devmod.client.ui.testing.panel.StatusPanel.StatusItem(
+                    com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language_lines").getString(),
+                    () -> !impactButtons.getCombatLanguageLinesStatusLabel().isEmpty(),
+                    com.devmod.client.ui.editor.core.DesignTokens.Testing.TELEMETRY_ACCENT,
+                    com.devmod.client.ui.editor.core.DesignTokens.Text.MUTED(),
+                    com.devmod.util.I18n.translate("devmod.testing.impact_hud.preset_combat_language_lines.tooltip").getString()))
+                .onClick((index, item, active) -> {
+                    if (index == 0) {
+                        if (active) {
+                            com.devmod.actions.ActionRegistry.invoke(
+                                com.devmod.actions.ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS,
+                                com.devmod.actions.client.ClientActionContexts.forClient(
+                                    com.devmod.actions.ActionOrigin.UI));
+                            showStatus(com.devmod.util.I18n.translate("devmod.testing.impact_hud.vfx_reset").getString());
+                        } else {
+                            com.devmod.actions.ActionRegistry.invoke(
+                                com.devmod.actions.ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE,
+                                com.devmod.actions.client.ClientActionContexts.forClient(
+                                    com.devmod.actions.ActionOrigin.UI));
+                            showStatus(com.devmod.util.I18n.translate("devmod.impact_vfx.preset_applied", "Combat Language").getString());
+                        }
+                    } else if (index == 1) {
+                        if (active) {
+                            com.devmod.actions.ActionRegistry.invoke(
+                                com.devmod.actions.ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS,
+                                com.devmod.actions.client.ClientActionContexts.forClient(
+                                    com.devmod.actions.ActionOrigin.UI));
+                            showStatus(com.devmod.util.I18n.translate("devmod.testing.impact_hud.vfx_reset").getString());
+                        } else {
+                            com.devmod.actions.ActionRegistry.invoke(
+                                com.devmod.actions.ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE_LINES,
+                                com.devmod.actions.client.ClientActionContexts.forClient(
+                                    com.devmod.actions.ActionOrigin.UI));
+                            showStatus(com.devmod.util.I18n.translate("devmod.impact_vfx.preset_applied", "Combat Language + Lines").getString());
+                        }
+                    }
+                    com.devmod.client.ui.editor.core.EditorSounds.playButtonClick();
+                })
+                .build()
         );
 
         // Position Section (collapsible with grid)
@@ -153,7 +209,6 @@ public class VoxelLabUiTestScreen extends Screen {
                 .addStatus("2D", ImpactHudOverlay::isEnabled)
                 .addStatus("3D", () -> Impact3DPanelManager.INSTANCE.isEnabled())
                 .addStatus("VFX", () -> getConfigBool(Config.IMPACT_VFX_ENABLED))
-                .messageSupplier(() -> statusMessage)
                 .build()
         );
     }
@@ -168,14 +223,11 @@ public class VoxelLabUiTestScreen extends Screen {
         panelContainer.tick();
         impactButtons.syncAll();
 
-        // Clear status message after timeout
-        if (!statusMessage.isEmpty() && System.currentTimeMillis() - statusMessageTime > 2000) {
-            statusMessage = "";
-        }
     }
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         // Background
         graphics.fill(0, 0, width, height, DesignTokens.Background.CONTENT());
 
@@ -196,6 +248,9 @@ public class VoxelLabUiTestScreen extends Screen {
 
         // Impact HUD panel container
         panelContainer.render(graphics, mouseX, mouseY);
+
+        // Mini toast
+        renderToast(graphics);
 
         // Offset display
         int offsetX = ImpactHudButtons.getOffsetX();
@@ -325,8 +380,13 @@ public class VoxelLabUiTestScreen extends Screen {
     // ═══════════════════════════════════════════════════════════════
 
     private void showStatus(String message) {
-        statusMessage = message;
-        statusMessageTime = System.currentTimeMillis();
+        toast.show(message);
+    }
+
+    private void renderToast(GuiGraphics graphics) {
+        var font = Objects.requireNonNull(this.font, "font");
+        toast.renderInBounds(graphics, font, sidebarX, sidebarY, sidebarWidth, sidebarHeight,
+            ToastMessage.Position.TOP_RIGHT);
     }
 
     private static boolean getConfigBool(net.neoforged.neoforge.common.ModConfigSpec.BooleanValue config) {

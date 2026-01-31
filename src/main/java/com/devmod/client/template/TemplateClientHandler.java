@@ -2,6 +2,7 @@ package com.devmod.client.template;
 
 import net.minecraft.client.Minecraft;
 
+import com.devmod.client.ui.ScreenSafety;
 import com.devmod.template.network.OpenTemplateEditorPayload;
 
 /**
@@ -15,13 +16,13 @@ public final class TemplateClientHandler {
      */
     public static void handleOpenEditor(OpenTemplateEditorPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> {
-            mc.setScreen(new TemplateEditorScreen(
+        ScreenSafety.openSafe("template_editor", mc.screen, () ->
+            new TemplateEditorScreen(
                 payload.zoneId(),
                 payload.minX(), payload.minZ(), payload.maxX(), payload.maxZ(), payload.floorY(),
                 payload.availableTemplates(),
                 payload.currentTemplateId()
-            ));
-        });
+            )
+        );
     }
 }

@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.abilities.StaminaSystem;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 @OnlyIn(Dist.CLIENT)
@@ -60,6 +61,7 @@ public class StaminaSystemEditor extends Screen {
     
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         graphics.fill(0, 0, width, height, OVERLAY_BG);
 
         var font = Objects.requireNonNull(this.font, "font");

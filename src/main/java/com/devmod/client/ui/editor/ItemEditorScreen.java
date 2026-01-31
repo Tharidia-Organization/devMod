@@ -43,6 +43,7 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.telemetry.UiTelemetry;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.ConfirmDialog;
@@ -847,6 +848,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         perfMonitor.startFrame();
         TooltipManager.INSTANCE.beginFrame(width, height);
         boolean blockBaseOverlays = hasBlockingOverlay();

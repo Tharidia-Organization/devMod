@@ -19,6 +19,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.client.ui.components.CountdownTimer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
@@ -86,6 +87,7 @@ public class WaveDirectiveScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         renderBackground(graphics, mouseX, mouseY, partialTick);
         final var safePayload = payload;
         if (safePayload == null) {

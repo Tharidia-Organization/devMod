@@ -17,6 +17,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.bridge.ClientUiBridge;
 import com.devmod.client.compat.mods.yacl.YaclCompat;
+import com.devmod.client.ui.ScreenSafety;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.debug.DebugOverlay;
@@ -45,15 +46,14 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
         Screen parent = mc.screen;
 
         // Try YACL-based settings if available and preferred
-        Screen yaclScreen = tryBuildYaclSettings(parent);
-        if (yaclScreen != null) {
-            LOGGER.debug("[ClientUiBridge] Using YACL settings screen");
-            mc.setScreen(yaclScreen);
-            return;
-        }
-
-        // Fall back to native settings screen
-        mc.setScreen(new com.devmod.client.ui.unified.UnifiedSettingsScreen(parent));
+        ScreenSafety.openSafe("settings", parent, () -> {
+            Screen yaclScreen = tryBuildYaclSettings(parent);
+            if (yaclScreen != null) {
+                LOGGER.debug("[ClientUiBridge] Using YACL settings screen");
+                return yaclScreen;
+            }
+            return new com.devmod.client.ui.unified.UnifiedSettingsScreen(parent);
+        });
     }
 
     /**
@@ -119,21 +119,25 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openRadialMenu() {
-        mc().setScreen(new com.devmod.client.ui.radial.RadialMenuScreen());
+        ScreenSafety.openSafe("radial_menu", mc().screen,
+            () -> new com.devmod.client.ui.radial.RadialMenuScreen());
     }
 
     @Override
     public void openTestingHub() {
-        mc().setScreen(new com.devmod.client.ui.hub.TestingHub());
+        ScreenSafety.openSafe("testing_hub", mc().screen,
+            () -> new com.devmod.client.ui.hub.TestingHub());
     }
 
     @Override
     public void openItemEditor() {
         var player = mc().player;
         if (player != null) {
-            mc().setScreen(new ItemEditorScreen(
-                player.getMainHandItem(),
-                EditorStartTab.GENERAL));
+            ScreenSafety.openSafe("item_editor", mc().screen, () ->
+                new ItemEditorScreen(
+                    player.getMainHandItem(),
+                    EditorStartTab.GENERAL)
+            );
         }
     }
 
@@ -143,7 +147,8 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
         if (mc.hitResult instanceof EntityHitResult entityHit) {
             Entity entity = entityHit.getEntity();
             if (entity instanceof Mob mob) {
-                mc.setScreen(new com.devmod.client.ui.screens.MobConfigScreen(mob));
+                ScreenSafety.openSafe("mob_config", mc.screen,
+                    () -> new com.devmod.client.ui.screens.MobConfigScreen(mob));
                 return;
             }
         }
@@ -155,27 +160,32 @@ public class ClientUiBridgeImpl implements ClientUiBridge {
 
     @Override
     public void openTelemetryDashboard() {
-        mc().setScreen(new com.devmod.client.ui.screens.TelemetryDashboardScreen(mc().screen));
+        ScreenSafety.openSafe("telemetry_dashboard", mc().screen,
+            () -> new com.devmod.client.ui.screens.TelemetryDashboardScreen(mc().screen));
     }
 
     @Override
     public void openWelcomeScreen() {
-        mc().setScreen(new com.devmod.client.ui.WelcomeScreen());
+        ScreenSafety.openSafe("welcome", mc().screen,
+            () -> new com.devmod.client.ui.WelcomeScreen());
     }
 
     @Override
     public void openArenaQuickTestWizard() {
-        mc().setScreen(new com.devmod.client.ui.wizard.QuickTestWizard());
+        ScreenSafety.openSafe("arena_quick_test", mc().screen,
+            () -> new com.devmod.client.ui.wizard.QuickTestWizard());
     }
 
     @Override
     public void openEnduranceQuestScreen(String templateId) {
-        mc().setScreen(new com.devmod.client.endurance.EnduranceQuestScreen());
+        ScreenSafety.openSafe("endurance_quest", mc().screen,
+            () -> new com.devmod.client.endurance.EnduranceQuestScreen());
     }
 
     @Override
     public void openPartyScreen() {
-        mc().setScreen(new com.devmod.client.party.PartyScreen());
+        ScreenSafety.openSafe("party_screen", mc().screen,
+            () -> new com.devmod.client.party.PartyScreen());
     }
 
     @Override

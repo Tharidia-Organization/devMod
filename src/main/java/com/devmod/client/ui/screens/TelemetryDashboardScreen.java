@@ -33,6 +33,7 @@ import com.devmod.client.rendering.RoomBoundsVisualizer;
 import com.devmod.client.rendering.SafeSpotVisualizer;
 import com.devmod.client.rendering.VerticalLevelsVisualizer;
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.rendering.HeatmapType;
@@ -108,6 +109,7 @@ public class TelemetryDashboardScreen extends Screen {
 
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         Font safeFont = getSafeFont();

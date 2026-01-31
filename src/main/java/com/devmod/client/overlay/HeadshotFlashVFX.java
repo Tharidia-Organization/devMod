@@ -2,69 +2,74 @@ package com.devmod.client.overlay;
 
 import java.util.Objects;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
-import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+
+import com.google.errorprone.annotations.InlineMe;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.overlay.OverlayTheme;
 
+/**
+ * Headshot feedback system.
+ *
+ * Provides satisfying audio feedback when the player lands a headshot.
+ * Previously used a red screen flash, but that was conceptually wrong
+ * (red = damage taken, not damage dealt). Now uses audio-only feedback
+ * for a clean, non-intrusive experience.
+ *
+ * The "dink" sound (high-pitched crossbow hit) is universally recognized
+ * as a headshot confirmation sound from games like CS:GO.
+ */
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class HeadshotFlashVFX {
 
-    private static final ResourceLocation LAYER_ID =
-        Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "headshot_flash"));
+    // Cooldown to prevent sound spam on rapid headshots
+    private static long lastTriggerTime = 0;
+    private static final long COOLDOWN_MS = 50;
 
-    private static long flashStartTime = 0;
-    private static final long FLASH_DURATION_MS = 300;
-    private static final int FLASH_COLOR_BASE = OverlayTheme.Flash.HEADSHOT;
+    // Sound settings - "dink" style headshot confirmation
+    private static final float SOUND_PITCH = 1.8f;  // High pitch for sharp "dink"
+    private static final float SOUND_VOLUME = 0.7f; // Audible but not overwhelming
 
     /**
-     * Activates the flash effect. Call when headshot is detected.
+     * Triggers headshot feedback. Call when a headshot is detected.
+     * Plays a satisfying "dink" sound as confirmation.
      */
     public static void trigger() {
-        flashStartTime = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+
+        // Prevent sound spam
+        if (now - lastTriggerTime < COOLDOWN_MS) {
+            return;
+        }
+        lastTriggerTime = now;
+
+        // Play headshot confirmation sound (client-side)
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getSoundManager() != null) {
+            mc.getSoundManager().play(Objects.requireNonNull(
+                SimpleSoundInstance.forUI(
+                    Objects.requireNonNull(SoundEvents.CROSSBOW_HIT),
+                    SOUND_PITCH,
+                    SOUND_VOLUME
+                )
+            ));
+        }
     }
 
     /**
-     * Checks if the flash is currently active.
+     * Returns false.
+     *
+     * @deprecated Flash is no longer used. Kept for API compatibility.
+     * @return always false
      */
+    @Deprecated
+    @InlineMe(replacement = "false")
     public static boolean isActive() {
-        return System.currentTimeMillis() - flashStartTime < FLASH_DURATION_MS;
-    }
-
-    @SubscribeEvent
-    public static void registerGuiLayers(RegisterGuiLayersEvent event) {
-        // Register above crosshair to cover everything
-        event.registerAbove(
-            Objects.requireNonNull(VanillaGuiLayers.CROSSHAIR),
-            Objects.requireNonNull(LAYER_ID),
-            (graphics, deltaTracker) -> render(graphics, graphics.guiWidth(), graphics.guiHeight())
-        );
-    }
-
-    /**
-     * Renders the flash effect. Called in HUD render loop.
-     * @param graphics GuiGraphics context
-     * @param screenWidth screen width
-     * @param screenHeight screen height
-     */
-    public static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
-        if (!isActive()) return;
-
-        long elapsed = System.currentTimeMillis() - flashStartTime;
-        float progress = elapsed / (float) FLASH_DURATION_MS;
-
-        // Alpha fade-out: starts at 128 (50%) and goes to 0
-        int alpha = (int) ((1.0f - progress) * 128);
-        int color = (alpha << 24) | FLASH_COLOR_BASE;
-
-        // Overlay full-screen
-        graphics.fill(0, 0, screenWidth, screenHeight, color);
+        return false;
     }
 }

@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 import com.devmod.DevMod;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.config.Config;
@@ -123,8 +124,9 @@ public class ImpactHudOverlay {
             panels.add(historySection);
         }
 
-        // Calculate panel dimensions
-        int panelWidth = 260;
+        // Calculate panel dimensions with responsive scaling
+        UIScaleManager.update();
+        int panelWidth = UIScaleManager.scale(260);
         int totalHeight = cachedMainHeight
             + (cachedModSection != null ? cachedModHeight : 0)
             + (historySection != null ? cachedHistoryHeight : 0);

@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
 import com.devmod.client.ui.editor.components.EditorButtonWidget;
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -104,6 +105,8 @@ public abstract class ErrorBoundaryScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        UIScaleManager.update();
+
         if (hasError) {
             renderErrorScreen(graphics, mouseX, mouseY, partialTick);
             return;
@@ -177,14 +180,14 @@ public abstract class ErrorBoundaryScreen extends Screen {
         // Dark background
         graphics.fill(0, 0, width, height, ERROR_BG_COLOR);
 
-        int centerX = width / 2;
-        int centerY = height / 2;
+        int centerX = UIScaleManager.getCenterX();
+        int centerY = UIScaleManager.getCenterY();
 
         // Error box
-        int boxWidth = 400;
-        int boxHeight = 180;
+        int boxWidth = UIScaleManager.scale(400);
+        int boxHeight = UIScaleManager.scale(180);
         int boxX = centerX - boxWidth / 2;
-        int boxY = centerY - boxHeight / 2 - 20;
+        int boxY = centerY - boxHeight / 2 - UIScaleManager.scale(20);
 
         // Box background
         graphics.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, DesignTokens.ErrorBoundary.PANEL_BG);

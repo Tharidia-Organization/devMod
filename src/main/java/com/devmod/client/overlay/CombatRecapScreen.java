@@ -12,6 +12,7 @@ import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.combat.HitHelper.BodyPart;
@@ -72,9 +73,15 @@ public class CombatRecapScreen extends Screen {
         int bgAlpha = (int) (DesignTokens.Alpha.A94 * animProgress);
         graphics.fill(0, 0, width, height, OverlayTheme.withAlpha(BG_COLOR, bgAlpha));
 
-        // Main content panel
-        int panelWidth = Math.min(600, width - 40);
-        int panelHeight = Math.min(450, height - 40);
+        // Update responsive scaling
+        UIScaleManager.update();
+
+        // Main content panel - responsive sizing
+        int baseWidth = UIScaleManager.scale(600);
+        int baseHeight = UIScaleManager.scale(450);
+        int margin = UIScaleManager.scale(20);
+        int panelWidth = Math.min(baseWidth, width - margin * 2);
+        int panelHeight = Math.min(baseHeight, height - margin * 2);
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 

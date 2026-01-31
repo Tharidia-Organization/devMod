@@ -439,4 +439,109 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
     public static void sendPartyStatus(@Nonnull ServerPlayer player, @Nonnull TransportPartyStatusPayload payload) {
         sendPacket(player, payload);
     }
+
+    /**
+     * Sends a network list to the client for manual destination selection.
+     */
+    public static void sendNetworkList(
+            @Nonnull ServerPlayer player,
+            @Nonnull com.devmod.transport.TransportData source,
+            @Nonnull com.devmod.transport.TransportRegistry registry) {
+        String networkName = source.networkName();
+        if (networkName == null || networkName.isEmpty()) {
+            return;
+        }
+
+        java.util.UUID sourceId = source.id();
+        var sourcePosOpt = source.getPosition();
+        var sourceDimOpt = source.getDimension();
+        java.util.List<com.devmod.transport.TransportData> nodes = registry.getByNetwork(networkName);
+        java.util.List<TransportNetworkListPayload.NetworkNodeInfo> payloadNodes = new java.util.ArrayList<>();
+
+        nodes.stream()
+            .filter(node -> node != null && !node.id().equals(sourceId))
+            .sorted((a, b) -> {
+                int distCompare = Long.compare(
+                    distanceSq(sourcePosOpt, sourceDimOpt, a),
+                    distanceSq(sourcePosOpt, sourceDimOpt, b)
+                );
+                if (distCompare != 0) {
+                    return distCompare;
+                }
+                return resolveNodeName(a).compareToIgnoreCase(resolveNodeName(b));
+            })
+            .forEach(node -> {
+                var posOpt = node.getPosition();
+                var dimOpt = node.getDimension();
+                if (posOpt.isEmpty() || dimOpt.isEmpty()) {
+                    return;
+                }
+                var pos = posOpt.get();
+                String displayName = resolveNodeName(node);
+                String dimension = dimOpt.get().toString();
+                int distanceBlocks = computeDistanceBlocks(sourcePosOpt, sourceDimOpt, node);
+                payloadNodes.add(new TransportNetworkListPayload.NetworkNodeInfo(
+                    node.id(),
+                    displayName,
+                    dimension,
+                    pos.getX(),
+                    pos.getY(),
+                    pos.getZ(),
+                    node.color().getIndex(),
+                    true,
+                    distanceBlocks
+                ));
+            });
+
+        sendPacket(player, new TransportNetworkListPayload(sourceId, networkName, payloadNodes));
+    }
+
+    private static String resolveNodeName(@Nonnull com.devmod.transport.TransportData node) {
+        String displayName = node.displayName();
+        if (displayName != null && !displayName.isEmpty()) {
+            return displayName;
+        }
+        String networkName = node.networkName();
+        if (networkName != null && !networkName.isEmpty()) {
+            return networkName;
+        }
+        return node.nodeType().getSerializedName();
+    }
+
+    private static long distanceSq(
+        java.util.Optional<net.minecraft.core.BlockPos> sourcePosOpt,
+        java.util.Optional<net.minecraft.resources.ResourceLocation> sourceDimOpt,
+        com.devmod.transport.TransportData node) {
+        if (sourcePosOpt.isEmpty() || sourceDimOpt.isEmpty()) {
+            return Long.MAX_VALUE;
+        }
+        var posOpt = node.getPosition();
+        var dimOpt = node.getDimension();
+        if (posOpt.isEmpty() || dimOpt.isEmpty()) {
+            return Long.MAX_VALUE;
+        }
+        if (!sourceDimOpt.get().equals(dimOpt.get())) {
+            return Long.MAX_VALUE;
+        }
+        return (long) sourcePosOpt.get().distSqr(posOpt.get());
+    }
+
+    private static int computeDistanceBlocks(
+        java.util.Optional<net.minecraft.core.BlockPos> sourcePosOpt,
+        java.util.Optional<net.minecraft.resources.ResourceLocation> sourceDimOpt,
+        com.devmod.transport.TransportData node) {
+        var posOpt = node.getPosition();
+        var dimOpt = node.getDimension();
+        if (posOpt.isEmpty() || dimOpt.isEmpty()) {
+            return -1;
+        }
+        if (sourceDimOpt.isEmpty() || sourcePosOpt.isEmpty()) {
+            return -1;
+        }
+        if (!sourceDimOpt.get().equals(dimOpt.get())) {
+            return -2;
+        }
+        long distSq = distanceSq(sourcePosOpt, sourceDimOpt, node);
+        return (int) Math.round(Math.sqrt((double) distSq));
+    }
 }

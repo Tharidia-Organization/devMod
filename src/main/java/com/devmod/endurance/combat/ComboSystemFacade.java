@@ -148,7 +148,6 @@ public final class ComboSystemFacade {
         }
 
         // Create new session
-        // TODO: Replace with ComboSessionImpl when implemented
         IComboSession session = createSession(playerId, questId);
         sessions.put(playerId, session);
 

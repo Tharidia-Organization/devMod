@@ -516,6 +516,8 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_VORTEX_TOGGLE),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_SLASH_TOGGLE),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_LINES_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_TOGGLE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_GLYPHS_EXCLUSIVE_TOGGLE),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_RESET_DEFAULTS)
         );
 
@@ -526,6 +528,13 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MED),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_HIGH),
             RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_INTENSITY_MAX)
+        );
+
+        RadialCategory vfxPresets = impactVfx.addSubcategory("impact_vfx_presets", "Presets", DesignTokens.Radial.TOOLS_PRIMARY,
+            stack(Items.ENCHANTED_BOOK));
+        vfxPresets.addItems(
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE),
+            RadialMenuItem.registry(ActionIds.CONFIG_IMPACT_VFX_PRESET_COMBAT_LANGUAGE_LINES)
         );
 
         effectsConfig.addItems(
