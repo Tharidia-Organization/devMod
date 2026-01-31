@@ -98,10 +98,10 @@ public class BacktrackingService {
      */
     public double getConfusionIndex(String roomId) {
         RoomBacktrackStats stats = roomStats.get(roomId);
-        if (stats == null || stats.uniqueVisitors == 0) {
+        if (stats == null || stats.getUniqueVisitors() == 0) {
             return 0.0;
         }
-        return (double) stats.backtrackCount / stats.uniqueVisitors;
+        return (double) stats.getBacktrackCount() / stats.getUniqueVisitors();
     }
 
     /**
@@ -150,7 +150,7 @@ public class BacktrackingService {
             return List.of();
         }
 
-        List<Map.Entry<BlockPos, Integer>> entries = new ArrayList<>(stats.backtrackPositions.entrySet());
+        List<Map.Entry<BlockPos, Integer>> entries = new ArrayList<>(stats.getBacktrackPositions().entrySet());
         entries.sort(Comparator.comparingInt(Map.Entry<BlockPos, Integer>::getValue).reversed());
 
         List<BlockPos> result = new ArrayList<>();
@@ -171,7 +171,7 @@ public class BacktrackingService {
             RoomBacktrackStats stats = entry.getValue();
             summaries.add(String.format("Room '%s': %d backtracks, %.2f confusion index, %.0f%% rate",
                 entry.getKey(),
-                stats.backtrackCount,
+                stats.getBacktrackCount(),
                 getConfusionIndex(entry.getKey()),
                 stats.getBacktrackRate() * 100));
         }
@@ -262,12 +262,18 @@ public class BacktrackingService {
      * Aggregated backtrack statistics for a room.
      */
     public static class RoomBacktrackStats {
-        public int backtrackCount = 0;
-        public int totalMovements = 0;
-        public int uniqueVisitors = 0;
-        public int totalStepsBack = 0;
-        public final Map<BlockPos, Integer> backtrackPositions = new ConcurrentHashMap<>();
+        private int backtrackCount = 0;
+        private int totalMovements = 0;
+        private int uniqueVisitors = 0;
+        private int totalStepsBack = 0;
+        private final Map<BlockPos, Integer> backtrackPositions = new ConcurrentHashMap<>();
         private final Set<UUID> visitors = ConcurrentHashMap.newKeySet();
+
+        public int getBacktrackCount() { return backtrackCount; }
+        public int getTotalMovements() { return totalMovements; }
+        public int getUniqueVisitors() { return uniqueVisitors; }
+        public int getTotalStepsBack() { return totalStepsBack; }
+        public Map<BlockPos, Integer> getBacktrackPositions() { return backtrackPositions; }
 
         void recordBacktrack(BlockPos pos, int stepsBack) {
             backtrackCount++;

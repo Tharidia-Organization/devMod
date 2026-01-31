@@ -15,6 +15,7 @@ import com.devmod.damage.DamageBreakdown;
 import com.devmod.util.I18n;
 import com.devmod.util.ThreadLocalPool;
 
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public final class ImpactHudContentBuilder {
 
     // P2: Thread-local pools for ArrayList reuse in render loop
@@ -40,6 +41,11 @@ public final class ImpactHudContentBuilder {
         LARGE
     }
 
+    public enum DetailLevel {
+        FULL,
+        COMPACT,
+        MINIMAL
+    }
     public record NumberFormat(String valueFormat, String multiplierFormat) {
         public String formatValue(float value) {
             return String.format(valueFormat, value);
@@ -95,11 +101,17 @@ public final class ImpactHudContentBuilder {
     }
 
     public static List<HudSection> buildContent(ImpactData data, NumberFormat format) {
+        return buildContent(data, format, DetailLevel.FULL);
+    }
+
+    public static List<HudSection> buildContent(ImpactData data, NumberFormat format, DetailLevel detail) {
         // P2: Use pooled list, caller receives copy since HudSection uses List.copyOf internally
         ArrayList<HudSection> sections = SECTION_LIST_POOL.acquire();
         try {
-            sections.add(buildMainSection(data, format));
-            buildModSection(data, format).ifPresent(sections::add);
+            sections.add(buildMainSection(data, format, detail));
+            if (detail == DetailLevel.FULL) {
+                buildModSection(data, format).ifPresent(sections::add);
+            }
             return List.copyOf(sections);
         } finally {
             SECTION_LIST_POOL.release(sections);
@@ -185,75 +197,87 @@ public final class ImpactHudContentBuilder {
     }
 
     public static HudSection buildMainSection(ImpactData data, NumberFormat format) {
+        return buildMainSection(data, format, DetailLevel.FULL);
+    }
+
+    public static HudSection buildMainSection(ImpactData data, NumberFormat format, DetailLevel detail) {
         // P2: Use pooled list - HudSection constructor calls List.copyOf so this is safe
         ArrayList<HudLine> lines = LINE_LIST_POOL.acquire();
         try {
-            return buildMainSectionImpl(data, format, lines);
+            return buildMainSectionImpl(data, format, detail, lines);
         } finally {
             LINE_LIST_POOL.release(lines);
         }
     }
 
-    private static HudSection buildMainSectionImpl(ImpactData data, NumberFormat format, List<HudLine> lines) {
-
-        Component partHit = Objects.requireNonNull(I18n.translate("devmod.hud.part_hit"), "partHitLabel")
-            .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
-            .append(Objects.requireNonNull(
-                Objects.requireNonNull(I18n.literal(data.getBodyPart().name()), "partHitName")
-                    .withStyle(style -> style.withColor(data.getBodyPartColor() & DesignTokens.Mask.RGB)),
-                "partHitNameStyled"))
-            .append(Objects.requireNonNull(I18n.literal(" ("), "partHitOpen"))
-            .append(Objects.requireNonNull(I18n.translate("devmod.hud.modifier"), "partHitModifier"))
-            .append(Objects.requireNonNull(I18n.literal(": "), "partHitModifierSeparator"))
-            .append(Objects.requireNonNull(
-                Objects.requireNonNull(I18n.literal("x" + format.formatMultiplier(data.getBodyPartMultiplier())),
-                    "partHitMultiplier")
-                    .withStyle(style -> style.withColor(Colors.VALUE & DesignTokens.Mask.RGB)),
-                "partHitMultiplierStyled"))
-            .append(Objects.requireNonNull(I18n.literal(")"), "partHitClose"));
-        lines.add(new HudLine(partHit, Colors.NORMAL, LineType.NORMAL, Spacing.SMALL));
-
-        lines.add(new HudLine(
-            I18n.translate("devmod.hud.source", data.getFormattedAttackSourceComponent()),
-            Colors.MUTED,
-            LineType.MUTED,
-            Spacing.SECTION
-        ));
-
-        DamageBreakdown bd = data.getBreakdown();
-        // P2: Use pooled list for breakdown lines
-        ArrayList<HudLine> breakdownLines = LINE_LIST_POOL.acquire();
-        try {
-            buildBreakdownLines(breakdownLines, bd, format);
-            lines.addAll(breakdownLines);
-        } finally {
-            LINE_LIST_POOL.release(breakdownLines);
+    private static HudSection buildMainSectionImpl(ImpactData data, NumberFormat format,
+                                                   DetailLevel detail, List<HudLine> lines) {
+        if (detail != DetailLevel.MINIMAL) {
+            Component partHit = Objects.requireNonNull(I18n.translate("devmod.hud.part_hit"), "partHitLabel")
+                .append(Objects.requireNonNull(I18n.literal(": "), "partHitSeparator"))
+                .append(Objects.requireNonNull(
+                    Objects.requireNonNull(I18n.literal(data.getBodyPart().name()), "partHitName")
+                        .withStyle(style -> style.withColor(data.getBodyPartColor() & DesignTokens.Mask.RGB)),
+                    "partHitNameStyled"))
+                .append(Objects.requireNonNull(I18n.literal(" ("), "partHitOpen"))
+                .append(Objects.requireNonNull(I18n.translate("devmod.hud.modifier"), "partHitModifier"))
+                .append(Objects.requireNonNull(I18n.literal(": "), "partHitModifierSeparator"))
+                .append(Objects.requireNonNull(
+                    Objects.requireNonNull(I18n.literal("x" + format.formatMultiplier(data.getBodyPartMultiplier())),
+                        "partHitMultiplier")
+                        .withStyle(style -> style.withColor(Colors.VALUE & DesignTokens.Mask.RGB)),
+                    "partHitMultiplierStyled"))
+                .append(Objects.requireNonNull(I18n.literal(")"), "partHitClose"));
+            lines.add(new HudLine(partHit, Colors.NORMAL, LineType.NORMAL, Spacing.SMALL));
         }
 
-        lines.add(new HudLine(
-            I18n.translate("devmod.hud.formula", bd.getFormulaString()),
-            Colors.FORMULA,
-            LineType.FORMULA,
-            Spacing.SMALL
-        ));
+        if (detail != DetailLevel.MINIMAL) {
+            lines.add(new HudLine(
+                I18n.translate("devmod.hud.source", data.getFormattedAttackSourceComponent()),
+                Colors.MUTED,
+                LineType.MUTED,
+                detail == DetailLevel.FULL ? Spacing.SECTION : Spacing.SMALL
+            ));
+        }
+
+        DamageBreakdown bd = data.getBreakdown();
+        if (detail == DetailLevel.FULL) {
+            // P2: Use pooled list for breakdown lines
+            ArrayList<HudLine> breakdownLines = LINE_LIST_POOL.acquire();
+            try {
+                buildBreakdownLines(breakdownLines, bd, format);
+                lines.addAll(breakdownLines);
+            } finally {
+                LINE_LIST_POOL.release(breakdownLines);
+            }
+
+            lines.add(new HudLine(
+                I18n.translate("devmod.hud.formula", bd.getFormulaString()),
+                Colors.FORMULA,
+                LineType.FORMULA,
+                Spacing.SMALL
+            ));
+        }
 
         if (data.hasActualDamage()) {
             lines.add(new HudLine(
                 I18n.translate("devmod.hud.actual_damage", format.formatValue(data.getActualDamageDealt())),
                 Colors.HIGHLIGHT,
                 LineType.HIGHLIGHT,
-                Spacing.SMALL,
+                detail == DetailLevel.FULL ? Spacing.SMALL : Spacing.NONE,
                 Colors.HIGHLIGHT_SHADOW
             ));
 
-            lines.add(new HudLine(
-                I18n.translate("devmod.hud.health_change",
-                    format.formatValue(data.getHealthBefore()),
-                    format.formatValue(data.getHealthAfter())),
-                Colors.MUTED,
-                LineType.MUTED,
-                Spacing.NONE
-            ));
+            if (detail != DetailLevel.MINIMAL) {
+                lines.add(new HudLine(
+                    I18n.translate("devmod.hud.health_change",
+                        format.formatValue(data.getHealthBefore()),
+                        format.formatValue(data.getHealthAfter())),
+                    Colors.MUTED,
+                    LineType.MUTED,
+                    Spacing.NONE
+                ));
+            }
 
             float reduction = data.getDamageReduction();
             if (Math.abs(reduction) > 0.1f) {
@@ -275,7 +299,7 @@ public final class ImpactHudContentBuilder {
             }
 
             // BUG-003 FIX: Detailed reduction breakdown
-            if (data.hasReductionBreakdown()) {
+            if (detail == DetailLevel.FULL && data.hasReductionBreakdown()) {
                 addReductionBreakdownLines(lines, data, format);
             }
         } else {
@@ -283,7 +307,7 @@ public final class ImpactHudContentBuilder {
                 I18n.translate("devmod.hud.calculated_damage", format.formatValue(bd.getFinalDamage())),
                 Colors.VALUE,
                 LineType.HIGHLIGHT,
-                Spacing.NONE,
+                detail == DetailLevel.FULL ? Spacing.NONE : Spacing.SMALL,
                 Colors.CALCULATED_SHADOW
             ));
         }

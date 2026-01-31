@@ -1,18 +1,6 @@
 {
   "replace": false,
   "values": [
-    "devmod:foundry_bricks",
-    "devmod:foundry_cracked_bricks",
-    "devmod:foundry_controller",
-    "devmod:foundry_drain",
-    "devmod:foundry_tank",
-    "devmod:foundry_faucet",
-    "devmod:foundry_channel",
-    "devmod:foundry_casting_table",
-    "devmod:foundry_casting_basin",
-    "devmod:foundry_part_builder",
-    "devmod:foundry_tool_station",
-    "devmod:foundry_tool_anvil",
     "devmod:steel_block",
     "devmod:bronze_block",
     "devmod:cobalt_block",

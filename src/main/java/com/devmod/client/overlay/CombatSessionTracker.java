@@ -17,6 +17,7 @@ import com.devmod.combat.HitHelper.BodyPart;
  * Tracks combat session statistics for the Combat Recap feature.
  * Collects data per-target and provides aggregated analytics.
  */
+@SuppressWarnings("null") // Integer::sum lambda null-safety false positive
 public final class CombatSessionTracker {
 
     public static final CombatSessionTracker INSTANCE = new CombatSessionTracker();

@@ -264,7 +264,7 @@ public class PartyScreen extends Screen {
         ResourceLocation mobId = selectedMobId;
         if (mobId != null) {
             for (EnduranceQuestRegistry.MobQuestConfig config : availableMobs) {
-                if (config.mobId.equals(mobId)) {
+                if (config.getMobId().equals(mobId)) {
                     return config;
                 }
             }
@@ -431,19 +431,19 @@ public class PartyScreen extends Screen {
     private void loadAvailableMobs() {
         availableMobs = new ArrayList<>(EnduranceQuestRegistry.INSTANCE.getAllMobConfigs());
         availableNamespaces = availableMobs.stream()
-                .map(m -> m.namespace)
+                .map(m -> m.getNamespace())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         availableMobs.sort((a, b) -> {
-            int tierComp = a.tier.compareTo(b.tier);
+            int tierComp = a.getTier().compareTo(b.getTier());
             if (tierComp != 0) return tierComp;
-            return a.displayName.compareTo(b.displayName);
+            return a.getDisplayName().compareTo(b.getDisplayName());
         });
 
         if (selectedMobId == null) {
             for (EnduranceQuestRegistry.MobQuestConfig config : availableMobs) {
-                if ("zombie".equals(config.mobId.getPath())) {
-                    selectedMobId = config.mobId;
+                if ("zombie".equals(config.getMobId().getPath())) {
+                    selectedMobId = config.getMobId();
                     break;
                 }
             }
@@ -455,12 +455,12 @@ public class PartyScreen extends Screen {
     private void filterMobs() {
         filteredMobs = availableMobs.stream()
                 .filter(m -> {
-                    if (selectedNamespace != null && !m.namespace.equals(selectedNamespace)) return false;
-                    if (selectedTierFilter != null && m.tier != selectedTierFilter) return false;
+                    if (selectedNamespace != null && !m.getNamespace().equals(selectedNamespace)) return false;
+                    if (selectedTierFilter != null && m.getTier() != selectedTierFilter) return false;
                     if (!mobSearchText.isEmpty()) {
                         String search = mobSearchText.toLowerCase(Locale.ROOT);
-                        return m.displayName.toLowerCase(Locale.ROOT).contains(search) ||
-                                m.mobId.toString().toLowerCase(Locale.ROOT).contains(search);
+                        return m.getDisplayName().toLowerCase(Locale.ROOT).contains(search) ||
+                                m.getMobId().toString().toLowerCase(Locale.ROOT).contains(search);
                     }
                     return true;
                 })
@@ -469,7 +469,7 @@ public class PartyScreen extends Screen {
         int newIndex = findMobIndex(selectedMobId, filteredMobs);
         if (newIndex < 0 && selectedMobId == null && !filteredMobs.isEmpty()) {
             selectedMobIndex = 0;
-            selectedMobId = filteredMobs.get(0).mobId;
+            selectedMobId = filteredMobs.get(0).getMobId();
         } else {
             selectedMobIndex = newIndex;
         }
@@ -1016,16 +1016,17 @@ public class PartyScreen extends Screen {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null) {
+        var level = mc.level;
+        if (level != null) {
             try {
-                Entity entity = config.entityType.create(mc.level);
+                Entity entity = config.getEntityType().create(level);
                 if (entity instanceof LivingEntity living) {
                     previewEntity = living;
                 } else {
                     previewEntity = null;
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to create preview entity for {}", config.mobId, e);
+                LOGGER.warn("Failed to create preview entity for {}", config.getMobId(), e);
                 previewEntity = null;
             }
         }
@@ -1142,7 +1143,7 @@ public class PartyScreen extends Screen {
             return selectedMobId;
         }
         if (selectedMobIndex < 0 || selectedMobIndex >= filteredMobs.size()) return null;
-        return filteredMobs.get(selectedMobIndex).mobId;
+        return filteredMobs.get(selectedMobIndex).getMobId();
     }
 
     @Override
@@ -1207,7 +1208,7 @@ public class PartyScreen extends Screen {
         if (isInParty && partyState != PartyData.PartyState.IN_QUEST
             && isLeader && hoveredMobIndex >= 0 && hoveredMobIndex < filteredMobs.size()) {
             selectedMobIndex = hoveredMobIndex;
-            selectedMobId = filteredMobs.get(selectedMobIndex).mobId;
+            selectedMobId = filteredMobs.get(selectedMobIndex).getMobId();
             updatePreviewEntity();
             ResourceLocation mobId = getSelectedMobId();
             if (mobId != null) {
@@ -1457,7 +1458,7 @@ public class PartyScreen extends Screen {
             return -1;
         }
         for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).mobId.equals(mobId)) {
+            if (list.get(i).getMobId().equals(mobId)) {
                 return i;
             }
         }

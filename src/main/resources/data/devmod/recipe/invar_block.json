@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["###", "###", "###"],
-  "key": { "#": { "item": "devmod:invar_ingot" } },
-  "result": { "id": "devmod:invar_block", "count": 1 }
-}

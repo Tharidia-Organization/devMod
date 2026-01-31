@@ -3,6 +3,8 @@ package com.devmod.client.overlay;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -44,6 +46,25 @@ public class ImpactHudOverlay {
 
     // === Toggle (initialized from config) ===
     private static boolean enabled = getConfigEnabled();
+
+    // === Cached content (reduce per-frame allocations) ===
+    @Nullable
+    private static ImpactData lastData = null;
+    private static int lastRevision = -1;
+    @Nullable
+    private static ImpactHudContentBuilder.HudSection cachedMainSection = null;
+    @Nullable
+    private static ImpactHudContentBuilder.HudSection cachedModSection = null;
+    private static int cachedMainHeight = 0;
+    private static int cachedModHeight = 0;
+
+    private static final long HISTORY_CACHE_MS = 200;
+    private static long lastHistoryBuild = 0;
+    @Nullable
+    private static ImpactData lastHistoryData = null;
+    @Nullable
+    private static ImpactHudContentBuilder.HudSection cachedHistorySection = null;
+    private static int cachedHistoryHeight = 0;
 
     // === Last rendered panel position (for crosshair hit-test) ===
     private static int lastPanelX = 0;
@@ -88,17 +109,15 @@ public class ImpactHudOverlay {
         int screenHeight = graphics.guiHeight();
         Font font = mc.font;
 
+        ensureCachedSections(data);
         ImpactHudContentBuilder.HudSection mainSection =
-            ImpactHudContentBuilder.buildMainSection(data, NUMBER_FORMAT);
-        ImpactHudContentBuilder.HudSection modSection =
-            ImpactHudContentBuilder.buildModSection(data, NUMBER_FORMAT).orElse(null);
-        ImpactHudContentBuilder.HudSection historySection =
-            ImpactHudContentBuilder.buildHistorySection(data, NUMBER_FORMAT).orElse(null);
+            Objects.requireNonNull(cachedMainSection, "cachedMainSection");
+        ImpactHudContentBuilder.HudSection historySection = getCachedHistorySection(data);
 
-        List<ImpactHudContentBuilder.HudSection> panels = new java.util.ArrayList<>();
+        List<ImpactHudContentBuilder.HudSection> panels = new java.util.ArrayList<>(3);
         panels.add(mainSection);
-        if (modSection != null) {
-            panels.add(modSection);
+        if (cachedModSection != null) {
+            panels.add(cachedModSection);
         }
         if (historySection != null) {
             panels.add(historySection);
@@ -106,10 +125,9 @@ public class ImpactHudOverlay {
 
         // Calculate panel dimensions
         int panelWidth = 260;
-        int totalHeight = 0;
-        for (ImpactHudContentBuilder.HudSection section : panels) {
-            totalHeight += calculatePanelHeight(section);
-        }
+        int totalHeight = cachedMainHeight
+            + (cachedModSection != null ? cachedModHeight : 0)
+            + (historySection != null ? cachedHistoryHeight : 0);
         if (panels.size() > 1) {
             totalHeight += PANEL_GAP * (panels.size() - 1);
         }
@@ -255,6 +273,32 @@ public class ImpactHudOverlay {
             case SECTION -> SECTION_SPACING;
             case LARGE -> 4;
         };
+    }
+
+    private static void ensureCachedSections(ImpactData data) {
+        int revision = data.getRevision();
+        if (data == lastData && revision == lastRevision && cachedMainSection != null) {
+            return;
+        }
+
+        cachedMainSection = ImpactHudContentBuilder.buildMainSection(data, NUMBER_FORMAT);
+        cachedModSection = ImpactHudContentBuilder.buildModSection(data, NUMBER_FORMAT).orElse(null);
+        cachedMainHeight = calculatePanelHeight(cachedMainSection);
+        cachedModHeight = cachedModSection != null ? calculatePanelHeight(cachedModSection) : 0;
+        lastData = data;
+        lastRevision = revision;
+    }
+
+    @Nullable
+    private static ImpactHudContentBuilder.HudSection getCachedHistorySection(ImpactData data) {
+        long now = System.currentTimeMillis();
+        if (data != lastHistoryData || now - lastHistoryBuild >= HISTORY_CACHE_MS) {
+            cachedHistorySection = ImpactHudContentBuilder.buildHistorySection(data, NUMBER_FORMAT).orElse(null);
+            cachedHistoryHeight = cachedHistorySection != null ? calculatePanelHeight(cachedHistorySection) : 0;
+            lastHistoryBuild = now;
+            lastHistoryData = data;
+        }
+        return cachedHistorySection;
     }
 
     /**

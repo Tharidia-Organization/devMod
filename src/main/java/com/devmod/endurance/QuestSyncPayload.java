@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadVersion;
 
 public record QuestSyncPayload(
     boolean hasActiveQuest,
@@ -70,7 +71,16 @@ public record QuestSyncPayload(
         QuestSyncPayload::decode
     );
 
+    // Protocol versioning:
+    // V1: Base quest fields + modifiers
+    // V2: Combo system (currentCombo, maxCombo, styleScore, styleRankOrdinal)
+    // V3: Flow state (flowStateOrdinal, virtuosoProgress, staleRisk, uniqueActionCount)
+    // V4: Momentum (momentumPercent, momentumStateOrdinal, isOverdrive, overdriveRemaining)
+    public static final int CURRENT_VERSION = 4;
+    public static final int MIN_SUPPORTED_VERSION = 1;
+
     private static void encode(RegistryFriendlyByteBuf buf, QuestSyncPayload payload) {
+        PayloadVersion.writeVersion(buf, CURRENT_VERSION);
         buf.writeBoolean(payload.hasActiveQuest);
         buf.writeUtf(Objects.requireNonNull(payload.questId));
         buf.writeUtf(Objects.requireNonNull(payload.questName));
@@ -127,6 +137,8 @@ public record QuestSyncPayload(
     private static final int MAX_MODIFIERS = 50;
 
     private static QuestSyncPayload decode(RegistryFriendlyByteBuf buf) {
+        int version = PayloadVersion.readVersion(buf, MIN_SUPPORTED_VERSION, CURRENT_VERSION);
+
         boolean hasActiveQuest = buf.readBoolean();
         String questId = buf.readUtf(MAX_STRING_LENGTH);
         // SECURITY FIX: Limit string length
@@ -173,30 +185,36 @@ public record QuestSyncPayload(
             }
         }
 
-        // Combo system data
-        int currentCombo = buf.readVarInt();
-        int maxCombo = buf.readVarInt();
-        int styleScore = buf.readVarInt();
-        int styleRankOrdinal = buf.readVarInt();
+        // V2+: Combo system data
+        int currentCombo = 0;
+        int maxCombo = 0;
+        int styleScore = 0;
+        int styleRankOrdinal = 0;
+        if (version >= 2) {
+            currentCombo = buf.readVarInt();
+            maxCombo = buf.readVarInt();
+            styleScore = buf.readVarInt();
+            styleRankOrdinal = buf.readVarInt();
+        }
 
-        // Flow State data (added later - check if readable for backward compat)
+        // V3+: Flow State data
         int flowStateOrdinal = 1; // Default: NEUTRAL
         float virtuosoProgress = 0f;
         float staleRisk = 0f;
         int uniqueActionCount = 0;
-        if (buf.isReadable()) {
+        if (version >= 3) {
             flowStateOrdinal = buf.readVarInt();
             virtuosoProgress = buf.readFloat();
             staleRisk = buf.readFloat();
             uniqueActionCount = buf.readVarInt();
         }
 
-        // Momentum data (added later - check if readable for backward compat)
+        // V4+: Momentum data
         int momentumPercent = 50; // Default: 50%
         int momentumStateOrdinal = 1; // Default: BUILDING
         boolean isOverdrive = false;
         long overdriveRemaining = 0;
-        if (buf.isReadable()) {
+        if (version >= 4) {
             momentumPercent = buf.readVarInt();
             momentumStateOrdinal = buf.readVarInt();
             isOverdrive = buf.readBoolean();
@@ -225,6 +243,7 @@ public record QuestSyncPayload(
     @Override
     public int estimatedSize() {
         int size = 0;
+        size += varIntSize(CURRENT_VERSION); // protocol version
         size += 1; // hasActiveQuest
         size += estimatedUtfSize(questId);
         size += estimatedUtfSize(questName);
@@ -274,7 +293,7 @@ public record QuestSyncPayload(
         return size;
     }
 
-    /**
+    /*
      * Create an empty payload (no active quest).
      */
     public static QuestSyncPayload empty() {
@@ -288,7 +307,7 @@ public record QuestSyncPayload(
         );
     }
 
-    /**
+    /*
      * Get the quest state enum value.
      */
     public EnduranceQuestState getState() {
@@ -299,7 +318,7 @@ public record QuestSyncPayload(
         return EnduranceQuestState.AVAILABLE;
     }
 
-    /**
+    /*
      * Get the style rank enum value.
      */
     public ComboSystem.StyleRank getStyleRank() {
@@ -310,7 +329,7 @@ public record QuestSyncPayload(
         return ComboSystem.StyleRank.D;
     }
 
-    /**
+    /*
      * Get the flow state enum value.
      */
     public FlowStateTracker.FlowState getFlowState() {
@@ -321,7 +340,7 @@ public record QuestSyncPayload(
         return FlowStateTracker.FlowState.NEUTRAL;
     }
 
-    /**
+    /*
      * Get the momentum state enum value.
      */
     public MomentumTracker.MomentumState getMomentumState() {

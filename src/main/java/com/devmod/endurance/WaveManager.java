@@ -595,12 +595,12 @@ public class WaveManager {
 
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
-        EntityType<?> entityType = mobConfig.entityType;
+        EntityType<?> entityType = mobConfig.getEntityType();
 
         // Check if this mob type is enabled in session's mob pool config
         EnduranceQuestManager.ActiveQuestSession session = waveState.getSession();
-        if (!com.devmod.endurance.config.EffectiveConfig.isMobEnabled(session, mobConfig.mobId)) {
-            LOGGER.info("[EnduranceQuest] Mob {} is disabled by session config, skipping spawn", mobConfig.mobId);
+        if (!com.devmod.endurance.config.EffectiveConfig.isMobEnabled(session, mobConfig.getMobId())) {
+            LOGGER.info("[EnduranceQuest] Mob {} is disabled by session config, skipping spawn", mobConfig.getMobId());
             return;
         }
 
@@ -687,7 +687,7 @@ public class WaveManager {
                 // FIX #9B: Check ELITE_HUNTER curse - forces all mobs to be elite
                 boolean forcedElite = com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE
                     .shouldSpawnElite(waveState.quest.getQuestId());
-                if (!safeAffix.isElite() && (forcedElite || random.nextFloat() < getEliteChance(mobConfig.eliteChance, waveState.waveNumber, waveState.getSession()))) {
+                if (!safeAffix.isElite() && (forcedElite || random.nextFloat() < getEliteChance(mobConfig.getEliteChance(), waveState.waveNumber, waveState.getSession()))) {
                     applyEliteBuffs(mob, waveState.waveNumber);
                     appliedAffix = SpawnAffix.ELITE;
                 } else if (safeAffix.isElite()) {
@@ -696,7 +696,7 @@ public class WaveManager {
 
                 if (shouldLogBossHp(mobConfig)) {
                     LOGGER.info("[EnduranceQuest] Boss HP final for {}: maxHp={}, currentHp={}, affix={}, wave={}, questId={}",
-                        mobConfig.mobId, mob.getMaxHealth(), mob.getHealth(), appliedAffix.name(),
+                        mobConfig.getMobId(), mob.getMaxHealth(), mob.getHealth(), appliedAffix.name(),
                         waveState.waveNumber, waveState.quest.getQuestId());
                 }
 
@@ -850,7 +850,7 @@ public class WaveManager {
 
         ServerLevel level = arena.getLevel();
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.quest.getMobConfig();
-        EntityType<?> entityType = mobConfig.entityType;
+        EntityType<?> entityType = mobConfig.getEntityType();
 
         SpawnOccupancyTracker occupied = new SpawnOccupancyTracker();
         boolean allowReuse = spawnContext.positions().size() < allowed;
@@ -1500,8 +1500,8 @@ public class WaveManager {
             float scaledHP = mobConfig.getScaledHealth(playerCount, questType);
             // If mob has different base HP than estimated, scale proportionally
             float ratio = 1.0f;
-            if (Math.abs(baseHP - mobConfig.baseHealth) > 0.1f && mobConfig.baseHealth > 0) {
-                ratio = baseHP / mobConfig.baseHealth;
+            if (Math.abs(baseHP - mobConfig.getBaseHealth()) > 0.1f && mobConfig.getBaseHealth() > 0) {
+                ratio = baseHP / mobConfig.getBaseHealth();
                 scaledHP = scaledHP * ratio;
             }
 
@@ -1510,10 +1510,10 @@ public class WaveManager {
             mob.setHealth(mob.getMaxHealth());
 
             LOGGER.debug("[EnduranceQuest] Mob HP scaled: {} -> {} (players={}, preset={}, type={}, waveScale={}, globalMult={})",
-                baseHP, scaledHP, playerCount, mobConfig.difficultyPreset.getDisplayName(), questType, waveScale, globalHealthMult);
+                baseHP, scaledHP, playerCount, mobConfig.getDifficultyPreset().getDisplayName(), questType, waveScale, globalHealthMult);
             if (shouldLogBossHp(mobConfig)) {
                 LOGGER.info("[EnduranceQuest] Boss HP scaling (pre-affix) for {}: baseAttr={}, baseEstimated={}, ratio={}, scaled={}, maxHp={}, wave={}, players={}, type={}, waveScale={}, globalMult={}, questId={}",
-                    mobConfig.mobId, baseHP, mobConfig.baseHealth, ratio, scaledHP, mob.getMaxHealth(),
+                    mobConfig.getMobId(), baseHP, mobConfig.getBaseHealth(), ratio, scaledHP, mob.getMaxHealth(),
                     waveState.waveNumber, playerCount, questType, waveScale, globalHealthMult,
                     waveState.quest.getQuestId());
             }
@@ -1526,8 +1526,8 @@ public class WaveManager {
             float baseDamage = (float) attackAttr.getBaseValue();
             float scaledDamage = mobConfig.getScaledDamage(playerCount);
             // Proportional scaling for different base damages
-            if (Math.abs(baseDamage - mobConfig.baseDamage) > 0.1f && mobConfig.baseDamage > 0) {
-                float ratio = baseDamage / mobConfig.baseDamage;
+            if (Math.abs(baseDamage - mobConfig.getBaseDamage()) > 0.1f && mobConfig.getBaseDamage() > 0) {
+                float ratio = baseDamage / mobConfig.getBaseDamage();
                 scaledDamage = scaledDamage * ratio;
             }
 
@@ -1535,7 +1535,7 @@ public class WaveManager {
             attackAttr.setBaseValue(scaledDamage);
 
             LOGGER.debug("[EnduranceQuest] Mob DMG scaled: {} -> {} (players={}, preset={}, waveScale={}, globalMult={})",
-                baseDamage, scaledDamage, playerCount, mobConfig.difficultyPreset.getDisplayName(), waveScale, globalDamageMult);
+                baseDamage, scaledDamage, playerCount, mobConfig.getDifficultyPreset().getDisplayName(), waveScale, globalDamageMult);
         }
 
         // Apply speed multiplier if session has global speed override
@@ -1552,10 +1552,10 @@ public class WaveManager {
     }
 
     private static boolean shouldLogBossHp(EnduranceQuestRegistry.MobQuestConfig mobConfig) {
-        if (mobConfig == null || mobConfig.mobId == null) {
+        if (mobConfig == null || mobConfig.getMobId() == null) {
             return false;
         }
-        return "ender_dragon".equals(mobConfig.mobId.getPath());
+        return "ender_dragon".equals(mobConfig.getMobId().getPath());
     }
 
     private float getEliteChance(float baseChance, int waveNumber,

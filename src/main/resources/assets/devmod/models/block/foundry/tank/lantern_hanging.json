@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/template/lantern_hanging",
-  "textures": {
-    "lantern": "devmod:block/foundry/lantern"
-  }
-}

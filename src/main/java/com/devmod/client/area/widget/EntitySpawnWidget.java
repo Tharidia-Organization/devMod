@@ -102,7 +102,7 @@ public class EntitySpawnWidget extends AbstractWidget {
                 boolean isHovered = mouseY >= pointY && mouseY < pointY + ROW_HEIGHT &&
                                    mouseX >= getX() && mouseX < getX() + getWidth();
 
-                renderSpawnPoint(graphics, point, i, getX() + 4, pointY, getWidth() - 8,
+                renderSpawnPoint(graphics, point, getX() + 4, pointY, getWidth() - 8,
                                isSelected, isHovered, mouseX, mouseY);
                 pointY += ROW_HEIGHT + SECTION_SPACING;
             }
@@ -134,7 +134,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         );
     }
 
-    private void renderSpawnPoint(GuiGraphics graphics, EntitySpawnPoint point, int index,
+    private void renderSpawnPoint(GuiGraphics graphics, EntitySpawnPoint point,
                                  int x, int y, int width, boolean isSelected, boolean isHovered,
                                  int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);

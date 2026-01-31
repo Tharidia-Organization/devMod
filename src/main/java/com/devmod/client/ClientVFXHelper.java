@@ -109,9 +109,10 @@ public final class ClientVFXHelper {
      */
     private static boolean isLocalAttacker(ImpactData impactData) {
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null
+        var player = mc.player;
+        return player != null
             && impactData.getAttackerUUID() != null
-            && impactData.getAttackerUUID().equals(mc.player.getUUID());
+            && impactData.getAttackerUUID().equals(player.getUUID());
     }
 
     /**

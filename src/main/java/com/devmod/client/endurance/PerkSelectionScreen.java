@@ -12,6 +12,7 @@ import org.lwjgl.glfw.GLFW;
 
 import com.google.common.base.Splitter;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -686,6 +687,10 @@ public class PerkSelectionScreen extends Screen {
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP), 1.2f)));
             mc.setScreen(null);
+
+            // Trigger checkpoint screen opening after perk selection
+            // This ensures the checkpoint screen opens even if overlay misses the transition
+            openCheckpointScreenAfterDelay(mc);
         }
     }
 
@@ -700,7 +705,58 @@ public class PerkSelectionScreen extends Screen {
         if (mc != null) {
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
             mc.setScreen(null);
+
+            // Trigger checkpoint screen opening after skipping perk
+            openCheckpointScreenAfterDelay(mc);
         }
+    }
+
+    /**
+     * Opens the checkpoint screen after a short delay to ensure smooth transition.
+     * This is needed because the overlay-based detection can miss the state transition
+     * when the perk screen closes.
+     *
+     * Only opens checkpoint if NO screen is currently showing, allowing the user to
+     * view debrief/report screens first and close them when ready.
+     */
+    private void openCheckpointScreenAfterDelay(Minecraft mc) {
+        java.util.concurrent.CompletableFuture.delayedExecutor(
+            500, java.util.concurrent.TimeUnit.MILLISECONDS
+        ).execute(() -> mc.execute(() -> {
+            // Check quest state
+            boolean hasQuest = ClientQuestCache.hasActiveQuest();
+            var data = ClientQuestCache.getData();
+            var state = data != null ? data.getState() : null;
+
+            var currentScreen = mc.screen;
+            String screenName = currentScreen != null ? currentScreen.getClass().getSimpleName() : "null";
+
+            org.slf4j.LoggerFactory.getLogger("PerkSelectionScreen")
+                .info("[PerkSelect] Delayed checkpoint check: screen={}, hasQuest={}, state={}",
+                    screenName, hasQuest, state);
+
+            // Open checkpoint screen if quest is at WAVE_COMPLETE state
+            if (hasQuest && data != null
+                && state == com.devmod.endurance.EnduranceQuestState.WAVE_COMPLETE) {
+                // Don't replace if already showing checkpoint or perk screens
+                if (currentScreen instanceof WaveCheckpointScreen
+                    || currentScreen instanceof PerkSelectionScreen) {
+                    org.slf4j.LoggerFactory.getLogger("PerkSelectionScreen")
+                        .info("[PerkSelect] Already showing correct screen, skipping");
+                    return;
+                }
+                // Only open checkpoint if NO screen is showing (user closed debrief/report)
+                // This allows user to analyze reports before proceeding
+                if (currentScreen != null) {
+                    org.slf4j.LoggerFactory.getLogger("PerkSelectionScreen")
+                        .info("[PerkSelect] Screen {} is open, not replacing (user should close it first)", screenName);
+                    return;
+                }
+                org.slf4j.LoggerFactory.getLogger("PerkSelectionScreen")
+                    .info("[PerkSelect] Opening checkpoint screen (no screen active)");
+                mc.setScreen(new WaveCheckpointScreen());
+            }
+        }));
     }
 
     @Override

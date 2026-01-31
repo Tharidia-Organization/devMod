@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.world.entity.Entity;
 
 public class HitData {
@@ -67,6 +69,7 @@ public class HitData {
      * @param target Any entity (supports modded entities)
      * @return HitInfo if found and not expired, null otherwise
      */
+    @Nullable
     public static synchronized HitInfo retrieve(Entity target) {
         HitInfo info = CONTEXT.remove(target.getUUID());
         if (info != null && System.currentTimeMillis() - info.timestamp > EXPIRATION_MS) {

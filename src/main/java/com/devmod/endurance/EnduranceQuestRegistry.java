@@ -135,31 +135,31 @@ public class EnduranceQuestRegistry {
      * Configuration for a mob's quest parameters.
      */
     public static final class MobQuestConfig {
-        public final ResourceLocation mobId;
-        public final EntityType<?> entityType;
-        public final MobTier tier;
-        public final MobDifficultyPreset difficultyPreset;
-        public final String displayName;
-        public final String namespace;
+        private final ResourceLocation mobId;
+        private final EntityType<?> entityType;
+        private final MobTier tier;
+        private final MobDifficultyPreset difficultyPreset;
+        private final String displayName;
+        private final String namespace;
 
         // Wave configuration
-        public final int baseCountPerWave;
-        public final float countScalingPerWave;
-        public final int maxPerWave;
+        private final int baseCountPerWave;
+        private final float countScalingPerWave;
+        private final int maxPerWave;
 
         // Spawn configuration
-        public final boolean canSpawnInGroups;
-        public final int groupSize;
-        public final float eliteChance; // Chance to spawn with buffs
+        private final boolean canSpawnInGroups;
+        private final int groupSize;
+        private final float eliteChance;
 
         // Rewards
-        public final int pointsPerKill;
-        public final int bonusPointsForWaveClear;
+        private final int pointsPerKill;
+        private final int bonusPointsForWaveClear;
 
         // Base stats (estimated from entity type defaults)
-        public final float baseHealth;
-        public final float baseDamage;
-        public final float baseSpeed;
+        private final float baseHealth;
+        private final float baseDamage;
+        private final float baseSpeed;
 
         public MobQuestConfig(ResourceLocation mobId, EntityType<?> entityType, MobTier tier) {
             this(mobId, entityType, tier, determineDifficultyPreset(mobId, tier));
@@ -441,6 +441,25 @@ public class EnduranceQuestRegistry {
         public String getStatsSummary() {
             return String.format("HP: %.0f | DMG: %.0f | %s", baseHealth, baseDamage, difficultyPreset.getDisplayName());
         }
+
+        // Getters
+        public ResourceLocation getMobId() { return mobId; }
+        public EntityType<?> getEntityType() { return entityType; }
+        public MobTier getTier() { return tier; }
+        public MobDifficultyPreset getDifficultyPreset() { return difficultyPreset; }
+        public String getDisplayName() { return displayName; }
+        public String getNamespace() { return namespace; }
+        public int getBaseCountPerWave() { return baseCountPerWave; }
+        public float getCountScalingPerWave() { return countScalingPerWave; }
+        public int getMaxPerWave() { return maxPerWave; }
+        public boolean canSpawnInGroups() { return canSpawnInGroups; }
+        public float getEliteChance() { return eliteChance; }
+        public int getGroupSize() { return groupSize; }
+        public int getPointsPerKill() { return pointsPerKill; }
+        public int getBonusPointsForWaveClear() { return bonusPointsForWaveClear; }
+        public float getBaseHealth() { return baseHealth; }
+        public float getBaseDamage() { return baseDamage; }
+        public float getBaseSpeed() { return baseSpeed; }
     }
 
     private EnduranceQuestRegistry() {}
@@ -642,14 +661,14 @@ public class EnduranceQuestRegistry {
      */
     private void updateMobTier(ResourceLocation id, MobQuestConfig oldConfig, MobTier newTier) {
         // Remove from old tier index
-        MobTier oldTier = oldConfig.tier;
+        MobTier oldTier = oldConfig.getTier();
         List<ResourceLocation> oldTierList = mobsByTier.get(oldTier);
         if (oldTierList != null) {
             oldTierList.remove(id);
         }
 
         // Create new config with updated tier
-        MobQuestConfig newConfig = new MobQuestConfig(id, oldConfig.entityType, newTier, oldConfig.difficultyPreset);
+        MobQuestConfig newConfig = new MobQuestConfig(id, oldConfig.getEntityType(), newTier, oldConfig.getDifficultyPreset());
         mobConfigs.put(id, newConfig);
 
         // Add to new tier index
@@ -913,8 +932,8 @@ public class EnduranceQuestRegistry {
         ensureInitialized();
         String lowerQuery = query.toLowerCase(Locale.ROOT);
         return mobConfigs.values().stream()
-            .filter(config -> config.displayName.toLowerCase(Locale.ROOT).contains(lowerQuery) ||
-                             config.mobId.toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
+            .filter(config -> config.getDisplayName().toLowerCase(Locale.ROOT).contains(lowerQuery) ||
+                             config.getMobId().toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
             .toList();
     }
 

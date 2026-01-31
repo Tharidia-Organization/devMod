@@ -157,12 +157,12 @@ public final class SnapshotManagerDialog extends BaseOverlay {
         } else if (isCreateMode) {
             renderCreateMode(graphics, font, contentX, contentY, contentWidth, mouseX, mouseY);
         } else {
-            renderListMode(graphics, font, contentX, contentY, contentWidth, panelX, panelY, panelHeight, mouseX, mouseY);
+            renderListMode(graphics, font, contentX, contentY, contentWidth, panelY, panelHeight, mouseX, mouseY);
         }
     }
 
     private void renderListMode(GuiGraphics graphics, Font font, int contentX, int contentY,
-                                 int contentWidth, int panelX, int panelY, int panelHeight, int mouseX, int mouseY) {
+                                 int contentWidth, int panelY, int panelHeight, int mouseX, int mouseY) {
         // Snapshot count
         String countText = snapshots.isEmpty()
             ? Component.translatable("area.snapshot.empty").getString()

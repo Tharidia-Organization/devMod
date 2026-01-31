@@ -744,34 +744,6 @@ public class Config {
         BUILDER.pop();
 
         // ============================================
-        // FOUNDRY SETTINGS
-        // ============================================
-
-        BUILDER.push("foundry");
-
-        FOUNDRY_MIN_INNER_SIZE = BUILDER
-                .comment("Minimum inner width/length of the foundry multiblock (inner cavity size)")
-                .defineInRange("minInnerSize", 1, 1, 64);
-
-        FOUNDRY_MAX_INNER_SIZE = BUILDER
-                .comment("Maximum inner width/length of the foundry multiblock")
-                .defineInRange("maxInnerSize", 14, 1, 64);
-
-        FOUNDRY_MAX_HEIGHT = BUILDER
-                .comment("Maximum wall height of the foundry multiblock")
-                .defineInRange("maxHeight", 64, 3, 128);
-
-        FOUNDRY_CAPACITY_PER_BLOCK = BUILDER
-                .comment("Molten fluid capacity per inner block (mB)")
-                .defineInRange("capacityPerBlock", 1000, 100, 10000);
-
-        FOUNDRY_FUEL_CAPACITY = BUILDER
-                .comment("Fuel tank capacity (mB) for the controller")
-                .defineInRange("fuelCapacity", 8000, 1000, 64000);
-
-        BUILDER.pop();
-
-        // ============================================
         // ADMIN PANEL SETTINGS
         // ============================================
 
@@ -791,16 +763,6 @@ public class Config {
 
     public static final ModConfigSpec.IntValue GRINDER_DURABILITY;
     public static final ModConfigSpec.IntValue GRINDER_OPERATIONS_PER_DAMAGE;
-
-    // ============================================
-    // FOUNDRY CONFIG VALUES
-    // ============================================
-
-    public static final ModConfigSpec.IntValue FOUNDRY_MIN_INNER_SIZE;
-    public static final ModConfigSpec.IntValue FOUNDRY_MAX_INNER_SIZE;
-    public static final ModConfigSpec.IntValue FOUNDRY_MAX_HEIGHT;
-    public static final ModConfigSpec.IntValue FOUNDRY_CAPACITY_PER_BLOCK;
-    public static final ModConfigSpec.IntValue FOUNDRY_FUEL_CAPACITY;
 
     // ============================================
     // ADMIN PANEL CONFIG VALUES

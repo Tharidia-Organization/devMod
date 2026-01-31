@@ -1,5 +1,0 @@
-{
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [{ "item": "devmod:electrum_ingot" }],
-  "result": { "id": "devmod:electrum_nugget", "count": 9 }
-}

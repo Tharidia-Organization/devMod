@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["###", "###", "###"],
-  "key": { "#": { "item": "devmod:nickel_ingot" } },
-  "result": { "id": "devmod:nickel_block", "count": 1 }
-}

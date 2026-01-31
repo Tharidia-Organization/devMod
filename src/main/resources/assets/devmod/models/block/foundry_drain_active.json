@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "top": "devmod:block/foundry_bricks",
-    "front": "devmod:block/foundry_drain_active",
-    "side": "devmod:block/foundry_bricks"
-  }
-}

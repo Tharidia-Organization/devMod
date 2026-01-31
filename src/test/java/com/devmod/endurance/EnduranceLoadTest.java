@@ -27,6 +27,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.devmod.endurance.combat.ComboSystemFacade;
+import com.devmod.endurance.combat.api.IComboSession;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -603,12 +606,17 @@ public class EnduranceLoadTest {
         @Test
         @DisplayName("Combo session creation under load")
         void testComboSessionCreationLoad() throws InterruptedException {
+            // Initialize the facade for testing
+            if (!ComboSystemFacade.isInitialized()) {
+                ComboSystemFacade.initialize();
+            }
+
             int sessionCount = 200;
             ExecutorService executor = Executors.newFixedThreadPool(20);
             CountDownLatch startLatch = new CountDownLatch(1);
             CountDownLatch doneLatch = new CountDownLatch(sessionCount);
             LoadTestMetrics metrics = new LoadTestMetrics();
-            List<ComboSystem.ComboSession> sessions = Collections.synchronizedList(new ArrayList<>());
+            List<IComboSession> sessions = Collections.synchronizedList(new ArrayList<>());
 
             for (int i = 0; i < sessionCount; i++) {
                 executor.execute(() -> {
@@ -618,7 +626,7 @@ public class EnduranceLoadTest {
                         UUID questId = UUID.randomUUID();
 
                         long start = System.nanoTime();
-                        ComboSystem.ComboSession session = ComboSystem.INSTANCE.startSession(playerId, questId);
+                        IComboSession session = ComboSystemFacade.get().startSession(playerId, questId);
                         long latency = System.nanoTime() - start;
 
                         if (session != null) {
@@ -626,7 +634,7 @@ public class EnduranceLoadTest {
                             metrics.recordSuccess(latency);
 
                             // End session after use
-                            ComboSystem.INSTANCE.endSession(playerId);
+                            ComboSystemFacade.get().endSession(playerId);
                         } else {
                             metrics.recordFailure(latency);
                         }

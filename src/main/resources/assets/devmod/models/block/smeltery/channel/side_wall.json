@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/template/channel/side_wall",
-  "textures": {
-    "texture": "devmod:block/smeltery/seared/stone"
-  }
-}

@@ -554,7 +554,7 @@ public class CombatTracker implements QuestLifecycleListener {
         // Only create session if none exists (shared per quest)
         if (getSession(questId).isEmpty()) {
             UUID playerId = event.context().playerId();
-            ResourceLocation mobType = event.context().quest().getMobConfig().mobId;
+            ResourceLocation mobType = event.context().quest().getMobConfig().getMobId();
             startTracking(questId, playerId, mobType);
         }
     }

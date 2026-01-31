@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "devmod:block/foundry_tool_station" },
-    "facing=south": { "model": "devmod:block/foundry_tool_station", "y": 180 },
-    "facing=west": { "model": "devmod:block/foundry_tool_station", "y": 270 },
-    "facing=east": { "model": "devmod:block/foundry_tool_station", "y": 90 }
-  }
-}

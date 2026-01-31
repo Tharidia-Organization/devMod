@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/smeltery/controller/melter",
-  "textures": {
-    "front": "devmod:block/smeltery/controller/melter_inactive"
-  }
-}

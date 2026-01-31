@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "devmod:block/foundry_stencil_table" },
-    "facing=south": { "model": "devmod:block/foundry_stencil_table", "y": 180 },
-    "facing=west": { "model": "devmod:block/foundry_stencil_table", "y": 270 },
-    "facing=east": { "model": "devmod:block/foundry_stencil_table", "y": 90 }
-  }
-}

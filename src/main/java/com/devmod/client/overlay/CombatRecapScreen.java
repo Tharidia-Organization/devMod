@@ -21,6 +21,7 @@ import com.devmod.combat.HitHelper.BodyPart;
  * Shows damage statistics, DPS graph, body part distribution, and top targets.
  */
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class CombatRecapScreen extends Screen {
 
     // === Layout Constants ===

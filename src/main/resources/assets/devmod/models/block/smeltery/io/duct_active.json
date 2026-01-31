@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/io_fluid",
-  "textures": {
-    "drain": "devmod:block/smeltery/io/duct_front_active",
-    "bricks": "devmod:block/smeltery/seared/bricks",
-    "back": "devmod:block/smeltery/io/back"
-  }
-}

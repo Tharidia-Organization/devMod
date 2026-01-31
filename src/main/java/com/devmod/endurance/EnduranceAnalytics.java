@@ -240,7 +240,7 @@ public class EnduranceAnalytics {
         record.playerId = combatSession.getPlayerId().toString();
         record.playerName = playerName;
         record.mobType = quest.getMobId().toString();
-        record.mobDisplayName = quest.getMobConfig().displayName;
+        record.mobDisplayName = quest.getMobConfig().getDisplayName();
         record.timestamp = System.currentTimeMillis();
         record.dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(record.timestamp), ZoneId.systemDefault())
             .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);

@@ -100,8 +100,8 @@ public class MobListPanel {
         for (MobQuestConfig config : configs) {
             EnduranceMobConfig mobConfig = EnduranceMobConfig.fromMobQuestConfig(config);
             allMobs.add(new MobListEntry(mobConfig));
-            enabledMobs.add(config.mobId);
-            namespaces.add(config.mobId.getNamespace());
+            enabledMobs.add(config.getMobId());
+            namespaces.add(config.getMobId().getNamespace());
         }
 
         availableNamespaces.add("all");

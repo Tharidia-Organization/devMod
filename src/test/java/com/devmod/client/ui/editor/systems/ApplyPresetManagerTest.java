@@ -75,8 +75,8 @@ public class ApplyPresetManagerTest {
         assertEquals(1, res.successCount());
         assertEquals(2, res.failureCount());
         assertTrue(res.failureDetails().stream()
-            .anyMatch(d -> d.itemId != null && d.itemId.endsWith("dirt") && "Scope mismatch".equals(d.message)));
+            .anyMatch(d -> d.itemId() != null && d.itemId().endsWith("dirt") && "Scope mismatch".equals(d.message())));
         assertTrue(res.failureDetails().stream()
-            .anyMatch(d -> d.itemId != null && d.itemId.endsWith("stone") && "apply failed".equals(d.message)));
+            .anyMatch(d -> d.itemId() != null && d.itemId().endsWith("stone") && "apply failed".equals(d.message())));
     }
 }

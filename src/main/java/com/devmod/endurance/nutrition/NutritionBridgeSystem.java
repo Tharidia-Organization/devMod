@@ -11,6 +11,11 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,7 +43,7 @@ import com.devmod.compat.mods.easydiet.EasyDietCompat;
  *
  * @author DevMod Team
  */
-public class NutritionBridgeSystem {
+public class NutritionBridgeSystem implements QuestLifecycleListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NutritionBridgeSystem.class);
 
@@ -475,5 +480,46 @@ public class NutritionBridgeSystem {
         sessions.clear();
         healthAccumulators.clear();
         LOGGER.debug("[NutritionBridge] Cleared all sessions");
+    }
+
+    // =========================================================================
+    // QuestLifecycleListener Implementation
+    // =========================================================================
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        if (!EasyDietCompat.isAvailable()) return;
+
+        QuestContext ctx = event.context();
+        UUID playerId = ctx.playerId();
+        UUID questId = ctx.questId();
+
+        onQuestStart(playerId, questId);
+        LOGGER.debug("[NutritionBridge] Started session for player {} via event bus", playerId);
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        if (!EasyDietCompat.isAvailable()) return;
+
+        QuestContext ctx = event.context();
+        ServerPlayer player = ctx.player();
+        UUID playerId = ctx.playerId();
+
+        // Remove attribute modifiers first
+        removeAttributeModifiers(player);
+        // Then end session
+        onQuestEnd(playerId);
+        LOGGER.debug("[NutritionBridge] Ended session for player {} via event bus", playerId);
+    }
+
+    @Override
+    public int getPriority() {
+        return 50; // Low priority, runs after most systems
+    }
+
+    @Override
+    public String getListenerName() {
+        return "NutritionBridgeSystem";
     }
 }

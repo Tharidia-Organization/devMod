@@ -452,11 +452,11 @@ public class GamificationManager {
      * Result class for quest completion tracking.
      */
     public static class QuestCompletionResult {
-        public final List<Badge> newBadges = new ArrayList<>();
-        public final boolean isNewHighScore;
-        public final boolean isNewWaveRecord;
-        public final int previousHighScore;
-        public final int previousHighWave;
+        private final List<Badge> newBadges = new ArrayList<>();
+        private final boolean isNewHighScore;
+        private final boolean isNewWaveRecord;
+        private final int previousHighScore;
+        private final int previousHighWave;
 
         public QuestCompletionResult(boolean isNewHighScore, boolean isNewWaveRecord,
                                      int previousHighScore, int previousHighWave) {
@@ -465,6 +465,12 @@ public class GamificationManager {
             this.previousHighScore = previousHighScore;
             this.previousHighWave = previousHighWave;
         }
+
+        public List<Badge> getNewBadges() { return newBadges; }
+        public boolean isNewHighScore() { return isNewHighScore; }
+        public boolean isNewWaveRecord() { return isNewWaveRecord; }
+        public int getPreviousHighScore() { return previousHighScore; }
+        public int getPreviousHighWave() { return previousHighWave; }
     }
 
     /**

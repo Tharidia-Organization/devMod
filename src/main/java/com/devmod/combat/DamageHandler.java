@@ -2,6 +2,8 @@ package com.devmod.combat;
 
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -314,8 +316,9 @@ public class DamageHandler {
      * an attacker - unknown types get a formatted fallback label so HUD
      * panels always show something.</p>
      *
-     * @return Readable name for the damage type (never null for environmental damage)
+     * @return Readable name for the damage type, or null if player attack without mace smash
      */
+    @Nullable
     private static String getEnvironmentalDamageSource(LivingIncomingDamageEvent event) {
         var source = event.getSource();
 

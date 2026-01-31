@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
@@ -534,6 +535,7 @@ public final class HitHelper {
      * Get the last recorded hit body part (for QA tracking).
      * Returns null if no recent hit or TTL expired.
      */
+    @Nullable
     public static String getLastHitPart() {
         if (lastHitPart == null) return null;
         if (System.currentTimeMillis() - lastHitTime > LAST_HIT_TTL_MS) {

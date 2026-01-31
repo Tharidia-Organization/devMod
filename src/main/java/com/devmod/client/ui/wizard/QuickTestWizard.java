@@ -98,7 +98,7 @@ public class QuickTestWizard extends Screen {
             // Registry not initialized - will show empty list
         }
         if (!availableMobs.isEmpty()) {
-            selectedMob = availableMobs.get(0).mobId;
+            selectedMob = availableMobs.get(0).getMobId();
         }
     }
 
@@ -338,7 +338,7 @@ public class QuickTestWizard extends Screen {
                     graphics.fill(leftCol + 2, itemY, leftCol + 198, itemY + 20, DesignTokens.Background.HOVER);
                 }
 
-                String mobName = mob.displayName != null ? mob.displayName : mob.mobId.toString();
+                String mobName = mob.getDisplayName() != null ? mob.getDisplayName() : mob.getMobId().toString();
                 if (mobName.length() > 25) mobName = mobName.substring(0, 22) + "...";
                 graphics.drawString(getFont(), mobName, leftCol + 8, itemY + 6,
                     selected ? DesignTokens.Accent.PRIMARY : DesignTokens.Text.PRIMARY, false);
@@ -699,7 +699,7 @@ public class QuickTestWizard extends Screen {
             int itemY = listY + 5 + i * 22;
             if (AxiomRenderer.isMouseOver(mx, my, leftCol + 2, itemY, 196, 20)) {
                 selectedMobIndex = idx;
-                selectedMob = availableMobs.get(idx).mobId;
+                selectedMob = availableMobs.get(idx).getMobId();
                 return;
             }
         }

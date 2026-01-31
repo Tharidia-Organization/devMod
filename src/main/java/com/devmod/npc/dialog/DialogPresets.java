@@ -23,14 +23,12 @@ public final class DialogPresets {
 
     // Preset IDs
     public static final String GUIDE_BASIC_ID = "preset_guide_basic";
-    public static final String FOUNDRY_GUIDE_ID = "preset_foundry_guide";
     public static final String VENDOR_ID = "preset_vendor";
     public static final String QUEST_GIVER_ID = "preset_quest_giver";
     public static final String INFO_POINT_ID = "preset_info_point";
 
     static {
         registerPreset(createGuideBasic());
-        registerPreset(createFoundryGuide());
         registerPreset(createVendor());
         registerPreset(createQuestGiver());
         registerPreset(createInfoPoint());
@@ -110,81 +108,6 @@ public final class DialogPresets {
         ));
 
         return DialogSet.createPreset(GUIDE_BASIC_ID, "Guida Base", nodes, "greeting");
-    }
-
-    /**
-     * Foundry guide preset with core system explanations.
-     */
-    private static DialogSet createFoundryGuide() {
-        Map<String, DialogNode> nodes = new HashMap<>();
-
-        nodes.put("start", new DialogNode(
-            "start",
-            List.of(
-                "Benvenuto nella Foundry.",
-                "Posso spiegarti multiblocco, fusione, colata e strumenti."
-            ),
-            List.of(
-                DialogOption.goTo("multiblock", "Multiblocco", "\uD83E\uDDF1", "multiblock"),
-                DialogOption.goTo("melting", "Fusione e carburante", "\uD83D\uDD25", "melting"),
-                DialogOption.goTo("casting", "Colata e stampi", "\uD83E\uDEA8", "casting"),
-                DialogOption.goTo("tools", "Strumenti modulari", "\uD83D\uDD28", "tools"),
-                new DialogOption("give_guide", "Dammi la guida", "\uD83D\uDCD6", null,
-                    new DialogAction.GiveItem(
-                        ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "foundry_guide"),
-                        1,
-                        null
-                    )),
-                DialogOption.close("exit", "Chiudi", "\u274C")
-            ),
-            null
-        ));
-
-        nodes.put("multiblock", new DialogNode(
-            "multiblock",
-            List.of(
-                "Costruisci una struttura cava in mattoni Foundry.",
-                "Il top resta aperto e il controller guarda l'interno.",
-                "Tanks, drain e faucet completano la struttura."
-            ),
-            List.of(DialogOption.goTo("back", "Indietro", "\u25C0\uFE0F", "start")),
-            null
-        ));
-
-        nodes.put("melting", new DialogNode(
-            "melting",
-            List.of(
-                "Inserisci carburante nel Fuel Tank.",
-                "Metti materiali nel controller o nei ducts.",
-                "Impurita' e temperatura influenzano la qualita'."
-            ),
-            List.of(DialogOption.goTo("back", "Indietro", "\u25C0\uFE0F", "start")),
-            null
-        ));
-
-        nodes.put("casting", new DialogNode(
-            "casting",
-            List.of(
-                "Usa faucet per colare in casting table o basin.",
-                "I cast definiscono la forma delle parti.",
-                "I canali instradano i fluidi verso piu' stampi."
-            ),
-            List.of(DialogOption.goTo("back", "Indietro", "\u25C0\uFE0F", "start")),
-            null
-        ));
-
-        nodes.put("tools", new DialogNode(
-            "tools",
-            List.of(
-                "Il Part Builder crea parti usando i pattern.",
-                "Tool Station e Anvil assemblano strumenti e armature.",
-                "Traits e modifiers cambiano le stat finali."
-            ),
-            List.of(DialogOption.goTo("back", "Indietro", "\u25C0\uFE0F", "start")),
-            null
-        ));
-
-        return DialogSet.createPreset(FOUNDRY_GUIDE_ID, "Guida Foundry", nodes, "start");
     }
 
     /**

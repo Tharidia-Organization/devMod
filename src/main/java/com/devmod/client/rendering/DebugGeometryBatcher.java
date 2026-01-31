@@ -38,6 +38,7 @@ import net.neoforged.api.distmarker.OnlyIn;
  * </pre>
  */
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class DebugGeometryBatcher {
     public static final DebugGeometryBatcher INSTANCE = new DebugGeometryBatcher();
 
@@ -375,9 +376,19 @@ public class DebugGeometryBatcher {
             return;
         }
 
-        shader.MODEL_VIEW_MATRIX.set(modelView);
-        shader.PROJECTION_MATRIX.set(projection);
-        shader.COLOR_MODULATOR.set(1.0f, 1.0f, 1.0f, 1.0f);
+        var modelViewMatrix = shader.MODEL_VIEW_MATRIX;
+        var projectionMatrix = shader.PROJECTION_MATRIX;
+        var colorModulator = shader.COLOR_MODULATOR;
+
+        if (modelViewMatrix != null) {
+            modelViewMatrix.set(modelView);
+        }
+        if (projectionMatrix != null) {
+            projectionMatrix.set(projection);
+        }
+        if (colorModulator != null) {
+            colorModulator.set(1.0f, 1.0f, 1.0f, 1.0f);
+        }
 
         vbo.bind();
         shader.apply();

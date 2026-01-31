@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -92,6 +93,7 @@ public class ImpactData {
     private volatile float mobEffectReduction = 0f;  // Resistance potion, etc.
     private volatile float absorptionReduction = 0f;
     private volatile float blockedDamage = 0f;
+    private final AtomicInteger revision = new AtomicInteger();
 
     /**
      * Complete constructor for internal use.
@@ -436,6 +438,7 @@ public class ImpactData {
         this.healthBefore = healthBefore;
         this.healthAfter = healthAfter;
         this.actualDamageDealt = actualDamage;
+        revision.incrementAndGet();
     }
 
     /**
@@ -449,6 +452,7 @@ public class ImpactData {
         this.mobEffectReduction = mobEffects;
         this.absorptionReduction = absorption;
         this.blockedDamage = blocked;
+        revision.incrementAndGet();
     }
 
     /** Gets armor reduction amount. */
@@ -504,6 +508,10 @@ public class ImpactData {
     public float getDamageReduction() {
         if (!hasActualDamage()) return 0;
         return breakdown.getFinalDamage() - actualDamageDealt;
+    }
+
+    public int getRevision() {
+        return revision.get();
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.devmod.client.overlay;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nonnull;
 
@@ -25,8 +25,8 @@ import com.devmod.config.Config;
 
 public class ImpactVFX {
 
-    // Active effects list (thread-safe to avoid ConcurrentModificationException)
-    private static final List<ImpactEffect> activeEffects = new CopyOnWriteArrayList<>();
+    // Active effects list (guarded by itself)
+    private static final List<ImpactEffect> activeEffects = new ArrayList<>();
 
     // Effect duration
     private static final long CORE_DURATION_MS = 2500;
@@ -55,13 +55,15 @@ public class ImpactVFX {
             return;
         }
 
-        // Remove old effects if there are too many
-        while (activeEffects.size() > 5) {
-            activeEffects.remove(0);
-        }
+        synchronized (activeEffects) {
+            // Remove old effects if there are too many
+            while (activeEffects.size() > 5) {
+                activeEffects.remove(0);
+            }
 
-        activeEffects.add(new ImpactEffect(Objects.requireNonNull(hitPoint, "hitPoint"),
-            slashDirection));
+            activeEffects.add(new ImpactEffect(Objects.requireNonNull(hitPoint, "hitPoint"),
+                slashDirection));
+        }
     }
 
     /**
@@ -70,24 +72,27 @@ public class ImpactVFX {
      */
     public static void render(PoseStack poseStack, MultiBufferSource bufferSource, Vec3 cameraPos) {
         if (!isVfxEnabled()) {
-            activeEffects.clear();
+            synchronized (activeEffects) {
+                activeEffects.clear();
+            }
             return;
         }
 
-        if (activeEffects.isEmpty()) return;
+        synchronized (activeEffects) {
+            if (activeEffects.isEmpty()) return;
 
-        // Remove expired effects
-        long now = System.currentTimeMillis();
-        activeEffects.removeIf(e -> e.isExpired(now));
+            // Remove expired effects
+            long now = System.currentTimeMillis();
+            for (int i = activeEffects.size() - 1; i >= 0; i--) {
+                if (activeEffects.get(i).isExpired(now)) {
+                    activeEffects.remove(i);
+                }
+            }
 
-        Vec3 cam = nnVec(cameraPos, "cameraPos");
-        for (ImpactEffect effect : activeEffects) {
-            renderEffect(poseStack, bufferSource, cam, effect, now);
-        }
-
-        // Flush buffer per assicurare rendering
-        if (bufferSource instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch();
+            Vec3 cam = nnVec(cameraPos, "cameraPos");
+            for (ImpactEffect effect : activeEffects) {
+                renderEffect(poseStack, bufferSource, cam, effect, now);
+            }
         }
     }
 

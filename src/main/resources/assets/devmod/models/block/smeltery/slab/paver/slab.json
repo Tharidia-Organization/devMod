@@ -1,8 +1,0 @@
-{
-    "parent": "block/slab",
-    "textures": {
-        "bottom": "devmod:block/smeltery/seared/paver",
-        "top": "devmod:block/smeltery/seared/paver",
-        "side": "devmod:block/smeltery/seared/paver_slab"
-    }
-}

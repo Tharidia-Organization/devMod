@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["###", "###", "###"],
-  "key": { "#": { "item": "devmod:lead_ingot" } },
-  "result": { "id": "devmod:lead_block", "count": 1 }
-}

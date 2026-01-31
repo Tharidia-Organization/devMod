@@ -139,7 +139,7 @@ public final class WaveDirector {
         int objectiveEliteCount = objective.getType() == WaveObjectiveState.Type.ELITE_HUNT ? 1 : 0;
 
         int remaining = Math.max(0, adjustedTotal - objectiveEliteCount);
-        int groupSize = mobConfig.canSpawnInGroups ? Math.max(1, mobConfig.groupSize) : 1;
+        int groupSize = mobConfig.canSpawnInGroups() ? Math.max(1, mobConfig.getGroupSize()) : 1;
         int batchSize = Math.max(1, groupSize);
         int maxBatches = waveNumber <= 2 ? MAX_BATCHES_EARLY : MAX_BATCHES_LATE;
         int plannedBatches = Math.min(maxBatches, Math.max(MIN_BATCHES, (int) Math.ceil(remaining / (double) batchSize)));

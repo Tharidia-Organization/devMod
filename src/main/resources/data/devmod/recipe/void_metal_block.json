@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["###", "###", "###"],
-  "key": { "#": { "item": "devmod:void_metal_ingot" } },
-  "result": { "id": "devmod:void_metal_block", "count": 1 }
-}

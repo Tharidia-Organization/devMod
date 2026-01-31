@@ -23,6 +23,7 @@ import com.devmod.transport.TransportState;
  *
  * <p>Channel ID: 212 (TRANSPORT_STATE)
  */
+@SuppressWarnings("null") // TransportPayloadLimits.truncate() null-safety false positive
 public record TransportStatePayload(
     boolean inTransport,
     int stateIndex,

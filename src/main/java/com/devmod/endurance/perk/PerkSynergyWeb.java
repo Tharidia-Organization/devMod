@@ -19,6 +19,11 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -32,7 +37,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 import com.devmod.endurance.PerkSynergySystem;
 import com.devmod.endurance.PerkSystem;
 
-public class PerkSynergyWeb {
+public class PerkSynergyWeb implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(PerkSynergyWeb.class);
 
     public static final PerkSynergyWeb INSTANCE = new PerkSynergyWeb();
@@ -977,5 +982,37 @@ public class PerkSynergyWeb {
             String baseText = isBlank(progressText) ? achievementId : progressText;
             return baseText + (isMet(context) ? " [Complete]" : " [In Progress]");
         }
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        ServerPlayer player = ctx.player();
+
+        // Load discoveries when player joins quest
+        onPlayerJoin(player);
+        LOGGER.debug("[PerkSynergyWeb] Loaded discoveries for player {} via event bus", player.getUUID());
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        QuestContext ctx = event.context();
+        ServerPlayer player = ctx.player();
+
+        // Save discoveries and cleanup when player leaves quest
+        onPlayerLeave(player);
+        LOGGER.debug("[PerkSynergyWeb] Saved discoveries for player {} via event bus", player.getUUID());
+    }
+
+    @Override
+    public int getPriority() {
+        return 100; // Low priority, runs after core systems
+    }
+
+    @Override
+    public String getListenerName() {
+        return "PerkSynergyWeb";
     }
 }

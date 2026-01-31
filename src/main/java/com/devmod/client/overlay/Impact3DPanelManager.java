@@ -1,8 +1,8 @@
 package com.devmod.client.overlay;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -25,9 +25,14 @@ public class Impact3DPanelManager {
     private static final double MAX_RENDER_DISTANCE = 64.0; // Don't render panels beyond this distance
     private static final double MAX_RENDER_DISTANCE_SQ = MAX_RENDER_DISTANCE * MAX_RENDER_DISTANCE;
 
-    // === State === (thread-safe to avoid ConcurrentModificationException)
-    private final List<Impact3DPanel> activePanels = new CopyOnWriteArrayList<>();
+    // === State ===
+    private final List<Impact3DPanel> activePanels = new ArrayList<>();
     private boolean enabled = true;
+    private int lastRenderedFull = 0;
+    private int lastRenderedCompact = 0;
+    private int lastRenderedMinimal = 0;
+    private int lastCacheHits = 0;
+    private int lastCacheMisses = 0;
 
     private Impact3DPanelManager() {}
 
@@ -69,14 +74,15 @@ public class Impact3DPanelManager {
         Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
         Vec3 panelPosition = resolvePanelPosition(mc, hitPoint, cameraPos);
 
-        // Remove excess panels (FIFO)
-        while (activePanels.size() >= MAX_PANELS) {
-            activePanels.remove(0);
-        }
-
         // Create and add the new panel
         Impact3DPanel panel = new Impact3DPanel(hitPoint, panelPosition, data);
-        activePanels.add(panel);
+        synchronized (activePanels) {
+            // Remove excess panels (FIFO)
+            while (activePanels.size() >= MAX_PANELS) {
+                activePanels.remove(0);
+            }
+            activePanels.add(panel);
+        }
     }
 
     private Vec3 resolvePanelPosition(Minecraft mc, Vec3 hitPoint, Vec3 cameraPos) {
@@ -126,13 +132,16 @@ public class Impact3DPanelManager {
         LocalPlayer player = mc.player;
         float partialTick = mc.getTimer().getGameTimeDeltaPartialTick(true);
 
-        // Update all panels (CopyOnWriteArrayList is safe for iteration)
-        for (Impact3DPanel panel : activePanels) {
-            panel.update(level, player, partialTick);
+        synchronized (activePanels) {
+            for (Impact3DPanel panel : activePanels) {
+                panel.update(level, player, partialTick);
+            }
+            for (int i = activePanels.size() - 1; i >= 0; i--) {
+                if (activePanels.get(i).isExpired()) {
+                    activePanels.remove(i);
+                }
+            }
         }
-
-        // Remove expired panels (removeIf works with CopyOnWriteArrayList)
-        activePanels.removeIf(Impact3DPanel::isExpired);
     }
 
     /**
@@ -149,49 +158,116 @@ public class Impact3DPanelManager {
      */
     public void renderAllPanels(PoseStack poseStack, MultiBufferSource bufferSource,
                                  Camera camera, float partialTick) {
-        if (!enabled) return;
-        if (activePanels.isEmpty()) return;
+        if (!enabled) {
+            resetRenderStats();
+            return;
+        }
+        synchronized (activePanels) {
+            if (activePanels.isEmpty()) {
+                resetRenderStats();
+                return;
+            }
+        }
 
         Vec3 cameraPos = camera.getPosition();
+        int full = 0;
+        int compact = 0;
+        int minimal = 0;
+        int cacheHits = 0;
+        int cacheMisses = 0;
 
-        for (Impact3DPanel panel : activePanels) {
-            // DISTANCE-GATED RENDERING: Skip panels too far away
-            Vec3 panelPos = panel.getPanelPosition();
-            if (panelPos != null) {
-                double distSq = panelPos.distanceToSqr(Objects.requireNonNull(cameraPos));
-                if (distSq > MAX_RENDER_DISTANCE_SQ) {
-                    continue; // Skip rendering, panel too far
+        synchronized (activePanels) {
+            for (Impact3DPanel panel : activePanels) {
+                // DISTANCE-GATED RENDERING: Skip panels too far away
+                Vec3 panelPos = panel.getPanelPosition();
+                if (panelPos != null) {
+                    double distSq = panelPos.distanceToSqr(Objects.requireNonNull(cameraPos));
+                    if (distSq > MAX_RENDER_DISTANCE_SQ) {
+                        continue; // Skip rendering, panel too far
+                    }
+                }
+
+                int outcome = panel.renderAndCollectStats(poseStack, bufferSource, camera, partialTick);
+                if (outcome < 0) {
+                    continue;
+                }
+                boolean cacheHit = (outcome & Impact3DPanel.CACHE_HIT_FLAG) != 0;
+                int detailIndex = outcome & 0x0F;
+                switch (detailIndex) {
+                    case Impact3DPanel.DETAIL_FULL -> full++;
+                    case Impact3DPanel.DETAIL_COMPACT -> compact++;
+                    case Impact3DPanel.DETAIL_MINIMAL -> minimal++;
+                    default -> {}
+                }
+                if (cacheHit) {
+                    cacheHits++;
+                } else {
+                    cacheMisses++;
                 }
             }
-
-            panel.render(poseStack, bufferSource, camera, partialTick);
         }
 
-        // Flush buffer to ensure rendering
-        if (bufferSource instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch();
-        }
+        lastRenderedFull = full;
+        lastRenderedCompact = compact;
+        lastRenderedMinimal = minimal;
+        lastCacheHits = cacheHits;
+        lastCacheMisses = cacheMisses;
     }
 
     /**
      * Clears all active panels.
      */
     public void clear() {
-        activePanels.clear();
+        synchronized (activePanels) {
+            activePanels.clear();
+        }
+        resetRenderStats();
     }
 
     /**
      * Checks if there are active panels.
      */
     public boolean hasActivePanels() {
-        return !activePanels.isEmpty();
+        synchronized (activePanels) {
+            return !activePanels.isEmpty();
+        }
     }
 
     /**
      * Gets the number of active panels.
      */
     public int getPanelCount() {
-        return activePanels.size();
+        synchronized (activePanels) {
+            return activePanels.size();
+        }
+    }
+
+    public int getLastRenderedFull() {
+        return lastRenderedFull;
+    }
+
+    public int getLastRenderedCompact() {
+        return lastRenderedCompact;
+    }
+
+    public int getLastRenderedMinimal() {
+        return lastRenderedMinimal;
+    }
+
+    public int getLastCacheHits() {
+        return lastCacheHits;
+    }
+
+    public int getLastCacheMisses() {
+        return lastCacheMisses;
+    }
+
+    private void resetRenderStats() {
+        lastRenderedFull = 0;
+        lastRenderedCompact = 0;
+        lastRenderedMinimal = 0;
+        lastCacheHits = 0;
+        lastCacheMisses = 0;
     }
 
     /**

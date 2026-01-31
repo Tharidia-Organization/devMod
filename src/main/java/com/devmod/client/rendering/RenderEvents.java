@@ -170,6 +170,11 @@ public class RenderEvents {
 
         // Update counters for the profiler
         profiler.setCounter("3D Panels", Impact3DPanelManager.INSTANCE.getPanelCount());
+        profiler.setCounter("Impact3D Full", Impact3DPanelManager.INSTANCE.getLastRenderedFull());
+        profiler.setCounter("Impact3D Compact", Impact3DPanelManager.INSTANCE.getLastRenderedCompact());
+        profiler.setCounter("Impact3D Minimal", Impact3DPanelManager.INSTANCE.getLastRenderedMinimal());
+        profiler.setCounter("Impact3D Cache Hit", Impact3DPanelManager.INSTANCE.getLastCacheHits());
+        profiler.setCounter("Impact3D Cache Miss", Impact3DPanelManager.INSTANCE.getLastCacheMisses());
         profiler.setCounter("Floating Panels", FloatingPanelManager.INSTANCE.getPanelCount());
         profiler.setCounter("Tracked Entities", AttributeMonitoringSystem.INSTANCE.getTrackedCount());
     }

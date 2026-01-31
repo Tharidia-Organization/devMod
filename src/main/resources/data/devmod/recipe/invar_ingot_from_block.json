@@ -1,5 +1,0 @@
-{
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [{ "item": "devmod:invar_block" }],
-  "result": { "id": "devmod:invar_ingot", "count": 9 }
-}

@@ -133,9 +133,6 @@ public class DevMod {
         // Initialize Clone module (telepad, cloning system)
         com.devmod.clone.CloneModule.init(eventBus);
 
-        // Initialize Foundry module (multiblock smelting/casting)
-        com.devmod.foundry.FoundryModule.init(eventBus);
-
         // Initialize NPC module (NPC spawning, dialog system)
         com.devmod.npc.NpcModule.init(eventBus);
 

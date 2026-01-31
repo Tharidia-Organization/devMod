@@ -49,6 +49,7 @@ import com.devmod.notification.NotificationPriority;
 import com.devmod.util.I18n;
 
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class EnduranceQuestScreen extends BaseDevModScreen {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestScreen.class);
     private static final String SCREEN_ID = "endurance_quest";
@@ -355,7 +356,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // Request arena suggestions if a quest is already pre-selected
         var preselected = selectedQuest;
         if (preselected != null && arenaPanel != null) {
-            arenaPanel.requestSuggestions(preselected.mobId.toString());
+            arenaPanel.requestSuggestions(preselected.getMobId().toString());
         }
     }
 
@@ -375,7 +376,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             return;
         }
         net.minecraft.client.Minecraft.getInstance().setScreen(
-            new MobPoolEditorScreen(this, quest.mobId)
+            new MobPoolEditorScreen(this, quest.getMobId())
         );
     }
 
@@ -532,7 +533,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // Apply pre-selection from QuickTestWizard if present
         if (hasPreselection && preselectedMob != null) {
             for (var quest : filteredQuests) {
-                if (quest.mobId.equals(preselectedMob)) {
+                if (quest.getMobId().equals(preselectedMob)) {
                     selectedQuest = quest;
                     LOGGER.info("[EnduranceQuestScreen] Pre-selected mob: {}", preselectedMob);
                     break;
@@ -545,11 +546,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         String queryLower = searchQuery.toLowerCase(Locale.ROOT);
         filteredQuests = allQuests.stream()
             .filter(q -> queryLower.isEmpty() ||
-                q.displayName.toLowerCase(Locale.ROOT).contains(queryLower) ||
-                q.mobId.toString().toLowerCase(Locale.ROOT).contains(queryLower))
-            .filter(q -> selectedNamespace.equals(ALL_NAMESPACE) || q.namespace.equals(selectedNamespace))
-            .filter(q -> selectedTier == null || q.tier == selectedTier)
-            .sorted(Comparator.comparing(q -> q.displayName))
+                q.getDisplayName().toLowerCase(Locale.ROOT).contains(queryLower) ||
+                q.getMobId().toString().toLowerCase(Locale.ROOT).contains(queryLower))
+            .filter(q -> selectedNamespace.equals(ALL_NAMESPACE) || q.getNamespace().equals(selectedNamespace))
+            .filter(q -> selectedTier == null || q.getTier() == selectedTier)
+            .sorted(Comparator.comparing(q -> q.getDisplayName()))
             .collect(Collectors.toList());
 
         // Clear selection if it no longer matches the filtered list
@@ -739,7 +740,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 displayName = displayName.substring(0, 10) + "..";
             }
             long count = ns.equals(ALL_NAMESPACE) ? allQuests.size() :
-                allQuests.stream().filter(q -> q.namespace.equals(ns)).count();
+                allQuests.stream().filter(q -> q.getNamespace().equals(ns)).count();
 
             int textColor = isSelected ? DesignTokens.Text.WHITE : COLOR_TEXT;
             graphics.drawString(safeFont, displayName, 12, modY, textColor);
@@ -790,7 +791,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 graphics.fill(8, y - 1, SIDEBAR_WIDTH - 14, y + 12, DesignTokens.Surface.LEVEL_1);
             }
 
-            long count = allQuests.stream().filter(q -> q.tier == tier).count();
+            long count = allQuests.stream().filter(q -> q.getTier() == tier).count();
             int textColor = isSelected ? DesignTokens.Text.WHITE : tierColor;
             graphics.drawString(safeFont, getTierDisplayName(tier), 12, y, textColor);
             String countStr = Objects.requireNonNull(String.valueOf(count));
@@ -902,7 +903,6 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         }
     }
 
-    @SuppressWarnings("null")
     private void renderEmptyQuestList(GuiGraphics graphics, net.minecraft.client.gui.Font safeFont,
                                        int listX, int listY, int listWidth, int listHeight) {
         String title = Objects.requireNonNullElse(
@@ -927,7 +927,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         graphics.fill(x, y, x + width, y + QUEST_CARD_HEIGHT, bgColor);
 
         // Left tier indicator (thicker for selected)
-        int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.tier));
+        int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.getTier()));
         int indicatorWidth = isSelected ? 5 : 3;
         graphics.fill(x, y, x + indicatorWidth, y + QUEST_CARD_HEIGHT, tierColor);
 
@@ -941,33 +941,33 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         int contentX = x + indicatorWidth + 8;
 
         // Row 1: Mob name + Tier badge
-        graphics.drawString(safeFont, quest.displayName, contentX, y + 6, COLOR_TEXT);
+        graphics.drawString(safeFont, quest.getDisplayName(), contentX, y + 6, COLOR_TEXT);
 
         // Compact tier badge (pill style)
-        String tierText = Objects.requireNonNull(getTierShortLabel(quest.tier));
+        String tierText = Objects.requireNonNull(getTierShortLabel(quest.getTier()));
         int tierWidth = safeFont.width(tierText) + 6;
         int tierBadgeX = x + width - tierWidth - 6;
         graphics.fill(tierBadgeX - 1, y + 4, tierBadgeX + tierWidth + 1, y + 16, tierColor);
         graphics.drawString(safeFont, tierText, tierBadgeX + 3, y + 6, DesignTokens.Text.WHITE);
 
         // Row 2: Namespace (mod name) - smaller and dimmer
-        graphics.drawString(safeFont, "§8" + quest.namespace, contentX, y + 20, COLOR_TEXT_DIM);
+        graphics.drawString(safeFont, "§8" + quest.getNamespace(), contentX, y + 20, COLOR_TEXT_DIM);
 
         // Row 3: Stats (HP | DMG) - compact format
-        var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(quest.mobId);
+        var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(quest.getMobId());
         String statsLine;
         if (actualStats.isPresent() && actualStats.get().isValid()) {
             var stats = actualStats.get();
             statsLine = I18n.translate("devmod.endurance.quest.card.stats_actual",
-                stats.health(), stats.damage(), quest.pointsPerKill).getString();
+                stats.health(), stats.damage(), quest.getPointsPerKill()).getString();
         } else {
             statsLine = I18n.translate("devmod.endurance.quest.card.stats_estimated",
-                quest.baseHealth, quest.baseDamage, quest.pointsPerKill).getString();
+                quest.getBaseHealth(), quest.getBaseDamage(), quest.getPointsPerKill()).getString();
         }
         graphics.drawString(safeFont, statsLine, contentX, y + 36, COLOR_TEXT);
 
         // Row 4: Personal best (if any) - right aligned
-        PersonalRecordsSyncPayload.MobRecord record = ClientPersonalRecordsCache.getMobRecord(quest.mobId.toString());
+        PersonalRecordsSyncPayload.MobRecord record = ClientPersonalRecordsCache.getMobRecord(quest.getMobId().toString());
         if (record.highestWave() > 0 || record.bestScore() > 0) {
             String bestText = I18n.translate("devmod.endurance.quest.card.best",
                 record.highestWave(), record.bestScore()).getString();
@@ -1002,7 +1002,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         var quest = selectedQuest;
         if (quest != null) {
             // Mob name header
-            String mobName = quest.displayName;
+            String mobName = quest.getDisplayName();
             if (mobName.length() > 22) {
                 mobName = mobName.substring(0, 20) + "..";
             }
@@ -1010,10 +1010,10 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             y += 14;
 
             // Tier badge inline
-            int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.tier));
-            String tierName = getTierDisplayName(quest.tier);
+            int tierColor = Objects.requireNonNull(TIER_COLORS.get(quest.getTier()));
+            String tierName = getTierDisplayName(quest.getTier());
             String tierLine = I18n.translate("devmod.endurance.quest.details.tier_with_namespace",
-                tierName, quest.namespace).getString();
+                tierName, quest.getNamespace()).getString();
             graphics.drawString(safeFont, tierLine, contentX, y, tierColor);
             y += 18;
 
@@ -1022,7 +1022,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             y += 8;
 
             // Mob stats in compact grid format
-            var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(quest.mobId);
+            var actualStats = EnduranceQuestRegistry.INSTANCE.getActualStats(quest.getMobId());
             boolean hasActual = actualStats.isPresent() && actualStats.get().isValid();
 
             // Stats row 1: HP and DMG
@@ -1036,17 +1036,17 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                     stats.armor()).getString(), contentX + 140, y, COLOR_TEXT);
             } else {
                 graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.stat.health_estimated",
-                    quest.baseHealth).getString(), contentX, y, COLOR_TEXT);
+                    quest.getBaseHealth()).getString(), contentX, y, COLOR_TEXT);
                 graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.stat.damage_estimated",
-                    quest.baseDamage).getString(), contentX + 70, y, COLOR_TEXT);
+                    quest.getBaseDamage()).getString(), contentX + 70, y, COLOR_TEXT);
             }
             y += 14;
 
             // Stats row 2: Points and Elite chance
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.points_per_kill",
-                quest.pointsPerKill).getString(), contentX, y, COLOR_TEXT);
+                quest.getPointsPerKill()).getString(), contentX, y, COLOR_TEXT);
             graphics.drawString(safeFont, I18n.translate("devmod.endurance.quest.details.elite_chance",
-                quest.eliteChance * 100).getString(), contentX + 100, y, COLOR_TEXT);
+                quest.getEliteChance() * 100).getString(), contentX + 100, y, COLOR_TEXT);
             y += 16;
 
             // Configure Mob button Y position
@@ -1355,7 +1355,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 String kitLabel = resolveKitSummaryLabel();
                 String arenaLabel = resolveArenaSummaryLabel();
                 String summary = I18n.translate("devmod.endurance.quest.summary_line",
-                    truncateLabel(quest.displayName, 12),
+                    truncateLabel(quest.getDisplayName(), 12),
                     waveLabel,
                     truncateLabel(kitLabel, 12),
                     truncateLabel(arenaLabel, 12)).getString();
@@ -1435,7 +1435,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                 var panel = arenaPanel;
                 if (panel != null) {
                     panel.clear();
-                    panel.requestSuggestions(quest.mobId.toString());
+                    panel.requestSuggestions(quest.getMobId().toString());
                 }
                 playClickSound();
                 return true;
@@ -1661,7 +1661,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         Notification notification = Notification.builder(NotificationCategory.QUEST)
             .titleKey("devmod.endurance.quest.notify.start.title")
             .messageKey(messageKey)
-            .param("mob", quest.displayName)
+            .param("mob", quest.getDisplayName())
             .priority(NotificationPriority.NORMAL)
             .displayDurationMs(2200)
             .build();
@@ -1792,11 +1792,11 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         String templateOverride = arenaPanel != null ? arenaPanel.getOverrideTemplateId() : null;
 
         LOGGER.info("[EnduranceQuest] Starting quest: {} with {} waves, endless={}, kit={}, template={}, practice={}",
-            currentQuest.displayName, wavesToSend, endlessMode, kitId,
+            currentQuest.getDisplayName(), wavesToSend, endlessMode, kitId,
             templateOverride != null ? templateOverride : "auto", practiceMode);
 
         StartQuestPayload payload = new StartQuestPayload(
-            currentQuest.mobId.toString(),
+            currentQuest.getMobId().toString(),
             wavesToSend,
             endlessMode,
             kitId,

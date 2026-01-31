@@ -205,7 +205,13 @@ export function ToastProvider({
     if (duration > 0) {
       window.setTimeout(() => dismissToast(id), duration);
     }
-  }, [dismissToast, preferences.durations, preferences.maxVisible]);
+  }, [
+    dismissToast,
+    preferences.durations,
+    preferences.maxVisible,
+    preferences.showInfoToasts,
+    preferences.showSuccessToasts,
+  ]);
 
   const value = useMemo(
     () => ({ pushToast, preferences, updatePreferences, resetPreferences }),

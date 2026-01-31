@@ -354,6 +354,7 @@ export default function NewsPage() {
                 <button
                   onClick={() => openEditModal(article)}
                   className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                  aria-label="Edit article"
                 >
                   <Edit className="h-5 w-5" />
                 </button>
@@ -364,6 +365,7 @@ export default function NewsPage() {
                     }
                   }}
                   className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  aria-label="Delete article"
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -381,7 +383,7 @@ export default function NewsPage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingArticle ? 'Edit Article' : 'New Article'}
               </h2>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close modal">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -392,8 +394,9 @@ export default function NewsPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
+                  id="title"
                   name="title"
                   required
                   defaultValue={editingArticle?.title}
@@ -404,8 +407,9 @@ export default function NewsPage() {
                 {helperText('title', `Max ${MAX_TITLE_LENGTH} characters`)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">Content</label>
                 <textarea
+                  id="content"
                   name="content"
                   required
                   rows={6}
@@ -417,9 +421,10 @@ export default function NewsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                   <div className="relative">
                     <select
+                      id="category"
                       name="category"
                       defaultValue={editingArticle?.category || 'ANNOUNCEMENT'}
                       onChange={handleFieldChange}
@@ -436,8 +441,9 @@ export default function NewsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Author Name</label>
+                  <label htmlFor="authorName" className="block text-sm font-medium text-gray-700 mb-1">Author Name</label>
                   <input
+                    id="authorName"
                     name="authorName"
                     defaultValue={editingArticle?.authorName || 'Admin'}
                     maxLength={MAX_AUTHOR_LENGTH}
@@ -449,8 +455,9 @@ export default function NewsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                   <input
+                    id="priority"
                     name="priority"
                     type="number"
                     defaultValue={editingArticle?.priority || 0}
@@ -484,8 +491,9 @@ export default function NewsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Publish At</label>
+                  <label htmlFor="publishAt" className="block text-sm font-medium text-gray-700 mb-1">Publish At</label>
                   <input
+                    id="publishAt"
                     type="datetime-local"
                     name="publishAt"
                     defaultValue={
@@ -499,8 +507,9 @@ export default function NewsPage() {
                   {helperText('publishAt', 'Leave blank to publish now')}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expires At</label>
+                  <label htmlFor="expiresAt" className="block text-sm font-medium text-gray-700 mb-1">Expires At</label>
                   <input
+                    id="expiresAt"
                     type="datetime-local"
                     name="expiresAt"
                     defaultValue={

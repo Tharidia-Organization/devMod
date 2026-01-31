@@ -20,6 +20,7 @@ import com.devmod.combat.signature.WeaponTrait;
 import com.devmod.shared.SharedColorTokens;
 
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class SignatureWeaponTooltip {
 
     /**

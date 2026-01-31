@@ -231,7 +231,7 @@ public class EnduranceMobPoolConfig {
     public void disableAll() {
         enabledMobs.clear();
         for (var config : EnduranceQuestRegistry.INSTANCE.getAllMobConfigs()) {
-            disabledMobs.add(config.mobId);
+            disabledMobs.add(config.getMobId());
         }
     }
 

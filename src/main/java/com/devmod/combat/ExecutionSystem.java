@@ -16,6 +16,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
@@ -44,7 +48,7 @@ import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.EnduranceTags;
 import com.devmod.endurance.MomentumTracker;
 
-public class ExecutionSystem {
+public class ExecutionSystem implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionSystem.class);
 
     public static final ExecutionSystem INSTANCE = new ExecutionSystem();
@@ -634,6 +638,27 @@ public class ExecutionSystem {
             throw new IllegalStateException(label + " is null");
         }
         return value;
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        QuestContext ctx = event.context();
+        UUID playerId = ctx.playerId();
+
+        onPlayerLeave(playerId);
+        LOGGER.debug("[ExecutionSystem] Cleaned up state for player {} via event bus", playerId);
+    }
+
+    @Override
+    public int getPriority() {
+        return 50; // Low priority - cleanup after combat systems
+    }
+
+    @Override
+    public String getListenerName() {
+        return "ExecutionSystem";
     }
 
     private ExecutionSystem() {}

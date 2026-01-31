@@ -290,7 +290,7 @@ public class QuestEditorScreen extends ModScreen {
     private void initEnduranceModalComponents() {
         // Load available mobs
         availableMobs = new ArrayList<>(EnduranceQuestRegistry.INSTANCE.getAllMobConfigs());
-        availableMobs.sort(Comparator.comparing(m -> m.displayName));
+        availableMobs.sort(Comparator.comparing(m -> m.getDisplayName()));
         filteredMobs = new ArrayList<>(availableMobs);
 
         int modalWidth = 400;
@@ -953,7 +953,7 @@ public class QuestEditorScreen extends ModScreen {
 
         // Refresh mob list
         availableMobs = new ArrayList<>(EnduranceQuestRegistry.INSTANCE.getAllMobConfigs());
-        availableMobs.sort(Comparator.comparing(m -> m.displayName));
+        availableMobs.sort(Comparator.comparing(m -> m.getDisplayName()));
         filteredMobs = new ArrayList<>(availableMobs);
 
         EditBox searchField = mobSearchField;
@@ -1019,8 +1019,8 @@ public class QuestEditorScreen extends ModScreen {
         } else {
             String lowerQuery = query.toLowerCase(Locale.ROOT);
             filteredMobs = availableMobs.stream()
-                .filter(m -> m.displayName.toLowerCase(Locale.ROOT).contains(lowerQuery) ||
-                             m.mobId.toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
+                .filter(m -> m.getDisplayName().toLowerCase(Locale.ROOT).contains(lowerQuery) ||
+                             m.getMobId().toString().toLowerCase(Locale.ROOT).contains(lowerQuery))
                 .collect(Collectors.toList());
         }
         mobListScroll = 0;
@@ -1050,8 +1050,8 @@ public class QuestEditorScreen extends ModScreen {
 
         // Create QuestData for the endurance quest
         QuestData enduranceQuest = QuestData.createEnduranceQuest(
-            mob.mobId.toString(),
-            mob.displayName,
+            mob.getMobId().toString(),
+            mob.getDisplayName(),
             enduranceWaves,
             enduranceEndless
         );
@@ -1062,7 +1062,7 @@ public class QuestEditorScreen extends ModScreen {
 
         // Send network packet to server to actually start the quest
         PacketDistributor.sendToServer(new StartQuestPayload(
-            mob.mobId.toString(),
+            mob.getMobId().toString(),
             enduranceWaves,
             enduranceEndless
         ));
@@ -1126,14 +1126,14 @@ public class QuestEditorScreen extends ModScreen {
             }
 
             // Tier color indicator
-            int tierColor = getTierColor(mob.tier);
+            int tierColor = getTierColor(mob.getTier());
             graphics.fill(listX + 2, itemY + 2, listX + 5, itemY + itemHeight - 2, tierColor);
 
             // Mob name
-            graphics.drawString(Objects.requireNonNull(font, "font"), mob.displayName, listX + 10, itemY + 5, DesignTokens.Text.PRIMARY(), false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), mob.getDisplayName(), listX + 10, itemY + 5, DesignTokens.Text.PRIMARY(), false);
 
             // Tier badge
-            String tierText = Objects.requireNonNull(mob.tier.name(), "tierText");
+            String tierText = Objects.requireNonNull(mob.getTier().name(), "tierText");
             int tierTextWidth = font.width(tierText);
             graphics.drawString(Objects.requireNonNull(font, "font"), tierText, listX + listWidth - tierTextWidth - 10, itemY + 5, tierColor, false);
         }
@@ -1157,7 +1157,7 @@ public class QuestEditorScreen extends ModScreen {
         EnduranceQuestRegistry.MobQuestConfig currentMob = selectedMob;
         if (currentMob != null) {
             int infoY = modalY + modalHeight - 95;
-            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + currentMob.displayName, listX, infoY, DesignTokens.Accent.GREEN(), false);
+            graphics.drawString(Objects.requireNonNull(font, "font"), "Selected: " + currentMob.getDisplayName(), listX, infoY, DesignTokens.Accent.GREEN(), false);
         }
     }
 

@@ -9,6 +9,12 @@ plugins {
     id 'com.github.spotbugs' version '6.0.7'  // SpotBugs static analysis
 }
 
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.*
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+
 tasks.named('wrapper', Wrapper).configure {
     // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
     // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
@@ -744,10 +750,6 @@ tasks.named('jar') {
     archiveBaseName.set('DevMod')
     archiveVersion.set('')
 }
-
-import org.gradle.api.tasks.*
-import org.gradle.api.file.RegularFileProperty
-import org.gradle.api.provider.Property
 
 // Custom task to generate build properties in a configuration-cache-compatible way
 abstract class GenerateBuildProperties extends DefaultTask {

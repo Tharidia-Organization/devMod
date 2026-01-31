@@ -58,18 +58,18 @@ public record EnduranceMobConfig(
             throw new IllegalArgumentException("config cannot be null");
         }
         return new EnduranceMobConfig(
-            config.mobId,
+            config.getMobId(),
             true, // enabled by default
-            config.baseHealth,
-            config.baseDamage,
-            config.baseSpeed,
+            config.getBaseHealth(),
+            config.getBaseDamage(),
+            config.getBaseSpeed(),
             0f, // baseArmor - not in MobQuestConfig, default to 0
-            config.baseCountPerWave,
-            config.countScalingPerWave,
-            config.maxPerWave,
-            config.eliteChance,
-            config.tier,
-            config.difficultyPreset
+            config.getBaseCountPerWave(),
+            config.getCountScalingPerWave(),
+            config.getMaxPerWave(),
+            config.getEliteChance(),
+            config.getTier(),
+            config.getDifficultyPreset()
         );
     }
 

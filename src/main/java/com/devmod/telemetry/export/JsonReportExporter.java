@@ -202,10 +202,10 @@ public class JsonReportExporter {
             double confusionIndex = BacktrackingService.INSTANCE.getConfusionIndex(entry.getKey());
 
             writer.write("    \"" + escapeJson(entry.getKey()) + "\": {\n");
-            writer.write("      \"backtrack_count\": " + stats.backtrackCount + ",\n");
-            writer.write("      \"total_movements\": " + stats.totalMovements + ",\n");
-            writer.write("      \"unique_visitors\": " + stats.uniqueVisitors + ",\n");
-            writer.write("      \"total_steps_back\": " + stats.totalStepsBack + ",\n");
+            writer.write("      \"backtrack_count\": " + stats.getBacktrackCount() + ",\n");
+            writer.write("      \"total_movements\": " + stats.getTotalMovements() + ",\n");
+            writer.write("      \"unique_visitors\": " + stats.getUniqueVisitors() + ",\n");
+            writer.write("      \"total_steps_back\": " + stats.getTotalStepsBack() + ",\n");
             writer.write("      \"backtrack_rate\": " + String.format("%.4f", stats.getBacktrackRate()) + ",\n");
             writer.write("      \"confusion_index\": " + String.format("%.4f", confusionIndex) + "\n");
             writer.write("    }");

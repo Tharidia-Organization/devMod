@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "devmod:block/foundry_tool_anvil" },
-    "facing=south": { "model": "devmod:block/foundry_tool_anvil", "y": 180 },
-    "facing=west": { "model": "devmod:block/foundry_tool_anvil", "y": 270 },
-    "facing=east": { "model": "devmod:block/foundry_tool_anvil", "y": 90 }
-  }
-}

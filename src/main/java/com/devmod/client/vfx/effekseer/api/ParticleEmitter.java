@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import javax.annotation.Nullable;
 
+@SuppressWarnings("null") // Effekseer API lacks @Nonnull annotations
 public class ParticleEmitter {
     public enum Type {
         WORLD,
@@ -13,14 +14,17 @@ public class ParticleEmitter {
         FIRST_PERSON_OFFHAND
     }
 
-    public final int handle;
-    public final Type type;
+    private final int handle;
+    private final Type type;
 
     protected final @Nullable EffekseerManager manager;
     private @Nullable PreDrawCallback callback;
-    public boolean isVisible = true;
-    public boolean isPaused = false;
+    protected boolean isVisible = true;
+    protected boolean isPaused = false;
     private boolean valid = true;
+
+    public int getHandle() { return handle; }
+    public Type getType() { return type; }
 
     public static ParticleEmitter dummy(Type type) {
         if (DUMMIES.isEmpty()) {

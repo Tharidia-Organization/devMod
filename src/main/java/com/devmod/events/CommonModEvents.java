@@ -149,6 +149,10 @@ public class CommonModEvents {
             eventBus.register(com.devmod.endurance.PerkSystem.INSTANCE);
             eventBus.register(com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE);
             eventBus.register(com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE);
+            eventBus.register(com.devmod.endurance.nutrition.NutritionBridgeSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.ComebackSystem.INSTANCE);
+            eventBus.register(com.devmod.combat.ExecutionSystem.INSTANCE);
             // Post-processing (negative priority)
             eventBus.register(com.devmod.endurance.lifecycle.PartyStatsCoordinator.INSTANCE);
             LOGGER.info("[DevMod] QuestEventBus initialized with {} listeners: {}",
@@ -315,7 +319,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Called when the server is stopping.
      * Cleans up server-side systems.
      */
@@ -396,7 +400,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Called when a level/dimension is unloaded.
      * Notifies DynamicDimensionManager to invalidate any proxy generators
      * that were using the unloaded dimension as their source.
@@ -408,7 +412,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Sync GameMechanicsConfig to client on login.
      */
     @SubscribeEvent
@@ -501,7 +505,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Sanitize weapon stats/components when equipment changes to avoid stale modifiers and enforce clear tool rules.
      */
     @SubscribeEvent
@@ -625,7 +629,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Refresh tool component/modifiers on mining to ensure clear toggle and rules are in sync.
      */
     @SubscribeEvent
@@ -657,7 +661,7 @@ public class CommonModEvents {
         }
     }
 
-    /**
+    /*
      * Enforce clear-tool toggle on drops: if clearToolRules is true, prevent custom drop overrides.
      */
     @SubscribeEvent

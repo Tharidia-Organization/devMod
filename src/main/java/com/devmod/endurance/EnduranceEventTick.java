@@ -119,7 +119,9 @@ public class EnduranceEventTick {
                         UUID questId = session.getQuest().getQuestId();
                         com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.tickPlayer(player, questId);
 
-                        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                        // Only tick hazards during active combat (not during intermission)
+                        if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel
+                                && session.getQuest().getState() == EnduranceQuestState.IN_PROGRESS) {
                             com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.tick(serverLevel, questId, player);
                         }
 
@@ -331,7 +333,7 @@ public class EnduranceEventTick {
                         QuestSequencePayload.Phase.BOSS_INTRO, secondsRemaining,
                         session.getQuest().getDisplayName(),
                         "Boss incoming",
-                        List.of("Boss: " + session.getQuest().getMobConfig().displayName));
+                        List.of("Boss: " + session.getQuest().getMobConfig().getDisplayName()));
                 }
                 if (ticksRemaining <= 0) {
                     int bossWaveNumber = session.getQuest().getCurrentWave();
@@ -682,7 +684,19 @@ public class EnduranceEventTick {
                         activeSession.getQuest().getCurrentWave(),
                         activeSession.getQuest().getQuestId());
                 }
-                player.teleportTo(targetPos.getX() + 0.5, targetY, targetPos.getZ() + 0.5);
+                // Use the full teleport method to ensure proper client sync.
+                // Simple teleportTo(x,y,z) doesn't force network sync when client is stuck in "loading terrain".
+                net.minecraft.server.level.ServerLevel level = arena.getLevel();
+                level.getChunkAt(targetPos); // Ensure chunk is loaded on server
+                player.teleportTo(
+                    level,
+                    targetPos.getX() + 0.5,
+                    targetY,
+                    targetPos.getZ() + 0.5,
+                    Objects.requireNonNull(java.util.Set.<net.minecraft.world.entity.RelativeMovement>of(), "teleport flags"),
+                    player.getYRot(),
+                    player.getXRot()
+                );
             }
         }
     }

@@ -30,6 +30,7 @@ import com.devmod.client.vfx.effekseer.render.EffekRenderer;
 import com.devmod.client.vfx.effekseer.render.RenderUtil;
 import javax.annotation.Nullable;
 
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetLoader.Preparations> {
     private static final Logger LOGGER = LogUtils.getLogger();
     @Nullable private static EffekAssetLoader INSTANCE;

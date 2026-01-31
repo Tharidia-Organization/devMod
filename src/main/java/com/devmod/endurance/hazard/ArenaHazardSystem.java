@@ -21,6 +21,7 @@ import com.devmod.endurance.lifecycle.QuestContext;
 import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.WaveCompleted;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -210,7 +211,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
     // ========== Session Management ==========
 
-    /**
+    /*
      * Start a hazard session for a quest.
      */
     public HazardSession startSession(UUID questId, BlockPos arenaCenter, int arenaRadius) {
@@ -222,14 +223,14 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         return session;
     }
 
-    /**
+    /*
      * Get active session for a quest.
      */
     public Optional<HazardSession> getSession(UUID questId) {
         return Optional.ofNullable(sessions.get(questId));
     }
 
-    /**
+    /*
      * End hazard session.
      */
     public HazardSession endSession(UUID questId) {
@@ -243,7 +244,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
     // ========== Wave Triggers ==========
 
-    /**
+    /*
      * Check and trigger hazards for a wave.
      * Called when a wave starts.
      */
@@ -271,7 +272,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         return triggered;
     }
 
-    /**
+    /*
      * Trigger a specific hazard.
      */
     public void triggerHazard(UUID questId, HazardType type) {
@@ -287,7 +288,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
     // ========== Tick Processing ==========
 
-    /**
+    /*
      * Tick all hazards for a quest.
      * Called from EnduranceEventTick.
      */
@@ -654,7 +655,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
 
     // ========== Public API ==========
 
-    /**
+    /*
      * Get active hazards for HUD display.
      */
     public List<HazardInfo> getActiveHazardInfo(UUID questId) {
@@ -681,7 +682,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         float progress
     ) {}
 
-    /**
+    /*
      * Check if a position is in the safe zone (considering shrink).
      */
     public boolean isInSafeZone(UUID questId, BlockPos pos) {
@@ -694,7 +695,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         return shrink.get().shrinkBounds.contains(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    /**
+    /*
      * Get current shrink level (for mob spawn adjustment).
      */
     public int getShrinkLevel(UUID questId) {
@@ -702,7 +703,7 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         return session != null ? session.currentShrinkLevel : 0;
     }
 
-    /**
+    /*
      * Check if blood moon is active (for mob damage bonus).
      */
     public boolean isBloodMoonActive(UUID questId) {
@@ -776,6 +777,21 @@ public class ArenaHazardSystem implements QuestLifecycleListener {
         if (session != null) {
             LOGGER.debug("[ArenaHazardSystem] Ended session for quest {} via event bus ({} hazards triggered)",
                 questId, session.triggeredHazards.size());
+        }
+    }
+
+    @Override
+    public void onWaveCompleted(WaveCompleted event) {
+        // Only trigger hazards once per wave (shared)
+        if (!event.applyShared()) return;
+
+        UUID questId = event.questId();
+        int upcomingWave = event.context().waveNumber() + 1;
+
+        List<HazardType> triggered = checkWaveHazards(questId, upcomingWave);
+        if (!triggered.isEmpty()) {
+            LOGGER.debug("[ArenaHazardSystem] Triggered {} hazards for wave {} via event bus: {}",
+                triggered.size(), upcomingWave, triggered);
         }
     }
 

@@ -2,6 +2,7 @@ package com.devmod.client.vfx.effekseer.api;
 
 import Effekseer.swig.EffekseerCoreDeviceType;
 
+@SuppressWarnings("ImmutableEnumChecker")
 public enum DeviceType {
     UNKNOWN(EffekseerCoreDeviceType.Unknown),
     OPENGL(EffekseerCoreDeviceType.OpenGL),

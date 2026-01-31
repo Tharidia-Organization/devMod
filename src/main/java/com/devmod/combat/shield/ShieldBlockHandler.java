@@ -16,7 +16,6 @@ import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.combat.ShieldDeflector;
-import com.devmod.foundry.tool.FoundryShieldItem;
 import com.devmod.config.handler.impl.ArmorConfigHandler;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
@@ -63,11 +62,6 @@ public final class ShieldBlockHandler {
             return incomingDamage;
         }
 
-        // Handle Foundry shields with custom abilities
-        if (shield.getItem() instanceof FoundryShieldItem foundryShield) {
-            return applyFoundryShieldBlock(player, source, incomingDamage, shield, foundryShield);
-        }
-
         // Handle vanilla shields
         if (!(shield.getItem() instanceof ShieldItem)) {
             LOGGER.debug("Item is not a shield");
@@ -82,37 +76,6 @@ public final class ShieldBlockHandler {
         applyCooldown(player, shield, stats);
 
         return result.damageAfterBlock();
-    }
-
-    /**
-     * Applies Foundry shield blocking with custom abilities.
-     */
-    private static float applyFoundryShieldBlock(Player player, DamageSource source,
-                                                  float incomingDamage, ItemStack shield,
-                                                  FoundryShieldItem foundryShield) {
-        LOGGER.debug("applyFoundryShieldBlock: player={}, damage={}, ability={}",
-            player.getName().getString(), incomingDamage, foundryShield.getPrimaryAbility(shield));
-
-        // Calculate protection bonus from foundry shield
-        float protectionBonus = foundryShield.getProtectionBonus(shield);
-        float damageAfterBlock = incomingDamage * (1f - protectionBonus);
-
-        // Apply foundry shield ability effects (thorns, reactive, etc.)
-        foundryShield.onBlockDamage(player.level(), player, shield, source, incomingDamage);
-
-        // Apply visual effects
-        if (player instanceof ServerPlayer serverPlayer) {
-            Vec3 impactPos = calculateImpactPosition(player, source);
-            broadcastImpactEffect(serverPlayer, impactPos, damageAfterBlock, false);
-        }
-
-        // Damage the shield
-        shield.hurtAndBreak(1, player, net.minecraft.world.entity.LivingEntity.getSlotForHand(player.getUsedItemHand()));
-
-        LOGGER.debug("Foundry shield blocked: {} -> {} ({}% reduction)",
-            incomingDamage, damageAfterBlock, (int)(protectionBonus * 100));
-
-        return damageAfterBlock;
     }
 
     private static BlockResult calculateBlock(Player player, DamageSource source,

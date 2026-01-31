@@ -83,43 +83,29 @@ public final class RadialMenuThemeDefaults {
         private Base() {}
     }
 
-    public static final class ThemePresetValues {
-        public final int bgDark;
-        public final int bgLight;
-        public final int selected;
-        public final int hover;
-        public final int active;
-        public final int activeGlow;
-        public final int border;
-        public final int textPrimary;
-        public final int textSecondary;
-
-        private ThemePresetValues(int bgDark, int bgLight, int selected, int hover,
-                                  int active, int activeGlow, int border,
-                                  int textPrimary, int textSecondary) {
-            this.bgDark = bgDark;
-            this.bgLight = bgLight;
-            this.selected = selected;
-            this.hover = hover;
-            this.active = active;
-            this.activeGlow = activeGlow;
-            this.border = border;
-            this.textPrimary = textPrimary;
-            this.textSecondary = textSecondary;
-        }
-    }
+    public record ThemePresetValues(
+        int bgDark,
+        int bgLight,
+        int selected,
+        int hover,
+        int active,
+        int activeGlow,
+        int border,
+        int textPrimary,
+        int textSecondary
+    ) {}
 
     private static ThemePresetValues fromPreset(DesignTokens.RadialMenu.PresetValues preset) {
         return new ThemePresetValues(
-            preset.bgDark,
-            preset.bgLight,
-            preset.selected,
-            preset.hover,
-            preset.active,
-            preset.activeGlow,
-            preset.border,
-            preset.textPrimary,
-            preset.textSecondary
+            preset.bgDark(),
+            preset.bgLight(),
+            preset.selected(),
+            preset.hover(),
+            preset.active(),
+            preset.activeGlow(),
+            preset.border(),
+            preset.textPrimary(),
+            preset.textSecondary()
         );
     }
 

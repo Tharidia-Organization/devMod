@@ -71,8 +71,8 @@ import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.runtime.InstanceData;
 import com.devmod.runtime.InstanceManager;
-import com.devmod.runtime.InstanceRegistry;
-import com.devmod.runtime.RecoverySystem;
+import com.devmod.endurance.services.InstanceServicesFacade;
+import com.devmod.endurance.services.PlayerStateServicesFacade;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
@@ -210,7 +210,7 @@ public class EnduranceQuestManager {
         // Create quest templates for all registered mobs
         for (EnduranceQuestRegistry.MobQuestConfig mobConfig : EnduranceQuestRegistry.INSTANCE.getAllMobConfigs()) {
             EnduranceQuest template = new EnduranceQuest(mobConfig);
-            questTemplates.put(mobConfig.mobId, template);
+            questTemplates.put(mobConfig.getMobId(), template);
         }
 
         // Initialize persistence
@@ -470,7 +470,7 @@ public class EnduranceQuestManager {
         if (settings != null && settings.questType == QuestType.EVENT) {
             return "event";
         }
-        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+        if (mobConfig != null && mobConfig.getTier() == EnduranceQuestRegistry.MobTier.BOSS) {
             return "boss";
         }
         return "endurance";
@@ -483,10 +483,10 @@ public class EnduranceQuestManager {
         if (settings != null && settings.questType == QuestType.EVENT) {
             return "hard";
         }
-        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+        if (mobConfig != null && mobConfig.getTier() == EnduranceQuestRegistry.MobTier.BOSS) {
             return "hard";
         }
-        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.ELITE) {
+        if (mobConfig != null && mobConfig.getTier() == EnduranceQuestRegistry.MobTier.ELITE) {
             return "hard";
         }
         return "normal";
@@ -619,12 +619,12 @@ public class EnduranceQuestManager {
         if (settings != null && settings.questType == QuestType.EVENT) {
             tags.add("event");
         }
-        if (mobConfig != null && mobConfig.tier == EnduranceQuestRegistry.MobTier.BOSS) {
+        if (mobConfig != null && mobConfig.getTier() == EnduranceQuestRegistry.MobTier.BOSS) {
             tags.add("boss");
         }
         if (arenaTemplateConfig != null && arenaTemplateConfig.routingEnabled() && mobConfig != null
-            && mobConfig.entityType != null) {
-            Class<?> baseClass = mobConfig.entityType.getBaseClass();
+            && mobConfig.getEntityType() != null) {
+            Class<?> baseClass = mobConfig.getEntityType().getBaseClass();
             if (baseClass != null && RangedAttackMob.class.isAssignableFrom(baseClass)) {
                 tags.add("ranged");
             } else {
@@ -749,7 +749,7 @@ public class EnduranceQuestManager {
             var server = leader.getServer();
             if (server == null) {
                 if (instanceId != null) {
-                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                    InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                 }
                 result.complete(PreparedArenaResult.failure("Server not available"));
                 return;
@@ -764,9 +764,9 @@ public class EnduranceQuestManager {
                         return;
                     }
 
-                    Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+                    Optional<InstanceData> instanceOpt = InstanceServicesFacade.INSTANCE.getInstance(instanceId);
                     if (instanceOpt.isEmpty()) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                         result.complete(PreparedArenaResult.failure("Instance not found after creation"));
                         return;
                     }
@@ -774,14 +774,14 @@ public class EnduranceQuestManager {
                     InstanceData instance = instanceOpt.get();
                     var dimensionKey = instance.getDimensionKey();
                     if (dimensionKey == null) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                         result.complete(PreparedArenaResult.failure("Instance dimension not ready"));
                         return;
                     }
 
                     ServerLevel instanceLevel = server.getLevel(dimensionKey);
                     if (instanceLevel == null) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                         result.complete(PreparedArenaResult.failure("Instance level not found"));
                         return;
                     }
@@ -836,7 +836,7 @@ public class EnduranceQuestManager {
                                         buildError,
                                         fallbackAttempt != null
                                     );
-                                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                                    InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                                     result.complete(PreparedArenaResult.failure(userMessage));
                                     return;
                                 }
@@ -883,7 +883,7 @@ public class EnduranceQuestManager {
                             null,
                             attempt.fallbackAttempted()
                         );
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                         result.complete(PreparedArenaResult.failure(userMessage));
                         return;
                     }
@@ -934,28 +934,28 @@ public class EnduranceQuestManager {
             return PreparedArenaResult.failure("Failed to create instance for party");
         }
 
-        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        Optional<InstanceData> instanceOpt = InstanceServicesFacade.INSTANCE.getInstance(instanceId);
         if (instanceOpt.isEmpty()) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             return PreparedArenaResult.failure("Instance not found after creation");
         }
 
         InstanceData instance = instanceOpt.get();
         var dimensionKey = instance.getDimensionKey();
         if (dimensionKey == null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             return PreparedArenaResult.failure("Instance dimension not ready");
         }
 
         var server = leader.getServer();
         if (server == null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             return PreparedArenaResult.failure("Server not available");
         }
 
         ServerLevel instanceLevel = server.getLevel(dimensionKey);
         if (instanceLevel == null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             return PreparedArenaResult.failure("Instance level not found");
         }
 
@@ -979,7 +979,7 @@ public class EnduranceQuestManager {
                 null,
                 attempt.fallbackAttempted()
             );
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             return PreparedArenaResult.failure(userMessage);
         }
 
@@ -1006,7 +1006,7 @@ public class EnduranceQuestManager {
         ArenaTemplate template = resolved.template();
         ArenaHandle handle = createArenaHandle(buildResult, resolved, instanceId, origin, instanceLevel);
         if (!isHandleValid(handle)) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             emitGateFailure("missing_spawn_slots", resolved);
             return PreparedArenaResult.failure("Template missing required spawn slots (player/mob)");
         }
@@ -1084,7 +1084,18 @@ public class EnduranceQuestManager {
             double y = spawnPos.getY();
             double z = spawnPos.getZ() + 0.5;
 
-            player.teleportTo(x, y, z);
+            // Use the full teleport method to ensure proper client sync.
+            // Simple teleportTo(x,y,z) doesn't force network sync when client is stuck in "loading terrain".
+            level.getChunkAt(spawnPos); // Ensure chunk is loaded on server
+            player.teleportTo(
+                level,
+                x,
+                y,
+                z,
+                java.util.Objects.requireNonNull(java.util.Set.<net.minecraft.world.entity.RelativeMovement>of(), "teleport flags"),
+                player.getYRot(),
+                player.getXRot()
+            );
             spawnPositions.put(player.getUUID(), spawnPos);
 
             LOGGER.debug("[EnduranceQuest] Teleported {} to handle spawn at ({}, {}, {})",
@@ -1624,21 +1635,21 @@ public class EnduranceQuestManager {
         String policyId = handle != null ? handle.policyId() : null;
         int policyVersion = handle != null ? handle.policyVersion() : 0;
         instance.setArena(center, radius, template.id(), templateVersion, policyId, policyVersion);
-        InstanceRegistry.INSTANCE.markDirty();
+        InstanceServicesFacade.INSTANCE.markDirty();
     }
 
     private void updateSnapshotArenaTemplate(ServerPlayer player, ArenaHandle handle) {
         if (player == null || handle == null) {
             return;
         }
-        RecoverySystem.INSTANCE.loadSnapshot(player.getUUID()).ifPresent(snapshot -> {
+        PlayerStateServicesFacade.INSTANCE.loadSnapshot(player.getUUID()).ifPresent(snapshot -> {
             snapshot.withArenaTemplate(
                 handle.templateId(),
                 handle.templateVersion(),
                 handle.policyId(),
                 handle.policyVersion()
             );
-            RecoverySystem.INSTANCE.saveSnapshot(snapshot);
+            PlayerStateServicesFacade.INSTANCE.saveSnapshot(snapshot);
         });
     }
 
@@ -1954,15 +1965,15 @@ public class EnduranceQuestManager {
                 applyAndSyncArenaOverrides(player, session);
 
                 // Prepare player (save state, give kit - NO TELEPORT, already done)
-                EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+                PlayerStateServicesFacade.INSTANCE.preparePlayerForQuest(player, session);
 
                 // Initialize all subsystems
                 EnduranceEventHandler.onQuestStart(player, session);
             } catch (Exception e) {
                 LOGGER.error("[EnduranceQuest] Failed to start quest for player {}", player.getName().getString(), e);
                 activeSessions.remove(playerId);
-                RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot ->
-                    RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Quest start failed"));
+                PlayerStateServicesFacade.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot ->
+                    PlayerStateServicesFacade.INSTANCE.performRecovery(player, snapshot, "Quest start failed"));
                 results.put(playerId, new StartQuestResult(false, "Quest start failed", null));
                 continue;
             }
@@ -2169,7 +2180,7 @@ public class EnduranceQuestManager {
                 ServerPlayer currentPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(session.getPlayerId()));
                 if (currentPlayer == null || currentSession == null) {
                     if (instanceId != null) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                     }
                     return;
                 }
@@ -2237,7 +2248,7 @@ public class EnduranceQuestManager {
             LOGGER.warn("[EnduranceQuest] Player {} disconnected during template instance creation", playerId);
             activeSessions.remove(playerId);
             if (instanceId != null) {
-                InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             }
             return;
         }
@@ -2252,9 +2263,9 @@ public class EnduranceQuestManager {
             return;
         }
 
-        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        Optional<InstanceData> instanceOpt = InstanceServicesFacade.INSTANCE.getInstance(instanceId);
         if (instanceOpt.isEmpty()) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             activeSessions.remove(playerId);
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
@@ -2266,7 +2277,7 @@ public class EnduranceQuestManager {
         InstanceData instance = instanceOpt.get();
         var dimensionKey = instance.getDimensionKey();
         if (dimensionKey == null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             activeSessions.remove(playerId);
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
@@ -2277,7 +2288,7 @@ public class EnduranceQuestManager {
 
         ServerLevel instanceLevel = server.getLevel(dimensionKey);
         if (instanceLevel == null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
             activeSessions.remove(playerId);
             com.devmod.network.NetworkHandler.sendInstanceLoadingHide(player);
             sendSoloSequenceUpdate(player, pendingSession, QuestSequencePayload.Phase.CANCELLED, 0);
@@ -2304,7 +2315,7 @@ public class EnduranceQuestManager {
                     ActiveQuestSession currentSession = activeSessions.get(playerId);
                     ServerPlayer currentPlayer = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
                     if (currentPlayer == null || currentSession == null) {
-                        InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+                        InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
                         activeSessions.remove(playerId);
                         return;
                     }
@@ -2421,7 +2432,7 @@ public class EnduranceQuestManager {
                                           @javax.annotation.Nullable UUID instanceId,
                                           String message) {
         if (instanceId != null) {
-            InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, false);
+            InstanceServicesFacade.INSTANCE.cleanupFailedQuest(instanceId);
         }
         if (pendingSession != null) {
             pendingSession.setLoadingProtection(false);
@@ -2497,7 +2508,7 @@ public class EnduranceQuestManager {
         // Apply arena policy config overrides and sync to client
         applyAndSyncArenaOverrides(player, session);
 
-        EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+        PlayerStateServicesFacade.INSTANCE.preparePlayerForQuest(player, session);
 
         EnduranceEventHandler.onQuestStart(player, session);
 
@@ -2508,7 +2519,7 @@ public class EnduranceQuestManager {
 
         session.scheduleSafeWindow(SAFE_WINDOW_TICKS);
         if (SAFE_WINDOW_TICKS > 0) {
-            EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
+            PlayerStateServicesFacade.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
             session.setLastSafeWindowSeconds((int) Math.ceil(SAFE_WINDOW_TICKS / 20.0));
         }
         session.scheduleWaveStart(WAVE_START_COUNTDOWN_TICKS);
@@ -2850,7 +2861,7 @@ public class EnduranceQuestManager {
                             player.getName().getString(), e);
                     }
                     try {
-                        EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+                        PlayerStateServicesFacade.INSTANCE.restorePlayerAfterQuest(player, session);
                     } catch (Exception e) {
                         LOGGER.warn("[EnduranceQuest] Failed to restore party member {} state",
                             player.getName().getString(), e);
@@ -2901,19 +2912,19 @@ public class EnduranceQuestManager {
         } finally {
             if (cleanupSession != null) {
                 try {
-                    EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(cleanupSession);
+                    PlayerStateServicesFacade.INSTANCE.cleanupQuestSystems(cleanupSession);
                 } catch (Exception e) {
                     LOGGER.warn("[EnduranceQuest] Failed to cleanup quest systems for party run {}", questId, e);
                 }
                 try {
-                    EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
+                    PlayerStateServicesFacade.INSTANCE.cleanupArenaOrInstance(cleanupSession, completed);
                 } catch (Exception e) {
                     LOGGER.warn("[EnduranceQuest] Failed to cleanup instance for party run {}", questId, e);
                 }
             } else {
                 UUID instanceId = partySession.getInstanceId();
                 if (instanceId != null) {
-                    InstanceArenaManager.INSTANCE.endInstanceQuest(instanceId, completed);
+                    InstanceServicesFacade.INSTANCE.safeCleanup(instanceId, completed);
                 }
             }
         }
@@ -3206,7 +3217,7 @@ public class EnduranceQuestManager {
         activeSessions.put(playerId, session);
 
         applyAndSyncArenaOverrides(player, session);
-        EndurancePlayerStateManager.INSTANCE.preparePlayerForQuest(player, session);
+        PlayerStateServicesFacade.INSTANCE.preparePlayerForQuest(player, session);
         EnduranceEventHandler.onQuestStart(player, session);
         if (!session.isPracticeMode()) {
             String dungeonId = "endurance_party_" + quest.getMobId().toString().replace(":", "_");
@@ -3220,7 +3231,7 @@ public class EnduranceQuestManager {
     }
 
     private boolean prepareLateJoinInstance(ServerPlayer player, UUID instanceId, PartyQuestSession partySession) {
-        Optional<InstanceData> instanceOpt = InstanceRegistry.INSTANCE.getInstance(instanceId);
+        Optional<InstanceData> instanceOpt = InstanceServicesFacade.INSTANCE.getInstance(instanceId);
         if (instanceOpt.isEmpty()) {
             return false;
         }
@@ -3228,8 +3239,8 @@ public class EnduranceQuestManager {
         if (!instance.addPlayer(player.getUUID())) {
             return false;
         }
-        InstanceRegistry.INSTANCE.save();
-        var snapshot = RecoverySystem.INSTANCE.createSnapshotFromPlayer(player, instance);
+        InstanceServicesFacade.INSTANCE.save();
+        var snapshot = PlayerStateServicesFacade.INSTANCE.createSnapshotFromPlayer(player, instance);
         snapshot.setState(com.devmod.runtime.PlayerInstanceState.PREPARING);
         var party = com.devmod.party.PartyManager.INSTANCE.getParty(partySession.getPartyId());
         if (party != null) {
@@ -3238,8 +3249,8 @@ public class EnduranceQuestManager {
         } else {
             snapshot.setPartyMembers(new java.util.HashSet<>(partySession.getMembers()));
         }
-        RecoverySystem.INSTANCE.saveSnapshot(snapshot);
-        InstanceRegistry.INSTANCE.mapPlayer(player.getUUID(), instanceId);
+        PlayerStateServicesFacade.INSTANCE.saveSnapshot(snapshot);
+        InstanceServicesFacade.INSTANCE.mapPlayer(player.getUUID(), instanceId);
         return true;
     }
 
@@ -3262,7 +3273,7 @@ public class EnduranceQuestManager {
         boolean teleported = false;
         UUID instanceId = session.getInstanceId();
         if (instanceId != null) {
-            RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_TRANSIT);
+            PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_TRANSIT);
             teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
         }
         if (teleported && session.getArena() != null) {
@@ -3271,17 +3282,17 @@ public class EnduranceQuestManager {
 
         if (teleported) {
             player.setGameMode(GameType.SURVIVAL);
-            EndurancePlayerStateManager.INSTANCE.resetQuestLoadout(player, session);
-            EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
+            PlayerStateServicesFacade.INSTANCE.resetQuestLoadout(player, session);
+            PlayerStateServicesFacade.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
             markPartyMemberActive(player.getUUID());
             if (instanceId != null) {
-                RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_INSTANCE);
+                PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_INSTANCE);
             }
             player.sendSystemMessage(Objects.requireNonNull(
                 net.minecraft.network.chat.Component.literal("[DevMod] Rejoined party run.")
                     .withStyle(SharedColorTokens.Chat.GREEN)));
         } else if (instanceId != null) {
-            RecoverySystem.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.PREPARING);
+            PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.PREPARING);
         }
 
         return teleported;
@@ -3322,7 +3333,7 @@ public class EnduranceQuestManager {
         // Reinitialize quest templates
         for (EnduranceQuestRegistry.MobQuestConfig mobConfig : EnduranceQuestRegistry.INSTANCE.getAllMobConfigs()) {
             EnduranceQuest template = new EnduranceQuest(mobConfig);
-            questTemplates.put(mobConfig.mobId, template);
+            questTemplates.put(mobConfig.getMobId(), template);
         }
     }
 
@@ -3379,8 +3390,8 @@ public class EnduranceQuestManager {
             PerkSystem.INSTANCE.endSession(playerId);
 
             if (cleanupShared) {
-                EndurancePlayerStateManager.INSTANCE.cleanupQuestSystems(session);
-                EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, false);
+                PlayerStateServicesFacade.INSTANCE.cleanupQuestSystems(session);
+                PlayerStateServicesFacade.INSTANCE.cleanupArenaOrInstance(session, false);
             }
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed shutdown cleanup for session {}", session.getPlayerId(), e);

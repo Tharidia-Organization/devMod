@@ -322,7 +322,7 @@ public class IntegratedTestSession {
                 var bosses = EnduranceQuestRegistry.INSTANCE.getBossMobs();
                 yield bosses.isEmpty() ?
                     ResourceLocation.withDefaultNamespace("wither") :
-                    bosses.get(0).mobId;
+                    bosses.get(0).getMobId();
             }
             case SURVIVAL_WAVES -> ResourceLocation.withDefaultNamespace("zombie");
             case DAMAGE_VALIDATION -> ResourceLocation.withDefaultNamespace("zombie");

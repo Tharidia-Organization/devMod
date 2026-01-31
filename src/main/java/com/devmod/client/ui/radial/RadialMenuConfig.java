@@ -223,15 +223,15 @@ public class RadialMenuConfig {
 
         ThemePreset(String name, RadialMenuThemeDefaults.ThemePresetValues values) {
             this.name = name;
-            this.bgDark = values.bgDark;
-            this.bgLight = values.bgLight;
-            this.selected = values.selected;
-            this.hover = values.hover;
-            this.active = values.active;
-            this.activeGlow = values.activeGlow;
-            this.border = values.border;
-            this.textPrimary = values.textPrimary;
-            this.textSecondary = values.textSecondary;
+            this.bgDark = values.bgDark();
+            this.bgLight = values.bgLight();
+            this.selected = values.selected();
+            this.hover = values.hover();
+            this.active = values.active();
+            this.activeGlow = values.activeGlow();
+            this.border = values.border();
+            this.textPrimary = values.textPrimary();
+            this.textSecondary = values.textSecondary();
         }
 
         public String getName() { return name; }

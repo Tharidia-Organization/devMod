@@ -57,6 +57,7 @@ import com.devmod.util.I18n;
 @SuppressWarnings({"UnusedVariable", "NullAway", "JavaTimeDefaultTimeZone"}) // Layout params reserved; fields init'd in initContent(); client timestamp is fine
 public class DebriefScreen extends BaseDevModScreen {
 
+    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DebriefScreen.class);
     private static final String SCREEN_ID = "wave_debrief";
 
     // Layout
@@ -181,7 +182,7 @@ public class DebriefScreen extends BaseDevModScreen {
         for (int i = 0; i < Tab.values().length; i++) {
             Tab tab = Tab.values()[i];
             int tabX = tabStartX + i * (tabWidth + TAB_GAP);
-            String tabLabel = tab.icon + " " + Component.translatable(tab.labelKey).getString();
+            String tabLabel = Objects.requireNonNull(tab.icon) + " " + Objects.requireNonNull(Component.translatable(Objects.requireNonNull(tab.labelKey)).getString());
             EditorButton tabBtn = EditorButton.builder("debrief-tab-" + tab.name().toLowerCase(Locale.ROOT), tabLabel)
                 .style(EditorButton.Style.GHOST)
                 .size(EditorButton.Size.MEDIUM)
@@ -217,10 +218,11 @@ public class DebriefScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::submitTicket)
             .build();
-        submitTicketButton = new EditorButtonWidget(submitBtn,
+        EditorButtonWidget submitWidget = new EditorButtonWidget(submitBtn,
             centerX - ACTION_BUTTON_WIDTH / 2, actionButtonY, ACTION_BUTTON_WIDTH, actionButtonHeight);
+        submitTicketButton = submitWidget;
         submitTicketButton.visible = false;
-        addRenderableWidget(submitTicketButton);
+        addRenderableWidget(Objects.requireNonNull(submitWidget));
 
         // Timeline navigation buttons (UX: accessible visual controls)
         // UX Q3: Position adjacent with small gap (no 140px hole)
@@ -238,10 +240,11 @@ public class DebriefScreen extends BaseDevModScreen {
                 }
             })
             .build();
-        timelinePrevButton = new EditorButtonWidget(prevBtn,
+        EditorButtonWidget prevWidget = new EditorButtonWidget(prevBtn,
             centerX - buttonWidth - buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4);
+        timelinePrevButton = prevWidget;
         timelinePrevButton.visible = false;
-        addRenderableWidget(timelinePrevButton);
+        addRenderableWidget(Objects.requireNonNull(prevWidget));
 
         EditorButton nextBtn = EditorButton.builder("debrief-timeline-next",
                 Component.translatable("devmod.endurance.debrief.action.next").getString())
@@ -256,19 +259,21 @@ public class DebriefScreen extends BaseDevModScreen {
                 }
             })
             .build();
-        timelineNextButton = new EditorButtonWidget(nextBtn,
+        EditorButtonWidget nextWidget = new EditorButtonWidget(nextBtn,
             centerX + buttonGap / 2, timelineNavY, buttonWidth, actionButtonHeight - 4);
+        timelineNextButton = nextWidget;
         timelineNextButton.visible = false;
-        addRenderableWidget(timelineNextButton);
+        addRenderableWidget(Objects.requireNonNull(nextWidget));
 
         // Ticket fields (report tab)
-        EditBox subjectField = new EditBox(font, contentX, contentY, contentWidth, 20,
+        Font safeFont = Objects.requireNonNull(font);
+        EditBox subjectField = new EditBox(safeFont, contentX, contentY, contentWidth, 20,
             Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.subject")));
         subjectField.setMaxLength(TICKET_SUBJECT_MAX);
         subjectField.setHint(Objects.requireNonNull(Component.translatable(
             "devmod.endurance.debrief.report.subject.placeholder")));
         subjectField.setValue(Objects.requireNonNull(
-            Component.translatable("devmod.endurance.debrief.report.subject.default", waveNumber)).getString());
+            Component.translatable("devmod.endurance.debrief.report.subject.default", waveNumber).getString()));
         subjectField.setBordered(false);
         subjectField.setTextColor(DesignTokens.Text.PRIMARY);
         subjectField.setTextColorUneditable(DesignTokens.Text.MUTED);
@@ -276,7 +281,7 @@ public class DebriefScreen extends BaseDevModScreen {
         addRenderableWidget(subjectField);
         ticketSubjectField = subjectField;
 
-        EditBox notesField = new EditBox(font, contentX, contentY, contentWidth, 40,
+        EditBox notesField = new EditBox(safeFont, contentX, contentY, contentWidth, 40,
             Objects.requireNonNull(Component.translatable("devmod.endurance.debrief.report.notes")));
         notesField.setMaxLength(TICKET_NOTES_MAX);
         notesField.setHint(Objects.requireNonNull(Component.translatable(
@@ -321,16 +326,18 @@ public class DebriefScreen extends BaseDevModScreen {
             // Fix #5: Disable button after submission
             submitTicketButton.getButton().setEnabled(!ticketSubmitted);
         }
-        if (ticketSubjectField != null) {
-            ticketSubjectField.visible = reportTab;
+        EditBox subjectBox = ticketSubjectField;
+        if (subjectBox != null) {
+            subjectBox.visible = reportTab;
             if (!reportTab) {
-                ticketSubjectField.setFocused(false);
+                subjectBox.setFocused(false);
             }
         }
-        if (ticketNotesField != null) {
-            ticketNotesField.visible = reportTab;
+        EditBox notesBox = ticketNotesField;
+        if (notesBox != null) {
+            notesBox.visible = reportTab;
             if (!reportTab) {
-                ticketNotesField.setFocused(false);
+                notesBox.setFocused(false);
             }
         }
         layoutActionButtons(reportTab);
@@ -444,13 +451,15 @@ public class DebriefScreen extends BaseDevModScreen {
     }
 
     private void renderInputBackgrounds(GuiGraphics graphics) {
-        if (ticketSubjectField != null && ticketSubjectField.visible) {
-            AxiomRenderer.drawInputBackground(graphics, ticketSubjectField.getX(), ticketSubjectField.getY(),
-                ticketSubjectField.getWidth(), ticketSubjectField.getHeight(), ticketSubjectField.isFocused());
+        EditBox subjectBox = ticketSubjectField;
+        if (subjectBox != null && subjectBox.visible) {
+            AxiomRenderer.drawInputBackground(graphics, subjectBox.getX(), subjectBox.getY(),
+                subjectBox.getWidth(), subjectBox.getHeight(), subjectBox.isFocused());
         }
-        if (ticketNotesField != null && ticketNotesField.visible) {
-            AxiomRenderer.drawInputBackground(graphics, ticketNotesField.getX(), ticketNotesField.getY(),
-                ticketNotesField.getWidth(), ticketNotesField.getHeight(), ticketNotesField.isFocused());
+        EditBox notesBox = ticketNotesField;
+        if (notesBox != null && notesBox.visible) {
+            AxiomRenderer.drawInputBackground(graphics, notesBox.getX(), notesBox.getY(),
+                notesBox.getWidth(), notesBox.getHeight(), notesBox.isFocused());
         }
     }
 
@@ -481,7 +490,7 @@ public class DebriefScreen extends BaseDevModScreen {
     }
 
     private void renderHeader(GuiGraphics graphics) {
-        Font font = Minecraft.getInstance().font;
+        Font font = Objects.requireNonNull(Minecraft.getInstance().font);
         String title = Objects.requireNonNull(
             Component.translatable("devmod.endurance.debrief.header.title", waveNumber).getString());
         graphics.drawString(font, title, panelX + PANEL_PADDING, panelY + PANEL_PADDING, COLOR_ACCENT, true);
@@ -768,7 +777,7 @@ public class DebriefScreen extends BaseDevModScreen {
 
         // Page indicator at bottom
         if (totalPages > 1) {
-            String pageInfo = tr("devmod.endurance.debrief.timeline.page", timelinePage + 1, totalPages);
+            String pageInfo = Objects.requireNonNull(tr("devmod.endurance.debrief.timeline.page", timelinePage + 1, totalPages));
             int pageInfoWidth = font.width(pageInfo);
             graphics.drawString(font, pageInfo, x + (w - pageInfoWidth) / 2,
                 listBottom + DesignTokens.Space._2, COLOR_ACCENT, false);
@@ -849,7 +858,7 @@ public class DebriefScreen extends BaseDevModScreen {
             String mvpLabel = tr("devmod.endurance.debrief.party.mvp", mvpName);
             graphics.drawString(font, mvpLabel, x, cursorY, DesignTokens.Overlay.Text.GOLD, true);
             if (mvpReason != null && !mvpReason.isEmpty()) {
-                graphics.drawString(font, " (" + mvpReason + ")", x + font.width(mvpLabel), cursorY, COLOR_TEXT_DIM, false);
+                graphics.drawString(font, " (" + mvpReason + ")", x + font.width(Objects.requireNonNull(mvpLabel)), cursorY, COLOR_TEXT_DIM, false);
             }
             cursorY += lineHeight + DesignTokens.Space._4;
         }
@@ -963,10 +972,11 @@ public class DebriefScreen extends BaseDevModScreen {
     }
 
     private static String tr(String key, Object... args) {
+        String safeKey = Objects.requireNonNull(key);
         if (args == null || args.length == 0) {
-            return Component.translatable(key).getString();
+            return Objects.requireNonNull(Component.translatable(safeKey).getString());
         }
-        return Component.translatable(key, args).getString();
+        return Objects.requireNonNull(Component.translatable(safeKey, args).getString());
     }
 
     /**
@@ -1167,7 +1177,7 @@ public class DebriefScreen extends BaseDevModScreen {
     }
 
     private String resolveTicketSubject() {
-        String fallback = tr("devmod.endurance.debrief.report.subject.default", waveNumber);
+        String fallback = Objects.requireNonNull(tr("devmod.endurance.debrief.report.subject.default", waveNumber));
         EditBox subjectField = ticketSubjectField;
         if (subjectField == null) {
             return fallback;
@@ -1177,7 +1187,7 @@ public class DebriefScreen extends BaseDevModScreen {
             subjectField.setValue(fallback);
             return fallback;
         }
-        return subject;
+        return Objects.requireNonNull(subject);
     }
 
     private String resolveTicketNotes() {
@@ -1356,10 +1366,42 @@ public class DebriefScreen extends BaseDevModScreen {
 
     @Override
     protected void onContentClose() {
+        LOGGER.info("[DebriefScreen] onContentClose called");
+
         // Ensure WIS transitions out of DEBRIEF phase when screen closes
         // This handles ESC key, Continue button, and any other close path
         if (WaveIntelligenceManager.INSTANCE.getCurrentPhase() == com.devmod.client.endurance.wis.WavePhase.DEBRIEF) {
             WaveIntelligenceManager.INSTANCE.skipDebrief();
         }
+
+        // Open checkpoint screen if quest is still at WAVE_COMPLETE state
+        // This ensures the user can continue to the next wave after viewing the debrief
+        // IMPORTANT: Use delayedExecutor to run AFTER super.onClose() sets screen to null
+        // mc.execute() runs synchronously on render thread, so we need a real delay
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        java.util.concurrent.CompletableFuture.delayedExecutor(
+            50, java.util.concurrent.TimeUnit.MILLISECONDS
+        ).execute(() -> mc.execute(() -> {
+            var data = com.devmod.client.endurance.ClientQuestCache.getData();
+            var state = data != null ? data.getState() : null;
+            boolean hasQuest = data != null && data.hasActiveQuest();
+            LOGGER.info("[DebriefScreen] Checkpoint check: hasQuest={}, state={}", hasQuest, state);
+
+            if (hasQuest && state == com.devmod.endurance.EnduranceQuestState.WAVE_COMPLETE) {
+                LOGGER.info("[DebriefScreen] Opening WaveCheckpointScreen, currentScreen={}",
+                    mc.screen != null ? mc.screen.getClass().getSimpleName() : "null");
+                try {
+                    var checkpoint = new com.devmod.client.endurance.WaveCheckpointScreen();
+                    LOGGER.info("[DebriefScreen] Created WaveCheckpointScreen instance");
+                    mc.setScreen(checkpoint);
+                    LOGGER.info("[DebriefScreen] setScreen completed, currentScreen={}",
+                        mc.screen != null ? mc.screen.getClass().getSimpleName() : "null");
+                } catch (Exception e) {
+                    LOGGER.error("[DebriefScreen] Failed to open WaveCheckpointScreen", e);
+                }
+            } else {
+                LOGGER.info("[DebriefScreen] NOT opening checkpoint (hasQuest={}, state={})", hasQuest, state);
+            }
+        }));
     }
 }

@@ -1,6 +1,0 @@
-{
-  "parent": "devmod:block/foundry/controller/alloyer",
-  "textures": {
-    "front": "devmod:block/foundry/controller/alloyer_inactive"
-  }
-}

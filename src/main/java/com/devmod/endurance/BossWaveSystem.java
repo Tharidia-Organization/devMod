@@ -503,14 +503,14 @@ public class BossWaveSystem {
         UUID safeQuestId = Objects.requireNonNull(questId);
 
         // Get mob requirements for boss validation
-        MobRequirements mobReqs = MobRequirementsRegistry.INSTANCE.get(mobConfig.entityType);
+        MobRequirements mobReqs = MobRequirementsRegistry.INSTANCE.get(mobConfig.getEntityType());
 
         // Validate boss requirements (non-blocking, logging only)
         if (mobReqs.boss().isBoss()) {
             int minPlayers = mobReqs.boss().minPlayers();
             if (playerCount < minPlayers) {
                 LOGGER.warn("[BossWave] Boss {} requires {} players, only {} present - scaling difficulty",
-                    mobConfig.entityType.getDescriptionId(), minPlayers, playerCount);
+                    mobConfig.getEntityType().getDescriptionId(), minPlayers, playerCount);
             }
         }
 
@@ -518,10 +518,10 @@ public class BossWaveSystem {
         int minRadius = mobReqs.space().minArenaRadius();
         if (minRadius > 0) {
             LOGGER.debug("[BossWave] Boss {} requires arena radius >= {}",
-                mobConfig.entityType.getDescriptionId(), minRadius);
+                mobConfig.getEntityType().getDescriptionId(), minRadius);
         }
 
-        Entity entity = mobConfig.entityType.create(level);
+        Entity entity = mobConfig.getEntityType().create(level);
         if (!(entity instanceof Mob mob)) return null;
 
         // Position at spawn point
@@ -610,7 +610,7 @@ public class BossWaveSystem {
         tag.putString("endurance_boss_name", generatedName);
         tag.putUUID(EnduranceTags.ARENA_ID, arenaId);
         tag.putUUID(EnduranceTags.QUEST_ID, safeQuestId);
-        tag.putString(EnduranceTags.MOB_ID, mobConfig.mobId.toString());
+        tag.putString(EnduranceTags.MOB_ID, mobConfig.getMobId().toString());
 
         if (handle != null) {
             String templateId = handle.templateId();

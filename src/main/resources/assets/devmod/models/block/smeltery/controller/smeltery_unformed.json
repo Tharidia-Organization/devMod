@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/controller",
-  "textures": {
-    "front": "devmod:block/smeltery/controller/smeltery_unformed",
-    "bricks": "devmod:block/smeltery/seared/bricks",
-    "back": "devmod:block/smeltery/io/back"
-  }
-}

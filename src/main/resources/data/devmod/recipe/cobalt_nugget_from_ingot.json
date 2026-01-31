@@ -1,5 +1,0 @@
-{
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [{ "item": "devmod:cobalt_ingot" }],
-  "result": { "id": "devmod:cobalt_nugget", "count": 9 }
-}

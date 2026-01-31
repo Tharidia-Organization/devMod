@@ -892,7 +892,23 @@ public class RewardSystem {
         private final Set<String> unlockedAscensionPerks = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         // Lock for compound operations on prestige and streak counters
-        private final Object progressionLock = new Object();
+        // Note: transient because Gson deserialization bypasses field initializers for final fields
+        // Volatile is required for safe double-checked locking in getProgressionLock()
+        private transient volatile Object progressionLock;
+
+        /**
+         * Get the progression lock, lazily initializing if null (happens after Gson deserialization).
+         */
+        private Object getProgressionLock() {
+            if (progressionLock == null) {
+                synchronized (this) {
+                    if (progressionLock == null) {
+                        progressionLock = new Object();
+                    }
+                }
+            }
+            return progressionLock;
+        }
 
         public PlayerWallet(UUID playerId) {
             this.playerId = playerId;
@@ -928,7 +944,7 @@ public class RewardSystem {
             if (currency == Currency.PRESTIGE && amount > 0) {
                 int newTotal;
                 int previousTotal;
-                synchronized (progressionLock) {
+                synchronized (getProgressionLock()) {
                     previousTotal = totalPrestigeEarned;
                     totalPrestigeEarned += amount;
                     newTotal = totalPrestigeEarned;
@@ -986,7 +1002,7 @@ public class RewardSystem {
          */
         public int updateCompletionStreak() {
             long today = LocalDate.now(ZoneId.systemDefault()).toEpochDay();
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 if (lastCompletionDay == today) {
                     return completionStreak;
                 }
@@ -1001,7 +1017,7 @@ public class RewardSystem {
         }
 
         public int getCompletionStreak() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return completionStreak;
             }
         }
@@ -1014,7 +1030,7 @@ public class RewardSystem {
 
         // Prestige milestone accessors
         public int getTotalPrestigeEarned() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return totalPrestigeEarned;
             }
         }
@@ -1025,7 +1041,7 @@ public class RewardSystem {
          * Get extra perk slots from prestige milestones.
          */
         public int getExtraPerkSlots() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return PrestigeMilestone.getExtraPerkSlots(totalPrestigeEarned);
             }
         }
@@ -1034,30 +1050,30 @@ public class RewardSystem {
          * Get token multiplier from prestige milestones.
          */
         public float getTokenMultiplier() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return PrestigeMilestone.getTokenMultiplier(totalPrestigeEarned);
             }
         }
 
         // Ascension (New Game+) accessors
         public int getAscensionLevel() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return ascensionLevel;
             }
         }
         public void setAscensionLevel(int level) {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 this.ascensionLevel = level;
             }
         }
 
         public String getAscensionTitle() {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 return ascensionTitle;
             }
         }
         public void setAscensionTitle(String title) {
-            synchronized (progressionLock) {
+            synchronized (getProgressionLock()) {
                 this.ascensionTitle = title;
             }
         }

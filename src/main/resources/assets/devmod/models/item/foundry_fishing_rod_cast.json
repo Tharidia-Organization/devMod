@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:item/handheld_rod",
-  "textures": {
-    "layer0": "devmod:item/foundry/tool/fishing_rod/rod",
-    "layer1": "devmod:item/foundry/tool/fishing_rod/string_cast",
-    "layer2": "devmod:item/foundry/tool/fishing_rod/hook_cast"
-  }
-}

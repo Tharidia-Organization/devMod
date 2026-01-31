@@ -25,7 +25,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.arena.policy.ArenaPolicy;
-import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
 import com.devmod.endurance.lifecycle.QuestContext;
 import com.devmod.endurance.lifecycle.QuestEventBus;
@@ -49,11 +48,11 @@ import com.devmod.telemetry.player.PlayerAttributeTelemetryService;
 public class EnduranceEventHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceEventHandler.class);
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // QUEST LIFECYCLE
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
-    /**
+    /*
      * Initialize all systems when a quest starts.
      * Called by EnduranceQuestManager.startQuest()
      */
@@ -73,9 +72,7 @@ public class EnduranceEventHandler {
         MutatorSystem.MutatorSession mutatorSession = MutatorSystem.INSTANCE.getSession(questId).orElse(null);
 
         // NOTE: PerkSystem session created by listener via event bus
-
-        // Reset comeback cooldown for fresh quest
-        ComebackSystem.INSTANCE.resetCooldown(playerId);
+        // NOTE: ComebackSystem cooldown reset by listener via event bus
 
         // Start live analytics session for real-time feedback hooks
         if (!practice) {
@@ -83,16 +80,9 @@ public class EnduranceEventHandler {
         }
 
         // NOTE: DevilsBargainManager session created by listener via event bus
-
-        // Load Perk Synergy Web discoveries for hidden perk tracking
-        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerJoin(player);
-
         // NOTE: ArenaHazardSystem session created by listener via event bus
-
-        // Start nutrition tracking session for Easy-Diet integration
-        if (EasyDietCompat.isAvailable()) {
-            NutritionBridgeSystem.INSTANCE.onQuestStart(playerId, questId);
-        }
+        // NOTE: PerkSynergyWeb discoveries loaded by listener via event bus
+        // NOTE: NutritionBridgeSystem session created by listener via event bus
 
         if (!practice) {
             // Record telemetry for quest start
@@ -129,7 +119,7 @@ public class EnduranceEventHandler {
             player.getName().getString(), mutatorSession.getActiveMutatorCount());
     }
 
-    /**
+    /*
      * Cleanup all systems when a quest ends.
      * Called when quest completes, fails, or is abandoned.
      */
@@ -196,21 +186,11 @@ public class EnduranceEventHandler {
         // NOTE: PerkSystem cleanup handled by listener via event bus
         // NOTE: DevilsBargainManager cleanup handled by listener via event bus
         // NOTE: ArenaHazardSystem cleanup handled by listener via event bus
+        // NOTE: PerkSynergyWeb discoveries saved by listener via event bus
 
-        // Cleanup execution system state
-        com.devmod.combat.ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
-
-        // Save Perk Synergy Web discoveries and cleanup
-        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.onPlayerLeave(player);
-
-        // End nutrition tracking session and remove attribute modifiers
-        if (EasyDietCompat.isAvailable()) {
-            NutritionBridgeSystem.INSTANCE.removeAttributeModifiers(player);
-            NutritionBridgeSystem.INSTANCE.onQuestEnd(playerId);
-        }
-
-        // Cleanup comeback system state
-        ComebackSystem.INSTANCE.onQuestEnd(playerId);
+        // NOTE: ExecutionSystem cleanup handled by listener via event bus
+        // NOTE: NutritionBridgeSystem cleanup handled by listener via event bus
+        // NOTE: ComebackSystem cleanup handled by listener via event bus
 
         // Process chain rewards if chain was completed
         if (!practice) {
@@ -243,18 +223,18 @@ public class EnduranceEventHandler {
                 );
 
             // Send badge unlock notifications for newly earned badges
-            for (GamificationManager.Badge badge : gamificationResult.newBadges) {
+            for (GamificationManager.Badge badge : gamificationResult.getNewBadges()) {
                 String rewardDescription = "+" + badge.getBonusPoints() + " bonus points (" + badge.getRarity().getDisplayName() + ")";
                 NotificationService.INSTANCE.notifyBadgeUnlock(
                     playerId, badge.getName(), badge.getRarity().getDisplayName(), badge.getDescription(), rewardDescription);
             }
 
             // Send record banner for new personal records
-            if (gamificationResult.isNewWaveRecord) {
+            if (gamificationResult.isNewWaveRecord()) {
                 String waveValue = "Wave " + session.getQuest().getCurrentWave();
                 NotificationService.INSTANCE.notifyRecord(playerId, "BEST WAVE", waveValue);
             }
-            if (gamificationResult.isNewHighScore) {
+            if (gamificationResult.isNewHighScore()) {
                 String scoreValue = String.format("%,d pts", session.getQuest().getPointsEarnedThisSession());
                 NotificationService.INSTANCE.notifyRecord(playerId, "HIGH SCORE", scoreValue);
             }
@@ -353,11 +333,11 @@ public class EnduranceEventHandler {
             comboSession != null ? comboSession.getHighestRank().getDisplayName() : "N/A");
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // WAVE EVENTS
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
-    /**
+    /*
      * Called when a new wave starts.
      */
     public static void onWaveStart(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
@@ -394,7 +374,7 @@ public class EnduranceEventHandler {
 
         // Gather wave info for notification
         int mobCount = quest.getCurrentWaveMobCount();
-        String enemyType = quest.getMobConfig().displayName;
+        String enemyType = quest.getMobConfig().getDisplayName();
         int totalWaves = quest.isEndlessMode() ? 0 : quest.getTotalWaves();
         String objective = null;
         String directive = null;
@@ -448,7 +428,7 @@ public class EnduranceEventHandler {
             waveNumber, player.getName().getString(), isBossWave);
     }
 
-    /**
+    /*
      * Called when a wave is completed.
      */
     public static void onWaveComplete(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session, int waveNumber) {
@@ -457,6 +437,13 @@ public class EnduranceEventHandler {
 
     public static void onWaveComplete(ServerPlayer player, EnduranceQuestManager.ActiveQuestSession session,
                                       int waveNumber, boolean applyShared) {
+        // Heal player to full and clear negative effects at wave completion
+        // This ensures player starts intermission in a safe state
+        player.setHealth(player.getMaxHealth());
+        player.removeAllEffects(); // Clear poison, wither, etc.
+        player.clearFire();
+        LOGGER.debug("[EnduranceQuest] Healed player {} at wave {} completion", player.getName().getString(), waveNumber);
+
         UUID playerId = player.getUUID();
         UUID questId = session.getQuest().getQuestId();
         EnduranceQuest quest = session.getQuest();
@@ -513,16 +500,7 @@ public class EnduranceEventHandler {
             }
         }
 
-        // === ARENA HAZARDS - Check for new hazards on wave transition ===
-        int upcomingWave = waveNumber + 1;
-        if (applyShared) {
-            List<com.devmod.endurance.hazard.ArenaHazardSystem.HazardType> triggeredHazards =
-                com.devmod.endurance.hazard.ArenaHazardSystem.INSTANCE.checkWaveHazards(questId, upcomingWave);
-            if (!triggeredHazards.isEmpty()) {
-                LOGGER.info("[EnduranceQuest] Arena hazards triggered for wave {}: {}",
-                    upcomingWave, triggeredHazards);
-            }
-        }
+        // NOTE: ArenaHazardSystem.checkWaveHazards handled by listener via event bus
 
         // === DETAILED LOGGING ===
         LOGGER.info("[EnduranceQuest] Wave {} completed for quest {} by player {}",
@@ -769,7 +747,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Send aggregated party wave stats to all party members for the debrief Party tab.
      * Only sends if player is in a party run (2+ members).
      * FIX #4: Simplified signature - all stats come from CombatTracker now.
@@ -952,11 +930,11 @@ public class EnduranceEventHandler {
             waveNumber, playerStats.size(), partyTotalKills, mvpPlayerId);
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // NEOFORGE EVENT SUBSCRIBERS
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
-    /**
+    /*
      * Handle damage dealt by players to mobs in quests.
      */
     @SubscribeEvent
@@ -964,7 +942,7 @@ public class EnduranceEventHandler {
         EnduranceEventCombat.handleDamagePost(event.getEntity(), event.getSource(), event.getNewDamage());
     }
 
-    /**
+    /*
      * Handle damage reduction from perks (Pre event to modify damage).
      */
     @SubscribeEvent
@@ -997,7 +975,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Handle critical hits.
      */
     @SubscribeEvent
@@ -1009,7 +987,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Handle mob deaths in quests.
      */
     @SubscribeEvent
@@ -1049,7 +1027,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Prevent quest gear from littering the arena on player death.
      */
     @SubscribeEvent
@@ -1061,7 +1039,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Server tick handler for wave management and quest updates.
      */
     @SubscribeEvent
@@ -1069,7 +1047,7 @@ public class EnduranceEventHandler {
         EnduranceEventTick.onServerTick();
     }
 
-    /**
+    /*
      * Restore per-player synced kit data on login.
      */
     @SubscribeEvent
@@ -1099,7 +1077,7 @@ public class EnduranceEventHandler {
         }
     }
 
-    /**
+    /*
      * Handle player logout - cleanup quest session.
      */
     @SubscribeEvent
@@ -1171,9 +1149,9 @@ public class EnduranceEventHandler {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // PUBLIC GETTERS FOR UI
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
     public static IComboSession getComboSession(UUID playerId) {
         return ComboSystemFacade.get().getSession(playerId).orElse(null);
@@ -1183,25 +1161,25 @@ public class EnduranceEventHandler {
         return EnduranceEventCombat.getMutatorSession(questId);
     }
 
-    /**
+    /*
      * Check if player is trying to leave the arena.
      */
     public static boolean canPlayerLeaveArena(ServerPlayer player) {
         return EnduranceEventTick.canPlayerLeaveArena(player);
     }
 
-    /**
+    /*
      * Teleport player back to arena if they try to escape.
      */
     public static void enforceArenaConfinement(ServerPlayer player) {
         EnduranceEventTick.enforceArenaConfinement(player);
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // MAILBOX INTEGRATION
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
-    /**
+    /*
      * Send a mailbox notification with quest reward summary.
      */
     private static void sendQuestRewardMailbox(
@@ -1257,11 +1235,11 @@ public class EnduranceEventHandler {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
     // ANALYTICS HELPER METHODS
-    // ═══════════════════════════════════════════════════════════════
+    // ==============================================================
 
-    /**
+    /*
      * Builds a WaveSummary from combat and combo data.
      */
     private static WaveSummary buildWaveSummary(int waveNumber,
@@ -1288,7 +1266,7 @@ public class EnduranceEventHandler {
         );
     }
 
-    /**
+    /*
      * Builds a QuestResult from all tracking data.
      */
     private static QuestResult buildQuestResult(UUID questId, UUID playerId,
@@ -1345,7 +1323,7 @@ public class EnduranceEventHandler {
             questId,
             playerId,
             quest.getQuestId().toString(),
-            quest.getMobConfig().mobId.toString(),
+            quest.getMobConfig().getMobId().toString(),
             completed,
             quest.getCurrentWave(),
             quest.getTotalWaves(),

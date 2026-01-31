@@ -1,6 +1,0 @@
-{
-    "parent": "block/cube_all",
-    "textures": {
-        "all": "devmod:block/smeltery/seared/cracked_bricks"
-    }
-}

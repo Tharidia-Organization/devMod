@@ -41,6 +41,7 @@ import com.devmod.transport.network.TransportWaypointSelectPayload;
  * </ul>
  */
 @OnlyIn(Dist.CLIENT)
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class TransportNetworkSelectScreen extends BaseDevModScreen {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransportNetworkSelectScreen.class);

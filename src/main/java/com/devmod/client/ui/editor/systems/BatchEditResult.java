@@ -66,6 +66,7 @@ public class BatchEditResult {
     /**
      * Generate clipboard-friendly error report.
      */
+    @SuppressWarnings("ThreadJoinLoop")
     public String generateErrorReport() {
         if (failureDetails.isEmpty()) {
             return "No errors to report.";
@@ -81,8 +82,8 @@ public class BatchEditResult {
         for (int i = 0; i < failureDetails.size(); i++) {
             FailureDetail detail = failureDetails.get(i);
             sb.append(String.format("%d. %s\n", i + 1, detail.toString()));
-            if (detail.stackTrace() != null && !detail.stackTrace().trim().isEmpty()) {
-                String stackTrace = detail.stackTrace();
+            String stackTrace = detail.stackTrace();
+            if (stackTrace != null && !stackTrace.trim().isEmpty()) {
                 int newlineIndex = stackTrace.indexOf('\n');
                 String firstLine = newlineIndex < 0 ? stackTrace : stackTrace.substring(0, newlineIndex);
                 sb.append("   Stack trace: ").append(firstLine).append("\n");

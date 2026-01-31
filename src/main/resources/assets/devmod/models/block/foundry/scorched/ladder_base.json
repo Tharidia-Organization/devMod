@@ -1,9 +1,0 @@
-{
-  "parent": "devmod:block/template/ladder_base",
-  "textures": {
-    "particle": "devmod:block/foundry/scorched/ladder",
-    "top":      "devmod:block/foundry/scorched/road",
-    "side":     "devmod:block/foundry/scorched/ladder",
-    "bottom":   "devmod:block/foundry/scorched/ladder"
-  }
-}

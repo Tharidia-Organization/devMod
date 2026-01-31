@@ -83,6 +83,7 @@ public class WaveCheckpointScreen extends Screen {
 
     public WaveCheckpointScreen() {
         super(I18n.translate("devmod.endurance.wave"));
+        LOGGER.info("[CheckpointScreen] Constructor called");
 
         // Capture data from ClientQuestCache
         this.waveNumber = ClientQuestCache.getCurrentWave();
@@ -100,6 +101,7 @@ public class WaveCheckpointScreen extends Screen {
     protected void init() {
         super.init();
         openTime = System.currentTimeMillis();
+        LOGGER.info("[CheckpointScreen] init() called, screen dimensions: {}x{}", width, height);
 
         // Continue button (primary CTA)
         String continueText = endlessMode
@@ -140,8 +142,14 @@ public class WaveCheckpointScreen extends Screen {
         }
     }
 
+    private boolean renderLogged = false;
+
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (!renderLogged) {
+            LOGGER.info("[CheckpointScreen] First render call!");
+            renderLogged = true;
+        }
         long elapsed = System.currentTimeMillis() - openTime;
 
         // Calculate fade-in progress

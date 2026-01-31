@@ -29,10 +29,6 @@ import com.devmod.combat.HitHelper;
 import com.devmod.config.MobConfigManager;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.config.Config;
-import com.devmod.foundry.FoundryBlocks;
-import com.devmod.foundry.block.FoundryControllerBlock;
-import com.devmod.foundry.block.entity.FoundryControllerBlockEntity;
-import com.devmod.foundry.menu.FoundryControllerMenu;
 import com.devmod.network.UpdateMobStatsPayload;
 import com.devmod.network.UpdateWeaponPayload;
 import com.devmod.portal.PortalFrameDetector;
@@ -780,127 +776,6 @@ public class DevModGameTests {
         Optional<PortalFrameDetector.FrameResult> result = detector.detectFrame(level, interior, Direction.Axis.X);
 
         helper.assertTrue(result.isEmpty(), "Expected detection to fail with blocked interior");
-        helper.succeed();
-    }
-
-    // ============================================================
-    // BATCH: foundry - Foundry multiblock detection
-    // ============================================================
-
-    /**
-     * TEST 22: Foundry forms at minimum size (1x1 interior, height 1).
-     */
-    @GameTest(template = TEMPLATE_5X5, batch = "foundry", required = true, timeoutTicks = 60)
-    public static void foundryFormsMinimumStructure(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
-        BlockState brick = Objects.requireNonNull(FoundryBlocks.FOUNDRY_BRICKS.get()).defaultBlockState();
-
-        int minX = interior.getX() - 1;
-        int maxX = interior.getX() + 1;
-        int minZ = interior.getZ() - 1;
-        int maxZ = interior.getZ() + 1;
-        int floorY = interior.getY() - 1;
-        int wallY = interior.getY();
-
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                level.setBlock(new BlockPos(x, floorY, z), brick, 3);
-            }
-        }
-
-        for (int x = minX; x <= maxX; x++) {
-            level.setBlock(new BlockPos(x, wallY, minZ), brick, 3);
-            level.setBlock(new BlockPos(x, wallY, maxZ), brick, 3);
-        }
-        for (int z = minZ; z <= maxZ; z++) {
-            level.setBlock(new BlockPos(minX, wallY, z), brick, 3);
-            level.setBlock(new BlockPos(maxX, wallY, z), brick, 3);
-        }
-
-        BlockPos controllerPos = new BlockPos(interior.getX(), wallY, minZ);
-        BlockState controllerState = Objects.requireNonNull(FoundryBlocks.FOUNDRY_CONTROLLER.get())
-            .defaultBlockState()
-            .setValue(FoundryControllerBlock.FACING, Direction.NORTH);
-        level.setBlock(controllerPos, controllerState, 3);
-
-        var blockEntity = level.getBlockEntity(controllerPos);
-        helper.assertTrue(blockEntity instanceof FoundryControllerBlockEntity, "Controller block entity should exist");
-        FoundryControllerBlockEntity controller = (FoundryControllerBlockEntity) blockEntity;
-
-        controller.markStructureDirty();
-        controller.tickServer();
-
-        helper.assertTrue(controller.isFormed(), "Expected foundry to form");
-        helper.assertTrue(
-            controller.getMoltenCapacity() == Config.FOUNDRY_CAPACITY_PER_BLOCK.get(),
-            "Capacity mismatch for 1x1x1 interior"
-        );
-        helper.succeed();
-    }
-
-    /**
-     * TEST 23: Foundry melting progress persists across save/load.
-     */
-    @GameTest(template = TEMPLATE_5X5, batch = "foundry", timeoutTicks = 200)
-    public static void foundryProgressPersistsOnSave(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        BlockPos interior = helper.absolutePos(new BlockPos(2, 1, 2));
-        BlockState brick = Objects.requireNonNull(FoundryBlocks.FOUNDRY_BRICKS.get()).defaultBlockState();
-
-        int minX = interior.getX() - 1;
-        int maxX = interior.getX() + 1;
-        int minZ = interior.getZ() - 1;
-        int maxZ = interior.getZ() + 1;
-        int floorY = interior.getY() - 1;
-        int wallY = interior.getY();
-
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                level.setBlock(new BlockPos(x, floorY, z), brick, 3);
-            }
-        }
-
-        for (int x = minX; x <= maxX; x++) {
-            level.setBlock(new BlockPos(x, wallY, minZ), brick, 3);
-            level.setBlock(new BlockPos(x, wallY, maxZ), brick, 3);
-        }
-        for (int z = minZ; z <= maxZ; z++) {
-            level.setBlock(new BlockPos(minX, wallY, z), brick, 3);
-            level.setBlock(new BlockPos(maxX, wallY, z), brick, 3);
-        }
-
-        BlockPos controllerPos = new BlockPos(interior.getX(), wallY, minZ);
-        BlockState controllerState = Objects.requireNonNull(FoundryBlocks.FOUNDRY_CONTROLLER.get())
-            .defaultBlockState()
-            .setValue(FoundryControllerBlock.FACING, Direction.NORTH);
-        level.setBlock(controllerPos, controllerState, 3);
-
-        FoundryControllerBlockEntity controller = (FoundryControllerBlockEntity) level.getBlockEntity(controllerPos);
-        helper.assertTrue(controller != null, "Controller block entity should exist");
-
-        controller.getInventory().setItem(0, new ItemStack(Items.IRON_INGOT));
-        controller.getInventory().setItem(FoundryControllerMenu.SLOT_FUEL, new ItemStack(Items.LAVA_BUCKET));
-        controller.markStructureDirty();
-
-        controller.tickServer();
-        helper.assertTrue(controller.isFormed(), "Expected foundry to form before melting");
-
-        for (int i = 0; i < 100; i++) {
-            controller.tickServer();
-        }
-
-        int progress = controller.getProgress();
-        helper.assertTrue(progress > 0, "Expected melting progress to be > 0");
-
-        CompoundTag tag = controller.saveWithoutMetadata(Objects.requireNonNull(level.registryAccess()));
-        helper.assertTrue(tag.contains("Progress"), "Expected progress to be saved to NBT");
-        helper.assertTrue(tag.getInt("Progress") == progress, "Saved progress mismatch");
-
-        FoundryControllerBlockEntity reloaded = new FoundryControllerBlockEntity(controllerPos, controllerState);
-        reloaded.loadWithComponents(tag, Objects.requireNonNull(level.registryAccess()));
-        helper.assertTrue(reloaded.getProgress() == progress, "Reloaded progress mismatch");
-
         helper.succeed();
     }
 }

@@ -1,8 +1,0 @@
-{
-  "parent": "devmod:block/template/table",
-  "textures": {
-    "side":   "devmod:block/smeltery/casting/table_side",
-    "top":    "devmod:block/smeltery/casting/table_top",
-    "bottom": "devmod:block/smeltery/casting/table_bottom"
-  }
-}

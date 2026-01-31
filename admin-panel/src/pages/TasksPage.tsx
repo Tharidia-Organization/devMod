@@ -385,6 +385,7 @@ export default function TasksPage() {
                 <button
                   onClick={() => openEditModal(task)}
                   className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-colors"
+                  aria-label="Edit task"
                 >
                   <Edit className="h-5 w-5" />
                 </button>
@@ -395,6 +396,7 @@ export default function TasksPage() {
                     }
                   }}
                   className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  aria-label="Delete task"
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -419,7 +421,7 @@ export default function TasksPage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingTask ? 'Edit Task' : 'New Task'}
               </h2>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg" aria-label="Close modal">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -430,8 +432,9 @@ export default function TasksPage() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
+                  id="title"
                   name="title"
                   required
                   defaultValue={editingTask?.title}
@@ -441,8 +444,9 @@ export default function TasksPage() {
                 {helperText('title')}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  id="description"
                   name="description"
                   rows={3}
                   defaultValue={editingTask?.description || ''}
@@ -451,8 +455,9 @@ export default function TasksPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To (UUID)</label>
+                <label htmlFor="assignedTo" className="block text-sm font-medium text-gray-700 mb-1">Assigned To (UUID)</label>
                 <input
+                  id="assignedTo"
                   name="assignedTo"
                   required
                   defaultValue={editingTask?.assignedTo}
@@ -468,8 +473,9 @@ export default function TasksPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned By</label>
+                  <label htmlFor="assignedByName" className="block text-sm font-medium text-gray-700 mb-1">Assigned By</label>
                   <input
+                    id="assignedByName"
                     name="assignedByName"
                     defaultValue={editingTask?.assignedByName || 'Admin'}
                     onChange={handleFieldChange}
@@ -477,8 +483,9 @@ export default function TasksPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
                   <input
+                    id="priority"
                     name="priority"
                     type="number"
                     min={PRIORITY_MIN}
@@ -491,8 +498,9 @@ export default function TasksPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <label htmlFor="dueAt" className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <input
+                  id="dueAt"
                   name="dueAt"
                   type="date"
                   defaultValue={editingTask?.dueAtMillis ? format(new Date(editingTask.dueAtMillis), 'yyyy-MM-dd') : ''}
@@ -504,9 +512,10 @@ export default function TasksPage() {
               {editingTask && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                     <div className="relative">
                       <select
+                        id="status"
                         name="status"
                         defaultValue={editingTask.status}
                         onChange={handleFieldChange}
@@ -520,8 +529,9 @@ export default function TasksPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                     <textarea
+                      id="notes"
                       name="notes"
                       rows={3}
                       defaultValue={editingTask.notes || ''}

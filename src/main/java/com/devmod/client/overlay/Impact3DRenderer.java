@@ -39,10 +39,41 @@ public class Impact3DRenderer {
     private static final float LINE_HEIGHT = 11f;
     private static final float SECTION_SPACING = 5f;
 
-    private static final ImpactHudContentBuilder.NumberFormat NUMBER_FORMAT =
-        new ImpactHudContentBuilder.NumberFormat("%.1f", "%.2f");
-
     private Impact3DRenderer() {}
+
+    public record RenderLine(String text, float x, float y, int color) {}
+    public record Separator(float x, float y, float width) {}
+    public record RenderLayout(List<RenderLine> lines, List<Separator> separators) {}
+
+    public RenderLayout buildLayout(List<ImpactHudContentBuilder.HudSection> sections) {
+        if (sections == null || sections.isEmpty()) {
+            return new RenderLayout(List.of(), List.of());
+        }
+
+        List<RenderLine> lines = new java.util.ArrayList<>();
+        List<Separator> separators = new java.util.ArrayList<>();
+
+        float textX = PADDING;
+        float textY = PADDING;
+
+        for (int i = 0; i < sections.size(); i++) {
+            ImpactHudContentBuilder.HudSection section = sections.get(i);
+            lines.add(new RenderLine(section.title().getString(), textX, textY, ImpactHudContentBuilder.Colors.TITLE));
+            textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
+
+            if (section.drawSeparator()) {
+                separators.add(new Separator(4f, textY, PANEL_WIDTH_PX - 12f));
+                textY += SECTION_SPACING;
+            }
+
+            for (ImpactHudContentBuilder.HudLine line : section.lines()) {
+                lines.add(new RenderLine(line.text().getString(), textX, textY, line.color()));
+                textY += LINE_HEIGHT + spacingPixels(line.spacingAfter());
+            }
+        }
+
+        return new RenderLayout(List.copyOf(lines), List.copyOf(separators));
+    }
 
     /**
      * Renders a 3D panel in the world with impact data.
@@ -58,14 +89,19 @@ public class Impact3DRenderer {
      */
     public void renderPanel(PoseStack poseStack, MultiBufferSource bufferSource,
                             Vec3 cameraPos, Vec3 panelWorldPos, Vec3 hitPoint,
-                            ImpactData data, float alpha) {
+                            ImpactData data, RenderLayout layout,
+                            ImpactHudContentBuilder.DetailLevel detail,
+                            boolean showConnectionLine,
+                            float alpha) {
         if (alpha <= 0.01f) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
         // 1. Render connection line from hit point to panel
-        renderConnectionLine(poseStack, bufferSource, cameraPos, hitPoint, panelWorldPos, alpha);
+        if (showConnectionLine) {
+            renderConnectionLine(poseStack, bufferSource, cameraPos, hitPoint, panelWorldPos, alpha);
+        }
 
         // 2. Translate to panel position (relative to camera)
         poseStack.pushPose();
@@ -84,7 +120,7 @@ public class Impact3DRenderer {
         poseStack.translate(-PANEL_WIDTH_PX / 2, -PANEL_HEIGHT_PX / 2, 0);
 
         // 6. Render panel content
-        renderPanelContent(poseStack, bufferSource, data, alpha, mc.font);
+        renderPanelContent(poseStack, bufferSource, data, layout, detail, alpha, mc.font);
 
         poseStack.popPose();
     }
@@ -128,7 +164,9 @@ public class Impact3DRenderer {
      * Renders the panel's internal content (background, text, data).
      */
     private void renderPanelContent(PoseStack poseStack, MultiBufferSource bufferSource,
-                                     ImpactData data, float alpha, Font font) {
+                                     ImpactData data, RenderLayout layout,
+                                     ImpactHudContentBuilder.DetailLevel detail,
+                                     float alpha, Font font) {
 
         // === BACKGROUND ===
         renderPanelBackground(poseStack, bufferSource, alpha);
@@ -138,60 +176,39 @@ public class Impact3DRenderer {
         poseStack.pushPose();
         poseStack.translate(0, 0, -0.01f);
 
-        float textX = PADDING;
-        float textY = PADDING;
-
-        List<ImpactHudContentBuilder.HudSection> sections =
-            ImpactHudContentBuilder.buildContent(data, NUMBER_FORMAT);
-        for (int i = 0; i < sections.size(); i++) {
-            if (i > 0) {
-                textY += LINE_HEIGHT + SECTION_SPACING;
+        if (layout != null) {
+            for (Separator separator : layout.separators()) {
+                renderSeparatorLine(poseStack, bufferSource, separator.x(), separator.y(),
+                    separator.width(), alpha);
             }
-            textY = renderSection(poseStack, bufferSource, font, sections.get(i), textX, textY, alpha);
+
+            for (RenderLine line : layout.lines()) {
+                renderText3D(poseStack, bufferSource, font, line.text(), line.x(), line.y(),
+                    applyAlpha(line.color(), alpha), alpha);
+            }
         }
 
         // === DPS DISPLAY (in DETAILED/ANALYSIS mode) ===
-        ImpactDisplayMode mode = ImpactHudController.INSTANCE.getDisplayMode();
-        if (mode == ImpactDisplayMode.DETAILED || mode == ImpactDisplayMode.ANALYSIS) {
-            float currentDps = ImpactDpsTracker.getCurrentDps(data.getAttackerUUID());
-            if (currentDps > 0.1f) {
-                textY += LINE_HEIGHT;
-                String dpsText = String.format("DPS: %.1f/s", currentDps);
-                int dpsColor = OverlayTheme.Impact3D.DPS;
-                renderText3D(poseStack, bufferSource, font, dpsText, textX, textY,
-                    applyAlpha(dpsColor, alpha), alpha);
+        if (detail != ImpactHudContentBuilder.DetailLevel.MINIMAL) {
+            ImpactDisplayMode mode = ImpactHudController.INSTANCE.getDisplayMode();
+            if (mode == ImpactDisplayMode.DETAILED || mode == ImpactDisplayMode.ANALYSIS) {
+                float currentDps = ImpactDpsTracker.getCurrentDps(data.getAttackerUUID());
+                if (currentDps > 0.1f) {
+                    float textX = PADDING;
+                    float textY = PADDING + (LINE_HEIGHT * 0.5f);
+                    if (layout != null && !layout.lines().isEmpty()) {
+                        RenderLine last = layout.lines().get(layout.lines().size() - 1);
+                        textY = last.y() + LINE_HEIGHT;
+                    }
+                    String dpsText = String.format("DPS: %.1f/s", currentDps);
+                    int dpsColor = OverlayTheme.Impact3D.DPS;
+                    renderText3D(poseStack, bufferSource, font, dpsText, textX, textY,
+                        applyAlpha(dpsColor, alpha), alpha);
+                }
             }
         }
 
         poseStack.popPose();
-    }
-
-    private float renderSection(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
-                                ImpactHudContentBuilder.HudSection section,
-                                float textX, float textY, float alpha) {
-        renderText3D(poseStack, bufferSource, font,
-            section.title().getString(),
-            textX, textY, applyAlpha(ImpactHudContentBuilder.Colors.TITLE, alpha), alpha);
-        textY += LINE_HEIGHT + spacingPixels(section.titleSpacing());
-
-        if (section.drawSeparator()) {
-            renderSeparatorLine(poseStack, bufferSource, 4, textY, PANEL_WIDTH_PX - 12, alpha);
-            textY += SECTION_SPACING;
-        }
-
-        for (ImpactHudContentBuilder.HudLine line : section.lines()) {
-            renderLine(poseStack, bufferSource, font, line, textX, textY, alpha);
-            textY += LINE_HEIGHT + spacingPixels(line.spacingAfter());
-        }
-
-        return textY;
-    }
-
-    private void renderLine(PoseStack poseStack, MultiBufferSource bufferSource, Font font,
-                            ImpactHudContentBuilder.HudLine line, float x, float y, float alpha) {
-        renderText3D(poseStack, bufferSource, font,
-            line.text().getString(),
-            x, y, applyAlpha(line.color(), alpha), alpha);
     }
 
     private float spacingPixels(ImpactHudContentBuilder.Spacing spacing) {

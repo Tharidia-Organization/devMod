@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "devmod:item/foundry/tool/javelin/head",
-    "layer1": "devmod:item/foundry/tool/javelin/handle",
-    "layer2": "devmod:item/foundry/tool/javelin/guard"
-  }
-}

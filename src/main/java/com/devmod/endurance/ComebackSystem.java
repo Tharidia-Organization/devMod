@@ -8,13 +8,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.endurance.lifecycle.QuestContext;
+import com.devmod.endurance.lifecycle.QuestLifecycleListener;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
+import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 
-public class ComebackSystem {
+public class ComebackSystem implements QuestLifecycleListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ComebackSystem.class);
 
@@ -280,5 +285,37 @@ public class ComebackSystem {
      */
     public PhoenixState getState(UUID playerId) {
         return activeStates.get(playerId);
+    }
+
+    // ========== QuestLifecycleListener Implementation ==========
+
+    @Override
+    public void onQuestStarted(QuestStarted event) {
+        QuestContext ctx = event.context();
+        UUID playerId = ctx.playerId();
+
+        // Reset cooldown for fresh quest
+        resetCooldown(playerId);
+        LOGGER.debug("[ComebackSystem] Reset cooldown for player {} via event bus", playerId);
+    }
+
+    @Override
+    public void onQuestEnded(QuestEnded event) {
+        QuestContext ctx = event.context();
+        UUID playerId = ctx.playerId();
+
+        // Cleanup state
+        onQuestEnd(playerId);
+        LOGGER.debug("[ComebackSystem] Cleaned up state for player {} via event bus", playerId);
+    }
+
+    @Override
+    public int getPriority() {
+        return 50; // Low priority
+    }
+
+    @Override
+    public String getListenerName() {
+        return "ComebackSystem";
     }
 }

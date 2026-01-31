@@ -198,10 +198,10 @@ public class CsvExporter {
                 double confusionIndex = BacktrackingService.INSTANCE.getConfusionIndex(entry.getKey());
                 writer.write(String.format("%s,%d,%d,%d,%d,%.4f,%.4f",
                     escapeCsv(entry.getKey()),
-                    stats.backtrackCount,
-                    stats.totalMovements,
-                    stats.uniqueVisitors,
-                    stats.totalStepsBack,
+                    stats.getBacktrackCount(),
+                    stats.getTotalMovements(),
+                    stats.getUniqueVisitors(),
+                    stats.getTotalStepsBack(),
                     stats.getBacktrackRate(),
                     confusionIndex));
                 writer.newLine();

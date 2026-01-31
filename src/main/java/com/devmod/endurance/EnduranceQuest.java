@@ -40,13 +40,13 @@ public class EnduranceQuest {
 
     public EnduranceQuest(EnduranceQuestRegistry.MobQuestConfig mobConfig) {
         this.questId = UUID.randomUUID();
-        this.mobId = mobConfig.mobId;
+        this.mobId = mobConfig.getMobId();
         this.mobConfig = mobConfig;
     }
 
     public EnduranceQuest(EnduranceQuestRegistry.MobQuestConfig mobConfig, UUID questId) {
         this.questId = questId != null ? questId : UUID.randomUUID();
-        this.mobId = mobConfig.mobId;
+        this.mobId = mobConfig.getMobId();
         this.mobConfig = mobConfig;
     }
 
@@ -83,7 +83,7 @@ public class EnduranceQuest {
         if (state != EnduranceQuestState.IN_PROGRESS) return;
 
         // Award wave bonus points
-        pointsEarnedThisSession += mobConfig.bonusPointsForWaveClear;
+        pointsEarnedThisSession += mobConfig.getBonusPointsForWaveClear();
 
         // Update high score
         if (currentWave > highestWaveReached) {
@@ -182,7 +182,7 @@ public class EnduranceQuest {
      */
     public void recordKill() {
         mobsKilledThisSession++;
-        pointsEarnedThisSession += mobConfig.pointsPerKill;
+        pointsEarnedThisSession += mobConfig.getPointsPerKill();
     }
 
     /**
@@ -286,14 +286,14 @@ public class EnduranceQuest {
      * Get display name for this quest.
      */
     public String getDisplayName() {
-        return mobConfig.displayName + " Endurance";
+        return mobConfig.getDisplayName() + " Endurance";
     }
 
     /**
      * Get difficulty tier.
      */
     public EnduranceQuestRegistry.MobTier getTier() {
-        return mobConfig.tier;
+        return mobConfig.getTier();
     }
 
     /**
@@ -314,6 +314,6 @@ public class EnduranceQuest {
     @Override
     public String toString() {
         return String.format("EnduranceQuest[%s, State=%s, Wave=%d/%d, Points=%d]",
-            mobConfig.displayName, state, currentWave, totalWaves, pointsEarnedThisSession);
+            mobConfig.getDisplayName(), state, currentWave, totalWaves, pointsEarnedThisSession);
     }
 }

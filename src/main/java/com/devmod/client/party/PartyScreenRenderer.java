@@ -626,11 +626,11 @@ public class PartyScreenRenderer {
             }
 
             // Tier color bar
-            int tierColor = getTierColor(config.tier);
+            int tierColor = getTierColor(config.getTier());
             graphics.fill(panelLeft + 5, rowY + 2, panelLeft + 9, rowY + rowH - 2, tierColor);
 
             // Mob name
-            String name = Objects.requireNonNull(config.displayName);
+            String name = Objects.requireNonNull(config.getDisplayName());
             if (f.width(name) > panelW - 40) {
                 name = Objects.requireNonNull(f.plainSubstrByWidth(name, panelW - 45)) + "..";
             }
@@ -638,7 +638,7 @@ public class PartyScreenRenderer {
             graphics.drawString(f, name, panelLeft + 14, rowY + 4, nameColor, false);
 
             // Difficulty preset
-            String preset = getPresetSymbol(config.difficultyPreset);
+            String preset = getPresetSymbol(config.getDifficultyPreset());
             graphics.drawString(f, preset, panelLeft + 14, rowY + 14, COLOR_TEXT_DIM, false);
         }
 
@@ -929,10 +929,10 @@ public class PartyScreenRenderer {
             // Stats section
             int statsY = previewArea + 125;
 
-            graphics.drawCenteredString(f, Objects.requireNonNull(config.displayName), centerX, statsY, getTierColor(config.tier));
+            graphics.drawCenteredString(f, Objects.requireNonNull(config.getDisplayName()), centerX, statsY, getTierColor(config.getTier()));
 
-            String tierBadge = Objects.requireNonNull(getTierBadge(config.tier));
-            graphics.drawCenteredString(f, tierBadge, centerX, statsY + 12, getTierColor(config.tier));
+            String tierBadge = Objects.requireNonNull(getTierBadge(config.getTier()));
+            graphics.drawCenteredString(f, tierBadge, centerX, statsY + 12, getTierColor(config.getTier()));
 
             // Stats grid
             int statY = statsY + 28;
@@ -940,10 +940,10 @@ public class PartyScreenRenderer {
             int col2 = panelLeft + panelW / 2 + 5;
 
             graphics.drawString(f, "HP", col1, statY, COLOR_STAT_HP, false);
-            graphics.drawString(f, String.format("%.0f", config.baseHealth), col1 + 25, statY, COLOR_TEXT_WHITE, false);
+            graphics.drawString(f, String.format("%.0f", config.getBaseHealth()), col1 + 25, statY, COLOR_TEXT_WHITE, false);
 
             graphics.drawString(f, "DMG", col2, statY, COLOR_STAT_DMG, false);
-            graphics.drawString(f, String.format("%.0f", config.baseDamage), col2 + 30, statY, COLOR_TEXT_WHITE, false);
+            graphics.drawString(f, String.format("%.0f", config.getBaseDamage()), col2 + 30, statY, COLOR_TEXT_WHITE, false);
 
             statY += 14;
             int playerCount = Math.max(1, members.size());
@@ -955,7 +955,7 @@ public class PartyScreenRenderer {
             graphics.drawString(f, String.format("%.0f", scaledDMG), col2 + 30, statY, COLOR_STAT_POINTS, false);
 
             statY += 14;
-            graphics.drawString(f, "Points/Kill: " + config.pointsPerKill, col1, statY, COLOR_TEXT_GRAY, false);
+            graphics.drawString(f, "Points/Kill: " + config.getPointsPerKill(), col1, statY, COLOR_TEXT_GRAY, false);
 
         } else {
             String emptyText = selectedConfig == null ? "Select an enemy" : "Preview unavailable";
@@ -1028,7 +1028,7 @@ public class PartyScreenRenderer {
         col += 90;
         graphics.drawString(f, String.format("DMG: %.0f", scaledDMG * waveMultiplier), col, statsY, COLOR_STAT_DMG, false);
         col += 90;
-        graphics.drawString(f, String.format("Points: %d", mobCount * config.pointsPerKill), col, statsY, COLOR_STAT_POINTS, false);
+        graphics.drawString(f, String.format("Points: %d", mobCount * config.getPointsPerKill()), col, statsY, COLOR_STAT_POINTS, false);
         col += 100;
         graphics.drawString(f, String.format("Difficulty: %.1fx", questType.getDifficultyMultiplier() * waveMultiplier), col, statsY, COLOR_STAT_DIFFICULTY, false);
     }

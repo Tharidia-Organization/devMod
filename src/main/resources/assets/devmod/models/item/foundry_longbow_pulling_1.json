@@ -1,9 +1,0 @@
-{
-  "parent": "minecraft:item/bow",
-  "textures": {
-    "layer0": "devmod:item/foundry/tool/longbow/large/limb_bottom_2",
-    "layer1": "devmod:item/foundry/tool/longbow/large/limb_top_2",
-    "layer2": "devmod:item/foundry/tool/longbow/large/grip",
-    "layer3": "devmod:item/foundry/tool/longbow/large/bowstring_2"
-  }
-}

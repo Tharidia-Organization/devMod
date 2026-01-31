@@ -390,10 +390,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxMessagesPerPlayer" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Messages Per Player
               </label>
               <input
+                id="maxMessagesPerPlayer"
                 name="maxMessagesPerPlayer"
                 type="number"
                 min="10"
@@ -409,10 +410,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxSubjectLength" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Subject Length
               </label>
               <input
+                id="maxSubjectLength"
                 name="maxSubjectLength"
                 type="number"
                 min="32"
@@ -428,10 +430,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxBodyLength" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Body Length
               </label>
               <input
+                id="maxBodyLength"
                 name="maxBodyLength"
                 type="number"
                 min="100"
@@ -447,10 +450,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="defaultMessageTtlHours" className="block text-sm font-medium text-gray-700 mb-2">
                 Default Message TTL (Hours)
               </label>
               <input
+                id="defaultMessageTtlHours"
                 name="defaultMessageTtlHours"
                 type="number"
                 min="24"
@@ -466,10 +470,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="minLevelToSend" className="block text-sm font-medium text-gray-700 mb-2">
                 Min Level to Send
               </label>
               <input
+                id="minLevelToSend"
                 name="minLevelToSend"
                 type="number"
                 min="0"
@@ -485,10 +490,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxAttachmentsPerMessage" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Attachments Per Message
               </label>
               <input
+                id="maxAttachmentsPerMessage"
                 name="maxAttachmentsPerMessage"
                 type="number"
                 min="0"
@@ -548,10 +554,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryDispatchIntervalSeconds" className="block text-sm font-medium text-gray-700 mb-2">
                 Dispatch Interval (seconds)
               </label>
               <input
+                id="deliveryDispatchIntervalSeconds"
                 name="deliveryDispatchIntervalSeconds"
                 type="number"
                 min="1"
@@ -567,10 +574,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryDispatchBatchSize" className="block text-sm font-medium text-gray-700 mb-2">
                 Dispatch Batch Size
               </label>
               <input
+                id="deliveryDispatchBatchSize"
                 name="deliveryDispatchBatchSize"
                 type="number"
                 min="1"
@@ -586,10 +594,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryMaxAttempts" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Delivery Attempts
               </label>
               <input
+                id="deliveryMaxAttempts"
                 name="deliveryMaxAttempts"
                 type="number"
                 min="1"
@@ -605,10 +614,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryRetryDelaySeconds" className="block text-sm font-medium text-gray-700 mb-2">
                 Retry Delay (seconds)
               </label>
               <input
+                id="deliveryRetryDelaySeconds"
                 name="deliveryRetryDelaySeconds"
                 type="number"
                 min="1"
@@ -624,10 +634,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryRetryMaxDelaySeconds" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Retry Delay (seconds)
               </label>
               <input
+                id="deliveryRetryMaxDelaySeconds"
                 name="deliveryRetryMaxDelaySeconds"
                 type="number"
                 min="1"
@@ -643,10 +654,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryRetryBackoffMultiplier" className="block text-sm font-medium text-gray-700 mb-2">
                 Retry Backoff Multiplier
               </label>
               <input
+                id="deliveryRetryBackoffMultiplier"
                 name="deliveryRetryBackoffMultiplier"
                 type="number"
                 min="1"
@@ -663,10 +675,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deliveryRetryJitterRatio" className="block text-sm font-medium text-gray-700 mb-2">
                 Retry Jitter Ratio
               </label>
               <input
+                id="deliveryRetryJitterRatio"
                 name="deliveryRetryJitterRatio"
                 type="number"
                 min="0"
@@ -727,10 +740,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="contentFilterAction" className="block text-sm font-medium text-gray-700 mb-2">
                 Filter Action
               </label>
               <select
+                id="contentFilterAction"
                 name="contentFilterAction"
                 defaultValue={config?.contentFilterAction ?? 'BLOCK'}
                 onChange={handleFieldChange}
@@ -762,10 +776,11 @@ export default function ConfigPage() {
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="contentFilterWords" className="block text-sm font-medium text-gray-700 mb-2">
                 Prohibited Words
               </label>
               <textarea
+                id="contentFilterWords"
                 name="contentFilterWords"
                 rows={5}
                 defaultValue={(config?.contentFilterWords ?? []).join('\n')}
@@ -780,10 +795,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="contentFilterPatterns" className="block text-sm font-medium text-gray-700 mb-2">
                 Prohibited Patterns (regex)
               </label>
               <textarea
+                id="contentFilterPatterns"
                 name="contentFilterPatterns"
                 rows={5}
                 defaultValue={(config?.contentFilterPatterns ?? []).join('\n')}
@@ -909,10 +925,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxMessagesPerMinute" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Messages Per Minute
               </label>
               <input
+                id="maxMessagesPerMinute"
                 name="maxMessagesPerMinute"
                 type="number"
                 min="1"
@@ -928,10 +945,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxMessagesPerDay" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Messages Per Day
               </label>
               <input
+                id="maxMessagesPerDay"
                 name="maxMessagesPerDay"
                 type="number"
                 min="0"
@@ -947,10 +965,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="maxMessagesPerRecipientPerDay" className="block text-sm font-medium text-gray-700 mb-2">
                 Max Per Recipient / Day
               </label>
               <input
+                id="maxMessagesPerRecipientPerDay"
                 name="maxMessagesPerRecipientPerDay"
                 type="number"
                 min="0"
@@ -966,10 +985,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="sendCooldownSeconds" className="block text-sm font-medium text-gray-700 mb-2">
                 Send Cooldown (Seconds)
               </label>
               <input
+                id="sendCooldownSeconds"
                 name="sendCooldownSeconds"
                 type="number"
                 min="0"
@@ -996,10 +1016,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="broadcastBatchSize" className="block text-sm font-medium text-gray-700 mb-2">
                 Broadcast Batch Size
               </label>
               <input
+                id="broadcastBatchSize"
                 name="broadcastBatchSize"
                 type="number"
                 min="1"
@@ -1015,10 +1036,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="broadcastBatchDelayMs" className="block text-sm font-medium text-gray-700 mb-2">
                 Batch Delay (ms)
               </label>
               <input
+                id="broadcastBatchDelayMs"
                 name="broadcastBatchDelayMs"
                 type="number"
                 min="0"
@@ -1034,10 +1056,11 @@ export default function ConfigPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="broadcastQueueThreshold" className="block text-sm font-medium text-gray-700 mb-2">
                 Queue Threshold
               </label>
               <input
+                id="broadcastQueueThreshold"
                 name="broadcastQueueThreshold"
                 type="number"
                 min="1"
@@ -1105,10 +1128,11 @@ export default function ConfigPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="messageRetentionDays" className="block text-sm font-medium text-gray-700 mb-2">
                 Message Retention (Days)
               </label>
               <input
+                id="messageRetentionDays"
                 name="messageRetentionDays"
                 type="number"
                 min="1"
@@ -1231,10 +1255,11 @@ export default function ConfigPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-2">
               Toast Position
             </label>
             <select
+              id="position"
               name="position"
               value={toastForm.position}
               onChange={handleToastFieldChange}
@@ -1248,10 +1273,11 @@ export default function ConfigPage() {
             {toastHelperText('position', 'Where notifications appear')}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="successMs" className="block text-sm font-medium text-gray-700 mb-2">
               Success Toast Duration (ms)
             </label>
             <input
+              id="successMs"
               name="successMs"
               type="number"
               min="0"
@@ -1263,10 +1289,11 @@ export default function ConfigPage() {
             {toastHelperText('successMs', '0 means sticky until dismissed')}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="infoMs" className="block text-sm font-medium text-gray-700 mb-2">
               Info Toast Duration (ms)
             </label>
             <input
+              id="infoMs"
               name="infoMs"
               type="number"
               min="0"
@@ -1278,10 +1305,11 @@ export default function ConfigPage() {
             {toastHelperText('infoMs', '0 means sticky until dismissed')}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="errorMs" className="block text-sm font-medium text-gray-700 mb-2">
               Error Toast Duration (ms)
             </label>
             <input
+              id="errorMs"
               name="errorMs"
               type="number"
               min="0"
@@ -1293,10 +1321,11 @@ export default function ConfigPage() {
             {toastHelperText('errorMs', '0 means sticky until dismissed')}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="maxVisible" className="block text-sm font-medium text-gray-700 mb-2">
               Max Visible Toasts
             </label>
             <input
+              id="maxVisible"
               name="maxVisible"
               type="number"
               min="1"

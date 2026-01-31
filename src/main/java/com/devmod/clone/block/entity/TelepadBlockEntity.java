@@ -38,6 +38,7 @@ import com.devmod.portal.PortalRegistry;
  *
  * <p>Uses "telepad:{name}" as network name in PortalRegistry for cross-dimensional teleportation.
  */
+@SuppressWarnings("null") // Minecraft API lacks @Nonnull annotations
 public class TelepadBlockEntity extends BlockEntity {
 
     private static final int CHARGE_TIME = 40; // ticks (2 seconds)

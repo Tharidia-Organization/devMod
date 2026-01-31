@@ -1,6 +1,0 @@
-{
-  "type": "minecraft:crafting_shaped",
-  "pattern": ["###", "###", "###"],
-  "key": { "#": { "item": "devmod:tin_ingot" } },
-  "result": { "id": "devmod:tin_block", "count": 1 }
-}

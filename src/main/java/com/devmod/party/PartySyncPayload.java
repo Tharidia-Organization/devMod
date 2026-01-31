@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -180,6 +182,7 @@ public record PartySyncPayload(
      * Get the selected mob ID as ResourceLocation.
      * Returns null if no mob is selected.
      */
+    @Nullable
     public ResourceLocation getSelectedMobResourceLocation() {
         String localSelectedMobId = selectedMobId;
         if (localSelectedMobId == null || localSelectedMobId.isEmpty()) {
@@ -227,7 +230,9 @@ public record PartySyncPayload(
 
     /**
      * Get member info by player ID.
+     * Returns null if the member is not found.
      */
+    @Nullable
     public PartyMemberInfo getMember(UUID playerId) {
         for (PartyMemberInfo member : members) {
             if (member.playerId.equals(playerId)) {
