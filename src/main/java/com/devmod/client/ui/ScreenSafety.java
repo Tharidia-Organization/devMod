@@ -19,6 +19,11 @@ public final class ScreenSafety {
 
     private ScreenSafety() {}
 
+    public static void openSafe(String context, Supplier<Screen> factory) {
+        Minecraft mc = Minecraft.getInstance();
+        openSafe(context, mc.screen, factory);
+    }
+
     public static void openSafe(String context, @Nullable Screen parent, Supplier<Screen> factory) {
         Minecraft mc = Minecraft.getInstance();
         mc.execute(() -> {
