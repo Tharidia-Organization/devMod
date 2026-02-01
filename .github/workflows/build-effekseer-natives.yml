@@ -31,18 +31,16 @@ jobs:
           cd effekseer
           # Get SDK path for C++ includes
           SDK_PATH=$(xcrun --show-sdk-path)
-          # Disable Python and C# bindings (only need Java)
-          sed -i '' 's/add_library(EffekseerNativeForPython/#disabled: add_library(EffekseerNativeForPython/g' src/cpp/CMakeLists.txt || true
-          sed -i '' 's/add_library(EffekseerNativeForCSharp/#disabled: add_library(EffekseerNativeForCSharp/g' src/cpp/CMakeLists.txt || true
-          # Disable problematic tools
-          sed -i '' 's/add_subdirectory(Tool\/EffekseerResourceConverter)/#disabled: add_subdirectory(Tool\/EffekseerResourceConverter)/g' src/cpp/Effekseer/CMakeLists.txt || true
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_STANDARD=17 \
             -DCMAKE_OSX_SYSROOT="$SDK_PATH" \
             -DCMAKE_CXX_FLAGS="-I${SDK_PATH}/usr/include/c++/v1 -stdlib=libc++" \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-          cmake --build build --config Release --target EffekseerNativeForJava -- -j$(sysctl -n hw.ncpu)
+          # Build only Java native library (ignore Python/C# errors)
+          cmake --build build --config Release --target EffekseerNativeForJava -- -j$(sysctl -n hw.ncpu) || true
+          # Verify library was built
+          ls -la build/src/cpp/libEffekseerNativeForJava.dylib
 
       - name: Upload macOS library
         uses: actions/upload-artifact@v4
@@ -99,16 +97,14 @@ jobs:
       - name: Build Linux x64
         run: |
           cd effekseer
-          # Disable problematic tools that have missing includes
-          sed -i 's/add_subdirectory(Tool\/EffekseerResourceConverter)/#disabled: add_subdirectory(Tool\/EffekseerResourceConverter)/g' src/cpp/Effekseer/CMakeLists.txt || true
-          # Disable Python and C# bindings (only need Java)
-          sed -i 's/add_library(EffekseerNativeForPython/#disabled: add_library(EffekseerNativeForPython/g' src/cpp/CMakeLists.txt || true
-          sed -i 's/add_library(EffekseerNativeForCSharp/#disabled: add_library(EffekseerNativeForCSharp/g' src/cpp/CMakeLists.txt || true
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_STANDARD=17 \
-            -DCMAKE_CXX_FLAGS="-std=c++17 -include cstdint"
-          cmake --build build --config Release --target EffekseerNativeForJava -- -j$(nproc)
+            -DCMAKE_CXX_FLAGS="-std=c++17"
+          # Build only Java native library (ignore other errors)
+          cmake --build build --config Release --target EffekseerNativeForJava -- -j$(nproc) || true
+          # Verify library was built
+          ls -la build/src/cpp/libEffekseerNativeForJava.so
 
       - name: Upload Linux library
         uses: actions/upload-artifact@v4
