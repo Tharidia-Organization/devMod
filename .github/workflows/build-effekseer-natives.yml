@@ -29,9 +29,13 @@ jobs:
       - name: Build universal binary (arm64 + x86_64)
         run: |
           cd effekseer
+          # Get SDK path for C++ includes
+          SDK_PATH=$(xcrun --show-sdk-path)
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_OSX_SYSROOT="$SDK_PATH" \
+            -DCMAKE_CXX_FLAGS="-I${SDK_PATH}/usr/include/c++/v1 -stdlib=libc++" \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
           cmake --build build --config Release -- -j$(sysctl -n hw.ncpu)
 
@@ -80,7 +84,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y swig cmake build-essential libgl1-mesa-dev libopenal-dev default-jdk
+          sudo apt-get install -y swig cmake build-essential g++ libgl1-mesa-dev libopenal-dev default-jdk libx11-dev
 
       - name: Clone Effekseer
         run: |
@@ -92,7 +96,8 @@ jobs:
           cd effekseer
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_STANDARD=17
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_CXX_FLAGS="-std=c++17"
           cmake --build build --config Release -- -j$(nproc)
 
       - name: Upload Linux library
