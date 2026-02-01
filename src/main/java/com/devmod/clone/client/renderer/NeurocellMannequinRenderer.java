@@ -162,10 +162,11 @@ public class NeurocellMannequinRenderer implements BlockEntityRenderer<Neurocell
         // Render the player model
         poseStack.pushPose();
 
-        // Position in center of block, elevated slightly
+        // Position in center of block, elevated to center mannequin in glass chamber
+        // Base Y offset: 0.35 places feet above support block floor
         // Bobbing aligned with NeurocellRenderer: 0.8 freq, 0.03 amp
         float bobOffset = Mth.sin(animTime * 0.8f) * 0.03f;
-        poseStack.translate(0.5, 0.0625 + bobOffset, 0.5);
+        poseStack.translate(0.5, 0.35 + bobOffset, 0.5);
 
         // Apply rotation (180° base + auto rotation like NeurocellRenderer)
         poseStack.mulPose(Objects.requireNonNull(Axis.YP.rotationDegrees(180.0f + totalRotation)));

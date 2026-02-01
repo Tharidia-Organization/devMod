@@ -191,7 +191,7 @@ public class QuestDeathScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(skullX, panelY + UIScaleManager.scale(20), 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
-        g.drawString(safeFont, skull, 0, 0, skullColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, skull, 0, 0, skullColor, true);
         g.pose().popPose();
 
         int y = panelY + UIScaleManager.scale(75);
@@ -316,13 +316,15 @@ public class QuestDeathScreen extends Screen {
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
                 .withConfirmed(true));
-        java.util.concurrent.CompletableFuture.delayedExecutor(
-            150, java.util.concurrent.TimeUnit.MILLISECONDS
-        ).execute(() -> ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
-            ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
-                .withConfirmed(true)));
         var mc = minecraft;
         if (mc != null) {
+            // Send respawn command to server - this ensures client-server respawn sync
+            // The server will force-respawn and teleport the player back to overworld,
+            // but the client needs to send this packet to properly synchronize state
+            var connection = mc.getConnection();
+            if (connection != null) {
+                connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
+            }
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
             mc.setScreen(null);
         }

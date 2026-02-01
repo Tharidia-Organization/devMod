@@ -50,24 +50,38 @@ public final class ShaderPipeline {
     * <p>This is idempotent; subsequent calls after success are ignored.</p>
     */
     public void register(RegisterShadersEvent event, Logger logger) {
-        if (initialized) return;
+        if (initialized) {
+            logger.debug("[Shaders] Pipeline '{}' already initialized, skipping", name);
+            return;
+        }
+
+        logger.info("[Shaders] Attempting to register shader '{}'...", name);
+        logger.info("[Shaders] Shader location: {}", shaderLocation);
+        logger.info("[Shaders] Vertex format: {}", renderTypeConfig.primaryFormat());
 
         try {
-            event.registerShader(
-                new ShaderInstance(
-                    Objects.requireNonNull(event.getResourceProvider()),
-                    Objects.requireNonNull(shaderLocation),
-                    Objects.requireNonNull(renderTypeConfig.primaryFormat())
-                ),
-                shader -> {
-                    shaderInstance = shader;
-                    buildRenderTypes();
-                    initialized = true;
-                    logger.info("[Shaders] Pipeline '{}' registered", name);
-                }
+            ShaderInstance newShader = new ShaderInstance(
+                Objects.requireNonNull(event.getResourceProvider()),
+                Objects.requireNonNull(shaderLocation),
+                Objects.requireNonNull(renderTypeConfig.primaryFormat())
             );
+            logger.info("[Shaders] ShaderInstance created successfully for '{}'", name);
+
+            event.registerShader(newShader, shader -> {
+                shaderInstance = shader;
+                buildRenderTypes();
+                initialized = true;
+                logger.info("[Shaders] Pipeline '{}' callback completed - shader ready!", name);
+            });
+            logger.info("[Shaders] Shader '{}' registration queued", name);
         } catch (IOException e) {
-            logger.error("[Shaders] Failed to register shader '{}'", name, e);
+            logger.error("[Shaders] FAILED to register shader '{}': {}", name, e.getMessage());
+            logger.error("[Shaders] Stack trace:", e);
+            buildRenderTypes(); // build fallback
+            initialized = true;
+        } catch (Exception e) {
+            logger.error("[Shaders] UNEXPECTED ERROR registering shader '{}': {}", name, e.getMessage());
+            logger.error("[Shaders] Stack trace:", e);
             buildRenderTypes(); // build fallback
             initialized = true;
         }

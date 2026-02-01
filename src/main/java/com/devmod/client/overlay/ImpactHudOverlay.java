@@ -279,7 +279,7 @@ public class ImpactHudOverlay {
         if (maxWidth <= 0) return;
         var lines = font.split(text, maxWidth);
         FormattedCharSequence sequence = lines.isEmpty() ? FormattedCharSequence.EMPTY : lines.get(0);
-        g.drawString(font, sequence, x, y, color, shadow);
+        UIScaleManager.drawScaledString(g, font, sequence, x, y, color, shadow);
     }
 
     /**

@@ -220,7 +220,7 @@ public abstract class ModScreen extends Screen {
      * Renders a section header with colored line.
      */
     protected void renderSectionHeader(GuiGraphics graphics, String text, int x, int y, int sectionWidth) {
-        graphics.drawString(Objects.requireNonNull(font), text, x, y, DesignTokens.Text.ACCENT(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), text, x, y, DesignTokens.Text.ACCENT(), false);
         graphics.fill(x, y + 12, x + sectionWidth, y + 13, DesignTokens.Accent.BLUE());
     }
 
@@ -228,8 +228,10 @@ public abstract class ModScreen extends Screen {
      * Renders a label-value pair.
      */
     protected void renderLabelValue(GuiGraphics graphics, String label, String value, int x, int y) {
-        graphics.drawString(Objects.requireNonNull(font), label + ":", x, y, DesignTokens.Text.MUTED(), false);
-        graphics.drawString(Objects.requireNonNull(font), value, x + font.width(label + ": "), y, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label + ":", x, y, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), value,
+            x + UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font), label + ": "), y,
+            DesignTokens.Text.PRIMARY(), false);
     }
 
     /**

@@ -100,6 +100,17 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
                                     @Nonnull HologramProjectorBlockEntity blockEntity) {
         BuildState state = blockEntity.getBuildState();
 
+        // DEBUG: Log build state every 5 seconds
+        if (level.getGameTime() % 100 == 0) {
+            HologramVBO vbo = blockEntity.getVBO();
+            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                "[Renderer] BuildState={}, showEntities={}, VBO valid={}",
+                state,
+                blockEntity.isShowEntities(),
+                vbo != null && vbo.isValid()
+            );
+        }
+
         switch (state) {
             case EMPTY -> startAsyncBuild(level, minX, maxX, minZ, maxZ, blockEntity);
             case BUILDING -> checkBuildProgress(blockEntity);
@@ -167,6 +178,10 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         blockEntity.setVBO(vbo);
         blockEntity.setBuildState(BuildState.UPLOADED);
 
+        // Store mesh origin Y for entity coordinate alignment
+        // CRITICAL: Entities must use the same Y origin as the mesh
+        blockEntity.setMeshOriginY(mesh.getOriginY());
+
         // Start fade-in animation
         Level level = blockEntity.getLevel();
         if (level != null) {
@@ -191,6 +206,16 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         // VBO tracks whether it was built with UV coords - must match shader expectations
         boolean vboHasUV = vbo.hasUVCoords();
         boolean texturedMode = vbo.isTexturedMode();
+
+        // SHADER HOT-RELOAD: If shader became ready after VBO was built without UV,
+        // trigger a rebuild to use the shader's full features
+        if (!vboHasUV && HologramShaderRegistry.isTexturedModeSupported()) {
+            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                "[Renderer] Shader became ready - triggering VBO rebuild for hologram at {}",
+                blockEntity.getBlockPos());
+            blockEntity.setBuildState(BuildState.EMPTY);
+            return; // Will rebuild on next frame
+        }
 
         // Bind block atlas if in textured mode
         if (texturedMode) {

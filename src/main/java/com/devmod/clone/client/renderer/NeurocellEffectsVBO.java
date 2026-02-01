@@ -230,30 +230,31 @@ public final class NeurocellEffectsVBO {
 
         // Setup render state for translucent lightning-like effect
         RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(515); // GL_LEQUAL
         RenderSystem.depthMask(false); // Don't write to depth buffer
         RenderSystem.enableBlend();
-        RenderSystem.blendFunc(770, 771); // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
+        RenderSystem.defaultBlendFunc(); // Use Minecraft's default blend function
 
-        // Get projection matrix
-        Matrix4f projectionMatrix = Objects.requireNonNull(RenderSystem.getProjectionMatrix());
+        try {
+            // Get projection matrix
+            Matrix4f projectionMatrix = Objects.requireNonNull(RenderSystem.getProjectionMatrix());
 
-        // Render first ring (moving up) - scale affects radius
-        float scanY1 = 0.3f + 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
-        renderRing(poseStack, projectionMatrix, scanY1, 0.42f * scale, animTime * 50.0f, 1.0f, data);
+            // Render first ring (moving up) - scale affects radius
+            float scanY1 = 0.3f + 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
+            renderRing(poseStack, projectionMatrix, scanY1, 0.42f * scale, animTime * 50.0f, 1.0f, data);
 
-        // Render second ring (moving down)
-        float scanY2 = 1.3f - 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
-        renderRing(poseStack, projectionMatrix, scanY2, 0.38f * scale, -animTime * 50.0f, 1.0f, data);
+            // Render second ring (moving down)
+            float scanY2 = 1.3f - 1.0f * (0.5f + 0.5f * Mth.sin(animTime * 1.2f));
+            renderRing(poseStack, projectionMatrix, scanY2, 0.38f * scale, -animTime * 50.0f, 1.0f, data);
 
-        // Render helix with pulsing alpha - scale affects helix size
-        float cycleTime = animTime % 5.0f;
-        float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * TWO_PI - HALF_PI);
-        renderHelix(poseStack, projectionMatrix, animTime * 2.0f, fadeMultiplier, scale, data);
-
-        // Restore render state
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
+            // Render helix with pulsing alpha - scale affects helix size
+            float cycleTime = animTime % 5.0f;
+            float fadeMultiplier = 0.5f + 0.5f * Mth.sin((cycleTime / 5.0f) * TWO_PI - HALF_PI);
+            renderHelix(poseStack, projectionMatrix, animTime * 2.0f, fadeMultiplier, scale, data);
+        } finally {
+            // Restore render state to avoid affecting subsequent rendering (e.g., glass transparency)
+            RenderSystem.depthMask(true);
+            RenderSystem.disableBlend();
+        }
     }
 
     /**

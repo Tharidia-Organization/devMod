@@ -8,6 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.model.MacroCategory;
@@ -349,13 +350,13 @@ public final class RadialHubRenderer {
     private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
                                                   int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
-            graphics.drawCenteredString(font, text, x, y, color);
+            UIScaleManager.drawScaledCenteredString(graphics, font, text, x, y, color);
             return;
         }
         float inv = 1f / scale;
         graphics.pose().pushPose();
         graphics.pose().scale(scale, scale, 1f);
-        graphics.drawCenteredString(font, text, Math.round(x * inv), Math.round(y * inv), color);
+        UIScaleManager.drawScaledCenteredString(graphics, font, text, Math.round(x * inv), Math.round(y * inv), color);
         graphics.pose().popPose();
     }
 }

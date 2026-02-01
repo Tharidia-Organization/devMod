@@ -12,6 +12,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.AxiomRenderer;
+import com.devmod.client.ui.core.UIScaleManager;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_ERROR;
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
@@ -97,7 +98,7 @@ public final class StatusPanel implements UIPanel {
         }
 
         int color = anyActive ? COLOR_SUCCESS : COLOR_ERROR;
-        graphics.drawString(font, sb.toString(), x, currentY, color, false);
+        UIScaleManager.drawScaledString(graphics, font, sb.toString(), x, currentY, color, false);
         currentY += ROW_HEIGHT;
 
         // Per-item color indicators
@@ -114,7 +115,7 @@ public final class StatusPanel implements UIPanel {
                 graphics.fill(indicatorX, indicatorY, indicatorX + width, indicatorY + ROW_HEIGHT,
                     com.devmod.client.ui.editor.core.DesignTokens.withAlpha(itemColor, 0x22));
             }
-            graphics.drawString(font, label, indicatorX, indicatorY, itemColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, indicatorX, indicatorY, itemColor, false);
             if (item.tooltip != null
                 && AxiomRenderer.isMouseOver(mouseX, mouseY, indicatorX, indicatorY, width, ROW_HEIGHT)) {
                 hoveredTooltip = item.tooltip;
@@ -130,7 +131,7 @@ public final class StatusPanel implements UIPanel {
             String msg = messageSupplier.get();
             if (msg != null && !msg.isEmpty()) {
                 int msgColor = msg.contains("Failed") || msg.contains("failed") ? COLOR_ERROR : COLOR_SUCCESS;
-                graphics.drawString(font, msg, x, currentY, msgColor, false);
+                UIScaleManager.drawScaledString(graphics, font, msg, x, currentY, msgColor, false);
             }
         }
 

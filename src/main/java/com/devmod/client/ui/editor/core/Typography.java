@@ -5,6 +5,7 @@ import java.util.Objects;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import static com.devmod.client.ui.editor.core.StringBuilderCache.acquire;
 import static com.devmod.client.ui.editor.core.StringBuilderCache.release;
 
@@ -137,11 +138,11 @@ public final class Typography {
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(text, "text cannot be null");
         if (Math.abs(scale - 1.0f) < 0.001f) {
-            g.drawString(font, text, x, y, color, false);
+            UIScaleManager.drawScaledString(g, font, text, x, y, color, false);
         } else {
             g.pose().pushPose();
             g.pose().scale(scale, scale, 1.0f);
-            g.drawString(font, text,
+            UIScaleManager.drawScaledString(g, font, text,
                 Math.round(x / scale),
                 Math.round(y / scale),
                 color, false);
@@ -157,7 +158,7 @@ public final class Typography {
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(text, "text cannot be null");
         if (font.width(text) <= maxWidth) {
-            g.drawString(font, text, x, y, color, false);
+            UIScaleManager.drawScaledString(g, font, text, x, y, color, false);
         } else {
             String ellipsis = "...";
             int ellipsisWidth = font.width(ellipsis);
@@ -174,7 +175,7 @@ public final class Typography {
             }
             String result = release(truncated);
 
-            g.drawString(font, result + ellipsis, x, y, color, false);
+            UIScaleManager.drawScaledString(g, font, result + ellipsis, x, y, color, false);
         }
     }
 
@@ -186,7 +187,7 @@ public final class Typography {
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(text, "text cannot be null");
         int textWidth = font.width(text);
-        g.drawString(font, text, centerX - textWidth / 2, y, color, false);
+        UIScaleManager.drawScaledString(g, font, text, centerX - textWidth / 2, y, color, false);
     }
 
     /**
@@ -197,6 +198,6 @@ public final class Typography {
         Objects.requireNonNull(font, "font cannot be null");
         Objects.requireNonNull(text, "text cannot be null");
         int textWidth = font.width(text);
-        g.drawString(font, text, rightX - textWidth, y, color, false);
+        UIScaleManager.drawScaledString(g, font, text, rightX - textWidth, y, color, false);
     }
 }

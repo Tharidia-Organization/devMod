@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_SEPARATOR;
@@ -43,12 +44,12 @@ public record SectionPanel(
         int currentY = y;
 
         // Title
-        graphics.drawString(font, title, x, currentY, titleColor, false);
+        UIScaleManager.drawScaledString(graphics, font, title, x, currentY, titleColor, false);
         currentY += TITLE_HEIGHT;
 
         // Description
         if (description != null) {
-            graphics.drawString(font, description, x, currentY, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, description, x, currentY, DesignTokens.Text.SECONDARY(), false);
             currentY += DESCRIPTION_HEIGHT;
         }
 

@@ -48,6 +48,8 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_EDITOR_HUB_OPEN,
         ActionIds.UI_PARTY_OPEN,
         ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+        ActionIds.UI_NOTIFICATION_SETTINGS_OPEN,
+        ActionIds.UI_ENDURANCE_SETTINGS_OPEN,
 
         // Overlays / HUD toggles
         ActionIds.HUD_QUICK_HELP_TOGGLE,

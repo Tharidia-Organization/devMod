@@ -175,7 +175,7 @@ public class QuestCompletionScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(centerX - safeFont.width(trophy) * 2, panelY + 15, 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
-        g.drawString(safeFont, trophy, 0, 0, trophyColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, trophy, 0, 0, trophyColor, true);
         g.pose().popPose();
 
         int y = panelY + 70;

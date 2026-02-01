@@ -4,6 +4,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joml.Matrix4f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -24,6 +26,8 @@ import net.minecraft.client.renderer.ShaderInstance;
  * rendering when the mesh doesn't change frequently.
  */
 public class HologramVBO {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HologramVBO.class);
+
     @Nullable
     private VertexBuffer vertexBuffer;
     private VertexFormat.Mode drawMode = VertexFormat.Mode.QUADS;
@@ -52,6 +56,9 @@ public class HologramVBO {
         this.hasUVCoords = useUV;
         // texturedMode is true only if BOTH mesh wants textures AND VBO has UV coords
         this.texturedMode = mesh.isTexturedMode() && useUV;
+
+        LOGGER.info("[HologramVBO] upload: meshTexturedMode={}, shaderSupported={}, useUV={}, finalTexturedMode={}",
+                    mesh.isTexturedMode(), useUV, useUV, this.texturedMode);
 
         VertexFormat format = useUV ? DefaultVertexFormat.POSITION_TEX_COLOR : DefaultVertexFormat.POSITION_COLOR;
 

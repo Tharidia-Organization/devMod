@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.COLOR_CYAN;
@@ -78,8 +79,9 @@ public final class SliderPanel implements UIPanel {
         // Title
         double value = valueGetter.get();
         String valueStr = Objects.requireNonNull(String.format(format, value), "value string");
-        graphics.drawString(font, title, x, y, DesignTokens.Text.PRIMARY(), false);
-        graphics.drawString(font, valueStr, x + width - font.width(valueStr), y, COLOR_CYAN, false);
+        UIScaleManager.drawScaledString(graphics, font, title, x, y, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, valueStr,
+            x + width - UIScaleManager.getScaledStringWidth(font, valueStr), y, COLOR_CYAN, false);
 
         // Slider track
         int trackY = y + 16;

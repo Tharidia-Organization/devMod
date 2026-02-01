@@ -841,7 +841,7 @@ public final class RadialTooltipRenderer {
     private static void drawStringScaled(GuiGraphics graphics, Font font, String text,
                                           int x, int y, int color, boolean shadow, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
-            graphics.drawString(font, text, x, y, color, shadow);
+            UIScaleManager.drawScaledString(graphics, font, text, x, y, color, shadow);
             return;
         }
         float inv = 1f / scale;
@@ -854,7 +854,7 @@ public final class RadialTooltipRenderer {
     private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
                                                   int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
-            graphics.drawCenteredString(font, text, x, y, color);
+            UIScaleManager.drawScaledCenteredString(graphics, font, text, x, y, color);
             return;
         }
         float inv = 1f / scale;

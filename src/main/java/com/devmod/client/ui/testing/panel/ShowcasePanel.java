@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_MEDIUM;
@@ -51,7 +52,7 @@ public final class ShowcasePanel implements UIPanel {
 
         // Title
         if (title != null && !title.isEmpty()) {
-            graphics.drawString(font, title, x, y, DesignTokens.Text.TITLE(), false);
+            UIScaleManager.drawScaledString(graphics, font, title, x, y, DesignTokens.Text.TITLE(), false);
         }
 
         // Grid of items
@@ -74,7 +75,7 @@ public final class ShowcasePanel implements UIPanel {
             item.button.render(graphics, itemX, itemY, itemWidth, BUTTON_HEIGHT_MEDIUM, mouseX, mouseY);
 
             // Render description below
-            graphics.drawString(font, item.description, itemX, itemY + BUTTON_HEIGHT_MEDIUM + 4,
+            UIScaleManager.drawScaledString(graphics, font, item.description, itemX, itemY + BUTTON_HEIGHT_MEDIUM + 4,
                 DesignTokens.Text.SECONDARY(), false);
         }
     }

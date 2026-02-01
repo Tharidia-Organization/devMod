@@ -262,7 +262,7 @@ public class SeasonPassScreen extends Screen {
         g.pose().scale(titleScale, titleScale, 1.0f);
         String title = Objects.requireNonNull(I18n.translate("devmod.ui.season_pass.title").getString());
         int titleWidth = f.width(title);
-        g.drawString(f, title, -titleWidth / 2, 0, titleColor, true);
+        UIScaleManager.drawScaledString(g, f, title, -titleWidth / 2, 0, titleColor, true);
         g.pose().popPose();
 
         // Season name, number, and days remaining
@@ -402,7 +402,7 @@ public class SeasonPassScreen extends Screen {
         g.pose().scale(numScale, numScale, 1.0f);
         String tierNum = Objects.requireNonNull(String.valueOf(tier));
         int numWidth = f.width(tierNum);
-        g.drawString(f, tierNum, -numWidth / 2, 0, tierColor, true);
+        UIScaleManager.drawScaledString(g, f, tierNum, -numWidth / 2, 0, tierColor, true);
         g.pose().popPose();
 
         // Get reward entry for this tier if available

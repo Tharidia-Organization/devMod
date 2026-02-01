@@ -315,7 +315,7 @@ public class WelcomeScreen extends Screen {
         String title = "DevMod";
         int titleWidth = safeFont.width(title);
         int titleColor = applyAlpha(COLOR_TITLE, alpha);
-        g.drawString(safeFont, title, -titleWidth / 2, 0, titleColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, title, -titleWidth / 2, 0, titleColor, true);
 
         g.pose().popPose();
 
@@ -372,7 +372,7 @@ public class WelcomeScreen extends Screen {
         g.pose().pushPose();
         g.pose().translate(x, y + UIScaleManager.scale(4), 0);
         g.pose().scale(bulletPulse, bulletPulse, 1.0f);
-        g.drawString(safeFont, bullet, 0, 0, bulletColor, false);
+        UIScaleManager.drawScaledString(g, safeFont, bullet, 0, 0, bulletColor, false);
         g.pose().popPose();
 
         // Feature name

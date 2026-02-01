@@ -302,13 +302,13 @@ public abstract class BaseDevModScreen extends Screen {
         // Text
         float textScale = UIScaleManager.getTextScale();
         if (Math.abs(textScale - 1.0f) < 0.01f) {
-            graphics.drawString(safeFont, safeMessage, msgX, msgY, statusColor, false);
+            UIScaleManager.drawScaledString(graphics, safeFont, safeMessage, msgX, msgY, statusColor, false);
             return;
         }
         graphics.pose().pushPose();
         graphics.pose().translate(msgX, msgY, 0);
         graphics.pose().scale(textScale, textScale, 1.0f);
-        graphics.drawString(safeFont, safeMessage, 0, 0, statusColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, safeMessage, 0, 0, statusColor, false);
         graphics.pose().popPose();
     }
 

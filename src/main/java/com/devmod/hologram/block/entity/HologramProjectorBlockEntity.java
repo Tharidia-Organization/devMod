@@ -91,6 +91,7 @@ public class HologramProjectorBlockEntity extends BlockEntity {
     // Animation state (client-side only)
     private transient long animationStartTime = -1;
     private transient float meshMaxY = 64.0f;
+    private transient int meshOriginY = 0; // Y origin used by mesh (for entity coordinate alignment)
     private static final float FADE_IN_DURATION = 2.0f; // seconds
 
     public HologramProjectorBlockEntity(BlockPos pos, BlockState state) {
@@ -227,6 +228,21 @@ public class HologramProjectorBlockEntity extends BlockEntity {
      */
     public float getMeshMaxY() {
         return meshMaxY;
+    }
+
+    /**
+     * Set the Y origin of the mesh (minimum Y of actual terrain).
+     * Used to align entity coordinates with mesh coordinates.
+     */
+    public void setMeshOriginY(int originY) {
+        this.meshOriginY = originY;
+    }
+
+    /**
+     * Get the Y origin of the mesh.
+     */
+    public int getMeshOriginY() {
+        return meshOriginY;
     }
 
     // === Settings ===
@@ -667,8 +683,10 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         }
 
         // Convert to lightweight data with relative coordinates
+        // CRITICAL: Use meshOriginY to match mesh coordinate system
+        // The mesh uses actual terrain minY, not level.getMinBuildHeight()
         double originX = scanMinX;
-        double originY = level.getMinBuildHeight();
+        double originY = meshOriginY;
         double originZ = scanMinZ;
 
         // Calculate Y-slice bounds if enabled
@@ -825,6 +843,9 @@ public class HologramProjectorBlockEntity extends BlockEntity {
             scanMaxZ = center.getZ() + halfSize - 1;
             regionValid = (scanMaxX - scanMinX + 1) == scanSize && (scanMaxZ - scanMinZ + 1) == scanSize;
         }
+
+        // Invalidate entity cache after loading settings (ensures fresh data on sync)
+        invalidateEntityCache();
     }
 
     @Override
@@ -835,6 +856,18 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         tag.putInt("BlockSize", blockSize);
         tag.putBoolean("TransparentMode", transparentMode);
         tag.putBoolean("RotationEnabled", rotationEnabled);
+        tag.putBoolean("FilterHighlightOnly", filterHighlightOnly);
+        tag.putInt("ActiveFilters", filtersToInt(activeFilters));
+        tag.putBoolean("TexturedMode", texturedMode);
+        // Entity rendering settings - CRITICAL: must sync to client for entity rendering
+        tag.putBoolean("ShowEntities", showEntities);
+        tag.putBoolean("FullEntityModels", fullEntityModels);
+        tag.putInt("MaxEntityModels", maxEntityModels);
+        tag.putInt("ActiveEntityFilters", EntityFilterType.toBitmask(activeEntityFilters));
+        // Y-slice settings
+        tag.putBoolean("YSliceEnabled", ySliceEnabled);
+        tag.putInt("YSliceLevel", ySliceLevel);
+        tag.putInt("YSliceThickness", ySliceThickness);
         return tag;
     }
 

@@ -544,6 +544,37 @@ public final class UIScaleManager {
     }
 
     /**
+     * Draws a FormattedCharSequence with proper UI scaling.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The FormattedCharSequence to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     * @param shadow Whether to draw shadow
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        net.minecraft.util.FormattedCharSequence text, int x, int y, int color, boolean shadow) {
+        graphics.drawString(font, text, x, y, color, shadow);
+    }
+
+    /**
+     * Draws a FormattedCharSequence without shadow.
+     *
+     * @param graphics The GuiGraphics context
+     * @param font The font to use
+     * @param text The FormattedCharSequence to draw
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param color Text color (ARGB)
+     */
+    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+                                        net.minecraft.util.FormattedCharSequence text, int x, int y, int color) {
+        graphics.drawString(font, text, x, y, color, false);
+    }
+
+    /**
      * Draws a centered Component with proper UI scaling.
      *
      * @param graphics The GuiGraphics context

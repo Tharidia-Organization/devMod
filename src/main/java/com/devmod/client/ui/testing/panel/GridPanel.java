@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 import static com.devmod.client.ui.testing.panel.PanelConstants.BUTTON_HEIGHT_SMALL;
@@ -32,7 +33,7 @@ public record GridPanel(
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
 
         // Title
-        graphics.drawString(font, title, x, y, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, title, x, y, DesignTokens.Text.SECONDARY(), false);
 
         // Grid
         int currentY = y + TITLE_HEIGHT;

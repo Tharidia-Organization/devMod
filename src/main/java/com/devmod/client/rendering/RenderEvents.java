@@ -284,6 +284,10 @@ public class RenderEvents {
             }
         }
 
+        while (KeyInputHandler.OPEN_VOXELLAB_KEY.consumeClick()) {
+            invokeAction(ActionIds.UI_VOXELLAB_OPEN);
+        }
+
         while (KeyInputHandler.TOGGLE_BOSS_PHASE_KEY.consumeClick()) {
             invokeAction(ActionIds.DEBUG_BOSS_PHASE_TOGGLE);
         }

@@ -108,10 +108,10 @@ public class HologramEntityRenderer {
 
             renderFullModels(poseStack, level, modelEntities, blockEntity, partialTicks);
             if (!cubeEntities.isEmpty()) {
-                renderSimpleCubes(poseStack, cubeEntities, partialTicks);
+                renderSimpleCubes(poseStack, level, blockEntity, cubeEntities, partialTicks);
             }
         } else {
-            renderSimpleCubes(poseStack, visibleEntities, partialTicks);
+            renderSimpleCubes(poseStack, level, blockEntity, visibleEntities, partialTicks);
         }
     }
 
@@ -169,12 +169,17 @@ public class HologramEntityRenderer {
     /**
      * Render entities as simple colored cubes with holographic shader effects.
      * All cubes are batched into a single draw call for efficiency.
+     * Uses live interpolated entity positions for smooth movement.
      *
      * @param poseStack The pose stack with hologram transformations applied
+     * @param level The current level for live entity lookup
+     * @param blockEntity The projector for origin calculation
      * @param entities The entities to render as cubes
-     * @param partialTicks Partial tick time for shader animations
+     * @param partialTicks Partial tick time for smooth interpolation
      */
-    private void renderSimpleCubes(@Nonnull PoseStack poseStack, @Nonnull List<HologramEntityData> entities,
+    private void renderSimpleCubes(@Nonnull PoseStack poseStack, @Nonnull Level level,
+                                    @Nonnull HologramProjectorBlockEntity blockEntity,
+                                    @Nonnull List<HologramEntityData> entities,
                                     float partialTicks) {
         if (entities.isEmpty()) return;
 
@@ -186,17 +191,14 @@ public class HologramEntityRenderer {
         if (shader != null) {
             RenderSystem.setShader(() -> shader);
 
-            Level level = Minecraft.getInstance().level;
-            if (level != null) {
-                float gameTime = (level.getGameTime() + partialTicks) / 20.0f;
+            float gameTime = (level.getGameTime() + partialTicks) / 20.0f;
 
-                // Cyan hologram color (same as terrain)
-                float[] holoColor = {0.2f, 0.85f, 1.0f};
+            // Cyan hologram color (same as terrain)
+            float[] holoColor = {0.2f, 0.85f, 1.0f};
 
-                HologramShaderRegistry.setUniforms(gameTime, 0.8f, 0.1f, 1.0f, holoColor);
-                HologramShaderRegistry.setAnimationUniforms(1.0f, gameTime, 0.2f, 256.0f);
-                HologramShaderRegistry.setTexturedModeUniforms(false, 0.0f);
-            }
+            HologramShaderRegistry.setUniforms(gameTime, 0.8f, 0.1f, 1.0f, holoColor);
+            HologramShaderRegistry.setAnimationUniforms(1.0f, gameTime, 0.2f, 256.0f);
+            HologramShaderRegistry.setTexturedModeUniforms(false, 0.0f);
         } else {
             RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
         }
@@ -204,6 +206,7 @@ public class HologramEntityRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
+        RenderSystem.enableDepthTest();
 
         // Combine RenderSystem modelview with hologram transforms
         Matrix4f combinedModelView = new Matrix4f(RenderSystem.getModelViewMatrix());
@@ -221,31 +224,43 @@ public class HologramEntityRenderer {
         BufferBuilder buffer = tesselator.begin(VertexFormat.Mode.QUADS, format);
 
         for (HologramEntityData entityData : entities) {
-            addCubeVertices(buffer, entityData, useCustomShader);
+            // Use CACHED positions for maximum stability (no jitter)
+            // The cache updates every 2 ticks which is smooth enough for minimap display
+            // Live interpolation causes jitter due to physics micro-adjustments
+            float relX = entityData.relativeX();
+            float relY = entityData.relativeY();
+            float relZ = entityData.relativeZ();
+            addCubeVerticesAt(buffer, relX, relY, relZ, entityData, useCustomShader);
         }
 
         // Single draw call for all cubes
         BufferUploader.drawWithShader(buffer.buildOrThrow());
 
-        // Restore RenderSystem state
+        // Restore RenderSystem state COMPLETELY
         RenderSystem.getModelViewStack().popMatrix();
         RenderSystem.applyModelViewMatrix();
 
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
+
+        // Clear shader to avoid affecting subsequent rendering
+        if (shader != null) {
+            shader.clear();
+        }
     }
 
     /**
-     * Add vertices for a single entity cube to the buffer.
+     * Add vertices for a single entity cube to the buffer at the specified position.
      *
      * @param buffer The buffer to add vertices to
-     * @param entityData The entity data
+     * @param x Relative X position (live interpolated)
+     * @param y Relative Y position (live interpolated)
+     * @param z Relative Z position (live interpolated)
+     * @param entityData The entity data for color and bounding box
      * @param includeUV Whether to include UV coordinates (must match buffer's vertex format)
      */
-    private void addCubeVertices(@Nonnull BufferBuilder buffer, @Nonnull HologramEntityData entityData, boolean includeUV) {
-        float x = entityData.relativeX();
-        float y = entityData.relativeY();
-        float z = entityData.relativeZ();
+    private void addCubeVerticesAt(@Nonnull BufferBuilder buffer, float x, float y, float z,
+                                    @Nonnull HologramEntityData entityData, boolean includeUV) {
         float halfWidth = entityData.bbWidth() / 2.0f;
         float height = entityData.bbHeight();
 
@@ -358,11 +373,6 @@ public class HologramEntityRenderer {
         Minecraft mc = Minecraft.getInstance();
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
 
-        // Compute origin for live position calculation
-        double originX = blockEntity.getScanMinX();
-        double originY = level.getMinBuildHeight();
-        double originZ = blockEntity.getScanMinZ();
-
         // Disable shadows once for all entities
         entityDispatcher.setRenderShadow(false);
         try {
@@ -372,10 +382,10 @@ public class HologramEntityRenderer {
 
                 poseStack.pushPose();
 
-                // Use LIVE interpolated position for smooth movement
-                float relX = (float) (entity.getX(partialTicks) - originX);
-                float relY = (float) (entity.getY(partialTicks) - originY);
-                float relZ = (float) (entity.getZ(partialTicks) - originZ);
+                // Use CACHED positions for maximum stability (no jitter)
+                float relX = entityData.relativeX();
+                float relY = entityData.relativeY();
+                float relZ = entityData.relativeZ();
                 poseStack.translate(relX, relY, relZ);
 
                 entityDispatcher.render(entity, 0, 0, 0, 0, partialTicks, poseStack, bufferSource, LightTexture.FULL_BRIGHT);

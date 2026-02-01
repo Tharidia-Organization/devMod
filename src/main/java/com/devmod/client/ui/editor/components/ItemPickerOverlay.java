@@ -251,7 +251,7 @@ public class ItemPickerOverlay extends BaseOverlay {
         int itemsBg = currentTab == 0 ? DesignTokens.Background.ACTIVE() :
                      (itemsHover ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL());
         safeGraphics.fill(innerX, innerY, innerX + tabW, innerY + tabH, itemsBg);
-        safeGraphics.drawCenteredString(safeFont, "Items", innerX + tabW / 2, innerY + (tabH - 8) / 2,
+        UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Items", innerX + tabW / 2, innerY + (tabH - 8) / 2,
             currentTab == 0 ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY());
 
         // Tags tab
@@ -260,7 +260,7 @@ public class ItemPickerOverlay extends BaseOverlay {
         int tagsBg = currentTab == 1 ? DesignTokens.Background.ACTIVE() :
                     (tagsHover ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL());
         safeGraphics.fill(innerX + tabW, innerY, innerX + innerW, innerY + tabH, tagsBg);
-        safeGraphics.drawCenteredString(safeFont, "Tags", innerX + tabW + tabW / 2, innerY + (tabH - 8) / 2,
+        UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Tags", innerX + tabW + tabW / 2, innerY + (tabH - 8) / 2,
             currentTab == 1 ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY());
 
         innerY += tabH + ScaledCoord.scaleDim(4);

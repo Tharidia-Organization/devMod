@@ -639,6 +639,18 @@ public final class DevModClientActions {
             .handler(context -> NotificationCenterScreen.open("NOTIFICATIONS", null))
             .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_NOTIFICATION_SETTINGS_OPEN)
+            .labelKey("devmod.action.notification_settings")
+            .descriptionKey("devmod.action.notification_settings.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Notifications")
+            .icon(Items.BELL)
+            .precondition(uiScreenPrecondition())
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "notification_settings",
+                () -> new com.devmod.client.notification.ui.NotificationSettingsScreen(null)))
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_MAILBOX_OPEN)
             .labelKey("devmod.action.mailbox")
             .descriptionKey("devmod.action.mailbox.desc")
@@ -2552,6 +2564,19 @@ public final class DevModClientActions {
                 PacketDistributor.sendToServer(new QuestActionPayload(action));
             })
             .build());
+
+        // Endurance Settings screen - direct access from radial menu
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_ENDURANCE_SETTINGS_OPEN)
+            .labelKey("devmod.action.endurance_settings")
+            .descriptionKey("devmod.action.endurance_settings.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Endurance")
+            .icon(Items.DIAMOND_SWORD)
+            .precondition(screenPrecondition())
+            .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
+                "endurance_settings",
+                () -> new com.devmod.client.endurance.EnduranceSettingsScreen(null)))
+            .build());
     }
 
     private static void registerAbilityActions() {
@@ -2609,6 +2634,7 @@ public final class DevModClientActions {
         ActionKeybindRegistry.register(ActionIds.UI_QA_TESTING_OPEN, KeyInputHandler.OPEN_QA_TESTING_KEY);
         ActionKeybindRegistry.register(ActionIds.UI_TESTING_HUB_OPEN, KeyInputHandler.OPEN_TESTING_HUB_KEY);
         ActionKeybindRegistry.register(ActionIds.ARENA_HUD_TOGGLE, KeyInputHandler.OPEN_TESTING_HUB_KEY, "Shift");
+        ActionKeybindRegistry.register(ActionIds.UI_VOXELLAB_OPEN, KeyInputHandler.OPEN_VOXELLAB_KEY);
         ActionKeybindRegistry.register(ActionIds.DEBUG_BOSS_PHASE_TOGGLE, KeyInputHandler.TOGGLE_BOSS_PHASE_KEY);
         ActionKeybindRegistry.register(ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE, KeyInputHandler.TOGGLE_ENTITY_DENSITY_KEY);
         ActionKeybindRegistry.register(ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE, KeyInputHandler.TOGGLE_SKILL_EFFICACY_KEY);

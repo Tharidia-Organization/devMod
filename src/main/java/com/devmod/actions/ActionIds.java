@@ -35,10 +35,12 @@ public final class ActionIds {
     public static final String UI_PARTY_OPEN = "devmod.ui.party.open";
     public static final String UI_PARTY_INVITE_POPUP_OPEN = "devmod.ui.party_invite_popup.open";
     public static final String UI_NOTIFICATION_CENTER_OPEN = "devmod.ui.notification_center.open";
+    public static final String UI_NOTIFICATION_SETTINGS_OPEN = "devmod.ui.notification_settings.open";
     public static final String UI_MAILBOX_OPEN = "devmod.ui.mailbox.open";
     public static final String UI_TESTER_TASKS_OPEN = "devmod.ui.tester_tasks.open";
     public static final String UI_QUEST_EDITOR_OPEN = "devmod.ui.quest_editor.open";
     public static final String UI_ENDURANCE_EDITOR_OPEN = "devmod.ui.endurance_editor.open";
+    public static final String UI_ENDURANCE_SETTINGS_OPEN = "devmod.ui.endurance_settings.open";
     public static final String UI_ENDURANCE_SCREEN_OPEN = "devmod.ui.endurance_screen.open";
     public static final String UI_ENDURANCE_SHOP_OPEN = "devmod.ui.endurance_shop.open";
     public static final String UI_VOXELLAB_OPEN = "devmod.ui.voxellab.open";

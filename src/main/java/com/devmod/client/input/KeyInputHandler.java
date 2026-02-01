@@ -225,6 +225,19 @@ public class KeyInputHandler {
             "key.categories.devmod"
     );
 
+    /**
+     * Opens VoxelLab - the developer testing and configuration tool.
+     *
+     * <p><b>Default key:</b> V</p>
+     */
+    public static final KeyMapping OPEN_VOXELLAB_KEY = new KeyMapping(
+            "key.devmod.voxellab",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_V,
+            "key.categories.devmod"
+    );
+
     // ═══════════════════════════════════════════════════════════════════════════
     // QUEST SYSTEM
     // ═══════════════════════════════════════════════════════════════════════════
@@ -414,6 +427,7 @@ public class KeyInputHandler {
         event.register(Objects.requireNonNull(TOGGLE_PROFILER_KEY));
         event.register(Objects.requireNonNull(OPEN_QA_TESTING_KEY));
         event.register(Objects.requireNonNull(OPEN_TESTING_HUB_KEY));
+        event.register(Objects.requireNonNull(OPEN_VOXELLAB_KEY));
         event.register(Objects.requireNonNull(TOGGLE_BOSS_PHASE_KEY));
         event.register(Objects.requireNonNull(TOGGLE_ENTITY_DENSITY_KEY));
         event.register(Objects.requireNonNull(TOGGLE_SKILL_EFFICACY_KEY));

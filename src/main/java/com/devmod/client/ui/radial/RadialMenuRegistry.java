@@ -853,6 +853,7 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.FEATHER))
             .item(RadialMenuItem.registry(ActionIds.UI_QUEST_EDITOR_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_EDITOR_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SETTINGS_OPEN))
             .item(RadialMenuItem.registry(ActionIds.QUEST_TASK_COMPLETE))
             .item(RadialMenuItem.registry(ActionIds.UI_PERK_SELECTION_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_WAVE_CHECKPOINT_OPEN))
@@ -881,6 +882,7 @@ public final class RadialMenuRegistry {
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_PARTY_INVITE_POPUP_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_NOTIFICATION_CENTER_OPEN))
+            .item(RadialMenuItem.registry(ActionIds.UI_NOTIFICATION_SETTINGS_OPEN))
             .build());
     }
 }

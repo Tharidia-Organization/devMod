@@ -222,14 +222,14 @@ public class RadialActionDetailScreen extends Screen {
             titleX += ICON_SIZE + ICON_GAP;
         }
         int titleY = panelY + (HEADER_HEIGHT - font.lineHeight) / 2;
-        graphics.drawString(font, safeTitle, titleX, titleY, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeTitle, titleX, titleY, DesignTokens.Text.PRIMARY(), false);
 
         graphics.enableScissor(contentX, contentY, contentX + contentWidth, contentY + contentHeight);
         int lineHeight = font.lineHeight + 2;
         int y = contentY - scrollOffset;
         for (DetailLine line : descriptionLines) {
             DetailLine safeLine = Objects.requireNonNull(line, "detail line");
-            graphics.drawString(font, safeLine.text, contentX, y, safeLine.color, false);
+            UIScaleManager.drawScaledString(graphics, font, safeLine.text, contentX, y, safeLine.color, false);
             y += lineHeight;
         }
         graphics.disableScissor();

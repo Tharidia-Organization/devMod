@@ -57,14 +57,19 @@ public final class HologramShaderRegistry {
 
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) {
-        LOGGER.info("[Hologram] Registering hologram shader...");
+        LOGGER.info("╔══════════════════════════════════════════════════════════════╗");
+        LOGGER.info("║ [Hologram] RegisterShadersEvent received - starting registration");
+        LOGGER.info("╚══════════════════════════════════════════════════════════════╝");
         PIPELINE.register(event, LOGGER);
         refreshRenderType();
         ShaderPipelineDiagnostics.logStatus("Hologram", PIPELINE, LOGGER);
+        LOGGER.info("[Hologram] Shader registration complete. Ready={}, UsingFallback={}",
+                    PIPELINE.isReady(), usingFallback);
     }
 
     private static void refreshRenderType() {
         boolean useFallback = !PIPELINE.isReady();
+        LOGGER.info("[Hologram] refreshRenderType: pipelineReady={}, useFallback={}", PIPELINE.isReady(), useFallback);
 
         String renderTypeName = useFallback ? HOLOGRAM_CONFIG.fallbackName() : HOLOGRAM_CONFIG.name();
         var format = useFallback ? HOLOGRAM_CONFIG.fallbackFormat() : HOLOGRAM_CONFIG.primaryFormat();
@@ -111,9 +116,22 @@ public final class HologramShaderRegistry {
 
     /**
      * Check if texture mode is supported (shader is ready and not using fallback).
+     * Triggers lazy refresh if shader became ready after initial setup.
      */
     public static boolean isTexturedModeSupported() {
-        return PIPELINE.isReady() && !usingFallback;
+        boolean pipelineReady = PIPELINE.isReady();
+        boolean pipelineInitialized = PIPELINE.isInitialized();
+
+        // Lazy refresh: if shader is now ready but we're still using fallback, refresh
+        if (usingFallback && pipelineReady) {
+            LOGGER.info("[Hologram] Shader became ready (was fallback), refreshing render type for textured mode");
+            refreshRenderType();
+        }
+
+        boolean result = pipelineReady && !usingFallback;
+        LOGGER.debug("[Hologram] isTexturedModeSupported: pipelineReady={}, initialized={}, usingFallback={}, result={}",
+                    pipelineReady, pipelineInitialized, usingFallback, result);
+        return result;
     }
 
     /**

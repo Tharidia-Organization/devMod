@@ -164,6 +164,14 @@ public final class HologramMesh {
         return texturedMode;
     }
 
+    /**
+     * Get the Y origin of this mesh (minimum Y of actual terrain).
+     * Used to align entity coordinates with mesh coordinates.
+     */
+    public int getOriginY() {
+        return originY;
+    }
+
     private HologramMesh(@Nonnull Level level, int minX, int minZ, int width, int depth, int minY, int height) {
         this.level = level;
         this.width = width;

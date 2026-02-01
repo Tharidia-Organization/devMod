@@ -1131,13 +1131,13 @@ public final class RadialMenuScreen extends Screen {
                 int starY = favY + RadialMenuScaler.scaleConstant(RadialMenuConstants.FAVORITE_STAR_OFFSET_Y);
                 float fontScale = RadialMenuScaler.getFontScale();
                 if (fontScale <= 0f || Math.abs(fontScale - 1f) < 0.001f) {
-                    graphics.drawCenteredString(safeFont, "*", favX, starY,
+                    UIScaleManager.drawScaledCenteredString(graphics, safeFont, "*", favX, starY,
                         RadialMenuConstants.FAVORITE_STAR_COLOR);
                 } else {
                     float inv = 1f / fontScale;
                     graphics.pose().pushPose();
                     graphics.pose().scale(fontScale, fontScale, 1f);
-                    graphics.drawCenteredString(safeFont, "*", Math.round(favX * inv),
+                    UIScaleManager.drawScaledCenteredString(graphics, safeFont, "*", Math.round(favX * inv),
                         Math.round(starY * inv), RadialMenuConstants.FAVORITE_STAR_COLOR);
                     graphics.pose().popPose();
                 }
