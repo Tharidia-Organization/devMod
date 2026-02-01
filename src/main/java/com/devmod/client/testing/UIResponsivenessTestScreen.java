@@ -57,15 +57,12 @@ public class UIResponsivenessTestScreen extends Screen {
     private final List<ScreenTestEntry> screenRegistry = new ArrayList<>();
     private final List<TestResult> testResults = new ArrayList<>();
     private int scrollOffset = 0;
-    @SuppressWarnings("unused") private boolean testingInProgress = false;
     private int currentGuiScaleIndex = 0;
     private int currentResolutionIndex = 0;
 
     // Original settings to restore
     private int originalGuiScale;
-    @SuppressWarnings("unused") private int originalWidth;
-    @SuppressWarnings("unused") private int originalHeight;
-    @SuppressWarnings("unused") private boolean originalFullscreen;
+    private boolean originalFullscreen;
 
     // Buttons
     @Nullable private EditorButton runAllButton;
@@ -89,8 +86,6 @@ public class UIResponsivenessTestScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null && mc.getWindow() != null) {
             originalGuiScale = mc.options.guiScale().get();
-            originalWidth = mc.getWindow().getWidth();
-            originalHeight = mc.getWindow().getHeight();
             originalFullscreen = mc.getWindow().isFullscreen();
         }
     }
@@ -100,6 +95,9 @@ public class UIResponsivenessTestScreen extends Screen {
         if (mc.options != null && mc.getWindow() != null) {
             mc.options.guiScale().set(originalGuiScale);
             mc.resizeDisplay();
+            if (mc.getWindow().isFullscreen() != originalFullscreen) {
+                mc.getWindow().toggleFullScreen();
+            }
         }
     }
 
@@ -432,13 +430,10 @@ public class UIResponsivenessTestScreen extends Screen {
     private void runAllTests() {
         LOGGER.info("[UITest] Starting comprehensive UI tests...");
         testResults.clear();
-        testingInProgress = true;
-
         for (ScreenTestEntry entry : screenRegistry) {
             testScreen(entry);
         }
 
-        testingInProgress = false;
         LOGGER.info("[UITest] Completed. Passed: {}, Failed: {}",
             testResults.stream().filter(r -> r.passed).count(),
             testResults.stream().filter(r -> !r.passed).count());

@@ -1950,10 +1950,8 @@ public class ArenaBuilder {
             return "minecraft:lantern"; // Light level 15
         } else if (targetLight >= 5) {
             return "minecraft:soul_lantern"; // Light level 10 - better for mid-low levels
-        } else if (targetLight >= 1) {
-            return "minecraft:redstone_torch"; // Light level 7 - for very low levels
         } else {
-            // Target is 0 or negative - use weakest available
+            // Target is 0-4 - use weakest available
             return "minecraft:redstone_torch"; // Light level 7
         }
     }

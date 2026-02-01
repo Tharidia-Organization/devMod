@@ -426,7 +426,7 @@ public class DialogOptionEditorScreen extends Screen {
         graphics.renderOutline(popupX, popupY, POPUP_WIDTH, POPUP_HEIGHT, COLOR_BORDER);
 
         // Title
-        UIScaleManager.drawScaledCenteredString(graphics, font, title, width / 2, popupY + PADDING, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, title.getString(), width / 2, popupY + PADDING, COLOR_TEXT);
 
         // Field labels
         int contentX = popupX + PADDING;

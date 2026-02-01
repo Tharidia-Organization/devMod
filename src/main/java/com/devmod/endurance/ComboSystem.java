@@ -81,6 +81,24 @@ public final class ComboSystem {
             StyleRank[] values = values();
             return idx < values.length - 1 ? values[idx + 1] : this;
         }
+
+        /**
+         * Network-safe rank id (currently ordinal-based).
+         * Centralizes ordinal usage for easier future migration.
+         */
+        @SuppressWarnings("EnumOrdinal")
+        public int getNetworkId() {
+            return this.ordinal();
+        }
+
+        /**
+         * Resolve rank from network id, clamped to valid range.
+         */
+        public static StyleRank fromNetworkId(int id) {
+            StyleRank[] values = values();
+            int safe = Math.max(0, Math.min(id, values.length - 1));
+            return values[safe];
+        }
     }
 
     /**

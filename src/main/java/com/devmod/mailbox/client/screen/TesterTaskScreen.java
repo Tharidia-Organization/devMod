@@ -276,7 +276,7 @@ public class TesterTaskScreen extends Screen {
         graphics.renderOutline(panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, MailboxUiTheme.TesterTasks.PANEL_OUTLINE);
 
         // Title
-        UIScaleManager.drawScaledCenteredString(graphics, getFont(), Objects.requireNonNull(title, "title"), width / 2, panelY + 10,
+        UIScaleManager.drawScaledCenteredString(graphics, getFont(), Objects.requireNonNull(title, "title").getString(), width / 2, panelY + 10,
             MailboxUiTheme.TesterTasks.TEXT_PRIMARY);
 
         // Task count
@@ -357,7 +357,7 @@ public class TesterTaskScreen extends Screen {
         // No tasks message
         if (tasks.isEmpty()) {
             UIScaleManager.drawScaledCenteredString(graphics, getFont(),
-                Objects.requireNonNull(Component.translatable("devmod.tester.no_tasks"), "no tasks"),
+                Objects.requireNonNull(Component.translatable("devmod.tester.no_tasks"), "no tasks").getString(),
                 listX + listWidth / 2, listY + listHeight / 2, MailboxUiTheme.TesterTasks.TEXT_DIM);
             return;
         }

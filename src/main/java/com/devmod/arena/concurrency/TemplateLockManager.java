@@ -72,7 +72,7 @@ public class TemplateLockManager {
         );
 
         LOGGER.info("TemplateLockManager started with {}s expiry, {}min cleanup",
-            LOCK_EXPIRY.getSeconds(), CLEANUP_INTERVAL.toMinutes());
+            LOCK_EXPIRY.toSeconds(), CLEANUP_INTERVAL.toMinutes());
     }
 
     /**

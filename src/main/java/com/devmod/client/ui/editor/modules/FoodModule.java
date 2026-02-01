@@ -34,7 +34,7 @@ public class FoodModule extends AbstractEditorModule {
     /** Ensures delegates are initialized (lazy init to avoid this-escape). */
     private void ensureDelegates() {
         if (!delegatesInitialized) {
-            this.core = new FoodModuleCore(this);
+            this.core = new FoodModuleCore();
             this.ui = new FoodModuleUI(this, core);
             delegatesInitialized = true;
         }

@@ -301,14 +301,14 @@ afterEvaluate {
 
 dependencies {
     // JUnit 5 for unit testing
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.14.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.14.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.14.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // Mockito for mocking Minecraft classes in unit tests
-    testImplementation 'org.mockito:mockito-core:4.11.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:4.11.0'
-    testImplementation 'org.mockito:mockito-inline:4.11.0'
+    // Note: mockito-inline is now integrated in mockito-core 5.x
+    testImplementation 'org.mockito:mockito-core:5.21.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.21.0'
 
     // SLF4J for test logging (required by DuckDB classes)
     testImplementation 'org.slf4j:slf4j-api:2.0.9'
@@ -327,14 +327,14 @@ dependencies {
 
     // GeckoLib - Advanced entity and block model animations
     // Enables Bedrock Edition .geo.json models with unlimited rotations, bone hierarchies, and animations
-    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.4"
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.3"
 
     // DevAuth - Microsoft authentication for dev environment
     // Added as JAR in run/mods folder (not gradle dependency to avoid module conflicts)
 
     // Error Prone compiler + NullAway plugin for compile-time null-safety verification
-    errorprone 'com.google.errorprone:error_prone_core:2.24.1'
-    errorprone 'com.uber.nullaway:nullaway:0.11.3'
+    errorprone 'com.google.errorprone:error_prone_core:2.46.0'
+    errorprone 'com.uber.nullaway:nullaway:0.13.1'
 
     // Allow test classes to access main source classes (for non-Minecraft unit tests)
     testImplementation sourceSets.main.output
@@ -350,28 +350,28 @@ dependencies {
     // Javalin 5.x uses Jetty 11, Javalin 6.x uses Jetty 12 - using 5.6.5 for Jetty 11 compatibility
     localRuntime('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
     localRuntime 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
-    localRuntime('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-webapp:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-xml:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-http:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-io:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-util:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty:jetty-security:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
-    localRuntime('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-server:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-servlet:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-webapp:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-xml:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-http:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-io:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-util:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty:jetty-security:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-core-server:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-core-common:11.0.26') { exclude group: 'org.slf4j' }
+    localRuntime('org.eclipse.jetty.websocket:websocket-servlet:11.0.26') { exclude group: 'org.slf4j' }
     localRuntime 'org.jetbrains:annotations:24.1.0'
     localRuntime 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
     localRuntime 'io.jsonwebtoken:jjwt-api:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-impl:0.12.3'
     localRuntime 'io.jsonwebtoken:jjwt-gson:0.12.3'
-    localRuntime 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    localRuntime 'com.fasterxml.jackson.core:jackson-core:2.17.2'
-    localRuntime 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
+    localRuntime 'com.fasterxml.jackson.core:jackson-databind:2.18.5'
+    localRuntime 'com.fasterxml.jackson.core:jackson-core:2.18.5'
+    localRuntime 'com.fasterxml.jackson.core:jackson-annotations:2.18.5'
     // NeoForge will resolve DuckDB at runtime via the standard dependency classpath
     testImplementation 'org.duckdb:duckdb_jdbc:1.4.3.0'
 
@@ -407,20 +407,20 @@ dependencies {
     // to keep the mod JAR lightweight (~3MB instead of ~10MB)
     compileOnly('io.javalin:javalin:5.6.5') { exclude group: 'org.slf4j' }
     compileOnly 'org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2'
-    compileOnly('org.eclipse.jetty:jetty-server:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-servlet:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-webapp:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-xml:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-http:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-io:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-util:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty:jetty-security:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-core-server:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-core-common:11.0.20') { exclude group: 'org.slf4j' }
-    compileOnly('org.eclipse.jetty.websocket:websocket-servlet:11.0.20') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-server:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-servlet:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-webapp:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-xml:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-http:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-io:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-util:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty:jetty-security:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-server:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-common:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-jetty-api:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-core-server:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-core-common:11.0.26') { exclude group: 'org.slf4j' }
+    compileOnly('org.eclipse.jetty.websocket:websocket-servlet:11.0.26') { exclude group: 'org.slf4j' }
     compileOnly 'org.jetbrains:annotations:24.1.0'
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
 
@@ -431,9 +431,9 @@ dependencies {
 
     // Jackson - JSON serialization for Javalin REST API
     // NOTE: compileOnly - downloaded at runtime by JavalinBootstrap
-    compileOnly 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    compileOnly 'com.fasterxml.jackson.core:jackson-core:2.17.2'
-    compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
+    compileOnly 'com.fasterxml.jackson.core:jackson-databind:2.18.5'
+    compileOnly 'com.fasterxml.jackson.core:jackson-core:2.18.5'
+    compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.18.5'
 
     // JWT for API authentication
     // NOTE: compileOnly - downloaded at runtime by JavalinBootstrap
@@ -593,6 +593,8 @@ tasks.withType(Checkstyle).configureEach {
 // Error Prone + NullAway Configuration
 // Provides compile-time null-safety verification for @Nonnull annotated code
 tasks.withType(JavaCompile).configureEach {
+    // Required for Error Prone 2.46+ on JDK 21
+    options.compilerArgs += ['-XDaddTypeAnnotationsToSymbol=true']
     options.errorprone {
         // NullAway configuration
         option("NullAway:AnnotatedPackages", "com.devmod")

@@ -28,7 +28,6 @@ public class CloneMachineItemModel extends GeoModel<CloneMachineBlockItem> {
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
     public ResourceLocation getModelResource(@Nonnull CloneMachineBlockItem item) {
         String machineName = getMachineName(item);
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "geo/block/" + machineName + ".geo.json");
@@ -36,7 +35,6 @@ public class CloneMachineItemModel extends GeoModel<CloneMachineBlockItem> {
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
     public ResourceLocation getTextureResource(@Nonnull CloneMachineBlockItem item) {
         String machineName = getMachineName(item);
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "textures/block/clone/" + machineName + ".png");

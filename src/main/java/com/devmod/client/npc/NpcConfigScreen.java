@@ -238,7 +238,7 @@ public class NpcConfigScreen extends Screen {
         graphics.fill(panelX + scaledPanelWidth - 1, panelY, panelX + scaledPanelWidth, panelY + scaledPanelHeight, COLOR_BORDER);
 
         // Draw title
-        UIScaleManager.drawScaledCenteredString(graphics, font, title, width / 2, panelY + scaledPadding, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, title.getString(), width / 2, panelY + scaledPadding, COLOR_TEXT);
 
         // Draw labels
         int contentX = panelX + scaledPadding;

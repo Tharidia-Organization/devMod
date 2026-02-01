@@ -836,33 +836,44 @@ public class TelemetryDashboardServer {
     private List<Map<String, Object>> queryTable(String table, @Nullable String from, @Nullable String to, int limit, String tsColumn) {
         StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table);
         List<String> conditions = new ArrayList<>();
+        List<SqlParam> params = new ArrayList<>();
 
-        if (from != null && !from.isBlank()) {
-            conditions.add(tsColumn + " >= '" + from + "'");
+        Timestamp fromTs = parseTimestamp(from);
+        if (fromTs != null) {
+            conditions.add(tsColumn + " >= ?");
+            params.add(paramTimestamp(fromTs));
         }
-        if (to != null && !to.isBlank()) {
-            conditions.add(tsColumn + " <= '" + to + "'");
+        Timestamp toTs = parseTimestamp(to);
+        if (toTs != null) {
+            conditions.add(tsColumn + " <= ?");
+            params.add(paramTimestamp(toTs));
         }
 
         if (!conditions.isEmpty()) {
             sql.append(" WHERE ").append(String.join(" AND ", conditions));
         }
 
-        sql.append(" ORDER BY ").append(tsColumn).append(" DESC LIMIT ").append(limit);
+        sql.append(" ORDER BY ").append(tsColumn).append(" DESC LIMIT ?");
+        params.add(paramInt(limit));
 
-        return executeQuery(sql.toString());
+        return executeQuery(sql.toString(), params);
     }
 
     private List<Map<String, Object>> queryTableWithFilters(String table, @Nullable String from, @Nullable String to, int limit,
                                                             String tsColumn, @Nullable Map<String, String> filters) {
         StringBuilder sql = new StringBuilder("SELECT * FROM ").append(table);
         List<String> conditions = new ArrayList<>();
+        List<SqlParam> params = new ArrayList<>();
 
-        if (from != null && !from.isBlank()) {
-            conditions.add(tsColumn + " >= '" + escapeSql(from) + "'");
+        Timestamp fromTs = parseTimestamp(from);
+        if (fromTs != null) {
+            conditions.add(tsColumn + " >= ?");
+            params.add(paramTimestamp(fromTs));
         }
-        if (to != null && !to.isBlank()) {
-            conditions.add(tsColumn + " <= '" + escapeSql(to) + "'");
+        Timestamp toTs = parseTimestamp(to);
+        if (toTs != null) {
+            conditions.add(tsColumn + " <= ?");
+            params.add(paramTimestamp(toTs));
         }
 
         if (filters != null) {
@@ -872,10 +883,11 @@ public class TelemetryDashboardServer {
                 }
                 String column = entry.getKey();
                 String value = entry.getValue().trim();
-                if (value.matches("^-?\\d+$")) {
-                    conditions.add(column + " = " + value);
+                conditions.add(column + " = ?");
+                if (column.endsWith("_version") && value.matches("^-?\\d+$")) {
+                    params.add(paramInt(parseNullableInt(value)));
                 } else {
-                    conditions.add(column + " = '" + escapeSql(value) + "'");
+                    params.add(paramString(value));
                 }
             }
         }
@@ -884,8 +896,9 @@ public class TelemetryDashboardServer {
             sql.append(" WHERE ").append(String.join(" AND ", conditions));
         }
 
-        sql.append(" ORDER BY ").append(tsColumn).append(" DESC LIMIT ").append(limit);
-        return executeQuery(sql.toString());
+        sql.append(" ORDER BY ").append(tsColumn).append(" DESC LIMIT ?");
+        params.add(paramInt(limit));
+        return executeQuery(sql.toString(), params);
     }
 
     private Map<String, String> buildArenaFilters(Map<String, String> params) {
@@ -917,10 +930,6 @@ public class TelemetryDashboardServer {
         return filters;
     }
 
-    private String escapeSql(String value) {
-        return value.replace("'", "''");
-    }
-
     @Nullable
     private Timestamp parseTimestamp(@Nullable String value) {
         if (value == null || value.isBlank()) {
@@ -949,9 +958,12 @@ public class TelemetryDashboardServer {
     }
 
     private List<Map<String, Object>> queryWithFilter(String table, String column, String value, int limit) {
-        String sql = "SELECT * FROM " + table + " WHERE " + column + " = '" + value +
-                     "' ORDER BY ts DESC LIMIT " + limit;
-        return executeQuery(sql);
+        String sql = "SELECT * FROM " + table + " WHERE " + column + " = ? ORDER BY ts DESC LIMIT ?";
+        List<SqlParam> params = List.of(
+            paramString(value),
+            paramInt(limit)
+        );
+        return executeQuery(sql, params);
     }
 
     private List<Map<String, Object>> getWeaponStats(@Nullable Map<String, String> filters, @Nullable String from, @Nullable String to) {

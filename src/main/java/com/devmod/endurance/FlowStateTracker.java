@@ -31,17 +31,19 @@ public class FlowStateTracker {
      * Flow states that affect style point gains.
      */
     public enum FlowState {
-        STALE("STALE", EnduranceColors.Flow.STALE, STALE_PENALTY, "Boring! Try something new!"),
-        NEUTRAL("", EnduranceColors.Flow.NEUTRAL, 1.0f, ""),
-        FRESH("FRESH!", EnduranceColors.Flow.FRESH, FRESH_BONUS, "Nice variety!"),
-        VIRTUOSO("VIRTUOSO!", EnduranceColors.Flow.VIRTUOSO, VIRTUOSO_MULTIPLIER, "Incredible style!");
+        STALE(0, "STALE", EnduranceColors.Flow.STALE, STALE_PENALTY, "Boring! Try something new!"),
+        NEUTRAL(1, "", EnduranceColors.Flow.NEUTRAL, 1.0f, ""),
+        FRESH(2, "FRESH!", EnduranceColors.Flow.FRESH, FRESH_BONUS, "Nice variety!"),
+        VIRTUOSO(3, "VIRTUOSO!", EnduranceColors.Flow.VIRTUOSO, VIRTUOSO_MULTIPLIER, "Incredible style!");
 
+        private final int networkId;
         private final String displayName;
         private final int color;
         private final float multiplier;
         private final String message;
 
-        FlowState(String displayName, int color, float multiplier, String message) {
+        FlowState(int networkId, String displayName, int color, float multiplier, String message) {
+            this.networkId = networkId;
             this.displayName = displayName;
             this.color = color;
             this.multiplier = multiplier;
@@ -52,6 +54,17 @@ public class FlowStateTracker {
         public int getColor() { return color; }
         public float getMultiplier() { return multiplier; }
         public String getMessage() { return message; }
+
+        public int getNetworkId() { return networkId; }
+
+        public static FlowState fromNetworkId(int id) {
+            for (FlowState state : values()) {
+                if (state.networkId == id) {
+                    return state;
+                }
+            }
+            return NEUTRAL;
+        }
     }
 
     /**

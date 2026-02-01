@@ -316,42 +316,6 @@ public class SphereRenderer {
     }
 
     /**
-     * Draws a filled cube with 6 quad faces.
-     * SIMPLE version: only position + color (for RenderType.debugQuads)
-     *
-     * This method is currently unused but kept for potential future use in filled visualizations.
-     */
-    public static void drawFilledCubeSimple(VertexConsumer consumer, @Nonnull Matrix4f matrix,
-                                             float cx, float cy, float cz, float halfSize,
-                                             float r, float g, float b, float a) {
-        Matrix4f mat = Objects.requireNonNull(matrix);
-        float x1 = cx - halfSize;
-        float y1 = cy - halfSize;
-        float z1 = cz - halfSize;
-        float x2 = cx + halfSize;
-        float y2 = cy + halfSize;
-        float z2 = cz + halfSize;
-
-        // Top face (+Y)
-        quadSimple(consumer, mat, x1, y2, z1, x1, y2, z2, x2, y2, z2, x2, y2, z1, r, g, b, a);
-
-        // Bottom face (-Y)
-        quadSimple(consumer, mat, x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1, r, g, b, a);
-
-        // North face (+Z)
-        quadSimple(consumer, mat, x1, y2, z2, x2, y2, z2, x2, y1, z2, x1, y1, z2, r, g, b, a);
-
-        // South face (-Z)
-        quadSimple(consumer, mat, x2, y2, z1, x1, y2, z1, x1, y1, z1, x2, y1, z1, r, g, b, a);
-
-        // East face (+X)
-        quadSimple(consumer, mat, x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2, r, g, b, a);
-
-        // West face (-X)
-        quadSimple(consumer, mat, x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1, r, g, b, a);
-    }
-
-    /**
      * Helper to draw a line between two points.
      */
     private static void line(VertexConsumer consumer, @Nonnull Matrix4f matrix,
@@ -363,20 +327,5 @@ public class SphereRenderer {
         Objects.requireNonNull(consumer.addVertex(mat, x2, y2, z2)).setColor(r, g, b, a);
     }
 
-    /**
-     * Helper to draw a quad (4 vertices) - SIMPLE version (position + color only).
-     */
-    private static void quadSimple(VertexConsumer consumer, @Nonnull Matrix4f matrix,
-                                    float x1, float y1, float z1,
-                                    float x2, float y2, float z2,
-                                    float x3, float y3, float z3,
-                                    float x4, float y4, float z4,
-                                    float r, float g, float b, float a) {
-        Matrix4f mat = Objects.requireNonNull(matrix);
-        Objects.requireNonNull(consumer.addVertex(mat, x1, y1, z1)).setColor(r, g, b, a);
-        Objects.requireNonNull(consumer.addVertex(mat, x2, y2, z2)).setColor(r, g, b, a);
-        Objects.requireNonNull(consumer.addVertex(mat, x3, y3, z3)).setColor(r, g, b, a);
-        Objects.requireNonNull(consumer.addVertex(mat, x4, y4, z4)).setColor(r, g, b, a);
-    }
 
 }

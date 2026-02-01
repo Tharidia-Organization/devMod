@@ -36,7 +36,6 @@ public class CloneMachineModel extends GeoModel<CloneMachineBlockEntity> {
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
     public ResourceLocation getModelResource(@Nonnull CloneMachineBlockEntity entity) {
         String machineName = getMachineName(entity);
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "geo/block/" + machineName + ".geo.json");
@@ -44,7 +43,6 @@ public class CloneMachineModel extends GeoModel<CloneMachineBlockEntity> {
 
     @Override
     @Nonnull
-    @SuppressWarnings("removal")
     public ResourceLocation getTextureResource(@Nonnull CloneMachineBlockEntity entity) {
         String machineName = getMachineName(entity);
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "textures/block/clone/" + machineName + ".png");

@@ -270,16 +270,17 @@ public class KitSelectionScreen extends Screen {
         super.init();
 
         // Initialize scaled dimensions before any calculations that depend on them
+        // Using scaleMin() to prevent overlap on small screens
         UIScaleManager.update();
-        scaledItemSize = UIScaleManager.scale(ITEM_SIZE);
-        scaledItemMargin = UIScaleManager.scale(ITEM_MARGIN);
-        scaledPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        scaledTabHeight = UIScaleManager.scale(TAB_HEIGHT);
-        scaledSlotSize = UIScaleManager.scale(SLOT_SIZE);
+        scaledItemSize = UIScaleManager.scaleMin(ITEM_SIZE, UIScaleManager.MIN_ITEM_SIZE);
+        scaledItemMargin = UIScaleManager.scaleMin(ITEM_MARGIN, UIScaleManager.MIN_GAP);
+        scaledPanelPadding = UIScaleManager.scaleMin(PANEL_PADDING, UIScaleManager.MIN_PADDING);
+        scaledTabHeight = UIScaleManager.scaleMin(TAB_HEIGHT, 20);
+        scaledSlotSize = UIScaleManager.scaleMin(SLOT_SIZE, 18);
         scaledLabelLineHeight = Math.max(UIScaleManager.getScaledLineHeight(), UIScaleManager.scale(LABEL_LINE_HEIGHT));
-        scaledSectionDividerSpacing = UIScaleManager.scale(SECTION_DIVIDER_SPACING);
-        scaledActionButtonHeight = UIScaleManager.scale(ACTION_BUTTON_HEIGHT);
-        scaledActionButtonGap = UIScaleManager.scale(ACTION_BUTTON_GAP);
+        scaledSectionDividerSpacing = UIScaleManager.scaleMin(SECTION_DIVIDER_SPACING, UIScaleManager.MIN_GAP);
+        scaledActionButtonHeight = UIScaleManager.scaleMin(ACTION_BUTTON_HEIGHT, 20);
+        scaledActionButtonGap = UIScaleManager.scaleMin(ACTION_BUTTON_GAP, UIScaleManager.MIN_GAP);
         scaledTextLineHeight = UIScaleManager.getScaledLineHeight();
 
         loadAllItems();
@@ -621,16 +622,16 @@ public class KitSelectionScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
 
-        // Update scaled dimensions for responsiveness
-        scaledItemSize = UIScaleManager.scale(ITEM_SIZE);
-        scaledItemMargin = UIScaleManager.scale(ITEM_MARGIN);
-        scaledPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        scaledTabHeight = UIScaleManager.scale(TAB_HEIGHT);
-        scaledSlotSize = UIScaleManager.scale(SLOT_SIZE);
-        scaledLabelLineHeight = UIScaleManager.scale(LABEL_LINE_HEIGHT);
-        scaledSectionDividerSpacing = UIScaleManager.scale(SECTION_DIVIDER_SPACING);
-        scaledActionButtonHeight = UIScaleManager.scale(ACTION_BUTTON_HEIGHT);
-        scaledActionButtonGap = UIScaleManager.scale(ACTION_BUTTON_GAP);
+        // Update scaled dimensions for responsiveness using scaleMin() to prevent overlap
+        scaledItemSize = UIScaleManager.scaleMin(ITEM_SIZE, UIScaleManager.MIN_ITEM_SIZE);
+        scaledItemMargin = UIScaleManager.scaleMin(ITEM_MARGIN, UIScaleManager.MIN_GAP);
+        scaledPanelPadding = UIScaleManager.scaleMin(PANEL_PADDING, UIScaleManager.MIN_PADDING);
+        scaledTabHeight = UIScaleManager.scaleMin(TAB_HEIGHT, 20);
+        scaledSlotSize = UIScaleManager.scaleMin(SLOT_SIZE, 18);
+        scaledLabelLineHeight = UIScaleManager.scaleMin(LABEL_LINE_HEIGHT, UIScaleManager.MIN_LINE_HEIGHT);
+        scaledSectionDividerSpacing = UIScaleManager.scaleMin(SECTION_DIVIDER_SPACING, UIScaleManager.MIN_GAP);
+        scaledActionButtonHeight = UIScaleManager.scaleMin(ACTION_BUTTON_HEIGHT, 20);
+        scaledActionButtonGap = UIScaleManager.scaleMin(ACTION_BUTTON_GAP, UIScaleManager.MIN_GAP);
 
         // Dark background
         graphics.fill(0, 0, width, height, COLOR_BG);
@@ -722,7 +723,7 @@ public class KitSelectionScreen extends Screen {
             int textY = tabMargin + (scaledTabHeight - tabMargin * 2 - scaledTextLineHeight) / 2;
             drawScaledText(graphics, safeFont, label, textX, textY, selected ? COLOR_TEXT_INVERSE : COLOR_TEXT);
 
-            tabX += tabW + 4;
+            tabX += tabW + tabMargin;
         }
     }
 
@@ -788,7 +789,9 @@ public class KitSelectionScreen extends Screen {
                     graphics.fill(itemX + scaledItemSize - 1, itemY, itemX + scaledItemSize, itemY + scaledItemSize, COLOR_ACCENT);
                 }
 
-                graphics.renderItem(stack, itemX + 1, itemY + 1);
+                // Center the 16x16 item icon within the scaled slot
+                int itemPad = (scaledItemSize - 16) / 2;
+                graphics.renderItem(stack, itemX + itemPad, itemY + itemPad);
             }
         }
 
@@ -1459,7 +1462,7 @@ public class KitSelectionScreen extends Screen {
                 playClickSound();
                 return true;
             }
-            tabX += tabW + UIScaleManager.scale(4);
+            tabX += tabW + tabMargin;
         }
         return false;
     }

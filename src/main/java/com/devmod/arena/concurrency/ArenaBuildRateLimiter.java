@@ -98,7 +98,7 @@ public class ArenaBuildRateLimiter {
                 return BuildPermit.Granted.now(generatePermitId(), waitTime);
             } else {
                 rejectedRequests.incrementAndGet();
-                LOGGER.warn("Build request from {} timed out after {}s", requesterId, QUEUE_TIMEOUT.getSeconds());
+                LOGGER.warn("Build request from {} timed out after {}s", requesterId, QUEUE_TIMEOUT.toSeconds());
                 return BuildPermit.Rejected.timeout(queuePosition);
             }
 
@@ -220,7 +220,7 @@ public class ArenaBuildRateLimiter {
         private double tokens;
         private long lastRefillTime;
 
-        public TokenBucket(int capacity, double refillRate) {
+        TokenBucket(int capacity, double refillRate) {
             this.capacity = capacity;
             this.refillRate = refillRate;
             this.tokens = capacity; // Start full
@@ -231,7 +231,7 @@ public class ArenaBuildRateLimiter {
          * Attempts to consume one token.
          * @return true if token was available, false if rate limited
          */
-        public synchronized boolean tryConsume() {
+        synchronized boolean tryConsume() {
             refill();
             if (tokens >= 1.0) {
                 tokens -= 1.0;

@@ -97,8 +97,9 @@ public class DebugPacketsMixin {
     /**
      * Send goal selector debug packets.
      */
-    @Inject(method = "sendGoalSelector", at = @At("HEAD"))
+    @Inject(method = "sendGoalSelector", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendGoalSelector(Level level, Mob mob, GoalSelector goalSelector, CallbackInfo ci) {
+        ci.cancel();
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         List<GoalDebugPayload.DebugGoal> goals = new ArrayList<>();
@@ -123,8 +124,9 @@ public class DebugPacketsMixin {
     /**
      * Send POI removed debug packets.
      */
-    @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"))
+    @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
+        ci.cancel();
         PoiRemovedDebugPayload payload = new PoiRemovedDebugPayload(Objects.requireNonNull(pos, "pos"));
         sendToPlayers(level, payload, DebugFeature.POI);
     }
@@ -132,8 +134,9 @@ public class DebugPacketsMixin {
     /**
      * Send raids debug packets.
      */
-    @Inject(method = "sendRaids", at = @At("HEAD"))
+    @Inject(method = "sendRaids", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendRaids(ServerLevel level, Collection<Raid> raids, CallbackInfo ci) {
+        ci.cancel();
         List<BlockPos> raidCenters = new ArrayList<>();
         for (Raid raid : raids) {
             if (raid.isActive()) {
@@ -150,8 +153,9 @@ public class DebugPacketsMixin {
     /**
      * Send neighbor updates debug packets.
      */
-    @Inject(method = "sendNeighborsUpdatePacket", at = @At("HEAD"))
+    @Inject(method = "sendNeighborsUpdatePacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendNeighborsUpdatePacket(Level level, BlockPos pos, CallbackInfo ci) {
+        ci.cancel();
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         NeighborUpdatesDebugPayload payload = new NeighborUpdatesDebugPayload(

@@ -229,7 +229,7 @@ public class TransportConfigScreen extends Screen {
         renderBorder(graphics, panelLeft, panelTop, scaledPanelWidth, scaledPanelHeight, borderColor, UIScaleManager.scale(2));
 
         // Render title
-        Component title = Component.translatable("screen.devmod.transport_config");
+        String title = Component.translatable("screen.devmod.transport_config").getString();
         int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
         UIScaleManager.drawScaledString(graphics, font, title, centerX - titleWidth / 2, panelTop + UIScaleManager.scale(8), DesignTokens.Text.PRIMARY);
 

@@ -609,7 +609,7 @@ public class EnduranceEventHandler {
             int waveDeaths = waveStats != null ? waveStats.deaths : 0;
             float damageTakenThisWave = waveStats != null ? waveStats.damageTaken : 0;
             boolean tookDamage = damageTakenThisWave > 0;
-            int styleOrdinal = comboSession != null ? comboSession.getCurrentRank().ordinal() : 0;
+            int styleOrdinal = comboSession != null ? comboSession.getCurrentRank().getNetworkId() : 0;
 
             DirectiveChainManager.ChainAdvanceResult chainResult = DirectiveChainManager.INSTANCE.advanceChain(
                 questId, waveKills, maxCombo, waveDeaths > 0, tookDamage, styleOrdinal);

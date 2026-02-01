@@ -1694,8 +1694,6 @@ public class AsyncArenaBuilder {
                 return "minecraft:lantern";
             } else if (targetLight >= 5) {
                 return "minecraft:soul_lantern";
-            } else if (targetLight >= 1) {
-                return "minecraft:redstone_torch";
             } else {
                 return "minecraft:redstone_torch";
             }

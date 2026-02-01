@@ -3,6 +3,9 @@ package com.devmod.debug;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
-import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -21,10 +23,10 @@ import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
+import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 
-@SuppressWarnings("unused") // Native debug sending is temporarily disabled; keep code for future use
 public class NativeDebugSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeDebugSender.class);
 
@@ -40,19 +42,9 @@ public class NativeDebugSender {
     /**
      * Tick - sends debug packets to players who have features enabled.
      *
-     * NOTE: Native debug packet sending is temporarily disabled because:
-     * 1. The DebugRendererMixin that would render these packets has mixin issues
-     * 2. Without the mixin, clients cannot render the debug visualizations anyway
-     * 3. The PathfindingDebugPayload causes IndexOutOfBoundsException on some paths
-     *
-     * To re-enable: fix DebugRendererMixin or use a different rendering approach.
+     * NOTE: Pathfinding debug uses DebugPackets with a mixin that swaps in a safe payload.
      */
     public void tick(ServerLevel level) {
-        // TEMPORARILY DISABLED - see note above
-        // The native debug system requires the DebugRendererMixin to work
-        // which has issues with field shadowing in NeoForge 1.21.1
-
-        /*
         tickCounter++;
         if (tickCounter < UPDATE_INTERVAL) return;
         tickCounter = 0;
@@ -82,7 +74,6 @@ public class NativeDebugSender {
                     player.getName().getString(), e.getMessage());
             }
         }
-        */
     }
 
     /**
@@ -97,19 +88,53 @@ public class NativeDebugSender {
             Path path = nav.getPath();
 
             if (path != null && !path.isDone()) {
-                // Use Minecraft's native debug packet sender
-                // DebugPackets.sendPathFindingPacket(level, mob, path, nav.getMaxDistanceToWaypoint());
-
-                // Or create and send the payload directly
-                PathfindingDebugPayload payload = new PathfindingDebugPayload(
-                    mob.getId(),
-                    path,
-                    nav.getMaxDistanceToWaypoint()
-                );
-
-                player.connection.send(new ClientboundCustomPayloadPacket(payload));
+                EntityPathingPayload payload = buildPathingPayload(mob, path, nav.getMaxDistanceToWaypoint());
+                if (payload != null) {
+                    player.connection.send(new ClientboundCustomPayloadPacket(payload));
+                }
             }
         }
+    }
+
+    @Nullable
+    private EntityPathingPayload buildPathingPayload(Mob mob, Path path, float maxDistanceToWaypoint) {
+        if (path == null || path.getNodeCount() == 0) return null;
+        List<EntityPathingPayload.PathNode> nodes = new ArrayList<>();
+        for (int i = 0; i < path.getNodeCount(); i++) {
+            Node node = path.getNode(i);
+            if (node != null) {
+                int nodeType = 0;
+                if (i < path.getNextNodeIndex()) {
+                    nodeType = 2; // closed
+                } else if (i == path.getNodeCount() - 1) {
+                    nodeType = 3; // target
+                }
+                nodes.add(new EntityPathingPayload.PathNode(
+                    node.x + 0.5,
+                    node.y + 0.1,
+                    node.z + 0.5,
+                    nodeType,
+                    node.costMalus
+                ));
+            }
+        }
+
+        if (nodes.isEmpty()) return null;
+        BlockPos target = path.getTarget();
+        double targetX = target != null ? target.getX() + 0.5 : nodes.get(nodes.size() - 1).x();
+        double targetY = target != null ? target.getY() + 0.1 : nodes.get(nodes.size() - 1).y();
+        double targetZ = target != null ? target.getZ() + 0.5 : nodes.get(nodes.size() - 1).z();
+
+        return new EntityPathingPayload(
+            mob.getId(),
+            Objects.requireNonNull(mob.getName().getString()),
+            nodes,
+            targetX,
+            targetY,
+            targetZ,
+            path.canReach(),
+            maxDistanceToWaypoint
+        );
     }
 
     /**

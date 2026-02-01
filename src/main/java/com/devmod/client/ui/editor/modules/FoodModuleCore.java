@@ -13,17 +13,12 @@ import com.devmod.stats.FoodStats;
 
 public class FoodModuleCore {
 
-    @SuppressWarnings("unused")
-    private final FoodModule module;
-
     private FoodStats stats = new FoodStats();
     private FoodStats originalStats = new FoodStats();
     private SourceBadge.Source dataSource = SourceBadge.Source.VANILLA;
     private String sourcePrefix = "VAN";
 
-    public FoodModuleCore(FoodModule module) {
-        this.module = module;
-    }
+    public FoodModuleCore() {}
 
     // ═══════════════════════════════════════════════════════════════
     // STATS ACCESS

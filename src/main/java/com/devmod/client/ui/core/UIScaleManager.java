@@ -52,6 +52,18 @@ public final class UIScaleManager {
     /** Minimum safe margin from screen edges. */
     public static final int EDGE_MARGIN = 8;
 
+    /** Minimum gap/margin to prevent element overlap (2px). */
+    public static final int MIN_GAP = 2;
+
+    /** Minimum text line height to prevent text overlap (8px). */
+    public static final int MIN_LINE_HEIGHT = 8;
+
+    /** Minimum item size for clickable elements (16px). */
+    public static final int MIN_ITEM_SIZE = 16;
+
+    /** Minimum padding for panels/containers (4px). */
+    public static final int MIN_PADDING = 4;
+
     /** Reference resolution for 1x scale (1080p). */
     private static final int REFERENCE_HEIGHT = 1080;
 
@@ -135,6 +147,18 @@ public final class UIScaleManager {
     }
 
     /**
+     * Scales an integer dimension with a guaranteed minimum value.
+     * Use this for margins, gaps, and spacing that should never be 0.
+     *
+     * @param baseValue The base value at 1x scale
+     * @param minimum The minimum return value (prevents overlap on small screens)
+     * @return Scaled and grid-snapped value, at least the minimum
+     */
+    public static int scaleMin(int baseValue, int minimum) {
+        return Math.max(minimum, snap((int) (baseValue * effectiveScale)));
+    }
+
+    /**
      * Scales a float dimension.
      *
      * @param baseValue The base value at 1x scale
@@ -153,7 +177,7 @@ public final class UIScaleManager {
      */
     public static int scaleText(int baseSize) {
         // Text scales at 70% of the rate to prevent tiny/huge text
-        float textScale = 1.0f + (effectiveScale - 1.0f) * 0.7f;
+        float textScale = 1.0f + (effectiveScale - 1.0f) * (7f / 10f);
         return Math.max(6, snap((int) (baseSize * textScale)));
     }
 
@@ -603,11 +627,12 @@ public final class UIScaleManager {
     /**
      * Gets the scaled line height for text rendering.
      * Uses the default Minecraft font line height (9 pixels) scaled appropriately.
+     * Minimum of MIN_LINE_HEIGHT to prevent text overlap on small screens.
      *
      * @return The scaled line height in pixels
      */
     public static int getScaledLineHeight() {
-        return scale(9); // Minecraft's default font line height
+        return Math.max(MIN_LINE_HEIGHT, scale(9));
     }
 
     /**
@@ -617,6 +642,6 @@ public final class UIScaleManager {
      * @return The text scale factor
      */
     public static float getTextScale() {
-        return 1.0f + (effectiveScale - 1.0f) * 0.7f;
+        return 1.0f + (effectiveScale - 1.0f) * (7f / 10f);
     }
 }

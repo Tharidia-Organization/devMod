@@ -2044,54 +2044,6 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
     }
 
-    @SuppressWarnings("unused") // Reserved for future export presets.
-    private List<ItemEditorDataManager.EnchantData> collectEnchantmentsForExport() {
-        List<ItemEditorDataManager.EnchantData> result = new ArrayList<>();
-        final var enchantType = Objects.requireNonNull(DataComponents.ENCHANTMENTS, "enchantments component");
-        ItemStack currentItem = getEditedItem();
-        ItemEnchantments enchants = currentItem.has(enchantType)
-            ? Objects.requireNonNull(currentItem.get(enchantType), "enchantments value")
-            : ItemEnchantments.EMPTY;
-        Minecraft mc = Minecraft.getInstance();
-        Level level = mc != null ? mc.level : null;
-        if (level == null) return result;
-        ResourceKey<Registry<Enchantment>> enchantKey = Objects.requireNonNull(Registries.ENCHANTMENT, "enchantment registry key");
-        Registry<Enchantment> registry = Objects.requireNonNull(
-            level.registryAccess().registryOrThrow(enchantKey),
-            "enchantment registry"
-        );
-        enchants.entrySet().forEach(entry -> {
-            Holder<Enchantment> holder = entry.getKey();
-            int enchantLevel = entry.getIntValue();
-            Enchantment enchant = Objects.requireNonNull(holder.value(), "enchantment value");
-            var key = registry.getKey(enchant);
-            if (key != null) {
-                result.add(new ItemEditorDataManager.EnchantData(key.toString(), enchantLevel));
-            }
-        });
-        return result;
-    }
-
-    @SuppressWarnings("unused") // Reserved for future export presets.
-    private List<ItemEditorDataManager.AttrData> collectAttributesForExport() {
-        List<ItemEditorDataManager.AttrData> result = new ArrayList<>();
-        final var attrType = Objects.requireNonNull(DataComponents.ATTRIBUTE_MODIFIERS, "attribute modifiers component");
-        ItemStack currentItem = getEditedItem();
-        ItemAttributeModifiers modifiers = currentItem.has(attrType)
-            ? Objects.requireNonNull(currentItem.get(attrType), "attribute modifiers")
-            : ItemAttributeModifiers.EMPTY;
-        Objects.requireNonNull(modifiers.modifiers(), "attribute modifier entries").forEach(entry -> {
-            Holder<Attribute> attr = entry.attribute();
-            AttributeModifier mod = entry.modifier();
-            var key = BuiltInRegistries.ATTRIBUTE.getKey(Objects.requireNonNull(attr.value(), "attribute value"));
-            if (key != null) {
-                int opOrdinal = mod.operation().ordinal();
-                result.add(new ItemEditorDataManager.AttrData(key.toString(), mod.amount(), opOrdinal));
-            }
-        });
-        return result;
-    }
-
     private void handleImport() {
         if (!supportsDataOps()) {
             showStatus("Import available only for weapons/armors/recipes", DesignTokens.Semantic.WARNING);
