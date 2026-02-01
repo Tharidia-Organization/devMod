@@ -1,0 +1,141 @@
+name: Build Effekseer Native Libraries
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    paths:
+      - '.github/workflows/build-effekseer-natives.yml'
+
+env:
+  EFFEKSEER_REPO: https://github.com/effekseer/EffekseerForMultiLanguages.git
+  EFFEKSEER_BRANCH: master
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install swig cmake
+
+      - name: Clone Effekseer
+        run: |
+          git clone --depth 1 --recursive ${{ env.EFFEKSEER_REPO }} effekseer
+          cd effekseer
+          cd src && sh generate_swig_wrapper.sh && cd ..
+
+      - name: Build universal binary (arm64 + x86_64)
+        run: |
+          cd effekseer
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+          cmake --build build --config Release -- -j$(sysctl -n hw.ncpu)
+
+      - name: Upload macOS library
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-native
+          path: effekseer/build/src/cpp/libEffekseerNativeForJava.dylib
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SWIG
+        run: choco install swig -y
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Clone Effekseer
+        run: |
+          git clone --depth 1 --recursive ${{ env.EFFEKSEER_REPO }} effekseer
+          cd effekseer/src
+          call generate_swig_wrapper.bat
+        shell: cmd
+
+      - name: Build Windows x64
+        run: |
+          cd effekseer
+          cmake -B build -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --parallel
+        shell: cmd
+
+      - name: Upload Windows library
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native
+          path: effekseer/build/src/cpp/Release/EffekseerNativeForJava.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y swig cmake build-essential libgl1-mesa-dev libopenal-dev default-jdk
+
+      - name: Clone Effekseer
+        run: |
+          git clone --depth 1 --recursive ${{ env.EFFEKSEER_REPO }} effekseer
+          cd effekseer/src && sh generate_swig_wrapper.sh && cd ..
+
+      - name: Build Linux x64
+        run: |
+          cd effekseer
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=17
+          cmake --build build --config Release -- -j$(nproc)
+
+      - name: Upload Linux library
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-native
+          path: effekseer/build/src/cpp/libEffekseerNativeForJava.so
+
+  package:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: natives
+
+      - name: Copy libraries to resources
+        run: |
+          mkdir -p src/main/resources/assets/devmod
+          cp natives/macos-native/libEffekseerNativeForJava.dylib src/main/resources/assets/devmod/
+          cp natives/windows-native/EffekseerNativeForJava.dll src/main/resources/assets/devmod/
+          cp natives/linux-native/libEffekseerNativeForJava.so src/main/resources/assets/devmod/
+          ls -la src/main/resources/assets/devmod/
+
+      - name: Upload combined package
+        uses: actions/upload-artifact@v4
+        with:
+          name: effekseer-natives-all
+          path: |
+            src/main/resources/assets/devmod/libEffekseerNativeForJava.dylib
+            src/main/resources/assets/devmod/EffekseerNativeForJava.dll
+            src/main/resources/assets/devmod/libEffekseerNativeForJava.so
+
+      - name: Create commit with updated libraries
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add src/main/resources/assets/devmod/*.dylib
+          git add src/main/resources/assets/devmod/*.dll
+          git add src/main/resources/assets/devmod/*.so
+          git commit -m "Update Effekseer native libraries (auto-built)" || echo "No changes to commit"
+          git push || echo "Push skipped"
