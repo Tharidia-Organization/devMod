@@ -2551,7 +2551,7 @@ public final class DevModClientActions {
                     // No payload provided (e.g., from radial menu) - open the quest selection screen
                     com.devmod.client.ui.ScreenSafety.openSafe(
                         "endurance_quest",
-                        () -> new com.devmod.client.endurance.EnduranceQuestScreen(null));
+                        com.devmod.client.endurance.EnduranceQuestScreen::new);
                     return;
                 }
                 PacketDistributor.sendToServer(payload);
