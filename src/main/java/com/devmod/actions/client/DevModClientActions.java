@@ -2548,6 +2548,10 @@ public final class DevModClientActions {
             .handler(context -> {
                 StartQuestPayload payload = context.getPayload(StartQuestPayload.class);
                 if (payload == null) {
+                    // No payload provided (e.g., from radial menu) - open the quest selection screen
+                    com.devmod.client.ui.ScreenSafety.openSafe(
+                        "endurance_quest",
+                        () -> new com.devmod.client.endurance.EnduranceQuestScreen(null));
                     return;
                 }
                 PacketDistributor.sendToServer(payload);
