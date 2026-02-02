@@ -145,7 +145,7 @@ public class RadialMenuConfig {
             GLFW.GLFW_KEY_W,
             GLFW.GLFW_KEY_E,
             GLFW.GLFW_KEY_R,
-            GLFW.GLFW_KEY_H,
+            GLFW.GLFW_KEY_T,
             GLFW.GLFW_KEY_Y,
             GLFW.GLFW_KEY_U,
             GLFW.GLFW_KEY_I,
@@ -381,6 +381,7 @@ public class RadialMenuConfig {
         input.macroKeys = dedupeKeyArray("input.macroKeys", input.macroKeys, DEFAULT_INPUT.macroKeys, usedKeys);
         input.categoryKeys = dedupeKeyArray("input.categoryKeys", input.categoryKeys, DEFAULT_INPUT.categoryKeys, usedKeys);
         input.itemKeys = dedupeKeyArray("input.itemKeys", input.itemKeys, DEFAULT_INPUT.itemKeys, usedKeys);
+        normalizeLegacyItemKeys();
 
         if (input.searchQuerySpace == '\0') {
             input.searchQuerySpace = DEFAULT_INPUT.searchQuerySpace;
@@ -522,6 +523,34 @@ public class RadialMenuConfig {
             }
         }
         return 0;
+    }
+
+    private void normalizeLegacyItemKeys() {
+        if (input == null || input.itemKeys == null || input.itemKeys.length != 10) {
+            return;
+        }
+        if (input.itemKeys[0] == GLFW.GLFW_KEY_Q
+            && input.itemKeys[1] == GLFW.GLFW_KEY_W
+            && input.itemKeys[2] == GLFW.GLFW_KEY_E
+            && input.itemKeys[3] == GLFW.GLFW_KEY_R
+            && input.itemKeys[4] == GLFW.GLFW_KEY_H
+            && input.itemKeys[5] == GLFW.GLFW_KEY_Y
+            && input.itemKeys[6] == GLFW.GLFW_KEY_U
+            && input.itemKeys[7] == GLFW.GLFW_KEY_I
+            && input.itemKeys[8] == GLFW.GLFW_KEY_O
+            && input.itemKeys[9] == GLFW.GLFW_KEY_P
+            && !containsKey(GLFW.GLFW_KEY_T, input.itemKeys)) {
+            input.itemKeys[4] = GLFW.GLFW_KEY_T;
+        }
+    }
+
+    private static boolean containsKey(int key, int[] keys) {
+        for (int value : keys) {
+            if (value == key) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

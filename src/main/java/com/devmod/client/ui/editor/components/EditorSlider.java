@@ -36,8 +36,8 @@ public class EditorSlider {
     private static final int FOCUS_RING_EXTRA_WIDTH = 4;
     private static final int DEFAULT_MARKER_HALF_WIDTH = 1;
     private static final int DEFAULT_MARKER_HEIGHT = 2;
-    private static final float MANUAL_INPUT_MIN = -1_000_000f;
-    private static final float MANUAL_INPUT_MAX = 1_000_000f;
+    private static final float MANUAL_INPUT_MIN = -Integer.MAX_VALUE;
+    private static final float MANUAL_INPUT_MAX = Integer.MAX_VALUE;
     private static final String LABEL_ELLIPSIS = "...";
     private static final boolean SHOW_SOURCE_BADGE = false;
 

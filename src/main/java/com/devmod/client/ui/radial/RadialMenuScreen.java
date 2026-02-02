@@ -1364,6 +1364,18 @@ public final class RadialMenuScreen extends Screen {
     }
 
     private boolean handlePrimaryClick(boolean shiftHeld, boolean ctrlHeld, double mouseX, double mouseY) {
+        // Ensure selection reflects the actual click location, not just the last hover frame.
+        updateSelection((int) Math.round(mouseX), (int) Math.round(mouseY));
+        RadialHubRenderer.HoverResult hoverResult = RadialHubRenderer.detectHover(
+            (int) Math.round(mouseX),
+            (int) Math.round(mouseY),
+            centerX,
+            centerY,
+            centerButtonRadius,
+            macroHubRadius
+        );
+        hoveredMacro = hoverResult.hoveredMacro();
+
         // Check favorites first
         if (editMode && selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             removeFavorite(selectedFavoriteIndex);
