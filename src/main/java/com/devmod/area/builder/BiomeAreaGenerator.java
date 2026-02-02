@@ -52,6 +52,22 @@ public final class BiomeAreaGenerator {
             return 0;
         }
 
+        Set<BlockPos> floorPositions = blocks;
+        if (floorPositions.isEmpty()) {
+            DevMod.LOGGER.warn("[BiomeAreaGenerator] Empty floor positions for area '{}'; regenerating from definition",
+                area.name());
+            floorPositions = AreaShapeGenerator.generateFloor(
+                Objects.requireNonNull(area.shape()),
+                Objects.requireNonNull(area.centerPosition()),
+                Objects.requireNonNull(area.dimensions()),
+                area.customShapeNbt()
+            );
+            if (floorPositions.isEmpty()) {
+                DevMod.LOGGER.warn("[BiomeAreaGenerator] No floor positions available for area '{}'", area.name());
+                return 0;
+            }
+        }
+
         // HIGH-02 fix: Validate biome config data before processing
         if (config.biomeId() == null || config.biomeId().getPath().length() > 256) {
             DevMod.LOGGER.warn("[Area] Invalid biome ID in config: {}", config.biomeId());
@@ -65,7 +81,7 @@ public final class BiomeAreaGenerator {
         TerrainStyle style = config.terrainStyle();
         int baseY = area.dimensions().floorY();
         int maxHeight = area.dimensions().height();
-        int seaLevel = config.seaLevel();
+        int seaLevel = resolveSeaLevel(config.seaLevel(), baseY, maxHeight);
 
         // Detailed logging for debugging
         DevMod.LOGGER.debug("[BiomeAreaGenerator] Generating terrain for area '{}':", area.name());
@@ -82,7 +98,7 @@ public final class BiomeAreaGenerator {
         int validHeights = 0;
 
         // CRIT-02 fix: Sort positions for deterministic RandomSource consumption
-        List<BlockPos> sortedPositions = AreaBlockMapGenerator.sortPositionsDeterministically(blocks);
+        List<BlockPos> sortedPositions = AreaBlockMapGenerator.sortPositionsDeterministically(floorPositions);
 
         for (BlockPos floorPos : sortedPositions) {
             int terrainHeight = BiomeTerrainCalculator.calculateTerrainHeight(
@@ -111,14 +127,14 @@ public final class BiomeAreaGenerator {
 
         // Carve caves if structures enabled (repurposing generateStructures flag for caves)
         if (config.generateStructures()) {
-            int caveBlocks = BiomeCaveGenerator.carveCavesInLevel(level, blocks, noise, baseY, maxHeight);
+            int caveBlocks = BiomeCaveGenerator.carveCavesInLevel(level, floorPositions, noise, baseY, maxHeight);
             blocksPlaced += caveBlocks;
             DevMod.LOGGER.debug("[BiomeAreaGenerator]   caves: {} blocks carved", caveBlocks);
         }
 
         // Generate features if enabled
         if (config.generateFeatures()) {
-            int featureBlocks = BiomeFeatureGenerator.generateFeatures(level, blocks, config, random, baseY, maxHeight);
+            int featureBlocks = BiomeFeatureGenerator.generateFeatures(level, floorPositions, config, random, baseY, maxHeight);
             blocksPlaced += featureBlocks;
             DevMod.LOGGER.debug("[BiomeAreaGenerator]   features: {} blocks placed", featureBlocks);
         }
@@ -145,6 +161,22 @@ public final class BiomeAreaGenerator {
             return result;
         }
 
+        Set<BlockPos> floorPositions = blocks;
+        if (floorPositions.isEmpty()) {
+            DevMod.LOGGER.warn("[BiomeAreaGenerator] Empty floor positions for area '{}'; regenerating from definition",
+                area.name());
+            floorPositions = AreaShapeGenerator.generateFloor(
+                Objects.requireNonNull(area.shape()),
+                Objects.requireNonNull(area.centerPosition()),
+                Objects.requireNonNull(area.dimensions()),
+                area.customShapeNbt()
+            );
+            if (floorPositions.isEmpty()) {
+                DevMod.LOGGER.warn("[BiomeAreaGenerator] No floor positions available for area '{}'", area.name());
+                return result;
+            }
+        }
+
         long seed = config.getEffectiveSeed();
         RandomSource random = RandomSource.create(seed);
         SimplexNoise noise = new SimplexNoise(Objects.requireNonNull(random));
@@ -152,13 +184,13 @@ public final class BiomeAreaGenerator {
         TerrainStyle style = config.terrainStyle();
         int baseY = area.dimensions().floorY();
         int maxHeight = area.dimensions().height();
-        int seaLevel = config.seaLevel();
+        int seaLevel = resolveSeaLevel(config.seaLevel(), baseY, maxHeight);
 
         DevMod.LOGGER.debug("[BiomeAreaGenerator] Pre-computing block map for area '{}' ({} floor positions)",
-            area.name(), blocks.size());
+            area.name(), floorPositions.size());
 
         // CRIT-02 fix: Sort positions for deterministic RandomSource consumption
-        List<BlockPos> sortedPositions = AreaBlockMapGenerator.sortPositionsDeterministically(blocks);
+        List<BlockPos> sortedPositions = AreaBlockMapGenerator.sortPositionsDeterministically(floorPositions);
 
         for (BlockPos floorPos : sortedPositions) {
             int terrainHeight = BiomeTerrainCalculator.calculateTerrainHeight(
@@ -171,13 +203,13 @@ public final class BiomeAreaGenerator {
 
         // Carve caves if structures enabled (repurposing generateStructures flag for caves)
         if (config.generateStructures()) {
-            int caveBlocksCarved = BiomeCaveGenerator.carveCavesInBlockMap(result, blocks, noise, baseY, maxHeight);
+            int caveBlocksCarved = BiomeCaveGenerator.carveCavesInBlockMap(result, floorPositions, noise, baseY, maxHeight);
             DevMod.LOGGER.debug("[BiomeAreaGenerator]   caves: {} blocks carved", caveBlocksCarved);
         }
 
         // Pre-compute features if enabled
         if (config.generateFeatures()) {
-            BiomeFeatureGenerator.computeFeatureBlocks(result, blocks, config, random, baseY, maxHeight);
+            BiomeFeatureGenerator.computeFeatureBlocks(result, floorPositions, config, random, baseY, maxHeight);
         }
 
         DevMod.LOGGER.debug("[BiomeAreaGenerator] Pre-computed {} blocks for area '{}'",
@@ -196,7 +228,7 @@ public final class BiomeAreaGenerator {
     private static int generateColumn(ServerLevel level, BlockPos basePos, int terrainHeight,
                                       int baseY, int seaLevel,
                                       BiomeGenerationConfig config, RandomSource random) {
-        if (terrainHeight < 0) {
+        if (terrainHeight < baseY) {
             return 0; // Skip (floating islands gap)
         }
 
@@ -252,7 +284,7 @@ public final class BiomeAreaGenerator {
     private static void computeColumnBlocks(Map<BlockPos, BlockState> result, BlockPos basePos, int terrainHeight,
                                             int baseY, int seaLevel,
                                             BiomeGenerationConfig config, RandomSource random) {
-        if (terrainHeight < 0) {
+        if (terrainHeight < baseY) {
             return; // Skip (floating islands gap)
         }
 
@@ -288,5 +320,13 @@ public final class BiomeAreaGenerator {
                 result.put(waterPos, Blocks.WATER.defaultBlockState());
             }
         }
+    }
+
+    private static int resolveSeaLevel(int seaLevel, int baseY, int maxHeight) {
+        int maxY = baseY + maxHeight - 1;
+        if (seaLevel < baseY || seaLevel > maxY) {
+            return baseY;
+        }
+        return seaLevel;
     }
 }

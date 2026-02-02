@@ -187,7 +187,7 @@ public class ActiveTestHudOverlay {
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
         int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int height = UIScaleManager.scale(60);
         int safeLeft = UIScaleManager.getSafeLeft();
         int safeRight = UIScaleManager.getSafeRight();
@@ -238,7 +238,7 @@ public class ActiveTestHudOverlay {
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
         int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
 
         // Calculate dynamic height based on instructions
         String instructionText = Objects.requireNonNullElse(activeTest.getInstructions(), "");

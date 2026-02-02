@@ -85,7 +85,7 @@ public class TemplateSelectorWidget extends AbstractWidget {
         this.onTemplateSelected = Objects.requireNonNull(onTemplateSelected);
         this.onTemplateDeleted = onTemplateDeleted;
         this.searchBox = new EditBox(Objects.requireNonNull(Minecraft.getInstance().font),
-            x + 2, y + 15 + 2, width - 4, AreaBuilderGuiConstants.FIELD_HEIGHT,
+            x + s(2), y + s(15) + s(2), width - s(4), AreaBuilderGuiConstants.scaledFieldHeight(),
             Objects.requireNonNull(Component.translatable("area.template.search")));
         this.searchBox.setHint(Objects.requireNonNull(Component.translatable("area.template.search")));
         this.searchBox.setMaxLength(64);
@@ -152,6 +152,16 @@ public class TemplateSelectorWidget extends AbstractWidget {
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font);
         updateLayout(font.lineHeight);
+        int itemHeight = s(ITEM_HEIGHT);
+        int itemInset = s(1);
+        int itemTextYOffset = s(4);
+        int itemSubTextYOffset = s(14);
+        int listPadding = s(4);
+        int deleteBtnSize = s(DELETE_BTN_SIZE);
+        int deleteInset = s(8);
+        int scrollbarInset = s(6);
+        int scrollbarWidth = s(4);
+        int scrollbarMinThumb = s(20);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -175,7 +185,7 @@ public class TemplateSelectorWidget extends AbstractWidget {
             String msgKey = allTemplates.isEmpty() ? "area.template.loading" : "area.template.empty";
             UIScaleManager.drawScaledCenteredString(graphics, font,
                 Component.translatable(msgKey).getString(),
-                getX() + getWidth() / 2, listY + listHeight / 2 - 4,
+                getX() + getWidth() / 2, listY + listHeight / 2 - s(4),
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             return;
         }
@@ -183,75 +193,79 @@ public class TemplateSelectorWidget extends AbstractWidget {
         // Draw visible templates
         for (int i = 0; i < visibleItems && i + scrollOffset < filteredTemplates.size(); i++) {
             TemplateSummary template = filteredTemplates.get(i + scrollOffset);
-            int itemY = listY + i * ITEM_HEIGHT;
+            int itemY = listY + i * itemHeight;
 
             boolean isHovered = mouseX >= getX() && mouseX < getX() + getWidth() &&
-                               mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                               mouseY >= itemY && mouseY < itemY + itemHeight;
             boolean isSelected = Objects.equals(template.id(), selectedTemplateId);
 
             // Item background
             if (isSelected) {
-                graphics.fill(getX() + 1, itemY, getX() + getWidth() - 1, itemY + ITEM_HEIGHT - 1,
+                graphics.fill(getX() + itemInset, itemY, getX() + getWidth() - itemInset, itemY + itemHeight - itemInset,
                     AreaBuilderGuiConstants.COLOR_TAB_ACTIVE);
             } else if (isHovered) {
-                graphics.fill(getX() + 1, itemY, getX() + getWidth() - 1, itemY + ITEM_HEIGHT - 1,
+                graphics.fill(getX() + itemInset, itemY, getX() + getWidth() - itemInset, itemY + itemHeight - itemInset,
                     AreaBuilderGuiConstants.COLOR_HOVER);
             }
 
             // Template name
-            UIScaleManager.drawScaledString(graphics, font, template.name(), getX() + 4, itemY + 4,
+            UIScaleManager.drawScaledString(graphics, font, template.name(), getX() + listPadding, itemY + itemTextYOffset,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
                           : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
             // Shape + Author info
             String info = template.shape().getSerializedName() + " - " + template.author();
-            UIScaleManager.drawScaledString(graphics, font, info, getX() + 4, itemY + 14,
+            UIScaleManager.drawScaledString(graphics, font, info, getX() + listPadding, itemY + itemSubTextYOffset,
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
 
             // Delete button [X] on hover (only if delete callback is set)
             if (isHovered && onTemplateDeleted != null) {
-                int btnX = getX() + getWidth() - DELETE_BTN_SIZE - 8;
-                int btnY = itemY + (ITEM_HEIGHT - DELETE_BTN_SIZE) / 2;
-                boolean btnHovered = mouseX >= btnX && mouseX < btnX + DELETE_BTN_SIZE
-                                  && mouseY >= btnY && mouseY < btnY + DELETE_BTN_SIZE;
+                int btnX = getX() + getWidth() - deleteBtnSize - deleteInset;
+                int btnY = itemY + (itemHeight - deleteBtnSize) / 2;
+                boolean btnHovered = mouseX >= btnX && mouseX < btnX + deleteBtnSize
+                                  && mouseY >= btnY && mouseY < btnY + deleteBtnSize;
 
                 // Button background
-                graphics.fill(btnX, btnY, btnX + DELETE_BTN_SIZE, btnY + DELETE_BTN_SIZE,
+                graphics.fill(btnX, btnY, btnX + deleteBtnSize, btnY + deleteBtnSize,
                     btnHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : DesignTokens.AreaBuilder.DANGER_BG);
 
                 // X symbol
                 int xColor = btnHovered ? DesignTokens.AreaBuilder.DANGER_ICON_HOVER
                     : DesignTokens.AreaBuilder.DANGER_ICON;
-                UIScaleManager.drawScaledCenteredString(graphics, font, "×", btnX + DELETE_BTN_SIZE / 2, btnY + 4, xColor);
+                UIScaleManager.drawScaledCenteredString(graphics, font, "×", btnX + deleteBtnSize / 2, btnY + s(4), xColor);
             }
         }
 
         // Scrollbar if needed
         if (filteredTemplates.size() > visibleItems) {
-            int scrollbarX = getX() + getWidth() - 6;
+            int scrollbarX = getX() + getWidth() - scrollbarInset;
             int scrollbarHeight = listHeight;
-            int thumbHeight = Math.max(20, scrollbarHeight * visibleItems / filteredTemplates.size());
+            int thumbHeight = Math.max(scrollbarMinThumb, scrollbarHeight * visibleItems / filteredTemplates.size());
             int maxScroll = filteredTemplates.size() - visibleItems;
             int thumbY = listY + (scrollbarHeight - thumbHeight) * scrollOffset / maxScroll;
 
             // Track
-            graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + scrollbarHeight,
+            graphics.fill(scrollbarX, listY, scrollbarX + scrollbarWidth, listY + scrollbarHeight,
                 AreaBuilderGuiConstants.COLOR_SCROLLBAR_TRACK);
             // Thumb
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight,
+            graphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth, thumbY + thumbHeight,
                 AreaBuilderGuiConstants.COLOR_SCROLLBAR_THUMB);
         }
     }
 
     private void updateLayout(int fontHeight) {
-        int searchY = getY() + fontHeight + HEADER_GAP;
-        listY = searchY + AreaBuilderGuiConstants.FIELD_HEIGHT + HEADER_GAP;
+        int itemHeight = s(ITEM_HEIGHT);
+        int headerGap = s(HEADER_GAP);
+        int fieldHeight = AreaBuilderGuiConstants.scaledFieldHeight();
+        int searchY = getY() + fontHeight + headerGap;
+        listY = searchY + fieldHeight + headerGap;
         int availableHeight = getHeight() - (listY - getY());
-        visibleItems = Math.max(1, Math.min(MAX_VISIBLE_ITEMS, availableHeight / ITEM_HEIGHT));
-        listHeight = visibleItems * ITEM_HEIGHT;
-        searchBox.setX(getX() + 2);
+        visibleItems = Math.max(1, Math.min(MAX_VISIBLE_ITEMS, availableHeight / itemHeight));
+        listHeight = visibleItems * itemHeight;
+        searchBox.setX(getX() + s(2));
         searchBox.setY(searchY);
-        searchBox.setWidth(Math.max(40, getWidth() - 4));
+        searchBox.setWidth(Math.max(s(40), getWidth() - s(4)));
+        searchBox.setHeight(fieldHeight);
         int maxScroll = Math.max(0, filteredTemplates.size() - Math.max(1, visibleItems));
         if (scrollOffset > maxScroll) {
             scrollOffset = maxScroll;
@@ -262,18 +276,19 @@ public class TemplateSelectorWidget extends AbstractWidget {
     public void onClick(double mouseX, double mouseY, int button) {
         // Check if clicking in list area
         if (mouseY >= listY && mouseY < listY + listHeight) {
-            int clickedIndex = (int) ((mouseY - listY) / ITEM_HEIGHT) + scrollOffset;
+            int clickedIndex = (int) ((mouseY - listY) / s(ITEM_HEIGHT)) + scrollOffset;
             if (clickedIndex >= 0 && clickedIndex < filteredTemplates.size()) {
                 TemplateSummary template = filteredTemplates.get(clickedIndex);
-                int itemY = listY + (clickedIndex - scrollOffset) * ITEM_HEIGHT;
+                int itemY = listY + (clickedIndex - scrollOffset) * s(ITEM_HEIGHT);
 
                 // Check if clicking on delete button
                 Consumer<UUID> deleteCallback = onTemplateDeleted;
                 if (deleteCallback != null) {
-                    int btnX = getX() + getWidth() - DELETE_BTN_SIZE - 8;
-                    int btnY = itemY + (ITEM_HEIGHT - DELETE_BTN_SIZE) / 2;
-                    if (mouseX >= btnX && mouseX < btnX + DELETE_BTN_SIZE
-                        && mouseY >= btnY && mouseY < btnY + DELETE_BTN_SIZE) {
+                    int deleteBtnSize = s(DELETE_BTN_SIZE);
+                    int btnX = getX() + getWidth() - deleteBtnSize - s(8);
+                    int btnY = itemY + (s(ITEM_HEIGHT) - deleteBtnSize) / 2;
+                    if (mouseX >= btnX && mouseX < btnX + deleteBtnSize
+                        && mouseY >= btnY && mouseY < btnY + deleteBtnSize) {
                         // Delete button clicked
                         deleteCallback.accept(template.id());
                         return;
@@ -337,5 +352,9 @@ public class TemplateSelectorWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.template.select")));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

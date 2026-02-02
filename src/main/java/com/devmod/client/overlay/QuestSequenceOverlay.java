@@ -263,7 +263,7 @@ public class QuestSequenceOverlay {
         int boxWidth = UIScaleManager.scale(240);
         int baseHeight = UIScaleManager.scale(
             currentPhase == QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS ? 90 : 70);
-        int lineStep = UIScaleManager.scale(10);
+        int lineStep = UIScaleManager.getScaledLineHeight(font, 10);
         int extraLines = 0;
         if (currentPhase == QuestSequencePayload.Phase.BRIEFING) {
             extraLines += infoLines.size();
@@ -274,7 +274,7 @@ public class QuestSequenceOverlay {
         if (title != null && !title.isBlank() && currentPhase == QuestSequencePayload.Phase.BRIEFING) {
             extraLines += 1;
         }
-        int boxHeight = baseHeight + Math.min(extraLines * lineStep, UIScaleManager.scale(60));
+        int boxHeight = baseHeight + (extraLines * lineStep);
         int boxX = (screenWidth - boxWidth) / 2;
         int boxY = UIScaleManager.scale(40);
         int safeLeft = UIScaleManager.getSafeLeft();
@@ -342,20 +342,21 @@ public class QuestSequenceOverlay {
                                 int boxX, int boxY, int boxWidth, int alpha) {
         var safeFont = Objects.requireNonNull(font, "font");
         int textColor = DesignTokens.withAlpha(DesignTokens.Text.SECONDARY, alpha);
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
         int lineY = boxY + UIScaleManager.scale(24);
 
         if (title != null && !title.isBlank()) {
             String safeTitle = Objects.requireNonNull(title, "title");
             safeTitle = truncateToWidth(safeFont, safeTitle, boxWidth - UIScaleManager.scale(20));
             UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeTitle, boxX + boxWidth / 2, lineY, textColor);
-            lineY += UIScaleManager.scale(10);
+            lineY += lineHeight;
         }
 
         if (subtitle != null && !subtitle.isBlank()) {
             String safeSubtitle = Objects.requireNonNull(subtitle, "subtitle");
             safeSubtitle = truncateToWidth(safeFont, safeSubtitle, boxWidth - UIScaleManager.scale(20));
             UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeSubtitle, boxX + boxWidth / 2, lineY, textColor);
-            lineY += UIScaleManager.scale(10);
+            lineY += lineHeight;
         }
 
         if (infoLines != null) {
@@ -366,7 +367,7 @@ public class QuestSequenceOverlay {
                 }
                 safeLine = truncateToWidth(safeFont, safeLine, boxWidth - UIScaleManager.scale(20));
                 UIScaleManager.drawScaledCenteredString(graphics, safeFont, safeLine, boxX + boxWidth / 2, lineY, textColor);
-                lineY += UIScaleManager.scale(10);
+                lineY += lineHeight;
             }
         }
     }

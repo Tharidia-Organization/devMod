@@ -36,106 +36,31 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_RADIAL_OPEN
     );
 
-    // Curated radial menu: keep only high-signal overlays + core screens.
+    // Curated radial menu: only hub/screen entry points.
     private static final Set<String> CURATED_ACTIONS = Set.of(
-        // Core screens
         ActionIds.UI_SETTINGS_OPEN,
-        ActionIds.UI_RADIAL_SETTINGS_OPEN,
-        ActionIds.UI_KEYBINDS_OPEN,
-        ActionIds.UI_TESTING_HUB_OPEN,
-        ActionIds.UI_VOXELLAB_OPEN,
         ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+        ActionIds.UI_TESTING_HUB_OPEN,
+        ActionIds.UI_QA_TESTING_OPEN,
         ActionIds.UI_EDITOR_HUB_OPEN,
-        ActionIds.UI_PARTY_OPEN,
-        ActionIds.UI_ENDURANCE_SCREEN_OPEN,
-        ActionIds.UI_NOTIFICATION_SETTINGS_OPEN,
-        ActionIds.UI_ENDURANCE_SETTINGS_OPEN,
-
-        // Overlays / HUD toggles
-        ActionIds.HUD_QUICK_HELP_TOGGLE,
-        ActionIds.HUD_IMPACT_TOGGLE,
-        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
-        ActionIds.HUD_IMPACT_3D_TOGGLE,
-        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
-        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
-        ActionIds.HUD_IMPACT_PRESET_DETAILED,
-        ActionIds.HUD_IMPACT_PRESET_TRAINING,
-        ActionIds.HUD_IMPACT_SHOW_RECAP,
-        ActionIds.HUD_QUEST_TOGGLE,
-        ActionIds.HUD_ENDURANCE_TOGGLE,
-        ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE,
-        ActionIds.HUD_PARTY_TOGGLE,
-        ActionIds.ARENA_HUD_TOGGLE,
-
-        // Debug overlays
-        ActionIds.DEBUG_OVERLAY_TOGGLE,
-        ActionIds.DEBUG_BODY_PARTS_TOGGLE,
-        ActionIds.DEBUG_OVERLAYS_ENABLE_ALL,
-        ActionIds.DEBUG_OVERLAYS_DISABLE_ALL,
-        ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE,
-        ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE,
-        ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE,
-        ActionIds.DEBUG_NATIVE_POI_TOGGLE,
-        ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE,
-        ActionIds.DEBUG_NATIVE_BEES_TOGGLE,
-        ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE,
-        ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE,
-        ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
-        ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
-        ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE,
-        ActionIds.DEBUG_PATHFINDING_TOGGLE,
-        ActionIds.DEBUG_LOS_TOGGLE,
-        ActionIds.DEBUG_AGGRO_RANGE_TOGGLE,
-        ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
-        ActionIds.DEBUG_SAFE_SPOTS_TOGGLE,
-        ActionIds.DEBUG_SPAWNABILITY_TOGGLE,
-        ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE,
-        ActionIds.DEBUG_FPS_TRACKER_TOGGLE,
-        ActionIds.DEBUG_PROFILER_TOGGLE,
-        ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE,
-        ActionIds.DEBUG_CHUNK_PERF_TOGGLE,
-
-        // Combat/analytics overlays
-        ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
-        ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,
-        ActionIds.DEBUG_ECONOMY_TOGGLE,
-        ActionIds.DEBUG_ECONOMY_VIEW_CYCLE,
-        ActionIds.DEBUG_ECONOMY_SORT_CYCLE,
-
-        // Heatmaps
-        ActionIds.DEBUG_HEATMAP_CYCLE,
-        ActionIds.DEBUG_HEATMAP_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE,
-        ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
-        ActionIds.DEBUG_HEATMAP_CLEAR_ALL
+        ActionIds.UI_NOTIFICATION_CENTER_OPEN,
+        ActionIds.UI_PLAY_HUB_OPEN,
+        ActionIds.UI_ARENA_HUB_OPEN,
+        ActionIds.UI_NEXUS_HUB_OPEN,
+        ActionIds.UI_VOXELLAB_OPEN
     );
 
     private static final Map<String, String> ACTION_MENU_OVERRIDES = Map.ofEntries(
-        Map.entry(ActionIds.UI_VOXELLAB_OPEN, "Root/Tools/Labs/Voxel Lab"),
-        Map.entry(ActionIds.UI_TESTING_HUB_OPEN, "Root/Tools/Labs/Testing Hub"),
-        Map.entry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, "Root/Telemetry/Dashboard"),
-        Map.entry(ActionIds.UI_EDITOR_HUB_OPEN, "Root/Tools/Editors/Editor Hub"),
-        Map.entry(ActionIds.HUD_QUICK_HELP_TOGGLE, "Root/HUD/Help/Quick Help"),
-        Map.entry(ActionIds.HUD_IMPACT_TOGGLE, "Root/HUD/Impact HUD/Toggle"),
-        Map.entry(ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE, "Root/HUD/Impact HUD/Controller"),
-        Map.entry(ActionIds.HUD_IMPACT_3D_TOGGLE, "Root/HUD/Impact HUD/3D Panels"),
-        Map.entry(ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE, "Root/HUD/Impact HUD/Display Mode"),
-        Map.entry(ActionIds.HUD_IMPACT_PRESET_MINIMAL, "Root/HUD/Impact HUD/Presets/Minimal"),
-        Map.entry(ActionIds.HUD_IMPACT_PRESET_DETAILED, "Root/HUD/Impact HUD/Presets/Detailed"),
-        Map.entry(ActionIds.HUD_IMPACT_PRESET_TRAINING, "Root/HUD/Impact HUD/Presets/Training"),
-        Map.entry(ActionIds.HUD_IMPACT_SHOW_RECAP, "Root/HUD/Impact HUD/Show Recap"),
-        Map.entry(ActionIds.HUD_QUEST_TOGGLE, "Root/HUD/Endurance HUD/Quest"),
-        Map.entry(ActionIds.HUD_ENDURANCE_TOGGLE, "Root/HUD/Endurance HUD/Endurance"),
-        Map.entry(ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE, "Root/HUD/Endurance HUD/Details"),
-        Map.entry(ActionIds.HUD_PARTY_TOGGLE, "Root/HUD/Party HUD/Party"),
-        Map.entry(ActionIds.ARENA_HUD_TOGGLE, "Root/HUD/Arena HUD/Toggle")
+        Map.entry(ActionIds.UI_SETTINGS_OPEN, "Root/Settings"),
+        Map.entry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, "Root/Telemetry"),
+        Map.entry(ActionIds.UI_TESTING_HUB_OPEN, "Root/Testing"),
+        Map.entry(ActionIds.UI_QA_TESTING_OPEN, "Root/Testing/QA Suite"),
+        Map.entry(ActionIds.UI_EDITOR_HUB_OPEN, "Root/Editors"),
+        Map.entry(ActionIds.UI_NOTIFICATION_CENTER_OPEN, "Root/Comms"),
+        Map.entry(ActionIds.UI_PLAY_HUB_OPEN, "Root/Play"),
+        Map.entry(ActionIds.UI_ARENA_HUB_OPEN, "Root/Arena"),
+        Map.entry(ActionIds.UI_NEXUS_HUB_OPEN, "Root/Nexus"),
+        Map.entry(ActionIds.UI_VOXELLAB_OPEN, "Root/Labs/VoxelLab")
     );
 
     private static final Map<String, String> ACTION_VISIBILITY_SUPPLIERS = Map.ofEntries(
@@ -154,11 +79,11 @@ public final class RadialMenuActionLayout {
 
     private static final Map<MacroCategory, List<String>> CATEGORY_ORDER = Map.of(
         MacroCategory.ANALYZE, List.of("Debug", "Spatial", "Performance"),
-        MacroCategory.TELEMETRY, List.of("Dashboard"),
+        MacroCategory.TELEMETRY, List.of("Telemetry", "Dashboard"),
         MacroCategory.COMBAT, List.of("Diagnostics", "Heatmaps"),
-        MacroCategory.ARENA, List.of("Ops", "Templates", "Force", "Autosmoke", "HUD", "Bounds"),
-        MacroCategory.PLAY, List.of("HUD", "Endurance", "Party"),
-        MacroCategory.TOOLS, List.of("Editors", "Labs", "Settings")
+        MacroCategory.ARENA, List.of("Arena", "Ops", "Templates", "Force", "Autosmoke", "HUD", "Bounds"),
+        MacroCategory.PLAY, List.of("Play", "HUD", "Endurance", "Party"),
+        MacroCategory.TOOLS, List.of("Editors", "Settings", "Testing", "Comms", "Nexus", "Labs")
     );
 
     private RadialMenuActionLayout() {}
@@ -848,6 +773,7 @@ public final class RadialMenuActionLayout {
                 case "Settings" -> DesignTokens.Radial.TOOLS_SETTINGS;
                 case "Testing" -> DesignTokens.Radial.TOOLS_TESTING;
                 case "Commands" -> DesignTokens.Radial.TOOLS_COMMANDS;
+                case "Comms" -> DesignTokens.Radial.TOOLS_MAILBOX;
                 case "Admin" -> DesignTokens.Radial.TOOLS_MAILBOX;
                 case "Nexus" -> DesignTokens.Radial.TOOLS_PRIMARY;
                 default -> DesignTokens.Radial.TOOLS_PRIMARY;

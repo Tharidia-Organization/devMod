@@ -86,8 +86,12 @@ import com.devmod.client.ui.editor.ItemEditorScreen;
 import com.devmod.client.ui.editor.StaminaSystemEditor;
 import com.devmod.client.ui.hub.TestingHub;
 import com.devmod.client.ui.hub.TestingHubState;
+import com.devmod.client.ui.screens.ArenaHubScreen;
+import com.devmod.client.ui.screens.EditorHubScreen;
 import com.devmod.client.ui.screens.MobConfigScreen;
 import com.devmod.client.ui.screens.MobEquipmentScreen;
+import com.devmod.client.ui.screens.NexusHubScreen;
+import com.devmod.client.ui.screens.PlayHubScreen;
 import com.devmod.client.ui.testing.VoxelLabScreen;
 import com.devmod.client.ui.testing.VoxelLabUiTestScreen;
 import com.devmod.client.ui.unified.SettingsCategory;
@@ -359,6 +363,36 @@ public final class DevModClientActions {
             })
             .build());
 
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_PLAY_HUB_OPEN)
+            .labelKey("devmod.action.play_hub")
+            .descriptionKey("devmod.action.play_hub.desc")
+            .category(ActionCategory.PARTY)
+            .menuPath("Root/Play/Hub")
+            .icon(Items.PLAYER_HEAD)
+            .precondition(screenPrecondition())
+            .handler(DevModClientActions::openPlayHub)
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_ARENA_HUB_OPEN)
+            .labelKey("devmod.action.arena_hub")
+            .descriptionKey("devmod.action.arena_hub.desc")
+            .category(ActionCategory.ARENA)
+            .menuPath("Root/Arena/Hub")
+            .icon(Items.TARGET)
+            .precondition(screenPrecondition())
+            .handler(DevModClientActions::openArenaHub)
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_NEXUS_HUB_OPEN)
+            .labelKey("devmod.action.nexus_hub")
+            .descriptionKey("devmod.action.nexus_hub.desc")
+            .category(ActionCategory.TOOLS)
+            .menuPath("Root/Nexus/Hub")
+            .icon(Items.ENDER_EYE)
+            .precondition(screenPrecondition())
+            .handler(DevModClientActions::openNexusHub)
+            .build());
+
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_EDITOR_HUB_OPEN)
             .labelKey("devmod.radial.item.editor_hub")
             .descriptionKey("devmod.radial.item.editor_hub.desc")
@@ -366,7 +400,7 @@ public final class DevModClientActions {
             .menuPath("Root/Tools/Editors/Editor Hub")
             .icon(Items.BOOKSHELF)
             .precondition(screenPrecondition())
-            .handler(context -> openItemEditorTab(context, EditorStartTab.GENERAL))
+            .handler(DevModClientActions::openEditorHub)
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_MOB_CONFIG_OPEN)
@@ -2847,6 +2881,30 @@ public final class DevModClientActions {
                 context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena create", templateId));
             }
         });
+    }
+
+    private static void openEditorHub(ActionContext context) {
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "editor_hub",
+            () -> new EditorHubScreen(null));
+    }
+
+    private static void openPlayHub(ActionContext context) {
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "play_hub",
+            () -> new PlayHubScreen(null));
+    }
+
+    private static void openArenaHub(ActionContext context) {
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "arena_hub",
+            () -> new ArenaHubScreen(null));
+    }
+
+    private static void openNexusHub(ActionContext context) {
+        com.devmod.client.ui.ScreenSafety.openSafe(
+            "nexus_hub",
+            () -> new NexusHubScreen(null));
     }
 
     private static void openTestingHub(ActionContext context) {

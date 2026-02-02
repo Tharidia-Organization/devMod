@@ -674,9 +674,9 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         // Query entities in the region
         List<Entity> entities = level.getEntities((Entity) null, scanBox, Entity::isAlive);
 
-        // DEBUG: Log entity query results
+        // DEBUG: Log entity query results (use debug level to avoid performance impact)
         if (gameTime % 100 == 0) {
-            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+            org.slf4j.LoggerFactory.getLogger("Hologram").debug(
                 "[Entities] AABB query: {} raw entities in scan region, activeFilters={}",
                 entities.size(), activeEntityFilters
             );

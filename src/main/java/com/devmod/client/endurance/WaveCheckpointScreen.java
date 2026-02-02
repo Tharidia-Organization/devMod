@@ -181,7 +181,7 @@ public class WaveCheckpointScreen extends Screen {
         // === Header (animated) ===
         if (elapsed > HEADER_REVEAL_DELAY) {
             float headerAlpha = Math.min(1.0f, (elapsed - HEADER_REVEAL_DELAY) / 300.0f);
-            renderHeader(graphics, centerX, panelY, sPanelWidth, headerAlpha, elapsed);
+            renderHeader(graphics, centerX, panelY, headerAlpha, elapsed);
 
             // Play completion sound once
             var mc = minecraft;
@@ -194,18 +194,18 @@ public class WaveCheckpointScreen extends Screen {
 
         // === Statistics (staggered reveal with animated counters) ===
         if (elapsed > STATS_REVEAL_DELAY) {
-            renderAnimatedStats(graphics, panelX, panelY, centerX, sPanelWidth, elapsed);
+            renderAnimatedStats(graphics, panelX, panelY, centerX, elapsed);
         }
 
         // === Style Rank Reveal (dramatic) ===
         if (elapsed > RANK_REVEAL_DELAY) {
             float rankAlpha = Math.min(1.0f, (elapsed - RANK_REVEAL_DELAY) / 400.0f);
-            renderStyleRankReveal(graphics, centerX, panelY + UIScaleManager.scale(170), rankAlpha, elapsed);
+            renderStyleRankReveal(graphics, centerX, panelY + s(170), rankAlpha, elapsed);
 
             // Play rank reveal sound once
             var mc2 = minecraft;
             if (!rankSoundPlayed && mc2 != null) {
-                float pitch = 0.8f + (styleRank.ordinal() * 0.1f);
+                float pitch = getRankPitch(styleRank);
                 mc2.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(
                     Objects.requireNonNull(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE), pitch, 0.6f)));
                 rankSoundPlayed = true;
@@ -214,7 +214,7 @@ public class WaveCheckpointScreen extends Screen {
 
         // === Progress Bar (for non-endless) ===
         if (!endlessMode && elapsed > RANK_REVEAL_DELAY + 200) {
-            renderProgressBar(graphics, panelX, panelY + UIScaleManager.scale(195), sPanelWidth, elapsed);
+            renderProgressBar(graphics, panelX, panelY + s(195), sPanelWidth, elapsed);
         }
 
         // === Hint ===
@@ -223,7 +223,7 @@ public class WaveCheckpointScreen extends Screen {
             int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
             UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
                 "ESC/F11: Continue  |  F12: Exit",
-                centerX, panelY + sPanelHeight - UIScaleManager.scale(22), hintColor);
+                centerX, panelY + sPanelHeight - s(22), hintColor);
         }
 
         graphics.pose().popPose();
@@ -246,12 +246,12 @@ public class WaveCheckpointScreen extends Screen {
         int glowAlpha = (int) (DesignTokens.Alpha.A27 * pulse * alpha);
         int glowColor = (glowAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
 
-        g.fill(x - 4, y - 4, x + w + 4, y + h + 4, glowColor);
-        g.fill(x - 3, y - 3, x + w + 3, y + h + 3, glowColor);
+        g.fill(x - s(4), y - s(4), x + w + s(4), y + h + s(4), glowColor);
+        g.fill(x - s(3), y - s(3), x + w + s(3), y + h + s(3), glowColor);
 
         // Border
         int borderColor = applyAlpha(COLOR_BORDER, alpha);
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, borderColor);
+        g.fill(x - s(2), y - s(2), x + w + s(2), y + h + s(2), borderColor);
 
         // Gradient background (top to bottom)
         int topColor = applyAlpha(COLOR_BG_TOP, alpha);
@@ -266,17 +266,17 @@ public class WaveCheckpointScreen extends Screen {
 
         // Inner border highlight (top)
         int highlightColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
-        g.fill(x, y, x + w, y + 1, highlightColor);
+        g.fill(x, y, x + w, y + s(1), highlightColor);
     }
 
-    private void renderHeader(GuiGraphics g, int centerX, int panelY, int sPanelWidth, float alpha, long elapsed) {
+    private void renderHeader(GuiGraphics g, int centerX, int panelY, float alpha, long elapsed) {
         // Checkmark icon (animated scale)
         float checkScale = 1.0f + 0.1f * (float) Math.sin(elapsed / 200.0);
         String checkMark = "\u2713";
         int checkColor = applyAlpha(COLOR_SUCCESS, alpha);
 
         g.pose().pushPose();
-        g.pose().translate(centerX - UIScaleManager.scale(70), panelY + UIScaleManager.scale(18), 0);
+        g.pose().translate(centerX - s(70), panelY + s(18), 0);
         g.pose().scale(checkScale * 1.5f, checkScale * 1.5f, 1.0f);
         UIScaleManager.drawScaledString(g, Objects.requireNonNull(font), checkMark, 0, 0, checkColor, true);
         g.pose().popPose();
@@ -291,20 +291,25 @@ public class WaveCheckpointScreen extends Screen {
             : 0;
 
         UIScaleManager.drawScaledCenteredString(g, Objects.requireNonNull(font), headerText,
-            centerX + UIScaleManager.scale(10), (int)(panelY + UIScaleManager.scale(18) + bounce), headerColor);
+            centerX + s(10), (int)(panelY + s(18) + bounce), headerColor);
 
         // Separator with glow
         int sepColor = applyAlpha(DesignTokens.withAlpha(COLOR_BORDER, DesignTokens.Alpha.A53), alpha);
-        int sepHalfWidth = UIScaleManager.scale(150);
-        g.fill(centerX - sepHalfWidth, panelY + UIScaleManager.scale(38), centerX + sepHalfWidth, panelY + UIScaleManager.scale(39), sepColor);
+        int sepHalfWidth = s(150);
+        g.fill(centerX - sepHalfWidth, panelY + s(38), centerX + sepHalfWidth, panelY + s(39), sepColor);
     }
 
-    private void renderAnimatedStats(GuiGraphics g, int panelX, int panelY, int centerX, int sPanelWidth, long elapsed) {
+    private void renderAnimatedStats(GuiGraphics g, int panelX, int panelY, int centerX, long elapsed) {
         long statsElapsed = elapsed - STATS_REVEAL_DELAY;
-        int statsY = panelY + UIScaleManager.scale(55);
-        int leftCol = panelX + UIScaleManager.scale(35);
-        int rightCol = centerX + UIScaleManager.scale(25);
-        int lineHeight = UIScaleManager.scale(26);
+        var safeFont = Objects.requireNonNull(font);
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int valueGap = s(2);
+        int boxHeight = lineHeight * 2 + valueGap;
+        int rowGap = s(6);
+        int rowStep = boxHeight + rowGap;
+        int statsY = panelY + s(52);
+        int leftCol = panelX + s(28);
+        int rightCol = centerX + s(18);
 
         // Define stats with their reveal order
         StatEntry[] stats = {
@@ -325,7 +330,8 @@ public class WaveCheckpointScreen extends Screen {
             if (statsElapsed > statDelay) {
                 float statAlpha = Math.min(1.0f, (statsElapsed - statDelay) / 200.0f);
                 String displayValue = stat.animate ? animateNumber(stat.value, statsElapsed - statDelay) : stat.value;
-                renderStatBox(g, stat.label, displayValue, leftCol, statsY + stat.row * lineHeight, stat.valueColor, statAlpha);
+                renderStatBox(g, stat.label, displayValue, leftCol, statsY + stat.row * rowStep,
+                    stat.valueColor, statAlpha, lineHeight, boxHeight, valueGap);
             }
         }
 
@@ -335,15 +341,16 @@ public class WaveCheckpointScreen extends Screen {
             if (statsElapsed > statDelay) {
                 float statAlpha = Math.min(1.0f, (statsElapsed - statDelay) / 200.0f);
                 String displayValue = stat.animate ? animateNumber(stat.value, statsElapsed - statDelay) : stat.value;
-                renderStatBox(g, stat.label, displayValue, rightCol, statsY + stat.row * lineHeight, stat.valueColor, statAlpha);
+                renderStatBox(g, stat.label, displayValue, rightCol, statsY + stat.row * rowStep,
+                    stat.valueColor, statAlpha, lineHeight, boxHeight, valueGap);
             }
         }
     }
 
-    private void renderStatBox(GuiGraphics g, String label, String value, int x, int y, int valueColor, float alpha) {
+    private void renderStatBox(GuiGraphics g, String label, String value, int x, int y,
+                               int valueColor, float alpha, int lineHeight, int boxHeight, int valueGap) {
         // Background box
-        int boxWidth = UIScaleManager.scale(140);
-        int boxHeight = UIScaleManager.scale(22);
+        int boxWidth = s(140);
         int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
         g.fill(x, y, x + boxWidth, y + boxHeight, bgColor);
 
@@ -355,12 +362,12 @@ public class WaveCheckpointScreen extends Screen {
         var safeFont = Objects.requireNonNull(font);
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
         UIScaleManager.drawScaledString(g, safeFont, label,
-            x + UIScaleManager.scale(5), y + UIScaleManager.scale(3), labelColor, false);
+            x + s(5), y + s(3), labelColor, false);
 
         // Value (larger, bold with shadow)
         int valColor = applyAlpha(valueColor, alpha);
         UIScaleManager.drawScaledString(g, safeFont, value,
-            x + UIScaleManager.scale(5), y + UIScaleManager.scale(12), valColor, true);
+            x + s(5), y + s(3) + lineHeight + valueGap, valColor, true);
     }
 
     private void renderStyleRankReveal(GuiGraphics g, int centerX, int y, float alpha, long elapsed) {
@@ -369,47 +376,47 @@ public class WaveCheckpointScreen extends Screen {
 
         // Pulsing glow behind rank
         float pulse = 0.6f + 0.4f * (float) Math.sin(rankElapsed / 150.0);
-        int glowRadius = (int) (30 * pulse);
+        int glowRadius = (int) (s(30) * pulse);
         int glowColor = applyAlpha(DesignTokens.withAlpha(styleRank.getColor(), DesignTokens.Alpha.A27), alpha * pulse);
 
-        g.fill(centerX - glowRadius, y - 10, centerX + glowRadius, y + 20, glowColor);
+        g.fill(centerX - glowRadius, y - s(10), centerX + glowRadius, y + s(20), glowColor);
 
         // Scale animation for rank
         float rankScale = alpha < 1.0f ? 0.5f + alpha * 0.5f : 1.0f + 0.05f * (float) Math.sin(rankElapsed / 100.0);
 
         g.pose().pushPose();
-        g.pose().translate(centerX, y + 5, 0);
+        g.pose().translate(centerX, y + s(5), 0);
         g.pose().scale(rankScale * 1.8f, rankScale * 1.8f, 1.0f);
 
         var safeFont = Objects.requireNonNull(font);
         String rankText = Objects.requireNonNull(styleRank.getDisplayName());
-        int rankWidth = safeFont.width(rankText);
+        int rankWidth = UIScaleManager.getScaledStringWidth(safeFont, rankText);
         int rankColor = applyAlpha(styleRank.getColor(), alpha);
-        UIScaleManager.drawScaledString(g, safeFont, rankText, -rankWidth / 2, -5, rankColor, true);
+        UIScaleManager.drawScaledString(g, safeFont, rankText, -rankWidth / 2, -s(5), rankColor, true);
 
         g.pose().popPose();
 
         // "Style Rank" label above
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        UIScaleManager.drawScaledCenteredString(g, safeFont, "STYLE RANK", centerX, y - 15, labelColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, "STYLE RANK", centerX, y - s(15), labelColor);
     }
 
     private void renderProgressBar(GuiGraphics g, int panelX, int y, int panelWidth, long elapsed) {
         float alpha = Math.min(1.0f, (elapsed - RANK_REVEAL_DELAY - 200) / 300.0f);
 
-        int barWidth = panelWidth - 60;
-        int barX = panelX + 30;
-        int barHeight = 8;
+        int barWidth = panelWidth - s(60);
+        int barX = panelX + s(30);
+        int barHeight = s(8);
 
         // Label
         var safeFont = Objects.requireNonNull(font);
         String progressText = "Quest Progress: " + waveNumber + "/" + totalWaves;
         int labelColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        UIScaleManager.drawScaledCenteredString(g, safeFont, progressText, panelX + panelWidth / 2, y - 2, labelColor);
+        UIScaleManager.drawScaledCenteredString(g, safeFont, progressText, panelX + panelWidth / 2, y - s(2), labelColor);
 
         // Bar background
         int bgColor = applyAlpha(DesignTokens.Surface.LEVEL_0, alpha);
-        g.fill(barX, y + 10, barX + barWidth, y + 10 + barHeight, bgColor);
+        g.fill(barX, y + s(10), barX + barWidth, y + s(10) + barHeight, bgColor);
 
         // Animated fill (guard against division by zero)
         float targetProgress = totalWaves > 0 ? (float) waveNumber / totalWaves : 0f;
@@ -423,27 +430,27 @@ public class WaveCheckpointScreen extends Screen {
         for (int i = 0; i < fillWidth; i++) {
             float gradProgress = barWidth > 0 ? (float) i / barWidth : 0f;
             int lineColor = lerpColor(applyAlpha(COLOR_ACCENT, alpha), fillColor, gradProgress);
-            g.fill(barX + i, y + 10, barX + i + 1, y + 10 + barHeight, lineColor);
+            g.fill(barX + i, y + s(10), barX + i + 1, y + s(10) + barHeight, lineColor);
         }
 
         // Shine effect
         if (fillWidth > 10) {
             int shineX = barX + (int)((elapsed / 20) % fillWidth);
             int shineColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
-            g.fill(shineX, y + 10, shineX + 3, y + 10 + barHeight, shineColor);
+            g.fill(shineX, y + s(10), shineX + s(3), y + s(10) + barHeight, shineColor);
         }
 
         // Border
         int borderColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
-        g.fill(barX, y + 10, barX + barWidth, y + 11, borderColor);
-        g.fill(barX, y + 10 + barHeight - 1, barX + barWidth, y + 10 + barHeight, borderColor);
+        g.fill(barX, y + s(10), barX + barWidth, y + s(11), borderColor);
+        g.fill(barX, y + s(10) + barHeight - s(1), barX + barWidth, y + s(10) + barHeight, borderColor);
     }
 
     // === Particle System ===
 
     private void spawnParticle() {
-        int x = width / 2 + random.nextInt(200) - 100;
-        int y = height / 2 - PANEL_HEIGHT / 2 - 20;
+        int x = width / 2 + random.nextInt(s(200)) - s(100);
+        int y = height / 2 - s(PANEL_HEIGHT) / 2 - s(20);
         int color = random.nextBoolean() ? COLOR_GOLD : COLOR_ACCENT;
         particles.add(new Particle(x, y, color));
     }
@@ -462,15 +469,15 @@ public class WaveCheckpointScreen extends Screen {
         int panelX = centerX - sPanelWidth / 2;
         int panelY = centerY - sPanelHeight / 2;
 
-        int buttonWidth = (sPanelWidth - UIScaleManager.scale(60)) / 2;
-        int buttonHeight = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
-        int buttonY = panelY + sPanelHeight - UIScaleManager.scale(55);
+        int buttonWidth = (sPanelWidth - s(60)) / 2;
+        int buttonHeight = s(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int buttonY = panelY + sPanelHeight - s(55);
 
         if (continueButton != null) {
-            continueButton.render(graphics, panelX + UIScaleManager.scale(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+            continueButton.render(graphics, panelX + s(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
         }
         if (exitButton != null) {
-            exitButton.render(graphics, panelX + sPanelWidth - buttonWidth - UIScaleManager.scale(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
+            exitButton.render(graphics, panelX + sPanelWidth - buttonWidth - s(25), buttonY, buttonWidth, buttonHeight, mouseX, mouseY);
         }
     }
 
@@ -531,6 +538,22 @@ public class WaveCheckpointScreen extends Screen {
 
     private static float easeOutQuad(float t) {
         return 1 - (1 - t) * (1 - t);
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
+    private static float getRankPitch(ComboSystem.StyleRank rank) {
+        return switch (rank) {
+            case D -> 0.8f;
+            case C -> 0.9f;
+            case B -> 1.0f;
+            case A -> 1.1f;
+            case S -> 1.2f;
+            case SS -> 1.3f;
+            case SSS -> 1.4f;
+        };
     }
 
     // === Actions ===

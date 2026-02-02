@@ -68,6 +68,10 @@ public class NotificationSettingsScreen extends Screen {
         this.parent = parent;
     }
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -101,8 +105,8 @@ public class NotificationSettingsScreen extends Screen {
         UIScaleManager.update();
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        int panelWidth = Math.min(PANEL_MAX_WIDTH, width - 32);
-        int panelHeight = Math.min(PANEL_MAX_HEIGHT, height - 32);
+        int panelWidth = Math.min(s(PANEL_MAX_WIDTH), width - s(32));
+        int panelHeight = Math.min(s(PANEL_MAX_HEIGHT), height - s(32));
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 
@@ -110,7 +114,7 @@ public class NotificationSettingsScreen extends Screen {
 
         int shadowAlpha = Math.min(DesignTokens.Alpha.A50, (int) (panelAlpha * 0.6f));
         int shadowColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BLACK, shadowAlpha);
-        graphics.fill(panelX - 8, panelY - 6, panelX + panelWidth + 8, panelY + panelHeight + 8, shadowColor);
+        graphics.fill(panelX - s(8), panelY - s(6), panelX + panelWidth + s(8), panelY + panelHeight + s(8), shadowColor);
 
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY);
     }
@@ -142,15 +146,15 @@ public class NotificationSettingsScreen extends Screen {
 
         renderHeader(graphics, panelX, panelY, panelWidth, mouseX, mouseY);
 
-        int contentX = panelX + PANEL_PADDING;
-        int contentY = panelY + HEADER_HEIGHT;
-        int contentW = panelWidth - PANEL_PADDING * 2;
-        int contentH = panelHeight - HEADER_HEIGHT - PANEL_PADDING;
+        int contentX = panelX + s(PANEL_PADDING);
+        int contentY = panelY + s(HEADER_HEIGHT);
+        int contentW = panelWidth - s(PANEL_PADDING) * 2;
+        int contentH = panelHeight - s(HEADER_HEIGHT) - s(PANEL_PADDING);
 
-        int leftW = Math.min(280, (int) (contentW * 0.34f));
-        int rightW = contentW - leftW - COLUMN_GAP;
+        int leftW = Math.min(s(280), (int) (contentW * 0.34f));
+        int rightW = contentW - leftW - s(COLUMN_GAP);
         int leftX = contentX;
-        int rightX = leftX + leftW + COLUMN_GAP;
+        int rightX = leftX + leftW + s(COLUMN_GAP);
 
         renderGlobalPanel(graphics, leftX, contentY, leftW, contentH, mouseX, mouseY);
         renderCategoryPanel(graphics, rightX, contentY, rightW, contentH, mouseX, mouseY);
@@ -160,27 +164,27 @@ public class NotificationSettingsScreen extends Screen {
                                int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(this.font);
         String title = Component.translatable("devmod.notification.settings.title").getString();
-        int titleX = panelX + PANEL_PADDING;
+        int titleX = panelX + s(PANEL_PADDING);
 
         graphics.pose().pushPose();
-        graphics.pose().translate(titleX, panelY + 16, 0);
+        graphics.pose().translate(titleX, panelY + s(16), 0);
         graphics.pose().scale(1.3f, 1.3f, 1.0f);
         UIScaleManager.drawScaledString(graphics, font, title, 0, 0,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
         graphics.pose().popPose();
 
         String subtitle = Component.translatable("devmod.notification.settings.subtitle").getString();
-        UIScaleManager.drawScaledString(graphics, font, subtitle, titleX, panelY + 38,
+        UIScaleManager.drawScaledString(graphics, font, subtitle, titleX, panelY + s(38),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
 
         String backLabel = Objects.requireNonNull(Component.translatable("gui.back").getString());
-        int backW = UIScaleManager.getScaledStringWidth(font, backLabel) + 14;
-        backRect = new Rect(panelX + panelWidth - PANEL_PADDING - backW, panelY + 18, backW, 20);
+        int backW = UIScaleManager.getScaledStringWidth(font, backLabel) + s(14);
+        backRect = new Rect(panelX + panelWidth - s(PANEL_PADDING) - backW, panelY + s(18), backW, s(20));
         renderActionButton(graphics, backRect, backLabel, mouseX, mouseY, false);
 
         String resetLabel = Objects.requireNonNull(Component.translatable("controls.reset").getString());
-        int resetW = UIScaleManager.getScaledStringWidth(font, resetLabel) + 14;
-        resetRect = new Rect(backRect.x() - resetW - 8, panelY + 18, resetW, 20);
+        int resetW = UIScaleManager.getScaledStringWidth(font, resetLabel) + s(14);
+        resetRect = new Rect(backRect.x() - resetW - s(8), panelY + s(18), resetW, s(20));
         renderActionButton(graphics, resetRect, resetLabel, mouseX, mouseY, true);
     }
 
@@ -200,7 +204,7 @@ public class NotificationSettingsScreen extends Screen {
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40));
 
         int textColor = accent ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_SECONDARY;
-        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 7, rect.y() + 6,
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(7), rect.y() + s(6),
                 NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
@@ -212,42 +216,42 @@ public class NotificationSettingsScreen extends Screen {
         graphics.fillGradient(x, y, x + width, y + height, top, bottom);
 
         int headerColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A40);
-        graphics.fill(x, y, x + width, y + 2, headerColor);
+        graphics.fill(x, y, x + width, y + s(2), headerColor);
 
-        int cursorY = y + 14;
+        int cursorY = y + s(14);
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.global")).getString(),
-                x + 12, cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
+                x + s(12), cursorY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
-        cursorY += 18;
+        cursorY += s(18);
 
         // Global mute
-        globalMuteRect = new Rect(x + width - TOGGLE_WIDTH - 12, cursorY + 2, TOGGLE_WIDTH, 16);
-        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.global_mute");
+        globalMuteRect = new Rect(x + width - s(TOGGLE_WIDTH) - s(12), cursorY + s(2), s(TOGGLE_WIDTH), s(16));
+        drawSettingLabel(graphics, x + s(12), cursorY, "devmod.notification.settings.global_mute");
         renderToggle(graphics, globalMuteRect, globalMute, mouseX, mouseY, NotificationUiTheme.RGB_ACCENT);
-        cursorY += ROW_HEIGHT;
+        cursorY += s(ROW_HEIGHT);
 
         // Master volume slider
-        masterSliderRect = new Rect(x + width - 130, cursorY + 4, 110, SLIDER_HEIGHT);
-        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.master_volume");
+        masterSliderRect = new Rect(x + width - s(130), cursorY + s(4), s(110), s(SLIDER_HEIGHT));
+        drawSettingLabel(graphics, x + s(12), cursorY, "devmod.notification.settings.master_volume");
         renderSlider(graphics, masterSliderRect, masterVolume, mouseX, mouseY,
                 NotificationUiTheme.RGB_ACCENT_ALT);
-        cursorY += ROW_HEIGHT;
+        cursorY += s(ROW_HEIGHT);
 
         // Minimum priority
-        minPriorityRect = new Rect(x + width - 130, cursorY + 2, 110, 18);
-        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.min_priority");
+        minPriorityRect = new Rect(x + width - s(130), cursorY + s(2), s(110), s(18));
+        drawSettingLabel(graphics, x + s(12), cursorY, "devmod.notification.settings.min_priority");
         renderPrioritySelector(graphics, minPriorityRect, minPriority, mouseX, mouseY);
-        cursorY += ROW_HEIGHT;
+        cursorY += s(ROW_HEIGHT);
 
         // Prefer chat
-        preferChatRect = new Rect(x + width - TOGGLE_WIDTH - 12, cursorY + 2, TOGGLE_WIDTH, 16);
-        drawSettingLabel(graphics, x + 12, cursorY, "devmod.notification.settings.prefer_chat");
+        preferChatRect = new Rect(x + width - s(TOGGLE_WIDTH) - s(12), cursorY + s(2), s(TOGGLE_WIDTH), s(16));
+        drawSettingLabel(graphics, x + s(12), cursorY, "devmod.notification.settings.prefer_chat");
         renderToggle(graphics, preferChatRect, preferChat, mouseX, mouseY, NotificationUiTheme.RGB_ACCENT);
     }
 
     private void drawSettingLabel(GuiGraphics graphics, int x, int y, String key) {
         Font font = Objects.requireNonNull(this.font);
-        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))).getString(), x, y + 6,
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable(Objects.requireNonNull(key))).getString(), x, y + s(6),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
     }
 
@@ -258,17 +262,17 @@ public class NotificationSettingsScreen extends Screen {
         int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM, 208);
         graphics.fillGradient(x, y, x + width, y + height, top, bottom);
 
-        graphics.fill(x, y, x + width, y + 2,
+        graphics.fill(x, y, x + width, y + s(2),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_ALT, DesignTokens.Alpha.A40));
 
-        int headerY = y + 12;
+        int headerY = y + s(12);
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.categories")).getString(),
-                x + 10, headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
+                x + s(10), headerY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100), true);
 
-        int labelY = headerY + 16;
-        int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
-        int soundX = overlayX + TOGGLE_WIDTH + 10;
-        int volumeX = soundX + TOGGLE_WIDTH + 10;
+        int labelY = headerY + s(16);
+        int overlayX = x + width - s(TOGGLE_WIDTH) * 2 - s(80);
+        int soundX = overlayX + s(TOGGLE_WIDTH) + s(10);
+        int volumeX = soundX + s(TOGGLE_WIDTH) + s(10);
 
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.overlay")).getString(),
                 overlayX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
@@ -277,22 +281,22 @@ public class NotificationSettingsScreen extends Screen {
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(Component.translatable("devmod.notification.settings.volume")).getString(),
                 volumeX, labelY, NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
 
-        int listTop = labelY + 12;
-        int listHeight = height - (listTop - y) - 12;
-        listRect = new Rect(x + 8, listTop, width - 16, listHeight);
+        int listTop = labelY + s(12);
+        int listHeight = height - (listTop - y) - s(12);
+        listRect = new Rect(x + s(8), listTop, width - s(16), listHeight);
 
-        int contentHeight = categoryRows.size() * (CATEGORY_ROW_HEIGHT + 6);
+        int contentHeight = categoryRows.size() * (s(CATEGORY_ROW_HEIGHT) + s(6));
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
 
         int rowY = listTop - scrollOffset;
         for (CategoryRow row : categoryRows) {
-            if (rowY + CATEGORY_ROW_HEIGHT < listTop || rowY > listTop + listHeight) {
-                rowY += CATEGORY_ROW_HEIGHT + 6;
+            if (rowY + s(CATEGORY_ROW_HEIGHT) < listTop || rowY > listTop + listHeight) {
+                rowY += s(CATEGORY_ROW_HEIGHT) + s(6);
                 continue;
             }
             row.render(graphics, listRect.x(), rowY, listRect.w(), mouseX, mouseY);
-            rowY += CATEGORY_ROW_HEIGHT + 6;
+            rowY += s(CATEGORY_ROW_HEIGHT) + s(6);
         }
     }
 
@@ -306,27 +310,27 @@ public class NotificationSettingsScreen extends Screen {
         int trackBottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A80);
 
         graphics.fillGradient(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + rect.h(), trackTop, trackBottom);
-        int knob = enabled ? rect.x() + rect.w() - rect.h() + 2 : rect.x() + 2;
-        graphics.fill(knob, rect.y() + 2, knob + rect.h() - 4, rect.y() + rect.h() - 2,
+        int knob = enabled ? rect.x() + rect.w() - rect.h() + s(2) : rect.x() + s(2);
+        graphics.fill(knob, rect.y() + s(2), knob + rect.h() - s(4), rect.y() + rect.h() - s(2),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
     }
 
     private void renderSlider(GuiGraphics graphics, Rect rect, float value,
                                int mouseX, int mouseY, int accent) {
         int trackColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_SURFACE_BOTTOM, DesignTokens.Alpha.A67);
-        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + rect.w(), rect.y() + rect.h() / 2 + 1, trackColor);
+        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - s(1), rect.x() + rect.w(), rect.y() + rect.h() / 2 + s(1), trackColor);
 
         int filled = (int) (rect.w() * value);
-        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - 1, rect.x() + filled, rect.y() + rect.h() / 2 + 1,
+        graphics.fill(rect.x(), rect.y() + rect.h() / 2 - s(1), rect.x() + filled, rect.y() + rect.h() / 2 + s(1),
                 NotificationUiTheme.withAlpha(accent, DesignTokens.Alpha.A80));
 
-        int handleX = rect.x() + Math.max(0, Math.min(rect.w() - 6, filled - 3));
-        graphics.fill(handleX, rect.y(), handleX + 6, rect.y() + rect.h(),
+        int handleX = rect.x() + Math.max(0, Math.min(rect.w() - s(6), filled - s(3)));
+        graphics.fill(handleX, rect.y(), handleX + s(6), rect.y() + rect.h(),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
 
         if (rect.contains(mouseX, mouseY)) {
             String label = Math.round(value * 100) + "%";
-            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + rect.w() + 6, rect.y() - 2,
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + rect.w() + s(6), rect.y() - s(2),
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A100));
         }
     }
@@ -343,7 +347,7 @@ public class NotificationSettingsScreen extends Screen {
 
         String label = priority.name().toLowerCase(Locale.ROOT);
         int textColor = NotificationUiTheme.getPriorityColor(priority);
-        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + 6, rect.y() + 5,
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, rect.x() + s(6), rect.y() + s(5),
                 NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
@@ -399,7 +403,7 @@ public class NotificationSettingsScreen extends Screen {
                 if (row.handleClick(mouseX, mouseY, listRect.x(), rowY, listRect.w())) {
                     return true;
                 }
-                rowY += CATEGORY_ROW_HEIGHT + 6;
+                rowY += s(CATEGORY_ROW_HEIGHT) + s(6);
             }
         }
 
@@ -448,7 +452,7 @@ public class NotificationSettingsScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (listRect.contains(mouseX, mouseY) && maxScroll > 0) {
-            scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - scrollY * 20));
+            scrollOffset = (int) Math.max(0, Math.min(maxScroll, scrollOffset - scrollY * s(20)));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -508,42 +512,42 @@ public class NotificationSettingsScreen extends Screen {
 
         void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
             Font font = Objects.requireNonNull(NotificationSettingsScreen.this.font);
-            boolean hovered = isMouseOver(mouseX, mouseY, x, y, width, CATEGORY_ROW_HEIGHT);
+            boolean hovered = isMouseOver(mouseX, mouseY, x, y, width, s(CATEGORY_ROW_HEIGHT));
 
             int baseTop = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_TOP : NotificationUiTheme.RGB_SURFACE_TOP;
             int baseBottom = hovered ? NotificationUiTheme.RGB_SURFACE_HOVER_BOTTOM : NotificationUiTheme.RGB_SURFACE_BOTTOM;
-            graphics.fillGradient(x, y, x + width, y + CATEGORY_ROW_HEIGHT,
+            graphics.fillGradient(x, y, x + width, y + s(CATEGORY_ROW_HEIGHT),
                     NotificationUiTheme.withAlpha(baseTop, 216),
                     NotificationUiTheme.withAlpha(baseBottom, 216));
 
             int accent = NotificationUiTheme.getCategoryColor(category);
-            graphics.fill(x, y + 6, x + 4, y + CATEGORY_ROW_HEIGHT - 6,
+            graphics.fill(x, y + s(6), x + s(4), y + s(CATEGORY_ROW_HEIGHT) - s(6),
                     NotificationUiTheme.withAlpha(accent, DesignTokens.Alpha.A80));
 
-            int labelX = x + 10;
+            int labelX = x + s(10);
             String label = Objects.requireNonNull(Component.translatable(Objects.requireNonNull(category.getTranslationKey())).getString());
-            int labelMax = width - 200;
+            int labelMax = width - s(200);
             if (UIScaleManager.getScaledStringWidth(font, label) > labelMax) {
-                label = Objects.requireNonNull(font.plainSubstrByWidth(label, labelMax - 6)) + "...";
+                label = Objects.requireNonNull(font.plainSubstrByWidth(label, labelMax - s(6))) + "...";
             }
-            UIScaleManager.drawScaledString(graphics, font, label, labelX, y + 10,
+            UIScaleManager.drawScaledString(graphics, font, label, labelX, y + s(10),
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
 
-            int overlayX = x + width - TOGGLE_WIDTH * 2 - 80;
-            overlayRect = new Rect(overlayX, y + 7, TOGGLE_WIDTH, 16);
+            int overlayX = x + width - s(TOGGLE_WIDTH) * 2 - s(80);
+            overlayRect = new Rect(overlayX, y + s(7), s(TOGGLE_WIDTH), s(16));
             renderToggle(graphics, overlayRect, overlayEnabled, mouseX, mouseY, accent);
 
-            int soundX = overlayX + TOGGLE_WIDTH + 10;
-            soundRect = new Rect(soundX, y + 7, TOGGLE_WIDTH, 16);
+            int soundX = overlayX + s(TOGGLE_WIDTH) + s(10);
+            soundRect = new Rect(soundX, y + s(7), s(TOGGLE_WIDTH), s(16));
             renderToggle(graphics, soundRect, soundEnabled, mouseX, mouseY, accent);
 
-            int volumeX = soundX + TOGGLE_WIDTH + 10;
-            volumeRect = new Rect(volumeX, y + 10, 70, SLIDER_HEIGHT);
+            int volumeX = soundX + s(TOGGLE_WIDTH) + s(10);
+            volumeRect = new Rect(volumeX, y + s(10), s(70), s(SLIDER_HEIGHT));
             renderSlider(graphics, volumeRect, volume, mouseX, mouseY, accent);
         }
 
         boolean handleClick(double mouseX, double mouseY, int x, int y, int width) {
-            if (!isMouseOver(mouseX, mouseY, x, y, width, CATEGORY_ROW_HEIGHT)) {
+            if (!isMouseOver(mouseX, mouseY, x, y, width, s(CATEGORY_ROW_HEIGHT))) {
                 return false;
             }
 

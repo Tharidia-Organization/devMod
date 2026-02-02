@@ -157,7 +157,7 @@ public class OnboardingOverlay {
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
 
         // Calculate panel size
         int panelHeight = calculatePanelHeight(sPanelPadding, sLineHeight);

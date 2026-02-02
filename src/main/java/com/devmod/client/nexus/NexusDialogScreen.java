@@ -72,11 +72,12 @@ public class NexusDialogScreen extends Screen {
         optionButtons.clear();
 
         // Calculate dialog position
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int dialogHeight = s(DIALOG_HEIGHT);
+        int dialogY = (height - dialogHeight) / 2;
 
         // Create option buttons (initially hidden until text is revealed)
-        int buttonY = dialogY + DIALOG_HEIGHT + 10;
-        int buttonX = (width - BUTTON_WIDTH) / 2;
+        int buttonY = dialogY + dialogHeight + s(10);
+        int buttonX = (width - s(BUTTON_WIDTH)) / 2;
 
         for (int i = 0; i < options.size(); i++) {
             DialogOptionData opt = options.get(i);
@@ -88,7 +89,7 @@ public class NexusDialogScreen extends Screen {
                 .onClick(() -> selectOption(opt))
                 .build();
             EditorButtonWidget widget = new EditorButtonWidget(button,
-                buttonX, buttonY + i * (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT);
+                buttonX, buttonY + i * (s(BUTTON_HEIGHT) + s(BUTTON_SPACING)), s(BUTTON_WIDTH), s(BUTTON_HEIGHT));
             widget.visible = textFullyRevealed;
             optionButtons.add(widget);
             addRenderableWidget(widget);
@@ -127,29 +128,31 @@ public class NexusDialogScreen extends Screen {
         // Semi-transparent background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        int dialogWidth = s(DIALOG_WIDTH);
+        int dialogHeight = s(DIALOG_HEIGHT);
+        int dialogX = (width - dialogWidth) / 2;
+        int dialogY = (height - dialogHeight) / 2;
 
         // Draw dialog panel with glow
         renderDialogPanel(graphics, dialogX, dialogY);
 
         // Draw speaker name
         var safeFont = Objects.requireNonNull(font, "font");
-        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + PADDING, dialogY + PADDING - 4, COLOR_SPEAKER);
+        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + s(PADDING), dialogY + s(PADDING) - s(4), COLOR_SPEAKER);
 
         // Draw divider line under speaker name
-        graphics.fill(dialogX + PADDING, dialogY + PADDING + 10,
-            dialogX + DIALOG_WIDTH - PADDING, dialogY + PADDING + 11, COLOR_BORDER);
+        graphics.fill(dialogX + s(PADDING), dialogY + s(PADDING) + s(10),
+            dialogX + dialogWidth - s(PADDING), dialogY + s(PADDING) + s(11), COLOR_BORDER);
 
         // Draw dialog text with typewriter effect
-        renderDialogText(graphics, dialogX + PADDING, dialogY + PADDING + 20);
+        renderDialogText(graphics, dialogX + s(PADDING), dialogY + s(PADDING) + s(20));
 
         // Draw hint if text not fully revealed
         if (!textFullyRevealed) {
             String hint = "[Click to skip]";
             int hintWidth = UIScaleManager.getScaledStringWidth(safeFont, hint);
-            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + DIALOG_WIDTH - PADDING - hintWidth,
-                dialogY + DIALOG_HEIGHT - PADDING, COLOR_TEXT_DIM);
+            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + dialogWidth - s(PADDING) - hintWidth,
+                dialogY + dialogHeight - s(PADDING), COLOR_TEXT_DIM);
         }
 
         // Render buttons
@@ -158,28 +161,30 @@ public class NexusDialogScreen extends Screen {
 
     private void renderDialogPanel(GuiGraphics graphics, int x, int y) {
         // Outer glow
-        graphics.fill(x - 2, y - 2, x + DIALOG_WIDTH + 2, y + DIALOG_HEIGHT + 2, COLOR_BORDER_GLOW);
+        int dialogWidth = s(DIALOG_WIDTH);
+        int dialogHeight = s(DIALOG_HEIGHT);
+        graphics.fill(x - s(2), y - s(2), x + dialogWidth + s(2), y + dialogHeight + s(2), COLOR_BORDER_GLOW);
 
         // Panel background
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, COLOR_PANEL_BG);
+        graphics.fill(x, y, x + dialogWidth, y + dialogHeight, COLOR_PANEL_BG);
 
         // Border
         // Top
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + 1, COLOR_BORDER);
+        graphics.fill(x, y, x + dialogWidth, y + s(1), COLOR_BORDER);
         // Bottom
-        graphics.fill(x, y + DIALOG_HEIGHT - 1, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, COLOR_BORDER);
+        graphics.fill(x, y + dialogHeight - s(1), x + dialogWidth, y + dialogHeight, COLOR_BORDER);
         // Left
-        graphics.fill(x, y, x + 1, y + DIALOG_HEIGHT, COLOR_BORDER);
+        graphics.fill(x, y, x + s(1), y + dialogHeight, COLOR_BORDER);
         // Right
-        graphics.fill(x + DIALOG_WIDTH - 1, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, COLOR_BORDER);
+        graphics.fill(x + dialogWidth - s(1), y, x + dialogWidth, y + dialogHeight, COLOR_BORDER);
     }
 
     private void renderDialogText(GuiGraphics graphics, int x, int y) {
         var safeFont = Objects.requireNonNull(font, "font");
         int charsDrawn = 0;
         int currentY = y;
-        int lineHeight = safeFont.lineHeight + 2;
-        int maxWidth = DIALOG_WIDTH - PADDING * 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight() + s(2);
+        int maxWidth = s(DIALOG_WIDTH) - s(PADDING) * 2;
 
         for (String line : lines) {
             if (line.isEmpty()) {
@@ -235,7 +240,7 @@ public class NexusDialogScreen extends Screen {
 
     private int getTotalCharCount() {
         int total = 0;
-        int maxWidth = DIALOG_WIDTH - PADDING * 2;
+        int maxWidth = s(DIALOG_WIDTH) - s(PADDING) * 2;
         for (String line : lines) {
             if (line.isEmpty()) continue;
             List<String> wrapped = wrapLine(line, maxWidth);
@@ -302,5 +307,9 @@ public class NexusDialogScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;  // Don't pause the game
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

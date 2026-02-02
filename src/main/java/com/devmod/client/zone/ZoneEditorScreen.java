@@ -79,6 +79,10 @@ public class ZoneEditorScreen extends BaseDevModScreen {
         "Sandbox (Cyan)", "Mechanics (Gray)", "Overview (Gold)", "Special (Dark Gray)"
     };
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     // ========================================================================
     // State
     // ========================================================================
@@ -285,13 +289,13 @@ public class ZoneEditorScreen extends BaseDevModScreen {
     }
 
     private void initGeneralTab(int x, int y, int width) {
-        int fieldWidth = width - 100;
-        int lineSpacing = 24;
-        int spawnLabelY = y + 100;
-        int portalLabelY = spawnLabelY + 50;
+        int fieldWidth = width - s(100);
+        int lineSpacing = s(24);
+        int spawnLabelY = y + s(100);
+        int portalLabelY = spawnLabelY + s(50);
 
         // Zone ID field
-        EditBox zoneIdBox = new EditBox(safeFont(), x + 100, y, fieldWidth, FIELD_HEIGHT,
+        EditBox zoneIdBox = new EditBox(safeFont(), x + s(100), y, fieldWidth, s(FIELD_HEIGHT),
             Objects.requireNonNull(Component.translatable("zone.editor.field.zone_id")));
         zoneIdBox.setMaxLength(ZoneNaming.MAX_ID_LENGTH);
         zoneIdBox.setValue(Objects.requireNonNull(zoneId));
@@ -304,7 +308,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
         this.addRenderableWidget(zoneIdBox);
 
         // Display name field
-        EditBox displayNameBox = new EditBox(safeFont(), x + 100, y + 30, fieldWidth, FIELD_HEIGHT,
+        EditBox displayNameBox = new EditBox(safeFont(), x + s(100), y + s(30), fieldWidth, s(FIELD_HEIGHT),
             Objects.requireNonNull(Component.translatable("zone.editor.field.display_name")));
         displayNameBox.setMaxLength(ZoneNaming.MAX_NAME_LENGTH);
         displayNameBox.setValue(Objects.requireNonNull(displayName));
@@ -316,7 +320,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
         this.addRenderableWidget(displayNameBox);
 
         // Hint message field
-        EditBox hintMessageBox = new EditBox(safeFont(), x + 100, y + 60, fieldWidth, FIELD_HEIGHT,
+        EditBox hintMessageBox = new EditBox(safeFont(), x + s(100), y + s(60), fieldWidth, s(FIELD_HEIGHT),
             Objects.requireNonNull(Component.translatable("zone.editor.field.hint")));
         hintMessageBox.setMaxLength(ZoneNaming.MAX_HINT_LENGTH);
         hintMessageBox.setValue(Objects.requireNonNull(hintMessage));
@@ -335,7 +339,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::useCurrentPosition)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(usePosition, x + 100, spawnY, fieldWidth, FIELD_HEIGHT));
+        this.addRenderableWidget(new EditorButtonWidget(usePosition, x + s(100), spawnY, fieldWidth, s(FIELD_HEIGHT)));
 
         EditorButton clearSpawn = EditorButton.builder("zone-editor-clear-spawn",
                 Component.translatable("zone.editor.clear_spawn").getString())
@@ -343,7 +347,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::clearSpawnOffset)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(clearSpawn, x + 100, spawnY + lineSpacing, fieldWidth, FIELD_HEIGHT));
+        this.addRenderableWidget(new EditorButtonWidget(clearSpawn, x + s(100), spawnY + lineSpacing, fieldWidth, s(FIELD_HEIGHT)));
 
         // Portal offset buttons
         EditorButton setPortal = EditorButton.builder("zone-editor-use-portal",
@@ -353,7 +357,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             .enabled(hasTeleport)
             .onClick(this::useCurrentPortalPosition)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(setPortal, x + 100, portalLabelY, fieldWidth, FIELD_HEIGHT));
+        this.addRenderableWidget(new EditorButtonWidget(setPortal, x + s(100), portalLabelY, fieldWidth, s(FIELD_HEIGHT)));
 
         EditorButton clearPortal = EditorButton.builder("zone-editor-clear-portal",
                 Component.translatable("zone.editor.clear_portal").getString())
@@ -362,7 +366,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             .enabled(hasTeleport)
             .onClick(this::clearPortalOffset)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(clearPortal, x + 100, portalLabelY + lineSpacing, fieldWidth, FIELD_HEIGHT));
+        this.addRenderableWidget(new EditorButtonWidget(clearPortal, x + s(100), portalLabelY + lineSpacing, fieldWidth, s(FIELD_HEIGHT)));
     }
 
     private void initBoundsTab(int x, int y, int width, int height) {
@@ -375,15 +379,15 @@ public class ZoneEditorScreen extends BaseDevModScreen {
     private void initStyleTab(int x, int y, int width) {
         // Color selection buttons (grid)
         int buttonsPerRow = 4;
-        int buttonWidth = (width - PADDING * (buttonsPerRow - 1)) / buttonsPerRow;
-        int buttonHeight = 24;
+        int buttonWidth = (width - s(PADDING) * (buttonsPerRow - 1)) / buttonsPerRow;
+        int buttonHeight = s(24);
 
         for (int i = 0; i < ZONE_COLORS.length; i++) {
             final int colorIndex = i;
             int row = i / buttonsPerRow;
             int col = i % buttonsPerRow;
-            int btnX = x + col * (buttonWidth + PADDING);
-            int btnY = y + row * (buttonHeight + 4);
+            int btnX = x + col * (buttonWidth + s(PADDING));
+            int btnY = y + row * (buttonHeight + s(4));
 
             EditorButton colorButton = EditorButton.builder("zone-color-" + colorIndex, ZONE_COLOR_NAMES[i])
                 .style(EditorButton.Style.NORMAL)
@@ -412,7 +416,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
 
         removeOptionsButtons();
 
-        int buttonWidth = optionsTabWidth / 2 - 10;
+        int buttonWidth = optionsTabWidth / 2 - s(10);
 
         // Allow building toggle
         EditorButton allowBuildingButton = EditorButton.builder("zone-allow-building",
@@ -425,7 +429,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             })
             .build();
         this.allowBuildingButton = new EditorButtonWidget(allowBuildingButton, optionsTabX, optionsTabY,
-            buttonWidth, FIELD_HEIGHT);
+            buttonWidth, s(FIELD_HEIGHT));
         this.addRenderableWidget(this.allowBuildingButton);
 
         // Is special toggle
@@ -438,8 +442,8 @@ public class ZoneEditorScreen extends BaseDevModScreen {
                 buildOptionsButtons();
             })
             .build();
-        this.specialZoneButton = new EditorButtonWidget(specialButton, optionsTabX + buttonWidth + 20, optionsTabY,
-            buttonWidth, FIELD_HEIGHT);
+        this.specialZoneButton = new EditorButtonWidget(specialButton, optionsTabX + buttonWidth + s(20), optionsTabY,
+            buttonWidth, s(FIELD_HEIGHT));
         this.addRenderableWidget(this.specialZoneButton);
 
         // Has teleport toggle
@@ -455,8 +459,8 @@ public class ZoneEditorScreen extends BaseDevModScreen {
                 buildOptionsButtons();
             })
             .build();
-        this.teleportableButton = new EditorButtonWidget(teleportableButton, optionsTabX, optionsTabY + 30,
-            buttonWidth, FIELD_HEIGHT);
+        this.teleportableButton = new EditorButtonWidget(teleportableButton, optionsTabX, optionsTabY + s(30),
+            buttonWidth, s(FIELD_HEIGHT));
         this.addRenderableWidget(this.teleportableButton);
 
         // Priority field
@@ -469,7 +473,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             })
             .build();
         this.priorityUpButton = new EditorButtonWidget(priorityUp,
-            optionsTabX + buttonWidth + 20, optionsTabY + 30, buttonWidth / 2, FIELD_HEIGHT);
+            optionsTabX + buttonWidth + s(20), optionsTabY + s(30), buttonWidth / 2, s(FIELD_HEIGHT));
         this.addRenderableWidget(this.priorityUpButton);
 
         EditorButton priorityDown = EditorButton.builder("zone-priority-down", "[-]")
@@ -481,7 +485,7 @@ public class ZoneEditorScreen extends BaseDevModScreen {
             })
             .build();
         this.priorityDownButton = new EditorButtonWidget(priorityDown,
-            optionsTabX + buttonWidth + 20 + buttonWidth / 2 + 5, optionsTabY + 30, buttonWidth / 2 - 5, FIELD_HEIGHT);
+            optionsTabX + buttonWidth + s(20) + buttonWidth / 2 + s(5), optionsTabY + s(30), buttonWidth / 2 - s(5), s(FIELD_HEIGHT));
         this.addRenderableWidget(this.priorityDownButton);
     }
 
@@ -598,46 +602,46 @@ public class ZoneEditorScreen extends BaseDevModScreen {
     }
 
     private void renderGeneralLabels(GuiGraphics graphics, int x, int y) {
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone ID:", x, y + 5, COLOR_TEXT_MUTED, false);
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Display:", x, y + 35, COLOR_TEXT_MUTED, false);
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Hint:", x, y + 65, COLOR_TEXT_MUTED, false);
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Spawn Offset:", x, y + 105, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone ID:", x, y + s(5), COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Display:", x, y + s(35), COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Hint:", x, y + s(65), COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Spawn Offset:", x, y + s(105), COLOR_TEXT_MUTED, false);
 
         // Show current spawn offset
         BlockPos spawn = spawnOffset;
         String spawnText = spawn != null
             ? String.format("(%d, %d, %d)", spawn.getX(), spawn.getY(), spawn.getZ())
             : "(not set)";
-        UIScaleManager.drawScaledString(graphics, safeFont(), spawnText, x, y + 125, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), spawnText, x, y + s(125), COLOR_TEXT_MUTED, false);
 
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Portal Offset:", x, y + 155, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Portal Offset:", x, y + s(155), COLOR_TEXT_MUTED, false);
         BlockPos portal = portalOffset;
         String portalText = portal != null
             ? String.format("(%d, %d, %d)", portal.getX(), portal.getY(), portal.getZ())
             : "(not set)";
-        UIScaleManager.drawScaledString(graphics, safeFont(), portalText, x, y + 175, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), portalText, x, y + s(175), COLOR_TEXT_MUTED, false);
     }
 
     private void renderBoundsLabels(GuiGraphics graphics, int x, int y) {
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Configure zone boundaries:", x, y - 10, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Configure zone boundaries:", x, y - s(10), COLOR_TEXT_PRIMARY, false);
 
         // Instructions
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Use the fields below to set min/max coordinates.", x, y + 150, COLOR_TEXT_MUTED, false);
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Tip: use markers to note corner positions.", x, y + 165, COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Use the fields below to set min/max coordinates.", x, y + s(150), COLOR_TEXT_MUTED, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Tip: use markers to note corner positions.", x, y + s(165), COLOR_TEXT_MUTED, false);
     }
 
     private void renderStyleLabels(GuiGraphics graphics, int x, int y) {
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Select zone color:", x, y - 15, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Select zone color:", x, y - s(15), COLOR_TEXT_PRIMARY, false);
 
         // Show selected color preview
-        int previewY = y + 100;
+        int previewY = y + s(100);
         UIScaleManager.drawScaledString(graphics, safeFont(), "Selected:", x, previewY, COLOR_TEXT_MUTED, false);
-        graphics.fill(x + 60, previewY - 2, x + 90, previewY + 12, 0xFF000000 | ZONE_COLORS[selectedColorIndex]);
-        UIScaleManager.drawScaledString(graphics, safeFont(), ZONE_COLOR_NAMES[selectedColorIndex], x + 100, previewY, COLOR_TEXT_PRIMARY, false);
+        graphics.fill(x + s(60), previewY - s(2), x + s(90), previewY + s(12), 0xFF000000 | ZONE_COLORS[selectedColorIndex]);
+        UIScaleManager.drawScaledString(graphics, safeFont(), ZONE_COLOR_NAMES[selectedColorIndex], x + s(100), previewY, COLOR_TEXT_PRIMARY, false);
     }
 
     private void renderOptionsLabels(GuiGraphics graphics, int x, int y) {
-        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone behavior options:", x, y - 15, COLOR_TEXT_PRIMARY, false);
+        UIScaleManager.drawScaledString(graphics, safeFont(), "Zone behavior options:", x, y - s(15), COLOR_TEXT_PRIMARY, false);
     }
 
     // ========================================================================

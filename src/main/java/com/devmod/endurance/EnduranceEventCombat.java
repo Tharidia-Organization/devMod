@@ -52,7 +52,25 @@ public class EnduranceEventCombat {
         // Check if damage was dealt by a player
         if (source.getEntity() instanceof ServerPlayer player) {
             // Check if target is a quest mob
-            if (isQuestMob(target)) {
+            boolean questMob = isQuestMob(target);
+            // Diagnostic logging for combat debugging
+            if (!questMob && target instanceof Mob) {
+                var session = EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
+                if (session != null) {
+                    var data = target.getPersistentData();
+                    boolean hasQuestId = data.contains(EnduranceTags.QUEST_ID);
+                    boolean hasArenaId = data.contains(EnduranceTags.ARENA_ID);
+                    LOGGER.info("[CombatDebug] Player {} hit non-quest mob {} (hasQuestId={}, hasArenaId={}, mobType={}, damage={}, playerInInstance={})",
+                        player.getName().getString(),
+                        target.getType().toString(),
+                        hasQuestId,
+                        hasArenaId,
+                        target.getClass().getSimpleName(),
+                        damage,
+                        session.isInInstanceDimension());
+                }
+            }
+            if (questMob) {
                 UUID playerId = player.getUUID();
                 EnduranceQuestManager.ActiveQuestSession session =
                     EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);

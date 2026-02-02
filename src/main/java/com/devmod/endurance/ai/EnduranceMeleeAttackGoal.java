@@ -47,6 +47,14 @@ public final class EnduranceMeleeAttackGoal extends Goal {
 
         LivingEntity target = this.mob.getTarget();
         if (target == null || !target.isAlive()) {
+            // Log every 100 ticks (5 seconds) if no target
+            if (gameTime % 100 == 0) {
+                org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
+                    "[AIDebug] canUse=false: mob={}, target={}, targetAlive={}",
+                    this.mob.getUUID().toString().substring(0, 8),
+                    target != null ? target.getName().getString() : "null",
+                    target != null && target.isAlive());
+            }
             return false;
         }
 
@@ -55,6 +63,16 @@ public final class EnduranceMeleeAttackGoal extends Goal {
             this.path = pathfinderMob.getNavigation().createPath(target, 0);
             if (this.path != null) {
                 return true;
+            }
+            // Log path creation failure
+            if (gameTime % 100 == 0) {
+                org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
+                    "[AIDebug] canUse path=null: mob={}, target={}, mobPos={}, targetPos={}, dist={}",
+                    this.mob.getUUID().toString().substring(0, 8),
+                    target.getName().getString(),
+                    this.mob.blockPosition(),
+                    target.blockPosition(),
+                    Math.sqrt(this.mob.distanceToSqr(target)));
             }
         }
 
@@ -79,6 +97,12 @@ public final class EnduranceMeleeAttackGoal extends Goal {
 
     @Override
     public void start() {
+        org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
+            "[AIDebug] Goal START: mob={}, target={}, path={}, pos={}",
+            this.mob.getUUID().toString().substring(0, 8),
+            this.mob.getTarget() != null ? this.mob.getTarget().getName().getString() : "null",
+            this.path != null ? "valid" : "null",
+            this.mob.blockPosition());
         if (this.mob instanceof PathfinderMob pathfinderMob) {
             pathfinderMob.getNavigation().moveTo(this.path, this.speedModifier);
         }
@@ -112,6 +136,21 @@ public final class EnduranceMeleeAttackGoal extends Goal {
         this.mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
 
         double distanceSqr = this.mob.distanceToSqr(target);
+
+        // Debug tick - log periodically
+        long gameTime = this.mob.level().getGameTime();
+        if (gameTime % 40 == 0) { // Every 2 seconds
+            double attackReach = this.getAttackReachSqr(target);
+            org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
+                "[AIDebug] tick: mob={}, mobPos={}, targetPos={}, distSq={}, reachSq={}, inRange={}, cooldown={}",
+                this.mob.getUUID().toString().substring(0, 8),
+                this.mob.blockPosition(),
+                target.blockPosition(),
+                String.format("%.1f", distanceSqr),
+                String.format("%.1f", attackReach),
+                distanceSqr <= attackReach,
+                this.ticksUntilNextAttack);
+        }
         this.ticksUntilNextPathRecalculation = Math.max(this.ticksUntilNextPathRecalculation - 1, 0);
 
         // Recalculate path periodically

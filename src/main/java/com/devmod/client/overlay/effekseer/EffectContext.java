@@ -300,13 +300,13 @@ public record EffectContext(
      * Effect types with priority and path.
      */
     public enum EffectType {
-        // Damage-based (weight)
-        GLANCING(1, "impact/glancing"),
-        LIGHT(5, "impact/light"),
-        MEDIUM(10, "impact/medium"),
-        HEAVY(20, "impact/heavy"),
-        CRUSHING(60, "impact/crushing"),
-        OBLITERATE(80, "impact/obliterate"),
+        // Damage-based (weight) - all use the generic hit effect with different scales
+        GLANCING(1, "impact/hit"),
+        LIGHT(5, "impact/hit"),
+        MEDIUM(10, "impact/hit"),
+        HEAVY(20, "impact/hit"),
+        CRUSHING(60, "impact/hit"),
+        OBLITERATE(80, "impact/hit"),
 
         // Context-based
         BACKSTAB(30, "impact/backstab"),
@@ -317,8 +317,8 @@ public record EffectContext(
         FINISHER(100, "impact/finisher"),
 
         // Secondary/modifier effects
-        COMBO_INDICATOR(0, "impact/combo_indicator"),
-        WEIGHT_FLASH(0, "impact/weight_flash"),
+        COMBO_INDICATOR(0, "impact/combo"),
+        WEIGHT_FLASH(0, "impact/hit"),
         BLOCK(0, "impact/block");
 
         private final int priority;

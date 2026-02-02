@@ -65,6 +65,18 @@ public class PartyScreen extends Screen {
     private static final int MAX_VISIBLE_MEMBERS = 6;
     private final float[] memberAnimations = new float[MAX_VISIBLE_MEMBERS];
 
+    // Hover animations (lerp-based smooth transitions)
+    private static final float HOVER_LERP_IN = 0.25f;   // Speed entering hover
+    private static final float HOVER_LERP_OUT = 0.15f;  // Speed exiting hover (slower = smoother)
+    private final float[] mobHoverAnimations = new float[MAX_VISIBLE_MOBS];
+    private final float[] tierHoverAnimations = new float[MobTier.values().length];
+    private final float[] memberHoverAnimations = new float[MAX_VISIBLE_MEMBERS];
+
+    // Scrollbar drag state
+    private boolean isDraggingMobScrollbar = false;
+    private int scrollbarDragStartY = 0;
+    private int scrollbarDragStartOffset = 0;
+
     // Party State
     private List<PartySyncPayload.PartyMemberInfo> members = new ArrayList<>();
     @Nullable
@@ -145,6 +157,7 @@ public class PartyScreen extends Screen {
     private int hoveredMemberIndex = -1;
     private int hoveredMobIndex = -1;
     private int hoveredQuestTab = -1;
+    private int hoveredTierIndex = -1;
 
     private int panelX, panelY;
     private int scaledPanelWidth, scaledPanelHeight;
@@ -152,6 +165,11 @@ public class PartyScreen extends Screen {
 
     // Renderer delegate
     @Nullable private PartyScreenRenderer renderer;
+
+    public static record PartyLayout(int membersX, int membersY, int membersW, int membersH,
+                               int mobX, int mobY, int mobW, int mobH,
+                               int previewX, int previewY, int previewW, int previewH,
+                               int contentTop, int contentBottom, int gap, int padding) {}
 
     public PartyScreen() {
         super(Objects.requireNonNull(Component.translatable("devmod.party.title")));
@@ -172,6 +190,110 @@ public class PartyScreen extends Screen {
         return Objects.requireNonNull(this.font, "Font not initialized");
     }
 
+    private int s(int value) {
+        float scale = Math.max(1f, UIScaleManager.getEffectiveScale());
+        return UIScaleManager.snap((int) (value * scale));
+    }
+
+    private int line() {
+        return getFont().lineHeight;
+    }
+
+    private int lineGap() {
+        return s(2);
+    }
+
+    private int panelHeaderHeight() {
+        return Math.max(s(22), line() + s(6));
+    }
+
+    private int memberRowHeight() {
+        return Math.max(s(32), line() * 2 + s(8));
+    }
+
+    private int mobRowHeight() {
+        return Math.max(s(24), line() * 2 + s(6));
+    }
+
+    private int inputHeight() {
+        return Math.max(s(20), line() + s(6));
+    }
+
+    private int filterButtonHeight() {
+        return Math.max(s(12), line() + s(2));
+    }
+
+    private int tierButtonHeight() {
+        return Math.max(s(14), line() + s(2));
+    }
+
+    private int inviteBlockHeight() {
+        return line() + lineGap() + inputHeight();
+    }
+
+    private int buttonRowHeight() {
+        return Math.max(s(24), line() + s(10));
+    }
+
+    private int buttonRowY() {
+        return panelY + scaledPanelHeight - s(18) - buttonRowHeight();
+    }
+
+    private int waveBarHeight() {
+        return Math.max(s(64), line() * 2 + s(26));
+    }
+
+    private int waveBarY() {
+        return buttonRowY() - s(12) - waveBarHeight();
+    }
+
+    private int memberFooterReserve() {
+        return line() + s(8);
+    }
+
+    private int memberListTop(PartyLayout layout) {
+        return layout.membersY + panelHeaderHeight() + s(6);
+    }
+
+    private int mobListTop(PartyLayout layout) {
+        // Compact layout: search + namespace filters on same row, tier buttons below
+        int searchY = layout.mobY + panelHeaderHeight() + s(6); // Match initMobSearchBox
+        int searchH = inputHeight();
+        // Tier buttons directly below search
+        int tierY = searchY + searchH + s(2);
+        return tierY + tierButtonHeight() + s(2);
+    }
+
+    private int mobFooterReserve() {
+        return line() + s(4);  // Compact: just enough for count label
+    }
+
+    private int headerLineCount() {
+        int lines = 1; // title
+        if (isInParty) {
+            lines += 1; // subtitle
+            if (partyState != PartyData.PartyState.IN_QUEST) {
+                String startReason = getStartBlockReason();
+                if (startReason != null && !startReason.isBlank()) {
+                    lines += 1;
+                }
+                lines += 1; // next action hint
+            }
+        }
+        return lines;
+    }
+
+    private int tabBarHeight() {
+        return Math.max(s(28), line() * 2 + s(8));
+    }
+
+    private int headerBlockHeight() {
+        int topPad = s(10);
+        int bottomPad = s(8);
+        int lines = headerLineCount();
+        return topPad + lines * line() + Math.max(0, lines - 1) * lineGap() + bottomPad;
+    }
+
     // ========== PUBLIC ACCESSORS FOR RENDERER ==========
 
     /** Returns font for renderer use. */
@@ -184,7 +306,8 @@ public class PartyScreen extends Screen {
     public int getPanelY() { return panelY; }
     public int getPanelWidth() { return scaledPanelWidth; }
     public int getPanelHeight() { return scaledPanelHeight; }
-    public int getKitRowY() { return panelY + scaledPanelHeight - UIScaleManager.scale(103); }
+    public int getKitRowY() { return waveBarY() - s(10) - line(); }
+    public int getWaveBarY() { return waveBarY(); }
     @Nullable public EditBox getInviteBox() { return inviteBox; }
     @Nullable public EditBox getMobSearchBox() { return mobSearchBox; }
 
@@ -233,12 +356,33 @@ public class PartyScreen extends Screen {
         return null;
     }
     public float[] getMemberAnimations() { return memberAnimations; }
+    public float[] getMobHoverAnimations() { return mobHoverAnimations; }
+    public float[] getTierHoverAnimations() { return tierHoverAnimations; }
+    public float[] getMemberHoverAnimations() { return memberHoverAnimations; }
+    public int getHoveredTierIndex() { return hoveredTierIndex; }
+    public void setHoveredTierIndex(int index) { this.hoveredTierIndex = index; }
+    public boolean isDraggingMobScrollbar() { return isDraggingMobScrollbar; }
     public int getMemberListScrollOffset() { return memberListScrollOffset; }
-    public int getMaxVisibleMembers() { return MAX_VISIBLE_MEMBERS; }
+    public int getMaxVisibleMembers() {
+        PartyLayout layout = getLayout();
+        int available = layout.membersH - (memberListTop(layout) - layout.membersY) - memberFooterReserve();
+        int rows = available > 0 ? (available / memberRowHeight()) : 1;
+        return Mth.clamp(rows, 1, MAX_VISIBLE_MEMBERS);
+    }
 
     public List<EnduranceQuestRegistry.MobQuestConfig> getFilteredMobs() { return filteredMobs; }
     public int getSelectedMobIndex() { return selectedMobIndex; }
     public int getMobListScrollOffset() { return mobListScrollOffset; }
+    public int getMaxVisibleMobs() {
+        PartyLayout layout = getLayout();
+        int listTop = mobListTop(layout);
+        int available = layout.mobH - (listTop - layout.mobY) - mobFooterReserve();
+        int rows = available > 0 ? (available / mobRowHeight()) : 1;
+        return Mth.clamp(rows, 1, MAX_VISIBLE_MOBS);
+    }
+    public int getMobListTop() {
+        return mobListTop(getLayout());
+    }
     public boolean isSelectedMobFilteredOut() {
         ResourceLocation mobId = selectedMobId;
         if (mobId == null) {
@@ -260,6 +404,42 @@ public class PartyScreen extends Screen {
     public void setMobRotationY(float value) { this.mobRotationY = value; }
 
     public int getPreviewWaveNumber() { return previewWaveNumber; }
+
+    PartyLayout getLayout() {
+        int padding = s(15);
+        int gap = s(10);
+        int contentTop = panelY + headerBlockHeight() + tabBarHeight() + s(6);
+        int contentBottom = getKitRowY() - s(12) - inviteBlockHeight();
+        int contentH = Math.max(0, contentBottom - contentTop);
+        int innerW = scaledPanelWidth - padding * 2;
+
+        int minMemberW = s(170);
+        int minPreviewW = s(170);
+        int minMidW = s(160);
+        int maxMemberW = s(260);
+        int maxPreviewW = s(260);
+
+        int memberW = clampInt((int) (innerW * 0.28f), minMemberW, maxMemberW);
+        int previewW = clampInt((int) (innerW * 0.30f), minPreviewW, maxPreviewW);
+        int midW = innerW - memberW - previewW - gap * 2;
+        if (midW < minMidW) {
+            int deficit = minMidW - midW;
+            int reduceMember = Math.min((deficit + 1) / 2, memberW - minMemberW);
+            memberW -= reduceMember;
+            int reducePreview = Math.min(deficit - reduceMember, previewW - minPreviewW);
+            previewW -= reducePreview;
+            midW = innerW - memberW - previewW - gap * 2;
+        }
+        midW = Math.max(0, midW);
+
+        int membersX = panelX + padding;
+        int mobX = membersX + memberW + gap;
+        int previewX = mobX + midW + gap;
+        return new PartyLayout(membersX, contentTop, memberW, contentH,
+            mobX, contentTop, midW, contentH,
+            previewX, contentTop, previewW, contentH,
+            contentTop, contentBottom, gap, padding);
+    }
 
     @Nullable
     public EnduranceQuestRegistry.MobQuestConfig getSelectedMobConfig() {
@@ -283,10 +463,12 @@ public class PartyScreen extends Screen {
         super.init();
         UIScaleManager.update();
 
-        scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
-        int actualWidth = Math.min(scaledPanelWidth, width - 40);
-        int actualHeight = Math.min(scaledPanelHeight, height - 40);
+        scaledPanelWidth = Math.max(PANEL_WIDTH, s(PANEL_WIDTH));
+        scaledPanelHeight = Math.max(PANEL_HEIGHT, s(PANEL_HEIGHT));
+        int actualWidth = Math.min(scaledPanelWidth, width - s(40));
+        int actualHeight = Math.min(scaledPanelHeight, height - s(40));
+        scaledPanelWidth = actualWidth;
+        scaledPanelHeight = actualHeight;
         panelX = (width - actualWidth) / 2;
         panelY = (height - actualHeight) / 2;
 
@@ -302,22 +484,21 @@ public class PartyScreen extends Screen {
         initMobSearchBox();
         initActionButtons();
         initKitButtons();
+        applyLayout(getLayout());
 
         updateButtonStates();
         updatePreviewEntity();
     }
 
     private void initInviteSection() {
-        // Use same coordinates as renderMembersPanel for invite section
-        // Members panel: panelLeft = panelX + 15, panelTop = panelY + 80, panelH = 200
-        int membersPanelLeft = panelX + 15;
-        int membersPanelTop = panelY + 80;
-        int membersPanelH = 200;
-        int inviteSectionY = membersPanelTop + membersPanelH + 8;  // = panelY + 288
-        // Input field aligned to standard input background size (140x20)
-        int inviteBoxX = membersPanelLeft + 5;
-        int inviteBoxY = inviteSectionY + 12;
-        var box = new EditBox(getFont(), inviteBoxX, inviteBoxY, 140, 20,
+        PartyLayout layout = getLayout();
+        int inviteSectionY = layout.membersY + layout.membersH + s(8);
+        int inviteBoxX = layout.membersX + s(5);
+        int inviteBoxY = inviteSectionY + line() + lineGap();
+        int inviteBoxH = inputHeight();
+        int inviteBtnW = s(50);
+        int inviteBoxW = Math.max(s(90), layout.membersW - inviteBtnW - s(12));
+        var box = new EditBox(getFont(), inviteBoxX, inviteBoxY, inviteBoxW, inviteBoxH,
                 Objects.requireNonNull(Component.literal("Player name...")));
         box.setHint(Objects.requireNonNull(Component.literal("Enter name...")));
         box.setMaxLength(16);
@@ -328,23 +509,23 @@ public class PartyScreen extends Screen {
         inviteBox = box;
 
         // Invite button - positioned right after the input background
-        int inviteButtonX = membersPanelLeft + 5 + 140 + 3;  // After input bg (140 wide) + gap
+        int inviteButtonX = inviteBoxX + inviteBoxW + s(3);
         inviteButton = EditorButton.builder("invite", "INVITE")
             .style(EditorButton.Style.PRIMARY)
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onInviteClicked)
             .build();
-        inviteButtonBounds = new ButtonArea(inviteButtonX, inviteSectionY + 12, 50, 20);
+        inviteButtonBounds = new ButtonArea(inviteButtonX, inviteBoxY, inviteBtnW, inviteBoxH);
     }
 
     private void initMobSearchBox() {
-        // Mob search box - inside mob selection panel after header
-        // Mob panel: panelLeft = panelX + 225, panelTop = panelY + 80
-        // Search field aligned to standard input background size (panelW - 10) x 20
-        int mobPanelLeft = panelX + 225;
-        int mobPanelTop = panelY + 80;
-        int mobSearchY = mobPanelTop + 28;
-        var searchBox = new EditBox(getFont(), mobPanelLeft + 5, mobSearchY, 150, 20,
+        PartyLayout layout = getLayout();
+        int mobSearchX = layout.mobX + s(5);
+        int mobSearchY = layout.mobY + panelHeaderHeight() + s(6);
+        // Leave space on right for namespace filter buttons (All, MC)
+        int mobSearchW = Math.max(s(60), layout.mobW - s(70));
+        int mobSearchH = inputHeight();
+        var searchBox = new EditBox(getFont(), mobSearchX, mobSearchY, mobSearchW, mobSearchH,
                 Objects.requireNonNull(Component.literal("Search...")));
         searchBox.setHint(Objects.requireNonNull(Component.literal("Search mobs...")));
         searchBox.setMaxLength(32);
@@ -358,8 +539,13 @@ public class PartyScreen extends Screen {
 
     private void initActionButtons() {
         // Bottom action buttons
-        int buttonY = panelY + scaledPanelHeight - UIScaleManager.scale(45);
+        int buttonY = buttonRowY();
         int centerX = panelX + scaledPanelWidth / 2;
+        int buttonH = buttonRowHeight();
+        int readyW = s(80);
+        int leaveW = s(70);
+        int startW = s(120);
+        int disbandW = s(70);
 
         readyButton = EditorButton.builder("ready", getReadyButtonText().getString())
             .style(EditorButton.Style.PRIMARY)
@@ -368,28 +554,28 @@ public class PartyScreen extends Screen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::onReadyClicked)
             .build();
-        readyButtonBounds = new ButtonArea(centerX - 180, buttonY, 80, 24);
+        readyButtonBounds = new ButtonArea(centerX - s(180), buttonY, readyW, buttonH);
 
         leaveButton = EditorButton.builder("leave", "LEAVE")
             .style(EditorButton.Style.GHOST)
             .size(EditorButton.Size.LARGE)
             .onClick(this::onLeaveClicked)
             .build();
-        leaveButtonBounds = new ButtonArea(centerX - 90, buttonY, 70, 24);
+        leaveButtonBounds = new ButtonArea(centerX - s(90), buttonY, leaveW, buttonH);
 
         startButton = EditorButton.builder("start-quest", "START QUEST")
             .style(EditorButton.Style.SUCCESS)
             .size(EditorButton.Size.LARGE)
             .onClick(this::onStartClicked)
             .build();
-        startButtonBounds = new ButtonArea(centerX - 10, buttonY, 120, 24);
+        startButtonBounds = new ButtonArea(centerX - s(10), buttonY, startW, buttonH);
 
         disbandButton = EditorButton.builder("disband", "DISBAND")
             .style(EditorButton.Style.DANGER)
             .size(EditorButton.Size.LARGE)
             .onClick(this::onDisbandClicked)
             .build();
-        disbandButtonBounds = new ButtonArea(centerX + 120, buttonY, 70, 24);
+        disbandButtonBounds = new ButtonArea(centerX + s(120), buttonY, disbandW, buttonH);
 
         // Create Party button (when not in party)
         createPartyButton = EditorButton.builder("create-party", "CREATE PARTY")
@@ -397,16 +583,20 @@ public class PartyScreen extends Screen {
             .size(EditorButton.Size.LARGE)
             .onClick(this::onCreatePartyClicked)
             .build();
-        createPartyButtonBounds = new ButtonArea(centerX - UIScaleManager.scale(80), panelY + scaledPanelHeight / 2 + UIScaleManager.scale(20), UIScaleManager.scale(160), UIScaleManager.scale(30));
+        int createW = s(160);
+        int createH = Math.max(s(30), line() + s(12));
+        int createX = centerX - createW / 2;
+        int createY = panelY + scaledPanelHeight / 2 + s(20);
+        createPartyButtonBounds = new ButtonArea(createX, createY, createW, createH);
     }
 
     private void initKitButtons() {
         int kitY = getKitRowY();
-        int rightX = panelX + scaledPanelWidth - UIScaleManager.scale(15);
-        int btnH = 18;
-        int navW = 22;
-        int editW = 40;
-        int gap = 4;
+        int rightX = panelX + scaledPanelWidth - s(15);
+        int btnH = Math.max(s(18), line() + s(4));
+        int navW = s(22);
+        int editW = s(40);
+        int gap = s(4);
 
         kitEditButton = EditorButton.builder("kit-edit", "EDIT")
             .style(EditorButton.Style.PRIMARY)
@@ -428,9 +618,59 @@ public class PartyScreen extends Screen {
         int nextX = editX - gap - navW;
         int prevX = nextX - gap - navW;
 
-        kitEditButtonBounds = new ButtonArea(editX, kitY - 2, editW, btnH);
-        kitNextButtonBounds = new ButtonArea(nextX, kitY - 2, navW, btnH);
-        kitPrevButtonBounds = new ButtonArea(prevX, kitY - 2, navW, btnH);
+        kitEditButtonBounds = new ButtonArea(editX, kitY - s(2), editW, btnH);
+        kitNextButtonBounds = new ButtonArea(nextX, kitY - s(2), navW, btnH);
+        kitPrevButtonBounds = new ButtonArea(prevX, kitY - s(2), navW, btnH);
+    }
+
+    private void applyLayout(PartyLayout layout) {
+        if (layout == null) {
+            return;
+        }
+        int inviteSectionY = layout.membersY + layout.membersH + s(8);
+        int inviteBoxX = layout.membersX + s(5);
+        int inviteBoxY = inviteSectionY + line() + lineGap();
+        int inviteBoxH = inputHeight();
+        int inviteBtnW = s(50);
+        int inviteBoxW = Math.max(s(90), layout.membersW - inviteBtnW - s(12));
+        EditBox invite = inviteBox;
+        if (invite != null) {
+            invite.setX(inviteBoxX);
+            invite.setY(inviteBoxY);
+            invite.setWidth(inviteBoxW);
+            invite.setHeight(inviteBoxH);
+        }
+        inviteButtonBounds = new ButtonArea(inviteBoxX + inviteBoxW + s(3), inviteBoxY, inviteBtnW, inviteBoxH);
+
+        int mobSearchX = layout.mobX + s(5);
+        int mobSearchY = layout.mobY + panelHeaderHeight() + s(6);
+        // Leave space on right for namespace filter buttons (All, MC)
+        int mobSearchW = Math.max(s(60), layout.mobW - s(70));
+        int mobSearchH = inputHeight();
+        EditBox search = mobSearchBox;
+        if (search != null) {
+            search.setX(mobSearchX);
+            search.setY(mobSearchY);
+            search.setWidth(mobSearchW);
+            search.setHeight(mobSearchH);
+        }
+
+        int kitY = getKitRowY();
+        int rightX = panelX + scaledPanelWidth - s(15);
+        int btnH = Math.max(s(18), line() + s(4));
+        int navW = s(22);
+        int editW = s(40);
+        int gap = s(4);
+        int editX = rightX - editW;
+        int nextX = editX - gap - navW;
+        int prevX = nextX - gap - navW;
+        kitEditButtonBounds = new ButtonArea(editX, kitY - s(2), editW, btnH);
+        kitNextButtonBounds = new ButtonArea(nextX, kitY - s(2), navW, btnH);
+        kitPrevButtonBounds = new ButtonArea(prevX, kitY - s(2), navW, btnH);
+    }
+
+    private int clampInt(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private void loadAvailableMobs() {
@@ -483,8 +723,13 @@ public class PartyScreen extends Screen {
     }
 
     private void clampMemberScroll() {
-        int maxScroll = Math.max(0, members.size() - MAX_VISIBLE_MEMBERS);
+        int maxScroll = Math.max(0, members.size() - getMaxVisibleMembers());
         memberListScrollOffset = Mth.clamp(memberListScrollOffset, 0, maxScroll);
+    }
+
+    private void clampMobScroll() {
+        int maxScroll = Math.max(0, filteredMobs.size() - getMaxVisibleMobs());
+        mobListScrollOffset = Mth.clamp(mobListScrollOffset, 0, maxScroll);
     }
 
     private void onMobSearchChanged(String text) {
@@ -651,7 +896,9 @@ public class PartyScreen extends Screen {
         titleGlow = (float) (Math.sin(animationTick * 3) * 0.3 + 0.7);
 
         // Member entrance animations
-        int visibleMembers = Math.min(memberAnimations.length, Math.max(0, members.size() - memberListScrollOffset));
+        int maxVisibleMembers = getMaxVisibleMembers();
+        int visibleMembers = Math.min(memberAnimations.length,
+            Math.min(maxVisibleMembers, Math.max(0, members.size() - memberListScrollOffset)));
         for (int i = 0; i < memberAnimations.length; i++) {
             if (i < visibleMembers) {
                 memberAnimations[i] = Math.min(1f, memberAnimations[i] + 0.1f);
@@ -660,12 +907,36 @@ public class PartyScreen extends Screen {
             }
         }
 
+        // Hover animations - smooth lerp transitions per element
+        // Mob list hover
+        for (int i = 0; i < mobHoverAnimations.length; i++) {
+            float target = (i == hoveredMobIndex - mobListScrollOffset && hoveredMobIndex >= 0) ? 1f : 0f;
+            float lerpSpeed = target > mobHoverAnimations[i] ? HOVER_LERP_IN : HOVER_LERP_OUT;
+            mobHoverAnimations[i] = Mth.lerp(lerpSpeed, mobHoverAnimations[i], target);
+        }
+
+        // Tier button hover
+        for (int i = 0; i < tierHoverAnimations.length; i++) {
+            float target = (i == hoveredTierIndex) ? 1f : 0f;
+            float lerpSpeed = target > tierHoverAnimations[i] ? HOVER_LERP_IN : HOVER_LERP_OUT;
+            tierHoverAnimations[i] = Mth.lerp(lerpSpeed, tierHoverAnimations[i], target);
+        }
+
+        // Member hover
+        for (int i = 0; i < memberHoverAnimations.length; i++) {
+            float target = (i == hoveredMemberIndex - memberListScrollOffset && hoveredMemberIndex >= 0) ? 1f : 0f;
+            float lerpSpeed = target > memberHoverAnimations[i] ? HOVER_LERP_IN : HOVER_LERP_OUT;
+            memberHoverAnimations[i] = Mth.lerp(lerpSpeed, memberHoverAnimations[i], target);
+        }
+
         // Sync
         long now = System.currentTimeMillis();
         if (now - lastSyncTime > SYNC_INTERVAL_MS) {
             lastSyncTime = now;
             refreshFromCache();
             updateButtonStates();
+            clampMemberScroll();
+            clampMobScroll();
         }
 
         if (kitSyncInFlight && now - kitSyncStartTime > KIT_SYNC_TIMEOUT_MS) {
@@ -1042,6 +1313,7 @@ public class PartyScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        applyLayout(getLayout());
         // Dark cinematic background
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
@@ -1167,26 +1439,30 @@ public class PartyScreen extends Screen {
             return true;
         }
 
-        // Namespace filter clicks
+        // Namespace filter clicks (now at right side of search row)
         if (isInParty) {
-            int nsFilterY = panelY + 80 + 28 + 25;
-            int nsBtnX = panelX + 230;
+            PartyLayout layout = getLayout();
+            int searchY = layout.mobY + panelHeaderHeight() + s(6); // Match actual position
+            int searchH = inputHeight();
+            int nsBtnH = Math.min(searchH, filterButtonHeight());
+            int nsBtnY = searchY + (searchH - nsBtnH) / 2;
+            int nsBtnX = layout.mobX + layout.mobW - s(60);
 
             // "All" button
-            int allW = 28;
+            int allW = s(22);
             if (mouseX >= nsBtnX && mouseX < nsBtnX + allW &&
-                mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
+                mouseY >= nsBtnY && mouseY < nsBtnY + nsBtnH) {
                 selectedNamespace = null;
                 filterMobs();
                 UiSounds.click();
                 return true;
             }
-            nsBtnX += allW + 2;
+            nsBtnX += allW + s(2);
 
             // "MC" button
-            int mcW = 24;
+            int mcW = s(22);
             if (mouseX >= nsBtnX && mouseX < nsBtnX + mcW &&
-                mouseY >= nsFilterY && mouseY < nsFilterY + 12) {
+                mouseY >= nsBtnY && mouseY < nsBtnY + nsBtnH) {
                 selectedNamespace = "minecraft".equals(selectedNamespace) ? null : "minecraft";
                 filterMobs();
                 UiSounds.click();
@@ -1194,21 +1470,25 @@ public class PartyScreen extends Screen {
             }
         }
 
-        // Tier filter clicks
+        // Tier filter clicks (now directly below search)
         if (isInParty) {
-            int filterY = panelY + 80 + 28 + 25 + 16;
-            int btnW = 22;
-            int btnX = panelX + 230;
+            PartyLayout layout = getLayout();
+            int searchY = layout.mobY + panelHeaderHeight() + s(6); // Match actual position
+            int searchH = inputHeight();
+            int filterY = searchY + searchH + s(2);
+            int btnW = s(20);
+            int btnH = tierButtonHeight();
+            int btnX = layout.mobX + s(5);
 
             for (MobTier tier : MobTier.values()) {
                 if (mouseX >= btnX && mouseX < btnX + btnW &&
-                    mouseY >= filterY && mouseY < filterY + 14) {
+                    mouseY >= filterY && mouseY < filterY + btnH) {
                     selectedTierFilter = (tier == selectedTierFilter) ? null : tier;
                     filterMobs();
                     UiSounds.click();
                     return true;
                 }
-                btnX += btnW + 2;
+                btnX += btnW + s(2);
             }
         }
 
@@ -1228,12 +1508,13 @@ public class PartyScreen extends Screen {
 
         // Wave slider
         if (isInParty) {
-            int sliderX = panelX + UIScaleManager.scale(115);
-            int sliderY = panelY + scaledPanelHeight - UIScaleManager.scale(85);
-            int sliderW = UIScaleManager.scale(150);
+            int sliderX = panelX + s(115);
+            int sliderY = getWaveBarY();
+            int sliderW = s(150);
+            int sliderH = Math.max(s(14), line() + s(4));
 
             if (mouseX >= sliderX && mouseX < sliderX + sliderW &&
-                    mouseY >= sliderY && mouseY < sliderY + 14) {
+                    mouseY >= sliderY && mouseY < sliderY + sliderH) {
                 float progress = (float) (mouseX - sliderX) / sliderW;
                 previewWaveNumber = 1 + (int) (progress * (MAX_PREVIEW_WAVE - 1));
                 previewWaveNumber = Mth.clamp(previewWaveNumber, 1, MAX_PREVIEW_WAVE);
@@ -1241,11 +1522,29 @@ public class PartyScreen extends Screen {
             }
         }
 
+        // Mob list scrollbar drag
+        if (isInParty && filteredMobs.size() > getMaxVisibleMobs()) {
+            PartyLayout layout = getLayout();
+            int scrollbarX = layout.mobX + layout.mobW - s(8);
+            int scrollbarW = s(6);
+            int listY = getMobListTop();
+            int listHeight = getMaxVisibleMobs() * mobRowHeight();
+
+            if (mouseX >= scrollbarX && mouseX < scrollbarX + scrollbarW &&
+                    mouseY >= listY && mouseY < listY + listHeight) {
+                isDraggingMobScrollbar = true;
+                scrollbarDragStartY = (int) mouseY;
+                scrollbarDragStartOffset = mobListScrollOffset;
+                return true;
+            }
+        }
+
         // 3D Preview drag
-        int previewX = panelX + 400;
-        int previewY = panelY + 102;
-        int boxW = 180;
-        int boxH = 120;
+        PartyLayout layout = getLayout();
+        int previewX = layout.previewX + s(5);
+        int previewY = layout.previewY + panelHeaderHeight();
+        int boxW = Math.max(0, layout.previewW - s(10));
+        int boxH = s(120);
 
         if (mouseX >= previewX && mouseX < previewX + boxW &&
                 mouseY >= previewY && mouseY < previewY + boxH) {
@@ -1278,6 +1577,7 @@ public class PartyScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         isDraggingPreview = false;
+        isDraggingMobScrollbar = false;
         if (handleButtonRelease(mouseX, mouseY, button)) {
             return true;
         }
@@ -1294,13 +1594,33 @@ public class PartyScreen extends Screen {
             return true;
         }
 
-        // Wave slider drag
-        int sliderX = panelX + UIScaleManager.scale(115);
-        int sliderY = panelY + scaledPanelHeight - UIScaleManager.scale(85);
-        int sliderW = UIScaleManager.scale(150);
+        // Scrollbar drag
+        if (isDraggingMobScrollbar) {
+            int listHeight = getMaxVisibleMobs() * mobRowHeight();
+            int maxScroll = Math.max(0, filteredMobs.size() - getMaxVisibleMobs());
+            if (maxScroll > 0 && listHeight > 0) {
+                float thumbRatio = (float) getMaxVisibleMobs() / filteredMobs.size();
+                int thumbH = Math.max(s(20), (int) (listHeight * thumbRatio));
+                int trackH = listHeight - thumbH;
 
-        if (mouseX >= sliderX - 10 && mouseX < sliderX + sliderW + 10 &&
-                mouseY >= sliderY - 5 && mouseY < sliderY + 20) {
+                if (trackH > 0) {
+                    int deltaY = (int) mouseY - scrollbarDragStartY;
+                    float scrollRatio = (float) deltaY / trackH;
+                    int newOffset = scrollbarDragStartOffset + (int) (scrollRatio * maxScroll);
+                    mobListScrollOffset = Mth.clamp(newOffset, 0, maxScroll);
+                }
+            }
+            return true;
+        }
+
+        // Wave slider drag
+        int sliderX = panelX + s(115);
+        int sliderY = getWaveBarY();
+        int sliderW = s(150);
+        int sliderH = Math.max(s(14), line() + s(4));
+
+        if (mouseX >= sliderX - s(10) && mouseX < sliderX + sliderW + s(10) &&
+                mouseY >= sliderY - s(5) && mouseY < sliderY + sliderH + s(6)) {
             float progress = (float) (mouseX - sliderX) / sliderW;
             previewWaveNumber = 1 + (int) (progress * (MAX_PREVIEW_WAVE - 1));
             previewWaveNumber = Mth.clamp(previewWaveNumber, 1, MAX_PREVIEW_WAVE);
@@ -1312,26 +1632,27 @@ public class PartyScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        int memberPanelX = panelX + 15;
-        int memberPanelY = panelY + 80;
-        int memberPanelW = 200;
-        int memberPanelH = 200;
+        PartyLayout layout = getLayout();
+        int memberPanelX = layout.membersX;
+        int memberPanelY = layout.membersY;
+        int memberPanelW = layout.membersW;
+        int memberPanelH = layout.membersH;
 
         if (isInParty && mouseX >= memberPanelX && mouseX < memberPanelX + memberPanelW &&
                 mouseY >= memberPanelY && mouseY < memberPanelY + memberPanelH) {
-            int maxScroll = Math.max(0, members.size() - MAX_VISIBLE_MEMBERS);
+            int maxScroll = Math.max(0, members.size() - getMaxVisibleMembers());
             memberListScrollOffset = Mth.clamp(memberListScrollOffset - (int) verticalAmount, 0, maxScroll);
             return true;
         }
 
-        int listX = panelX + 230;
-        int listY = panelY + 80 + 28 + 25 + 16 + 18; // searchY + nsFilterY offset + tierFilterY offset + listOffset
-        int listW = 150;
-        int listH = MAX_VISIBLE_MOBS * 26;
+        int listX = layout.mobX + s(5);
+        int listY = getMobListTop();
+        int listW = Math.max(0, layout.mobW - s(10));
+        int listH = getMaxVisibleMobs() * mobRowHeight();
 
         if (mouseX >= listX && mouseX < listX + listW &&
                 mouseY >= listY && mouseY < listY + listH) {
-            int maxScroll = Math.max(0, filteredMobs.size() - MAX_VISIBLE_MOBS);
+            int maxScroll = Math.max(0, filteredMobs.size() - getMaxVisibleMobs());
             mobListScrollOffset = Mth.clamp(mobListScrollOffset - (int) verticalAmount, 0, maxScroll);
             return true;
         }

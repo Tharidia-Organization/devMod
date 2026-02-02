@@ -82,12 +82,13 @@ public class PreWaveBriefOverlay {
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
         int sSectionSpacing = UIScaleManager.scale(SECTION_SPACING);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, 11);
 
         int panelX = (screenWidth - sPanelWidth) / 2;
         int panelY = UIScaleManager.scale(40);
 
         // Calculate panel height based on content
-        int contentHeight = calculateContentHeight(data, font, sSectionSpacing);
+        int contentHeight = calculateContentHeight(data, sLineHeight, sSectionSpacing);
         int panelHeight = contentHeight + sPanelPadding * 2;
 
         // Draw background
@@ -101,7 +102,7 @@ public class PreWaveBriefOverlay {
         String waveTitle = Objects.requireNonNull(String.format("WAVE %d / %d", data.waveNumber(), data.totalWaves()));
         int titleWidth = UIScaleManager.getScaledStringWidth(font, waveTitle);
         UIScaleManager.drawScaledString(graphics, font, waveTitle, panelX + (sPanelWidth - titleWidth) / 2, y, COLOR_ACCENT, true);
-        y += font.lineHeight + 4;
+        y += sLineHeight + UIScaleManager.scale(4);
 
         // Separator line
         int lineX = panelX + sPanelWidth / 4;
@@ -118,50 +119,50 @@ public class PreWaveBriefOverlay {
         renderThreatPanel(graphics, font, leftColX, colY, data.threatLevel());
 
         // Mob composition (right column)
-        int mobsHeight = renderMobComposition(graphics, font, rightColX, colY, data);
+        int mobsHeight = renderMobComposition(graphics, font, rightColX, colY, data, sLineHeight);
         y = colY + Math.max(UIScaleManager.scale(60), mobsHeight) + sSectionSpacing;
 
         // Modifiers
         if (!data.activeModifiers().isEmpty()) {
-            y = renderModifiers(graphics, font, panelX + sPanelPadding, y, data.activeModifiers());
+            y = renderModifiers(graphics, font, panelX + sPanelPadding, y, data.activeModifiers(), sLineHeight);
             y += sSectionSpacing;
         }
 
         // Warnings
         if (data.warnings() != null && !data.warnings().isEmpty()) {
-            y = renderWarnings(graphics, font, panelX + sPanelPadding, y, data.warnings());
+            y = renderWarnings(graphics, font, panelX + sPanelPadding, y, data.warnings(), sLineHeight);
             y += sSectionSpacing;
         }
 
         // Objective
         if (data.objective() != null) {
-            y = renderObjective(graphics, font, panelX + sPanelPadding, y, data.objective());
+            y = renderObjective(graphics, font, panelX + sPanelPadding, y, data.objective(), sLineHeight);
             y += sSectionSpacing;
         }
 
         // Countdown timer
         int ticksRemaining = wis.getPhaseTicksRemaining();
         int secondsRemaining = Math.max(0, ticksRemaining / 20);
-        renderCountdown(graphics, font, panelX, y, sPanelWidth, sPanelPadding, secondsRemaining);
+        renderCountdown(graphics, font, panelX, y, sPanelWidth, sPanelPadding, secondsRemaining, sLineHeight);
     }
 
-    private static int calculateContentHeight(WaveBriefingData data, Font font, int sSectionSpacing) {
+    private static int calculateContentHeight(WaveBriefingData data, int sLineHeight, int sSectionSpacing) {
         int height = 0;
-        height += font.lineHeight + 4; // Title
+        height += sLineHeight + UIScaleManager.scale(4); // Title
         height += sSectionSpacing; // Separator
         height += UIScaleManager.scale(60); // Threat + Mob composition area
         height += sSectionSpacing;
 
         if (!data.activeModifiers().isEmpty()) {
-            height += font.lineHeight + UIScaleManager.scale(8) + sSectionSpacing;
+            height += sLineHeight + UIScaleManager.scale(8) + sSectionSpacing;
         }
 
         if (data.warnings() != null && !data.warnings().isEmpty()) {
-            height += (font.lineHeight + 2) * data.warnings().size() + sSectionSpacing;
+            height += (sLineHeight + UIScaleManager.scale(2)) * data.warnings().size() + sSectionSpacing;
         }
 
         if (data.objective() != null) {
-            height += font.lineHeight * 2 + sSectionSpacing;
+            height += sLineHeight * 2 + sSectionSpacing;
         }
 
         height += UIScaleManager.scale(60); // Countdown area
@@ -199,13 +200,13 @@ public class PreWaveBriefOverlay {
     }
 
     private static int renderMobComposition(GuiGraphics graphics, Font font, int x, int y,
-                                             WaveBriefingData data) {
+                                             WaveBriefingData data, int lineHeight) {
         Font safeFont = Objects.requireNonNull(font);
         int startY = y;
 
         // Header
         UIScaleManager.drawScaledString(graphics, safeFont, "MOB COMPOSITION", x, y, COLOR_TEXT_DIM, false);
-        y += safeFont.lineHeight + 4;
+        y += lineHeight + UIScaleManager.scale(4);
 
         // Mob list (Fix #6: configurable limit via WaveIntelligenceManager)
         List<WaveBriefingData.MobComposition> mobs = data.mobComposition();
@@ -223,26 +224,26 @@ public class PreWaveBriefOverlay {
             int color = mob.isBoss() ? DesignTokens.Semantic.ERROR :
                         (mob.eliteCount() > 0 ? DesignTokens.Semantic.WARNING : COLOR_TEXT);
             UIScaleManager.drawScaledString(graphics, safeFont, line, x, y, color, false);
-            y += safeFont.lineHeight + 2;
+            y += lineHeight + UIScaleManager.scale(2);
         }
 
         if (mobs.size() > mobLimit) {
             UIScaleManager.drawScaledString(graphics, safeFont, "... and " + (mobs.size() - mobLimit) + " more", x, y, COLOR_TEXT_DIM, false);
-            y += safeFont.lineHeight + 2;
+            y += lineHeight + UIScaleManager.scale(2);
         }
 
         // Total
         String total = String.format("Total: %d mobs (%d elite)", data.totalMobCount(), data.eliteCount());
         UIScaleManager.drawScaledString(graphics, safeFont, total, x, y, COLOR_ACCENT, false);
-        y += safeFont.lineHeight;
+        y += lineHeight;
 
         return y - startY;
     }
 
-    private static int renderModifiers(GuiGraphics graphics, Font font, int x, int y, Set<String> modifiers) {
+    private static int renderModifiers(GuiGraphics graphics, Font font, int x, int y, Set<String> modifiers, int lineHeight) {
         Font safeFont = Objects.requireNonNull(font);
         UIScaleManager.drawScaledString(graphics, safeFont, "MODIFIERS:", x, y, COLOR_TEXT_DIM, false);
-        y += safeFont.lineHeight + 4;
+        y += lineHeight + UIScaleManager.scale(4);
 
         int modX = x;
         for (String modifier : modifiers) {
@@ -256,30 +257,30 @@ public class PreWaveBriefOverlay {
             modX += tagWidth + 4;
         }
 
-        return y + safeFont.lineHeight + 4;
+        return y + lineHeight + UIScaleManager.scale(4);
     }
 
-    private static int renderWarnings(GuiGraphics graphics, Font font, int x, int y, List<String> warnings) {
+    private static int renderWarnings(GuiGraphics graphics, Font font, int x, int y, List<String> warnings, int lineHeight) {
         Font safeFont = Objects.requireNonNull(font);
         for (String warning : warnings) {
             UIScaleManager.drawScaledString(graphics, safeFont, "⚠ " + warning, x, y, DesignTokens.Semantic.ERROR, false);
-            y += safeFont.lineHeight + 2;
+            y += lineHeight + UIScaleManager.scale(2);
         }
         return y;
     }
 
     private static int renderObjective(GuiGraphics graphics, Font font, int x, int y,
-                                        WaveBriefingData.ObjectiveInfo objective) {
+                                        WaveBriefingData.ObjectiveInfo objective, int lineHeight) {
         Font safeFont = Objects.requireNonNull(font);
         UIScaleManager.drawScaledString(graphics, safeFont, "OBJECTIVE:", x, y, COLOR_TEXT_DIM, false);
-        y += safeFont.lineHeight + 2;
+        y += lineHeight + UIScaleManager.scale(2);
         UIScaleManager.drawScaledString(graphics, safeFont, objective.description(), x, y, COLOR_TEXT, false);
-        y += safeFont.lineHeight;
+        y += lineHeight;
         return y;
     }
 
     private static void renderCountdown(GuiGraphics graphics, Font font, int panelX, int y,
-                                          int panelWidth, int sPanelPadding, int seconds) {
+                                          int panelWidth, int sPanelPadding, int seconds, int lineHeight) {
         Font safeFont = Objects.requireNonNull(font);
 
         // Separator
@@ -292,7 +293,7 @@ public class PreWaveBriefOverlay {
         String label = "STARTING IN";
         int labelWidth = UIScaleManager.getScaledStringWidth(safeFont, label);
         UIScaleManager.drawScaledString(graphics, safeFont, label, panelX + (panelWidth - labelWidth) / 2, y, COLOR_TEXT_DIM, false);
-        y += safeFont.lineHeight + UIScaleManager.scale(8);
+        y += lineHeight + UIScaleManager.scale(8);
 
         // Large countdown number
         String countdownText = Objects.requireNonNull(String.valueOf(seconds));

@@ -712,17 +712,17 @@ public class DialogEditorScreen extends Screen {
 
         // Column titles
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.nodes"),
-            col1X, topY + 3, COLOR_TEXT);
+            col1X, topY + UIScaleManager.scale(3), COLOR_TEXT);
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.text"),
-            col2X + 90, topY + 3, COLOR_TEXT);
+            col2X + UIScaleManager.scale(90), topY + UIScaleManager.scale(3), COLOR_TEXT);
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.dialog_editor.options"),
-            col3X + 125, topY + 3, COLOR_TEXT);
+            col3X + UIScaleManager.scale(125), topY + UIScaleManager.scale(3), COLOR_TEXT);
 
         // Title (with dirty indicator)
         Component displayTitle = isDirty()
             ? Component.literal("* ").append(title)
             : title;
-        UIScaleManager.drawScaledCenteredString(graphics, font, displayTitle, width / 2, 5, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, displayTitle, width / 2, UIScaleManager.scale(5), COLOR_TEXT);
 
         // Preset warning
         if (originalDialogSet != null && originalDialogSet.isPreset()) {
@@ -731,11 +731,11 @@ public class DialogEditorScreen extends Screen {
         }
 
         // Borders between columns
-        int listY = topY + 20;
-        int listHeight = height - listY - 60;
+        int listY = topY + UIScaleManager.scale(20);
+        int listHeight = height - listY - UIScaleManager.scale(60);
 
-        graphics.fill(col2X - 5, listY - 5, col2X - 4, listY + listHeight, COLOR_BORDER);
-        graphics.fill(col3X - 5, listY - 5, col3X - 4, listY + listHeight, COLOR_BORDER);
+        graphics.fill(col2X - UIScaleManager.scale(5), listY - UIScaleManager.scale(5), col2X - UIScaleManager.scale(4), listY + listHeight, COLOR_BORDER);
+        graphics.fill(col3X - UIScaleManager.scale(5), listY - UIScaleManager.scale(5), col3X - UIScaleManager.scale(4), listY + listHeight, COLOR_BORDER);
 
         renderInputBackgrounds(graphics);
 

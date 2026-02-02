@@ -63,6 +63,7 @@ public class SkillEfficacyOverlay {
         if (mc.player == null || mc.level == null || mc.options.hideGui) return;
 
         Font font = mc.font;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int screenWidth = graphics.guiWidth();
         int screenHeight = graphics.guiHeight();
 
@@ -70,7 +71,7 @@ public class SkillEfficacyOverlay {
         int panelWidth = Math.min(UIScaleManager.scale(PANEL_WIDTH), UIScaleManager.getSafeWidth());
         int panelX = screenWidth - panelWidth - UIScaleManager.scale(10);
         int panelY = screenHeight / 2;
-        int panelHeight = calculatePanelHeight(recentSkillsCount());
+        int panelHeight = calculatePanelHeight(recentSkillsCount(), lineHeight);
         int safeLeft = UIScaleManager.getSafeLeft();
         int safeRight = UIScaleManager.getSafeRight();
         int safeTop = UIScaleManager.getSafeTop();
@@ -78,16 +79,15 @@ public class SkillEfficacyOverlay {
         panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
         panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
-        renderSkillPanel(graphics, font, panelX, panelY, panelWidth);
+        renderSkillPanel(graphics, font, panelX, panelY, panelWidth, lineHeight);
     }
 
-    private static void renderSkillPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth) {
+    private static void renderSkillPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth, int lineHeight) {
         List<SkillTrackingService.SkillStats> recentSkills =
             SkillTrackingService.INSTANCE.getRecentSkills(MAX_SKILLS_SHOWN);
 
-        int panelHeight = calculatePanelHeight(recentSkills.size());
+        int panelHeight = calculatePanelHeight(recentSkills.size(), lineHeight);
         int panelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
         // Background
         graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
@@ -115,13 +115,13 @@ public class SkillEfficacyOverlay {
 
         // Skill entries
         for (SkillTrackingService.SkillStats skill : recentSkills) {
-            renderSkillEntry(graphics, font, textX, textY, skill);
+            renderSkillEntry(graphics, font, textX, textY, skill, lineHeight);
             textY += lineHeight * 2 + UIScaleManager.scale(2);
         }
     }
 
     private static void renderSkillEntry(GuiGraphics graphics, Font font, int x, int y,
-                                          SkillTrackingService.SkillStats skill) {
+                                          SkillTrackingService.SkillStats skill, int lineHeight) {
         var safeFont = Objects.requireNonNull(font);
         // Skill name
         String name = truncateName(skill.skillId(), 15);
@@ -134,7 +134,7 @@ public class SkillEfficacyOverlay {
             skill.hits(), skill.uses(), hitRate * 100);
         UIScaleManager.drawScaledString(graphics, safeFont, hitText, x + UIScaleManager.scale(100), y, hitColor, false);
 
-        y += UIScaleManager.scale(LINE_HEIGHT);
+        y += lineHeight;
 
         // Damage
         String dmgText = String.format("Dmg: %.1f", skill.totalDamage());
@@ -172,9 +172,8 @@ public class SkillEfficacyOverlay {
         return name;
     }
 
-    private static int calculatePanelHeight(int skillCount) {
+    private static int calculatePanelHeight(int skillCount, int lineHeight) {
         int padding = UIScaleManager.scale(PANEL_PADDING);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         int height = padding * 2;
         height += lineHeight + 2;  // Title
         height += 4;                // Separator

@@ -87,6 +87,21 @@ public final class EnduranceTargetPlayerGoal extends TargetGoal {
         double nearestDistSq = Double.MAX_VALUE;
 
         for (ServerPlayer player : serverLevel.players()) {
+            // Diagnostic logging for targeting debug
+            if (this.recheckDelay <= 0 && serverLevel.players().size() == 1) {
+                boolean alive = player.isAlive();
+                boolean spectator = player.isSpectator();
+                boolean creative = player.isCreative();
+                net.minecraft.world.level.GameType gameMode = player.gameMode.getGameModeForPlayer();
+                if (spectator || creative || !alive) {
+                    org.slf4j.LoggerFactory.getLogger(EnduranceTargetPlayerGoal.class)
+                        .info("[AIDebug] Mob {} skipping player {} (alive={}, spectator={}, creative={}, gameMode={})",
+                            this.mob.getType().toString(),
+                            player.getName().getString(),
+                            alive, spectator, creative, gameMode);
+                }
+            }
+
             if (!player.isAlive() || player.isSpectator() || player.isCreative()) {
                 continue;
             }
@@ -94,9 +109,21 @@ public final class EnduranceTargetPlayerGoal extends TargetGoal {
             double distSq = this.mob.distanceToSqr(player);
             if (distSq < nearestDistSq && distSq < TARGET_RANGE_SQ) {
                 // Check if we can see the player
-                if (this.mob.getSensing().hasLineOfSight(player)) {
+                boolean hasLOS = this.mob.getSensing().hasLineOfSight(player);
+                if (hasLOS) {
                     nearestDistSq = distSq;
                     nearest = player;
+                } else if (this.recheckDelay <= 0 && serverLevel.players().size() == 1) {
+                    // Log line of sight failure (only when single player)
+                    org.slf4j.LoggerFactory.getLogger(EnduranceTargetPlayerGoal.class)
+                        .info("[AIDebug] Mob {} no LOS to player {} (dist={}, mobPos={}, playerPos={}, mobDim={}, playerDim={})",
+                            this.mob.getType().toString(),
+                            player.getName().getString(),
+                            Math.sqrt(distSq),
+                            this.mob.blockPosition(),
+                            player.blockPosition(),
+                            this.mob.level().dimension().location(),
+                            player.level().dimension().location());
                 }
             }
         }

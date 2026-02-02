@@ -46,6 +46,13 @@ public class GridSettingsWidget extends AbstractWidget {
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
         int currentY = getY();
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int sizeButtonWidth = s(SIZE_BUTTON_WIDTH);
+        int headerGap = s(4);
+        int sectionGap = s(14);
+        int blockGap = s(8);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -55,9 +62,9 @@ public class GridSettingsWidget extends AbstractWidget {
         );
 
         // Master toggle on same line as title
-        int toggleX = getX() + getWidth() - TOGGLE_WIDTH;
+        int toggleX = getX() + getWidth() - toggleWidth;
         renderToggle(graphics, settings.enabled(), toggleX, currentY, mouseX, mouseY);
-        currentY += ROW_HEIGHT + 4;
+        currentY += rowHeight + headerGap;
 
         // If grid is disabled, show "Grid Disabled" message
         if (!settings.enabled()) {
@@ -73,7 +80,7 @@ public class GridSettingsWidget extends AbstractWidget {
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.grid.size")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
-        currentY += 14;
+        currentY += sectionGap;
 
         // Grid size buttons
         int btnX = getX();
@@ -81,25 +88,25 @@ public class GridSettingsWidget extends AbstractWidget {
             if (size == GridSize.CUSTOM) continue; // Skip custom for now
 
             boolean isSelected = settings.size() == size;
-            boolean isHovered = mouseX >= btnX && mouseX < btnX + SIZE_BUTTON_WIDTH &&
-                               mouseY >= currentY && mouseY < currentY + BUTTON_HEIGHT;
+            boolean isHovered = mouseX >= btnX && mouseX < btnX + sizeButtonWidth &&
+                               mouseY >= currentY && mouseY < currentY + buttonHeight;
 
             int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                          (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER :
                                      AreaBuilderGuiConstants.COLOR_PANEL);
 
-            graphics.fill(btnX, currentY, btnX + SIZE_BUTTON_WIDTH, currentY + BUTTON_HEIGHT, bgColor);
-            graphics.renderOutline(btnX, currentY, SIZE_BUTTON_WIDTH, BUTTON_HEIGHT,
+            graphics.fill(btnX, currentY, btnX + sizeButtonWidth, currentY + buttonHeight, bgColor);
+            graphics.renderOutline(btnX, currentY, sizeButtonWidth, buttonHeight,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             String sizeName = Component.translatable("area.grid.size_" + size.getId()).getString();
             UIScaleManager.drawScaledCenteredString(graphics, font, sizeName,
-                btnX + SIZE_BUTTON_WIDTH / 2, currentY + 5,
+                btnX + sizeButtonWidth / 2, currentY + s(5),
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
-            btnX += SIZE_BUTTON_WIDTH + 4;
+            btnX += sizeButtonWidth + s(4);
         }
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + blockGap;
 
         // Snap options
         renderToggle(graphics, "area.grid.snap_position", settings.snapPosition(),
@@ -112,54 +119,56 @@ public class GridSettingsWidget extends AbstractWidget {
 
         renderToggle(graphics, "area.grid.show_lines", settings.showGridLines(),
             getX(), currentY, mouseX, mouseY, true);
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + blockGap;
 
         // Alignment section
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.grid.alignment")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
-        currentY += 14;
+        currentY += sectionGap;
 
         // Alignment buttons
         btnX = getX();
         for (GridAlignment alignment : GridAlignment.values()) {
             boolean isSelected = settings.alignment() == alignment;
-            boolean isHovered = mouseX >= btnX && mouseX < btnX + SIZE_BUTTON_WIDTH &&
-                               mouseY >= currentY && mouseY < currentY + BUTTON_HEIGHT;
+            boolean isHovered = mouseX >= btnX && mouseX < btnX + sizeButtonWidth &&
+                               mouseY >= currentY && mouseY < currentY + buttonHeight;
 
             int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                          (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER :
                                      AreaBuilderGuiConstants.COLOR_PANEL);
 
-            graphics.fill(btnX, currentY, btnX + SIZE_BUTTON_WIDTH, currentY + BUTTON_HEIGHT, bgColor);
-            graphics.renderOutline(btnX, currentY, SIZE_BUTTON_WIDTH, BUTTON_HEIGHT,
+            graphics.fill(btnX, currentY, btnX + sizeButtonWidth, currentY + buttonHeight, bgColor);
+            graphics.renderOutline(btnX, currentY, sizeButtonWidth, buttonHeight,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             String alignName = Component.translatable("area.grid.alignment." + alignment.getId()).getString();
             UIScaleManager.drawScaledCenteredString(graphics, font, alignName,
-                btnX + SIZE_BUTTON_WIDTH / 2, currentY + 5,
+                btnX + sizeButtonWidth / 2, currentY + s(5),
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
-            btnX += SIZE_BUTTON_WIDTH + 4;
+            btnX += sizeButtonWidth + s(4);
         }
     }
 
     private void renderToggle(GuiGraphics graphics, boolean value, int x, int y, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
 
-        boolean isHovered = mouseX >= x && mouseX < x + TOGGLE_WIDTH &&
-                           mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+        boolean isHovered = mouseX >= x && mouseX < x + toggleWidth &&
+                           mouseY >= y && mouseY < y + buttonHeight;
 
         int bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF;
         if (isHovered) {
             bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON_HOVER : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF_HOVER;
         }
 
-        graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_HEIGHT, bgColor);
-        graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_HEIGHT, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(x, y, x + toggleWidth, y + buttonHeight, bgColor);
+        graphics.renderOutline(x, y, toggleWidth, buttonHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
         String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
-        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + toggleWidth / 2, y + s(5), AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     private void renderToggle(GuiGraphics graphics, String translationKey, boolean value,
@@ -170,7 +179,7 @@ public class GridSettingsWidget extends AbstractWidget {
             var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
             UIScaleManager.drawScaledString(graphics, font,
                 Objects.requireNonNull(Component.translatable(Objects.requireNonNull(translationKey))),
-                x + TOGGLE_WIDTH + 8, y + 5,
+                x + s(TOGGLE_WIDTH) + s(8), y + s(5),
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
             );
         }
@@ -179,38 +188,42 @@ public class GridSettingsWidget extends AbstractWidget {
     @Override
     public void onClick(double mouseX, double mouseY, int button) {
         int currentY = getY();
+        int rowHeight = s(ROW_HEIGHT);
+        int sizeButtonWidth = s(SIZE_BUTTON_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        int toggleWidth = s(TOGGLE_WIDTH);
 
         // Master toggle
-        int toggleX = getX() + getWidth() - TOGGLE_WIDTH;
+        int toggleX = getX() + getWidth() - toggleWidth;
         if (isToggleClicked(mouseX, mouseY, toggleX, currentY)) {
             settings = settings.withEnabled(!settings.enabled());
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT + 4;
+        currentY += rowHeight + s(4);
 
         if (!settings.enabled()) {
             return; // Grid disabled, no other controls active
         }
 
-        currentY += 14; // Skip "Grid Size" label
+        currentY += s(14); // Skip "Grid Size" label
 
         // Grid size buttons
         int btnX = getX();
         for (GridSize size : GridSize.values()) {
             if (size == GridSize.CUSTOM) continue;
 
-            if (mouseX >= btnX && mouseX < btnX + SIZE_BUTTON_WIDTH &&
-                mouseY >= currentY && mouseY < currentY + BUTTON_HEIGHT) {
+            if (mouseX >= btnX && mouseX < btnX + sizeButtonWidth &&
+                mouseY >= currentY && mouseY < currentY + buttonHeight) {
                 if (settings.size() != size) {
                     settings = settings.withSize(size);
                     notifyChange();
                 }
                 return;
             }
-            btnX += SIZE_BUTTON_WIDTH + 4;
+            btnX += sizeButtonWidth + s(4);
         }
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + s(8);
 
         // Snap position toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -218,7 +231,7 @@ public class GridSettingsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Snap dimensions toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -226,7 +239,7 @@ public class GridSettingsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Show grid lines toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -234,28 +247,30 @@ public class GridSettingsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + s(8);
 
-        currentY += 14; // Skip "Alignment" label
+        currentY += s(14); // Skip "Alignment" label
 
         // Alignment buttons
         btnX = getX();
         for (GridAlignment alignment : GridAlignment.values()) {
-            if (mouseX >= btnX && mouseX < btnX + SIZE_BUTTON_WIDTH &&
-                mouseY >= currentY && mouseY < currentY + BUTTON_HEIGHT) {
+            if (mouseX >= btnX && mouseX < btnX + sizeButtonWidth &&
+                mouseY >= currentY && mouseY < currentY + buttonHeight) {
                 if (settings.alignment() != alignment) {
                     settings = settings.withAlignment(alignment);
                     notifyChange();
                 }
                 return;
             }
-            btnX += SIZE_BUTTON_WIDTH + 4;
+            btnX += sizeButtonWidth + s(4);
         }
     }
 
     private boolean isToggleClicked(double mouseX, double mouseY, int x, int y) {
-        return mouseX >= x && mouseX < x + TOGGLE_WIDTH &&
-               mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        return mouseX >= x && mouseX < x + toggleWidth &&
+               mouseY >= y && mouseY < y + buttonHeight;
     }
 
     private void notifyChange() {
@@ -278,5 +293,9 @@ public class GridSettingsWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.grid.enable")));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

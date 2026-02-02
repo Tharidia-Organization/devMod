@@ -184,7 +184,7 @@ public class NutritionHudOverlay {
         int sBarBorder = UIScaleManager.scale(BAR_BORDER);
         int sPadding = UIScaleManager.scale(PADDING);
         int sLabelWidth = UIScaleManager.scale(LABEL_WIDTH);
-        int sModifierLineHeight = UIScaleManager.scale(MODIFIER_LINE_HEIGHT);
+        int sModifierLineHeight = UIScaleManager.getScaledLineHeight(font, MODIFIER_LINE_HEIGHT);
 
         // Calculate panel dimensions (include label width)
         int panelWidth = sLabelWidth + sBarWidth + sPadding * 2;

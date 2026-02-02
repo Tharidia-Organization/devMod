@@ -70,6 +70,10 @@ public class GroupDialogScreen extends Screen {
     // Option buttons
     private List<EditorButtonWidget> optionButtons = List.of();
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     public GroupDialogScreen(
         @Nonnull UUID sessionId,
         @Nonnull String dialogId,
@@ -96,6 +100,7 @@ public class GroupDialogScreen extends Screen {
 
     @Override
     protected void init() {
+        UIScaleManager.update();
         createOptionButtons();
     }
 
@@ -134,6 +139,7 @@ public class GroupDialogScreen extends Screen {
     }
 
     private void createOptionButtons() {
+        UIScaleManager.update();
         // Clear existing buttons
         optionButtons.forEach(this::removeWidget);
 
@@ -142,21 +148,25 @@ public class GroupDialogScreen extends Screen {
             return;
         }
 
-        int dialogBoxY = height - DIALOG_BOX_HEIGHT - PADDING;
-        int optionAreaY = dialogBoxY - (options.size() * (OPTION_HEIGHT + OPTION_SPACING)) - PADDING;
-        int optionWidth = width - PADDING * 4;
+        int sDialogBoxHeight = s(DIALOG_BOX_HEIGHT);
+        int sPadding = s(PADDING);
+        int sOptionHeight = s(OPTION_HEIGHT);
+        int sOptionSpacing = s(OPTION_SPACING);
+        int dialogBoxY = height - sDialogBoxHeight - sPadding;
+        int optionAreaY = dialogBoxY - (options.size() * (sOptionHeight + sOptionSpacing)) - sPadding;
+        int optionWidth = width - sPadding * 4;
 
         optionButtons = new java.util.ArrayList<>();
         for (int i = 0; i < options.size(); i++) {
             DialogOption opt = options.get(i);
-            int btnY = optionAreaY + i * (OPTION_HEIGHT + OPTION_SPACING);
+            int btnY = optionAreaY + i * (sOptionHeight + sOptionSpacing);
 
             EditorButton button = EditorButton.builder("dialog_opt_" + i, opt.icon() + " " + opt.label())
                 .style(EditorButton.Style.NORMAL)
                 .size(EditorButton.Size.MEDIUM)
                 .onClick(() -> onOptionSelected(opt.id()))
                 .build();
-            EditorButtonWidget widget = new EditorButtonWidget(button, PADDING * 2, btnY, optionWidth, OPTION_HEIGHT);
+            EditorButtonWidget widget = new EditorButtonWidget(button, sPadding * 2, btnY, optionWidth, sOptionHeight);
             optionButtons.add(widget);
             addRenderableWidget(widget);
         }
@@ -181,7 +191,7 @@ public class GroupDialogScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Dialog box
-        int dialogBoxY = height - DIALOG_BOX_HEIGHT - PADDING;
+        int dialogBoxY = height - s(DIALOG_BOX_HEIGHT) - s(PADDING);
         renderDialogBox(graphics, dialogBoxY);
 
         // Speaker name
@@ -204,21 +214,24 @@ public class GroupDialogScreen extends Screen {
                 font,
                 hint,
                 width / 2,
-                dialogBoxY + DIALOG_BOX_HEIGHT - 16,
+                dialogBoxY + s(DIALOG_BOX_HEIGHT) - s(16),
                 COLOR_TEXT_DIM
             );
         }
     }
 
     private void renderDialogBox(@Nonnull GuiGraphics graphics, int y) {
+        int sPadding = s(PADDING);
+        int sDialogBoxHeight = s(DIALOG_BOX_HEIGHT);
+        int sSpeakerNameHeight = s(SPEAKER_NAME_HEIGHT);
         // Main box
-        graphics.fill(PADDING, y, width - PADDING, y + DIALOG_BOX_HEIGHT, COLOR_DIALOG_BG);
-        graphics.renderOutline(PADDING, y, width - PADDING * 2, DIALOG_BOX_HEIGHT, COLOR_DIALOG_BORDER);
+        graphics.fill(sPadding, y, width - sPadding, y + sDialogBoxHeight, COLOR_DIALOG_BG);
+        graphics.renderOutline(sPadding, y, width - sPadding * 2, sDialogBoxHeight, COLOR_DIALOG_BORDER);
 
         // Speaker name background
-        int speakerBgWidth = UIScaleManager.getScaledStringWidth(font, currentSpeakerName) + 16;
-        graphics.fill(PADDING, y - SPEAKER_NAME_HEIGHT, PADDING + speakerBgWidth, y, COLOR_SPEAKER_BG);
-        graphics.renderOutline(PADDING, y - SPEAKER_NAME_HEIGHT, speakerBgWidth, SPEAKER_NAME_HEIGHT, COLOR_DIALOG_BORDER);
+        int speakerBgWidth = UIScaleManager.getScaledStringWidth(font, currentSpeakerName) + s(16);
+        graphics.fill(sPadding, y - sSpeakerNameHeight, sPadding + speakerBgWidth, y, COLOR_SPEAKER_BG);
+        graphics.renderOutline(sPadding, y - sSpeakerNameHeight, speakerBgWidth, sSpeakerNameHeight, COLOR_DIALOG_BORDER);
     }
 
     private void renderSpeakerName(@Nonnull GuiGraphics graphics, int dialogY) {
@@ -247,8 +260,8 @@ public class GroupDialogScreen extends Screen {
                 graphics,
                 font,
                 currentSpeakerName,
-                PADDING + 8,
-                dialogY - SPEAKER_NAME_HEIGHT + 6,
+                s(PADDING) + s(8),
+                dialogY - s(SPEAKER_NAME_HEIGHT) + s(6),
                 speakerColor
             );
         }
@@ -258,9 +271,9 @@ public class GroupDialogScreen extends Screen {
         String displayText = currentText.substring(0, Math.min(displayedChars, currentText.length()));
 
         // Word wrap
-        int textX = PADDING + 12;
-        int textY = dialogY + 12;
-        int maxWidth = width - PADDING * 2 - 24;
+        int textX = s(PADDING) + s(12);
+        int textY = dialogY + s(12);
+        int maxWidth = width - s(PADDING) * 2 - s(24);
 
         List<String> lines = wrapText(displayText, maxWidth);
         for (int i = 0; i < lines.size() && i < 4; i++) {
@@ -270,12 +283,12 @@ public class GroupDialogScreen extends Screen {
 
     private void renderProgress(@Nonnull GuiGraphics graphics, int dialogY) {
         // Line progress indicator (dots)
-        int dotX = width - PADDING - 40;
-        int dotY = dialogY - 8;
+        int dotX = width - s(PADDING) - s(40);
+        int dotY = dialogY - s(8);
 
         for (int i = 0; i < totalLines; i++) {
             int dotColor = i <= lineIndex ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED;
-            graphics.fill(dotX + i * 8, dotY, dotX + i * 8 + 4, dotY + 4, dotColor);
+            graphics.fill(dotX + i * s(8), dotY, dotX + i * s(8) + s(4), dotY + s(4), dotColor);
         }
     }
 

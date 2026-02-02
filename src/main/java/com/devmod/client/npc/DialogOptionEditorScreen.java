@@ -101,6 +101,10 @@ public class DialogOptionEditorScreen extends Screen {
         initActionParams(option.action());
     }
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     private void initActionParams(DialogAction action) {
         switch (action) {
             case DialogAction.GoToNode goTo -> actionParam1 = goTo.nodeId();
@@ -141,15 +145,23 @@ public class DialogOptionEditorScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        UIScaleManager.update();
 
-        int popupX = (width - POPUP_WIDTH) / 2;
-        int popupY = (height - POPUP_HEIGHT) / 2;
-        int contentX = popupX + PADDING;
-        int contentWidth = POPUP_WIDTH - PADDING * 2;
-        int y = popupY + PADDING + 15;
+        int sPopupW = s(POPUP_WIDTH);
+        int sPopupH = s(POPUP_HEIGHT);
+        int sPadding = s(PADDING);
+        int sFieldH = s(FIELD_HEIGHT);
+        int sLabelH = s(LABEL_HEIGHT);
+        int sSpacing = s(SPACING);
+
+        int popupX = (width - sPopupW) / 2;
+        int popupY = (height - sPopupH) / 2;
+        int contentX = popupX + sPadding;
+        int contentWidth = sPopupW - sPadding * 2;
+        int y = popupY + sPadding + s(15);
 
         // ID field
-        idField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        idField = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.translatable("gui.devmod.npc.option_editor.id"));
         idField.setValue(editedId);
         idField.setMaxLength(DialogLimits.MAX_OPTION_ID_LENGTH);
@@ -158,10 +170,10 @@ public class DialogOptionEditorScreen extends Screen {
         idField.setTextColor(DesignTokens.Text.PRIMARY);
         idField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(idField);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         // Label field
-        labelField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        labelField = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.translatable("gui.devmod.npc.option_editor.label"));
         labelField.setValue(editedLabel);
         labelField.setMaxLength(DialogLimits.MAX_OPTION_LABEL_LENGTH);
@@ -170,10 +182,10 @@ public class DialogOptionEditorScreen extends Screen {
         labelField.setTextColor(DesignTokens.Text.PRIMARY);
         labelField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(labelField);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         // Icon field
-        iconField = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        iconField = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.translatable("gui.devmod.npc.option_editor.icon"));
         iconField.setValue(editedIcon);
         iconField.setMaxLength(DialogLimits.MAX_OPTION_ICON_LENGTH);
@@ -182,23 +194,23 @@ public class DialogOptionEditorScreen extends Screen {
         iconField.setTextColor(DesignTokens.Text.PRIMARY);
         iconField.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(iconField);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         // Action type cycle button
         actionTypeButton = CycleButton.<ActionType>builder(ActionType::getDisplayName)
             .withValues(ACTION_TYPES)
             .withInitialValue(selectedActionType)
-            .create(contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+            .create(contentX, y + sLabelH, contentWidth, sFieldH,
                 Component.translatable("gui.devmod.npc.option_editor.action_type"),
                 (btn, value) -> {
                     selectedActionType = value;
                     updateParamFields();
                 });
         addRenderableWidget(actionTypeButton);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         // Parameter fields (shown/hidden based on action type)
-        param1Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        param1Field = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.literal("Param 1"));
         param1Field.setValue(actionParam1);
         param1Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
@@ -207,9 +219,9 @@ public class DialogOptionEditorScreen extends Screen {
         param1Field.setTextColor(DesignTokens.Text.PRIMARY);
         param1Field.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(param1Field);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
-        param2Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        param2Field = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.literal("Param 2"));
         param2Field.setValue(actionParam2);
         param2Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
@@ -218,9 +230,9 @@ public class DialogOptionEditorScreen extends Screen {
         param2Field.setTextColor(DesignTokens.Text.PRIMARY);
         param2Field.setTextColorUneditable(DesignTokens.Text.MUTED);
         addRenderableWidget(param2Field);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
-        param3Field = new EditBox(font, contentX, y + LABEL_HEIGHT, contentWidth, FIELD_HEIGHT,
+        param3Field = new EditBox(font, contentX, y + sLabelH, contentWidth, sFieldH,
             Component.literal("Param 3"));
         param3Field.setValue(actionParam3);
         param3Field.setMaxLength(DialogLimits.MAX_ACTION_PARAM_LENGTH);
@@ -233,8 +245,8 @@ public class DialogOptionEditorScreen extends Screen {
         updateParamFields();
 
         // Bottom buttons
-        int buttonY = popupY + POPUP_HEIGHT - PADDING - FIELD_HEIGHT;
-        int buttonWidth = 80;
+        int buttonY = popupY + sPopupH - sPadding - sFieldH;
+        int buttonWidth = s(80);
 
         EditorButton cancelButton = EditorButton.builder("dialog-option-cancel",
                 Component.translatable("gui.devmod.cancel").getString())
@@ -243,7 +255,7 @@ public class DialogOptionEditorScreen extends Screen {
             .onClick(this::goBack)
             .build();
         addRenderableWidget(new EditorButtonWidget(cancelButton,
-            popupX + POPUP_WIDTH / 2 - buttonWidth - 5, buttonY, buttonWidth, FIELD_HEIGHT));
+            popupX + sPopupW / 2 - buttonWidth - s(5), buttonY, buttonWidth, sFieldH));
 
         EditorButton saveButton = EditorButton.builder("dialog-option-save",
                 Component.translatable("gui.devmod.npc.option_editor.save").getString())
@@ -252,7 +264,7 @@ public class DialogOptionEditorScreen extends Screen {
             .onClick(this::saveAndClose)
             .build();
         addRenderableWidget(new EditorButtonWidget(saveButton,
-            popupX + POPUP_WIDTH / 2 + 5, buttonY, buttonWidth, FIELD_HEIGHT));
+            popupX + sPopupW / 2 + s(5), buttonY, buttonWidth, sFieldH));
     }
 
     private void updateParamFields() {
@@ -416,48 +428,54 @@ public class DialogOptionEditorScreen extends Screen {
         UIScaleManager.update();
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int popupX = (width - POPUP_WIDTH) / 2;
-        int popupY = (height - POPUP_HEIGHT) / 2;
+        int sPopupW = s(POPUP_WIDTH);
+        int sPopupH = s(POPUP_HEIGHT);
+        int sPadding = s(PADDING);
+        int sFieldH = s(FIELD_HEIGHT);
+        int sLabelH = s(LABEL_HEIGHT);
+        int sSpacing = s(SPACING);
+        int popupX = (width - sPopupW) / 2;
+        int popupY = (height - sPopupH) / 2;
 
         // Popup background
-        graphics.fill(popupX, popupY, popupX + POPUP_WIDTH, popupY + POPUP_HEIGHT, COLOR_PANEL_BG);
+        graphics.fill(popupX, popupY, popupX + sPopupW, popupY + sPopupH, COLOR_PANEL_BG);
 
         // Border
-        graphics.renderOutline(popupX, popupY, POPUP_WIDTH, POPUP_HEIGHT, COLOR_BORDER);
+        graphics.renderOutline(popupX, popupY, sPopupW, sPopupH, COLOR_BORDER);
 
         // Title
-        UIScaleManager.drawScaledCenteredString(graphics, font, title.getString(), width / 2, popupY + PADDING, COLOR_TEXT);
+        UIScaleManager.drawScaledCenteredString(graphics, font, title.getString(), width / 2, popupY + sPadding, COLOR_TEXT);
 
         // Field labels
-        int contentX = popupX + PADDING;
-        int y = popupY + PADDING + 15;
+        int contentX = popupX + sPadding;
+        int y = popupY + sPadding + s(15);
 
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.id"),
             contentX, y, COLOR_LABEL);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.label"),
             contentX, y, COLOR_LABEL);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.icon"),
             contentX, y, COLOR_LABEL);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         UIScaleManager.drawScaledString(graphics, font, Component.translatable("gui.devmod.npc.option_editor.action_type"),
             contentX, y, COLOR_LABEL);
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         // Parameter labels based on action type
         if (param1Field != null && param1Field.visible) {
             UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam1Label(), contentX, y, COLOR_LABEL);
         }
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         if (param2Field != null && param2Field.visible) {
             UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam2Label(), contentX, y, COLOR_LABEL);
         }
-        y += LABEL_HEIGHT + FIELD_HEIGHT + SPACING;
+        y += sLabelH + sFieldH + sSpacing;
 
         if (param3Field != null && param3Field.visible) {
             UIScaleManager.drawScaledString(graphics, font, selectedActionType.getParam3Label(), contentX, y, COLOR_LABEL);
@@ -518,11 +536,11 @@ public class DialogOptionEditorScreen extends Screen {
             this.translationKey = translationKey;
         }
 
-        public Component getDisplayName() {
+        Component getDisplayName() {
             return Component.translatable(translationKey);
         }
 
-        public Component getParam1Label() {
+        Component getParam1Label() {
             return switch (this) {
                 case GOTO -> Component.translatable("gui.devmod.npc.action.goto.node_id");
                 case COMMAND -> Component.translatable("gui.devmod.npc.action.command.cmd");
@@ -534,7 +552,7 @@ public class DialogOptionEditorScreen extends Screen {
             };
         }
 
-        public Component getParam2Label() {
+        Component getParam2Label() {
             return switch (this) {
                 case COMMAND -> Component.translatable("gui.devmod.npc.action.command.source");
                 case TELEPORT -> Component.translatable("gui.devmod.npc.action.teleport.zone");
@@ -544,14 +562,14 @@ public class DialogOptionEditorScreen extends Screen {
             };
         }
 
-        public Component getParam3Label() {
+        Component getParam3Label() {
             return switch (this) {
                 case PLAY_SOUND -> Component.translatable("gui.devmod.npc.action.play_sound.pitch");
                 default -> Component.empty();
             };
         }
 
-        public static ActionType fromAction(DialogAction action) {
+        static ActionType fromAction(DialogAction action) {
             return switch (action) {
                 case DialogAction.CloseDialog c -> CLOSE;
                 case DialogAction.GoToNode g -> GOTO;

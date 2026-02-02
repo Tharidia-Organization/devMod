@@ -1035,7 +1035,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /*
+    /**
      * Handles build status updates from the server.
      * Called by AreaClientHooks when BuildStatusPayload is received.
      *
@@ -1220,7 +1220,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         PacketDistributor.sendToServer(new RequestTemplateListPayload());
     }
 
-    /*
+    /**
      * Updates the zone selector with the list of zones from the server.
      * Called from AreaClientHooks when ZoneListPayload is received.
      *
@@ -1232,7 +1232,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
     }
 
-    /*
+    /**
      * Updates the template list from the server.
      * Called from AreaClientHooks when TemplateListPayload is received.
      *
@@ -1249,7 +1249,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         LOGGER.debug("[AreaBuilder] Received {} templates from server (cached)", templates.size());
     }
 
-    /*
+    /**
      * Invalidates the template cache. Call after saving or deleting templates.
      */
     public static void invalidateTemplateCache() {
@@ -1257,7 +1257,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         templateCacheTime = 0L;
     }
 
-    /*
+    /**
      * Applies a template's configuration to this screen.
      * Called from AreaClientHooks when TemplateDataPayload is received.
      *

@@ -22,6 +22,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import com.devmod.DevMod;
 import com.devmod.area.builder.AreaBlockMapGenerator;
 import com.devmod.area.builder.AreaBuildTask;
+import com.devmod.area.builder.AreaPalettePresets;
 import com.devmod.area.builder.AreaShapeGenerator;
 import com.devmod.area.builder.BiomeAreaGenerator;
 import com.devmod.area.data.AreaDefinition;
@@ -93,16 +94,52 @@ public class AreaSystemGameTests {
         DevMod.LOGGER.info("[GameTest] Cleaning up 'area_integration' batch");
     }
 
-    @BeforeBatch(batch = "area_snapshot")
-    public static void setupAreaSnapshotBatch(ServerLevel level) {
-        DevMod.LOGGER.info("[GameTest] Setting up 'area_snapshot' batch");
+    @BeforeBatch(batch = "area_snapshot_core")
+    public static void setupAreaSnapshotCoreBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Setting up 'area_snapshot_core' batch");
         // Clean up any pending snapshot operations
         AreaSnapshotManager.INSTANCE.cleanup();
     }
 
-    @AfterBatch(batch = "area_snapshot")
-    public static void cleanupAreaSnapshotBatch(ServerLevel level) {
-        DevMod.LOGGER.info("[GameTest] Cleaning up 'area_snapshot' batch");
+    @AfterBatch(batch = "area_snapshot_core")
+    public static void cleanupAreaSnapshotCoreBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Cleaning up 'area_snapshot_core' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @BeforeBatch(batch = "area_snapshot_progress")
+    public static void setupAreaSnapshotProgressBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Setting up 'area_snapshot_progress' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @AfterBatch(batch = "area_snapshot_progress")
+    public static void cleanupAreaSnapshotProgressBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Cleaning up 'area_snapshot_progress' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @BeforeBatch(batch = "area_snapshot_concurrency")
+    public static void setupAreaSnapshotConcurrencyBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Setting up 'area_snapshot_concurrency' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @AfterBatch(batch = "area_snapshot_concurrency")
+    public static void cleanupAreaSnapshotConcurrencyBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Cleaning up 'area_snapshot_concurrency' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @BeforeBatch(batch = "area_snapshot_misc")
+    public static void setupAreaSnapshotMiscBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Setting up 'area_snapshot_misc' batch");
+        AreaSnapshotManager.INSTANCE.cleanup();
+    }
+
+    @AfterBatch(batch = "area_snapshot_misc")
+    public static void cleanupAreaSnapshotMiscBatch(ServerLevel level) {
+        DevMod.LOGGER.info("[GameTest] Cleaning up 'area_snapshot_misc' batch");
         AreaSnapshotManager.INSTANCE.cleanup();
     }
 
@@ -120,6 +157,10 @@ public class AreaSystemGameTests {
     // HELPER METHODS - Reduce code duplication
     // ============================================================
 
+    private static AreaPalette defaultPalette() {
+        return AreaPalettePresets.fromPreset("default");
+    }
+
     /**
      * Creates a simple test AreaDefinition with common defaults.
      *
@@ -130,7 +171,7 @@ public class AreaSystemGameTests {
      */
     private static AreaDefinition createTestArea(String name, BlockPos center, AreaDimensions dims) {
         return createTestArea(name, center, dims, AreaShape.RECTANGULAR,
-            new AreaOptions(true, false, false, WallStyle.SOLID, false, false, null));
+            AreaOptions.OPEN);
     }
 
     /**
@@ -151,7 +192,7 @@ public class AreaSystemGameTests {
             .shape(Objects.requireNonNull(shape))
             .dimensions(Objects.requireNonNull(dims))
             .center(Objects.requireNonNull(center))
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(Objects.requireNonNull(options))
             .build();
     }
@@ -417,7 +458,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 2, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(true, false, false, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -558,7 +599,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(5, 5, 3, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(true, true, true, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -605,7 +646,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 3, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(true, true, true, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -739,7 +780,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(5, 5, 3, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
 
@@ -750,7 +791,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.CIRCULAR)
             .dimensions(new AreaDimensions(7, 7, 4, center.getY()))
             .center(Objects.requireNonNull(center.above(10)))
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(Objects.requireNonNull(AreaOptions.DEFAULT))
             .build();
 
@@ -788,7 +829,7 @@ public class AreaSystemGameTests {
      * - Two-phase restore (CLEAR + RESTORE)
      * - Block placement verification
      */
-    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot", required = true, timeoutTicks = 600)
+    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot_core", required = true, timeoutTicks = 600)
     public static void testSnapshotCaptureRestoreEndToEnd(GameTestHelper helper) {
         ServerLevel level = Objects.requireNonNull(helper.getLevel());
         BlockPos center = helper.absolutePos(new BlockPos(2, 1, 2));
@@ -816,7 +857,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 2, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -950,7 +991,7 @@ public class AreaSystemGameTests {
      * TEST 20: Snapshot Capture Progress Tracking
      * Verifies that capture progress is tracked correctly during multi-tick capture.
      */
-    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot", timeoutTicks = 400)
+    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot_progress", timeoutTicks = 400)
     public static void testSnapshotCaptureProgressTracking(GameTestHelper helper) {
         ServerLevel level = Objects.requireNonNull(helper.getLevel());
         BlockPos center = helper.absolutePos(new BlockPos(2, 1, 2));
@@ -969,7 +1010,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 2, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -1016,7 +1057,7 @@ public class AreaSystemGameTests {
      * TEST 21: Concurrent Capture Limit
      * Verifies that MAX_CONCURRENT_CAPTURES is respected.
      */
-    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot", timeoutTicks = 200)
+    @GameTest(template = TEMPLATE_5X5, batch = "area_snapshot_concurrency", timeoutTicks = 200)
     public static void testConcurrentCaptureLimit(GameTestHelper helper) {
         ServerLevel level = Objects.requireNonNull(helper.getLevel());
         BlockPos center = helper.absolutePos(new BlockPos(2, 1, 2));
@@ -1039,7 +1080,7 @@ public class AreaSystemGameTests {
                 .shape(AreaShape.RECTANGULAR)
                 .dimensions(new AreaDimensions(3, 3, 2, center.getY()))
                 .center(center)
-                .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+                .palette(Objects.requireNonNull(defaultPalette()))
                 .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
                 .build();
 
@@ -1062,7 +1103,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 2, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .build();
 
@@ -1107,7 +1148,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(3, 3, 8, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(config)
             .build();
@@ -1168,7 +1209,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(5, 5, 16, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(config)
             .build();
@@ -1220,7 +1261,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(5, 5, 12, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(config)
             .build();
@@ -1294,7 +1335,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(8, 8, 32, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(flatConfig)
             .build();
@@ -1305,7 +1346,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(8, 8, 32, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(naturalConfig)
             .build();
@@ -1315,14 +1356,16 @@ public class AreaSystemGameTests {
 
         Map<BlockPos, BlockState> flatBlocks = BiomeAreaGenerator.generateBlockMap(flatArea, floorPositions);
         Map<BlockPos, BlockState> naturalBlocks = BiomeAreaGenerator.generateBlockMap(naturalArea, floorPositions);
+        DevMod.LOGGER.info("[GameTest] Terrain style block maps: flat={}, natural={}, floor={}",
+            flatBlocks.size(), naturalBlocks.size(), floorPositions.size());
 
         // FLAT should have uniform height, NATURAL should have variation
         Set<Integer> flatYs = new java.util.HashSet<>();
         Set<Integer> naturalYs = new java.util.HashSet<>();
 
         for (BlockPos floorPos : floorPositions) {
-            int flatMaxY = -1;
-            int naturalMaxY = -1;
+            int flatMaxY = Integer.MIN_VALUE;
+            int naturalMaxY = Integer.MIN_VALUE;
             for (BlockPos pos : flatBlocks.keySet()) {
                 if (pos.getX() == floorPos.getX() && pos.getZ() == floorPos.getZ()) {
                     flatMaxY = Math.max(flatMaxY, pos.getY());
@@ -1333,8 +1376,8 @@ public class AreaSystemGameTests {
                     naturalMaxY = Math.max(naturalMaxY, pos.getY());
                 }
             }
-            if (flatMaxY >= 0) flatYs.add(flatMaxY);
-            if (naturalMaxY >= 0) naturalYs.add(naturalMaxY);
+            if (flatMaxY != Integer.MIN_VALUE) flatYs.add(flatMaxY);
+            if (naturalMaxY != Integer.MIN_VALUE) naturalYs.add(naturalMaxY);
         }
 
         helper.assertTrue(flatYs.size() == 1,
@@ -1367,7 +1410,7 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(new AreaDimensions(8, 8, 16, center.getY()))
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
+            .palette(Objects.requireNonNull(defaultPalette()))
             .options(new AreaOptions(false, false, false, WallStyle.SOLID, false, false, null))
             .biomeConfig(config)
             .build();
@@ -1431,11 +1474,12 @@ public class AreaSystemGameTests {
             .shape(AreaShape.RECTANGULAR)
             .dimensions(dims)
             .center(center)
-            .palette(Objects.requireNonNull(AreaPalette.empty("default")))
-            .options(new AreaOptions(true, false, false, WallStyle.SOLID, true, false, null)) // clearFirst = true
+            .palette(Objects.requireNonNull(defaultPalette()))
+            .options(AreaOptions.OPEN)
             .build();
 
-        AreaBuildTask task = new AreaBuildTask(level, Objects.requireNonNull(def), 100, t -> {});
+        AreaBuildTask task = new AreaBuildTask(level, Objects.requireNonNull(def), 100, t -> {})
+            .withClearStep();
 
         try {
             // Run task to completion
@@ -1466,7 +1510,7 @@ public class AreaSystemGameTests {
      * Verifies that AreaSnapshotManager receives tick events.
      * This test checks that the manager's tick method is functional.
      */
-    @GameTest(template = TEMPLATE_EMPTY, batch = "area_snapshot", timeoutTicks = 100)
+    @GameTest(template = TEMPLATE_EMPTY, batch = "area_snapshot_misc", timeoutTicks = 100)
     public static void testSnapshotManagerTickWiring(GameTestHelper helper) {
         // Verify that AreaSnapshotManager can be ticked without errors
         // This confirms the event bus registration is working

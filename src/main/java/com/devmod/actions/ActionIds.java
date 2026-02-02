@@ -18,6 +18,9 @@ public final class ActionIds {
     public static final String UI_ITEM_EDITOR_OPEN_USABLE = "devmod.ui.item_editor.open_usable";
     public static final String UI_TELEMETRY_DASHBOARD_OPEN = "devmod.ui.telemetry_dashboard.open";
     public static final String UI_EDITOR_HUB_OPEN = "devmod.ui.editor_hub.open";
+    public static final String UI_PLAY_HUB_OPEN = "devmod.ui.play_hub.open";
+    public static final String UI_ARENA_HUB_OPEN = "devmod.ui.arena_hub.open";
+    public static final String UI_NEXUS_HUB_OPEN = "devmod.ui.nexus_hub.open";
     public static final String UI_MOB_CONFIG_OPEN = "devmod.ui.mob_config.open";
     public static final String UI_MOB_EQUIPMENT_OPEN = "devmod.ui.mob_equipment.open";
     public static final String UI_ROOM_BOUNDS_EDITOR_OPEN = "devmod.ui.room_bounds_editor.open";
@@ -294,6 +297,9 @@ public final class ActionIds {
     public static final String TEST_ENDURANCE_EXPORT_TABLE = "devmod.testing.endurance.export.table";
     public static final String TEST_ENDURANCE_EXPORT_ALL = "devmod.testing.endurance.export.all";
     public static final String TEST_ENDURANCE_AUTOSMOKE = "devmod.testing.endurance.autosmoke";
+    public static final String TEST_ENDURANCE_KILLWAVE = "devmod.testing.endurance.killwave";
+    public static final String TEST_ENDURANCE_DIE = "devmod.testing.endurance.die";
+    public static final String TEST_ENDURANCE_SKIP_WAVE = "devmod.testing.endurance.skipwave";
     public static final String TEST_DEBUGBOX = "devmod.testing.debugbox";
     public static final String TEST_DEBUGCLEAR = "devmod.testing.debugclear";
     public static final String TEST_PANELCLEAR = "devmod.testing.panelclear";

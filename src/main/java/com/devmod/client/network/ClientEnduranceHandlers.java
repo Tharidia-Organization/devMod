@@ -68,6 +68,12 @@ public final class ClientEnduranceHandlers {
     }
 
     public static void handleQuestCompletion(QuestCompletionPayload payload) {
+        LOGGER.info("[EnduranceQuest][Client] QuestCompletion packet received: wave={}/{}, tokens={}",
+            payload.finalWave(), payload.totalWaves(), payload.tokensEarned());
+        // Quest is ending - clear all death screen suppression flags
+        // This prevents showing QuestDeathScreen after the quest has ended
+        ClientQuestCache.forceStopDeathScreenSuppression();
+        ClientQuestCache.setPendingQuestEnd(false);
         EnduranceUiCache.setLastQuestCompletion(payload);
         // Clear party stats cache since quest is ending
         ClientPartyStatsCache.clear();

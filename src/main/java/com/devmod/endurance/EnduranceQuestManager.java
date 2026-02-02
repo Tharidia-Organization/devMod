@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,7 @@ import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.arena.telemetry.ArenaTelemetry;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.endurance.services.InstanceServicesFacade;
@@ -93,6 +96,8 @@ public class EnduranceQuestManager {
     private final Map<UUID, PartyQuestSession> partySessions = new ConcurrentHashMap<>();
     // Quest UUID -> party UUID lookup for shared party runs
     private final Map<UUID, UUID> questToParty = new ConcurrentHashMap<>();
+    // Lock for atomic party session registration/removal (updates both partySessions and questToParty)
+    private final Object partySessionLock = new Object();
 
     // Quest templates (mob ID -> quest template with best records)
     private final Map<ResourceLocation, EnduranceQuest> questTemplates = new ConcurrentHashMap<>();
@@ -105,20 +110,23 @@ public class EnduranceQuestManager {
     // Data directory
     private Path dataDirectory;
 
-    private boolean initialized = false;
+    // Volatile for thread visibility across initialization and query threads
+    private volatile boolean initialized = false;
 
     // Instance dimension mode flag - when true, quests run in isolated temporary dimensions
-    private boolean useInstanceDimensions = true;
+    // Volatile for thread visibility when config is hot-reloaded
+    private volatile boolean useInstanceDimensions = true;
 
     // Arena template system integration (L1/L2)
-    private ArenaTemplateRegistry arenaTemplateRegistry;
-    private ArenaPolicyRegistry arenaPolicyRegistry;
-    private PolicyResolver policyResolver;
-    private OverrideManager overrideManager;
-    private @javax.annotation.Nullable ForceTemplateCapability forceTemplateCapability;
-    private ArenaTelemetry arenaTelemetry;
-    private ArenaTemplateConfig arenaTemplateConfig;
-    private ArenaTemplateConfig.ConfigSnapshot arenaConfigSnapshot;
+    // Volatile for thread visibility during hot-reload and concurrent access
+    private volatile ArenaTemplateRegistry arenaTemplateRegistry;
+    private volatile ArenaPolicyRegistry arenaPolicyRegistry;
+    private volatile PolicyResolver policyResolver;
+    private volatile OverrideManager overrideManager;
+    private volatile @javax.annotation.Nullable ForceTemplateCapability forceTemplateCapability;
+    private volatile ArenaTelemetry arenaTelemetry;
+    private volatile ArenaTemplateConfig arenaTemplateConfig;
+    private volatile ArenaTemplateConfig.ConfigSnapshot arenaConfigSnapshot;
     private final PrebuildPoolManager prebuildPoolManager = new PrebuildPoolManager();
     private final AsyncArenaBuildCoordinator asyncBuildCoordinator =
         new AsyncArenaBuildCoordinator(() -> arenaConfigSnapshot);
@@ -743,7 +751,7 @@ public class EnduranceQuestManager {
 
         CompletableFuture<PreparedArenaResult> result = new CompletableFuture<>();
         var instanceFuture = InstanceManager.INSTANCE
-            .startInstanceQuestImmediate(leader, template.id(), mobId.toString(), partyMembers)
+            .prepareInstanceQuest(leader, template.id(), mobId.toString(), partyMembers)
             .orTimeout(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         instanceFuture = instanceFuture.whenComplete((instanceId, throwable) -> {
             var server = leader.getServer();
@@ -923,7 +931,7 @@ public class EnduranceQuestManager {
                 ? new ArrayList<>(settings.partyMemberIds)
                 : null;
             instanceId = InstanceManager.INSTANCE
-                .startInstanceQuestImmediate(leader, template.id(), mobId.toString(), partyMembers)
+                .prepareInstanceQuest(leader, template.id(), mobId.toString(), partyMembers)
                 .get(INSTANCE_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOGGER.error("[EnduranceQuest] Failed to create instance for party: {}", e.getMessage());
@@ -1027,13 +1035,21 @@ public class EnduranceQuestManager {
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaContext arena,
                                                                         @javax.annotation.Nullable ArenaHandle handle) {
-        return teleportPlayersToArena(players, arena, handle, false);
+        return teleportPlayersToArena(players, arena, handle, false, shouldUpdateSnapshotState(arena, handle));
     }
 
     public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
                                                                         ArenaContext arena,
                                                                         @javax.annotation.Nullable ArenaHandle handle,
                                                                         boolean allowFallback) {
+        return teleportPlayersToArena(players, arena, handle, allowFallback, shouldUpdateSnapshotState(arena, handle));
+    }
+
+    public Map<UUID, net.minecraft.core.BlockPos> teleportPlayersToArena(List<ServerPlayer> players,
+                                                                        ArenaContext arena,
+                                                                        @javax.annotation.Nullable ArenaHandle handle,
+                                                                        boolean allowFallback,
+                                                                        boolean updateSnapshotState) {
         Map<UUID, net.minecraft.core.BlockPos> spawnPositions = new HashMap<>();
         if (handle == null || handle.playerSpawnPositions() == null || handle.playerSpawnPositions().isEmpty()) {
             LOGGER.error("[EnduranceQuest] Missing player spawn slots; ArenaHandle required");
@@ -1043,6 +1059,9 @@ public class EnduranceQuestManager {
         List<ArenaHandle.BlockPos> positions = handle.playerSpawnPositions();
         int playerCount = players.size();
         ServerLevel level = arena.getLevel();
+        UUID instanceId = handle.instanceId();
+        boolean isInstanceDimension = com.devmod.runtime.DynamicDimensionManager.INSTANCE.isInstanceDimension(level.dimension());
+        boolean useTeleportTransaction = instanceId != null && isInstanceDimension;
         com.devmod.arena.registry.TemplateSpawnValidator runtimeValidator =
             new com.devmod.arena.registry.TemplateSpawnValidator(arenaTelemetry);
         Map<net.minecraft.core.BlockPos, ArenaTemplate.SpawnSlot> slotMap = Collections.emptyMap();
@@ -1059,6 +1078,8 @@ public class EnduranceQuestManager {
             ServerPlayer player = players.get(i);
             if (player == null || !player.isAlive()) continue;
 
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> previousDimension =
+                player.level().dimension();
             net.minecraft.core.BlockPos spawnPos = pickValidatedSpawnPosition(
                 positions,
                 i,
@@ -1080,23 +1101,58 @@ public class EnduranceQuestManager {
                 spawnPositions.clear();
                 return spawnPositions;
             }
-            double x = spawnPos.getX() + 0.5;
-            double y = spawnPos.getY();
-            double z = spawnPos.getZ() + 0.5;
+            if (useTeleportTransaction) {
+                com.devmod.runtime.TeleportTransaction.TeleportResult result =
+                    com.devmod.runtime.TeleportTransaction.executeToArena(
+                        player,
+                        instanceId,
+                        level,
+                        spawnPos,
+                        updateSnapshotState
+                    );
+                if (result == com.devmod.runtime.TeleportTransaction.TeleportResult.SUCCESS) {
+                    spawnPositions.put(player.getUUID(), spawnPos);
+                } else {
+                    LOGGER.warn("[EnduranceQuest] Teleport transaction failed for {} (instance={}, result={})",
+                        player.getName().getString(), instanceId, result);
+                    if (result == com.devmod.runtime.TeleportTransaction.TeleportResult.DIMENSION_NOT_FOUND
+                        || result == com.devmod.runtime.TeleportTransaction.TeleportResult.INSTANCE_INVALID_STATE) {
+                        spawnPositions.clear();
+                        return spawnPositions;
+                    }
+                    continue;
+                }
+            } else {
+                double x = spawnPos.getX() + 0.5;
+                double y = spawnPos.getY();
+                double z = spawnPos.getZ() + 0.5;
 
-            // Use the full teleport method to ensure proper client sync.
-            // Simple teleportTo(x,y,z) doesn't force network sync when client is stuck in "loading terrain".
-            level.getChunkAt(spawnPos); // Ensure chunk is loaded on server
-            player.teleportTo(
-                level,
-                x,
-                y,
-                z,
-                java.util.Objects.requireNonNull(java.util.Set.<net.minecraft.world.entity.RelativeMovement>of(), "teleport flags"),
-                player.getYRot(),
-                player.getXRot()
-            );
-            spawnPositions.put(player.getUUID(), spawnPos);
+                // Use the full teleport method to ensure proper client sync.
+                // Simple teleportTo(x,y,z) doesn't force network sync when client is stuck in "loading terrain".
+                level.getChunkAt(spawnPos); // Ensure chunk is loaded on server
+                player.teleportTo(
+                    level,
+                    x,
+                    y,
+                    z,
+                    java.util.Objects.requireNonNull(java.util.Set.<net.minecraft.world.entity.RelativeMovement>of(), "teleport flags"),
+                    player.getYRot(),
+                    player.getXRot()
+                );
+                player.setDeltaMovement(0, 0, 0);
+                player.fallDistance = 0;
+                boolean dimensionChanged = !previousDimension.equals(level.dimension());
+                if (dimensionChanged) {
+                    player.connection.resetPosition();
+                }
+                if (com.devmod.runtime.DynamicDimensionManager.INSTANCE.isInstanceDimension(level.dimension())) {
+                    com.devmod.runtime.environment.DimensionEnvironmentManager.INSTANCE.syncEnvironmentToPlayer(
+                        player,
+                        level.dimension()
+                    );
+                }
+                spawnPositions.put(player.getUUID(), spawnPos);
+            }
 
             LOGGER.debug("[EnduranceQuest] Teleported {} to handle spawn at ({}, {}, {})",
                 player.getName().getString(), spawnPos.getX(), spawnPos.getY(), spawnPos.getZ());
@@ -1105,6 +1161,42 @@ public class EnduranceQuestManager {
         LOGGER.info("[EnduranceQuest] Teleported {} players to arena {} using template spawns",
             spawnPositions.size(), arena.getId());
         return spawnPositions;
+    }
+
+    private boolean shouldUpdateSnapshotState(ArenaContext arena, @javax.annotation.Nullable ArenaHandle handle) {
+        if (handle == null || handle.instanceId() == null) {
+            return false;
+        }
+        if (arena == null || arena.getLevel() == null) {
+            return false;
+        }
+        return com.devmod.runtime.DynamicDimensionManager.INSTANCE.isInstanceDimension(arena.getLevel().dimension());
+    }
+
+    public boolean teleportPlayerToArena(ServerPlayer player,
+                                         ActiveQuestSession session,
+                                         boolean allowFallback,
+                                         boolean updateSnapshotState) {
+        if (player == null || session == null) {
+            return false;
+        }
+        ArenaContext arena = session.getArena();
+        ArenaHandle handle = session.getArenaHandle();
+        if (arena == null || handle == null) {
+            LOGGER.warn("[EnduranceQuest] Teleport failed for {} - missing arena/handle (arena={}, handle={})",
+                player.getName().getString(),
+                arena != null ? arena.getId() : "null",
+                handle != null ? handle.arenaId() : "null");
+            return false;
+        }
+        boolean success = !teleportPlayersToArena(
+            java.util.List.of(player),
+            arena,
+            handle,
+            allowFallback,
+            updateSnapshotState
+        ).isEmpty();
+        return success;
     }
 
     private net.minecraft.core.BlockPos pickValidatedSpawnPosition(
@@ -1958,6 +2050,7 @@ public class EnduranceQuestManager {
             if (settings.mobPoolConfig != null) {
                 session.setMobPoolConfig(settings.mobPoolConfig.copy());
             }
+            session.transitionTo(ActiveQuestSession.LifecycleState.ACTIVE, "prepared quest started");
             activeSessions.put(playerId, session); // Replaces placeholder
 
             try {
@@ -2073,6 +2166,11 @@ public class EnduranceQuestManager {
         quest.setTotalWaves(settings.totalWaves);
         quest.setEndlessMode(settings.endlessMode);
 
+        // Structured logging for quest start
+        EnduranceLogger.phase(Phase.QUEST_START, player, quest.getQuestId(),
+            "Starting quest: mob=%s, waves=%d, endless=%s, practice=%s",
+            mobId, settings.totalWaves, settings.endlessMode, settings.practiceMode);
+
         // Create placeholder session for atomic insert
         // NOTE: Arena is null here - will be set after successful creation
         ActiveQuestSession placeholderSession = new ActiveQuestSession(playerId, quest, null, System.currentTimeMillis());
@@ -2122,6 +2220,7 @@ public class EnduranceQuestManager {
         }
 
         pendingSession.setPending(true);
+        pendingSession.transitionTo(ActiveQuestSession.LifecycleState.PREPARING, "pending instance start");
         pendingSession.setDifficultyLabel(resolveDifficultyLabel(settings, quest.getMobConfig()));
         pendingSession.setQuestTypeLabel(resolveQuestTypeLabel(settings, quest.getMobConfig()));
         pendingSession.setKitId(settings.resolveKitId(playerId));
@@ -2167,12 +2266,17 @@ public class EnduranceQuestManager {
         }
 
         session.setLoadingProtection(true);
+        session.transitionTo(ActiveQuestSession.LifecycleState.TELEPORTING, "instance creation started");
         com.devmod.network.NetworkHandler.sendInstanceLoadingShow(player, "Creating template instance...");
         player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Creating instance dimension...")
             .withStyle(SharedColorTokens.Chat.YELLOW)));
 
+        // Structured logging for instance creation start
+        EnduranceLogger.phase(Phase.INSTANCE_CREATE, player, session.getQuest().getQuestId(),
+            "Starting instance creation: template=%s, mob=%s", resolved.template().id(), mobId);
+
         var startFuture = InstanceManager.INSTANCE
-            .startInstanceQuestImmediate(player, resolved.template().id(), mobId.toString(), null);
+            .prepareInstanceQuest(player, resolved.template().id(), mobId.toString(), null);
         startFuture = startFuture.whenComplete((instanceId, throwable) -> {
             var server = player.getServer();
             if (server == null) {
@@ -2440,6 +2544,7 @@ public class EnduranceQuestManager {
         }
         if (pendingSession != null) {
             pendingSession.setLoadingProtection(false);
+            pendingSession.transitionTo(ActiveQuestSession.LifecycleState.FAILED, "instance setup failed");
             activeSessions.remove(pendingSession.getPlayerId());
         }
         if (player != null) {
@@ -2503,6 +2608,7 @@ public class EnduranceQuestManager {
             session.setKitId(settings.resolveKitId(effectivePlayerId));
             session.setPracticeMode(settings.practiceMode);
         }
+        session.transitionTo(ActiveQuestSession.LifecycleState.ACTIVE, "quest started");
         if (pendingSession != null) {
             pendingSession.setLoadingProtection(false);
         }
@@ -2534,6 +2640,13 @@ public class EnduranceQuestManager {
             List.of("Invulnerability active"));
         session.setLoadingProtection(false);
 
+        // Structured logging for instance ready and player teleport
+        EnduranceLogger.phase(Phase.INSTANCE_READY, player, quest.getQuestId(),
+            "Instance ready: id=%s, template=%s", instanceId, template.id());
+        EnduranceLogger.phase(Phase.PLAYER_TELEPORT, player, quest.getQuestId(),
+            "Teleported to instance dimension: instanceId=%s, arenaPos=(%.1f, %.1f, %.1f), scheduling wave in %d ticks",
+            instanceId, player.getX(), player.getY(), player.getZ(), WAVE_START_COUNTDOWN_TICKS);
+
         LOGGER.info("[EnduranceQuest] Player {} started TEMPLATE quest: {} (instance: {})",
             player.getName().getString(), quest.getDisplayName(), instanceId);
 
@@ -2545,16 +2658,22 @@ public class EnduranceQuestManager {
 
     /**
      * Get active quest session for a player.
-     * Returns empty if the session is still initializing (placeholder state).
+     * Returns empty if the session is not ready for active gameplay:
+     * - isInitializing: arena not yet set (placeholder state)
+     * - isPending: instance still being created
+     * - isLoadingProtection: player still loading into instance
      * This prevents race conditions where code tries to use an incomplete session.
      */
     public Optional<ActiveQuestSession> getActiveSession(UUID playerId) {
         ActiveQuestSession session = activeSessions.get(playerId);
-        // Filter out initializing sessions to prevent race conditions
-        if (session != null && session.isInitializing()) {
+        if (session == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(session);
+        // Filter out sessions that are not yet ready for active gameplay
+        if (session.isInitializing() || session.isPending() || session.isLoadingProtection()) {
+            return Optional.empty();
+        }
+        return Optional.of(session);
     }
 
     /**
@@ -2822,6 +2941,27 @@ public class EnduranceQuestManager {
         sessionHandler.exitAtCheckpoint(player);
     }
 
+    /**
+     * Critical failure handler for teleport/dimension recovery.
+     * Ends the quest safely and restores player state.
+     */
+    public void handleCriticalTeleportFailure(ServerPlayer player,
+                                              ActiveQuestSession session,
+                                              String reason) {
+        if (player == null || session == null) {
+            return;
+        }
+        String safeReason = reason != null && !reason.isBlank() ? reason : "teleport_failed";
+        if (session.getPartyId() != null) {
+            getPartySession(session.getPartyId()).ifPresent(partySession ->
+                endPartyRun(partySession, false, safeReason));
+            return;
+        }
+        if (sessionHandler != null) {
+            sessionHandler.forceFailQuest(player, session, safeReason);
+        }
+    }
+
     public void endPartyRun(PartyQuestSession partySession, boolean completed, String reason) {
         if (partySession == null || !partySession.isActive()) {
             return;
@@ -3038,8 +3178,11 @@ public class EnduranceQuestManager {
         if (session == null) {
             return null;
         }
-        partySessions.put(session.getPartyId(), session);
-        questToParty.put(session.getQuestId(), session.getPartyId());
+        // Thread-safe: Atomic update of both maps under lock
+        synchronized (partySessionLock) {
+            partySessions.put(session.getPartyId(), session);
+            questToParty.put(session.getQuestId(), session.getPartyId());
+        }
         var party = com.devmod.party.PartyManager.INSTANCE.getParty(session.getPartyId());
         if (party != null && party.getState() != com.devmod.party.PartyData.PartyState.IN_QUEST) {
             com.devmod.party.PartyManager.INSTANCE.forceStartQuest(session.getPartyId(), session.getInstanceId());
@@ -3073,9 +3216,12 @@ public class EnduranceQuestManager {
     }
 
     public void removePartySession(UUID partyId) {
-        PartyQuestSession session = partySessions.remove(partyId);
-        if (session != null) {
-            questToParty.remove(session.getQuestId());
+        // Thread-safe: Atomic removal from both maps under lock
+        synchronized (partySessionLock) {
+            PartyQuestSession session = partySessions.remove(partyId);
+            if (session != null) {
+                questToParty.remove(session.getQuestId());
+            }
         }
     }
 
@@ -3221,6 +3367,7 @@ public class EnduranceQuestManager {
             }
             session.setMobPoolConfig(templateSession.getMobPoolConfig());
         }
+        session.transitionTo(ActiveQuestSession.LifecycleState.ACTIVE, "party member attached");
         session.setPartySpectator(true);
         activeSessions.put(playerId, session);
 
@@ -3278,29 +3425,21 @@ public class EnduranceQuestManager {
             return true;
         }
 
-        boolean teleported = false;
-        UUID instanceId = session.getInstanceId();
-        if (instanceId != null) {
-            PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_TRANSIT);
-            teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
-        }
-        if (teleported && session.getArena() != null) {
-            teleported = !teleportPlayersToArena(List.of(player), session.getArena(), session.getArenaHandle(), true).isEmpty();
-        }
+        boolean teleported = teleportPlayerToArena(
+            player,
+            session,
+            true,
+            session.isInInstanceDimension()
+        );
 
         if (teleported) {
             player.setGameMode(GameType.SURVIVAL);
             PlayerStateServicesFacade.INSTANCE.resetQuestLoadout(player, session);
             PlayerStateServicesFacade.INSTANCE.applySafeWindowEffects(player, SAFE_WINDOW_TICKS);
             markPartyMemberActive(player.getUUID());
-            if (instanceId != null) {
-                PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.IN_INSTANCE);
-            }
             player.sendSystemMessage(Objects.requireNonNull(
                 net.minecraft.network.chat.Component.literal("[DevMod] Rejoined party run.")
                     .withStyle(SharedColorTokens.Chat.GREEN)));
-        } else if (instanceId != null) {
-            PlayerStateServicesFacade.INSTANCE.updateSnapshotState(player.getUUID(), com.devmod.runtime.PlayerInstanceState.PREPARING);
         }
 
         return teleported;
@@ -3508,16 +3647,29 @@ public class EnduranceQuestManager {
      * Active quest session for a player.
      */
     public static class ActiveQuestSession {
+        public enum LifecycleState {
+            INITIALIZING,
+            PREPARING,
+            TELEPORTING,
+            ACTIVE,
+            AWAITING_RESPAWN,
+            CLEANUP,
+            COMPLETED,
+            FAILED
+        }
+
         private final UUID playerId;
         final EnduranceQuest quest;
         final ArenaContext arena;
         private final long startTime;
         private int killsInCurrentWave = 0;
-        private boolean awaitingRespawnChoice = false;
-        private boolean respawnRequested = false;
+        private final AtomicBoolean awaitingRespawnChoice = new AtomicBoolean(false);
+        private final AtomicBoolean respawnRequested = new AtomicBoolean(false);
         private long abandonConfirmUntilMs = 0;
         private long lastDimensionRecoveryMs = 0;
         private long lastConfinementLogMs = 0;
+        private volatile LifecycleState lifecycleState = LifecycleState.INITIALIZING;
+        private volatile long lifecycleUpdatedAtMs = System.currentTimeMillis();
 
         // Instance dimension ID (null if using legacy overworld arena)
         private UUID instanceId;
@@ -3533,29 +3685,29 @@ public class EnduranceQuestManager {
         private boolean pending = false;
         private boolean loadingProtection = false;
 
-        // Instance start countdown (solo pre-teleport)
-        private int pendingInstanceStartTicks = 0;
-        private int lastTeleportCountdownSeconds = -1;
+        // Instance start countdown (solo pre-teleport) - AtomicInteger for thread safety
+        private final AtomicInteger pendingInstanceStartTicks = new AtomicInteger(0);
+        private volatile int lastTeleportCountdownSeconds = -1;
         private @javax.annotation.Nullable ResourceLocation pendingMobId;
         private @javax.annotation.Nullable QuestSettings pendingSettings;
         private @javax.annotation.Nullable ResolvedArena pendingResolved;
 
-        // Briefing countdown (solo pre-teleport lobby)
-        private int pendingBriefingTicks = 0;
-        private int lastBriefingSeconds = -1;
+        // Briefing countdown (solo pre-teleport lobby) - AtomicInteger for thread safety
+        private final AtomicInteger pendingBriefingTicks = new AtomicInteger(0);
+        private volatile int lastBriefingSeconds = -1;
         private List<String> briefingLines = List.of();
 
-        // Wave start countdown (solo start / respawn delay)
-        private int pendingWaveStartTicks = 0;
-        private int lastWaveCountdownSeconds = -1;
+        // Wave start countdown (solo start / respawn delay) - AtomicInteger for thread safety
+        private final AtomicInteger pendingWaveStartTicks = new AtomicInteger(0);
+        private volatile int lastWaveCountdownSeconds = -1;
 
-        // Safe window countdown (post-teleport / post-respawn)
-        private int pendingSafeWindowTicks = 0;
-        private int lastSafeWindowSeconds = -1;
+        // Safe window countdown (post-teleport / post-respawn) - AtomicInteger for thread safety
+        private final AtomicInteger pendingSafeWindowTicks = new AtomicInteger(0);
+        private volatile int lastSafeWindowSeconds = -1;
 
-        // Boss intro countdown (short cinematic pause)
-        private int pendingBossIntroTicks = 0;
-        private int lastBossIntroSeconds = -1;
+        // Boss intro countdown (short cinematic pause) - AtomicInteger for thread safety
+        private final AtomicInteger pendingBossIntroTicks = new AtomicInteger(0);
+        private volatile int lastBossIntroSeconds = -1;
         private boolean respawnCountdownActive = false;
 
         // Wave directive choices (risk/reward between waves)
@@ -3617,13 +3769,74 @@ public class EnduranceQuestManager {
         public ArenaContext getArena() { return arena; }
         public long getStartTime() { return startTime; }
         public int getKillsInCurrentWave() { return killsInCurrentWave; }
-        public boolean isAwaitingRespawnChoice() { return awaitingRespawnChoice; }
-        public boolean isRespawnRequested() { return respawnRequested; }
+        public boolean isAwaitingRespawnChoice() { return awaitingRespawnChoice.get(); }
+        public boolean isRespawnRequested() { return respawnRequested.get(); }
+        public LifecycleState getLifecycleState() { return lifecycleState; }
+        public long getLifecycleUpdatedAtMs() { return lifecycleUpdatedAtMs; }
+        public boolean isLifecycleActive() { return lifecycleState == LifecycleState.ACTIVE; }
+        public boolean shouldProcessGameplay() {
+            return lifecycleState == LifecycleState.ACTIVE;
+        }
+
+        public synchronized boolean transitionTo(LifecycleState next, @javax.annotation.Nullable String reason) {
+            LifecycleState current = this.lifecycleState;
+            if (current == next) {
+                return true;
+            }
+            boolean valid = isValidTransition(current, next);
+            this.lifecycleState = next;
+            this.lifecycleUpdatedAtMs = System.currentTimeMillis();
+            if (!valid) {
+                LOGGER.warn("[EnduranceQuest] Lifecycle transition forced for {}: {} -> {} (reason={})",
+                    playerId, current, next, reason);
+            } else {
+                LOGGER.debug("[EnduranceQuest] Lifecycle transition for {}: {} -> {} (reason={})",
+                    playerId, current, next, reason);
+            }
+            return valid;
+        }
+
+        private static boolean isValidTransition(LifecycleState from, LifecycleState to) {
+            return switch (from) {
+                case INITIALIZING -> to != LifecycleState.COMPLETED;
+                case PREPARING -> to == LifecycleState.TELEPORTING
+                    || to == LifecycleState.ACTIVE
+                    || to == LifecycleState.FAILED
+                    || to == LifecycleState.CLEANUP;
+                case TELEPORTING -> to == LifecycleState.ACTIVE
+                    || to == LifecycleState.FAILED
+                    || to == LifecycleState.CLEANUP;
+                case ACTIVE -> to == LifecycleState.AWAITING_RESPAWN
+                    || to == LifecycleState.CLEANUP
+                    || to == LifecycleState.COMPLETED
+                    || to == LifecycleState.FAILED;
+                case AWAITING_RESPAWN -> to == LifecycleState.TELEPORTING
+                    || to == LifecycleState.CLEANUP
+                    || to == LifecycleState.FAILED
+                    || to == LifecycleState.ACTIVE;
+                case CLEANUP -> to == LifecycleState.COMPLETED
+                    || to == LifecycleState.FAILED;
+                case COMPLETED, FAILED -> false;
+            };
+        }
 
         public void setAwaitingRespawnChoice(boolean awaiting) {
-            this.awaitingRespawnChoice = awaiting;
+            this.awaitingRespawnChoice.set(awaiting);
         }
-        public void setRespawnRequested(boolean respawnRequested) { this.respawnRequested = respawnRequested; }
+        /**
+         * Atomically set awaitingRespawnChoice from expected value to new value.
+         * Returns true if successful (prevents race condition between vanilla respawn and handler).
+         */
+        public boolean compareAndSetAwaitingRespawnChoice(boolean expect, boolean update) {
+            return this.awaitingRespawnChoice.compareAndSet(expect, update);
+        }
+        public void setRespawnRequested(boolean respawnRequested) { this.respawnRequested.set(respawnRequested); }
+        /**
+         * Atomically set respawnRequested from expected value to new value.
+         */
+        public boolean compareAndSetRespawnRequested(boolean expect, boolean update) {
+            return this.respawnRequested.compareAndSet(expect, update);
+        }
         public boolean canAttemptDimensionRecovery(long nowMs, long cooldownMs) {
             return nowMs - lastDimensionRecoveryMs >= cooldownMs;
         }
@@ -3711,24 +3924,30 @@ public class EnduranceQuestManager {
             this.pendingMobId = mobId;
             this.pendingSettings = settings;
             this.pendingResolved = resolved;
-            this.pendingInstanceStartTicks = Math.max(0, ticks);
+            this.pendingInstanceStartTicks.set(Math.max(0, ticks));
             this.lastTeleportCountdownSeconds = -1;
         }
 
         public void scheduleBriefing(int ticks) {
-            this.pendingBriefingTicks = Math.max(0, ticks);
+            this.pendingBriefingTicks.set(Math.max(0, ticks));
             this.lastBriefingSeconds = -1;
         }
 
         public boolean isBriefingPending() {
-            return pendingBriefingTicks > 0;
+            return pendingBriefingTicks.get() > 0;
         }
 
+        /**
+         * Thread-safe countdown tick using atomic decrement.
+         * Returns the new value after decrement (or current value if already 0).
+         */
         public int tickBriefingCountdown() {
-            if (pendingBriefingTicks > 0) {
-                pendingBriefingTicks--;
-            }
-            return pendingBriefingTicks;
+            int current;
+            do {
+                current = pendingBriefingTicks.get();
+                if (current <= 0) return 0;
+            } while (!pendingBriefingTicks.compareAndSet(current, current - 1));
+            return current - 1;
         }
 
         public int getLastBriefingSeconds() { return lastBriefingSeconds; }
@@ -3742,14 +3961,19 @@ public class EnduranceQuestManager {
         }
 
         public boolean isInstanceStartPending() {
-            return pendingInstanceStartTicks > 0 && pendingMobId != null && pendingSettings != null && pendingResolved != null;
+            return pendingInstanceStartTicks.get() > 0 && pendingMobId != null && pendingSettings != null && pendingResolved != null;
         }
 
+        /**
+         * Thread-safe countdown tick using atomic decrement.
+         */
         public int tickInstanceStartCountdown() {
-            if (pendingInstanceStartTicks > 0) {
-                pendingInstanceStartTicks--;
-            }
-            return pendingInstanceStartTicks;
+            int current;
+            do {
+                current = pendingInstanceStartTicks.get();
+                if (current <= 0) return 0;
+            } while (!pendingInstanceStartTicks.compareAndSet(current, current - 1));
+            return current - 1;
         }
 
         public int getLastTeleportCountdownSeconds() { return lastTeleportCountdownSeconds; }
@@ -3760,7 +3984,7 @@ public class EnduranceQuestManager {
         public @javax.annotation.Nullable ResolvedArena getPendingResolved() { return pendingResolved; }
 
         public void clearPendingInstanceStart() {
-            pendingInstanceStartTicks = 0;
+            pendingInstanceStartTicks.set(0);
             lastTeleportCountdownSeconds = -1;
             pendingMobId = null;
             pendingSettings = null;
@@ -3769,21 +3993,26 @@ public class EnduranceQuestManager {
 
         public void scheduleWaveStart(int ticks) {
             if (ticks <= 0) {
-                pendingWaveStartTicks = 0;
+                pendingWaveStartTicks.set(0);
                 lastWaveCountdownSeconds = -1;
                 return;
             }
-            pendingWaveStartTicks = ticks;
+            pendingWaveStartTicks.set(ticks);
             lastWaveCountdownSeconds = -1;
         }
 
-        public boolean isWaveStartPending() { return pendingWaveStartTicks > 0; }
+        public boolean isWaveStartPending() { return pendingWaveStartTicks.get() > 0; }
 
+        /**
+         * Thread-safe countdown tick using atomic decrement.
+         */
         public int tickWaveStartCountdown() {
-            if (pendingWaveStartTicks > 0) {
-                pendingWaveStartTicks--;
-            }
-            return pendingWaveStartTicks;
+            int current;
+            do {
+                current = pendingWaveStartTicks.get();
+                if (current <= 0) return 0;
+            } while (!pendingWaveStartTicks.compareAndSet(current, current - 1));
+            return current - 1;
         }
 
         public int getLastWaveCountdownSeconds() { return lastWaveCountdownSeconds; }
@@ -3791,27 +4020,32 @@ public class EnduranceQuestManager {
         public void setLastWaveCountdownSeconds(int seconds) { this.lastWaveCountdownSeconds = seconds; }
 
         public void clearPendingWaveStart() {
-            pendingWaveStartTicks = 0;
+            pendingWaveStartTicks.set(0);
             lastWaveCountdownSeconds = -1;
         }
 
         public void scheduleSafeWindow(int ticks) {
             if (ticks <= 0) {
-                pendingSafeWindowTicks = 0;
+                pendingSafeWindowTicks.set(0);
                 lastSafeWindowSeconds = -1;
                 return;
             }
-            pendingSafeWindowTicks = ticks;
+            pendingSafeWindowTicks.set(ticks);
             lastSafeWindowSeconds = -1;
         }
 
-        public boolean isSafeWindowPending() { return pendingSafeWindowTicks > 0; }
+        public boolean isSafeWindowPending() { return pendingSafeWindowTicks.get() > 0; }
 
+        /**
+         * Thread-safe countdown tick using atomic decrement.
+         */
         public int tickSafeWindowCountdown() {
-            if (pendingSafeWindowTicks > 0) {
-                pendingSafeWindowTicks--;
-            }
-            return pendingSafeWindowTicks;
+            int current;
+            do {
+                current = pendingSafeWindowTicks.get();
+                if (current <= 0) return 0;
+            } while (!pendingSafeWindowTicks.compareAndSet(current, current - 1));
+            return current - 1;
         }
 
         public int getLastSafeWindowSeconds() { return lastSafeWindowSeconds; }
@@ -3819,27 +4053,32 @@ public class EnduranceQuestManager {
         public void setLastSafeWindowSeconds(int seconds) { this.lastSafeWindowSeconds = seconds; }
 
         public void clearPendingSafeWindow() {
-            pendingSafeWindowTicks = 0;
+            pendingSafeWindowTicks.set(0);
             lastSafeWindowSeconds = -1;
         }
 
         public void scheduleBossIntro(int ticks) {
             if (ticks <= 0) {
-                pendingBossIntroTicks = 0;
+                pendingBossIntroTicks.set(0);
                 lastBossIntroSeconds = -1;
                 return;
             }
-            pendingBossIntroTicks = ticks;
+            pendingBossIntroTicks.set(ticks);
             lastBossIntroSeconds = -1;
         }
 
-        public boolean isBossIntroPending() { return pendingBossIntroTicks > 0; }
+        public boolean isBossIntroPending() { return pendingBossIntroTicks.get() > 0; }
 
+        /**
+         * Thread-safe countdown tick using atomic decrement.
+         */
         public int tickBossIntroCountdown() {
-            if (pendingBossIntroTicks > 0) {
-                pendingBossIntroTicks--;
-            }
-            return pendingBossIntroTicks;
+            int current;
+            do {
+                current = pendingBossIntroTicks.get();
+                if (current <= 0) return 0;
+            } while (!pendingBossIntroTicks.compareAndSet(current, current - 1));
+            return current - 1;
         }
 
         public int getLastBossIntroSeconds() { return lastBossIntroSeconds; }
@@ -3847,7 +4086,7 @@ public class EnduranceQuestManager {
         public void setLastBossIntroSeconds(int seconds) { this.lastBossIntroSeconds = seconds; }
 
         public void clearPendingBossIntro() {
-            pendingBossIntroTicks = 0;
+            pendingBossIntroTicks.set(0);
             lastBossIntroSeconds = -1;
         }
 
@@ -3864,7 +4103,7 @@ public class EnduranceQuestManager {
             clearPendingSafeWindow();
             clearPendingBossIntro();
             clearPendingInstanceStart();
-            pendingBriefingTicks = 0;
+            pendingBriefingTicks.set(0);
             lastBriefingSeconds = -1;
             briefingLines = List.of();
             respawnCountdownActive = false;

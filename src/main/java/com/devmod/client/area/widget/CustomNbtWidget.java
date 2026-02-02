@@ -74,23 +74,23 @@ public class CustomNbtWidget extends AbstractWidget {
         this.onNbtChanged = Objects.requireNonNull(onNbtChanged);
 
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
-        int inputWidth = 45;
-        int inputY = y + height - 50;
+        int inputWidth = s(45);
+        int inputY = y + height - s(50);
 
         // X input
-        this.xInput = new EditBox(font, x + 25, inputY, inputWidth, 16,
+        this.xInput = new EditBox(font, x + s(25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.custom.x")));
         this.xInput.setValue("0");
         this.xInput.setMaxLength(6);
 
         // Y input
-        this.yInput = new EditBox(font, x + 80 + 25, inputY, inputWidth, 16,
+        this.yInput = new EditBox(font, x + s(80 + 25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.custom.y")));
         this.yInput.setValue("0");
         this.yInput.setMaxLength(6);
 
         // Z input
-        this.zInput = new EditBox(font, x + 160 + 25, inputY, inputWidth, 16,
+        this.zInput = new EditBox(font, x + s(160 + 25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.custom.z")));
         this.zInput.setValue("0");
         this.zInput.setMaxLength(6);
@@ -142,6 +142,25 @@ public class CustomNbtWidget extends AbstractWidget {
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int listPadding = s(4);
+        int listHeaderGap = s(12);
+        int listTopGap = s(45);
+        int presetY = getY() + s(18);
+        int presetButtonPadding = s(4);
+        int presetButtonHeight = s(14);
+        int listHeight = MAX_VISIBLE_POSITIONS * rowHeight;
+        int addSectionGap = s(10);
+        int addLabelGap = s(15);
+        int inputHeight = s(16);
+        int inputWidth = s(45);
+        int inputLabelOffset = s(4);
+        int addButtonWidth = s(50);
+        int addButtonHeight = s(18);
+        int clearButtonWidth = s(55);
+        int clearButtonHeight = s(14);
+        int clearButtonInset = s(60);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -151,7 +170,6 @@ public class CustomNbtWidget extends AbstractWidget {
         );
 
         // Preset selector
-        int presetY = getY() + 18;
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.custom.preset")),
             getX(), presetY,
@@ -159,32 +177,31 @@ public class CustomNbtWidget extends AbstractWidget {
         );
 
         // Preset buttons
-        int presetBtnX = getX() + 60;
+        int presetBtnX = getX() + s(60);
         for (int i = 0; i < PRESET_NAMES.length; i++) {
             String presetName = Objects.requireNonNull(PRESET_NAMES[i]);
-            int btnWidth = font.width(presetName) + 8;
+            int btnWidth = font.width(presetName) + s(8);
             boolean selected = i == selectedPreset;
             boolean hovered = mouseX >= presetBtnX && mouseX < presetBtnX + btnWidth &&
-                              mouseY >= presetY - 2 && mouseY < presetY + 12;
+                              mouseY >= presetY - s(2) && mouseY < presetY + presetButtonHeight;
 
             int bgColor = selected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                           (hovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL);
-            graphics.fill(presetBtnX, presetY - 2, presetBtnX + btnWidth, presetY + 12, bgColor);
-            UIScaleManager.drawScaledString(graphics, font, presetName, presetBtnX + 4, presetY, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            graphics.fill(presetBtnX, presetY - s(2), presetBtnX + btnWidth, presetY + presetButtonHeight, bgColor);
+            UIScaleManager.drawScaledString(graphics, font, presetName, presetBtnX + presetButtonPadding, presetY, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
-            presetBtnX += btnWidth + 4;
+            presetBtnX += btnWidth + s(4);
         }
 
         // Position list header
-        int listY = getY() + 45;
+        int listY = getY() + listTopGap;
         UIScaleManager.drawScaledString(graphics, font,
             "Positions (relative to center): " + positions.size() + "/" + MAX_POSITIONS,
-            getX(), listY - 12,
+            getX(), listY - listHeaderGap,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
 
         // Position list background
-        int listHeight = MAX_VISIBLE_POSITIONS * ROW_HEIGHT;
         graphics.fill(getX(), listY, getX() + getWidth(), listY + listHeight, AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(getX(), listY, getWidth(), listHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
@@ -195,39 +212,39 @@ public class CustomNbtWidget extends AbstractWidget {
             if (idx >= positions.size()) break;
 
             BlockPos pos = positions.get(idx);
-            int rowY = listY + i * ROW_HEIGHT + 2;
+            int rowY = listY + i * rowHeight + s(2);
 
             // Index
             UIScaleManager.drawScaledString(graphics, font,
                 String.valueOf(idx + 1) + ".",
-                getX() + 4, rowY + 4,
+                getX() + listPadding, rowY + inputLabelOffset,
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
             );
 
             // Coordinates
             String coordText = String.format("(%+d, %+d, %+d)", pos.getX(), pos.getY(), pos.getZ());
-            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + 30, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + s(30), rowY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
             // Delete button
-            int btnX = getX() + getWidth() - BUTTON_SIZE - 8;
+            int btnX = getX() + getWidth() - buttonSize - s(8);
             int btnY = rowY;
-            boolean hovered = mouseX >= btnX && mouseX < btnX + BUTTON_SIZE &&
-                              mouseY >= btnY && mouseY < btnY + BUTTON_SIZE;
+            boolean hovered = mouseX >= btnX && mouseX < btnX + buttonSize &&
+                              mouseY >= btnY && mouseY < btnY + buttonSize;
             int btnColor = hovered ? DesignTokens.AreaBuilder.DELETE_BTN_HOVER : DesignTokens.AreaBuilder.DELETE_BTN;
-            graphics.fill(btnX, btnY, btnX + BUTTON_SIZE, btnY + BUTTON_SIZE, btnColor);
-            UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
+            graphics.fill(btnX, btnY, btnX + buttonSize, btnY + buttonSize, btnColor);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + buttonSize / 2, btnY + inputLabelOffset, DesignTokens.AreaBuilder.TEXT_WHITE);
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + s(2), AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
         if (scrollOffset + MAX_VISIBLE_POSITIONS < positions.size()) {
-            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - s(10), AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
 
         // Add position section
-        int addY = listY + listHeight + 10;
+        int addY = listY + listHeight + addSectionGap;
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.custom.add_position")),
             getX(), addY,
@@ -235,42 +252,51 @@ public class CustomNbtWidget extends AbstractWidget {
         );
 
         // X/Y/Z labels and inputs
-        int inputY = addY + 15;
-        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        int inputY = addY + addLabelGap;
+        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + s(5), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        xInput.setX(getX() + s(25));
         xInput.setY(inputY);
+        xInput.setWidth(inputWidth);
+        xInput.setHeight(inputHeight);
         xInput.render(graphics, mouseX, mouseY, partialTick);
 
-        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + s(85), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        yInput.setX(getX() + s(80 + 25));
         yInput.setY(inputY);
+        yInput.setWidth(inputWidth);
+        yInput.setHeight(inputHeight);
         yInput.render(graphics, mouseX, mouseY, partialTick);
 
-        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + s(165), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        zInput.setX(getX() + s(160 + 25));
         zInput.setY(inputY);
+        zInput.setWidth(inputWidth);
+        zInput.setHeight(inputHeight);
         zInput.render(graphics, mouseX, mouseY, partialTick);
 
         // Add button
-        int addBtnX = getX() + 230;
+        int addBtnX = getX() + s(230);
         int addBtnY = inputY;
-        int addBtnW = 50;
-        int addBtnH = 18;
+        int addBtnW = addButtonWidth;
+        int addBtnH = addButtonHeight;
         boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + addBtnW &&
                              mouseY >= addBtnY && mouseY < addBtnY + addBtnH;
         graphics.fill(addBtnX, addBtnY, addBtnX + addBtnW, addBtnY + addBtnH,
             addHovered ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(addBtnX, addBtnY, addBtnW, addBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + s(5), AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Clear all button
-        int clearBtnX = getX() + getWidth() - 60;
-        int clearBtnY = addY - 2;
-        int clearBtnW = 55;
-        int clearBtnH = 14;
+        int clearBtnX = getX() + getWidth() - clearButtonInset;
+        int clearBtnY = addY - s(2);
+        int clearBtnW = clearButtonWidth;
+        int clearBtnH = clearButtonHeight;
         boolean clearHovered = mouseX >= clearBtnX && mouseX < clearBtnX + clearBtnW &&
                                mouseY >= clearBtnY && mouseY < clearBtnY + clearBtnH;
         graphics.fill(clearBtnX, clearBtnY, clearBtnX + clearBtnW, clearBtnY + clearBtnH,
             clearHovered ? DesignTokens.AreaBuilder.DELETE_BTN : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(clearBtnX, clearBtnY, clearBtnW, clearBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "Clear All", clearBtnX + clearBtnW / 2, clearBtnY + 3, DesignTokens.AreaBuilder.TEXT_WHITE);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "Clear All", clearBtnX + clearBtnW / 2, clearBtnY + s(3), DesignTokens.AreaBuilder.TEXT_WHITE);
     }
 
     @Override
@@ -283,29 +309,29 @@ public class CustomNbtWidget extends AbstractWidget {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
 
         // Check preset buttons
-        int presetY = getY() + 18;
-        int presetBtnX = getX() + 60;
+        int presetY = getY() + s(18);
+        int presetBtnX = getX() + s(60);
         for (int i = 0; i < PRESET_NAMES.length; i++) {
             String presetName = Objects.requireNonNull(PRESET_NAMES[i]);
-            int btnWidth = font.width(presetName) + 8;
+            int btnWidth = font.width(presetName) + s(8);
             if (mouseX >= presetBtnX && mouseX < presetBtnX + btnWidth &&
-                mouseY >= presetY - 2 && mouseY < presetY + 12) {
+                mouseY >= presetY - s(2) && mouseY < presetY + s(14)) {
                 selectedPreset = i;
                 applyPreset(i);
                 return true;
             }
-            presetBtnX += btnWidth + 4;
+            presetBtnX += btnWidth + s(4);
         }
 
-        int listY = getY() + 45;
-        int listHeight = MAX_VISIBLE_POSITIONS * ROW_HEIGHT;
+        int listY = getY() + s(45);
+        int listHeight = MAX_VISIBLE_POSITIONS * s(ROW_HEIGHT);
 
         // Check add button
-        int addY = listY + listHeight + 10;
-        int inputY = addY + 15;
-        int addBtnX = getX() + 230;
-        int addBtnW = 50;
-        int addBtnH = 18;
+        int addY = listY + listHeight + s(10);
+        int inputY = addY + s(15);
+        int addBtnX = getX() + s(230);
+        int addBtnW = s(50);
+        int addBtnH = s(18);
         if (mouseX >= addBtnX && mouseX < addBtnX + addBtnW &&
             mouseY >= inputY && mouseY < inputY + addBtnH) {
             addPosition();
@@ -313,10 +339,10 @@ public class CustomNbtWidget extends AbstractWidget {
         }
 
         // Check clear all button
-        int clearBtnX = getX() + getWidth() - 60;
-        int clearBtnY = addY - 2;
-        int clearBtnW = 55;
-        int clearBtnH = 14;
+        int clearBtnX = getX() + getWidth() - s(60);
+        int clearBtnY = addY - s(2);
+        int clearBtnW = s(55);
+        int clearBtnH = s(14);
         if (mouseX >= clearBtnX && mouseX < clearBtnX + clearBtnW &&
             mouseY >= clearBtnY && mouseY < clearBtnY + clearBtnH) {
             positions.clear();
@@ -331,12 +357,12 @@ public class CustomNbtWidget extends AbstractWidget {
             int idx = i + scrollOffset;
             if (idx >= positions.size()) break;
 
-            int rowY = listY + i * ROW_HEIGHT + 2;
-            int btnX = getX() + getWidth() - BUTTON_SIZE - 8;
+            int rowY = listY + i * s(ROW_HEIGHT) + s(2);
+            int btnX = getX() + getWidth() - s(BUTTON_SIZE) - s(8);
             int btnY = rowY;
 
-            if (mouseX >= btnX && mouseX < btnX + BUTTON_SIZE &&
-                mouseY >= btnY && mouseY < btnY + BUTTON_SIZE) {
+            if (mouseX >= btnX && mouseX < btnX + s(BUTTON_SIZE) &&
+                mouseY >= btnY && mouseY < btnY + s(BUTTON_SIZE)) {
                 positions.remove(idx);
                 if (scrollOffset > 0 && scrollOffset >= positions.size() - MAX_VISIBLE_POSITIONS + 1) {
                     scrollOffset--;
@@ -351,8 +377,8 @@ public class CustomNbtWidget extends AbstractWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int listY = getY() + 45;
-        int listHeight = MAX_VISIBLE_POSITIONS * ROW_HEIGHT;
+        int listY = getY() + s(45);
+        int listHeight = MAX_VISIBLE_POSITIONS * s(ROW_HEIGHT);
 
         if (mouseX >= getX() && mouseX < getX() + getWidth() &&
             mouseY >= listY && mouseY < listY + listHeight) {
@@ -517,5 +543,9 @@ public class CustomNbtWidget extends AbstractWidget {
      */
     public int getPositionCount() {
         return positions.size();
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

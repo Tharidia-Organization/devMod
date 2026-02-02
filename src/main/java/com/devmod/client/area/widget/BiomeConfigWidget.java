@@ -68,7 +68,7 @@ public class BiomeConfigWidget extends AbstractWidget {
 
         seedField = new EditBox(Objects.requireNonNull(
             net.minecraft.client.Minecraft.getInstance().font, "font"),
-            x, y, SEED_FIELD_WIDTH, AreaBuilderGuiConstants.FIELD_HEIGHT,
+            x, y, s(SEED_FIELD_WIDTH), AreaBuilderGuiConstants.scaledFieldHeight(),
             Objects.requireNonNull(Component.translatable("area.biome.seed"), "seedLabel"));
         seedField.setMaxLength(20);
         seedField.setBordered(false);
@@ -85,6 +85,8 @@ public class BiomeConfigWidget extends AbstractWidget {
         var font = Objects.requireNonNull(
             net.minecraft.client.Minecraft.getInstance().font, "font");
         updateLayout(font.lineHeight);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        int buttonWidth = s(BUTTON_WIDTH);
 
         // Enable toggle
         renderToggle(graphics, "area.biome.enable", biomeEnabled,
@@ -92,9 +94,9 @@ public class BiomeConfigWidget extends AbstractWidget {
 
         // Tooltip for enable toggle
         int toggleLabelWidth = font.width(
-            Objects.requireNonNull(Component.translatable("area.biome.enable"), "enableLabel")) + TOGGLE_WIDTH + 8;
+            Objects.requireNonNull(Component.translatable("area.biome.enable"), "enableLabel")) + s(TOGGLE_WIDTH) + s(8);
         if (mouseX >= getX() && mouseX < getX() + toggleLabelWidth &&
-            mouseY >= enableToggleY && mouseY < enableToggleY + BUTTON_HEIGHT) {
+            mouseY >= enableToggleY && mouseY < enableToggleY + buttonHeight) {
             graphics.renderTooltip(font,
                 Objects.requireNonNull(Component.translatable("area.biome.enable.tooltip"), "enableTooltip"),
                 mouseX, mouseY);
@@ -122,17 +124,17 @@ public class BiomeConfigWidget extends AbstractWidget {
 
         // Random seed button
         boolean randomHovered = biomeEnabled &&
-            mouseX >= randomButtonX && mouseX < randomButtonX + BUTTON_WIDTH &&
-            mouseY >= seedFieldY && mouseY < seedFieldY + BUTTON_HEIGHT;
+            mouseX >= randomButtonX && mouseX < randomButtonX + buttonWidth &&
+            mouseY >= seedFieldY && mouseY < seedFieldY + buttonHeight;
         int randomBg = biomeEnabled
             ? (randomHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL)
             : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(randomButtonX, seedFieldY, randomButtonX + BUTTON_WIDTH, seedFieldY + BUTTON_HEIGHT, randomBg);
-        graphics.renderOutline(randomButtonX, seedFieldY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        graphics.fill(randomButtonX, seedFieldY, randomButtonX + buttonWidth, seedFieldY + buttonHeight, randomBg);
+        graphics.renderOutline(randomButtonX, seedFieldY, buttonWidth, buttonHeight,
             AreaBuilderGuiConstants.COLOR_BORDER);
         UIScaleManager.drawScaledCenteredString(graphics, font,
             Component.translatable("area.biome.random_seed").getString(),
-            randomButtonX + BUTTON_WIDTH / 2, seedFieldY + 5, primaryColor);
+            randomButtonX + buttonWidth / 2, seedFieldY + s(5), primaryColor);
 
         // Terrain style section
         UIScaleManager.drawScaledString(graphics, font,
@@ -146,8 +148,8 @@ public class BiomeConfigWidget extends AbstractWidget {
         for (TerrainStyle style : TERRAIN_STYLES) {
             boolean isSelected = config.terrainStyle() == style;
             boolean isHovered = biomeEnabled &&
-                mouseX >= btnX && mouseX < btnX + BUTTON_WIDTH &&
-                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + BUTTON_HEIGHT;
+                mouseX >= btnX && mouseX < btnX + buttonWidth &&
+                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + buttonHeight;
 
             int bgColor;
             if (!biomeEnabled) {
@@ -160,16 +162,16 @@ public class BiomeConfigWidget extends AbstractWidget {
                 bgColor = AreaBuilderGuiConstants.COLOR_PANEL;
             }
 
-            graphics.fill(btnX, terrainButtonsY, btnX + BUTTON_WIDTH, terrainButtonsY + BUTTON_HEIGHT, bgColor);
-            graphics.renderOutline(btnX, terrainButtonsY, BUTTON_WIDTH, BUTTON_HEIGHT,
+            graphics.fill(btnX, terrainButtonsY, btnX + buttonWidth, terrainButtonsY + buttonHeight, bgColor);
+            graphics.renderOutline(btnX, terrainButtonsY, buttonWidth, buttonHeight,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             UIScaleManager.drawScaledCenteredString(graphics, font,
                 Component.translatable("area.biome.terrain." + style.getSerializedName()).getString(),
-                btnX + BUTTON_WIDTH / 2, terrainButtonsY + 5,
+                btnX + buttonWidth / 2, terrainButtonsY + s(5),
                 isSelected ? primaryColor : secondaryColor);
 
-            btnX += BUTTON_WIDTH + 4;
+            btnX += buttonWidth + s(4);
         }
 
         // Feature toggles
@@ -187,12 +189,14 @@ public class BiomeConfigWidget extends AbstractWidget {
                              int x, int y, int mouseX, int mouseY, boolean enabled) {
         var font = Objects.requireNonNull(
             net.minecraft.client.Minecraft.getInstance().font, "font");
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
 
         // Toggle button
         int toggleX = x;
         boolean isHovered = enabled &&
-            mouseX >= toggleX && mouseX < toggleX + TOGGLE_WIDTH &&
-            mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+            mouseX >= toggleX && mouseX < toggleX + toggleWidth &&
+            mouseY >= y && mouseY < y + buttonHeight;
 
         int bgColor;
         if (!enabled) {
@@ -204,18 +208,18 @@ public class BiomeConfigWidget extends AbstractWidget {
             }
         }
 
-        graphics.fill(toggleX, y, toggleX + TOGGLE_WIDTH, y + BUTTON_HEIGHT, bgColor);
-        graphics.renderOutline(toggleX, y, TOGGLE_WIDTH, BUTTON_HEIGHT,
+        graphics.fill(toggleX, y, toggleX + toggleWidth, y + buttonHeight, bgColor);
+        graphics.renderOutline(toggleX, y, toggleWidth, buttonHeight,
             AreaBuilderGuiConstants.COLOR_BORDER);
 
         String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
         int toggleColor = enabled ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED;
-        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, toggleX + TOGGLE_WIDTH / 2, y + 5, toggleColor);
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, toggleX + toggleWidth / 2, y + s(5), toggleColor);
 
         // Label
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(translationKey), "toggleLabel"),
-            toggleX + TOGGLE_WIDTH + 8, y + 5,
+            toggleX + toggleWidth + s(8), y + s(5),
             enabled ? AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY : AreaBuilderGuiConstants.COLOR_TEXT_DISABLED
         );
     }
@@ -225,10 +229,13 @@ public class BiomeConfigWidget extends AbstractWidget {
         int fontHeight = Objects.requireNonNull(
             net.minecraft.client.Minecraft.getInstance().font, "font").lineHeight;
         updateLayout(fontHeight);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonWidth = s(BUTTON_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
 
         // Enable toggle
-        if (mouseX >= getX() && mouseX < getX() + TOGGLE_WIDTH &&
-            mouseY >= enableToggleY && mouseY < enableToggleY + BUTTON_HEIGHT) {
+        if (mouseX >= getX() && mouseX < getX() + toggleWidth &&
+            mouseY >= enableToggleY && mouseY < enableToggleY + buttonHeight) {
             biomeEnabled = !biomeEnabled;
             if (onBiomeEnabledChanged != null) {
                 onBiomeEnabledChanged.accept(biomeEnabled);
@@ -244,8 +251,8 @@ public class BiomeConfigWidget extends AbstractWidget {
         }
 
         // Random seed button
-        if (mouseX >= randomButtonX && mouseX < randomButtonX + BUTTON_WIDTH &&
-            mouseY >= seedFieldY && mouseY < seedFieldY + BUTTON_HEIGHT) {
+        if (mouseX >= randomButtonX && mouseX < randomButtonX + buttonWidth &&
+            mouseY >= seedFieldY && mouseY < seedFieldY + buttonHeight) {
             config = config.withRandomSeed();
             seedField.setValue(Objects.requireNonNull(Long.toString(config.seed()), "seedString"));
             notifyChange();
@@ -255,8 +262,8 @@ public class BiomeConfigWidget extends AbstractWidget {
         // Terrain style buttons
         int btnX = getX();
         for (TerrainStyle style : TERRAIN_STYLES) {
-            if (mouseX >= btnX && mouseX < btnX + BUTTON_WIDTH &&
-                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + BUTTON_HEIGHT) {
+            if (mouseX >= btnX && mouseX < btnX + buttonWidth &&
+                mouseY >= terrainButtonsY && mouseY < terrainButtonsY + buttonHeight) {
                 TerrainStyle currentStyle = Objects.requireNonNull(config.terrainStyle(), "terrainStyle");
                 if (currentStyle != style) {
                     config = config.withTerrainStyle(Objects.requireNonNull(style, "style"));
@@ -264,18 +271,18 @@ public class BiomeConfigWidget extends AbstractWidget {
                 }
                 return;
             }
-            btnX += BUTTON_WIDTH + 4;
+            btnX += buttonWidth + s(4);
         }
 
         // Feature toggles
-        if (mouseX >= getX() && mouseX < getX() + TOGGLE_WIDTH) {
-            if (mouseY >= featureStartY && mouseY < featureStartY + BUTTON_HEIGHT) {
+        if (mouseX >= getX() && mouseX < getX() + toggleWidth) {
+            if (mouseY >= featureStartY && mouseY < featureStartY + buttonHeight) {
                 config = config.withFeatures(!config.generateFeatures());
                 notifyChange();
                 return;
             }
 
-            if (mouseY >= featureStartY + ROW_HEIGHT && mouseY < featureStartY + ROW_HEIGHT + BUTTON_HEIGHT) {
+            if (mouseY >= featureStartY + s(ROW_HEIGHT) && mouseY < featureStartY + s(ROW_HEIGHT) + buttonHeight) {
                 config = new BiomeGenerationConfig(
                     config.biomeId(), config.seed(), !config.generateStructures(),
                     config.generateFeatures(), config.generateOres(),
@@ -285,7 +292,7 @@ public class BiomeConfigWidget extends AbstractWidget {
                 return;
             }
 
-            if (mouseY >= featureStartY + ROW_HEIGHT * 2 && mouseY < featureStartY + ROW_HEIGHT * 2 + BUTTON_HEIGHT) {
+            if (mouseY >= featureStartY + s(ROW_HEIGHT) * 2 && mouseY < featureStartY + s(ROW_HEIGHT) * 2 + buttonHeight) {
                 config = new BiomeGenerationConfig(
                     config.biomeId(), config.seed(), config.generateStructures(),
                     config.generateFeatures(), !config.generateOres(),
@@ -329,23 +336,25 @@ public class BiomeConfigWidget extends AbstractWidget {
     private void updateLayout(int fontHeight) {
         int currentY = getY();
         enableToggleY = currentY;
-        currentY += ROW_HEIGHT + SECTION_GAP;
+        currentY += s(ROW_HEIGHT) + s(SECTION_GAP);
 
         seedLabelY = currentY;
-        currentY += fontHeight + 3;
+        currentY += fontHeight + s(3);
 
         seedFieldY = currentY;
-        seedFieldWidth = Math.max(60, Math.min(SEED_FIELD_WIDTH, getWidth() - BUTTON_WIDTH - 10));
-        randomButtonX = getX() + seedFieldWidth + 10;
+        int buttonWidth = s(BUTTON_WIDTH);
+        seedFieldWidth = Math.max(s(60), Math.min(s(SEED_FIELD_WIDTH), getWidth() - buttonWidth - s(10)));
+        randomButtonX = getX() + seedFieldWidth + s(10);
         seedField.setX(getX());
         seedField.setY(seedFieldY);
         seedField.setWidth(seedFieldWidth);
-        currentY += ROW_HEIGHT + SECTION_GAP;
+        seedField.setHeight(AreaBuilderGuiConstants.scaledFieldHeight());
+        currentY += s(ROW_HEIGHT) + s(SECTION_GAP);
 
         terrainLabelY = currentY;
-        currentY += fontHeight + 5;
+        currentY += fontHeight + s(5);
         terrainButtonsY = currentY;
-        currentY += ROW_HEIGHT + SECTION_GAP;
+        currentY += s(ROW_HEIGHT) + s(SECTION_GAP);
 
         featureStartY = currentY;
     }
@@ -411,5 +420,9 @@ public class BiomeConfigWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.biome.config.title"), "narrationTitle"));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

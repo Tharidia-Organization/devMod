@@ -39,6 +39,11 @@ public class VoxelLabScreen extends Screen {
     @Nullable
     private EditorButton closeButton;
 
+    private int scaledHeaderHeight;
+    private int scaledTabBarHeight;
+    private int scaledPadding;
+    private int scaledTabSpacing;
+
     public VoxelLabScreen() {
         super(java.util.Objects.requireNonNull(Component.literal("Voxel Lab"), "title"));
     }
@@ -52,6 +57,9 @@ public class VoxelLabScreen extends Screen {
         // Track screen open for telemetry
         UiTelemetry.screenOpened("testing", "voxel_lab");
 
+        UIScaleManager.update();
+        updateScaledMetrics();
+
         // Create tab buttons
         createTabButtons();
 
@@ -62,10 +70,10 @@ public class VoxelLabScreen extends Screen {
         registerPages();
 
         // Initialize active page
-        int contentX = PADDING;
-        int contentY = HEADER_HEIGHT + TAB_BAR_HEIGHT;
-        int contentWidth = width - PADDING * 2;
-        int contentHeight = height - contentY - PADDING;
+        int contentX = scaledPadding;
+        int contentY = scaledHeaderHeight + scaledTabBarHeight;
+        int contentWidth = width - scaledPadding * 2;
+        int contentHeight = height - contentY - scaledPadding;
 
         for (VoxelLabPage page : pages.values()) {
             page.init(contentX, contentY, contentWidth, contentHeight);
@@ -147,6 +155,13 @@ public class VoxelLabScreen extends Screen {
         }
     }
 
+    private void updateScaledMetrics() {
+        scaledHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
+        scaledTabBarHeight = UIScaleManager.scale(TAB_BAR_HEIGHT);
+        scaledPadding = UIScaleManager.scale(PADDING);
+        scaledTabSpacing = UIScaleManager.scale(TAB_SPACING);
+    }
+
     public VoxelLabTab getActiveTab() {
         return activeTab;
     }
@@ -166,8 +181,23 @@ public class VoxelLabScreen extends Screen {
     }
 
     @Override
+    public void resize(@Nonnull Minecraft minecraft, int width, int height) {
+        super.resize(minecraft, width, height);
+        UIScaleManager.update();
+        updateScaledMetrics();
+        int contentX = scaledPadding;
+        int contentY = scaledHeaderHeight + scaledTabBarHeight;
+        int contentWidth = width - scaledPadding * 2;
+        int contentHeight = height - contentY - scaledPadding;
+        for (VoxelLabPage page : pages.values()) {
+            page.init(contentX, contentY, contentWidth, contentHeight);
+        }
+    }
+
+    @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        updateScaledMetrics();
         // Background
         graphics.fill(0, 0, width, height, DesignTokens.Background.CONTENT());
 
@@ -191,44 +221,48 @@ public class VoxelLabScreen extends Screen {
     private void renderHeader(GuiGraphics graphics, net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
         Font safeFont = Objects.requireNonNull(font, "font");
         // Title
-        UIScaleManager.drawScaledString(graphics, safeFont, "Voxel Lab", PADDING, PADDING, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Voxel Lab", scaledPadding, scaledPadding, DesignTokens.Text.TITLE(), false);
 
         // Subtitle with tab description
         String subtitle = Objects.requireNonNull(activeTab.getDescription(), "subtitle");
-        UIScaleManager.drawScaledString(graphics, safeFont, subtitle, PADDING, PADDING + 14, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, safeFont, subtitle, scaledPadding, scaledPadding + UIScaleManager.scale(14), DesignTokens.Text.SECONDARY(), false);
 
         // Close button
-        int closeX = width - PADDING - 24;
-        int closeY = PADDING;
+        int closeSize = UIScaleManager.scale(24);
+        int closeX = width - scaledPadding - closeSize;
+        int closeY = scaledPadding;
         EditorButton closeButton = getCloseButton();
-        closeButton.render(graphics, closeX, closeY, 24, 24, mouseX, mouseY);
+        closeButton.render(graphics, closeX, closeY, closeSize, closeSize, mouseX, mouseY);
     }
 
     private void renderTabBar(GuiGraphics graphics, int mouseX, int mouseY) {
-        int tabY = HEADER_HEIGHT - 6;
+        int tabY = scaledHeaderHeight - UIScaleManager.scale(6);
 
         // Tab bar background
-        graphics.fill(0, tabY, width, tabY + TAB_BAR_HEIGHT, DesignTokens.Background.PANEL());
+        graphics.fill(0, tabY, width, tabY + scaledTabBarHeight, DesignTokens.Background.PANEL());
 
         // Render tab buttons
-        int tabX = PADDING;
+        int tabX = scaledPadding;
+        int available = width - scaledPadding * 2;
+        int tabs = VoxelLabTab.values().length;
+        int maxTabW = tabs > 0 ? Math.max(UIScaleManager.scale(60), (available - scaledTabSpacing * (tabs - 1)) / tabs) : UIScaleManager.scale(80);
         for (VoxelLabTab tab : VoxelLabTab.values()) {
             EditorButton button = tabButtons.get(tab);
             if (button != null) {
-                int tabWidth = calculateTabWidth(tab);
-                button.render(graphics, tabX, tabY + 4, tabWidth, TAB_BAR_HEIGHT - 8, mouseX, mouseY);
-                tabX += tabWidth + TAB_SPACING;
+                int tabWidth = Math.min(calculateTabWidth(tab), maxTabW);
+                button.render(graphics, tabX, tabY + UIScaleManager.scale(4), tabWidth, scaledTabBarHeight - UIScaleManager.scale(8), mouseX, mouseY);
+                tabX += tabWidth + scaledTabSpacing;
             }
         }
 
         // Bottom border
-        graphics.fill(0, tabY + TAB_BAR_HEIGHT - 1, width, tabY + TAB_BAR_HEIGHT, DesignTokens.Border.DEFAULT());
+        graphics.fill(0, tabY + scaledTabBarHeight - 1, width, tabY + scaledTabBarHeight, DesignTokens.Border.DEFAULT());
     }
 
     private int calculateTabWidth(VoxelLabTab tab) {
         Font safeFont = Objects.requireNonNull(this.font, "font");
         String label = Objects.requireNonNull(tab.getLabel(), "tab label");
-        return safeFont.width(label) + 16;
+        return safeFont.width(label) + UIScaleManager.scale(16);
     }
 
     private EditorButton getCloseButton() {
@@ -253,20 +287,10 @@ public class VoxelLabScreen extends Screen {
             return true;
         }
 
-        // Tab buttons
-        int tabX = PADDING;
-        int tabY = HEADER_HEIGHT - 6 + 4;
-        for (VoxelLabTab tab : VoxelLabTab.values()) {
-            EditorButton tabButton = tabButtons.get(tab);
-            if (tabButton != null) {
-                int tabWidth = calculateTabWidth(tab);
-                if (mouseX >= tabX && mouseX <= tabX + tabWidth &&
-                    mouseY >= tabY && mouseY <= tabY + TAB_BAR_HEIGHT - 8) {
-                    if (tabButton.mouseClicked(mouseX, mouseY, button)) {
-                        return true;
-                    }
-                }
-                tabX += tabWidth + TAB_SPACING;
+        // Tab buttons (EditorButton bounds are set during render)
+        for (EditorButton tabButton : tabButtons.values()) {
+            if (tabButton != null && tabButton.mouseClicked(mouseX, mouseY, button)) {
+                return true;
             }
         }
 
@@ -339,20 +363,6 @@ public class VoxelLabScreen extends Screen {
         return super.charTyped(codePoint, modifiers);
     }
 
-    @Override
-    public void resize(@Nonnull Minecraft mc, int newWidth, int newHeight) {
-        super.resize(mc, newWidth, newHeight);
-
-        // Reinitialize all pages with new dimensions
-        int contentX = PADDING;
-        int contentY = HEADER_HEIGHT + TAB_BAR_HEIGHT;
-        int contentWidth = newWidth - PADDING * 2;
-        int contentHeight = newHeight - contentY - PADDING;
-
-        for (VoxelLabPage page : pages.values()) {
-            page.init(contentX, contentY, contentWidth, contentHeight);
-        }
-    }
 
     @Override
     public boolean isPauseScreen() {

@@ -86,6 +86,40 @@ public class EnduranceSettingsScreen extends Screen {
         this.parent = parent;
     }
 
+    private record Layout(int headerH, int footerH, int sidebarW, int padding, int tabH, int tabGap,
+                          int contentX, int contentY, int contentW, int contentH,
+                          int sliderSpacing, int backBtnW, int backBtnH,
+                          int footerTextOffsetY, int footerBtnOffsetY, int footerBtnH,
+                          int footerBtnW, int footerBtnSpacing,
+                          int resetAllBtnW, int resetSectionBtnW) {}
+
+    private Layout layout() {
+        int headerH = UIScaleManager.scale(HEADER_HEIGHT);
+        int footerH = UIScaleManager.scale(FOOTER_HEIGHT);
+        int sidebarW = UIScaleManager.scale(SIDEBAR_WIDTH);
+        int padding = UIScaleManager.scale(PADDING);
+        int tabH = UIScaleManager.scale(28);
+        int tabGap = UIScaleManager.scale(2);
+        int contentX = sidebarW + padding;
+        int contentY = headerH + padding;
+        int contentW = Math.max(UIScaleManager.scale(220), width - sidebarW - padding * 2);
+        int contentH = Math.max(UIScaleManager.scale(120), height - headerH - footerH - padding * 2);
+        int sliderSpacing = UIScaleManager.scale(SLIDER_SPACING);
+        int backBtnW = UIScaleManager.scale(70);
+        int backBtnH = UIScaleManager.scale(24);
+        int footerTextOffsetY = UIScaleManager.scale(18);
+        int footerBtnOffsetY = UIScaleManager.scale(12);
+        int footerBtnH = UIScaleManager.scale(26);
+        int footerBtnW = UIScaleManager.scale(90);
+        int footerBtnSpacing = UIScaleManager.scale(6);
+        int resetAllBtnW = UIScaleManager.scale(70);
+        int resetSectionBtnW = UIScaleManager.scale(90);
+        return new Layout(headerH, footerH, sidebarW, padding, tabH, tabGap,
+            contentX, contentY, contentW, contentH, sliderSpacing, backBtnW, backBtnH,
+            footerTextOffsetY, footerBtnOffsetY, footerBtnH, footerBtnW, footerBtnSpacing,
+            resetAllBtnW, resetSectionBtnW);
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -516,10 +550,12 @@ public class EnduranceSettingsScreen extends Screen {
     }
 
     private void calculateMaxScroll() {
+        UIScaleManager.update();
+        Layout layout = layout();
         if (activeSection >= 0 && activeSection < sections.size()) {
             ConfigSection section = sections.get(activeSection);
-            int contentHeight = section.getContentHeight();
-            int viewportHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING * 2;
+            int contentHeight = section.getContentHeight(layout.sliderSpacing());
+            int viewportHeight = layout.contentH();
             maxScroll = Math.max(0, contentHeight - viewportHeight);
         } else {
             maxScroll = 0;
@@ -530,98 +566,98 @@ public class EnduranceSettingsScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        Layout layout = layout();
         // Background
         graphics.fill(0, 0, width, height, DesignTokens.Bg.LEVEL_0);
 
         var safeFont = Objects.requireNonNull(font);
 
         // Header
-        renderHeader(graphics, safeFont, mouseX, mouseY);
+        renderHeader(graphics, safeFont, layout, mouseX, mouseY);
 
         // Sidebar (section tabs)
-        renderSidebar(graphics, safeFont, mouseX, mouseY);
+        renderSidebar(graphics, safeFont, layout, mouseX, mouseY);
 
         // Content area
-        renderContent(graphics, safeFont, mouseX, mouseY);
+        renderContent(graphics, safeFont, layout, mouseX, mouseY);
 
         // Footer with buttons
-        renderFooter(graphics, safeFont, mouseX, mouseY);
+        renderFooter(graphics, safeFont, layout, mouseX, mouseY);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderHeader(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderHeader(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, Layout layout, int mouseX, int mouseY) {
         // Header background
-        graphics.fill(0, 0, width, HEADER_HEIGHT, DesignTokens.Bg.LEVEL_1);
-        graphics.fill(0, HEADER_HEIGHT - 1, width, HEADER_HEIGHT, DesignTokens.Accent.PRIMARY);
+        graphics.fill(0, 0, width, layout.headerH(), DesignTokens.Bg.LEVEL_1);
+        graphics.fill(0, layout.headerH() - 1, width, layout.headerH(), DesignTokens.Accent.PRIMARY);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font, I18n.translate("devmod.endurance.settings.title").getString(),
-            PADDING, 12, DesignTokens.Text.PRIMARY, false);
+            layout.padding(), UIScaleManager.scale(12), DesignTokens.Text.PRIMARY, false);
 
         // Subtitle
         if (activeSection >= 0 && activeSection < sections.size()) {
             String sectionName = sections.get(activeSection).name;
             UIScaleManager.drawScaledString(graphics, font, I18n.ui("category", sectionName).getString(),
-                PADDING, 26, DesignTokens.Text.SECONDARY, false);
+                layout.padding(), UIScaleManager.scale(26), DesignTokens.Text.SECONDARY, false);
         }
 
         // Back button
-        int btnW = 70;
-        int btnH = 24;
         if (backButton != null) {
-            backButton.render(graphics, width - btnW - PADDING, 8, btnW, btnH, mouseX, mouseY);
+            int btnX = width - layout.backBtnW() - layout.padding();
+            backButton.render(graphics, btnX, UIScaleManager.scale(8), layout.backBtnW(), layout.backBtnH(), mouseX, mouseY);
         }
     }
 
-    private void renderSidebar(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
+    private void renderSidebar(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, Layout layout, int mouseX, int mouseY) {
         int sidebarX = 0;
-        int sidebarY = HEADER_HEIGHT;
-        int sidebarH = height - HEADER_HEIGHT;
+        int sidebarY = layout.headerH();
+        int sidebarH = height - layout.headerH();
 
         // Sidebar background
-        graphics.fill(sidebarX, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, DesignTokens.Bg.LEVEL_1);
-        graphics.fill(sidebarX + SIDEBAR_WIDTH - 1, sidebarY, sidebarX + SIDEBAR_WIDTH, sidebarY + sidebarH, DesignTokens.Accent.PRIMARY);
+        graphics.fill(sidebarX, sidebarY, sidebarX + layout.sidebarW(), sidebarY + sidebarH, DesignTokens.Bg.LEVEL_1);
+        graphics.fill(sidebarX + layout.sidebarW() - 1, sidebarY, sidebarX + layout.sidebarW(), sidebarY + sidebarH, DesignTokens.Accent.PRIMARY);
 
-        int y = sidebarY + PADDING;
-        int tabH = 28;
+        int y = sidebarY + layout.padding();
 
         for (int i = 0; i < sections.size(); i++) {
             ConfigSection section = sections.get(i);
             boolean isActive = i == activeSection;
-            boolean isHovered = mouseX >= sidebarX && mouseX < sidebarX + SIDEBAR_WIDTH - 1 &&
-                               mouseY >= y && mouseY < y + tabH;
+            boolean isHovered = mouseX >= sidebarX && mouseX < sidebarX + layout.sidebarW() - 1 &&
+                               mouseY >= y && mouseY < y + layout.tabH();
 
             // Tab background
             if (isActive) {
-                graphics.fill(sidebarX + 4, y, sidebarX + SIDEBAR_WIDTH - 1, y + tabH, section.color);
+                graphics.fill(sidebarX + UIScaleManager.scale(4), y, sidebarX + layout.sidebarW() - 1, y + layout.tabH(), section.color);
             } else if (isHovered) {
-                graphics.fill(sidebarX + 4, y, sidebarX + SIDEBAR_WIDTH - 1, y + tabH, DesignTokens.Surface.LEVEL_1);
+                graphics.fill(sidebarX + UIScaleManager.scale(4), y, sidebarX + layout.sidebarW() - 1, y + layout.tabH(), DesignTokens.Surface.LEVEL_1);
             }
 
             // Left accent bar for active
             if (isActive) {
-                graphics.fill(sidebarX, y, sidebarX + 4, y + tabH, section.color);
+                graphics.fill(sidebarX, y, sidebarX + UIScaleManager.scale(4), y + layout.tabH(), section.color);
             }
 
             // Section name
             int textColor = isActive ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-            UIScaleManager.drawScaledString(graphics, font, section.name, sidebarX + 12, y + 10, textColor, false);
+            String name = truncateText(section.name, layout.sidebarW() - UIScaleManager.scale(36), font);
+            UIScaleManager.drawScaledString(graphics, font, name, sidebarX + UIScaleManager.scale(12), y + UIScaleManager.scale(10), textColor, false);
 
             // Item count badge
             String countStr = String.valueOf(section.items.size());
-            int countX = sidebarX + SIDEBAR_WIDTH - 20;
-            UIScaleManager.drawScaledString(graphics, font, countStr, countX, y + 10, DesignTokens.Text.MUTED, false);
+            int countX = sidebarX + layout.sidebarW() - UIScaleManager.scale(20);
+            UIScaleManager.drawScaledString(graphics, font, countStr, countX, y + UIScaleManager.scale(10), DesignTokens.Text.MUTED, false);
 
-            y += tabH + 2;
+            y += layout.tabH() + layout.tabGap();
         }
     }
 
-    private void renderContent(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
-        int contentX = SIDEBAR_WIDTH + PADDING;
-        int contentY = HEADER_HEIGHT + PADDING;
-        int contentW = width - SIDEBAR_WIDTH - PADDING * 2;
-        int contentH = height - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING * 2;
+    private void renderContent(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, Layout layout, int mouseX, int mouseY) {
+        int contentX = layout.contentX();
+        int contentY = layout.contentY();
+        int contentW = layout.contentW();
+        int contentH = layout.contentH();
 
         if (activeSection < 0 || activeSection >= sections.size()) return;
 
@@ -638,58 +674,58 @@ public class EnduranceSettingsScreen extends Screen {
 
                 // Show checkmark for recently saved items
                 if (wasRecentlySaved(item.getConfigKey())) {
-                    UIScaleManager.drawScaledString(graphics, font, "\u2713", contentX + contentW - 20, y + 2, COLOR_SAVED, false);
+                    UIScaleManager.drawScaledString(graphics, font, "\u2713", contentX + contentW - UIScaleManager.scale(20), y + UIScaleManager.scale(2), COLOR_SAVED, false);
                 }
                 // Show warning indicator for modified items
                 else if (isModified(item.getConfigKey())) {
-                    UIScaleManager.drawScaledString(graphics, font, "\u25CF", contentX + contentW - 20, y + 2, COLOR_WARNING, false);
+                    UIScaleManager.drawScaledString(graphics, font, "\u25CF", contentX + contentW - UIScaleManager.scale(20), y + UIScaleManager.scale(2), COLOR_WARNING, false);
                 }
             }
-            y += item.getHeight() + SLIDER_SPACING;
+            y += item.getHeight() + layout.sliderSpacing();
         }
 
         graphics.disableScissor();
 
         // Scrollbar
         if (maxScroll > 0) {
-            int scrollbarX = contentX + contentW - 4;
-            int scrollbarH = Math.max(20, (int) ((float) contentH / (contentH + maxScroll) * contentH));
+            int scrollbarX = contentX + contentW - UIScaleManager.scale(4);
+            int scrollbarH = Math.max(UIScaleManager.scale(20), (int) ((float) contentH / (contentH + maxScroll) * contentH));
             int scrollbarY = contentY + (int) ((float) scrollOffset / maxScroll * (contentH - scrollbarH));
-            graphics.fill(scrollbarX, contentY, scrollbarX + 4, contentY + contentH, DesignTokens.Surface.LEVEL_0);
-            graphics.fill(scrollbarX, scrollbarY, scrollbarX + 4, scrollbarY + scrollbarH, DesignTokens.Accent.PRIMARY);
+            graphics.fill(scrollbarX, contentY, scrollbarX + UIScaleManager.scale(4), contentY + contentH, DesignTokens.Surface.LEVEL_0);
+            graphics.fill(scrollbarX, scrollbarY, scrollbarX + UIScaleManager.scale(4), scrollbarY + scrollbarH, DesignTokens.Accent.PRIMARY);
         }
     }
 
-    private void renderFooter(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int mouseX, int mouseY) {
-        int footerY = height - FOOTER_HEIGHT;
-        int footerX = SIDEBAR_WIDTH;
+    private void renderFooter(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, Layout layout, int mouseX, int mouseY) {
+        int footerY = height - layout.footerH();
+        int footerX = layout.sidebarW();
 
         // Footer background
         graphics.fill(footerX, footerY, width, height, DesignTokens.Bg.LEVEL_1);
         graphics.fill(footerX, footerY, width, footerY + 1, DesignTokens.Accent.PRIMARY);
 
         // Pending changes indicator
-        int textY = footerY + 18;
+        int textY = footerY + layout.footerTextOffsetY();
         if (pendingChangesCount > 0) {
             String pendingMsg = I18n.translate("devmod.settings.pending", pendingChangesCount).getString();
-            UIScaleManager.drawScaledString(graphics, font, pendingMsg, footerX + PADDING, textY, COLOR_WARNING, false);
+            UIScaleManager.drawScaledString(graphics, font, pendingMsg, footerX + layout.padding(), textY, COLOR_WARNING, false);
         } else {
             String noChangesMsg = I18n.translate("devmod.settings.no_changes").getString();
             // Show green if recently saved, otherwise muted
             boolean recentlySaved = !recentlySavedKeys.isEmpty() &&
                 (System.currentTimeMillis() - lastSaveTime <= SAVE_FEEDBACK_DURATION_MS);
             int statusColor = recentlySaved ? COLOR_SAVED : DesignTokens.Text.MUTED;
-            UIScaleManager.drawScaledString(graphics, font, noChangesMsg, footerX + PADDING, textY, statusColor, false);
+            UIScaleManager.drawScaledString(graphics, font, noChangesMsg, footerX + layout.padding(), textY, statusColor, false);
         }
 
         // Buttons - right aligned
-        int btnY = footerY + 12;
-        int btnSpacing = 6;
-        int btnH = 26;
-        int btnW = 90;
+        int btnY = footerY + layout.footerBtnOffsetY();
+        int btnSpacing = layout.footerBtnSpacing();
+        int btnH = layout.footerBtnH();
+        int btnW = layout.footerBtnW();
 
         // Apply Global button (rightmost, OP only)
-        int globalBtnX = width - PADDING - btnW;
+        int globalBtnX = width - layout.padding() - btnW;
         if (applyGlobalButton != null) {
             applyGlobalButton.render(graphics, globalBtnX, btnY, btnW, btnH, mouseX, mouseY);
         }
@@ -707,22 +743,34 @@ public class EnduranceSettingsScreen extends Screen {
         }
 
         // Reset All button
-        int resetAllBtnW = 70;
+        int resetAllBtnW = layout.resetAllBtnW();
         int resetAllBtnX = proposeBtnX - btnSpacing - resetAllBtnW;
         if (resetAllButton != null) {
             resetAllButton.render(graphics, resetAllBtnX, btnY, resetAllBtnW, btnH, mouseX, mouseY);
         }
 
         // Reset Section button
-        int resetSectionBtnW = 90;
+        int resetSectionBtnW = layout.resetSectionBtnW();
         int resetSectionBtnX = resetAllBtnX - btnSpacing - resetSectionBtnW;
         if (resetSectionButton != null) {
             resetSectionButton.render(graphics, resetSectionBtnX, btnY, resetSectionBtnW, btnH, mouseX, mouseY);
         }
     }
 
+    private String truncateText(String text, int maxWidth, net.minecraft.client.gui.Font font) {
+        if (font.width(text) <= maxWidth) return text;
+        String ellipsis = "...";
+        String truncated = text;
+        while (truncated.length() > 4 && font.width(truncated + ellipsis) > maxWidth) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        return truncated + ellipsis;
+    }
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
+        Layout layout = layout();
         if (button == 0) {
             // Back button
             if (backButton != null && backButton.mouseClicked(mouseX, mouseY, button)) {
@@ -747,12 +795,11 @@ public class EnduranceSettingsScreen extends Screen {
             }
 
             // Sidebar tabs
-            int sidebarY = HEADER_HEIGHT + PADDING;
-            int tabH = 28;
-            if (mouseX < SIDEBAR_WIDTH) {
+            int sidebarY = layout.headerH() + layout.padding();
+            if (mouseX < layout.sidebarW()) {
                 for (int i = 0; i < sections.size(); i++) {
-                    int tabTop = sidebarY + i * (tabH + 2);
-                    if (mouseY >= tabTop && mouseY < tabTop + tabH) {
+                    int tabTop = sidebarY + i * (layout.tabH() + layout.tabGap());
+                    if (mouseY >= tabTop && mouseY < tabTop + layout.tabH()) {
                         if (activeSection != i) {
                             activeSection = i;
                             scrollOffset = 0;
@@ -764,9 +811,9 @@ public class EnduranceSettingsScreen extends Screen {
             }
 
             // Content area sliders
-            int contentX = SIDEBAR_WIDTH + PADDING;
-            int contentY = HEADER_HEIGHT + PADDING;
-            int contentW = width - SIDEBAR_WIDTH - PADDING * 2;
+            int contentX = layout.contentX();
+            int contentY = layout.contentY();
+            int contentW = layout.contentW();
 
             if (activeSection >= 0 && activeSection < sections.size()) {
                 ConfigSection section = sections.get(activeSection);
@@ -775,7 +822,7 @@ public class EnduranceSettingsScreen extends Screen {
                     if (item.mouseClicked(mouseX, mouseY, contentX, y, contentW)) {
                         return true;
                     }
-                    y += item.getHeight() + SLIDER_SPACING;
+                    y += item.getHeight() + layout.sliderSpacing();
                 }
             }
         }
@@ -816,9 +863,11 @@ public class EnduranceSettingsScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        int contentX = SIDEBAR_WIDTH + PADDING;
-        int contentY = HEADER_HEIGHT + PADDING;
-        int contentW = width - SIDEBAR_WIDTH - PADDING * 2;
+        UIScaleManager.update();
+        Layout layout = layout();
+        int contentX = layout.contentX();
+        int contentY = layout.contentY();
+        int contentW = layout.contentW();
 
         if (activeSection >= 0 && activeSection < sections.size()) {
             ConfigSection section = sections.get(activeSection);
@@ -827,7 +876,7 @@ public class EnduranceSettingsScreen extends Screen {
                 if (item.mouseDragged(mouseX, mouseY, contentX, y, contentW)) {
                     return true;
                 }
-                y += item.getHeight() + SLIDER_SPACING;
+                y += item.getHeight() + layout.sliderSpacing();
             }
         }
 
@@ -836,8 +885,10 @@ public class EnduranceSettingsScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (mouseX > SIDEBAR_WIDTH) {
-            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
+        UIScaleManager.update();
+        Layout layout = layout();
+        if (mouseX > layout.sidebarW()) {
+            scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * UIScaleManager.scale(20))));
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -885,10 +936,10 @@ public class EnduranceSettingsScreen extends Screen {
             items.add(new ButtonItem(label, onClick));
         }
 
-        int getContentHeight() {
+        int getContentHeight(int sliderSpacing) {
             int h = 0;
             for (ConfigItem item : items) {
-                h += item.getHeight() + SLIDER_SPACING;
+                h += item.getHeight() + sliderSpacing;
             }
             return h;
         }
@@ -950,13 +1001,13 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + UIScaleManager.scale(2), DesignTokens.Text.PRIMARY, false);
 
             // Slider track
-            int sliderX = x + 140;
-            int sliderW = width - 200;
-            int sliderY = y + 5;
-            int sliderH = 10;
+            int sliderX = x + UIScaleManager.scale(140);
+            int sliderW = Math.max(UIScaleManager.scale(60), width - UIScaleManager.scale(200));
+            int sliderY = y + UIScaleManager.scale(5);
+            int sliderH = UIScaleManager.scale(10);
 
             graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, DesignTokens.Surface.LEVEL_0);
 
@@ -967,26 +1018,26 @@ public class EnduranceSettingsScreen extends Screen {
             graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, COLOR_BLUE);
 
             // Slider handle
-            int handleX = sliderX + fillW - 3;
-            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, DesignTokens.Text.WHITE);
+            int handleX = sliderX + fillW - UIScaleManager.scale(3);
+            graphics.fill(handleX, sliderY - UIScaleManager.scale(2), handleX + UIScaleManager.scale(6), sliderY + sliderH + UIScaleManager.scale(2), DesignTokens.Text.WHITE);
 
             // Value display
             String valueStr = String.format(format, value * displayScale);
-            UIScaleManager.drawScaledString(graphics, font, valueStr, sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, valueStr, sliderX + sliderW + UIScaleManager.scale(8), y + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
         public int getHeight() {
-            return SLIDER_HEIGHT;
+            return UIScaleManager.scale(SLIDER_HEIGHT);
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
-            int sliderX = baseX + 140;
-            int sliderW = baseW - 200;
-            int sliderY = baseY + 5;
+            int sliderX = baseX + UIScaleManager.scale(140);
+            int sliderW = Math.max(UIScaleManager.scale(60), baseW - UIScaleManager.scale(200));
+            int sliderY = baseY + UIScaleManager.scale(5);
 
-            if (mouseX >= sliderX && mouseX <= sliderX + sliderW && mouseY >= sliderY - 2 && mouseY <= sliderY + 14) {
+            if (mouseX >= sliderX && mouseX <= sliderX + sliderW && mouseY >= sliderY - UIScaleManager.scale(2) && mouseY <= sliderY + UIScaleManager.scale(14)) {
                 dragging = true;
                 updateValue(mouseX, sliderX, sliderW);
                 return true;
@@ -1002,8 +1053,8 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
             if (dragging) {
-                int sliderX = baseX + 140;
-                int sliderW = baseW - 200;
+                int sliderX = baseX + UIScaleManager.scale(140);
+                int sliderW = Math.max(UIScaleManager.scale(60), baseW - UIScaleManager.scale(200));
                 updateValue(mouseX, sliderX, sliderW);
                 return true;
             }
@@ -1072,13 +1123,13 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + UIScaleManager.scale(2), DesignTokens.Text.PRIMARY, false);
 
             // Slider track
-            int sliderX = x + 140;
-            int sliderW = width - 200;
-            int sliderY = y + 5;
-            int sliderH = 10;
+            int sliderX = x + UIScaleManager.scale(140);
+            int sliderW = Math.max(UIScaleManager.scale(60), width - UIScaleManager.scale(200));
+            int sliderY = y + UIScaleManager.scale(5);
+            int sliderH = UIScaleManager.scale(10);
 
             graphics.fill(sliderX, sliderY, sliderX + sliderW, sliderY + sliderH, DesignTokens.Surface.LEVEL_0);
 
@@ -1089,25 +1140,25 @@ public class EnduranceSettingsScreen extends Screen {
             graphics.fill(sliderX, sliderY, sliderX + fillW, sliderY + sliderH, COLOR_BLUE);
 
             // Slider handle
-            int handleX = sliderX + fillW - 3;
-            graphics.fill(handleX, sliderY - 2, handleX + 6, sliderY + sliderH + 2, DesignTokens.Text.WHITE);
+            int handleX = sliderX + fillW - UIScaleManager.scale(3);
+            graphics.fill(handleX, sliderY - UIScaleManager.scale(2), handleX + UIScaleManager.scale(6), sliderY + sliderH + UIScaleManager.scale(2), DesignTokens.Text.WHITE);
 
             // Value display
-            UIScaleManager.drawScaledString(graphics, font, String.valueOf(value), sliderX + sliderW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, String.valueOf(value), sliderX + sliderW + UIScaleManager.scale(8), y + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
         public int getHeight() {
-            return SLIDER_HEIGHT;
+            return UIScaleManager.scale(SLIDER_HEIGHT);
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
-            int sliderX = baseX + 140;
-            int sliderW = baseW - 200;
-            int sliderY = baseY + 5;
+            int sliderX = baseX + UIScaleManager.scale(140);
+            int sliderW = Math.max(UIScaleManager.scale(60), baseW - UIScaleManager.scale(200));
+            int sliderY = baseY + UIScaleManager.scale(5);
 
-            if (mouseX >= sliderX && mouseX <= sliderX + sliderW && mouseY >= sliderY - 2 && mouseY <= sliderY + 14) {
+            if (mouseX >= sliderX && mouseX <= sliderX + sliderW && mouseY >= sliderY - UIScaleManager.scale(2) && mouseY <= sliderY + UIScaleManager.scale(14)) {
                 dragging = true;
                 updateValue(mouseX, sliderX, sliderW);
                 return true;
@@ -1123,8 +1174,8 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public boolean mouseDragged(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
             if (dragging) {
-                int sliderX = baseX + 140;
-                int sliderW = baseW - 200;
+                int sliderX = baseX + UIScaleManager.scale(140);
+                int sliderW = Math.max(UIScaleManager.scale(60), baseW - UIScaleManager.scale(200));
                 updateValue(mouseX, sliderX, sliderW);
                 return true;
             }
@@ -1189,40 +1240,40 @@ public class EnduranceSettingsScreen extends Screen {
         @Override
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             // Label
-            UIScaleManager.drawScaledString(graphics, font, label, x, y + 2, DesignTokens.Text.PRIMARY, false);
+            UIScaleManager.drawScaledString(graphics, font, label, x, y + UIScaleManager.scale(2), DesignTokens.Text.PRIMARY, false);
 
             // Toggle box
-            int toggleX = x + 140;
-            int toggleY = y + 3;
-            int toggleW = 40;
-            int toggleH = 14;
+            int toggleX = x + UIScaleManager.scale(140);
+            int toggleY = y + UIScaleManager.scale(3);
+            int toggleW = UIScaleManager.scale(40);
+            int toggleH = UIScaleManager.scale(14);
 
             boolean enabled = config.get();
             int bgColor = enabled ? COLOR_GREEN : DesignTokens.Surface.LEVEL_0;
             graphics.fill(toggleX, toggleY, toggleX + toggleW, toggleY + toggleH, bgColor);
 
             // Toggle indicator
-            int indicatorX = enabled ? toggleX + toggleW - 16 : toggleX + 2;
-            graphics.fill(indicatorX, toggleY + 2, indicatorX + 14, toggleY + toggleH - 2, DesignTokens.Text.WHITE);
+            int indicatorX = enabled ? toggleX + toggleW - UIScaleManager.scale(16) : toggleX + UIScaleManager.scale(2);
+            graphics.fill(indicatorX, toggleY + UIScaleManager.scale(2), indicatorX + UIScaleManager.scale(14), toggleY + toggleH - UIScaleManager.scale(2), DesignTokens.Text.WHITE);
 
             // Status text
             String status = enabled
                 ? I18n.translate("devmod.overlay.on").getString()
                 : I18n.translate("devmod.overlay.off").getString();
-            UIScaleManager.drawScaledString(graphics, font, status, toggleX + toggleW + 8, y + 2, DesignTokens.Text.SECONDARY, false);
+            UIScaleManager.drawScaledString(graphics, font, status, toggleX + toggleW + UIScaleManager.scale(8), y + UIScaleManager.scale(2), DesignTokens.Text.SECONDARY, false);
         }
 
         @Override
         public int getHeight() {
-            return SLIDER_HEIGHT;
+            return UIScaleManager.scale(SLIDER_HEIGHT);
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
-            int toggleX = baseX + 140;
-            int toggleY = baseY + 3;
-            int toggleW = 40;
-            int toggleH = 14;
+            int toggleX = baseX + UIScaleManager.scale(140);
+            int toggleY = baseY + UIScaleManager.scale(3);
+            int toggleW = UIScaleManager.scale(40);
+            int toggleH = UIScaleManager.scale(14);
 
             if (mouseX >= toggleX && mouseX <= toggleX + toggleW && mouseY >= toggleY && mouseY <= toggleY + toggleH) {
                 config.set(!config.get());
@@ -1294,8 +1345,8 @@ public class EnduranceSettingsScreen extends Screen {
         public void render(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font, int x, int y, int width, int mouseX, int mouseY) {
             int btnX = x;
             int btnY = y;
-            int btnW = Math.min(200, width - 20);
-            int btnH = 22;
+            int btnW = Math.min(UIScaleManager.scale(200), width - UIScaleManager.scale(20));
+            int btnH = UIScaleManager.scale(22);
 
             boolean hovered = mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH;
 
@@ -1307,20 +1358,20 @@ public class EnduranceSettingsScreen extends Screen {
             // Label (centered)
             int textX = btnX + (btnW - UIScaleManager.getScaledStringWidth(font, label)) / 2;
             int textColor = hovered ? DesignTokens.Text.WHITE : DesignTokens.Text.PRIMARY;
-            UIScaleManager.drawScaledString(graphics, font, label, textX, btnY + 7, textColor, false);
+            UIScaleManager.drawScaledString(graphics, font, label, textX, btnY + UIScaleManager.scale(7), textColor, false);
         }
 
         @Override
         public int getHeight() {
-            return 26; // Slightly taller than sliders
+            return UIScaleManager.scale(26); // Slightly taller than sliders
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int baseX, int baseY, int baseW) {
             int btnX = baseX;
             int btnY = baseY;
-            int btnW = Math.min(200, baseW - 20);
-            int btnH = 22;
+            int btnW = Math.min(UIScaleManager.scale(200), baseW - UIScaleManager.scale(20));
+            int btnH = UIScaleManager.scale(22);
 
             if (mouseX >= btnX && mouseX < btnX + btnW && mouseY >= btnY && mouseY < btnY + btnH) {
                 onClick.run();

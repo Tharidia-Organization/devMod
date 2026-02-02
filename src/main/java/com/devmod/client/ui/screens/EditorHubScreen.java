@@ -144,6 +144,7 @@ public class EditorHubScreen extends Screen {
             I18n.translate("devmod.screen.editor_hub").getString());
 
         int scaledContentWidth = UIScaleManager.scale(CONTENT_WIDTH);
+        int scaledButtonHeight = UIScaleManager.scale(DesignTokens.Size.BUTTON_HEIGHT);
         int contentX = (this.width - scaledContentWidth) / 2;
         int y = UIScaleManager.scale(28);
 
@@ -152,17 +153,17 @@ public class EditorHubScreen extends Screen {
             y += UIScaleManager.scale(HEADER_GAP);
 
             for (EditorButton button : section.buttons()) {
-                button.render(graphics, contentX, y, scaledContentWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
-                y += DesignTokens.Size.BUTTON_HEIGHT + UIScaleManager.scale(BUTTON_GAP);
+                button.render(graphics, contentX, y, scaledContentWidth, scaledButtonHeight, mouseX, mouseY);
+                y += scaledButtonHeight + UIScaleManager.scale(BUTTON_GAP);
             }
 
             y += UIScaleManager.scale(SECTION_GAP);
         }
 
-        int buttonWidth = 110;
+        int buttonWidth = UIScaleManager.scale(110);
         int buttonX = (this.width - buttonWidth) / 2;
         int buttonY = this.height - UIScaleManager.scale(32);
-        backButton.render(graphics, buttonX, buttonY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        backButton.render(graphics, buttonX, buttonY, buttonWidth, scaledButtonHeight, mouseX, mouseY);
     }
 
     @Override

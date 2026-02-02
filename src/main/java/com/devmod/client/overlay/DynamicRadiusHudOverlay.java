@@ -90,9 +90,9 @@ public final class DynamicRadiusHudOverlay {
         int maxWidth = Math.max(0, UIScaleManager.getSafeWidth() - sPadding * 2);
         String display = truncateToWidth(font, line.getString(), maxWidth);
         int width = UIScaleManager.getScaledStringWidth(font, display);
-        int height = font.lineHeight;
-        int boxHeight = height + (sPadding * 2);
-        graphics.fill(x - sPadding, y - sPadding, x + width + sPadding, y + height + sPadding, BG_COLOR);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int boxHeight = lineHeight + (sPadding * 2);
+        graphics.fill(x - sPadding, y - sPadding, x + width + sPadding, y + lineHeight + sPadding, BG_COLOR);
         UIScaleManager.drawScaledString(graphics, font, display, x, y, TEXT_COLOR, false);
         return y + boxHeight + sLineGap;
     }

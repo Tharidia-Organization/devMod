@@ -11,14 +11,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.fml.loading.FMLEnvironment;
-
 import com.devmod.client.ClientVFXProxy;
 import com.devmod.combat.HitHelper;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.integration.ModIntegrationManager;
 
 public final class ImpactHudService {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ImpactHudService.class);
 
     private ImpactHudService() {}
@@ -95,11 +94,10 @@ public final class ImpactHudService {
 
     public static void triggerImpactVfx(ImpactData impactData, @Nullable Vec3 hitPoint,
                                         @Nullable Vec3 vfxDirection, LivingEntity victim) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Impact VFX: dist.isClient={}, hitPoint={}, target={}",
-                FMLEnvironment.dist.isClient(), hitPoint, victim.getName().getString());
-        }
+        LOGGER.debug("[ImpactHudService] triggerImpactVfx: hitPoint={}, vfxDirection={}, victim={}",
+            hitPoint, vfxDirection, victim);
         if (hitPoint == null || vfxDirection == null) {
+            LOGGER.debug("[ImpactHudService] Skipping VFX: hitPoint={}, vfxDirection={}", hitPoint, vfxDirection);
             return;
         }
         ClientVFXProxy.addImpactVFX(hitPoint, vfxDirection, impactData);

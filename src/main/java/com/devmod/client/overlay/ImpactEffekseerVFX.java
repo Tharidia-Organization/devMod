@@ -5,6 +5,9 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
@@ -69,6 +72,8 @@ import com.devmod.config.Config;
 @OnlyIn(Dist.CLIENT)
 public final class ImpactEffekseerVFX {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImpactEffekseerVFX.class);
+
     private ImpactEffekseerVFX() {}
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -106,11 +111,16 @@ public final class ImpactEffekseerVFX {
         @Nullable ImpactData data,
         boolean isKill
     ) {
+        LOGGER.debug("[ImpactEffekseerVFX] playImpactEffect called: hitPoint={}, data={}, isKill={}, thread={}",
+            hitPoint, data != null ? data.getTarget() : "null", isKill, Thread.currentThread().getName());
+
         if (hitPoint == null) {
+            LOGGER.debug("[ImpactEffekseerVFX] hitPoint is null, returning dummy");
             return ParticleEmitter.dummy(ParticleEmitter.Type.WORLD);
         }
 
         if (!isEnabled()) {
+            LOGGER.debug("[ImpactEffekseerVFX] Effekseer disabled in config, returning dummy");
             return ParticleEmitter.dummy(ParticleEmitter.Type.WORLD);
         }
 
@@ -157,6 +167,8 @@ public final class ImpactEffekseerVFX {
 
         // Play through orchestrator
         List<ParticleEmitter> emitters = EffectOrchestrator.play(context);
+        LOGGER.debug("[ImpactEffekseerVFX] Orchestrator returned {} emitters, first exists={}",
+            emitters.size(), !emitters.isEmpty() && emitters.get(0).exists());
         return emitters.isEmpty()
             ? ParticleEmitter.dummy(ParticleEmitter.Type.WORLD)
             : emitters.get(0);

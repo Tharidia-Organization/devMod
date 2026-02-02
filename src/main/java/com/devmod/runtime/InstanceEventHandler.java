@@ -72,6 +72,17 @@ public class InstanceEventHandler {
      * be included in the server's normal tick loop.
      */
     private static void tickInstanceDimensions(MinecraftServer server) {
+        // Diagnostic: Log instance counts periodically (every 5 seconds)
+        if (tickCounter == 0) {
+            int activeCount = InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.ACTIVE).size();
+            int readyCount = InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.READY).size();
+            int totalPlayers = InstanceRegistry.INSTANCE.getTotalPlayersInInstances();
+            if (activeCount > 0 || readyCount > 0 || totalPlayers > 0) {
+                LOGGER.info("[InstanceDebug] Instance states: ACTIVE={}, READY={}, players_mapped={}",
+                    activeCount, readyCount, totalPlayers);
+            }
+        }
+
         for (InstanceData instance : InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.ACTIVE)) {
             ResourceKey<Level> dimKey = instance.getDimensionKey();
             if (dimKey != null) {

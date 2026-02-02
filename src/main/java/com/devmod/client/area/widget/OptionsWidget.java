@@ -44,6 +44,12 @@ public class OptionsWidget extends AbstractWidget {
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
         int currentY = getY();
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        int styleButtonWidth = s(STYLE_BUTTON_WIDTH);
+        int titleGap = s(16);
+        int sectionGap = s(14);
+        int blockGap = s(8);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -51,28 +57,28 @@ public class OptionsWidget extends AbstractWidget {
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
-        currentY += 16;
+        currentY += titleGap;
 
         // Structure toggles
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.options.section.structure")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
-        currentY += 14;
+        currentY += sectionGap;
 
         // Walls toggle
         renderToggle(graphics, "area.options.walls", options.hasWalls(),
             getX(), currentY, mouseX, mouseY);
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Ceiling toggle
         renderToggle(graphics, "area.options.ceiling", options.hasCeiling(),
             getX(), currentY, mouseX, mouseY);
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Floor toggle
         renderToggle(graphics, "area.options.floor", options.hasFloor(),
             getX(), currentY, mouseX, mouseY);
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + blockGap;
 
         // Wall style section
         UIScaleManager.drawScaledString(graphics, font,
@@ -80,21 +86,21 @@ public class OptionsWidget extends AbstractWidget {
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
-        currentY += 14;
+        currentY += sectionGap;
 
         // Wall style buttons
         int btnX = getX();
         for (WallStyle style : WallStyle.values()) {
             boolean isSelected = options.wallStyle() == style;
-            boolean isHovered = mouseX >= btnX && mouseX < btnX + STYLE_BUTTON_WIDTH &&
-                               mouseY >= currentY && mouseY < currentY + BUTTON_HEIGHT;
+            boolean isHovered = mouseX >= btnX && mouseX < btnX + styleButtonWidth &&
+                               mouseY >= currentY && mouseY < currentY + buttonHeight;
 
             int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                          (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER :
                                      AreaBuilderGuiConstants.COLOR_PANEL);
 
-            graphics.fill(btnX, currentY, btnX + STYLE_BUTTON_WIDTH, currentY + BUTTON_HEIGHT, bgColor);
-            graphics.renderOutline(btnX, currentY, STYLE_BUTTON_WIDTH, BUTTON_HEIGHT,
+            graphics.fill(btnX, currentY, btnX + styleButtonWidth, currentY + buttonHeight, bgColor);
+            graphics.renderOutline(btnX, currentY, styleButtonWidth, buttonHeight,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
             String styleName = Component.translatable("area.wall_style." + style.getSerializedName()).getString();
@@ -102,30 +108,30 @@ public class OptionsWidget extends AbstractWidget {
                 styleName = styleName.substring(0, 8) + "..";
             }
             UIScaleManager.drawScaledCenteredString(graphics, font, styleName,
-                btnX + STYLE_BUTTON_WIDTH / 2, currentY + 5,
+                btnX + styleButtonWidth / 2, currentY + s(5),
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
-            btnX += STYLE_BUTTON_WIDTH + 4;
+            btnX += styleButtonWidth + s(4);
 
             // Wrap to next line after 2 buttons
-            if (btnX > getX() + getWidth() - STYLE_BUTTON_WIDTH) {
+            if (btnX > getX() + getWidth() - styleButtonWidth) {
                 btnX = getX();
-                currentY += ROW_HEIGHT;
+                currentY += rowHeight;
             }
         }
 
-        currentY += ROW_HEIGHT + 8;
+        currentY += rowHeight + blockGap;
 
         // Additional options
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.options.section.gameplay")),
             getX(), currentY, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
-        currentY += 14;
+        currentY += sectionGap;
 
         // Spawn portals toggle
         renderToggle(graphics, "area.options.spawn_portals", options.spawnPortals(),
             getX(), currentY, mouseX, mouseY);
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Allow building toggle
         renderToggle(graphics, "area.options.allow_building", options.allowBuilding(),
@@ -135,34 +141,39 @@ public class OptionsWidget extends AbstractWidget {
     private void renderToggle(GuiGraphics graphics, String translationKey, boolean value,
                              int x, int y, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
 
         // Toggle button
-        boolean isHovered = mouseX >= x && mouseX < x + TOGGLE_WIDTH &&
-                           mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+        boolean isHovered = mouseX >= x && mouseX < x + toggleWidth &&
+                           mouseY >= y && mouseY < y + buttonHeight;
 
         int bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF;
         if (isHovered) {
             bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON_HOVER : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF_HOVER;
         }
 
-        graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_HEIGHT, bgColor);
-        graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_HEIGHT,
+        graphics.fill(x, y, x + toggleWidth, y + buttonHeight, bgColor);
+        graphics.renderOutline(x, y, toggleWidth, buttonHeight,
             AreaBuilderGuiConstants.COLOR_BORDER);
 
         String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
-        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + toggleWidth / 2, y + s(5), AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Label
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(Objects.requireNonNull(translationKey))),
-            x + TOGGLE_WIDTH + 8, y + 5,
+            x + toggleWidth + s(8), y + s(5),
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
     }
 
     @Override
     public void onClick(double mouseX, double mouseY, int button) {
-        int currentY = getY() + 16 + 14;
+        int rowHeight = s(ROW_HEIGHT);
+        int styleButtonWidth = s(STYLE_BUTTON_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        int currentY = getY() + s(16) + s(14);
 
         // Walls toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -170,7 +181,7 @@ public class OptionsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Ceiling toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -178,7 +189,7 @@ public class OptionsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Floor toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -186,14 +197,14 @@ public class OptionsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT + 8 + 14;
+        currentY += rowHeight + s(8) + s(14);
 
         // Wall style buttons
         int btnX = getX();
         int styleY = currentY;
         for (WallStyle style : WallStyle.values()) {
-            if (mouseX >= btnX && mouseX < btnX + STYLE_BUTTON_WIDTH &&
-                mouseY >= styleY && mouseY < styleY + BUTTON_HEIGHT) {
+            if (mouseX >= btnX && mouseX < btnX + styleButtonWidth &&
+                mouseY >= styleY && mouseY < styleY + buttonHeight) {
                 if (options.wallStyle() != style) {
                     options = options.withWallStyle(style);
                     notifyChange();
@@ -201,17 +212,17 @@ public class OptionsWidget extends AbstractWidget {
                 return;
             }
 
-            btnX += STYLE_BUTTON_WIDTH + 4;
+            btnX += styleButtonWidth + s(4);
 
             // Wrap to next line
-            if (btnX > getX() + getWidth() - STYLE_BUTTON_WIDTH) {
+            if (btnX > getX() + getWidth() - styleButtonWidth) {
                 btnX = getX();
-                styleY += ROW_HEIGHT;
+                styleY += rowHeight;
             }
         }
 
         // Calculate where gameplay toggles start
-        currentY = styleY + ROW_HEIGHT + 8 + 14;
+        currentY = styleY + rowHeight + s(8) + s(14);
 
         // Spawn portals toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -219,7 +230,7 @@ public class OptionsWidget extends AbstractWidget {
             notifyChange();
             return;
         }
-        currentY += ROW_HEIGHT;
+        currentY += rowHeight;
 
         // Allow building toggle
         if (isToggleClicked(mouseX, mouseY, getX(), currentY)) {
@@ -229,8 +240,10 @@ public class OptionsWidget extends AbstractWidget {
     }
 
     private boolean isToggleClicked(double mouseX, double mouseY, int x, int y) {
-        return mouseX >= x && mouseX < x + TOGGLE_WIDTH &&
-               mouseY >= y && mouseY < y + BUTTON_HEIGHT;
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonHeight = s(BUTTON_HEIGHT);
+        return mouseX >= x && mouseX < x + toggleWidth &&
+               mouseY >= y && mouseY < y + buttonHeight;
     }
 
     private void notifyChange() {
@@ -253,5 +266,9 @@ public class OptionsWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.builder.tab.options")));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

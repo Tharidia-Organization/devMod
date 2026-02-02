@@ -23,6 +23,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.devmod.endurance.EnduranceLogger;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.shared.SharedColorTokens;
 
 public class InstanceManager {
@@ -32,6 +34,12 @@ public class InstanceManager {
     // Teleport countdown in ticks (10 seconds = 200 ticks)
     private static final int TELEPORT_COUNTDOWN_TICKS = 200;
 
+    private enum TeleportMode {
+        IMMEDIATE,
+        COUNTDOWN,
+        NONE
+    }
+
     // Pending teleports (players in countdown)
     private final Map<UUID, TeleportRequest> pendingTeleports = new ConcurrentHashMap<>();
 
@@ -39,7 +47,8 @@ public class InstanceManager {
     private final Map<UUID, PendingRecovery> pendingRecoveries = new ConcurrentHashMap<>();
 
     private MinecraftServer server;
-    private boolean initialized = false;
+    // Volatile for thread visibility across initialization and tick threads
+    private volatile boolean initialized = false;
 
     private InstanceManager() {}
 
@@ -109,7 +118,7 @@ public class InstanceManager {
             String questId,
             @Nullable List<UUID> partyMembers
     ) {
-        return startInstanceQuestInternal(player, arenaId, questId, partyMembers, true);
+        return startInstanceQuestInternal(player, arenaId, questId, partyMembers, TeleportMode.IMMEDIATE);
     }
 
     /**
@@ -129,7 +138,21 @@ public class InstanceManager {
             String questId,
             @Nullable List<UUID> partyMembers
     ) {
-        return startInstanceQuestInternal(player, arenaId, questId, partyMembers, false);
+        return startInstanceQuestInternal(player, arenaId, questId, partyMembers, TeleportMode.COUNTDOWN);
+    }
+
+    /**
+     * Prepare a new instance quest WITHOUT teleporting players.
+     * This is used when the caller needs to build/prepare the arena first,
+     * then teleport at a controlled time.
+     */
+    public CompletableFuture<UUID> prepareInstanceQuest(
+            ServerPlayer player,
+            String arenaId,
+            String questId,
+            @Nullable List<UUID> partyMembers
+    ) {
+        return startInstanceQuestInternal(player, arenaId, questId, partyMembers, TeleportMode.NONE);
     }
 
     /**
@@ -139,7 +162,7 @@ public class InstanceManager {
      * @param arenaId The arena template to use
      * @param questId The quest identifier
      * @param partyMembers Optional list of party member UUIDs (null for solo)
-     * @param immediate If true, teleport immediately; if false, use 10-second countdown
+     * @param mode Teleport mode (immediate, countdown, or none)
      * @return CompletableFuture with the instance ID, or null on failure
      */
     private CompletableFuture<UUID> startInstanceQuestInternal(
@@ -147,7 +170,7 @@ public class InstanceManager {
             String arenaId,
             String questId,
             @Nullable List<UUID> partyMembers,
-            boolean immediate
+            TeleportMode mode
     ) {
         if (!initialized) {
             LOGGER.error("[InstanceManager] Not initialized");
@@ -157,7 +180,11 @@ public class InstanceManager {
         UUID playerId = nn(player.getUUID(), "player uuid");
 
         // Check if player is already in an instance
-        if (InstanceRegistry.INSTANCE.getPlayerInstance(playerId).isPresent()) {
+        var existingInstance = InstanceRegistry.INSTANCE.getPlayerInstance(playerId);
+        if (existingInstance.isPresent()) {
+            InstanceData existing = existingInstance.get();
+            LOGGER.warn("[InstanceDebug] Player {} already mapped to instance {} (state={}, dimKey={}). Blocking new quest start.",
+                player.getName().getString(), existing.getInstanceId(), existing.getState(), existing.getDimensionKey());
             player.sendSystemMessage(styledMsg("[DevMod] You are already in an instance!", SharedColorTokens.Chat.RED));
             return CompletableFuture.completedFuture(null);
         }
@@ -222,15 +249,16 @@ public class InstanceManager {
 
         // Notify players (different message based on mode)
         for (ServerPlayer p : allPlayers) {
-            if (immediate) {
-                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance...", SharedColorTokens.Chat.GOLD));
+            if (mode == TeleportMode.COUNTDOWN) {
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance... teleporting in 10 seconds",
+                    SharedColorTokens.Chat.GOLD));
             } else {
-                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance... teleporting in 10 seconds", SharedColorTokens.Chat.GOLD));
+                p.sendSystemMessage(styledMsg("[DevMod] Preparing instance...", SharedColorTokens.Chat.GOLD));
             }
         }
 
-        // Capture immediate flag for lambda
-        final boolean teleportImmediately = immediate;
+        // Capture mode for lambda
+        final TeleportMode teleportMode = mode;
 
         // Phase 2: Create dimension asynchronously
         // Note: createDimensionAsync schedules on server thread, so thenApply also runs on server thread
@@ -257,7 +285,7 @@ public class InstanceManager {
                 }
 
                 // Update instance with dimension
-                instance.setDimensionKey(dimensionKey);
+                InstanceRegistry.INSTANCE.setDimensionKey(instanceId, dimensionKey);
                 instance.setState(InstanceState.READY);
                 InstanceRegistry.INSTANCE.save();
 
@@ -267,19 +295,22 @@ public class InstanceManager {
                     ServerPlayer onlinePlayer = server.getPlayerList().getPlayer(nn(originalPlayer.getUUID(), "player uuid"));
                     if (onlinePlayer == null) {
                         // Player disconnected during dimension creation
-                UUID originalId = nn(originalPlayer.getUUID(), "player uuid");
-                LOGGER.warn("[InstanceManager] Player {} disconnected before teleport, skipping",
+                        UUID originalId = nn(originalPlayer.getUUID(), "player uuid");
+                        LOGGER.warn("[InstanceManager] Player {} disconnected before teleport, skipping",
                             originalId);
-                // Remove from instance, snapshot preserved for login recovery
-                instance.removePlayer(originalId);
-                InstanceRegistry.INSTANCE.unmapPlayer(originalId);
-                continue;
-            }
+                        // Remove from instance, snapshot preserved for login recovery
+                        instance.removePlayer(originalId);
+                        InstanceRegistry.INSTANCE.unmapPlayer(originalId);
+                        continue;
+                    }
 
-                    if (teleportImmediately) {
+                    if (teleportMode == TeleportMode.IMMEDIATE) {
                         executeImmediateTeleport(onlinePlayer, instanceId);
-                    } else {
+                    } else if (teleportMode == TeleportMode.COUNTDOWN) {
                         startTeleportCountdown(onlinePlayer, instanceId);
+                    } else {
+                        LOGGER.debug("[InstanceManager] Instance {} ready for {}, teleport deferred",
+                            instanceId, onlinePlayer.getName().getString());
                     }
                 }
 
@@ -298,40 +329,25 @@ public class InstanceManager {
      * Used when integrating with quest systems that need synchronous completion.
      */
     private void executeImmediateTeleport(ServerPlayer player, UUID instanceId) {
-        UUID playerId = nn(player.getUUID(), "player uuid");
-
         LOGGER.info("[InstanceManager] Executing immediate teleport for {} to instance {}",
             player.getName().getString(), instanceId);
 
-        // Update snapshot state
-        RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.IN_TRANSIT);
+        // Use TeleportTransaction for atomic teleport with proper locking, validation, and state management
+        TeleportTransaction.TeleportResult result = TeleportTransaction.execute(
+            player,
+            instanceId,
+            true // update snapshot state (IN_TRANSIT -> IN_INSTANCE)
+        );
 
-        // Perform teleport immediately
-        boolean success = DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
-
-        if (success) {
-            // Update states
-            RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.IN_INSTANCE);
-
-            InstanceRegistry.INSTANCE.getInstance(instanceId).ifPresent(instance -> {
-                if (instance.getState() == InstanceState.READY) {
-                    instance.setState(InstanceState.ACTIVE);
-                    InstanceRegistry.INSTANCE.save();
-                }
-            });
-
+        if (result == TeleportTransaction.TeleportResult.SUCCESS) {
             player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", SharedColorTokens.Chat.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {} (immediate)",
                 player.getName().getString(), instanceId);
         } else {
-            // Teleport failed - recover player
-            LOGGER.error("[InstanceManager] Immediate teleport failed for {} to instance {}",
-                player.getName().getString(), instanceId);
-
-            RecoverySystem.INSTANCE.loadSnapshot(playerId).ifPresent(snapshot -> {
-                RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Teleport failed");
-            });
+            // Teleport failed - TeleportTransaction already performed recovery if needed
+            LOGGER.error("[InstanceManager] Immediate teleport failed for {} to instance {} (result: {})",
+                player.getName().getString(), instanceId, result);
         }
     }
 
@@ -364,8 +380,8 @@ public class InstanceManager {
         // Process pending recoveries (delayed after respawn)
         processPendingRecoveries();
 
-        if (pendingTeleports.isEmpty()) return;
-
+        // Note: Removed isEmpty() optimization to avoid TOCTOU race window.
+        // The iterator is safe for ConcurrentHashMap even if entries are added/removed.
         Iterator<Map.Entry<UUID, TeleportRequest>> iterator = pendingTeleports.entrySet().iterator();
 
         while (iterator.hasNext()) {
@@ -410,8 +426,26 @@ public class InstanceManager {
 
             // Execute teleport when countdown reaches zero
             if (request.ticksRemaining <= 0) {
-                iterator.remove();
-                executeTeleport(player, request);
+                // IMPORTANT: Only remove request AFTER successful teleport
+                // This allows retry on transient failures
+                boolean success = executeTeleport(player, request);
+                if (success) {
+                    iterator.remove();
+                } else {
+                    // Check if we should retry or give up
+                    request.failureCount++;
+                    if (request.failureCount >= 3) {
+                        LOGGER.error("[InstanceManager] Teleport failed {} times for {}, giving up",
+                            request.failureCount, player.getName().getString());
+                        iterator.remove();
+                        // Recovery already performed by executeTeleport
+                    } else {
+                        // Reset countdown for retry
+                        request.ticksRemaining = 20; // 1 second before retry
+                        LOGGER.warn("[InstanceManager] Teleport failed for {}, will retry (attempt {})",
+                            player.getName().getString(), request.failureCount);
+                    }
+                }
             }
         }
     }
@@ -450,36 +484,31 @@ public class InstanceManager {
 
     /**
      * Execute the actual teleport to the instance dimension.
+     *
+     * @return true if teleport succeeded, false if failed (recovery performed)
      */
-    private void executeTeleport(ServerPlayer player, TeleportRequest request) {
+    private boolean executeTeleport(ServerPlayer player, TeleportRequest request) {
         LOGGER.info("[InstanceManager] Executing teleport for {} to instance {}",
             player.getName().getString(), request.instanceId);
 
-        boolean success = DynamicDimensionManager.INSTANCE.teleportToInstance(player, request.instanceId);
+        // Use TeleportTransaction for atomic teleport with proper locking and validation
+        TeleportTransaction.TeleportResult result = TeleportTransaction.execute(
+            player,
+            request.instanceId,
+            true // update snapshot state
+        );
 
-        if (success) {
-            // Update snapshot and instance state
-            RecoverySystem.INSTANCE.updateSnapshotState(nn(player.getUUID(), "player uuid"), PlayerInstanceState.IN_INSTANCE);
-
-            InstanceRegistry.INSTANCE.getInstance(request.instanceId).ifPresent(instance -> {
-                if (instance.getState() == InstanceState.READY) {
-                    instance.setState(InstanceState.ACTIVE);
-                    InstanceRegistry.INSTANCE.save();
-                }
-            });
-
+        if (result == TeleportTransaction.TeleportResult.SUCCESS) {
             player.sendSystemMessage(styledMsg("[DevMod] Welcome to the arena! Good luck!", SharedColorTokens.Chat.GREEN));
 
             LOGGER.info("[InstanceManager] Player {} successfully teleported to instance {}",
                 player.getName().getString(), request.instanceId);
+            return true;
         } else {
-            // Teleport failed - recover player
-            LOGGER.error("[InstanceManager] Teleport failed for {} to instance {}",
-                player.getName().getString(), request.instanceId);
-
-            RecoverySystem.INSTANCE.loadSnapshot(nn(player.getUUID(), "player uuid")).ifPresent(snapshot -> {
-                RecoverySystem.INSTANCE.performRecovery(player, snapshot, "Teleport failed");
-            });
+            // Teleport failed - TeleportTransaction already performed recovery if needed
+            LOGGER.error("[InstanceManager] Teleport failed for {} to instance {} (result: {})",
+                player.getName().getString(), request.instanceId, result);
+            return false;
         }
     }
 
@@ -502,6 +531,11 @@ public class InstanceManager {
         InstanceData instance = instanceOpt.get();
         LOGGER.info("[InstanceManager] Ending instance {} (success: {}, reason: {})",
             instanceId, success, reason);
+
+        // Structured logging for instance end
+        EnduranceLogger.phase(Phase.INSTANCE_DESTROY, instanceId,
+            "Starting instance cleanup: success=%s, reason=%s, playerCount=%d",
+            success, reason, instance.getPlayerIds().size());
 
         // Update state
         instance.setState(InstanceState.COMPLETING);
@@ -564,6 +598,8 @@ public class InstanceManager {
         InstanceRegistry.INSTANCE.scheduleDestruction(instanceId);
         InstanceRegistry.INSTANCE.save();
 
+        EnduranceLogger.phase(Phase.INSTANCE_DESTROY, instanceId,
+            "Instance scheduled for destruction: state=%s", instance.getState());
         LOGGER.info("[InstanceManager] Instance {} scheduled for destruction", instanceId);
     }
 
@@ -696,6 +732,7 @@ public class InstanceManager {
         final UUID instanceId;
         final long createdAt;
         int ticksRemaining;
+        int failureCount;
 
         // Maximum time a teleport request can exist before being considered stale (30 seconds)
         static final long MAX_AGE_MS = 30_000;
@@ -705,6 +742,7 @@ public class InstanceManager {
             this.instanceId = instanceId;
             this.ticksRemaining = ticksRemaining;
             this.createdAt = System.currentTimeMillis();
+            this.failureCount = 0;
         }
 
         /**

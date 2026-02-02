@@ -178,7 +178,7 @@ public class PartyHudOverlay {
             if (hasModifiers) headerLines++;
         }
 
-        int lineHeight = font.lineHeight;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int headerTextHeight = headerLines * lineHeight + (headerLines - 1) * sHeaderLineGap;
         int barCount = hasQuestData ? 1 + (tensionActive ? 1 : 0) : 0;
         int barBlockHeight = barCount > 0

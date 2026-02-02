@@ -299,13 +299,15 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void updateLayout() {
         Font font = Minecraft.getInstance().font;
+        UIScaleManager.update();
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int margin = PANEL_MARGIN;
         panelWidth = Math.min(PANEL_MAX_WIDTH, Math.max(DesignTokens.Component.MODAL_MIN_WIDTH, width - margin * 2));
         panelHeight = Math.min(PANEL_MAX_HEIGHT, height - margin * 2);
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
 
-        headerHeight = font.lineHeight * 2 + HEADER_GAP;
+        headerHeight = lineHeight * 2 + HEADER_GAP;
         tabY = panelY + PANEL_PADDING + headerHeight + HEADER_GAP;
         footerY = panelY + panelHeight - FOOTER_HEIGHT;
 
@@ -486,7 +488,8 @@ public class DebriefScreen extends BaseDevModScreen {
         String percentText = percent + "%";
         Font font = Minecraft.getInstance().font;
         int textX = x - UIScaleManager.getScaledStringWidth(font, percentText) - 4;
-        int textY = thumbY + (thumbHeight - font.lineHeight) / 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int textY = thumbY + (thumbHeight - lineHeight) / 2;
         UIScaleManager.drawScaledString(graphics, font, percentText, textX, textY, COLOR_TEXT_DIM, false);
     }
 
@@ -502,12 +505,20 @@ public class DebriefScreen extends BaseDevModScreen {
             collector.getTotalKills(),
             String.format("%.1f", collector.getDPS())
         ).getString();
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         UIScaleManager.drawScaledString(graphics, font, subtitle, panelX + PANEL_PADDING,
-            panelY + PANEL_PADDING + font.lineHeight + HEADER_GAP, COLOR_TEXT_DIM, false);
+            panelY + PANEL_PADDING + lineHeight + HEADER_GAP, COLOR_TEXT_DIM, false);
     }
 
     private void renderTabHighlight(GuiGraphics graphics) {
-        int activeIndex = activeTab.ordinal();
+        int activeIndex = 0;
+        Tab[] tabs = Tab.values();
+        for (int i = 0; i < tabs.length; i++) {
+            if (tabs[i] == activeTab) {
+                activeIndex = i;
+                break;
+            }
+        }
         int activeX = tabStartX + activeIndex * (tabWidth + TAB_GAP);
         graphics.fill(activeX, tabY + TAB_HEIGHT - 2, activeX + tabWidth, tabY + TAB_HEIGHT, COLOR_ACCENT);
     }
@@ -516,7 +527,7 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void renderOverviewTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 4;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 12);
         int columnGap = DesignTokens.Space._6;
         int columnWidth = Math.max(1, (w - columnGap) / 2);
         int leftX = x;
@@ -532,7 +543,7 @@ public class DebriefScreen extends BaseDevModScreen {
         cursorLeft += lineHeight;
 
         float gradeScale = 2.4f;
-        int gradeHeight = Math.round(font.lineHeight * gradeScale);
+        int gradeHeight = Math.round(lineHeight * gradeScale);
         graphics.pose().pushPose();
         graphics.pose().translate(leftX, cursorLeft, 0);
         graphics.pose().scale(gradeScale, gradeScale, 1f);
@@ -543,22 +554,22 @@ public class DebriefScreen extends BaseDevModScreen {
         int breakdownY = cursorLeft;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.dps", String.format("%.0f", breakdown.dpsScore), String.format("%.0f", CAP_DPS)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
-        breakdownY += font.lineHeight;
+        breakdownY += lineHeight;
         if (breakdown.noDamageBonus > 0) {
             UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.no_damage",
                 String.format("%.0f", breakdown.noDamageBonus), String.format("%.0f", CAP_NO_DAMAGE)),
                 leftX, breakdownY, COLOR_SUCCESS, false);
-            breakdownY += font.lineHeight;
+            breakdownY += lineHeight;
         }
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.combo", String.format("%.0f", breakdown.comboScore), String.format("%.0f", CAP_COMBO)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
-        breakdownY += font.lineHeight;
+        breakdownY += lineHeight;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.ttk", String.format("%.0f", breakdown.ttkScore), String.format("%.0f", CAP_TTK)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
-        breakdownY += font.lineHeight;
+        breakdownY += lineHeight;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.crit", String.format("%.0f", breakdown.critScore), String.format("%.0f", CAP_CRIT)),
             leftX, breakdownY, COLOR_TEXT_DIM, false);
-        breakdownY += font.lineHeight;
+        breakdownY += lineHeight;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.grade.total", String.format("%.0f", breakdown.totalScore), String.format("%.0f", CAP_TOTAL)),
             leftX, breakdownY, COLOR_ACCENT, false);
         cursorLeft = breakdownY + lineHeight;
@@ -643,7 +654,7 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void renderCombatTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 4;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 12);
         int columnGap = DesignTokens.Space._6;
         int columnWidth = Math.max(1, (w - columnGap) / 2);
         int leftX = x;
@@ -711,37 +722,38 @@ public class DebriefScreen extends BaseDevModScreen {
 
     private void renderSpatialTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 12);
         int cursorY = y;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.title"), x, cursorY, COLOR_ACCENT, false);
-        cursorY += font.lineHeight + DesignTokens.Space._4;
+        cursorY += lineHeight + DesignTokens.Space._4;
 
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.positions", collector.getPlayerPositions().size()),
             x, cursorY, COLOR_TEXT, false);
-        cursorY += font.lineHeight + DesignTokens.Space._2;
+        cursorY += lineHeight + DesignTokens.Space._2;
 
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.kills", collector.getKillPositions().size()),
             x, cursorY, COLOR_TEXT, false);
-        cursorY += font.lineHeight + DesignTokens.Space._2;
+        cursorY += lineHeight + DesignTokens.Space._2;
 
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.damage", collector.getDamagePositions().size()),
             x, cursorY, COLOR_TEXT, false);
-        cursorY += font.lineHeight + DesignTokens.Space._2;
+        cursorY += lineHeight + DesignTokens.Space._2;
 
         boolean noDeath = collector.getDeathPositions().isEmpty();
         String deathSymbol = noDeath ? "✓" : "✗";
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.deaths", deathSymbol, collector.getDeathPositions().size()),
             x, cursorY, noDeath ? COLOR_SUCCESS : COLOR_ERROR, false);
-        cursorY += font.lineHeight + DesignTokens.Space._6;
+        cursorY += lineHeight + DesignTokens.Space._6;
 
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.spatial.heatmap_note"),
             x, cursorY, COLOR_TEXT_DIM, false);
 
-        updateScrollBounds(y, cursorY + font.lineHeight, h);
+        updateScrollBounds(y, cursorY + lineHeight, h);
     }
 
     private void renderTimelineTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 11);
         int textX = x + DesignTokens.Space._2;
 
         List<CombatEvent> events = collector.getEvents();
@@ -751,10 +763,10 @@ public class DebriefScreen extends BaseDevModScreen {
         String header = tr("devmod.endurance.debrief.timeline.header",
             timelinePage + 1, totalPages, events.size());
         UIScaleManager.drawScaledString(graphics, font, header, textX, y, COLOR_ACCENT, false);
-        y += font.lineHeight + DesignTokens.Space._2;
+        y += lineHeight + DesignTokens.Space._2;
 
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.timeline.hint"), textX, y, COLOR_TEXT_DIM, false);
-        y += font.lineHeight + DesignTokens.Space._4;
+        y += lineHeight + DesignTokens.Space._4;
 
         // Calculate page bounds
         int startIdx = timelinePage * TIMELINE_PAGE_SIZE;
@@ -791,7 +803,7 @@ public class DebriefScreen extends BaseDevModScreen {
      */
     private void renderPartyTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 4;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 12);
 
         PartyWaveStats partyStats = ClientPartyStatsCache.getStatsForWave(waveNumber);
 
@@ -905,7 +917,7 @@ public class DebriefScreen extends BaseDevModScreen {
     @SuppressWarnings("UnusedVariable") // w/h reserved for future layout constraints
     private void renderReportTab(GuiGraphics graphics, int x, int y, int w, int h) {
         Font font = Minecraft.getInstance().font;
-        int lineHeight = font.lineHeight + 4;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 12);
         int cursorY = y;
         UIScaleManager.drawScaledString(graphics, font, tr("devmod.endurance.debrief.report.title"), x, cursorY, COLOR_ACCENT, false);
         cursorY += lineHeight + DesignTokens.Space._3;

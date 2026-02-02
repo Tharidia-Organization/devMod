@@ -97,6 +97,15 @@ public class EnduranceShopScreen extends Screen {
     private int playerBloodGems = 0;
     private Map<String, Integer> playerPurchases = new HashMap<>();
 
+    private int scaledCategoryWidth;
+    private int scaledItemHeight;
+    private int scaledItemMargin;
+
+    private record ShopLayout(int sidebarX, int sidebarY, int sidebarW, int sidebarH,
+                              int listX, int listY, int listW, int listH,
+                              int detailsX, int detailsY, int detailsW, int detailsH,
+                              int actionY, int headerY) {}
+
     public EnduranceShopScreen() {
         super(I18n.endurance("shop_title"));
     }
@@ -104,6 +113,9 @@ public class EnduranceShopScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+
+        UIScaleManager.update();
+        updateScaledMetrics();
 
         // Load player currency (would need client-side sync)
         loadPlayerData();
@@ -144,8 +156,9 @@ public class EnduranceShopScreen extends Screen {
     }
 
     private void calculateMaxScroll() {
-        int contentHeight = categoryItems.size() * (ITEM_HEIGHT + ITEM_MARGIN);
-        int viewportHeight = height - 100;
+        ShopLayout layout = getLayout();
+        int contentHeight = categoryItems.size() * (scaledItemHeight + scaledItemMargin);
+        int viewportHeight = layout.listH();
         maxScroll = Math.max(0, contentHeight - viewportHeight);
     }
 
@@ -164,43 +177,46 @@ public class EnduranceShopScreen extends Screen {
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+        updateScaledMetrics();
+        ShopLayout layout = getLayout();
         // Background
         graphics.fill(0, 0, width, height, COLOR_BG);
 
         // Header
-        renderHeader(graphics);
+        renderHeader(graphics, layout);
 
         // Category sidebar with custom buttons
-        renderCategorySidebar(graphics, mouseX, mouseY);
+        renderCategorySidebar(graphics, mouseX, mouseY, layout);
 
         if (viewMode == ViewMode.CHALLENGES) {
             // Render challenges view
-            renderChallengeList(graphics, mouseX, mouseY);
+            renderChallengeList(graphics, mouseX, mouseY, layout);
         } else {
             // Item list
-            renderItemList(graphics, mouseX, mouseY);
+            renderItemList(graphics, mouseX, mouseY, layout);
 
             // Selected item details
             RewardSystem.ShopItem item = selectedItem;
             if (item != null) {
-                renderItemDetails(graphics, item);
+                renderItemDetails(graphics, item, layout);
             }
         }
 
         // Custom action buttons (Back, Purchase)
-        renderActionButtons(graphics, mouseX, mouseY);
+        renderActionButtons(graphics, mouseX, mouseY, layout);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    private void renderHeader(GuiGraphics graphics) {
+    private void renderHeader(GuiGraphics graphics, ShopLayout layout) {
         var safeFont = Objects.requireNonNull(font);
         // Title
-        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.shop_title").getString()), width / 2, 10, COLOR_ACCENT);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.endurance.shop_title").getString()),
+            width / 2, layout.headerY(), COLOR_ACCENT);
 
         // Currency display
-        int currencyY = 10;
-        int currencyX = width - 200;
+        int currencyY = layout.headerY();
+        int currencyX = Math.max(layout.listX(), width - UIScaleManager.scale(200));
         int lineHeight = UIScaleManager.getScaledLineHeight();
 
         // Tokens
@@ -228,17 +244,19 @@ public class EnduranceShopScreen extends Screen {
             currencyX, currencyY, getCurrencyColor(RewardSystem.Currency.BLOOD_GEMS));
     }
 
-    private void renderCategorySidebar(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderCategorySidebar(GuiGraphics graphics, int mouseX, int mouseY, ShopLayout layout) {
         var safeFont = Objects.requireNonNull(font);
-        graphics.fill(0, 40, CATEGORY_WIDTH, height - 50, COLOR_CATEGORY_BG);
+        graphics.fill(layout.sidebarX(), layout.sidebarY(), layout.sidebarX() + layout.sidebarW(),
+            layout.sidebarY() + layout.sidebarH(), COLOR_CATEGORY_BG);
 
         // Category header
-        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()), CATEGORY_WIDTH / 2, 45, COLOR_TEXT_DIM);
+        UIScaleManager.drawScaledCenteredString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.categories").getString()),
+            layout.sidebarX() + layout.sidebarW() / 2, layout.sidebarY() + UIScaleManager.scale(5), COLOR_TEXT_DIM);
 
         // Category buttons (custom rendered)
-        int catY = 60;
-        int catBtnW = CATEGORY_WIDTH - DesignTokens.Space.PANEL_PADDING * 2;
-        int catBtnH = DesignTokens.Component.BUTTON_HEIGHT_LG;
+        int catY = layout.sidebarY() + UIScaleManager.scale(20);
+        int catBtnW = layout.sidebarW() - DesignTokens.Space.PANEL_PADDING * 2;
+        int catBtnH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
 
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
             int catBtnX = DesignTokens.Space.PANEL_PADDING;
@@ -258,7 +276,7 @@ public class EnduranceShopScreen extends Screen {
         catY += 15;
 
         // Challenges button (special category)
-        int catBtnX = DesignTokens.Space.PANEL_PADDING;
+        int catBtnX = layout.sidebarX() + DesignTokens.Space.PANEL_PADDING;
         boolean challengesSelected = viewMode == ViewMode.CHALLENGES;
         boolean challengesHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, catBtnX, catY, catBtnW, catBtnH);
         String challengesLabel = Objects.requireNonNull(I18n.translate("devmod.endurance.challenges").getString());
@@ -274,26 +292,26 @@ public class EnduranceShopScreen extends Screen {
         // Badge showing completion
         if (challengeCount > 0) {
             int badgeColor = completedCount == challengeCount ? COLOR_SUCCESS : COLOR_ACCENT;
-            int badgeX = catBtnX + catBtnW - UIScaleManager.getScaledStringWidth(safeFont, badge) - 5;
+            int badgeX = catBtnX + catBtnW - UIScaleManager.getScaledStringWidth(safeFont, badge) - UIScaleManager.scale(5);
             UIScaleManager.drawScaledString(graphics, safeFont, badge, badgeX, catY + (catBtnH - 8) / 2, badgeColor);
         }
     }
 
-    private void renderItemList(GuiGraphics graphics, int mouseX, int mouseY) {
-        int listX = CATEGORY_WIDTH + 10;
-        int listY = 50;
-        int listWidth = width - CATEGORY_WIDTH - 230;
-        int listHeight = height - 100;
+    private void renderItemList(GuiGraphics graphics, int mouseX, int mouseY, ShopLayout layout) {
+        int listX = layout.listX();
+        int listY = layout.listY();
+        int listWidth = layout.listW();
+        int listHeight = layout.listH();
 
         // Clip area
         graphics.enableScissor(listX, listY, listX + listWidth, listY + listHeight);
 
         int y = listY - scrollOffset;
         for (RewardSystem.ShopItem item : categoryItems) {
-            if (y + ITEM_HEIGHT > listY && y < listY + listHeight) {
+            if (y + scaledItemHeight > listY && y < listY + listHeight) {
                 renderShopItem(graphics, item, listX, y, listWidth, mouseX, mouseY);
             }
-            y += ITEM_HEIGHT + ITEM_MARGIN;
+            y += scaledItemHeight + scaledItemMargin;
         }
 
         graphics.disableScissor();
@@ -311,12 +329,12 @@ public class EnduranceShopScreen extends Screen {
      * Renders the daily challenges list view.
      * Uses all ChallengeDisplayData methods for complete integration.
      */
-    private void renderChallengeList(GuiGraphics graphics, int mouseX, int mouseY) {
-        int listX = CATEGORY_WIDTH + 10;
-        int listY = 50;
-        int listWidth = width - CATEGORY_WIDTH - 20;
-        int listHeight = height - 100;
-        int challengeItemHeight = ITEM_HEIGHT + 10;
+    private void renderChallengeList(GuiGraphics graphics, int mouseX, int mouseY, ShopLayout layout) {
+        int listX = layout.listX();
+        int listY = layout.listY();
+        int listWidth = layout.listW() + (layout.detailsW() > 0 ? layout.detailsW() + UIScaleManager.scale(10) : 0);
+        int listHeight = layout.listH();
+        int challengeItemHeight = scaledItemHeight + UIScaleManager.scale(10);
         List<ClientChallengeCache.ChallengeDisplayData> challenges = getChallengeSnapshot();
 
         // Title
@@ -341,13 +359,13 @@ public class EnduranceShopScreen extends Screen {
             if (y + challengeItemHeight > listY && y < listY + listHeight) {
                 renderChallengeItem(graphics, challenge, listX, y, listWidth, challengeItemHeight, mouseX, mouseY);
             }
-            y += challengeItemHeight + ITEM_MARGIN;
+            y += challengeItemHeight + scaledItemMargin;
         }
 
         graphics.disableScissor();
 
         // Calculate scroll for challenges
-        int contentHeight = challenges.size() * (challengeItemHeight + ITEM_MARGIN);
+        int contentHeight = challenges.size() * (challengeItemHeight + scaledItemMargin);
         int challengeMaxScroll = Math.max(0, contentHeight - listHeight);
         if (challengeMaxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + challengeMaxScroll) * listHeight);
@@ -421,7 +439,7 @@ public class EnduranceShopScreen extends Screen {
 
     private void renderShopItem(GuiGraphics graphics, RewardSystem.ShopItem item,
                                  int x, int y, int width, int mouseX, int mouseY) {
-        boolean isHovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY < y + ITEM_HEIGHT;
+        boolean isHovered = mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY < y + scaledItemHeight;
         boolean isSelected = item == selectedItem;
         boolean canAfford = canAfford(item);
         int owned = playerPurchases.getOrDefault(item.getId(), 0);
@@ -438,48 +456,51 @@ public class EnduranceShopScreen extends Screen {
             bgColor = COLOR_ITEM_BG;
         }
 
-        graphics.fill(x, y, x + width, y + ITEM_HEIGHT, bgColor);
+        graphics.fill(x, y, x + width, y + scaledItemHeight, bgColor);
 
         // Category color indicator
         var safeFont = Objects.requireNonNull(font);
         int catColor = getCategoryColor(item.getCategory());
-        graphics.fill(x, y, x + 4, y + ITEM_HEIGHT, catColor);
+        graphics.fill(x, y, x + 4, y + scaledItemHeight, catColor);
 
         // Item name (truncated to prevent overflow)
         int nameColor = maxedOut ? COLOR_TEXT_DIM : COLOR_TEXT;
         String displayName = truncateText(getItemName(item), width - 100); // Leave room for owned count
-        UIScaleManager.drawScaledString(graphics, safeFont, displayName, x + 10, y + 5, nameColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, displayName, x + UIScaleManager.scale(10), y + UIScaleManager.scale(5), nameColor);
 
         // Description (truncated to prevent overflow)
         String description = truncateText(getItemDescription(item), width - 20);
-        UIScaleManager.drawScaledString(graphics, safeFont, description, x + 10, y + 18, COLOR_TEXT_DIM);
+        UIScaleManager.drawScaledString(graphics, safeFont, description, x + UIScaleManager.scale(10), y + UIScaleManager.scale(18), COLOR_TEXT_DIM);
 
         // Price
         int currencyColor = getCurrencyColor(item.getCurrency());
         String priceText = item.getPrice() + " " + getCurrencyLabel(item.getCurrency());
         int priceColor = canAfford ? currencyColor : COLOR_ERROR;
-        UIScaleManager.drawScaledString(graphics, safeFont, priceText, x + 10, y + 35, priceColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, priceText, x + UIScaleManager.scale(10), y + UIScaleManager.scale(35), priceColor);
 
         // Owned count
         String ownedText = Objects.requireNonNull(I18n.translate("devmod.ui.owned").getString()) + ": " + owned + "/" + item.getMaxPurchases();
         int ownedColor = maxedOut ? COLOR_SUCCESS : COLOR_TEXT_DIM;
-        UIScaleManager.drawScaledString(graphics, safeFont, ownedText, x + width - UIScaleManager.getScaledStringWidth(safeFont, ownedText) - 10, y + 5, ownedColor);
+        UIScaleManager.drawScaledString(graphics, safeFont, ownedText, x + width - UIScaleManager.getScaledStringWidth(safeFont, ownedText) - UIScaleManager.scale(10), y + UIScaleManager.scale(5), ownedColor);
 
         // Status indicator
         if (maxedOut) {
-            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.max").getString()), x + width - 30, y + ITEM_HEIGHT - 15, COLOR_SUCCESS);
+            UIScaleManager.drawScaledString(graphics, safeFont, Objects.requireNonNull(I18n.translate("devmod.ui.max").getString()),
+                x + width - UIScaleManager.scale(30), y + scaledItemHeight - UIScaleManager.scale(15), COLOR_SUCCESS);
         } else if (!canAfford) {
             String cantAfford = Objects.requireNonNull(I18n.translate("devmod.reward.cannot_afford").getString());
-            UIScaleManager.drawScaledString(graphics, safeFont, cantAfford, x + width - UIScaleManager.getScaledStringWidth(safeFont, cantAfford) - 10, y + ITEM_HEIGHT - 15, COLOR_ERROR);
+            UIScaleManager.drawScaledString(graphics, safeFont, cantAfford,
+                x + width - UIScaleManager.getScaledStringWidth(safeFont, cantAfford) - UIScaleManager.scale(10),
+                y + scaledItemHeight - UIScaleManager.scale(15), COLOR_ERROR);
         }
     }
 
-    private void renderItemDetails(GuiGraphics graphics, RewardSystem.ShopItem item) {
+    private void renderItemDetails(GuiGraphics graphics, RewardSystem.ShopItem item, ShopLayout layout) {
         var safeFont = Objects.requireNonNull(font);
-        int panelX = width - 210;
-        int panelY = 50;
-        int panelWidth = 200;
-        int panelHeight = height - 150;
+        int panelX = layout.detailsX();
+        int panelY = layout.detailsY();
+        int panelWidth = layout.detailsW();
+        int panelHeight = layout.detailsH();
 
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, COLOR_CATEGORY_BG);
 
@@ -528,21 +549,21 @@ public class EnduranceShopScreen extends Screen {
     /**
      * Render custom action buttons (Back, Purchase).
      */
-    private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY) {
-        int buttonY = height - 40;
+    private void renderActionButtons(GuiGraphics graphics, int mouseX, int mouseY, ShopLayout layout) {
+        int buttonY = layout.actionY();
 
         // Back button (secondary - left side)
-        int backW = 80 - 20;
-        int backH = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int backX = DesignTokens.Space.PANEL_PADDING;
+        int backW = UIScaleManager.scale(60);
+        int backH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int backX = UIScaleManager.scale(DesignTokens.Space.PANEL_PADDING);
         boolean backHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, backX, buttonY, backW, backH);
         renderButton(graphics, backX, buttonY, backW, backH,
             I18n.translate("devmod.ui.back").getString(), backHovered, DesignTokens.Accent.PRIMARY);
 
         // Purchase button (primary CTA - green, right side)
-        int purchaseW = 80;
-        int purchaseH = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int purchaseX = width - purchaseW - 10;
+        int purchaseW = UIScaleManager.scale(80);
+        int purchaseH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int purchaseX = width - purchaseW - UIScaleManager.scale(10);
         final var currentItem = selectedItem;
         boolean canPurchase = currentItem != null && canAfford(currentItem)
             && playerPurchases.getOrDefault(currentItem.getId(), 0) < currentItem.getMaxPurchases();
@@ -562,7 +583,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.fill(x, y, x + w, y + h, bgColor);
         AxiomRenderer.drawBorder(graphics, x, y, w, h, color);
         int textX = x + (w - UIScaleManager.getScaledStringWidth(safeFont, safeText)) / 2;
-        int textY = y + (h - 8) / 2;
+        int textY = y + (h - UIScaleManager.getScaledLineHeight()) / 2;
         UIScaleManager.drawScaledString(graphics, safeFont, safeText, textX, textY,
             hovered ? DesignTokens.Text.WHITE : color, false);
     }
@@ -648,12 +669,13 @@ public class EnduranceShopScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int mx = (int) mouseX;
         int my = (int) mouseY;
+        ShopLayout layout = getLayout();
 
         // Check category button clicks
-        int catY = 60;
-        int catBtnW = CATEGORY_WIDTH - DesignTokens.Space.PANEL_PADDING * 2;
-        int catBtnH = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int catBtnX = DesignTokens.Space.PANEL_PADDING;
+        int catY = layout.sidebarY() + UIScaleManager.scale(20);
+        int catBtnW = layout.sidebarW() - DesignTokens.Space.PANEL_PADDING * 2;
+        int catBtnH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int catBtnX = layout.sidebarX() + DesignTokens.Space.PANEL_PADDING;
 
         for (RewardSystem.ShopCategory category : RewardSystem.ShopCategory.values()) {
             if (AxiomRenderer.isMouseOver(mx, my, catBtnX, catY, catBtnW, catBtnH)) {
@@ -673,35 +695,35 @@ public class EnduranceShopScreen extends Screen {
         }
 
         // Check action button clicks
-        int buttonY = height - 40;
+        int buttonY = layout.actionY();
 
         // Back button
-        int backW = 80 - 20;
-        int backH = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int backX = DesignTokens.Space.PANEL_PADDING;
+        int backW = UIScaleManager.scale(60);
+        int backH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int backX = UIScaleManager.scale(DesignTokens.Space.PANEL_PADDING);
         if (AxiomRenderer.isMouseOver(mx, my, backX, buttonY, backW, backH)) {
             goBack();
             return true;
         }
 
         // Purchase button
-        int purchaseW = 80;
-        int purchaseH = DesignTokens.Component.BUTTON_HEIGHT_LG;
-        int purchaseX = width - purchaseW - 10;
+        int purchaseW = UIScaleManager.scale(80);
+        int purchaseH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
+        int purchaseX = width - purchaseW - UIScaleManager.scale(10);
         if (AxiomRenderer.isMouseOver(mx, my, purchaseX, buttonY, purchaseW, purchaseH)) {
             purchaseSelected();
             return true;
         }
 
         // Check item list clicks
-        int listX = CATEGORY_WIDTH + 10;
-        int listY = 50;
-        int listWidth = width - CATEGORY_WIDTH - 230;
-        int listHeight = height - 100;
+        int listX = layout.listX();
+        int listY = layout.listY();
+        int listWidth = layout.listW();
+        int listHeight = layout.listH();
 
         if (mouseX >= listX && mouseX <= listX + listWidth && mouseY >= listY && mouseY <= listY + listHeight) {
             int relativeY = (int) mouseY - listY + scrollOffset;
-            int index = relativeY / (ITEM_HEIGHT + ITEM_MARGIN);
+            int index = relativeY / (scaledItemHeight + scaledItemMargin);
             if (index >= 0 && index < categoryItems.size()) {
                 selectedItem = categoryItems.get(index);
                 return true;
@@ -713,7 +735,7 @@ public class EnduranceShopScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * 20)));
+        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * UIScaleManager.scale(20))));
         return true;
     }
 
@@ -756,5 +778,40 @@ public class EnduranceShopScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private void updateScaledMetrics() {
+        scaledCategoryWidth = UIScaleManager.scale(CATEGORY_WIDTH);
+        scaledItemHeight = UIScaleManager.scale(ITEM_HEIGHT);
+        scaledItemMargin = UIScaleManager.scale(ITEM_MARGIN);
+    }
+
+    private ShopLayout getLayout() {
+        int headerY = UIScaleManager.scale(10);
+        int actionY = height - UIScaleManager.scale(40);
+        int sidebarX = 0;
+        int sidebarY = UIScaleManager.scale(40);
+        int sidebarW = scaledCategoryWidth;
+        int sidebarH = height - UIScaleManager.scale(50) - sidebarY;
+
+        int detailsW = UIScaleManager.scale(200);
+        int detailsX = width - detailsW - UIScaleManager.scale(10);
+        int detailsY = UIScaleManager.scale(50);
+        int detailsH = height - UIScaleManager.scale(150);
+
+        int listX = sidebarW + UIScaleManager.scale(10);
+        int listY = UIScaleManager.scale(50);
+        int listW = detailsX - listX - UIScaleManager.scale(10);
+        if (listW < UIScaleManager.scale(180)) {
+            detailsW = UIScaleManager.scale(160);
+            detailsX = width - detailsW - UIScaleManager.scale(10);
+            listW = Math.max(UIScaleManager.scale(120), detailsX - listX - UIScaleManager.scale(10));
+        }
+        int listH = height - UIScaleManager.scale(100);
+
+        return new ShopLayout(sidebarX, sidebarY, sidebarW, sidebarH,
+            listX, listY, listW, listH,
+            detailsX, detailsY, detailsW, detailsH,
+            actionY, headerY);
     }
 }

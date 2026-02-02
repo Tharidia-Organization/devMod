@@ -151,9 +151,10 @@ public final class PlayerStateServicesFacade {
      *
      * @param playerId The player's UUID
      * @param state The new state
+     * @return true if the update succeeded, false if snapshot not found or I/O error occurred
      */
-    public void updateSnapshotState(UUID playerId, PlayerInstanceState state) {
-        RecoverySystem.INSTANCE.updateSnapshotState(playerId, state);
+    public boolean updateSnapshotState(UUID playerId, PlayerInstanceState state) {
+        return RecoverySystem.INSTANCE.updateSnapshotState(playerId, state);
     }
 
     /**
@@ -174,21 +175,28 @@ public final class PlayerStateServicesFacade {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * Prepares a player for quest and creates a recovery snapshot.
-     * This is a common pattern for quest entry.
+     * Creates a recovery snapshot and prepares a player for quest.
+     * IMPORTANT: Snapshot is created FIRST to capture original state (inventory, position, etc.)
+     * before preparePlayerForQuest modifies the player (clears inventory, sets survival mode).
      *
      * @param player The player
      * @param session The quest session
      * @param instance The instance data
-     * @return The created snapshot
+     * @return The created snapshot containing the player's ORIGINAL state
      */
     public PlayerInstanceSnapshot preparePlayerWithSnapshot(
             ServerPlayer player,
             ActiveQuestSession session,
             InstanceData instance) {
-        preparePlayerForQuest(player, session);
+        // CRITICAL: Create snapshot FIRST to capture original state
+        // preparePlayerForQuest() clears inventory and modifies player state,
+        // so we must snapshot before those modifications
         PlayerInstanceSnapshot snapshot = createSnapshotFromPlayer(player, instance);
         saveSnapshot(snapshot);
+
+        // NOW prepare the player (clears inventory, sets survival mode, gives kit)
+        preparePlayerForQuest(player, session);
+
         return snapshot;
     }
 

@@ -98,7 +98,7 @@ public class ContractHudOverlay implements LayeredDraw.Layer {
         if (pulsePhase > 2 * Math.PI) pulsePhase -= (float) (2 * Math.PI);
 
         int sPadding = UIScaleManager.scale(PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int sIconSize = UIScaleManager.scale(ICON_SIZE);
 
         // Calculate panel width based on longest contract name

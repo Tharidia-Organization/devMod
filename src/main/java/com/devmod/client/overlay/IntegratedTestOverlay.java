@@ -75,7 +75,7 @@ public class IntegratedTestOverlay {
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
 
         // Position: Left side, vertically centered
         int panelX = UIScaleManager.scale(5);
@@ -194,7 +194,7 @@ public class IntegratedTestOverlay {
         // Duration
         java.time.Instant start = session.getSessionStart();
         if (start != null) {
-            long seconds = java.time.Duration.between(start, java.time.Instant.now()).getSeconds();
+            long seconds = java.time.Duration.between(start, java.time.Instant.now()).toSeconds();
             long minutes = seconds / 60;
             seconds = seconds % 60;
             String duration = String.format("Time: %d:%02d", minutes, seconds);

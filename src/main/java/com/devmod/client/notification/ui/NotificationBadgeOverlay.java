@@ -303,9 +303,12 @@ public class NotificationBadgeOverlay {
                     .getString());
         }
 
-        int sPadding = UIScaleManager.scale(16);
-        int tooltipWidth = Math.max(UIScaleManager.getScaledStringWidth(font, title), UIScaleManager.getScaledStringWidth(font, subtitle)) + sPadding;
-        int tooltipHeight = UIScaleManager.scale(28);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int sPadding = UIScaleManager.scale(8);
+        int sLineGap = UIScaleManager.scale(2);
+        int tooltipWidth = Math.max(UIScaleManager.getScaledStringWidth(font, title), UIScaleManager.getScaledStringWidth(font, subtitle))
+            + sPadding * 2;
+        int tooltipHeight = sPadding * 2 + lineHeight * 2 + sLineGap;
 
         // Ensure tooltip stays on screen
         Minecraft mc = Minecraft.getInstance();
@@ -325,9 +328,11 @@ public class NotificationBadgeOverlay {
         graphics.fill(x, y + tooltipHeight - 1, x + tooltipWidth, y + tooltipHeight,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT_SOFT, DesignTokens.Alpha.A27));
 
-        UIScaleManager.drawScaledString(graphics, font, title, x + sMargin, y + UIScaleManager.scale(4),
+        int textX = x + sPadding;
+        int textY = y + sPadding;
+        UIScaleManager.drawScaledString(graphics, font, title, textX, textY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
-        UIScaleManager.drawScaledString(graphics, font, subtitle, x + sMargin, y + UIScaleManager.scale(16),
+        UIScaleManager.drawScaledString(graphics, font, subtitle, textX, textY + lineHeight + sLineGap,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
     }
 

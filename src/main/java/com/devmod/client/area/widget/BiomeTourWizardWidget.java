@@ -48,13 +48,22 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         super(x, y, width, height, Component.empty());
         this.config = initialConfig != null ? initialConfig : BiomeTourConfig.defaultTour();
         this.onConfigChanged = onConfigChanged;
-        this.maxVisibleSections = (height - HEADER_HEIGHT - 60) / (ROW_HEIGHT + SECTION_SPACING);
+        this.maxVisibleSections = Math.max(1, (height - s(HEADER_HEIGHT) - s(60)) / (s(ROW_HEIGHT) + s(SECTION_SPACING)));
     }
 
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
         int currentY = getY();
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int sectionSpacing = s(SECTION_SPACING);
+        int headerHeight = s(HEADER_HEIGHT);
+        int titleGap = s(12);
+        int sectionInset = s(4);
+        int sectionWidthInset = s(8);
+        int addButtonWidth = s(120);
+        updateMaxVisibleSections();
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -62,7 +71,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
-        currentY += 12;
+        currentY += titleGap;
 
         // Intro text
         UIScaleManager.drawScaledString(graphics, font,
@@ -70,42 +79,42 @@ public class BiomeTourWizardWidget extends AbstractWidget {
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
-        currentY += HEADER_HEIGHT - 12;
+        currentY += headerHeight - titleGap;
 
         // Section list background
-        int listHeight = maxVisibleSections * (ROW_HEIGHT + SECTION_SPACING);
+        int listHeight = maxVisibleSections * (rowHeight + sectionSpacing);
         graphics.fill(getX(), currentY, getX() + getWidth(), currentY + listHeight, AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(getX(), currentY, getWidth(), listHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
         // Render sections
-        int sectionY = currentY + 4;
+        int sectionY = currentY + sectionInset;
         for (int i = scrollOffset; i < Math.min(config.getSectionCount(), scrollOffset + maxVisibleSections); i++) {
             BiomeTourSection section = config.getSection(i);
             boolean isSelected = i == selectedSection;
-            boolean isHovered = mouseY >= sectionY && mouseY < sectionY + ROW_HEIGHT &&
+            boolean isHovered = mouseY >= sectionY && mouseY < sectionY + rowHeight &&
                                mouseX >= getX() && mouseX < getX() + getWidth();
 
-            renderSection(graphics, section, i, getX() + 4, sectionY, getWidth() - 8,
+            renderSection(graphics, section, i, getX() + sectionInset, sectionY, getWidth() - sectionWidthInset,
                          isSelected, isHovered, mouseX, mouseY);
-            sectionY += ROW_HEIGHT + SECTION_SPACING;
+            sectionY += rowHeight + sectionSpacing;
         }
 
-        currentY += listHeight + 8;
+        currentY += listHeight + s(8);
 
         // Add section button
-        boolean addHovered = mouseX >= getX() && mouseX < getX() + 120 &&
-                            mouseY >= currentY && mouseY < currentY + BUTTON_SIZE;
+        boolean addHovered = mouseX >= getX() && mouseX < getX() + addButtonWidth &&
+                            mouseY >= currentY && mouseY < currentY + buttonSize;
         int addBgColor = addHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(getX(), currentY, getX() + 120, currentY + BUTTON_SIZE, addBgColor);
-        graphics.renderOutline(getX(), currentY, 120, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(getX(), currentY, getX() + addButtonWidth, currentY + buttonSize, addBgColor);
+        graphics.renderOutline(getX(), currentY, addButtonWidth, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.add_section")),
-            getX() + 6, currentY + 5,
+            getX() + s(6), currentY + s(5),
             config.getSectionCount() < BiomeTourConfig.MAX_SECTIONS ?
                 AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
-        currentY += BUTTON_SIZE + 12;
+        currentY += buttonSize + s(12);
 
         // Summary
         UIScaleManager.drawScaledString(graphics, font,
@@ -113,7 +122,7 @@ public class BiomeTourWizardWidget extends AbstractWidget {
             getX(), currentY,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
-        currentY += 12;
+        currentY += s(12);
 
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.sections_count", config.getSectionCount())),
@@ -126,70 +135,78 @@ public class BiomeTourWizardWidget extends AbstractWidget {
                               int x, int y, int width, boolean isSelected, boolean isHovered,
                               int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int padding = s(4);
+        int textOffset = s(14);
 
         // Background
         int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                      (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : DesignTokens.AreaBuilder.TRANSPARENT);
         if (bgColor != 0) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, bgColor);
+            graphics.fill(x, y, x + width, y + rowHeight, bgColor);
         }
 
         // Section number
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.biome_tour.section", index + 1)),
-            x + 4, y + 4,
+            x + padding, y + padding,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
         // Biome name
         UIScaleManager.drawScaledString(graphics, font,
             section.getBiomeDisplayName(),
-            x + 4, y + 14,
+            x + padding, y + textOffset,
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
 
         // Length
         String lengthText = section.length() + " blocks";
-        UIScaleManager.drawScaledString(graphics, font, lengthText, x + 100, y + 14, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, lengthText, x + s(100), y + textOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Transition style
         String transitionKey = "area.biome_tour.transition." + section.transition().getId();
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable(transitionKey)),
-            x + 180, y + 14,
+            x + s(180), y + textOffset,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
         // Remove button (X)
-        int removeX = x + width - BUTTON_SIZE - 4;
-        boolean removeHovered = mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
-                               mouseY >= y + 4 && mouseY < y + 4 + BUTTON_SIZE;
+        int removeX = x + width - buttonSize - padding;
+        boolean removeHovered = mouseX >= removeX && mouseX < removeX + buttonSize &&
+                               mouseY >= y + padding && mouseY < y + padding + buttonSize;
         int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(removeX, y + 4, removeX + BUTTON_SIZE, y + 4 + BUTTON_SIZE, removeBgColor);
-        graphics.renderOutline(removeX, y + 4, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + BUTTON_SIZE / 2, y + 8,
+        graphics.fill(removeX, y + padding, removeX + buttonSize, y + padding + buttonSize, removeBgColor);
+        graphics.renderOutline(removeX, y + padding, buttonSize, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + buttonSize / 2, y + s(8),
             removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Transition cycle button
-        int transX = x + width - BUTTON_SIZE * 2 - 8;
-        boolean transHovered = mouseX >= transX && mouseX < transX + BUTTON_SIZE &&
-                              mouseY >= y + 4 && mouseY < y + 4 + BUTTON_SIZE;
+        int transX = x + width - buttonSize * 2 - s(8);
+        boolean transHovered = mouseX >= transX && mouseX < transX + buttonSize &&
+                              mouseY >= y + padding && mouseY < y + padding + buttonSize;
         int transBgColor = transHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(transX, y + 4, transX + BUTTON_SIZE, y + 4 + BUTTON_SIZE, transBgColor);
-        graphics.renderOutline(transX, y + 4, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "T", transX + BUTTON_SIZE / 2, y + 8,
+        graphics.fill(transX, y + padding, transX + buttonSize, y + padding + buttonSize, transBgColor);
+        graphics.renderOutline(transX, y + padding, buttonSize, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "T", transX + buttonSize / 2, y + s(8),
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 
     @Override
     public void onClick(double mouseX, double mouseY, int button) {
-        int listY = getY() + HEADER_HEIGHT;
-        int listHeight = maxVisibleSections * (ROW_HEIGHT + SECTION_SPACING);
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int sectionSpacing = s(SECTION_SPACING);
+        int listY = getY() + s(HEADER_HEIGHT);
+        updateMaxVisibleSections();
+        int listHeight = maxVisibleSections * (rowHeight + sectionSpacing);
 
         // Check add section button
-        int addY = listY + listHeight + 8;
-        if (mouseX >= getX() && mouseX < getX() + 120 &&
-            mouseY >= addY && mouseY < addY + BUTTON_SIZE) {
+        int addY = listY + listHeight + s(8);
+        if (mouseX >= getX() && mouseX < getX() + s(120) &&
+            mouseY >= addY && mouseY < addY + buttonSize) {
             if (config.getSectionCount() < BiomeTourConfig.MAX_SECTIONS) {
                 addNewSection();
             }
@@ -197,24 +214,24 @@ public class BiomeTourWizardWidget extends AbstractWidget {
         }
 
         // Check section clicks
-        int sectionY = listY + 4;
+        int sectionY = listY + s(4);
         for (int i = scrollOffset; i < Math.min(config.getSectionCount(), scrollOffset + maxVisibleSections); i++) {
-            if (mouseY >= sectionY && mouseY < sectionY + ROW_HEIGHT) {
-                int sectionWidth = getWidth() - 8;
-                int sectionX = getX() + 4;
+            if (mouseY >= sectionY && mouseY < sectionY + rowHeight) {
+                int sectionWidth = getWidth() - s(8);
+                int sectionX = getX() + s(4);
 
                 // Remove button
-                int removeX = sectionX + sectionWidth - BUTTON_SIZE - 4;
-                if (mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
-                    mouseY >= sectionY + 4 && mouseY < sectionY + 4 + BUTTON_SIZE) {
+                int removeX = sectionX + sectionWidth - buttonSize - s(4);
+                if (mouseX >= removeX && mouseX < removeX + buttonSize &&
+                    mouseY >= sectionY + s(4) && mouseY < sectionY + s(4) + buttonSize) {
                     removeSection(i);
                     return;
                 }
 
                 // Transition cycle button
-                int transX = sectionX + sectionWidth - BUTTON_SIZE * 2 - 8;
-                if (mouseX >= transX && mouseX < transX + BUTTON_SIZE &&
-                    mouseY >= sectionY + 4 && mouseY < sectionY + 4 + BUTTON_SIZE) {
+                int transX = sectionX + sectionWidth - buttonSize * 2 - s(8);
+                if (mouseX >= transX && mouseX < transX + buttonSize &&
+                    mouseY >= sectionY + s(4) && mouseY < sectionY + s(4) + buttonSize) {
                     cycleTransition(i);
                     return;
                 }
@@ -223,12 +240,13 @@ public class BiomeTourWizardWidget extends AbstractWidget {
                 selectedSection = (selectedSection == i) ? -1 : i;
                 return;
             }
-            sectionY += ROW_HEIGHT + SECTION_SPACING;
+            sectionY += rowHeight + sectionSpacing;
         }
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        updateMaxVisibleSections();
         int maxScroll = Math.max(0, config.getSectionCount() - maxVisibleSections);
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) verticalAmount));
         return true;
@@ -258,7 +276,14 @@ public class BiomeTourWizardWidget extends AbstractWidget {
     private void cycleTransition(int index) {
         BiomeTourSection section = config.getSection(index);
         TransitionStyle[] styles = TransitionStyle.values();
-        int nextIndex = (section.transition().ordinal() + 1) % styles.length;
+        int currentIndex = 0;
+        for (int i = 0; i < styles.length; i++) {
+            if (styles[i] == section.transition()) {
+                currentIndex = i;
+                break;
+            }
+        }
+        int nextIndex = (currentIndex + 1) % styles.length;
         TransitionStyle nextStyle = Objects.requireNonNull(styles[nextIndex]);
         BiomeTourSection updated = Objects.requireNonNull(section.withTransition(nextStyle));
         config = config.withSectionUpdated(index, updated);
@@ -316,5 +341,17 @@ public class BiomeTourWizardWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.biome_tour.title")));
+    }
+
+    private void updateMaxVisibleSections() {
+        int rowHeight = s(ROW_HEIGHT);
+        int sectionSpacing = s(SECTION_SPACING);
+        int headerHeight = s(HEADER_HEIGHT);
+        int available = Math.max(0, getHeight() - headerHeight - s(60));
+        maxVisibleSections = Math.max(1, available / Math.max(1, rowHeight + sectionSpacing));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

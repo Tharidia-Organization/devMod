@@ -86,7 +86,7 @@ public class AttributeHudOverlay {
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelMargin = UIScaleManager.scale(PANEL_MARGIN);
         int sPadding = UIScaleManager.scale(PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int sSectionGap = UIScaleManager.scale(SECTION_GAP);
 
         // Calculate dynamic height

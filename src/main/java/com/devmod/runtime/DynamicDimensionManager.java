@@ -72,7 +72,8 @@ public class DynamicDimensionManager {
     private final Map<ResourceKey<Level>, Set<ChunkPos>> forcedChunksPerDimension = new ConcurrentHashMap<>();
 
     private MinecraftServer server;
-    private boolean initialized = false;
+    // Volatile for thread visibility across initialization and teleport threads
+    private volatile boolean initialized = false;
 
     private DynamicDimensionManager() {}
 
@@ -112,6 +113,9 @@ public class DynamicDimensionManager {
         } catch (LinkageError e) {
             LOGGER.debug("[DynamicDim] Could not clear DH registrations during shutdown: {}", e.getMessage());
         }
+
+        // Shutdown the lock manager
+        DimensionLockManager.INSTANCE.shutdown();
 
         LOGGER.info("[DynamicDim] Shutdown complete");
     }
@@ -218,9 +222,12 @@ public class DynamicDimensionManager {
             ServerLevel newLevel = createVoidDimension(dimensionKey, arenaId);
 
             if (newLevel != null) {
-                // Track the mapping
-                dimensionToInstance.put(dimensionKey, instanceId);
-                instanceToDimension.put(instanceId, dimensionKey);
+                // Track the mapping atomically to prevent race conditions
+                // where teleportToInstance reads instanceToDimension before it's written
+                DimensionLockManager.INSTANCE.withMapLock(() -> {
+                    dimensionToInstance.put(dimensionKey, instanceId);
+                    instanceToDimension.put(instanceId, dimensionKey);
+                });
 
                 LOGGER.info("[DynamicDim] Successfully created dimension {} for instance {}",
                     dimensionLocation, instanceId);
@@ -998,8 +1005,14 @@ public class DynamicDimensionManager {
 
         // 4. Clean up tracking maps BEFORE file deletion
         // This prevents other code from trying to use this dimension
-        dimensionToInstance.remove(resolvedKey);
-        instanceToDimension.remove(instanceId);
+        // Use lock for atomic removal to prevent race conditions
+        DimensionLockManager.INSTANCE.withMapLock(() -> {
+            dimensionToInstance.remove(resolvedKey);
+            instanceToDimension.remove(instanceId);
+        });
+
+        // Clean up the instance lock to prevent memory leaks
+        DimensionLockManager.INSTANCE.cleanupLock(instanceId);
 
         // 5. Delete dimension files ONLY if unload succeeded
         // This prevents file-in-use errors and ensures resources are released
@@ -1125,6 +1138,39 @@ public class DynamicDimensionManager {
         Files.deleteIfExists(path);
     }
 
+    // === Dimension Queries ===
+
+    /**
+     * Check if a dimension exists for the given instance.
+     * Thread-safe: reads under map lock.
+     *
+     * @param instanceId The instance to check
+     * @return true if the dimension exists and is loaded
+     */
+    public boolean hasDimension(UUID instanceId) {
+        ResourceKey<Level> dimensionKey = DimensionLockManager.INSTANCE.withMapLock(
+            () -> instanceToDimension.get(instanceId)
+        );
+        if (dimensionKey == null) {
+            return false;
+        }
+        return server != null && server.getLevel(dimensionKey) != null;
+    }
+
+    /**
+     * Get the dimension key for an instance.
+     * Thread-safe: reads under map lock.
+     *
+     * @param instanceId The instance to look up
+     * @return The dimension key, or null if not found
+     */
+    @Nullable
+    public ResourceKey<Level> getDimensionKey(UUID instanceId) {
+        return DimensionLockManager.INSTANCE.withMapLock(
+            () -> instanceToDimension.get(instanceId)
+        );
+    }
+
     // === Teleportation ===
 
     /**
@@ -1135,7 +1181,11 @@ public class DynamicDimensionManager {
      * @return true if teleport succeeded
      */
     public boolean teleportToInstance(ServerPlayer player, UUID instanceId) {
-        ResourceKey<Level> dimensionKey = instanceToDimension.get(instanceId);
+        ResourceKey<Level> previousDim = player.level().dimension();
+        // Read dimension key under lock to ensure consistency with create/destroy operations
+        ResourceKey<Level> dimensionKey = DimensionLockManager.INSTANCE.withMapLock(
+            () -> instanceToDimension.get(instanceId)
+        );
         if (dimensionKey == null) {
             LOGGER.error("[DynamicDim] No dimension found for instance {}", instanceId);
             return false;
@@ -1169,11 +1219,15 @@ public class DynamicDimensionManager {
             0,  // Face north
             0   // Level pitch
         );
+        player.setDeltaMovement(0, 0, 0);
+        player.fallDistance = 0;
+
+        if (!previousDim.equals(dimensionKey)) {
+            player.connection.resetPosition();
+        }
 
         // Sync environment settings (frozen time) to the client
-        var envSettings = DimensionEnvironmentManager.INSTANCE.getSettings(dimensionKey);
-        String biomeId = envSettings.map(s -> s.biomeId()).orElse("");
-        DimensionEnvironmentManager.INSTANCE.getTimeController().syncToPlayer(player, dimensionKey, biomeId);
+        DimensionEnvironmentManager.INSTANCE.syncEnvironmentToPlayer(player, dimensionKey);
 
         LOGGER.info("[DynamicDim] Teleported {} to instance {}", player.getName().getString(), instanceId);
         return true;
@@ -1200,6 +1254,8 @@ public class DynamicDimensionManager {
             player.getYRot(),
             player.getXRot()
         );
+        player.setDeltaMovement(0, 0, 0);
+        player.fallDistance = 0;
 
         // Clear environment sync (frozen time, biome) for the arena dimension
         // This prevents client from keeping stale frozen time after leaving arena

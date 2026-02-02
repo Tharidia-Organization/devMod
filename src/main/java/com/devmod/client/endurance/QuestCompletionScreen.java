@@ -34,14 +34,10 @@ public class QuestCompletionScreen extends Screen {
     private static final int COLOR_BONUS = DesignTokens.Accent.PRIMARY;
     private static final int COLOR_ORANGE = EnduranceUiTheme.Accent.ORANGE;  // Mutators/achievements
 
-    // === Dimensions (base values, may be scaled for small screens) ===
+    // === Dimensions (base values, scaled at runtime) ===
     private static final int BASE_PANEL_WIDTH = DesignTokens.Component.MODAL_MAX_WIDTH;
     private static final int BASE_PANEL_HEIGHT = 380;
     private static final int MIN_PANEL_WIDTH = 280;
-
-    // Calculated panel dimensions (set in init)
-    private int PANEL_WIDTH = BASE_PANEL_WIDTH;
-    private int PANEL_HEIGHT = BASE_PANEL_HEIGHT;
 
     // === Animation (optimized for snappier UX) ===
     private static final long FADE_IN_DURATION = 300;
@@ -68,12 +64,6 @@ public class QuestCompletionScreen extends Screen {
     protected void init() {
         super.init();
         openTime = System.currentTimeMillis();
-
-        // Calculate responsive panel dimensions
-        int maxWidth = width - 40; // 20px margin on each side
-        int maxHeight = height - 60; // 30px margin top/bottom
-        PANEL_WIDTH = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_WIDTH, maxWidth));
-        PANEL_HEIGHT = Math.max(MIN_PANEL_WIDTH, Math.min(BASE_PANEL_HEIGHT, maxHeight));
 
         continueButton = EditorButton.builder("completion-continue", "Continue")
             .style(EditorButton.Style.SUCCESS)
@@ -121,16 +111,25 @@ public class QuestCompletionScreen extends Screen {
         graphics.fill(0, 0, width, height, (bgAlpha << 24) | EnduranceUiTheme.CompletionScreen.BACKDROP_RGB);
 
         int centerX = width / 2;
-        int panelX = centerX - PANEL_WIDTH / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
+        int maxWidth = width - UIScaleManager.scale(40);
+        int maxHeight = height - UIScaleManager.scale(60);
+        int contentHeight = calculateContentHeight();
+        int sPanelWidth = Math.max(UIScaleManager.scale(MIN_PANEL_WIDTH),
+            Math.min(UIScaleManager.scale(BASE_PANEL_WIDTH), maxWidth));
+        int minPanelHeight = UIScaleManager.scale(MIN_PANEL_WIDTH);
+        int basePanelHeight = UIScaleManager.scale(BASE_PANEL_HEIGHT);
+        int sPanelHeight = Math.max(minPanelHeight, Math.min(basePanelHeight, maxHeight));
+        sPanelHeight = Math.max(sPanelHeight, Math.min(maxHeight, contentHeight));
+        int panelX = centerX - sPanelWidth / 2;
+        int panelY = (height - sPanelHeight) / 2;
 
         // Panel with golden glow
-        renderPanel(graphics, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT, fadeProgress);
+        renderPanel(graphics, panelX, panelY, sPanelWidth, sPanelHeight, fadeProgress);
 
         // Content
         if (fadeProgress > 0.3f) {
             float contentAlpha = (fadeProgress - 0.3f) / 0.7f;
-            renderContent(graphics, panelX, panelY, contentAlpha, elapsed);
+            renderContent(graphics, panelX, panelY, sPanelWidth, sPanelHeight, contentAlpha, elapsed);
         }
 
         // Keybind hint
@@ -138,10 +137,83 @@ public class QuestCompletionScreen extends Screen {
             float hintAlpha = (fadeProgress - 0.8f) / 0.2f;
             int hintColor = applyAlpha(DesignTokens.Text.MUTED, hintAlpha);
             UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font),
-                "ESC / Enter: Continue", centerX, panelY + PANEL_HEIGHT + 10, hintColor);
+                "ESC / Enter: Continue", centerX, panelY + sPanelHeight + UIScaleManager.scale(10), hintColor);
         }
 
-        renderButtons(graphics, mouseX, mouseY);
+        renderButtons(graphics, mouseX, mouseY, sPanelHeight);
+    }
+
+    private int calculateContentHeight() {
+        var safeFont = Objects.requireNonNull(font, "font");
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int titleGap = lineHeight + UIScaleManager.scale(6);
+        int lineGap = lineHeight + UIScaleManager.scale(2);
+        int smallGap = lineHeight;
+        int sectionGap = lineHeight + UIScaleManager.scale(6);
+        int blockGap = lineHeight + UIScaleManager.scale(8);
+
+        int height = 0;
+        height += UIScaleManager.scale(70); // top offset for trophy and title
+        height += titleGap; // title
+        height += lineGap;  // quest name
+        height += lineGap;  // wave info
+        height += sectionGap; // duration + spacing
+
+        boolean hasRunInfo = (data.templateId() != null && !data.templateId().isBlank())
+            || (data.policyId() != null && !data.policyId().isBlank())
+            || (data.instanceId() != null && !data.instanceId().isBlank())
+            || (data.arenaId() != null && !data.arenaId().isBlank());
+        if (hasRunInfo) {
+            height += lineGap; // run header
+            if (data.templateId() != null && !data.templateId().isBlank()) height += smallGap;
+            if (data.policyId() != null && !data.policyId().isBlank()) height += smallGap;
+            height += smallGap; // difficulty/mode
+            if ((data.instanceId() != null && !data.instanceId().isBlank())
+                || (data.arenaId() != null && !data.arenaId().isBlank())) {
+                height += smallGap;
+            }
+            height += UIScaleManager.scale(6);
+        } else {
+            height += UIScaleManager.scale(8);
+        }
+
+        height += UIScaleManager.scale(15); // separator
+
+        // Rewards
+        height += blockGap; // header + spacing
+        height += lineGap; // tokens
+        if (data.styleMultiplier() > 1.0f || data.mutatorMultiplier() > 1.0f) height += lineGap;
+        if (data.bloodGemsEarned() > 0) height += lineGap;
+        if (data.prestigeEarned() > 0) height += lineGap;
+        height += UIScaleManager.scale(8);
+
+        // Bonuses
+        if (data.noHitBonus() || data.speedBonus() || data.activeMutators() > 0) {
+            height += sectionGap; // header
+            if (data.noHitBonus()) height += smallGap;
+            if (data.speedBonus()) height += smallGap;
+            if (data.activeMutators() > 0) height += smallGap;
+            height += UIScaleManager.scale(6);
+        }
+
+        // Stats
+        height += sectionGap; // header
+        boolean twoColumn = UIScaleManager.scale(BASE_PANEL_WIDTH) >= UIScaleManager.scale(360);
+        int statsLines = 2;
+        if (data.totalDamageTaken() > 0 || data.deaths() > 0) {
+            statsLines = 3;
+        }
+        height += statsLines * smallGap + (twoColumn ? blockGap : UIScaleManager.scale(4));
+
+        // Achievements
+        if (!data.achievementNames().isEmpty()) {
+            height += lineGap; // header
+            height += Math.min(data.achievementNames().size(), 3) * UIScaleManager.scale(11);
+        }
+
+        // Footer space for buttons
+        height += UIScaleManager.scale(64);
+        return height;
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
@@ -163,9 +235,17 @@ public class QuestCompletionScreen extends Screen {
         g.fill(x + w - 3, y, x + w, y + h, borderColor);
     }
 
-    private void renderContent(GuiGraphics g, int panelX, int panelY, float alpha, long elapsed) {
+    private void renderContent(GuiGraphics g, int panelX, int panelY, int panelWidth, int panelHeight, float alpha, long elapsed) {
         var safeFont = Objects.requireNonNull(font);
-        int centerX = panelX + PANEL_WIDTH / 2;
+        int centerX = panelX + panelWidth / 2;
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int titleGap = lineHeight + UIScaleManager.scale(6);
+        int lineGap = lineHeight + UIScaleManager.scale(2);
+        int smallGap = lineHeight;
+        int sectionGap = lineHeight + UIScaleManager.scale(6);
+        int blockGap = lineHeight + UIScaleManager.scale(8);
+        int inset = UIScaleManager.scale(30);
+        int contentBottom = panelY + panelHeight - UIScaleManager.scale(64);
 
         // Trophy with pulse
         float pulse = (float) (Math.sin(elapsed / (double) TROPHY_PULSE_PERIOD * Math.PI * 2) * 0.2 + 0.8);
@@ -173,32 +253,40 @@ public class QuestCompletionScreen extends Screen {
 
         String trophy = "\u2605"; // Star
         g.pose().pushPose();
-        g.pose().translate(centerX - safeFont.width(trophy) * 2, panelY + 15, 0);
+        g.pose().translate(centerX - safeFont.width(trophy) * 2, panelY + UIScaleManager.scale(15), 0);
         g.pose().scale(4.0f, 4.0f, 1.0f);
         UIScaleManager.drawScaledString(g, safeFont, trophy, 0, 0, trophyColor, true);
         g.pose().popPose();
 
-        int y = panelY + 70;
+        int y = panelY + UIScaleManager.scale(70);
 
         // Title
         String title = data.endlessMode() ? "ENDLESS MODE COMPLETE!" : "QUEST COMPLETE!";
         UIScaleManager.drawScaledCenteredString(g, safeFont, title, centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
-        y += 18;
+        y += titleGap;
+
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
 
         // Quest name and wave info (truncated to fit panel width)
-        String questName = truncateText(data.questName(), PANEL_WIDTH - 40);
+        String questName = truncateText(data.questName(), panelWidth - UIScaleManager.scale(40));
         UIScaleManager.drawScaledCenteredString(g, safeFont, Objects.requireNonNull(questName), centerX, y, applyAlpha(COLOR_TEXT, alpha));
-        y += 14;
+        y += lineGap;
 
         String waveInfo = data.endlessMode()
             ? "Reached Wave " + data.finalWave()
             : "Completed " + data.finalWave() + "/" + data.totalWaves() + " waves";
         UIScaleManager.drawScaledCenteredString(g, safeFont, waveInfo, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 14;
+        y += lineGap;
 
         // Duration
         UIScaleManager.drawScaledCenteredString(g, safeFont, "Time: " + data.getFormattedDuration(), centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 16;
+        y += sectionGap;
+
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
 
         boolean hasRunInfo = (data.templateId() != null && !data.templateId().isBlank())
             || (data.policyId() != null && !data.policyId().isBlank())
@@ -207,21 +295,27 @@ public class QuestCompletionScreen extends Screen {
 
         if (hasRunInfo) {
             UIScaleManager.drawScaledCenteredString(g, safeFont, "-- RUN INFO --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
-            y += 14;
+            y += lineGap;
 
             if (data.templateId() != null && !data.templateId().isBlank()) {
                 String templateLine = "Template: " + data.templateId() + " v" + data.templateVersion();
                 UIScaleManager.drawScaledCenteredString(g, safeFont,
-                    Objects.requireNonNull(truncateText(templateLine, PANEL_WIDTH - 60), "templateLine"),
+                    Objects.requireNonNull(truncateText(templateLine, panelWidth - UIScaleManager.scale(60)), "templateLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-                y += 12;
+                y += smallGap;
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
             }
             if (data.policyId() != null && !data.policyId().isBlank()) {
                 String policyLine = "Policy: " + data.policyId() + " v" + data.policyVersion();
                 UIScaleManager.drawScaledCenteredString(g, safeFont,
-                    Objects.requireNonNull(truncateText(policyLine, PANEL_WIDTH - 60), "policyLine"),
+                    Objects.requireNonNull(truncateText(policyLine, panelWidth - UIScaleManager.scale(60)), "policyLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-                y += 12;
+                y += smallGap;
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
             }
 
             String difficulty = data.difficultyLabel() != null && !data.difficultyLabel().isBlank()
@@ -230,113 +324,203 @@ public class QuestCompletionScreen extends Screen {
                 ? data.questTypeLabel() : "endurance";
             UIScaleManager.drawScaledCenteredString(g, safeFont, "Difficulty: " + difficulty + " | Mode: " + mode,
                 centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-            y += 12;
+            y += smallGap;
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
 
             if (data.instanceId() != null && !data.instanceId().isBlank()) {
                 String runLine = "Run ID: " + data.instanceId();
                 UIScaleManager.drawScaledCenteredString(g, safeFont,
-                    Objects.requireNonNull(truncateText(runLine, PANEL_WIDTH - 60), "runLine"),
+                    Objects.requireNonNull(truncateText(runLine, panelWidth - UIScaleManager.scale(60)), "runLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-                y += 12;
+                y += smallGap;
             } else if (data.arenaId() != null && !data.arenaId().isBlank()) {
                 String arenaLine = "Arena ID: " + data.arenaId();
                 UIScaleManager.drawScaledCenteredString(g, safeFont,
-                    Objects.requireNonNull(truncateText(arenaLine, PANEL_WIDTH - 60), "arenaLine"),
+                    Objects.requireNonNull(truncateText(arenaLine, panelWidth - UIScaleManager.scale(60)), "arenaLine"),
                     centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-                y += 12;
+                y += smallGap;
             }
-            y += 6;
+            y += UIScaleManager.scale(6);
         } else {
-            y += 8;
+            y += UIScaleManager.scale(8);
+        }
+
+        if (y + lineHeight > contentBottom) {
+            return;
         }
 
         // Separator
         int sepColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
-        g.fill(panelX + 30, y, panelX + PANEL_WIDTH - 30, y + 1, sepColor);
-        y += 15;
+        g.fill(panelX + inset, y, panelX + panelWidth - inset, y + 1, sepColor);
+        y += UIScaleManager.scale(15);
 
         // === REWARDS SECTION ===
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
         UIScaleManager.drawScaledCenteredString(g, safeFont, "-- REWARDS --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
-        y += 18;
+        y += blockGap;
 
         // Tokens (animated)
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
         String tokenText = "\u2B50 " + animatedTokens + " Tokens";
         UIScaleManager.drawScaledCenteredString(g, safeFont, tokenText, centerX, y, applyAlpha(COLOR_GOLD, alpha));
-        y += 14;
+        y += lineGap;
 
         // Show multipliers if significant
         if (data.styleMultiplier() > 1.0f || data.mutatorMultiplier() > 1.0f) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
             String multText = Objects.requireNonNull(String.format("(Base: %d | Style: x%.1f | Mutator: x%.1f)",
                 data.baseTokens(), data.styleMultiplier(), data.mutatorMultiplier()));
             UIScaleManager.drawScaledCenteredString(g, safeFont, multText, centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-            y += 14;
+            y += lineGap;
         }
 
         // Blood Gems
         if (data.bloodGemsEarned() > 0) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
             String gemText = "\u2666 " + animatedGems + " Blood Gems";
             UIScaleManager.drawScaledCenteredString(g, safeFont, gemText, centerX, y, applyAlpha(COLOR_GEM, alpha));
-            y += 14;
+            y += lineGap;
         }
 
         // Prestige points
         if (data.prestigeEarned() > 0) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
             UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2726 " + data.prestigeEarned() + " Prestige", centerX, y, applyAlpha(COLOR_GEM, alpha));
-            y += 14;
+            y += lineGap;
         }
-        y += 8;
+        y += UIScaleManager.scale(8);
 
         // === BONUSES ===
         if (data.noHitBonus() || data.speedBonus() || data.activeMutators() > 0) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
             UIScaleManager.drawScaledCenteredString(g, safeFont, "-- BONUSES --", centerX, y, applyAlpha(COLOR_BONUS, alpha));
-            y += 16;
+            y += sectionGap;
 
             if (data.noHitBonus()) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
                 UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 No Hit Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
-                y += 12;
+                y += smallGap;
             }
             if (data.speedBonus()) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
                 UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 Speed Bonus!", centerX, y, applyAlpha(COLOR_SUCCESS, alpha));
-                y += 12;
+                y += smallGap;
             }
             if (data.activeMutators() > 0) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
                 UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2714 " + data.activeMutators() + " Mutators Active", centerX, y, applyAlpha(COLOR_ORANGE, alpha));
-                y += 12;
+                y += smallGap;
             }
-            y += 6;
+            y += UIScaleManager.scale(6);
         }
 
         // === STATS ===
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
         UIScaleManager.drawScaledCenteredString(g, safeFont, "-- STATS --", centerX, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += 16;
+        y += sectionGap;
 
-        int leftX = panelX + 50;
-        int rightX = centerX + 20;
+        boolean twoColumn = panelWidth >= UIScaleManager.scale(360);
+        int leftX = panelX + UIScaleManager.scale(40);
+        int rightX = panelX + panelWidth / 2 + UIScaleManager.scale(10);
 
-        // Two column layout
-        UIScaleManager.drawScaledString(g, safeFont, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
-        UIScaleManager.drawScaledString(g, safeFont, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha), false);
-        y += 12;
+        if (twoColumn) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledString(g, safeFont, "Kills: " + data.totalKills(), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
+            UIScaleManager.drawScaledString(g, safeFont, "Max Combo: " + data.maxCombo(), rightX, y, applyAlpha(COLOR_TEXT, alpha), false);
+            y += smallGap;
 
-        UIScaleManager.drawScaledString(g, safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
-        UIScaleManager.drawScaledString(g, safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), rightX, y, applyAlpha(data.getStyleRank().getColor(), alpha), false);
-        y += 12;
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledString(g, safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), leftX, y, applyAlpha(COLOR_TEXT, alpha), false);
+            UIScaleManager.drawScaledString(g, safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), rightX, y, applyAlpha(data.getStyleRank().getColor(), alpha), false);
+            y += smallGap;
 
-        if (data.totalDamageTaken() > 0) {
-            UIScaleManager.drawScaledString(g, safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
+            if (data.totalDamageTaken() > 0) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
+                UIScaleManager.drawScaledString(g, safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), leftX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
+            }
+            if (data.deaths() > 0) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
+                UIScaleManager.drawScaledString(g, safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
+            }
+            y += blockGap;
+        } else {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "Kills: " + data.totalKills(), centerX, y, applyAlpha(COLOR_TEXT, alpha));
+            y += smallGap;
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "Max Combo: " + data.maxCombo(), centerX, y, applyAlpha(COLOR_TEXT, alpha));
+            y += smallGap;
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "Damage Dealt: " + String.format("%.0f", data.totalDamageDealt()), centerX, y, applyAlpha(COLOR_TEXT, alpha));
+            y += smallGap;
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
+            UIScaleManager.drawScaledCenteredString(g, safeFont, "Style Rank: " + data.getStyleRank().getDisplayName(), centerX, y, applyAlpha(data.getStyleRank().getColor(), alpha));
+            y += smallGap;
+            if (data.totalDamageTaken() > 0) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "Damage Taken: " + String.format("%.0f", data.totalDamageTaken()), centerX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
+                y += smallGap;
+            }
+            if (data.deaths() > 0) {
+                if (y + lineHeight > contentBottom) {
+                    return;
+                }
+                UIScaleManager.drawScaledCenteredString(g, safeFont, "Deaths: " + data.deaths(), centerX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha));
+                y += smallGap;
+            }
+            y += UIScaleManager.scale(4);
         }
-        if (data.deaths() > 0) {
-            UIScaleManager.drawScaledString(g, safeFont, "Deaths: " + data.deaths(), rightX, y, applyAlpha(DesignTokens.Semantic.ERROR, alpha), false);
-        }
-        y += 18;
 
         // === ACHIEVEMENTS ===
         List<String> achievements = data.achievementNames();
         if (!achievements.isEmpty()) {
+            if (y + lineHeight > contentBottom) {
+                return;
+            }
             UIScaleManager.drawScaledCenteredString(g, safeFont, "-- ACHIEVEMENTS UNLOCKED --", centerX, y, applyAlpha(COLOR_GOLD, alpha));
-            y += 14;
+            y += lineGap;
 
-            int maxY = panelY + PANEL_HEIGHT - 60;
+            int maxY = panelY + panelHeight - UIScaleManager.scale(60);
             int achievementsShown = 0;
             for (String achievement : achievements) {
                 if (y > maxY) {
@@ -346,7 +530,7 @@ public class QuestCompletionScreen extends Screen {
                     break;
                 }
                 UIScaleManager.drawScaledCenteredString(g, safeFont, "\u2605 " + achievement, centerX, y, applyAlpha(COLOR_ORANGE, alpha));
-                y += 11;
+                y += UIScaleManager.scale(11);
                 achievementsShown++;
             }
         }
@@ -358,13 +542,13 @@ public class QuestCompletionScreen extends Screen {
         return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
-    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY, int panelHeight) {
         int centerX = width / 2;
-        int panelY = (height - PANEL_HEIGHT) / 2;
-        int buttonWidth = 100;  // Standard medium button width
-        int buttonHeight = DesignTokens.Component.BUTTON_HEIGHT_LG;
+        int panelY = (height - panelHeight) / 2;
+        int buttonWidth = UIScaleManager.scale(120);
+        int buttonHeight = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
         int buttonX = centerX - buttonWidth / 2;
-        int buttonY = panelY + PANEL_HEIGHT - 40;
+        int buttonY = panelY + panelHeight - UIScaleManager.scale(40);
 
         if (continueButton != null) {
             continueButton.render(graphics, buttonX, buttonY, buttonWidth, buttonHeight, mouseX, mouseY);

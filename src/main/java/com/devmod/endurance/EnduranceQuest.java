@@ -3,6 +3,9 @@ package com.devmod.endurance;
 import java.util.UUID;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+
+import com.devmod.endurance.EnduranceLogger.Phase;
 
 public class EnduranceQuest {
 
@@ -56,6 +59,7 @@ public class EnduranceQuest {
      * Start a new quest attempt.
      */
     public void start(UUID arenaId) {
+        EnduranceQuestState previousState = state;
         if (state != EnduranceQuestState.AVAILABLE && state != EnduranceQuestState.COOLDOWN) {
             throw new IllegalStateException("Quest cannot be started in state: " + state);
         }
@@ -74,6 +78,10 @@ public class EnduranceQuest {
         this.pointsEarnedThisSession = 0;
 
         this.totalAttempts++;
+
+        EnduranceLogger.phase(Phase.QUEST_START, (ServerPlayer) null, questId,
+            "State: %s→%s, mob=%s, waves=%d, endless=%s, attempt=%d",
+            previousState, state, mobId, totalWaves, endlessMode, totalAttempts);
     }
 
     /**
@@ -98,6 +106,10 @@ public class EnduranceQuest {
             // It will be incremented in continueToNextWave()
             // This ensures the checkpoint screen shows the correct wave number
             state = EnduranceQuestState.WAVE_COMPLETE;
+
+            EnduranceLogger.phase(Phase.WAVE_COMPLETE, (ServerPlayer) null, questId,
+                "State: IN_PROGRESS→WAVE_COMPLETE, wave=%d/%d, points=%d, kills=%d",
+                currentWave, totalWaves, pointsEarnedThisSession, mobsKilledThisSession);
         }
     }
 
@@ -107,9 +119,14 @@ public class EnduranceQuest {
     public void continueToNextWave() {
         if (state != EnduranceQuestState.WAVE_COMPLETE) return;
 
+        int previousWave = currentWave;
         // NOW increment to the next wave number
         currentWave++;
         state = EnduranceQuestState.IN_PROGRESS;
+
+        EnduranceLogger.phase(Phase.CHECKPOINT, (ServerPlayer) null, questId,
+            "State: WAVE_COMPLETE→IN_PROGRESS, wave=%d→%d/%d",
+            previousWave, currentWave, totalWaves);
     }
 
     /**
@@ -130,6 +147,10 @@ public class EnduranceQuest {
         if (pointsEarnedThisSession > bestSessionPoints) {
             bestSessionPoints = pointsEarnedThisSession;
         }
+
+        EnduranceLogger.phase(Phase.QUEST_COMPLETE, (ServerPlayer) null, questId,
+            "State: IN_PROGRESS→COMPLETED, duration=%dms, points=%d, kills=%d, deaths=%d, completions=%d",
+            completionTime, pointsEarnedThisSession, mobsKilledThisSession, deathsThisSession, totalCompletions);
     }
 
     /**
@@ -138,6 +159,7 @@ public class EnduranceQuest {
     public void fail(boolean abandoned) {
         if (state == EnduranceQuestState.COMPLETED || state == EnduranceQuestState.FAILED) return;
 
+        EnduranceQuestState previousState = state;
         state = EnduranceQuestState.FAILED;
         sessionEndTime = System.currentTimeMillis();
 
@@ -149,14 +171,24 @@ public class EnduranceQuest {
         if (pointsEarnedThisSession > bestSessionPoints) {
             bestSessionPoints = pointsEarnedThisSession;
         }
+
+        long duration = sessionEndTime - sessionStartTime;
+        EnduranceLogger.phase(abandoned ? Phase.QUEST_ABANDON : Phase.QUEST_FAIL, (ServerPlayer) null, questId,
+            "State: %s→FAILED, wave=%d/%d, duration=%dms, points=%d, kills=%d, deaths=%d, abandoned=%s",
+            previousState, currentWave, totalWaves, duration, pointsEarnedThisSession,
+            mobsKilledThisSession, deathsThisSession, abandoned);
     }
 
     /**
      * Reset quest to available state.
      */
     public void reset() {
+        EnduranceQuestState previousState = state;
         state = EnduranceQuestState.AVAILABLE;
         arenaId = null;
+
+        EnduranceLogger.phase(Phase.CLEANUP, (ServerPlayer) null, questId,
+            "State: %s→AVAILABLE (reset)", previousState);
     }
 
     /**
@@ -166,6 +198,7 @@ public class EnduranceQuest {
     public void continueAfterDeath() {
         if (state != EnduranceQuestState.FAILED) return;
 
+        int pointsBefore = pointsEarnedThisSession;
         // Apply death penalty - lose some points
         pointsEarnedThisSession = Math.max(0, pointsEarnedThisSession - 100);
 
@@ -173,6 +206,10 @@ public class EnduranceQuest {
         state = EnduranceQuestState.IN_PROGRESS;
 
         deathsThisSession++;
+
+        EnduranceLogger.phase(Phase.PLAYER_RESPAWN, (ServerPlayer) null, questId,
+            "State: FAILED→IN_PROGRESS, wave=%d, deaths=%d, pointPenalty=%d→%d",
+            currentWave, deathsThisSession, pointsBefore, pointsEarnedThisSession);
     }
 
     // ========== Combat Events ==========

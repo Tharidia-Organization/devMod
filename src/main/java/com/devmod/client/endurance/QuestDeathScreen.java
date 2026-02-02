@@ -61,6 +61,7 @@ public class QuestDeathScreen extends Screen {
     // === State ===
     private long openTime;
     private boolean soundPlayed = false;
+    private boolean giveUpRequested = false;  // Track if give up already requested
     @Nullable
     private EditorButton respawnButton;
     @Nullable
@@ -106,7 +107,10 @@ public class QuestDeathScreen extends Screen {
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int maxHeight = height - UIScaleManager.scale(60);
+        int contentHeight = calculateContentHeight();
+        int sPanelHeight = Math.max(UIScaleManager.scale(PANEL_HEIGHT), contentHeight);
+        sPanelHeight = Math.min(sPanelHeight, maxHeight);
 
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
@@ -156,8 +160,29 @@ public class QuestDeathScreen extends Screen {
         }
 
         if (elapsed > FADE_IN_DURATION + 300) {
-            renderButtons(graphics, mouseX, mouseY);
+            renderButtons(graphics, mouseX, mouseY, sPanelHeight);
         }
+    }
+
+    private int calculateContentHeight() {
+        var safeFont = Objects.requireNonNull(font, "font");
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int lineGap = UIScaleManager.scale(4);
+        int sectionGap = UIScaleManager.scale(10);
+        int topOffset = UIScaleManager.scale(75);
+        int bottomButtons = UIScaleManager.scale(80);
+
+        int height = topOffset;
+        height += lineHeight + sectionGap; // YOU DIED
+        height += lineHeight + lineGap;    // Wave
+        height += lineHeight + lineGap;    // Points
+        height += lineHeight + sectionGap; // Deaths
+        height += sectionGap;              // separator gap
+        height += lineHeight + lineGap;    // Choose your fate
+        height += lineHeight * 4;          // respawn lines (header + 3 details)
+        height += lineHeight + lineGap;    // give up line
+        height += bottomButtons;
+        return height;
     }
 
     private void renderPanel(GuiGraphics g, int x, int y, int w, int h, float alpha) {
@@ -181,6 +206,13 @@ public class QuestDeathScreen extends Screen {
 
     private void renderContent(GuiGraphics g, int panelX, int panelY, int sPanelWidth, int sPanelHeight, float alpha, long elapsed) {
         var safeFont = Objects.requireNonNull(font);
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int lineGap = UIScaleManager.scale(4);
+        int sectionGap = UIScaleManager.scale(10);
+        int sInset = UIScaleManager.scale(30);
+        int buttonBlock = UIScaleManager.scale(70);
+        int contentBottom = panelY + sPanelHeight - buttonBlock - UIScaleManager.scale(10);
+
         // Pulsing skull effect
         float pulse = (float) (Math.sin(elapsed / (double) SKULL_PULSE_PERIOD * Math.PI * 2) * 0.3 + 0.7);
         int skullColor = applyAlpha(COLOR_DEATH, alpha * pulse);
@@ -195,13 +227,12 @@ public class QuestDeathScreen extends Screen {
         g.pose().popPose();
 
         int y = panelY + UIScaleManager.scale(75);
-        int sInset = UIScaleManager.scale(30);
 
         // "YOU DIED" text
         UIScaleManager.drawScaledCenteredString(g, safeFont,
             Objects.requireNonNull(I18n.translate("devmod.endurance.you_died").getString()),
             panelX + sPanelWidth / 2, y, applyAlpha(COLOR_DEATH, alpha));
-        y += UIScaleManager.scale(25);
+        y += lineHeight + sectionGap;
 
         // Wave info
         String waveText = endlessMode
@@ -209,50 +240,62 @@ public class QuestDeathScreen extends Screen {
             : I18n.translate("devmod.endurance.wave").getString() + " " + currentWave + " / " + totalWaves;
         UIScaleManager.drawScaledCenteredString(g, safeFont, waveText,
             panelX + sPanelWidth / 2, y, applyAlpha(COLOR_TEXT_DIM, alpha));
-        y += UIScaleManager.scale(18);
+        y += lineHeight + lineGap;
 
         // Points earned
         String pointsText = I18n.translate("devmod.endurance.points").getString() + ": " + pointsEarned;
         UIScaleManager.drawScaledCenteredString(g, safeFont, pointsText,
             panelX + sPanelWidth / 2, y, applyAlpha(COLOR_GOLD, alpha));
-        y += UIScaleManager.scale(18);
+        y += lineHeight + lineGap;
 
         // Deaths this run
         String deathsText = I18n.translate("devmod.endurance.deaths").getString() + ": " + deathsThisRun;
         UIScaleManager.drawScaledCenteredString(g, safeFont, deathsText,
             panelX + sPanelWidth / 2, y, applyAlpha(COLOR_WARNING, alpha));
-        y += UIScaleManager.scale(30);
+        y += lineHeight + sectionGap;
+
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
 
         // Separator
         int sepColor = applyAlpha(DesignTokens.Stroke.MUTED, alpha);
         g.fill(panelX + sInset, y, panelX + sPanelWidth - sInset, y + 1, sepColor);
-        y += UIScaleManager.scale(15);
+        y += sectionGap;
 
         // Options explanation
         UIScaleManager.drawScaledCenteredString(g, safeFont,
             Objects.requireNonNull(I18n.ui("choose_fate").getString()),
             panelX + sPanelWidth / 2, y, applyAlpha(COLOR_TEXT, alpha));
-        y += UIScaleManager.scale(18);
+        y += lineHeight + lineGap;
+
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
 
         // Respawn info
         UIScaleManager.drawScaledString(g, safeFont, "• " + I18n.ui("respawn_info").getString(),
             panelX + sInset, y, applyAlpha(COLOR_SUCCESS, alpha), false);
-        y += UIScaleManager.scale(12);
+        y += lineHeight;
         UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.translate("devmod.endurance.respawn_cost").getString(),
             panelX + sInset, y, applyAlpha(COLOR_WARNING, alpha), false);
-        y += UIScaleManager.scale(12);
+        y += lineHeight;
         UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.ui("respawn_countdown").getString(),
             panelX + sInset, y, applyAlpha(COLOR_TEXT_DIM, alpha), false);
-        y += UIScaleManager.scale(12);
+        y += lineHeight;
         // UX Q2: Show respawn location to reduce uncertainty
         UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.ui("respawn_location").getString(),
             panelX + sInset, y, applyAlpha(COLOR_TEXT_DIM, alpha), false);
-        y += UIScaleManager.scale(18);
+        y += lineHeight + lineGap;
+
+        if (y + lineHeight > contentBottom) {
+            return;
+        }
 
         // Give up info
         UIScaleManager.drawScaledString(g, safeFont, "• " + I18n.ui("giveup_info").getString(),
             panelX + sInset, y, applyAlpha(COLOR_DEATH, alpha), false);
-        y += UIScaleManager.scale(12);
+        y += lineHeight;
         UIScaleManager.drawScaledString(g, safeFont, "  " + I18n.translate("devmod.endurance.points").getString() + ": " + Math.max(0, pointsEarned),
             panelX + sInset, y, applyAlpha(COLOR_GOLD, alpha), false);
     }
@@ -263,17 +306,17 @@ public class QuestDeathScreen extends Screen {
         return (a << 24) | (color & DesignTokens.Mask.RGB);
     }
 
-    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY, int sPanelHeight) {
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
         int centerX = width / 2;
         int centerY = height / 2;
         int panelX = centerX - sPanelWidth / 2;
         int panelY = centerY - sPanelHeight / 2;
         int buttonWidth = sPanelWidth - UIScaleManager.scale(DesignTokens.Space.PANEL_PADDING * 5);
         int sButtonHeight = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
-        int respawnY = panelY + sPanelHeight - UIScaleManager.scale(70);
-        int giveUpY = panelY + sPanelHeight - UIScaleManager.scale(40);
+        int buttonGap = UIScaleManager.scale(8);
+        int giveUpY = panelY + sPanelHeight - sButtonHeight - UIScaleManager.scale(18);
+        int respawnY = giveUpY - sButtonHeight - buttonGap;
 
         if (respawnButton != null) {
             respawnButton.render(graphics, panelX + UIScaleManager.scale(20), respawnY, buttonWidth, sButtonHeight, mouseX, mouseY);
@@ -309,24 +352,26 @@ public class QuestDeathScreen extends Screen {
     }
 
     private void giveUpAndCollect() {
-        LOGGER.info("[EnduranceQuest][Client] QuestDeathScreen give up clicked");
-        // Stop suppression immediately since quest is ending
-        ClientQuestCache.stopDeathScreenSuppression();
+        LOGGER.info("[EnduranceQuest][Client] QuestDeathScreen give up clicked (count={})", giveUpRequested ? 2 : 1);
+        giveUpRequested = true;  // Track that give up was clicked at least once
+        // Mark quest end as pending - this prevents RenderEvents from reopening QuestDeathScreen
+        // while we wait for the server to send the quest-ended sync
+        ClientQuestCache.setPendingQuestEnd(true);
+        // NOTE: Don't call forceStopDeathScreenSuppression() here - the player is still dead
+        // client-side and we need to keep suppressing until respawn sync arrives.
+        // Suppression will naturally stop once player is alive and quest is inactive.
 
         ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT,
             ClientActionContexts.forClient(ActionOrigin.UI, QuestActionPayload.Action.GIVE_UP_AFTER_DEATH)
                 .withConfirmed(true));
         var mc = minecraft;
         if (mc != null) {
-            // Send respawn command to server - this ensures client-server respawn sync
-            // The server will force-respawn and teleport the player back to overworld,
-            // but the client needs to send this packet to properly synchronize state
-            var connection = mc.getConnection();
-            if (connection != null) {
-                connection.send(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
-            }
+            // DO NOT close the screen here - keep QuestDeathScreen open until server confirms
+            // quest end and respawns the player. Closing prematurely causes vanilla DeathScreen
+            // to appear because Minecraft sees dead player without a death screen.
+            // The server will handle respawn and teleport, which will close this screen naturally.
             mc.getSoundManager().play(Objects.requireNonNull(SimpleSoundInstance.forUI(Objects.requireNonNull(SoundEvents.UI_BUTTON_CLICK.value()), 1.0f)));
-            mc.setScreen(null);
+            LOGGER.info("[EnduranceQuest][Client] Waiting for server to confirm quest end...");
         }
     }
 

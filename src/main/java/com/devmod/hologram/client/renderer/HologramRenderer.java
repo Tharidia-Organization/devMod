@@ -100,10 +100,10 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
                                     @Nonnull HologramProjectorBlockEntity blockEntity) {
         BuildState state = blockEntity.getBuildState();
 
-        // DEBUG: Log build state every 5 seconds
+        // DEBUG: Log build state every 5 seconds (use debug level to avoid performance impact)
         if (level.getGameTime() % 100 == 0) {
             HologramVBO vbo = blockEntity.getVBO();
-            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+            org.slf4j.LoggerFactory.getLogger("Hologram").debug(
                 "[Renderer] BuildState={}, showEntities={}, VBO valid={}",
                 state,
                 blockEntity.isShowEntities(),

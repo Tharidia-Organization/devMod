@@ -52,6 +52,11 @@ public class DimensionsWidget extends AbstractWidget {
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int labelWidth = s(LABEL_WIDTH);
+        int sliderHeight = s(SLIDER_HEIGHT);
+        int sliderSpacing = s(SLIDER_SPACING);
+        int topOffset = s(20);
+        int summaryGap = s(10);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -60,23 +65,23 @@ public class DimensionsWidget extends AbstractWidget {
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
 
-        int sliderX = getX() + LABEL_WIDTH;
-        int sliderWidth = getWidth() - LABEL_WIDTH - 50;
+        int sliderX = getX() + labelWidth;
+        int sliderWidth = getWidth() - labelWidth - s(50);
 
         // Width slider
         renderSlider(graphics, "Width", widthValue, AreaDimensions.MIN_SIZE, AreaDimensions.MAX_SIZE,
-            getX(), getY() + 20, sliderX, sliderWidth);
+            getX(), getY() + topOffset, sliderX, sliderWidth, sliderHeight);
 
         // Length slider
         renderSlider(graphics, "Length", lengthValue, AreaDimensions.MIN_SIZE, AreaDimensions.MAX_SIZE,
-            getX(), getY() + 20 + SLIDER_SPACING, sliderX, sliderWidth);
+            getX(), getY() + topOffset + sliderSpacing, sliderX, sliderWidth, sliderHeight);
 
         // Height slider
         renderSlider(graphics, "Height", heightValue, AreaDimensions.MIN_HEIGHT, AreaDimensions.MAX_HEIGHT,
-            getX(), getY() + 20 + SLIDER_SPACING * 2, sliderX, sliderWidth);
+            getX(), getY() + topOffset + sliderSpacing * 2, sliderX, sliderWidth, sliderHeight);
 
         // Summary
-        int summaryY = getY() + 20 + SLIDER_SPACING * 3 + 10;
+        int summaryY = getY() + topOffset + sliderSpacing * 3 + summaryGap;
         Component summary = Objects.requireNonNull(Component.translatable("area.dimensions.summary",
             widthValue, lengthValue, heightValue,
             (long) widthValue * lengthValue * heightValue));
@@ -84,43 +89,50 @@ public class DimensionsWidget extends AbstractWidget {
     }
 
     private void renderSlider(GuiGraphics graphics, String label, int value, int min, int max,
-                             int labelX, int y, int sliderX, int sliderWidth) {
+                             int labelX, int y, int sliderX, int sliderWidth, int sliderHeight) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int labelYOffset = s(6);
+        int inset = s(2);
+        int valueOffset = s(8);
 
         // Label
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.dimensions." + label.toLowerCase(Locale.ROOT))),
-            labelX, y + 6,
+            labelX, y + labelYOffset,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
 
         // Slider background
         int bgColor = AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(sliderX, y, sliderX + sliderWidth, y + SLIDER_HEIGHT, bgColor);
-        graphics.renderOutline(sliderX, y, sliderWidth, SLIDER_HEIGHT, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(sliderX, y, sliderX + sliderWidth, y + sliderHeight, bgColor);
+        graphics.renderOutline(sliderX, y, sliderWidth, sliderHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
         // Slider fill
         float percentage = (float) (value - min) / (max - min);
-        int fillWidth = (int) (percentage * (sliderWidth - 4));
-        graphics.fill(sliderX + 2, y + 2, sliderX + 2 + fillWidth, y + SLIDER_HEIGHT - 2,
+        int fillWidth = (int) (percentage * (sliderWidth - inset * 2));
+        graphics.fill(sliderX + inset, y + inset, sliderX + inset + fillWidth, y + sliderHeight - inset,
             AreaBuilderGuiConstants.COLOR_TAB_ACTIVE);
 
         // Value text
         String valueText = String.valueOf(value);
-        int valueX = sliderX + sliderWidth + 8;
-        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), valueText, valueX, y + 6, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        int valueX = sliderX + sliderWidth + valueOffset;
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), valueText, valueX, y + labelYOffset, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            int sliderX = getX() + LABEL_WIDTH;
-            int sliderWidth = getWidth() - LABEL_WIDTH - 50;
+            int labelWidth = s(LABEL_WIDTH);
+            int sliderSpacing = s(SLIDER_SPACING);
+            int topOffset = s(20);
+            int sliderHeight = s(SLIDER_HEIGHT);
+            int sliderX = getX() + labelWidth;
+            int sliderWidth = getWidth() - labelWidth - s(50);
 
             for (int i = 0; i < 3; i++) {
-                int sliderY = getY() + 20 + SLIDER_SPACING * i;
+                int sliderY = getY() + topOffset + sliderSpacing * i;
                 if (mouseX >= sliderX && mouseX <= sliderX + sliderWidth &&
-                    mouseY >= sliderY && mouseY <= sliderY + SLIDER_HEIGHT) {
+                    mouseY >= sliderY && mouseY <= sliderY + sliderHeight) {
                     activeSlider = i;
                     updateSliderValue((int) mouseX, sliderX, sliderWidth);
                     return true;
@@ -133,8 +145,9 @@ public class DimensionsWidget extends AbstractWidget {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (activeSlider >= 0) {
-            int sliderX = getX() + LABEL_WIDTH;
-            int sliderWidth = getWidth() - LABEL_WIDTH - 50;
+            int labelWidth = s(LABEL_WIDTH);
+            int sliderX = getX() + labelWidth;
+            int sliderWidth = getWidth() - labelWidth - s(50);
             updateSliderValue((int) mouseX, sliderX, sliderWidth);
             return true;
         }
@@ -212,6 +225,10 @@ public class DimensionsWidget extends AbstractWidget {
         this.widthValue = dimensions.width();
         this.lengthValue = dimensions.length();
         this.heightValue = dimensions.height();
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 
     @Override

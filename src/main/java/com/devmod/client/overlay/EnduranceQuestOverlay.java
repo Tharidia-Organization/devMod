@@ -167,10 +167,13 @@ public class EnduranceQuestOverlay {
         int safeBottom = UIScaleManager.getSafeBottom();
 
         boolean allowDetails = showDetails;
-        int panelHeight = calculatePanelHeight(data, panelWidth, allowDetails);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
+        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
+        int sProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
+        int panelHeight = calculatePanelHeight(data, panelWidth, allowDetails, sLineHeight, sPanelPadding, sProgressBarHeight);
         if (panelHeight > UIScaleManager.getSafeHeight() && allowDetails) {
             allowDetails = false;
-            panelHeight = calculatePanelHeight(data, panelWidth, false);
+            panelHeight = calculatePanelHeight(data, panelWidth, false, sLineHeight, sPanelPadding, sProgressBarHeight);
         }
 
         int panelX = Math.max(safeLeft, Math.min(sMarginLeft, safeRight - panelWidth));
@@ -191,7 +194,7 @@ public class EnduranceQuestOverlay {
         renderWaveCompleteAnimation(graphics, font, panelX, panelY + panelHeight + UIScaleManager.scale(5), panelWidth);
 
         // Render prominent wave banner at top center
-        renderWaveBanner(graphics, font, mc.getWindow().getGuiScaledWidth(), data);
+        renderWaveBanner(graphics, font, data);
 
         // Render boss alert if active
         renderBossAlert(graphics, font, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
@@ -206,14 +209,12 @@ public class EnduranceQuestOverlay {
         renderPanelBackground(g, x, y, width, height);
 
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int sProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
         int sGap2 = UIScaleManager.scale(2);
         int sGap4 = UIScaleManager.scale(4);
         int sGap6 = UIScaleManager.scale(6);
         int sGap8 = UIScaleManager.scale(8);
-        int sGap10 = UIScaleManager.scale(10);
-
         int textX = x + sPanelPadding;
         int textY = y + sPanelPadding;
         int contentWidth = Math.max(0, width - sPanelPadding * 2);
@@ -596,7 +597,7 @@ public class EnduranceQuestOverlay {
      * Renders the prominent wave banner at the top-center of the screen.
      * Shows a large and visible wave number, or a countdown timer for time-based objectives.
      */
-    private static void renderWaveBanner(GuiGraphics g, Font font, int screenWidth, QuestSyncPayload data) {
+    private static void renderWaveBanner(GuiGraphics g, Font font, QuestSyncPayload data) {
         WaveObjectiveState.Type objectiveType = data.getObjectiveType();
         boolean isTimedObjective = objectiveType == WaveObjectiveState.Type.SURVIVE_TIME ||
                                    objectiveType == WaveObjectiveState.Type.HOLD_ZONE;
@@ -723,12 +724,8 @@ public class EnduranceQuestOverlay {
     /**
      * Calculates dynamic panel height.
      */
-    private static int calculatePanelHeight(QuestSyncPayload data, int panelWidth, boolean showDetails) {
-        // Use scaled dimensions
-        int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
-        int sProgressBarHeight = UIScaleManager.scale(PROGRESS_BAR_HEIGHT);
-
+    private static int calculatePanelHeight(QuestSyncPayload data, int panelWidth, boolean showDetails,
+                                            int sLineHeight, int sPanelPadding, int sProgressBarHeight) {
         int height = sPanelPadding * 2;
         height += sLineHeight + UIScaleManager.scale(2);  // Header (quest name)
         if (!buildTemplatePolicyLine(data).isBlank()) {

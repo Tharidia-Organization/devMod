@@ -56,11 +56,17 @@ public class InstanceLoadingOverlay {
         int screenWidth = mc.getWindow().getGuiScaledWidth();
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
-        // Scale dimensions
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
         int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
-        int panelHeight = Math.min(sPanelHeight, UIScaleManager.getSafeHeight());
+        int sTopPadding = UIScaleManager.scale(12);
+        int sBottomPadding = UIScaleManager.scale(10);
+        int sTextGap = UIScaleManager.scale(4);
+        int sHintGap = UIScaleManager.scale(6);
+        int textBlockHeight = lineHeight * 3 + sTextGap * 2;
+        int computedHeight = sTopPadding + textBlockHeight + sHintGap + lineHeight + sBottomPadding;
+        int panelHeight = Math.min(Math.max(sPanelHeight, computedHeight), UIScaleManager.getSafeHeight());
 
         // Update spinner
         spinnerAngle += deltaTracker.getGameTimeDeltaTicks() * 8;
@@ -104,24 +110,28 @@ public class InstanceLoadingOverlay {
         int textX = panelX + textOffsetX;
         int contentRight = panelX + panelWidth - UIScaleManager.scale(10);
         int maxTextWidth = Math.max(0, contentRight - textX);
+        int textY = panelY + sTopPadding;
         String title = I18n.translate("devmod.loading.preparing_quest").getString();
         title = truncateToWidth(font, title, maxTextWidth);
-        UIScaleManager.drawScaledString(graphics, font, "\u00A7l" + title, textX, panelY + UIScaleManager.scale(15), DesignTokens.Text.PRIMARY);
+        UIScaleManager.drawScaledString(graphics, font, "\u00A7l" + title, textX, textY, DesignTokens.Text.PRIMARY);
 
         // Status message
+        textY += lineHeight + sTextGap;
         String statusLine = truncateToWidth(font, statusMessage, maxTextWidth);
-        UIScaleManager.drawScaledString(graphics, font, statusLine, textX, panelY + UIScaleManager.scale(32), DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, statusLine, textX, textY, DesignTokens.Text.SECONDARY);
 
         // Elapsed time
+        textY += lineHeight + sTextGap;
         long elapsed = System.currentTimeMillis() - startTime;
         String timeText = String.format("%.1fs", elapsed / 1000.0);
         String timeLine = truncateToWidth(font, timeText, maxTextWidth);
-        UIScaleManager.drawScaledString(graphics, font, timeLine, textX, panelY + UIScaleManager.scale(50), DesignTokens.Text.MUTED);
+        UIScaleManager.drawScaledString(graphics, font, timeLine, textX, textY, DesignTokens.Text.MUTED);
 
         // Hint
         String hint = I18n.translate("devmod.loading.please_wait").getString();
         hint = truncateToWidth(font, hint, panelWidth - UIScaleManager.scale(12));
-        UIScaleManager.drawScaledCenteredString(graphics, font, "\u00A78" + hint, panelX + panelWidth / 2, panelY + panelHeight - UIScaleManager.scale(12), DesignTokens.Text.MUTED);
+        int hintY = panelY + panelHeight - sBottomPadding - lineHeight;
+        UIScaleManager.drawScaledCenteredString(graphics, font, "\u00A78" + hint, panelX + panelWidth / 2, hintY, DesignTokens.Text.MUTED);
     }
 
     private static String truncateToWidth(Font font, String text, int maxWidth) {

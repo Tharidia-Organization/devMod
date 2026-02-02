@@ -70,12 +70,15 @@ public class MinimalCombatHUD {
 
         // Build HUD content
         String[] lines = buildHudLines(wis, collector);
-        int maxWidth = MIN_WIDTH;
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sMargin = UIScaleManager.scale(MARGIN);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int maxWidth = UIScaleManager.scale(MIN_WIDTH);
         for (String line : lines) {
-            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + PADDING * 2);
+            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + sPadding * 2);
         }
 
-        int hudHeight = (font.lineHeight + 2) * lines.length + PADDING * 2;
+        int hudHeight = lineHeight * lines.length + sPadding * 2;
 
         // Calculate position based on configured HUD position (Fix #2)
         int hudX;
@@ -83,20 +86,20 @@ public class MinimalCombatHUD {
         WaveIntelligenceManager.HudPosition pos = wis.getHudPosition();
         switch (pos) {
             case TOP_LEFT -> {
-                hudX = MARGIN;
-                hudY = MARGIN;
+                hudX = sMargin;
+                hudY = sMargin;
             }
             case BOTTOM_LEFT -> {
-                hudX = MARGIN;
-                hudY = screenHeight - hudHeight - MARGIN - 50; // Above hotbar
+                hudX = sMargin;
+                hudY = screenHeight - hudHeight - sMargin - UIScaleManager.scale(50); // Above hotbar
             }
             case BOTTOM_RIGHT -> {
-                hudX = screenWidth - maxWidth - MARGIN;
-                hudY = screenHeight - hudHeight - MARGIN - 50;
+                hudX = screenWidth - maxWidth - sMargin;
+                hudY = screenHeight - hudHeight - sMargin - UIScaleManager.scale(50);
             }
             default -> { // TOP_RIGHT (default)
-                hudX = screenWidth - maxWidth - MARGIN;
-                hudY = MARGIN;
+                hudX = screenWidth - maxWidth - sMargin;
+                hudY = sMargin;
             }
         }
 
@@ -109,12 +112,12 @@ public class MinimalCombatHUD {
         int accentColor = (alphaBits & DesignTokens.Mask.ALPHA) | (DesignTokens.Accent.PRIMARY & DesignTokens.Mask.RGB);
         int dimColor = (alphaBits & DesignTokens.Mask.ALPHA) | (DesignTokens.Text.SECONDARY & DesignTokens.Mask.RGB);
 
-        int y = hudY + PADDING;
+        int y = hudY + sPadding;
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
             int color = i == 0 ? accentColor : (i == 1 ? dimColor : textColor);
-            UIScaleManager.drawScaledString(graphics, font, line, hudX + PADDING, y, color, false);
-            y += font.lineHeight + 2;
+            UIScaleManager.drawScaledString(graphics, font, line, hudX + sPadding, y, color, false);
+            y += lineHeight;
         }
     }
 
@@ -182,14 +185,17 @@ public class MinimalCombatHUD {
             String.format("TTK: %.0fms", collector.getAverageTTK())
         };
 
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sMargin = UIScaleManager.scale(MARGIN);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int maxWidth = 0;
         for (String line : extLines) {
-            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + PADDING * 2);
+            maxWidth = Math.max(maxWidth, UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(line)) + sPadding * 2);
         }
 
-        int hudHeight = (font.lineHeight + 2) * extLines.length + PADDING * 2;
-        int hudX = screenWidth - maxWidth - MARGIN;
-        int hudY = screenHeight - hudHeight - MARGIN - 50; // Above hotbar
+        int hudHeight = lineHeight * extLines.length + sPadding * 2;
+        int hudX = screenWidth - maxWidth - sMargin;
+        int hudY = screenHeight - hudHeight - sMargin - UIScaleManager.scale(50); // Above hotbar
 
         // Draw background
         int bgColor = (alphaBits & DesignTokens.Mask.ALPHA) | (DesignTokens.Bg.LEVEL_0 & DesignTokens.Mask.RGB);
@@ -197,10 +203,10 @@ public class MinimalCombatHUD {
 
         // Draw lines
         int textColor = (alphaBits & DesignTokens.Mask.ALPHA) | (DesignTokens.Text.SECONDARY & DesignTokens.Mask.RGB);
-        int y = hudY + PADDING;
+        int y = hudY + sPadding;
         for (String line : extLines) {
-            UIScaleManager.drawScaledString(graphics, font, line, hudX + PADDING, y, textColor, false);
-            y += font.lineHeight + 2;
+            UIScaleManager.drawScaledString(graphics, font, line, hudX + sPadding, y, textColor, false);
+            y += lineHeight;
         }
     }
 

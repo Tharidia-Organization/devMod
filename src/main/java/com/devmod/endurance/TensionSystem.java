@@ -195,22 +195,32 @@ public class TensionSystem implements QuestLifecycleListener {
             LOGGER.debug("[TensionSystem] Kill streak bonus: +{}", DEFAULT_KILL_STREAK_BONUS);
         }
 
-        // Apply tension gain (synchronized to prevent race with onPlayerDamaged/onMobKill)
+        // Apply tension gain and check boss trigger (synchronized to prevent race conditions)
+        boolean shouldSpawnBoss;
+        float currentTension;
+        float bossThreshold;
+        float tensionPercent;
+
         synchronized (state) {
             state.currentTension += tensionGain;
             state.wavesSinceLastBoss++;
 
             // Reset wave tracking
             resetWaveTracking(state);
+
+            // Capture values for logging outside sync block
+            currentTension = state.currentTension;
+            bossThreshold = state.bossThreshold;
+            tensionPercent = state.getTensionPercent();
+
+            // Check for boss trigger inside sync block
+            shouldSpawnBoss = checkBossTrigger(state, waveNumber, questId);
+            state.bossWavePending = shouldSpawnBoss;
         }
 
         LOGGER.info("[TensionSystem] Wave {} complete. Tension: {}/{} ({}%)",
-            waveNumber, state.currentTension, state.bossThreshold,
-            (int)(state.getTensionPercent() * 100));
-
-        // Check for boss trigger
-        boolean shouldSpawnBoss = checkBossTrigger(state, waveNumber, questId);
-        state.bossWavePending = shouldSpawnBoss;
+            waveNumber, currentTension, bossThreshold,
+            (int)(tensionPercent * 100));
 
         return shouldSpawnBoss;
     }
@@ -349,29 +359,35 @@ public class TensionSystem implements QuestLifecycleListener {
 
     /*
      * Manually add tension (for special events, mutators, etc).
+     * Thread-safe: Synchronized to prevent race with wave completion.
      */
     public void addTension(UUID questId, float amount, String reason) {
         TensionState state = questStates.get(questId);
         if (state != null) {
-            state.currentTension += amount;
-            LOGGER.debug("[TensionSystem] Added {} tension ({}). Total: {}",
-                amount, reason, state.currentTension);
+            synchronized (state) {
+                state.currentTension += amount;
+                LOGGER.debug("[TensionSystem] Added {} tension ({}). Total: {}",
+                    amount, reason, state.currentTension);
+            }
         }
     }
 
     /*
      * Get tension info for UI display.
+     * Thread-safe: Synchronized to get consistent snapshot of state.
      */
     public TensionInfo getTensionInfo(UUID questId) {
         TensionState state = questStates.get(questId);
         if (state == null) {
             return new TensionInfo(0f, 0, false);
         }
-        return new TensionInfo(
-            state.getTensionPercent(),
-            state.getTensionLevel(),
-            state.bossWavePending
-        );
+        synchronized (state) {
+            return new TensionInfo(
+                state.getTensionPercent(),
+                state.getTensionLevel(),
+                state.bossWavePending
+            );
+        }
     }
 
     /*

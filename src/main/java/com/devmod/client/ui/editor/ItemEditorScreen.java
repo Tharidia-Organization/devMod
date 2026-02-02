@@ -1026,6 +1026,23 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void renderSidePanels(GuiGraphics graphics, int mouseX, int mouseY, boolean allowTooltips) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
+        int favoritesTitleOffsetX = s(FAVORITES_TITLE_OFFSET_X);
+        int favoritesTitleOffsetY = s(FAVORITES_TITLE_OFFSET_Y);
+        int favoritesRowHeight = s(FAVORITES_ROW_HEIGHT);
+        int favoritesListStartY = s(FAVORITES_LIST_START_Y);
+        int favoritesListBottomPadding = s(FAVORITES_LIST_BOTTOM_PADDING);
+        int favoritesRowHitInset = s(FAVORITES_ROW_HIT_INSET);
+        int favoritesRowHoverInset = s(FAVORITES_ROW_HOVER_INSET);
+        int favoritesRowTextOffsetX = s(FAVORITES_ROW_TEXT_OFFSET_X);
+        int favoritesRowTextOffsetY = s(FAVORITES_ROW_TEXT_OFFSET_Y);
+        int favoritesPinButtonOffsetX = s(FAVORITES_PIN_BUTTON_OFFSET_X);
+        int favoritesPinButtonOffsetY = s(FAVORITES_PIN_BUTTON_OFFSET_Y);
+        int favoritesPinButtonWidth = s(FAVORITES_PIN_BUTTON_WIDTH);
+        int favoritesPinButtonHeight = s(FAVORITES_PIN_BUTTON_HEIGHT);
+        int favoritesPinTextOffsetX = s(FAVORITES_PIN_TEXT_OFFSET_X);
+        int favoritesPinTextOffsetY = s(FAVORITES_PIN_TEXT_OFFSET_Y);
+        int devPanelTextOffsetX = s(DEV_PANEL_TEXT_OFFSET_X);
+        int devPanelTextOffsetY = s(DEV_PANEL_TEXT_OFFSET_Y);
 
         // Left panel (favorites)
         ResponsiveLayout.Rect leftPanel = PRESETS_ENABLED ? layout.getFavoritesPanelArea() : ResponsiveLayout.Rect.EMPTY;
@@ -1034,31 +1051,31 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                          DesignTokens.Bg.LEVEL_2);
             AxiomRenderer.drawBorder(graphics, leftPanel.x(), leftPanel.y(),
                                     leftPanel.width(), leftPanel.height(), DesignTokens.Stroke.DEFAULT);
-            UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + FAVORITES_TITLE_OFFSET_X,
-                leftPanel.y() + FAVORITES_TITLE_OFFSET_Y,
+            UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_TITLE_TEXT, leftPanel.x() + favoritesTitleOffsetX,
+                leftPanel.y() + favoritesTitleOffsetY,
                                DesignTokens.Text.SECONDARY(), false);
 
             List<ItemEditorDataManager.PresetData> favorites = getFavoritePresetsForActiveType();
-            int rowHeight = FAVORITES_ROW_HEIGHT;
-            int startY = leftPanel.y() + FAVORITES_LIST_START_Y;
-            int maxRows = Math.max(0, (leftPanel.height() - FAVORITES_LIST_BOTTOM_PADDING) / rowHeight);
+            int rowHeight = favoritesRowHeight;
+            int startY = leftPanel.y() + favoritesListStartY;
+            int maxRows = Math.max(0, (leftPanel.height() - favoritesListBottomPadding) / rowHeight);
             for (int i = 0; i < Math.min(maxRows, favorites.size()); i++) {
                 ItemEditorDataManager.PresetData preset = favorites.get(i);
                 int rowY = startY + i * rowHeight;
                 String label = preset.name == null ? FAVORITES_LABEL_FALLBACK : preset.name;
-                boolean hovered = mouseX >= leftPanel.x() + FAVORITES_ROW_HIT_INSET
-                    && mouseX <= leftPanel.right() - FAVORITES_ROW_HIT_INSET
+                boolean hovered = mouseX >= leftPanel.x() + favoritesRowHitInset
+                    && mouseX <= leftPanel.right() - favoritesRowHitInset
                     && mouseY >= rowY && mouseY <= rowY + rowHeight;
                 if (hovered) {
-                    graphics.fill(leftPanel.x() + FAVORITES_ROW_HOVER_INSET, rowY,
-                        leftPanel.right() - FAVORITES_ROW_HOVER_INSET, rowY + rowHeight, DesignTokens.Background.HOVER());
+                    graphics.fill(leftPanel.x() + favoritesRowHoverInset, rowY,
+                        leftPanel.right() - favoritesRowHoverInset, rowY + rowHeight, DesignTokens.Background.HOVER());
                     if (allowTooltips) {
                         TooltipManager.INSTANCE.queueTooltip(
                             label, leftPanel.x(), rowY, leftPanel.width(), rowHeight, TooltipManager.TooltipPosition.AUTO);
                     }
                 }
-                UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + FAVORITES_ROW_TEXT_OFFSET_X,
-                    rowY + FAVORITES_ROW_TEXT_OFFSET_Y,
+                UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + favoritesRowTextOffsetX,
+                    rowY + favoritesRowTextOffsetY,
                     hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
             }
 
@@ -1066,14 +1083,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             if (lastLoadedPreset != null) {
                 boolean isFav = favoriteStore.isFavorite(getActiveItemType(), lastLoadedPreset);
                 String pinLabel = isFav ? FAVORITES_UNPIN_TEXT : FAVORITES_PIN_TEXT;
-                int btnY = leftPanel.bottom() - FAVORITES_PIN_BUTTON_OFFSET_Y;
-                int btnW = FAVORITES_PIN_BUTTON_WIDTH;
-                int btnH = FAVORITES_PIN_BUTTON_HEIGHT;
-                int btnX = leftPanel.x() + FAVORITES_PIN_BUTTON_OFFSET_X;
+                int btnY = leftPanel.bottom() - favoritesPinButtonOffsetY;
+                int btnW = favoritesPinButtonWidth;
+                int btnH = favoritesPinButtonHeight;
+                int btnX = leftPanel.x() + favoritesPinButtonOffsetX;
                 graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, DesignTokens.Button.NORMAL());
                 AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, DesignTokens.Stroke.DEFAULT);
-                UIScaleManager.drawScaledString(graphics, safeFont, pinLabel, btnX + FAVORITES_PIN_TEXT_OFFSET_X,
-                    btnY + FAVORITES_PIN_TEXT_OFFSET_Y, DesignTokens.Text.PRIMARY(), false);
+                UIScaleManager.drawScaledString(graphics, safeFont, pinLabel, btnX + favoritesPinTextOffsetX,
+                    btnY + favoritesPinTextOffsetY, DesignTokens.Text.PRIMARY(), false);
             }
         }
 
@@ -1085,8 +1102,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                              DesignTokens.Bg.LEVEL_2);
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
                                         rightPanel.width(), rightPanel.height(), DesignTokens.Stroke.DEFAULT);
-                UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + DEV_PANEL_TEXT_OFFSET_X,
-                    rightPanel.y() + DEV_PANEL_TEXT_OFFSET_Y,
+                UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + devPanelTextOffsetX,
+                    rightPanel.y() + devPanelTextOffsetY,
                                    DesignTokens.Text.SECONDARY(), false);
             }
         }
@@ -1117,16 +1134,18 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private void renderStatusMessage(GuiGraphics graphics) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
         String safeMessage = Objects.requireNonNull(statusMessage, "statusMessage cannot be null");
-        int msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + STATUS_MESSAGE_PADDING_X * 2;
+        int paddingX = s(STATUS_MESSAGE_PADDING_X);
+        int paddingY = s(STATUS_MESSAGE_PADDING_Y);
+        int bottomOffset = s(STATUS_MESSAGE_BOTTOM_OFFSET);
+        int screenMargin = s(STATUS_MESSAGE_SCREEN_MARGIN);
+        int msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + paddingX * 2;
         int msgX = (width - msgWidth) / 2;
-        int msgY = height - STATUS_MESSAGE_BOTTOM_OFFSET;
+        int msgY = height - bottomOffset;
         float fontScale = Typography.withUiScale(1.0f);
 
-        int paddingX = STATUS_MESSAGE_PADDING_X;
-        int paddingY = STATUS_MESSAGE_PADDING_Y;
         int msgHeight = safeFont.lineHeight + paddingY * 2;
         msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + paddingX * 2;
-        msgX = Math.max(STATUS_MESSAGE_SCREEN_MARGIN, Math.min(width - msgWidth - STATUS_MESSAGE_SCREEN_MARGIN, msgX));
+        msgX = Math.max(screenMargin, Math.min(width - msgWidth - screenMargin, msgX));
 
         graphics.fill(msgX, msgY, msgX + msgWidth, msgY + msgHeight, STATUS_MESSAGE_BG);
         AxiomRenderer.drawBorder(graphics, msgX, msgY, msgWidth, msgHeight, statusColor);
@@ -1140,23 +1159,41 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int panelHeight = historyBounds.height();
         int x = historyBounds.x();
         int y = historyBounds.y();
+        int titleOffsetX = s(HISTORY_PANEL_TITLE_OFFSET_X);
+        int titleOffsetY = s(HISTORY_PANEL_TITLE_OFFSET_Y);
+        int filterHeight = s(HISTORY_FILTER_HEIGHT);
+        int listOffsetY = s(HISTORY_PANEL_LIST_OFFSET_Y);
+        int listHeightPadding = s(HISTORY_PANEL_LIST_HEIGHT_PADDING);
+        int lineHeight = s(HISTORY_PANEL_LINE_HEIGHT);
+        int footerOffsetY = s(HISTORY_PANEL_FOOTER_OFFSET_Y);
+        int textOffsetX = s(HISTORY_PANEL_TEXT_OFFSET_X);
+        int clearWidth = s(HISTORY_PANEL_CLEAR_WIDTH);
+        int clearHeight = s(HISTORY_PANEL_CLEAR_HEIGHT);
+        int clearOffsetX = s(HISTORY_PANEL_CLEAR_OFFSET_X);
+        int clearOffsetY = s(HISTORY_PANEL_CLEAR_OFFSET_Y);
+        int clearTextOffsetX = s(HISTORY_PANEL_CLEAR_TEXT_OFFSET_X);
+        int clearTextOffsetY = s(HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y);
+        int rollbackWidth = s(HISTORY_PANEL_ROLLBACK_WIDTH);
+        int rollbackHeight = s(HISTORY_PANEL_ROLLBACK_HEIGHT);
+        int rollbackOffsetX = s(HISTORY_PANEL_ROLLBACK_OFFSET_X);
+        int rollbackTextOffsetX = s(HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X);
+        int rollbackTextOffsetY = s(HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y);
 
         graphics.fill(x, y, x + panelWidth, y + panelHeight, DesignTokens.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, DesignTokens.Stroke.DEFAULT);
 
-        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_TITLE_TEXT, x + HISTORY_PANEL_TITLE_OFFSET_X, y + HISTORY_PANEL_TITLE_OFFSET_Y,
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_TITLE_TEXT, x + titleOffsetX, y + titleOffsetY,
             DesignTokens.Text.TITLE(), false);
         renderHistoryFilters(graphics, safeFont, x, y, mouseX, mouseY);
-        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y + HISTORY_FILTER_HEIGHT;
+        int listY = y + listOffsetY + filterHeight;
         List<ItemEditorHistoryEntry> entries = getFilteredHistoryEntries();
-        int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
-        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING - HISTORY_FILTER_HEIGHT;
+        int listHeight = panelHeight - listHeightPadding - filterHeight;
         int maxScroll = Math.max(0, Math.max(0, entries.size() * lineHeight - listHeight));
         historyScrollOffset = Math.max(0, Math.min(historyScrollOffset, maxScroll));
 
         int visibleLines = listHeight / lineHeight;
         if (entries.isEmpty()) {
-            UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_EMPTY_TEXT, x + HISTORY_PANEL_TEXT_OFFSET_X, listY,
+            UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_EMPTY_TEXT, x + textOffsetX, listY,
                 DesignTokens.Text.MUTED(), false);
         } else {
             int startIndex = Math.max(0, historyScrollOffset / lineHeight);
@@ -1176,14 +1213,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                         DesignTokens.Background.HOVER());
                 }
                 String label = entry.formatLabel();
-                UIScaleManager.drawScaledString(graphics, safeFont, label, x + HISTORY_PANEL_TEXT_OFFSET_X, entryY,
+                UIScaleManager.drawScaledString(graphics, safeFont, label, x + textOffsetX, entryY,
                     selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
                 if (hovered) {
                     TooltipManager.INSTANCE.queueTooltip(
                         entry.formatDiffSummary(),
-                        x + HISTORY_PANEL_TEXT_OFFSET_X,
+                        x + textOffsetX,
                         entryY,
-                        panelWidth - HISTORY_PANEL_TEXT_OFFSET_X * 2,
+                        panelWidth - textOffsetX * 2,
                         lineHeight,
                         TooltipManager.TooltipPosition.AUTO
                     );
@@ -1192,29 +1229,29 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Footer with clear button and counter
-        int footerY = y + panelHeight - HISTORY_PANEL_FOOTER_OFFSET_Y;
+        int footerY = y + panelHeight - footerOffsetY;
         String countText = entries.isEmpty()
             ? HISTORY_SHOWING_EMPTY
             : HISTORY_SHOWING_PREFIX + Math.min(visibleLines, entries.size()) + HISTORY_SHOWING_SEPARATOR + entries.size();
-        UIScaleManager.drawScaledString(graphics, safeFont, countText, x + HISTORY_PANEL_TEXT_OFFSET_X, footerY,
+        UIScaleManager.drawScaledString(graphics, safeFont, countText, x + textOffsetX, footerY,
             DesignTokens.Text.MUTED(), false);
 
         // Clear button
-        int clearW = HISTORY_PANEL_CLEAR_WIDTH;
-        int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
-        int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
-        int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
+        int clearW = clearWidth;
+        int clearH = clearHeight;
+        int clearX = x + panelWidth - clearW - clearOffsetX;
+        int clearY = footerY - clearOffsetY;
         int clearBg = entries.isEmpty() ? DesignTokens.Button.DISABLED() : DesignTokens.Background.INPUT();
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
         AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, DesignTokens.Stroke.DEFAULT);
         int clearColor = entries.isEmpty() ? DesignTokens.Text.DISABLED() : DesignTokens.Text.PRIMARY();
-        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_CLEAR_TEXT, clearX + HISTORY_PANEL_CLEAR_TEXT_OFFSET_X,
-            clearY + HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y, clearColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_CLEAR_TEXT, clearX + clearTextOffsetX,
+            clearY + clearTextOffsetY, clearColor, false);
 
         // Rollback button
-        int rollbackW = HISTORY_PANEL_ROLLBACK_WIDTH;
-        int rollbackH = HISTORY_PANEL_ROLLBACK_HEIGHT;
-        int rollbackX = clearX - rollbackW - HISTORY_PANEL_ROLLBACK_OFFSET_X;
+        int rollbackW = rollbackWidth;
+        int rollbackH = rollbackHeight;
+        int rollbackX = clearX - rollbackW - rollbackOffsetX;
         int rollbackY = clearY;
         boolean canRollback = historySelectedIndex >= 0 && historySelectedIndex < entries.size();
         historyRollbackBounds = new ResponsiveLayout.Rect(rollbackX, rollbackY, rollbackW, rollbackH);
@@ -1222,28 +1259,28 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(rollbackX, rollbackY, rollbackX + rollbackW, rollbackY + rollbackH, rollbackBg);
         AxiomRenderer.drawBorder(graphics, rollbackX, rollbackY, rollbackW, rollbackH, DesignTokens.Stroke.DEFAULT);
         int rollbackColor = canRollback ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
-        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X,
-            rollbackY + HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y, rollbackColor, false);
+        UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + rollbackTextOffsetX,
+            rollbackY + rollbackTextOffsetY, rollbackColor, false);
     }
 
     private void renderHistoryFilters(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                                       int x, int y, int mouseX, int mouseY) {
         historyFilterHits.clear();
-        int cursorX = x + HISTORY_PANEL_TITLE_OFFSET_X;
-        int cursorY = y + HISTORY_PANEL_TITLE_OFFSET_Y + HISTORY_FILTER_OFFSET_Y;
+        int cursorX = x + s(HISTORY_PANEL_TITLE_OFFSET_X);
+        int cursorY = y + s(HISTORY_PANEL_TITLE_OFFSET_Y) + s(HISTORY_FILTER_OFFSET_Y);
         for (HistoryFilter filter : HistoryFilter.values()) {
             String label = filter.label;
-            int width = UIScaleManager.getScaledStringWidth(font, label) + 10;
-            ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(cursorX, cursorY, width, HISTORY_FILTER_HEIGHT);
+            int width = UIScaleManager.getScaledStringWidth(font, label) + s(10);
+            ResponsiveLayout.Rect rect = new ResponsiveLayout.Rect(cursorX, cursorY, width, s(HISTORY_FILTER_HEIGHT));
             boolean selected = historyFilter == filter;
             boolean hovered = rect.contains(mouseX, mouseY);
             int bg = selected ? DesignTokens.Background.ACTIVE() : (hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.INPUT());
             graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bg);
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), DesignTokens.Stroke.DEFAULT);
             int color = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
-            UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 5, rect.y() + 2, color, false);
+            UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(5), rect.y() + s(2), color, false);
             historyFilterHits.add(new HistoryFilterHit(filter, rect));
-            cursorX = rect.right() + HISTORY_FILTER_GAP;
+            cursorX = rect.right() + s(HISTORY_FILTER_GAP);
         }
     }
 
@@ -1284,9 +1321,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         List<ItemEditorHistoryEntry> entries = getFilteredHistoryEntries();
-        int lineHeight = HISTORY_PANEL_LINE_HEIGHT;
-        int listY = y + HISTORY_PANEL_LIST_OFFSET_Y + HISTORY_FILTER_HEIGHT;
-        int listHeight = panelHeight - HISTORY_PANEL_LIST_HEIGHT_PADDING - HISTORY_FILTER_HEIGHT;
+        int lineHeight = s(HISTORY_PANEL_LINE_HEIGHT);
+        int listY = y + s(HISTORY_PANEL_LIST_OFFSET_Y) + s(HISTORY_FILTER_HEIGHT);
+        int listHeight = panelHeight - s(HISTORY_PANEL_LIST_HEIGHT_PADDING) - s(HISTORY_FILTER_HEIGHT);
         int visibleLines = listHeight / lineHeight;
         int startIndex = Math.max(0, historyScrollOffset / lineHeight);
         int endIndex = Math.min(entries.size(), startIndex + visibleLines);
@@ -1324,11 +1361,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         }
 
         // Clear button
-        int clearW = HISTORY_PANEL_CLEAR_WIDTH;
-        int clearH = HISTORY_PANEL_CLEAR_HEIGHT;
-        int footerY = y + panelHeight - HISTORY_PANEL_FOOTER_OFFSET_Y;
-        int clearX = x + panelWidth - clearW - HISTORY_PANEL_CLEAR_OFFSET_X;
-        int clearY = footerY - HISTORY_PANEL_CLEAR_OFFSET_Y;
+        int clearW = s(HISTORY_PANEL_CLEAR_WIDTH);
+        int clearH = s(HISTORY_PANEL_CLEAR_HEIGHT);
+        int footerY = y + panelHeight - s(HISTORY_PANEL_FOOTER_OFFSET_Y);
+        int clearX = x + panelWidth - clearW - s(HISTORY_PANEL_CLEAR_OFFSET_X);
+        int clearY = footerY - s(HISTORY_PANEL_CLEAR_OFFSET_Y);
         if (mouseX >= clearX && mouseX <= clearX + clearW && mouseY >= clearY && mouseY <= clearY + clearH) {
             historyEntries.clear();
             historyScrollOffset = 0;
@@ -1345,14 +1382,14 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     }
 
     private ResponsiveLayout.Rect getHistoryPanelBounds() {
-        int x = layout.getEditorX() + layout.getEditorWidth() - HISTORY_PANEL_WIDTH - HISTORY_PANEL_MARGIN_RIGHT;
-        int y = layout.getEditorY() + DesignTokens.Size.HEADER_HEIGHT + HISTORY_PANEL_MARGIN_TOP;
-        return new ResponsiveLayout.Rect(x, y, HISTORY_PANEL_WIDTH, HISTORY_PANEL_HEIGHT);
+        int x = layout.getEditorX() + layout.getEditorWidth() - s(HISTORY_PANEL_WIDTH) - s(HISTORY_PANEL_MARGIN_RIGHT);
+        int y = layout.getEditorY() + ScaledCoord.scaleDim(DesignTokens.Size.HEADER_HEIGHT) + s(HISTORY_PANEL_MARGIN_TOP);
+        return new ResponsiveLayout.Rect(x, y, s(HISTORY_PANEL_WIDTH), s(HISTORY_PANEL_HEIGHT));
     }
 
     @Override
     public void scrollHistory(int delta) {
-        historyScrollOffset += delta * HISTORY_PANEL_LINE_HEIGHT;
+        historyScrollOffset += delta * s(HISTORY_PANEL_LINE_HEIGHT);
         historyScrollOffset = Math.max(0, historyScrollOffset);
     }
 
@@ -1360,10 +1397,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         ResponsiveLayout.Rect devArea = layout.getDevModePanelArea();
         if (devArea.isEmpty()) {
             devArea = new ResponsiveLayout.Rect(
-                width - DEV_PANEL_FALLBACK_WIDTH - DEV_PANEL_FALLBACK_MARGIN_RIGHT,
-                DEV_PANEL_FALLBACK_MARGIN_TOP,
-                DEV_PANEL_FALLBACK_WIDTH,
-                DEV_PANEL_FALLBACK_HEIGHT
+                width - s(DEV_PANEL_FALLBACK_WIDTH) - s(DEV_PANEL_FALLBACK_MARGIN_RIGHT),
+                s(DEV_PANEL_FALLBACK_MARGIN_TOP),
+                s(DEV_PANEL_FALLBACK_WIDTH),
+                s(DEV_PANEL_FALLBACK_HEIGHT)
             );
         }
 
@@ -1382,23 +1419,23 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(devArea.x(), devArea.y(), devArea.right(), devArea.bottom(), DEV_PANEL_BG);
         AxiomRenderer.drawBorder(graphics, devArea.x(), devArea.y(), devArea.width(), devArea.height(), DesignTokens.Accent.PRIMARY);
 
-        int textY = devArea.y() + DEV_PANEL_TEXT_OFFSET_Y;
-        UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + DEV_PANEL_TEXT_OFFSET_X, textY,
+        int textY = devArea.y() + s(DEV_PANEL_TEXT_OFFSET_Y);
+        UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_TITLE_TEXT, devArea.x() + s(DEV_PANEL_TEXT_OFFSET_X), textY,
             DEV_PANEL_TITLE_COLOR, false);
-        textY += DEV_PANEL_TITLE_LINE_STEP;
+        textY += s(DEV_PANEL_TITLE_LINE_STEP);
 
         EditorCache.CacheStats stats = EditorCache.INSTANCE.getStats();
-        UIScaleManager.drawScaledString(graphics, safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Cache: " + stats.valid() + "/" + stats.total(), devArea.x() + s(DEV_PANEL_TEXT_OFFSET_X),
             textY, DesignTokens.Text.SECONDARY(), false);
-        textY += DEV_PANEL_LINE_STEP;
-        UIScaleManager.drawScaledString(graphics, safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        textY += s(DEV_PANEL_LINE_STEP);
+        UIScaleManager.drawScaledString(graphics, safeFont, String.format("Hit: %.1f%%", stats.hitRate() * 100), devArea.x() + s(DEV_PANEL_TEXT_OFFSET_X),
             textY, DesignTokens.Text.SECONDARY(), false);
-        textY += DEV_PANEL_LINE_STEP;
+        textY += s(DEV_PANEL_LINE_STEP);
 
-        UIScaleManager.drawScaledString(graphics, safeFont, "Size: " + layout.getScreenSize(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        UIScaleManager.drawScaledString(graphics, safeFont, "Size: " + layout.getScreenSize(), devArea.x() + s(DEV_PANEL_TEXT_OFFSET_X),
             textY, DesignTokens.Text.SECONDARY(), false);
-        textY += DEV_PANEL_LINE_STEP;
-        UIScaleManager.drawScaledString(graphics, safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + DEV_PANEL_TEXT_OFFSET_X,
+        textY += s(DEV_PANEL_LINE_STEP);
+        UIScaleManager.drawScaledString(graphics, safeFont, "Scroll: " + (int) scrollArea.getScrollOffset(), devArea.x() + s(DEV_PANEL_TEXT_OFFSET_X),
             textY, DesignTokens.Text.SECONDARY(), false);
     }
 
@@ -2861,6 +2898,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         editorState.setSelectedSlot(slot);
     }
 
+    private static int s(int value) {
+        return ScaledCoord.scaleDim(value);
+    }
+
     private enum HistoryFilter {
         ALL("All", ""),
         APPLY("Apply", "apply"),
@@ -2877,7 +2918,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             this.actionKey = actionKey;
         }
 
-        public boolean matches(String action) {
+        boolean matches(String action) {
             if (this == ALL) return true;
             if (action == null) return false;
             return action.equalsIgnoreCase(actionKey);

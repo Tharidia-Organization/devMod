@@ -129,17 +129,24 @@ public final class EffectOrchestrator {
 
         ParticleEmitter emitter = EffekseerClient.play(effectId);
         if (!emitter.exists()) {
+            DevMod.LOGGER.debug("[Orchestrator] Effect not found: {}", effectId);
             return emitter; // Dummy emitter, effect file doesn't exist
         }
+
+        // Ensure effect is visible and playing (required for Effekseer to render)
+        emitter.setVisibility(true);
+        emitter.resume();
 
         // Position
         Vec3 pos = context.hitPoint();
         emitter.setPosition((float) pos.x, (float) pos.y, (float) pos.z);
 
-        // Calculate scale
-        float baseScale = isPrimary ? 1.0f : 0.7f;
+        // Calculate scale - keep effects subtle and non-invasive
+        float baseScale = isPrimary ? 0.25f : 0.15f;
         float intensityMult = context.getIntensityMultiplier();
-        float finalScale = preset.calculateFinalScale(baseScale, intensityMult);
+        // Clamp intensity to prevent oversized effects
+        float clampedIntensity = Math.min(intensityMult, 1.5f);
+        float finalScale = preset.calculateFinalScale(baseScale, clampedIntensity);
         emitter.setScale(finalScale, finalScale, finalScale);
 
         // Orientation based on hit direction
@@ -182,22 +189,23 @@ public final class EffectOrchestrator {
      * Gets base duration for an effect type (milliseconds).
      */
     private static long getBaseDuration(EffectType type) {
+        // Shorter durations for snappier, less intrusive effects
         return switch (type) {
-            case GLANCING -> 120;
-            case LIGHT -> 160;
-            case MEDIUM -> 200;
-            case HEAVY -> 260;
-            case CRUSHING -> 320;
-            case OBLITERATE -> 420;
-            case CRITICAL -> 380;
-            case HEADSHOT -> 450;
-            case COMBO -> 350;
-            case KILL -> 800;
-            case FINISHER -> 1200;
-            case BACKSTAB -> 450;
-            case COMBO_INDICATOR -> 220;
-            case WEIGHT_FLASH -> 180;
-            case BLOCK -> 250;
+            case GLANCING -> 80;
+            case LIGHT -> 100;
+            case MEDIUM -> 120;
+            case HEAVY -> 150;
+            case CRUSHING -> 180;
+            case OBLITERATE -> 220;
+            case CRITICAL -> 200;
+            case HEADSHOT -> 250;
+            case COMBO -> 180;
+            case KILL -> 400;
+            case FINISHER -> 600;
+            case BACKSTAB -> 200;
+            case COMBO_INDICATOR -> 120;
+            case WEIGHT_FLASH -> 100;
+            case BLOCK -> 150;
         };
     }
 
@@ -224,22 +232,26 @@ public final class EffectOrchestrator {
             return emitter;
         }
 
+        // Ensure effect is visible and playing (required for Effekseer to render)
+        emitter.setVisibility(true);
+        emitter.resume();
+
         Vec3 pos = context.hitPoint();
         emitter.setPosition((float) pos.x, (float) pos.y + 0.5f, (float) pos.z);
 
-        // Milestone effects are bigger
-        float scale = preset.getScaleMultiplier() * 1.5f;
+        // Milestone effects - slightly larger but still subtle
+        float scale = preset.getScaleMultiplier() * 0.4f;
         emitter.setScale(scale, scale, scale);
 
         // Combo tier for color/intensity
-        int tier = ComboTracker.getComboTier(context.comboInfo().count()).ordinal();
+        int tier = getComboTierIndex(ComboTracker.getComboTier(context.comboInfo().count()));
         emitter.setDynamicInput(0, tier);
         emitter.setDynamicInput(1, context.comboInfo().count());
 
         ACTIVE_EFFECTS.addLast(new ActiveEffect(
             emitter,
             System.currentTimeMillis(),
-            (long) (1000 * preset.getDurationMultiplier())
+            (long) (400 * preset.getDurationMultiplier())
         ));
 
         return emitter;
@@ -269,6 +281,17 @@ public final class EffectOrchestrator {
             }
             return false;
         });
+    }
+
+    private static int getComboTierIndex(ComboTracker.ComboTier tier) {
+        return switch (tier) {
+            case NONE -> 0;
+            case NICE -> 1;
+            case GREAT -> 2;
+            case AWESOME -> 3;
+            case INSANE -> 4;
+            case GODLIKE -> 5;
+        };
     }
 
     /**

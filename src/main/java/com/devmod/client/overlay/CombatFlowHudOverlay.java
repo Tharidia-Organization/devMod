@@ -157,6 +157,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         int combo = cache.getCombo();
         float scale = cache.getComboScale();
         StyleRank rank = cache.getStyleRank();
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
 
         PoseStack pose = graphics.pose();
         pose.pushPose();
@@ -170,7 +171,7 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         int centerY = y + UIScaleManager.scale(18);
         pose.translate(centerX, centerY, 0);
         pose.scale(scale * 2.0f, scale * 2.0f, 1.0f);
-        pose.translate(-textWidth / 2f, -font.lineHeight / 2f, 0);
+        pose.translate(-textWidth / 2f, -lineHeight / 2f, 0);
 
         // Combo number with rank color
         int color = combo > 0
@@ -380,12 +381,13 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
                 // Scale effect
                 PoseStack pose = graphics.pose();
                 pose.pushPose();
+                int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
                 float scale = cache.getPerfectParryScale();
                 int textWidth = UIScaleManager.getScaledStringWidth(font, guardText);
                 int textX = x + sPanelWidth - textWidth - UIScaleManager.scale(6);
-                pose.translate(textX + textWidth / 2f, y + font.lineHeight / 2f, 0);
+                pose.translate(textX + textWidth / 2f, y + lineHeight / 2f, 0);
                 pose.scale(scale, scale, 1.0f);
-                pose.translate(-(textX + textWidth / 2f), -(y + font.lineHeight / 2f), 0);
+                pose.translate(-(textX + textWidth / 2f), -(y + lineHeight / 2f), 0);
                 UIScaleManager.drawScaledString(graphics, font, guardText, textX, y, guardColor, true);
                 pose.popPose();
             } else {
@@ -499,8 +501,9 @@ public class CombatFlowHudOverlay implements LayeredDraw.Layer {
         List<ActionAnnouncement> announcements = cache.getAnnouncements();
 
         int offsetY = 0;
-        int sLineGap = UIScaleManager.scale(24);
-        int sSubtitleOffset = UIScaleManager.scale(10);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int sLineGap = Math.max(UIScaleManager.scale(24), lineHeight * 2);
+        int sSubtitleOffset = Math.max(UIScaleManager.scale(10), lineHeight);
         int sSlideOffset = UIScaleManager.scale(50);
         for (int i = announcements.size() - 1; i >= 0; i--) {
             ActionAnnouncement ann = announcements.get(i);

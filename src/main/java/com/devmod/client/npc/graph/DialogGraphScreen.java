@@ -55,6 +55,10 @@ public class DialogGraphScreen extends Screen {
     // Toolbar buttons
     private final java.util.List<EditorButtonWidget> toolbarButtons = new java.util.ArrayList<>();
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     public DialogGraphScreen(@Nonnull DialogSet dialogSet, @Nullable Screen parentScreen) {
         super(Component.literal("Dialog Graph: " + dialogSet.name()));
         this.dialogSet = dialogSet;
@@ -69,12 +73,13 @@ public class DialogGraphScreen extends Screen {
     @Override
     protected void init() {
         EditorApplyFeedbackRouter.register(feedbackListener);
+        UIScaleManager.update();
         // Calculate dimensions
-        int canvasWidth = width - SIDE_PANEL_WIDTH;
-        int canvasHeight = height - TOOLBAR_HEIGHT;
+        int canvasWidth = width - s(SIDE_PANEL_WIDTH);
+        int canvasHeight = height - s(TOOLBAR_HEIGHT);
 
         // Create canvas
-        canvas = new GraphCanvas(0, TOOLBAR_HEIGHT, canvasWidth, canvasHeight);
+        canvas = new GraphCanvas(0, s(TOOLBAR_HEIGHT), canvasWidth, canvasHeight);
         canvas.loadDialogSet(dialogSet);
         canvas.setOnNodeSelected(this::onNodeSelected);
         canvas.setOnNodeDoubleClicked(this::onNodeDoubleClicked);
@@ -84,16 +89,16 @@ public class DialogGraphScreen extends Screen {
         addRenderableWidget(canvas);
 
         // Create side panel
-        nodePanel = new NodeEditPanel(canvasWidth, TOOLBAR_HEIGHT, SIDE_PANEL_WIDTH, canvasHeight);
+        nodePanel = new NodeEditPanel(canvasWidth, s(TOOLBAR_HEIGHT), s(SIDE_PANEL_WIDTH), canvasHeight);
         nodePanel.setOnEditClicked(this::onEditNode);
         nodePanel.setOnSetEntryClicked(this::onSetEntryNode);
         addRenderableWidget(nodePanel);
 
         // Create minimap
-        int minimapSize = 120;
+        int minimapSize = s(120);
         minimap = new GraphMinimap(
-            canvasWidth - minimapSize - 10,
-            TOOLBAR_HEIGHT + 10,
+            canvasWidth - minimapSize - s(10),
+            s(TOOLBAR_HEIGHT) + s(10),
             minimapSize,
             minimapSize,
             canvas
@@ -106,10 +111,10 @@ public class DialogGraphScreen extends Screen {
 
     private void initToolbar() {
         toolbarButtons.clear();
-        int x = 8;
-        int y = 4;
-        int btnHeight = EditorButton.Size.MEDIUM.height();
-        int spacing = DesignTokens.Spacing.XS;
+        int x = s(8);
+        int y = s(4);
+        int btnHeight = s(EditorButton.Size.MEDIUM.height());
+        int spacing = s(DesignTokens.Spacing.XS);
 
         // Back button
         EditorButton backButton = EditorButton.builder("graph_back", "\u2190 Back")
@@ -118,13 +123,13 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Return to dialog editor")
             .onClick(this::onClose)
             .build();
-        EditorButtonWidget backWidget = new EditorButtonWidget(backButton, x, y, 60, btnHeight);
+        EditorButtonWidget backWidget = new EditorButtonWidget(backButton, x, y, s(60), btnHeight);
         toolbarButtons.add(backWidget);
         addRenderableWidget(backWidget);
-        x += 60 + spacing * 2;
+        x += s(60) + spacing * 2;
 
         // Separator
-        x += 8;
+        x += s(8);
 
         // Zoom controls
         EditorButton zoomOutButton = EditorButton.builder("graph_zoom_out", "-")
@@ -133,10 +138,10 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Zoom out")
             .onClick(() -> canvas.zoomOut())
             .build();
-        EditorButtonWidget zoomOutWidget = new EditorButtonWidget(zoomOutButton, x, y, 20, btnHeight);
+        EditorButtonWidget zoomOutWidget = new EditorButtonWidget(zoomOutButton, x, y, s(20), btnHeight);
         toolbarButtons.add(zoomOutWidget);
         addRenderableWidget(zoomOutWidget);
-        x += 20 + spacing;
+        x += s(20) + spacing;
 
         EditorButton zoomInButton = EditorButton.builder("graph_zoom_in", "+")
             .style(EditorButton.Style.NORMAL)
@@ -144,10 +149,10 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Zoom in")
             .onClick(() -> canvas.zoomIn())
             .build();
-        EditorButtonWidget zoomInWidget = new EditorButtonWidget(zoomInButton, x, y, 20, btnHeight);
+        EditorButtonWidget zoomInWidget = new EditorButtonWidget(zoomInButton, x, y, s(20), btnHeight);
         toolbarButtons.add(zoomInWidget);
         addRenderableWidget(zoomInWidget);
-        x += 20 + spacing * 2;
+        x += s(20) + spacing * 2;
 
         // Fit to screen
         EditorButton fitButton = EditorButton.builder("graph_fit", "Fit")
@@ -156,10 +161,10 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Fit all nodes in view (F)")
             .onClick(() -> canvas.fitToScreen())
             .build();
-        EditorButtonWidget fitWidget = new EditorButtonWidget(fitButton, x, y, 40, btnHeight);
+        EditorButtonWidget fitWidget = new EditorButtonWidget(fitButton, x, y, s(40), btnHeight);
         toolbarButtons.add(fitWidget);
         addRenderableWidget(fitWidget);
-        x += 40 + spacing;
+        x += s(40) + spacing;
 
         // Center view
         EditorButton centerButton = EditorButton.builder("graph_center", "Center")
@@ -168,13 +173,13 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Center view on nodes (C)")
             .onClick(() -> canvas.centerView())
             .build();
-        EditorButtonWidget centerWidget = new EditorButtonWidget(centerButton, x, y, 50, btnHeight);
+        EditorButtonWidget centerWidget = new EditorButtonWidget(centerButton, x, y, s(50), btnHeight);
         toolbarButtons.add(centerWidget);
         addRenderableWidget(centerWidget);
-        x += 50 + spacing * 2;
+        x += s(50) + spacing * 2;
 
         // Separator
-        x += 8;
+        x += s(8);
 
         // Layout buttons
         EditorButton layoutButton = EditorButton.builder("graph_layout", "Auto Layout")
@@ -183,10 +188,10 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Apply force-directed layout (L)")
             .onClick(() -> canvas.startAutoLayout())
             .build();
-        EditorButtonWidget layoutWidget = new EditorButtonWidget(layoutButton, x, y, 80, btnHeight);
+        EditorButtonWidget layoutWidget = new EditorButtonWidget(layoutButton, x, y, s(80), btnHeight);
         toolbarButtons.add(layoutWidget);
         addRenderableWidget(layoutWidget);
-        x += 80 + spacing;
+        x += s(80) + spacing;
 
         EditorButton hierarchyButton = EditorButton.builder("graph_hierarchy", "Hierarchy")
             .style(EditorButton.Style.NORMAL)
@@ -194,7 +199,7 @@ public class DialogGraphScreen extends Screen {
             .tooltip("Apply hierarchical layout")
             .onClick(() -> canvas.hierarchicalLayout())
             .build();
-        EditorButtonWidget hierarchyWidget = new EditorButtonWidget(hierarchyButton, x, y, 70, btnHeight);
+        EditorButtonWidget hierarchyWidget = new EditorButtonWidget(hierarchyButton, x, y, s(70), btnHeight);
         toolbarButtons.add(hierarchyWidget);
         addRenderableWidget(hierarchyWidget);
     }
@@ -328,10 +333,10 @@ public class DialogGraphScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
         // Toolbar background
-        graphics.fill(0, 0, width, TOOLBAR_HEIGHT, COLOR_TOOLBAR_BG);
+        graphics.fill(0, 0, width, s(TOOLBAR_HEIGHT), COLOR_TOOLBAR_BG);
 
         // Toolbar separator
-        graphics.fill(0, TOOLBAR_HEIGHT - 1, width, TOOLBAR_HEIGHT, DesignTokens.Border.DEFAULT);
+        graphics.fill(0, s(TOOLBAR_HEIGHT) - 1, width, s(TOOLBAR_HEIGHT), DesignTokens.Border.DEFAULT);
 
         // Render widgets
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -342,8 +347,8 @@ public class DialogGraphScreen extends Screen {
             graphics,
             font,
             zoomText,
-            width - SIDE_PANEL_WIDTH - 50,
-            8,
+            width - s(SIDE_PANEL_WIDTH) - s(50),
+            s(8),
             DesignTokens.Text.SECONDARY
         );
 
@@ -353,7 +358,7 @@ public class DialogGraphScreen extends Screen {
             font,
             dialogSet.name(),
             width / 2 - UIScaleManager.getScaledStringWidth(font, dialogSet.name()) / 2,
-            8,
+            s(8),
             COLOR_TEXT
         );
 
@@ -361,7 +366,7 @@ public class DialogGraphScreen extends Screen {
 
         var font = this.font;
         if (font != null) {
-            toast.renderInBounds(graphics, font, 0, 0, width, TOOLBAR_HEIGHT,
+            toast.renderInBounds(graphics, font, 0, 0, width, s(TOOLBAR_HEIGHT),
                 com.devmod.client.ui.testing.ToastMessage.Position.TOP_RIGHT);
         }
     }

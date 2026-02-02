@@ -71,29 +71,29 @@ public class PathWaypointWidget extends AbstractWidget {
         this.onPathDataChanged = Objects.requireNonNull(onPathDataChanged);
 
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
-        int inputWidth = 45;
-        int inputY = y + height - 50;
+        int inputWidth = s(45);
+        int inputY = y + height - s(50);
 
         // X input
-        this.xInput = new EditBox(font, x + 25, inputY, inputWidth, 16,
+        this.xInput = new EditBox(font, x + s(25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.path.x")));
         this.xInput.setValue("0");
         this.xInput.setMaxLength(6);
 
         // Y input
-        this.yInput = new EditBox(font, x + 80 + 25, inputY, inputWidth, 16,
+        this.yInput = new EditBox(font, x + s(80 + 25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.path.y")));
         this.yInput.setValue("0");
         this.yInput.setMaxLength(6);
 
         // Z input
-        this.zInput = new EditBox(font, x + 160 + 25, inputY, inputWidth, 16,
+        this.zInput = new EditBox(font, x + s(160 + 25), inputY, inputWidth, s(16),
             Objects.requireNonNull(Component.translatable("area.path.z")));
         this.zInput.setValue("0");
         this.zInput.setMaxLength(6);
 
         // Width input (corridor width)
-        this.widthInput = new EditBox(font, x + 100, y + 35, 40, 16,
+        this.widthInput = new EditBox(font, x + s(100), y + s(35), s(40), s(16),
             Objects.requireNonNull(Component.translatable("area.path.width")));
         this.widthInput.setValue(Objects.requireNonNull(String.valueOf(corridorWidth)));
         this.widthInput.setMaxLength(3);
@@ -173,6 +173,18 @@ public class PathWaypointWidget extends AbstractWidget {
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font);
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int listTopGap = s(60);
+        int listHeaderGap = s(12);
+        int listHeight = MAX_VISIBLE_WAYPOINTS * rowHeight;
+        int addSectionGap = s(10);
+        int addLabelGap = s(15);
+        int inputHeight = s(16);
+        int inputWidth = s(45);
+        int inputLabelOffset = s(4);
+        int addButtonWidth = s(50);
+        int addButtonHeight = s(18);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -184,21 +196,24 @@ public class PathWaypointWidget extends AbstractWidget {
         // Corridor width label and input
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.path.corridor_width")),
-            getX(), getY() + 22,
+            getX(), getY() + s(22),
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
+        widthInput.setX(getX() + s(100));
+        widthInput.setY(getY() + s(35));
+        widthInput.setWidth(s(40));
+        widthInput.setHeight(inputHeight);
         widthInput.render(graphics, mouseX, mouseY, partialTick);
 
         // Waypoint list header
-        int listY = getY() + 60;
+        int listY = getY() + listTopGap;
         UIScaleManager.drawScaledString(graphics, font,
             "Waypoints (relative to center):",
-            getX(), listY - 12,
+            getX(), listY - listHeaderGap,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
         );
 
         // Waypoint list background
-        int listHeight = MAX_VISIBLE_WAYPOINTS * ROW_HEIGHT;
         graphics.fill(getX(), listY, getX() + getWidth(), listY + listHeight, AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(getX(), listY, getWidth(), listHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
@@ -209,41 +224,41 @@ public class PathWaypointWidget extends AbstractWidget {
             if (idx >= waypoints.size()) break;
 
             WaypointEntry entry = waypoints.get(idx);
-            int rowY = listY + i * ROW_HEIGHT + 3;
+            int rowY = listY + i * rowHeight + s(3);
 
             // Index
             UIScaleManager.drawScaledString(graphics, font,
                 String.valueOf(idx + 1) + ".",
-                getX() + 4, rowY + 4,
+                getX() + s(4), rowY + inputLabelOffset,
                 AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
             );
 
             // Coordinates
             String coordText = String.format("(%+d, %+d, %+d)", entry.x, entry.y, entry.z);
-            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + 25, rowY + 4, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+            UIScaleManager.drawScaledString(graphics, font, coordText, getX() + s(25), rowY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
             // Delete button (only if more than 2 waypoints)
             if (waypoints.size() > 2) {
-                int btnX = getX() + getWidth() - BUTTON_SIZE - 8;
+                int btnX = getX() + getWidth() - buttonSize - s(8);
                 int btnY = rowY;
-                boolean hovered = mouseX >= btnX && mouseX < btnX + BUTTON_SIZE &&
-                                  mouseY >= btnY && mouseY < btnY + BUTTON_SIZE;
+                boolean hovered = mouseX >= btnX && mouseX < btnX + buttonSize &&
+                                  mouseY >= btnY && mouseY < btnY + buttonSize;
                 int btnColor = hovered ? DesignTokens.AreaBuilder.DELETE_BTN_HOVER : DesignTokens.AreaBuilder.DELETE_BTN;
-                graphics.fill(btnX, btnY, btnX + BUTTON_SIZE, btnY + BUTTON_SIZE, btnColor);
-                UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + BUTTON_SIZE / 2, btnY + 4, DesignTokens.AreaBuilder.TEXT_WHITE);
+                graphics.fill(btnX, btnY, btnX + buttonSize, btnY + buttonSize, btnColor);
+                UIScaleManager.drawScaledCenteredString(graphics, font, "X", btnX + buttonSize / 2, btnY + inputLabelOffset, DesignTokens.AreaBuilder.TEXT_WHITE);
             }
         }
 
         // Scroll indicators
         if (scrollOffset > 0) {
-            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + 2, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "^", getX() + getWidth() / 2, listY + s(2), AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
         if (scrollOffset + MAX_VISIBLE_WAYPOINTS < waypoints.size()) {
-            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - 10, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+            UIScaleManager.drawScaledCenteredString(graphics, font, "v", getX() + getWidth() / 2, listY + listHeight - s(10), AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
         }
 
         // Add waypoint section
-        int addY = listY + listHeight + 10;
+        int addY = listY + listHeight + addSectionGap;
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.path.add_waypoint")),
             getX(), addY,
@@ -251,33 +266,42 @@ public class PathWaypointWidget extends AbstractWidget {
         );
 
         // X/Y/Z labels and inputs
-        int inputY = addY + 15;
-        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + 5, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        int inputY = addY + addLabelGap;
+        UIScaleManager.drawScaledString(graphics, font, "X:", getX() + s(5), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        xInput.setX(getX() + s(25));
         xInput.setY(inputY);
+        xInput.setWidth(inputWidth);
+        xInput.setHeight(inputHeight);
         xInput.render(graphics, mouseX, mouseY, partialTick);
 
-        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + 85, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Y:", getX() + s(85), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        yInput.setX(getX() + s(80 + 25));
         yInput.setY(inputY);
+        yInput.setWidth(inputWidth);
+        yInput.setHeight(inputHeight);
         yInput.render(graphics, mouseX, mouseY, partialTick);
 
-        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + 165, inputY + 4, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, "Z:", getX() + s(165), inputY + inputLabelOffset, AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
+        zInput.setX(getX() + s(160 + 25));
         zInput.setY(inputY);
+        zInput.setWidth(inputWidth);
+        zInput.setHeight(inputHeight);
         zInput.render(graphics, mouseX, mouseY, partialTick);
 
         // Add button
-        int addBtnX = getX() + 230;
+        int addBtnX = getX() + s(230);
         int addBtnY = inputY;
-        int addBtnW = 50;
-        int addBtnH = 18;
+        int addBtnW = addButtonWidth;
+        int addBtnH = addButtonHeight;
         boolean addHovered = mouseX >= addBtnX && mouseX < addBtnX + addBtnW &&
                              mouseY >= addBtnY && mouseY < addBtnY + addBtnH;
         graphics.fill(addBtnX, addBtnY, addBtnX + addBtnW, addBtnY + addBtnH,
             addHovered ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE : AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(addBtnX, addBtnY, addBtnW, addBtnH, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "+ Add", addBtnX + addBtnW / 2, addBtnY + s(5), AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
 
         // Info text
-        int infoY = inputY + 25;
+        int infoY = inputY + s(25);
         UIScaleManager.drawScaledString(graphics, font,
             "Total waypoints: " + waypoints.size(),
             getX(), infoY,
@@ -293,14 +317,14 @@ public class PathWaypointWidget extends AbstractWidget {
         if (yInput.mouseClicked(mouseX, mouseY, button)) return true;
         if (zInput.mouseClicked(mouseX, mouseY, button)) return true;
 
-        int listY = getY() + 60;
-        int listHeight = MAX_VISIBLE_WAYPOINTS * ROW_HEIGHT;
+        int listY = getY() + s(60);
+        int listHeight = MAX_VISIBLE_WAYPOINTS * s(ROW_HEIGHT);
 
         // Check add button
-        int addBtnX = getX() + 230;
-        int addBtnY = listY + listHeight + 25;
-        int addBtnW = 50;
-        int addBtnH = 18;
+        int addBtnX = getX() + s(230);
+        int addBtnY = listY + listHeight + s(25);
+        int addBtnW = s(50);
+        int addBtnH = s(18);
         if (mouseX >= addBtnX && mouseX < addBtnX + addBtnW &&
             mouseY >= addBtnY && mouseY < addBtnY + addBtnH) {
             addWaypoint();
@@ -314,12 +338,12 @@ public class PathWaypointWidget extends AbstractWidget {
                 int idx = i + scrollOffset;
                 if (idx >= waypoints.size()) break;
 
-                int rowY = listY + i * ROW_HEIGHT + 3;
-                int btnX = getX() + getWidth() - BUTTON_SIZE - 8;
+                int rowY = listY + i * s(ROW_HEIGHT) + s(3);
+                int btnX = getX() + getWidth() - s(BUTTON_SIZE) - s(8);
                 int btnY = rowY;
 
-                if (mouseX >= btnX && mouseX < btnX + BUTTON_SIZE &&
-                    mouseY >= btnY && mouseY < btnY + BUTTON_SIZE) {
+                if (mouseX >= btnX && mouseX < btnX + s(BUTTON_SIZE) &&
+                    mouseY >= btnY && mouseY < btnY + s(BUTTON_SIZE)) {
                     waypoints.remove(idx);
                     if (scrollOffset > 0 && scrollOffset >= waypoints.size() - MAX_VISIBLE_WAYPOINTS + 1) {
                         scrollOffset--;
@@ -335,8 +359,8 @@ public class PathWaypointWidget extends AbstractWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int listY = getY() + 60;
-        int listHeight = MAX_VISIBLE_WAYPOINTS * ROW_HEIGHT;
+        int listY = getY() + s(60);
+        int listHeight = MAX_VISIBLE_WAYPOINTS * s(ROW_HEIGHT);
 
         if (mouseX >= getX() && mouseX < getX() + getWidth() &&
             mouseY >= listY && mouseY < listY + listHeight) {
@@ -431,4 +455,8 @@ public class PathWaypointWidget extends AbstractWidget {
      * Internal record for waypoint entries (relative coordinates).
      */
     private record WaypointEntry(int x, int y, int z) {}
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
 }

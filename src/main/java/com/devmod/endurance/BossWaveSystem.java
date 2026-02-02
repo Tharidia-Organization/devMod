@@ -36,6 +36,7 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.DevMod;
 import com.devmod.arena.api.ArenaHandle;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
@@ -173,8 +174,8 @@ public class BossWaveSystem {
         // Ability cooldowns
         private final Map<BossAbility, Integer> abilityCooldowns = new EnumMap<>(BossAbility.class);
 
-        // Minions (for Summoner)
-        private final List<UUID> activeMinions = new ArrayList<>();
+        // Minions (for Summoner) - Thread-safe: uses CopyOnWriteArrayList for safe iteration during cleanup
+        private final List<UUID> activeMinions = new java.util.concurrent.CopyOnWriteArrayList<>();
         public static final int MAX_MINIONS = 8;
 
         // Combat tracking
@@ -482,6 +483,12 @@ public class BossWaveSystem {
             String generatedName = requireNonNull(mixedData.generatedName(), "generatedName");
             LOGGER.info("[BossWave] Started boss wave {} with {} (variant={}, players={}, type={})",
                 waveNumber, generatedName, mixedData.variant(), playerCount, questType);
+
+            // Structured logging for boss spawn
+            EnduranceLogger.phase(Phase.BOSS_SPAWN, null, quest.getQuestId(),
+                "Boss spawned: wave=%d, name=%s, primary=%s, secondary=%s, variant=%s, health=%.0f, players=%d",
+                waveNumber, generatedName, primaryName, secondaryName, variantName,
+                boss.getMaxHealth(), playerCount);
         }
 
         return fight;
@@ -562,6 +569,9 @@ public class BossWaveSystem {
 
             LOGGER.debug("[BossWave] Mixed Boss HP: {} (variant={}, players={})",
                 scaledHealth, mixedData.variant(), playerCount);
+        } else {
+            LOGGER.warn("[BossWave] Boss mob {} missing MAX_HEALTH attribute - scaling skipped",
+                mob.getType().getDescriptionId());
         }
 
         // Apply damage
@@ -576,12 +586,18 @@ public class BossWaveSystem {
             scaledDamage *= mixedData.variant().getDamageMod();
 
             damageAttr.setBaseValue(scaledDamage);
+        } else {
+            LOGGER.warn("[BossWave] Boss mob {} missing ATTACK_DAMAGE attribute - scaling skipped",
+                mob.getType().getDescriptionId());
         }
 
         // Apply speed
         var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
         if (speedAttr != null) {
             speedAttr.setBaseValue(speedAttr.getBaseValue() * speedMult);
+        } else {
+            LOGGER.warn("[BossWave] Boss mob {} missing MOVEMENT_SPEED attribute - scaling skipped",
+                mob.getType().getDescriptionId());
         }
 
         // Visual indicators with blended color
@@ -816,6 +832,12 @@ public class BossWaveSystem {
 
                 LOGGER.info("[BossWave] Boss defeated! Bonus: {} (perfect: {}, speed: {}, abilities: {}, dmgDealt: {})",
                     fight.bonusPoints, fight.perfectFight, fight.ticksAlive < 1200, fight.abilitiesUsed, fight.totalDamageDealt);
+
+                // Structured logging for boss defeat
+                EnduranceLogger.phase(Phase.BOSS_DEFEAT, (ServerPlayer) null, (UUID) null,
+                    "Boss defeated: wave=%d, archetype=%s, duration=%dms, bonus=%d, perfect=%s, dmgTaken=%.0f, dmgDealt=%.0f",
+                    fight.waveNumber, fight.archetype.name(), fightDurationMs,
+                    fight.bonusPoints, fight.perfectFight, fight.totalDamageTaken, fight.totalDamageDealt);
             }
         }
         return fight;

@@ -308,6 +308,11 @@ public class WaypointSelectScreen extends BaseDevModScreen {
         var renderFont = Objects.requireNonNull(this.font, "font");
         boolean selected = wp.equals(selectedWaypoint);
         boolean available = wp.available();
+        int sTextInset = UIScaleManager.scale(8);
+        int sTextTop = UIScaleManager.scale(3);
+        int sTextMid = UIScaleManager.scale(13);
+        int sTextBottom = UIScaleManager.scale(23);
+        int sRightInset = UIScaleManager.scale(4);
 
         // Background
         int bgColor;
@@ -323,40 +328,40 @@ public class WaypointSelectScreen extends BaseDevModScreen {
         // Color indicator (left strip)
         int wpColor = wp.color().getColorValue();
         int indicatorColor = available ? ((0xFF << 24) | (wpColor & 0xFFFFFF)) : 0xFF555555;
-        graphics.fill(x, y, x + 4, y + height, indicatorColor);
+        graphics.fill(x, y, x + UIScaleManager.scale(4), y + height, indicatorColor);
 
         // Selection border
         if (selected) {
             int selColor = (0xFF << 24) | (color.getColorValue() & 0xFFFFFF);
-            renderBorder(graphics, x, y, width, height, selColor, 1);
+            renderBorder(graphics, x, y, width, height, selColor, UIScaleManager.scale(1));
         }
 
         // Waypoint name
         int textColor = available ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED;
         String displayName = wp.name().isEmpty() ? "Unnamed" : wp.name();
-        UIScaleManager.drawScaledString(graphics, renderFont, displayName, x + 8, y + 3, textColor);
+        UIScaleManager.drawScaledString(graphics, renderFont, displayName, x + sTextInset, y + sTextTop, textColor);
 
         // Category badge (if present)
         if (!wp.category().isEmpty()) {
             String catText = "[" + wp.category() + "]";
             int catWidth = UIScaleManager.getScaledStringWidth(renderFont, catText);
-            int catX = x + width - catWidth - 4;
-            UIScaleManager.drawScaledString(graphics, renderFont, catText, catX, y + 3, DesignTokens.Text.MUTED);
+            int catX = x + width - catWidth - sRightInset;
+            UIScaleManager.drawScaledString(graphics, renderFont, catText, catX, y + sTextTop, DesignTokens.Text.MUTED);
         }
 
         // Coordinates
         String coordText = wp.getCoordinatesString();
-        UIScaleManager.drawScaledString(graphics, renderFont, coordText, x + 8, y + 13, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledString(graphics, renderFont, coordText, x + sTextInset, y + sTextMid, DesignTokens.Text.SECONDARY);
 
         // Dimension
         String dimText = Objects.requireNonNull(wp.getFormattedDimension());
         int dimWidth = UIScaleManager.getScaledStringWidth(renderFont, dimText);
-        UIScaleManager.drawScaledString(graphics, renderFont, dimText, x + width - dimWidth - 4, y + 13, DesignTokens.Text.MUTED);
+        UIScaleManager.drawScaledString(graphics, renderFont, dimText, x + width - dimWidth - sRightInset, y + sTextMid, DesignTokens.Text.MUTED);
 
         // Availability status
         if (!available) {
             String unavailText = "Unavailable";
-            UIScaleManager.drawScaledString(graphics, renderFont, unavailText, x + 8, y + 23, DesignTokens.Semantic.ERROR);
+            UIScaleManager.drawScaledString(graphics, renderFont, unavailText, x + sTextInset, y + sTextBottom, DesignTokens.Semantic.ERROR);
         }
     }
 
@@ -364,7 +369,7 @@ public class WaypointSelectScreen extends BaseDevModScreen {
      * Renders a border around a rectangle.
      */
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {
-        renderBorder(graphics, x, y, width, height, color, BORDER_THICKNESS);
+        renderBorder(graphics, x, y, width, height, color, UIScaleManager.scale(BORDER_THICKNESS));
     }
 
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color, int thickness) {

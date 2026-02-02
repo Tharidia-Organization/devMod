@@ -124,7 +124,7 @@ public class ImpactHudOverlay {
         int sPanelWidth = UIScaleManager.scale(260);
         int panelWidth = Math.min(sPanelWidth, UIScaleManager.getSafeWidth());
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int sSectionSpacing = UIScaleManager.scale(SECTION_SPACING);
         int sPanelGap = UIScaleManager.scale(PANEL_GAP);
         int sAccentBarWidth = UIScaleManager.scale(ACCENT_BAR_WIDTH);

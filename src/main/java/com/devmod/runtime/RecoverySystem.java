@@ -31,6 +31,8 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 
 import com.devmod.DevMod;
+import com.devmod.endurance.EnduranceLogger;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.util.ConfigPaths;
 
@@ -42,6 +44,7 @@ public class RecoverySystem {
     private final ConcurrentHashMap<UUID, Object> playerLocks = new ConcurrentHashMap<>();
 
     private Path snapshotsDir;
+    private Path intentsDir;
     private boolean initialized = false;
 
     private RecoverySystem() {}
@@ -57,12 +60,14 @@ public class RecoverySystem {
      */
     public void initialize() {
         this.snapshotsDir = ConfigPaths.getConfigDir().resolve("snapshots");
+        this.intentsDir = ConfigPaths.getConfigDir().resolve("recovery_intents");
         try {
             Files.createDirectories(snapshotsDir);
+            Files.createDirectories(intentsDir);
             initialized = true;
-            LOGGER.info("[Recovery] Initialized, snapshots dir: {}", snapshotsDir);
+            LOGGER.info("[Recovery] Initialized, snapshots dir: {}, intents dir: {}", snapshotsDir, intentsDir);
         } catch (IOException e) {
-            LOGGER.error("[Recovery] Failed to create snapshots directory", e);
+            LOGGER.error("[Recovery] Failed to create recovery directories", e);
         }
     }
 
@@ -91,8 +96,12 @@ public class RecoverySystem {
     /**
      * Update the state of an existing snapshot.
      * Thread-safe: Uses per-player locks to prevent concurrent read-modify-write races.
+     *
+     * @param playerId The player whose snapshot to update
+     * @param newState The new state to set
+     * @return true if the update succeeded, false if snapshot not found or I/O error occurred
      */
-    public void updateSnapshotState(UUID playerId, PlayerInstanceState newState) {
+    public boolean updateSnapshotState(UUID playerId, PlayerInstanceState newState) {
         Path snapshotFile = getSnapshotFile(playerId);
 
         // Synchronize on a per-player lock object to prevent concurrent updates
@@ -106,10 +115,13 @@ public class RecoverySystem {
                 snapshot.saveToFile(snapshotFile);
 
                 LOGGER.debug("[Recovery] Updated snapshot state for {} to {}", playerId, newState);
+                return true;
             } catch (NoSuchFileException e) {
                 LOGGER.warn("[Recovery] No snapshot found for player {} to update", playerId);
+                return false;
             } catch (IOException e) {
                 LOGGER.error("[Recovery] Failed to update snapshot state for {}", playerId, e);
+                return false;
             }
         }
     }
@@ -153,6 +165,102 @@ public class RecoverySystem {
         }
     }
 
+    // === Recovery Intent Management ===
+
+    /**
+     * Create a recovery intent before starting recovery.
+     * This persists to disk so recovery can resume after server crash.
+     */
+    public RecoveryIntent createRecoveryIntent(UUID playerId, @Nullable UUID instanceId, String reason) {
+        if (!initialized) return null;
+
+        RecoveryIntent intent = new RecoveryIntent(playerId, instanceId, reason);
+        try {
+            Path intentFile = RecoveryIntent.getIntentFile(intentsDir, playerId);
+            intent.saveToFile(intentFile);
+            LOGGER.debug("[Recovery] Created recovery intent for {}: {}", playerId, reason);
+            return intent;
+        } catch (IOException e) {
+            LOGGER.error("[Recovery] Failed to create recovery intent for {}", playerId, e);
+            return null;
+        }
+    }
+
+    /**
+     * Load a pending recovery intent for a player.
+     */
+    public Optional<RecoveryIntent> loadRecoveryIntent(UUID playerId) {
+        if (!initialized) return Optional.empty();
+
+        try {
+            Path intentFile = RecoveryIntent.getIntentFile(intentsDir, playerId);
+            if (!Files.exists(intentFile)) {
+                return Optional.empty();
+            }
+            return Optional.of(RecoveryIntent.loadFromFile(intentFile));
+        } catch (IOException e) {
+            LOGGER.error("[Recovery] Failed to load recovery intent for {}", playerId, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Delete a recovery intent (after successful recovery).
+     */
+    public void deleteRecoveryIntent(UUID playerId) {
+        if (!initialized) return;
+        RecoveryIntent.delete(intentsDir, playerId);
+        LOGGER.debug("[Recovery] Deleted recovery intent for {}", playerId);
+    }
+
+    /**
+     * Check if a player has a pending recovery intent.
+     * Called on player login to detect incomplete recoveries from server crash.
+     *
+     * @return true if there's a pending intent that needs processing
+     */
+    public boolean hasPendingRecoveryIntent(UUID playerId) {
+        if (!initialized) return false;
+        return RecoveryIntent.exists(intentsDir, playerId);
+    }
+
+    /**
+     * Resume an interrupted recovery from a pending intent.
+     * Called when player logs in and has a pending intent from a previous crash.
+     *
+     * @param player The player
+     * @return true if recovery was resumed
+     */
+    public boolean resumeInterruptedRecovery(ServerPlayer player) {
+        UUID playerId = player.getUUID();
+
+        Optional<RecoveryIntent> intentOpt = loadRecoveryIntent(playerId);
+        if (intentOpt.isEmpty()) {
+            return false;
+        }
+
+        RecoveryIntent intent = intentOpt.get();
+        LOGGER.info("[Recovery] Found pending recovery intent for {} (phase: {}, reason: {})",
+            player.getName().getString(), intent.getPhase(), intent.getReason());
+
+        // Load the snapshot
+        Optional<PlayerInstanceSnapshot> snapshotOpt = loadSnapshot(playerId);
+        if (snapshotOpt.isEmpty()) {
+            LOGGER.warn("[Recovery] No snapshot found for pending intent, deleting intent");
+            deleteRecoveryIntent(playerId);
+            return false;
+        }
+
+        // Resume recovery from where it was interrupted
+        PlayerInstanceSnapshot snapshot = snapshotOpt.get();
+        LOGGER.info("[Recovery] Resuming interrupted recovery for {} from phase {}",
+            player.getName().getString(), intent.getPhase());
+
+        // Perform recovery - the intent will be deleted on completion
+        performRecovery(player, snapshot, "Resuming interrupted recovery: " + intent.getReason());
+        return true;
+    }
+
     /**
      * Check if a player has a pending snapshot.
      */
@@ -173,6 +281,17 @@ public class RecoverySystem {
      */
     public void checkPendingRecovery(ServerPlayer player) {
         UUID playerId = player.getUUID();
+
+        // First, check for pending recovery intents from a previous server crash
+        // during recovery. This takes priority over normal snapshot processing.
+        if (hasPendingRecoveryIntent(playerId)) {
+            LOGGER.info("[Recovery] Found pending recovery intent for {} - resuming interrupted recovery",
+                player.getName().getString());
+            if (resumeInterruptedRecovery(player)) {
+                return; // Recovery handled by intent
+            }
+            // If intent resumption failed (e.g., no snapshot), fall through to normal processing
+        }
 
         Optional<PlayerInstanceSnapshot> snapshotOpt = loadSnapshot(playerId);
         if (snapshotOpt.isEmpty()) {
@@ -223,20 +342,42 @@ public class RecoverySystem {
      * Perform full recovery for a player.
      */
     public void performRecovery(ServerPlayer player, PlayerInstanceSnapshot snapshot, String reason) {
+        UUID playerId = player.getUUID();
         LOGGER.info("[Recovery] Performing recovery for {} - {}", player.getName().getString(), reason);
+        EnduranceLogger.phase(Phase.CLEANUP, player, snapshot.getInstanceId(),
+            "Starting recovery: reason=%s, originalDim=%s", reason, snapshot.getOriginalDimension());
 
         MinecraftServer server = player.getServer();
         if (server == null) {
             LOGGER.error("[Recovery] Server is null, cannot recover player");
+            EnduranceLogger.error(player, snapshot.getInstanceId(), "Recovery failed: server is null");
             return;
         }
 
+        // Create recovery intent BEFORE starting - this persists to disk so we can
+        // resume recovery if server crashes during the process
+        RecoveryIntent intent = createRecoveryIntent(playerId, snapshot.getInstanceId(), reason);
+        Path intentFile = intent != null ? RecoveryIntent.getIntentFile(intentsDir, playerId) : null;
+
+        // Track recovery success to ensure snapshot cleanup in finally block
+        // If teleport succeeded, we should delete snapshot even if later steps fail
+        // (to prevent zombie snapshots that cause repeated recovery attempts)
+        boolean teleportSucceeded = false;
+        boolean recoveryComplete = false;
+
         try {
-            // 1. Teleport to original position
+            // 1. Teleport to original position (CRITICAL - if this fails, keep snapshot for retry)
             teleportToOriginalPosition(player, snapshot, server);
+            teleportSucceeded = true;
+            if (intent != null && intentFile != null) {
+                intent.updatePhase(RecoveryIntent.Phase.TELEPORTED, intentFile);
+            }
 
             // 2. Restore inventory
             restoreInventory(player, snapshot);
+            if (intent != null && intentFile != null) {
+                intent.updatePhase(RecoveryIntent.Phase.INVENTORY_RESTORED, intentFile);
+            }
 
             // 3. Restore game mode
             restoreGameMode(player, snapshot);
@@ -246,30 +387,59 @@ public class RecoverySystem {
 
             // 5. Restore potion effects
             restoreEffects(player, snapshot);
+            if (intent != null && intentFile != null) {
+                intent.updatePhase(RecoveryIntent.Phase.EFFECTS_RESTORED, intentFile);
+            }
 
             // 6. Restore experience
             restoreExperience(player, snapshot);
 
             // 7. Clean up instance registry mapping
-            InstanceRegistry.INSTANCE.unmapPlayer(player.getUUID());
+            InstanceRegistry.INSTANCE.unmapPlayer(playerId);
+            if (snapshot.getInstanceId() != null) {
+                InstanceRegistry.INSTANCE.getInstance(snapshot.getInstanceId()).ifPresent(instance -> {
+                    instance.removePlayer(playerId);
+                    InstanceRegistry.INSTANCE.markDirty();
+                });
+            }
 
-            // 8. Delete snapshot
-            deleteSnapshot(player.getUUID());
+            recoveryComplete = true;
 
-            // 9. Notify player
+            // 8. Notify player
             player.sendSystemMessage(
                 Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] " + reason + ". Your state has been restored.")
                     .withStyle(SharedColorTokens.Chat.YELLOW))
             );
 
+            EnduranceLogger.phase(Phase.CLEANUP, player, snapshot.getInstanceId(),
+                "Recovery complete: pos=(%.1f, %.1f, %.1f), gameMode=%s, health=%.1f, xpLevel=%d",
+                player.getX(), player.getY(), player.getZ(),
+                player.gameMode.getGameModeForPlayer(),
+                player.getHealth(), player.experienceLevel);
             LOGGER.info("[Recovery] Successfully recovered player {}", player.getName().getString());
 
         } catch (Exception e) {
+            EnduranceLogger.error(player, snapshot.getInstanceId(), "Recovery failed: %s", e.getMessage());
             LOGGER.error("[Recovery] Failed to recover player {}", player.getName().getString(), e);
             player.sendSystemMessage(
                 Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Recovery failed! Please contact an admin.")
                     .withStyle(SharedColorTokens.Chat.RED))
             );
+        } finally {
+            // Delete snapshot if recovery succeeded OR if teleport succeeded
+            // This prevents zombie snapshots when later steps fail
+            // If teleport failed, keep snapshot for retry on next login
+            if (recoveryComplete || teleportSucceeded) {
+                deleteSnapshot(playerId);
+                deleteRecoveryIntent(playerId); // Also delete the intent
+                if (!recoveryComplete) {
+                    LOGGER.warn("[Recovery] Deleting snapshot for {} despite incomplete recovery " +
+                        "(teleport succeeded, so player is in overworld)", player.getName().getString());
+                }
+            } else {
+                LOGGER.info("[Recovery] Keeping snapshot for {} - teleport failed, will retry on next login",
+                    player.getName().getString());
+            }
         }
     }
 
@@ -300,6 +470,14 @@ public class RecoverySystem {
             snapshot.getOriginalPitch()
         );
 
+        // Force chunk resync to prevent ghost blocks after dimension transition
+        // This resets the connection state and forces chunks around the player to be resent
+        player.connection.resetPosition();
+
+        EnduranceLogger.phase(Phase.PLAYER_TELEPORT, player, snapshot.getInstanceId(),
+            "Returning to original dimension: %s at (%.1f, %.1f, %.1f)",
+            targetLevel.dimension().location(),
+            snapshot.getOriginalX(), snapshot.getOriginalY(), snapshot.getOriginalZ());
         LOGGER.debug("[Recovery] Teleported {} to {} at ({}, {}, {})",
             player.getName().getString(),
             targetLevel.dimension().location(),
@@ -313,6 +491,8 @@ public class RecoverySystem {
         CompoundTag inventoryNBT = snapshot.getInventoryNBT();
         if (inventoryNBT == null) {
             LOGGER.warn("[Recovery] No inventory data in snapshot for {}", player.getName().getString());
+            EnduranceLogger.phase(Phase.CLEANUP, player, snapshot.getInstanceId(),
+                "Inventory restore skipped: no inventory data in snapshot");
             return;
         }
 
@@ -323,6 +503,8 @@ public class RecoverySystem {
         ListTag inventoryList = Objects.requireNonNull(inventoryNBT.getList("Items", 10));
         player.getInventory().load(inventoryList);
 
+        EnduranceLogger.phase(Phase.CLEANUP, player, snapshot.getInstanceId(),
+            "Inventory restored: %d slots loaded", inventoryList.size());
         LOGGER.debug("[Recovery] Restored inventory for {} ({} slots)",
             player.getName().getString(), inventoryList.size());
     }
@@ -338,17 +520,26 @@ public class RecoverySystem {
 
     private void restoreHealthAndFood(ServerPlayer player, PlayerInstanceSnapshot snapshot) {
         // Restore max health first (in case of attribute modifiers)
-        // Then restore current health
-        float health = Math.min(snapshot.getOriginalHealth(), player.getMaxHealth());
-        player.setHealth(health > 0 ? health : player.getMaxHealth());
+        // Then restore current health - but ensure at least half max health for safety
+        // This prevents players from being vulnerable to environmental mobs after recovery
+        float maxHealth = player.getMaxHealth();
+        float minSafeHealth = maxHealth / 2.0f;
+        float originalHealth = snapshot.getOriginalHealth();
+        float health = Math.min(originalHealth, maxHealth);
+        // Ensure at least half max health so player isn't immediately vulnerable
+        health = Math.max(health, minSafeHealth);
+        player.setHealth(health > 0 ? health : maxHealth);
 
-        // Restore food
-        player.getFoodData().setFoodLevel(snapshot.getOriginalFoodLevel());
+        // Restore food - also ensure at least half food for safety
+        int originalFood = snapshot.getOriginalFoodLevel();
+        int safeFood = Math.max(originalFood, 10); // At least half food
+        player.getFoodData().setFoodLevel(safeFood);
         player.getFoodData().setSaturation(snapshot.getOriginalSaturation());
         player.getFoodData().setExhaustion(snapshot.getOriginalExhaustion());
 
-        LOGGER.debug("[Recovery] Restored health ({}) and food ({}) for {}",
-            player.getHealth(), player.getFoodData().getFoodLevel(), player.getName().getString());
+        LOGGER.debug("[Recovery] Restored health ({}) and food ({}) for {} (original health was {}, original food was {})",
+            player.getHealth(), player.getFoodData().getFoodLevel(), player.getName().getString(),
+            originalHealth, originalFood);
     }
 
     private void restoreEffects(ServerPlayer player, PlayerInstanceSnapshot snapshot) {

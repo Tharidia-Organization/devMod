@@ -90,9 +90,10 @@ public class EntityDensityOverlay {
         }
 
         Font font = mc.font;
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         // Position: right side of screen to avoid FpsTracker overlap (5,5)-(145,90)
         int panelWidth = Math.min(UIScaleManager.scale(PANEL_WIDTH), UIScaleManager.getSafeWidth());
-        int panelHeight = calculatePanelHeight();
+        int panelHeight = calculatePanelHeight(lineHeight);
         int panelX = mc.getWindow().getGuiScaledWidth() - panelWidth - UIScaleManager.scale(10);
         int panelY = UIScaleManager.scale(100); // Below FpsTracker area
         int safeLeft = UIScaleManager.getSafeLeft();
@@ -102,7 +103,7 @@ public class EntityDensityOverlay {
         panelX = Math.max(safeLeft, Math.min(panelX, safeRight - panelWidth));
         panelY = Math.max(safeTop, Math.min(panelY, safeBottom - panelHeight));
 
-        renderDensityPanel(graphics, font, panelX, panelY, panelWidth);
+        renderDensityPanel(graphics, font, panelX, panelY, panelWidth, lineHeight);
     }
 
     private static void updateEntityScan(Minecraft mc) {
@@ -138,11 +139,10 @@ public class EntityDensityOverlay {
         cachedTotalEntities = cachedHostileCount + cachedPassiveCount + cachedPlayerCount + cachedOtherCount;
     }
 
-    private static void renderDensityPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth) {
+    private static void renderDensityPanel(GuiGraphics graphics, Font font, int x, int y, int panelWidth, int lineHeight) {
         var safeFont = Objects.requireNonNull(font);
-        int panelHeight = calculatePanelHeight();
+        int panelHeight = calculatePanelHeight(lineHeight);
         int panelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
 
         // Background
         graphics.fill(x, y, x + panelWidth, y + panelHeight, PANEL_BG);
@@ -207,9 +207,8 @@ public class EntityDensityOverlay {
         }
     }
 
-    private static int calculatePanelHeight() {
+    private static int calculatePanelHeight(int lineHeight) {
         int padding = UIScaleManager.scale(PANEL_PADDING);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         int height = padding * 2;
         height += lineHeight + 2;  // Title
         height += 4;                // Separator

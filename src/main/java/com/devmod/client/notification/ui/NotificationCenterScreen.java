@@ -156,6 +156,10 @@ public class NotificationCenterScreen extends Screen {
         this(parent, Tab.NOTIFICATIONS, null);
     }
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     private NotificationCenterScreen(@Nullable Screen parent, Tab initialTab, @Nullable UUID initialEntityId) {
         super(Component.translatable("devmod.notification.center.title"));
         this.parent = parent;
@@ -388,19 +392,19 @@ public class NotificationCenterScreen extends Screen {
         long now = System.currentTimeMillis();
         float openProgress = easeOutCubic(Math.min(1f, (now - openedAt) / 280f));
 
-        int panelWidth = Math.min(PANEL_MAX_WIDTH, width - 32);
-        int panelHeight = Math.min(PANEL_MAX_HEIGHT, height - 32);
+        int panelWidth = Math.min(s(PANEL_MAX_WIDTH), width - s(32));
+        int panelHeight = Math.min(s(PANEL_MAX_HEIGHT), height - s(32));
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 
         int panelAlpha = (int) (235 * openProgress);
 
         graphics.pose().pushPose();
-        graphics.pose().translate(0, (1f - openProgress) * 12f, 0);
+        graphics.pose().translate(0, (1f - openProgress) * UIScaleManager.scaleF(12f), 0);
 
         int shadowAlpha = (int) (140 * openProgress);
         int shadowColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_BLACK, shadowAlpha);
-        graphics.fill(panelX - 8, panelY - 6, panelX + panelWidth + 8, panelY + panelHeight + 8, shadowColor);
+        graphics.fill(panelX - s(8), panelY - s(6), panelX + panelWidth + s(8), panelY + panelHeight + s(8), shadowColor);
 
         renderPanel(graphics, panelX, panelY, panelWidth, panelHeight, panelAlpha, mouseX, mouseY, now);
 
@@ -442,25 +446,25 @@ public class NotificationCenterScreen extends Screen {
 
         renderHeader(graphics, panelX, panelY, panelWidth, mouseX, mouseY);
 
-        int contentX = panelX + PANEL_PADDING;
-        int contentY = panelY + HEADER_HEIGHT;
-        int contentW = panelWidth - PANEL_PADDING * 2;
-        int contentH = panelHeight - HEADER_HEIGHT - PANEL_PADDING;
+        int contentX = panelX + s(PANEL_PADDING);
+        int contentY = panelY + s(HEADER_HEIGHT);
+        int contentW = panelWidth - s(PANEL_PADDING) * 2;
+        int contentH = panelHeight - s(HEADER_HEIGHT) - s(PANEL_PADDING);
 
-        int navWidth = Math.min(NAV_WIDTH, Math.max(120, contentW / 4));
+        int navWidth = Math.min(s(NAV_WIDTH), Math.max(s(120), contentW / 4));
         Rect navRect = new Rect(contentX, contentY, navWidth, contentH);
         renderNav(graphics, navRect, mouseX, mouseY, panelAlpha);
 
-        int mainX = navRect.x() + navRect.w() + CONTENT_GAP;
-        int mainW = contentW - navRect.w() - CONTENT_GAP;
+        int mainX = navRect.x() + navRect.w() + s(CONTENT_GAP);
+        int mainW = contentW - navRect.w() - s(CONTENT_GAP);
         renderContent(graphics, new Rect(mainX, contentY, mainW, contentH), panelAlpha, mouseX, mouseY, now);
     }
 
     private void renderHeader(GuiGraphics graphics, int panelX, int panelY, int panelWidth, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(this.font);
         String title = tr("devmod.notification.center.title");
-        int titleX = panelX + PANEL_PADDING;
-        int titleY = panelY + 16;
+        int titleX = panelX + s(PANEL_PADDING);
+        int titleY = panelY + s(16);
 
         graphics.pose().pushPose();
         graphics.pose().translate(titleX, titleY, 0);
@@ -470,55 +474,56 @@ public class NotificationCenterScreen extends Screen {
         graphics.pose().popPose();
 
         String subtitle = getActiveSubtitle();
-        UIScaleManager.drawScaledString(graphics, font, subtitle, titleX, panelY + 38,
+        UIScaleManager.drawScaledString(graphics, font, subtitle, titleX, panelY + s(38),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
 
         String tabLabel = tr(activeTab.labelKey);
-        renderTabChip(graphics, font, titleX + UIScaleManager.getScaledStringWidth(font, title) + 12, panelY + 18, tabLabel, getTabColor(activeTab));
+        renderTabChip(graphics, font, titleX + UIScaleManager.getScaledStringWidth(font, title) + s(12),
+            panelY + s(18), tabLabel, getTabColor(activeTab));
 
         actionButtons.clear();
 
-        int actionX = panelX + panelWidth - PANEL_PADDING;
+        int actionX = panelX + panelWidth - s(PANEL_PADDING);
         String backLabel = tr("gui.back");
-        int backW = UIScaleManager.getScaledStringWidth(font, backLabel) + 14;
-        backRect = new Rect(actionX - backW, panelY + 18, backW, ACTION_HEIGHT);
+        int backW = UIScaleManager.getScaledStringWidth(font, backLabel) + s(14);
+        backRect = new Rect(actionX - backW, panelY + s(18), backW, s(ACTION_HEIGHT));
         renderActionButton(graphics, backRect, backLabel, mouseX, mouseY, false, true);
-        actionX = backRect.x() - 8;
+        actionX = backRect.x() - s(8);
 
         if (activeTab == Tab.NOTIFICATIONS) {
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.settings", false, true, mouseX, mouseY,
                 () -> com.devmod.client.ui.ScreenSafety.openSafe(
                     "notification_settings",
                     this,
                     () -> new NotificationSettingsScreen(this)));
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.mark_all_read", true, true, mouseX, mouseY,
                 ClientNotificationManager.INSTANCE::markAllRead);
         } else if (activeTab == Tab.MAILBOX) {
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.open_mailbox", false, true, mouseX, mouseY,
                 MailboxScreen::open);
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.refresh_mailbox", true, true, mouseX, mouseY,
                 () -> PacketDistributor.sendToServer(Objects.requireNonNull(MailboxActionPayload.refresh())));
         } else if (activeTab == Tab.NEWS) {
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.open_news", false, true, mouseX, mouseY,
                 NewsScreen::open);
         } else if (activeTab == Tab.TICKETS) {
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.new_ticket", true, true, mouseX, mouseY,
                 () -> com.devmod.client.ui.ScreenSafety.openSafe(
                     "ticket_create",
                     this,
                     () -> new TicketCreateScreen(this)));
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.refresh_tickets", false, true, mouseX, mouseY,
                 () -> PacketDistributor.sendToServer(new TicketSyncRequestPayload()));
         } else if (activeTab == Tab.TASKS) {
             boolean enabled = ClientMailboxAccess.isTester();
-            actionX = renderHeaderAction(graphics, font, actionX, panelY + 18,
+            actionX = renderHeaderAction(graphics, font, actionX, panelY + s(18),
                 "devmod.notification.center.action.open_tasks", false, enabled, mouseX, mouseY,
                 TesterTaskScreen::open);
         }
@@ -527,23 +532,23 @@ public class NotificationCenterScreen extends Screen {
     private int renderHeaderAction(GuiGraphics graphics, Font font, int rightX, int y, String labelKey,
                                    boolean accent, boolean enabled, int mouseX, int mouseY, Runnable handler) {
         String label = tr(labelKey);
-        int width = UIScaleManager.getScaledStringWidth(font, label) + 14;
-        Rect rect = new Rect(rightX - width, y, width, ACTION_HEIGHT);
+        int width = UIScaleManager.getScaledStringWidth(font, label) + s(14);
+        Rect rect = new Rect(rightX - width, y, width, s(ACTION_HEIGHT));
         renderActionButton(graphics, rect, label, mouseX, mouseY, accent, enabled);
         actionButtons.add(new ActionButton(rect, handler, enabled));
-        return rect.x() - 8;
+        return rect.x() - s(8);
     }
 
     private void renderTabChip(GuiGraphics graphics, Font font, int x, int y, @Nonnull String label, int accent) {
-        int chipW = UIScaleManager.getScaledStringWidth(font, label) + 14;
-        int chipH = 18;
+        int chipW = UIScaleManager.getScaledStringWidth(font, label) + s(14);
+        int chipH = s(18);
         Rect rect = new Rect(x, y, chipW, chipH);
         int top = NotificationUiTheme.withAlpha(NotificationUiTheme.mix(accent, NotificationUiTheme.RGB_BLACK, 0.4f),
             DesignTokens.Alpha.A67);
         int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.mix(accent, NotificationUiTheme.RGB_BLACK, 0.55f),
             DesignTokens.Alpha.A67);
-        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 6, top, bottom);
-        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 7, rect.y() + 5,
+        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), s(6), top, bottom);
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(7), rect.y() + s(5),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, DesignTokens.Alpha.A100));
     }
 
@@ -553,21 +558,21 @@ public class NotificationCenterScreen extends Screen {
             Math.min(panelAlpha, DesignTokens.Alpha.A88));
         int bottom = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_PANEL_INNER_BOTTOM,
             Math.min(panelAlpha, DesignTokens.Alpha.A88));
-        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 8, top, bottom);
+        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), s(8), top, bottom);
 
         int headerColor = NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_ACCENT, DesignTokens.Alpha.A27);
-        graphics.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + 2, headerColor);
+        graphics.fill(rect.x(), rect.y(), rect.x() + rect.w(), rect.y() + s(2), headerColor);
 
-        int y = rect.y() + 10;
+        int y = rect.y() + s(10);
         for (Tab tab : Tab.values()) {
-            int itemHeight = NAV_ITEM_HEIGHT;
-            Rect itemRect = new Rect(rect.x() + 8, y, rect.w() - 16, itemHeight);
+            int itemHeight = s(NAV_ITEM_HEIGHT);
+            Rect itemRect = new Rect(rect.x() + s(8), y, rect.w() - s(16), itemHeight);
             boolean enabled = isTabEnabled(tab);
             boolean active = tab == activeTab;
             boolean hovered = itemRect.contains(mouseX, mouseY);
             renderNavItem(graphics, itemRect, tab, active, hovered, enabled, panelAlpha);
             tabEntries.add(new TabEntry(tab, itemRect, enabled));
-            y += itemHeight + NAV_ITEM_GAP;
+            y += itemHeight + s(NAV_ITEM_GAP);
         }
     }
 
@@ -586,38 +591,38 @@ public class NotificationCenterScreen extends Screen {
         renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 6, top, bottom);
 
         int accentAlpha = active ? DesignTokens.Alpha.A80 : DesignTokens.Alpha.A40;
-        graphics.fill(rect.x(), rect.y() + rect.h() - 2, rect.x() + rect.w(), rect.y() + rect.h(),
+        graphics.fill(rect.x(), rect.y() + rect.h() - s(2), rect.x() + rect.w(), rect.y() + rect.h(),
                 NotificationUiTheme.withAlpha(accent, accentAlpha));
 
         String label = tr(tab.labelKey);
         int labelColor = enabled ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_MUTED;
-        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 8, rect.y() + 8,
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(8), rect.y() + s(8),
                 NotificationUiTheme.withAlpha(labelColor, DesignTokens.Alpha.A100));
 
         int count = getTabBadgeCount(tab);
         String countLabel = nn(String.valueOf(count));
         if (count > 0) {
             int countW = UIScaleManager.getScaledStringWidth(font, countLabel);
-            UIScaleManager.drawScaledString(graphics, font, countLabel, rect.x() + rect.w() - countW - 8, rect.y() + 8,
+            UIScaleManager.drawScaledString(graphics, font, countLabel, rect.x() + rect.w() - countW - s(8), rect.y() + s(8),
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, DesignTokens.Alpha.A100));
         }
 
         if (!enabled && tab == Tab.TASKS) {
             String locked = tr("devmod.notification.center.tab.locked");
             int lockW = UIScaleManager.getScaledStringWidth(font, locked);
-            UIScaleManager.drawScaledString(graphics, font, locked, rect.x() + rect.w() - lockW - 8, rect.y() + 8,
+            UIScaleManager.drawScaledString(graphics, font, locked, rect.x() + rect.w() - lockW - s(8), rect.y() + s(8),
                     NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_MUTED, DesignTokens.Alpha.A80));
         }
     }
 
     private void renderContent(GuiGraphics graphics, Rect rect, int panelAlpha, int mouseX, int mouseY, long now) {
-        boolean split = rect.w() >= MIN_SPLIT_WIDTH;
+        boolean split = rect.w() >= s(MIN_SPLIT_WIDTH);
         int listWidth = split ? (int) (rect.w() * 0.54f) : rect.w();
-        int detailWidth = split ? rect.w() - listWidth - CONTENT_GAP : 0;
+        int detailWidth = split ? rect.w() - listWidth - s(CONTENT_GAP) : 0;
 
         Rect listPanel = new Rect(rect.x(), rect.y(), listWidth, rect.h());
         Rect detailPanel = detailWidth > 0
-            ? new Rect(rect.x() + listWidth + CONTENT_GAP, rect.y(), detailWidth, rect.h())
+            ? new Rect(rect.x() + listWidth + s(CONTENT_GAP), rect.y(), detailWidth, rect.h())
             : new Rect(0, 0, 0, 0);
 
         detailRect = detailPanel;
@@ -636,17 +641,17 @@ public class NotificationCenterScreen extends Screen {
                                         int panelAlpha, int mouseX, int mouseY, long now) {
         renderInsetPanel(graphics, listPanel, panelAlpha);
 
-        int filterX = listPanel.x() + 8;
-        int filterY = listPanel.y() + 8;
-        int filterWidth = listPanel.w() - 16;
+        int filterX = listPanel.x() + s(8);
+        int filterY = listPanel.y() + s(8);
+        int filterWidth = listPanel.w() - s(16);
         int filterEndY = renderFilters(graphics, filterX, filterY, filterWidth, mouseX, mouseY);
 
-        int listTop = filterEndY + 10;
-        int listHeight = listPanel.y() + listPanel.h() - listTop - 8;
-        listRect = new Rect(listPanel.x() + 8, listTop, listPanel.w() - 16, Math.max(0, listHeight));
+        int listTop = filterEndY + s(10);
+        int listHeight = listPanel.y() + listPanel.h() - listTop - s(8);
+        listRect = new Rect(listPanel.x() + s(8), listTop, listPanel.w() - s(16), Math.max(0, listHeight));
 
         List<Notification> filtered = getFilteredNotifications();
-        int contentHeight = getListContentHeight(NOTIFICATION_ROW_HEIGHT, filtered.size());
+        int contentHeight = getListContentHeight(s(NOTIFICATION_ROW_HEIGHT), filtered.size());
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
@@ -662,11 +667,11 @@ public class NotificationCenterScreen extends Screen {
                 int y = listRect.y() - scrollOffset;
                 for (int i = 0; i < filtered.size(); i++) {
                     Notification notification = filtered.get(i);
-                    int rowY = y + i * (NOTIFICATION_ROW_HEIGHT + LIST_GAP);
-                    if (rowY + NOTIFICATION_ROW_HEIGHT < listRect.y() || rowY > listRect.y() + listRect.h()) {
+                    int rowY = y + i * (s(NOTIFICATION_ROW_HEIGHT) + s(LIST_GAP));
+                    if (rowY + s(NOTIFICATION_ROW_HEIGHT) < listRect.y() || rowY > listRect.y() + listRect.h()) {
                         continue;
                     }
-                    Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), NOTIFICATION_ROW_HEIGHT);
+                    Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), s(NOTIFICATION_ROW_HEIGHT));
                     boolean hovered = rowRect.contains(mouseX, mouseY);
                     boolean selected = notification.id().equals(selectedNotificationId);
                     renderNotificationRow(graphics, rowRect, notification, selected, hovered, panelAlpha, now);
@@ -687,10 +692,10 @@ public class NotificationCenterScreen extends Screen {
     private void renderMailboxTab(GuiGraphics graphics, Rect listPanel, Rect detailPanel,
                                   int panelAlpha, int mouseX, int mouseY) {
         renderInsetPanel(graphics, listPanel, panelAlpha);
-        listRect = new Rect(listPanel.x() + 8, listPanel.y() + 8, listPanel.w() - 16, listPanel.h() - 16);
+        listRect = new Rect(listPanel.x() + s(8), listPanel.y() + s(8), listPanel.w() - s(16), listPanel.h() - s(16));
 
         List<MailboxMessageData> messages = ClientMailboxCache.getMessages();
-        int contentHeight = getListContentHeight(MAILBOX_ROW_HEIGHT, messages.size());
+        int contentHeight = getListContentHeight(s(MAILBOX_ROW_HEIGHT), messages.size());
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
@@ -706,13 +711,13 @@ public class NotificationCenterScreen extends Screen {
                 int y = listRect.y() - scrollOffset;
                 for (MailboxMessageData message : messages) {
                     int rowY = y;
-                    if (rowY + MAILBOX_ROW_HEIGHT >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
-                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), MAILBOX_ROW_HEIGHT);
+                    if (rowY + s(MAILBOX_ROW_HEIGHT) >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
+                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), s(MAILBOX_ROW_HEIGHT));
                         boolean hovered = rowRect.contains(mouseX, mouseY);
                         boolean selected = message.id().equals(selectedMailboxId);
                         renderMailboxRow(graphics, rowRect, message, selected, hovered, panelAlpha);
                     }
-                    y += MAILBOX_ROW_HEIGHT + LIST_GAP;
+                    y += s(MAILBOX_ROW_HEIGHT) + s(LIST_GAP);
                 }
             } finally {
                 if (scissor) {
@@ -730,10 +735,10 @@ public class NotificationCenterScreen extends Screen {
     private void renderNewsTab(GuiGraphics graphics, Rect listPanel, Rect detailPanel,
                                int panelAlpha, int mouseX, int mouseY) {
         renderInsetPanel(graphics, listPanel, panelAlpha);
-        listRect = new Rect(listPanel.x() + 8, listPanel.y() + 8, listPanel.w() - 16, listPanel.h() - 16);
+        listRect = new Rect(listPanel.x() + s(8), listPanel.y() + s(8), listPanel.w() - s(16), listPanel.h() - s(16));
 
         List<NewsArticleData> articles = ClientNewsCache.getArticles();
-        int contentHeight = getListContentHeight(NEWS_ROW_HEIGHT, articles.size());
+        int contentHeight = getListContentHeight(s(NEWS_ROW_HEIGHT), articles.size());
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
@@ -749,13 +754,13 @@ public class NotificationCenterScreen extends Screen {
                 int y = listRect.y() - scrollOffset;
                 for (NewsArticleData article : articles) {
                     int rowY = y;
-                    if (rowY + NEWS_ROW_HEIGHT >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
-                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), NEWS_ROW_HEIGHT);
+                    if (rowY + s(NEWS_ROW_HEIGHT) >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
+                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), s(NEWS_ROW_HEIGHT));
                         boolean hovered = rowRect.contains(mouseX, mouseY);
                         boolean selected = article.id().equals(selectedNewsId);
                         renderNewsRow(graphics, rowRect, article, selected, hovered, panelAlpha);
                     }
-                    y += NEWS_ROW_HEIGHT + LIST_GAP;
+                    y += s(NEWS_ROW_HEIGHT) + s(LIST_GAP);
                 }
             } finally {
                 if (scissor) {
@@ -773,10 +778,10 @@ public class NotificationCenterScreen extends Screen {
     private void renderTicketsTab(GuiGraphics graphics, Rect listPanel, Rect detailPanel,
                                   int panelAlpha, int mouseX, int mouseY) {
         renderInsetPanel(graphics, listPanel, panelAlpha);
-        listRect = new Rect(listPanel.x() + 8, listPanel.y() + 8, listPanel.w() - 16, listPanel.h() - 16);
+        listRect = new Rect(listPanel.x() + s(8), listPanel.y() + s(8), listPanel.w() - s(16), listPanel.h() - s(16));
 
         List<TicketData> tickets = ClientTicketCache.getTickets();
-        int contentHeight = getListContentHeight(TICKET_ROW_HEIGHT, tickets.size());
+        int contentHeight = getListContentHeight(s(TICKET_ROW_HEIGHT), tickets.size());
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
@@ -792,13 +797,13 @@ public class NotificationCenterScreen extends Screen {
                 int y = listRect.y() - scrollOffset;
                 for (TicketData ticket : tickets) {
                     int rowY = y;
-                    if (rowY + TICKET_ROW_HEIGHT >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
-                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), TICKET_ROW_HEIGHT);
+                    if (rowY + s(TICKET_ROW_HEIGHT) >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
+                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), s(TICKET_ROW_HEIGHT));
                         boolean hovered = rowRect.contains(mouseX, mouseY);
                         boolean selected = ticket.id().equals(selectedTicketId);
                         renderTicketRow(graphics, rowRect, ticket, selected, hovered, panelAlpha);
                     }
-                    y += TICKET_ROW_HEIGHT + LIST_GAP;
+                    y += s(TICKET_ROW_HEIGHT) + s(LIST_GAP);
                 }
             } finally {
                 if (scissor) {
@@ -816,7 +821,7 @@ public class NotificationCenterScreen extends Screen {
     private void renderTasksTab(GuiGraphics graphics, Rect listPanel, Rect detailPanel,
                                 int panelAlpha, int mouseX, int mouseY) {
         renderInsetPanel(graphics, listPanel, panelAlpha);
-        listRect = new Rect(listPanel.x() + 8, listPanel.y() + 8, listPanel.w() - 16, listPanel.h() - 16);
+        listRect = new Rect(listPanel.x() + s(8), listPanel.y() + s(8), listPanel.w() - s(16), listPanel.h() - s(16));
 
         if (!ClientMailboxAccess.isTester()) {
             maxScroll = 0;
@@ -826,7 +831,7 @@ public class NotificationCenterScreen extends Screen {
         }
 
         List<TestTask> tasks = ClientTaskCache.getTasks();
-        int contentHeight = getListContentHeight(TASK_ROW_HEIGHT, tasks.size());
+        int contentHeight = getListContentHeight(s(TASK_ROW_HEIGHT), tasks.size());
         maxScroll = Math.max(0, contentHeight - listRect.h());
         scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
@@ -842,13 +847,13 @@ public class NotificationCenterScreen extends Screen {
                 int y = listRect.y() - scrollOffset;
                 for (TestTask task : tasks) {
                     int rowY = y;
-                    if (rowY + TASK_ROW_HEIGHT >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
-                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), TASK_ROW_HEIGHT);
+                    if (rowY + s(TASK_ROW_HEIGHT) >= listRect.y() && rowY <= listRect.y() + listRect.h()) {
+                        Rect rowRect = new Rect(listRect.x(), rowY, listRect.w(), s(TASK_ROW_HEIGHT));
                         boolean hovered = rowRect.contains(mouseX, mouseY);
                         boolean selected = task.id().equals(selectedTaskId);
                         renderTaskRow(graphics, rowRect, task, selected, hovered, panelAlpha);
                     }
-                    y += TASK_ROW_HEIGHT + LIST_GAP;
+                    y += s(TASK_ROW_HEIGHT) + s(LIST_GAP);
                 }
             } finally {
                 if (scissor) {
@@ -1405,16 +1410,16 @@ public class NotificationCenterScreen extends Screen {
         if (!enabled) {
             textColor = NotificationUiTheme.RGB_TEXT_MUTED;
         }
-        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 7, rect.y() + 6,
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(7), rect.y() + s(6),
                 NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
     private int getDetailActionAreaHeight(List<DetailAction> actions, int rectWidth) {
-        int rows = countDetailActionRows(actions, rectWidth - 24);
+        int rows = countDetailActionRows(actions, rectWidth - s(24));
         if (rows <= 0) {
-            return 18;
+            return s(18);
         }
-        return rows * DETAIL_ACTION_HEIGHT + (rows - 1) * DETAIL_ACTION_GAP + 16;
+        return rows * s(DETAIL_ACTION_HEIGHT) + (rows - 1) * s(DETAIL_ACTION_GAP) + s(16);
     }
 
     private int countDetailActionRows(List<DetailAction> actions, int maxWidth) {
@@ -1425,12 +1430,12 @@ public class NotificationCenterScreen extends Screen {
         int rows = 1;
         int rightX = maxWidth;
         for (DetailAction action : actions) {
-            int width = Math.min(maxWidth, UIScaleManager.getScaledStringWidth(font, nn(action.label())) + 14);
+            int width = Math.min(maxWidth, UIScaleManager.getScaledStringWidth(font, nn(action.label())) + s(14));
             if (rightX - width < 0) {
                 rows++;
                 rightX = maxWidth;
             }
-            rightX -= width + 8;
+            rightX -= width + s(8);
         }
         return rows;
     }
@@ -1441,20 +1446,20 @@ public class NotificationCenterScreen extends Screen {
             return;
         }
         Font font = Objects.requireNonNull(this.font);
-        int rightX = rect.x() + rect.w() - 12;
-        int leftBound = rect.x() + 12;
-        int y = rect.y() + rect.h() - DETAIL_ACTION_HEIGHT - 12;
+        int rightX = rect.x() + rect.w() - s(12);
+        int leftBound = rect.x() + s(12);
+        int y = rect.y() + rect.h() - s(DETAIL_ACTION_HEIGHT) - s(12);
 
         for (DetailAction action : actions) {
-            int width = UIScaleManager.getScaledStringWidth(font, nn(action.label())) + 14;
+            int width = UIScaleManager.getScaledStringWidth(font, nn(action.label())) + s(14);
             if (rightX - width < leftBound) {
-                y -= DETAIL_ACTION_HEIGHT + DETAIL_ACTION_GAP;
-                rightX = rect.x() + rect.w() - 12;
+                y -= s(DETAIL_ACTION_HEIGHT) + s(DETAIL_ACTION_GAP);
+                rightX = rect.x() + rect.w() - s(12);
             }
-            Rect buttonRect = new Rect(rightX - width, y, width, DETAIL_ACTION_HEIGHT);
+            Rect buttonRect = new Rect(rightX - width, y, width, s(DETAIL_ACTION_HEIGHT));
             renderActionButton(graphics, buttonRect, action.label(), mouseX, mouseY, action.accent(), action.enabled());
             actionButtons.add(new ActionButton(buttonRect, action.onClick(), action.enabled()));
-            rightX = buttonRect.x() - 8;
+            rightX = buttonRect.x() - s(8);
         }
     }
 
@@ -1470,22 +1475,22 @@ public class NotificationCenterScreen extends Screen {
         List<FilterChip> filters = buildFilterChips();
         for (FilterChip chip : filters) {
             String label = nn(chip.label());
-            int chipW = UIScaleManager.getScaledStringWidth(font, label) + 18;
+            int chipW = UIScaleManager.getScaledStringWidth(font, label) + s(18);
             if (chipX + chipW > chipMaxX) {
                 chipX = startX;
-                chipY += CHIP_HEIGHT + CHIP_GAP;
+                chipY += s(CHIP_HEIGHT) + s(CHIP_GAP);
             }
 
-            Rect rect = new Rect(chipX, chipY, chipW, CHIP_HEIGHT);
+            Rect rect = new Rect(chipX, chipY, chipW, s(CHIP_HEIGHT));
             boolean active = Objects.equals(activeFilter, chip.category());
             boolean hovered = rect.contains(mouseX, mouseY);
             renderFilterChip(graphics, rect, label, active, hovered, chip.category());
 
             filterChips.add(new FilterChip(chip.category(), rect, label));
-            chipX += chipW + CHIP_GAP;
+            chipX += chipW + s(CHIP_GAP);
         }
 
-        return chipY + CHIP_HEIGHT;
+        return chipY + s(CHIP_HEIGHT);
     }
 
     private void renderFilterChip(GuiGraphics graphics, Rect rect, String label, boolean active, boolean hovered,
@@ -1501,7 +1506,7 @@ public class NotificationCenterScreen extends Screen {
 
         int top = NotificationUiTheme.withAlpha(baseTop, 221);
         int bottom = NotificationUiTheme.withAlpha(baseBottom, 221);
-        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), 6, top, bottom);
+        renderRoundedRect(graphics, rect.x(), rect.y(), rect.w(), rect.h(), s(6), top, bottom);
 
         int accent = category != null ? NotificationUiTheme.getCategoryColor(category) : NotificationUiTheme.RGB_ACCENT;
         int accentAlpha = active ? DesignTokens.Alpha.A80 : DesignTokens.Alpha.A40;
@@ -1509,7 +1514,7 @@ public class NotificationCenterScreen extends Screen {
                 NotificationUiTheme.withAlpha(accent, accentAlpha));
 
         int textColor = active ? NotificationUiTheme.RGB_TEXT_PRIMARY : NotificationUiTheme.RGB_TEXT_SECONDARY;
-        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + 9, rect.y() + 6,
+        UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(9), rect.y() + s(6),
                 NotificationUiTheme.withAlpha(textColor, DesignTokens.Alpha.A100));
     }
 
@@ -1519,11 +1524,11 @@ public class NotificationCenterScreen extends Screen {
         String subtitle = tr(subtitleKey);
 
         int centerX = rect.x() + rect.w() / 2;
-        int centerY = rect.y() + rect.h() / 2 - 10;
+        int centerY = rect.y() + rect.h() / 2 - s(10);
 
         UIScaleManager.drawScaledString(graphics, font, title, centerX - UIScaleManager.getScaledStringWidth(font, title) / 2, centerY,
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, alpha), true);
-        UIScaleManager.drawScaledString(graphics, font, subtitle, centerX - UIScaleManager.getScaledStringWidth(font, subtitle) / 2, centerY + 14,
+        UIScaleManager.drawScaledString(graphics, font, subtitle, centerX - UIScaleManager.getScaledStringWidth(font, subtitle) / 2, centerY + s(14),
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_SECONDARY, alpha));
     }
 
@@ -1531,7 +1536,7 @@ public class NotificationCenterScreen extends Screen {
         if (count <= 0) {
             return 0;
         }
-        return count * rowHeight + (count - 1) * LIST_GAP;
+        return count * rowHeight + (count - 1) * s(LIST_GAP);
     }
 
     private List<Notification> getFilteredNotifications() {
@@ -1617,7 +1622,7 @@ public class NotificationCenterScreen extends Screen {
         List<Notification> filtered = getFilteredNotifications();
         int y = listRect.y() - scrollOffset;
         for (Notification notification : filtered) {
-            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), NOTIFICATION_ROW_HEIGHT);
+            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), s(NOTIFICATION_ROW_HEIGHT));
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedNotificationId = notification.id();
                 detailScrollOffset = 0;
@@ -1627,7 +1632,7 @@ public class NotificationCenterScreen extends Screen {
                 }
                 return;
             }
-            y += NOTIFICATION_ROW_HEIGHT + LIST_GAP;
+            y += s(NOTIFICATION_ROW_HEIGHT) + s(LIST_GAP);
         }
     }
 
@@ -1635,7 +1640,7 @@ public class NotificationCenterScreen extends Screen {
         List<MailboxMessageData> messages = ClientMailboxCache.getMessages();
         int y = listRect.y() - scrollOffset;
         for (MailboxMessageData message : messages) {
-            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), MAILBOX_ROW_HEIGHT);
+            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), s(MAILBOX_ROW_HEIGHT));
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedMailboxId = message.id();
                 detailScrollOffset = 0;
@@ -1648,7 +1653,7 @@ public class NotificationCenterScreen extends Screen {
                 }
                 return;
             }
-            y += MAILBOX_ROW_HEIGHT + LIST_GAP;
+            y += s(MAILBOX_ROW_HEIGHT) + s(LIST_GAP);
         }
     }
 
@@ -1656,7 +1661,7 @@ public class NotificationCenterScreen extends Screen {
         List<NewsArticleData> articles = ClientNewsCache.getArticles();
         int y = listRect.y() - scrollOffset;
         for (NewsArticleData article : articles) {
-            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), NEWS_ROW_HEIGHT);
+            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), s(NEWS_ROW_HEIGHT));
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedNewsId = article.id();
                 detailScrollOffset = 0;
@@ -1669,7 +1674,7 @@ public class NotificationCenterScreen extends Screen {
                 }
                 return;
             }
-            y += NEWS_ROW_HEIGHT + LIST_GAP;
+            y += s(NEWS_ROW_HEIGHT) + s(LIST_GAP);
         }
     }
 
@@ -1677,13 +1682,13 @@ public class NotificationCenterScreen extends Screen {
         List<TicketData> tickets = ClientTicketCache.getTickets();
         int y = listRect.y() - scrollOffset;
         for (TicketData ticket : tickets) {
-            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), TICKET_ROW_HEIGHT);
+            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), s(TICKET_ROW_HEIGHT));
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedTicketId = ticket.id();
                 detailScrollOffset = 0;
                 return;
             }
-            y += TICKET_ROW_HEIGHT + LIST_GAP;
+            y += s(TICKET_ROW_HEIGHT) + s(LIST_GAP);
         }
     }
 
@@ -1694,7 +1699,7 @@ public class NotificationCenterScreen extends Screen {
         List<TestTask> tasks = ClientTaskCache.getTasks();
         int y = listRect.y() - scrollOffset;
         for (TestTask task : tasks) {
-            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), TASK_ROW_HEIGHT);
+            Rect rowRect = new Rect(listRect.x(), y, listRect.w(), s(TASK_ROW_HEIGHT));
             if (rowRect.contains(mouseX, mouseY)) {
                 selectedTaskId = task.id();
                 detailScrollOffset = 0;
@@ -1703,7 +1708,7 @@ public class NotificationCenterScreen extends Screen {
                 }
                 return;
             }
-            y += TASK_ROW_HEIGHT + LIST_GAP;
+            y += s(TASK_ROW_HEIGHT) + s(LIST_GAP);
         }
     }
 

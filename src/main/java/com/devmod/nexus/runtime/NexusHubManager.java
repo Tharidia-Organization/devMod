@@ -220,10 +220,29 @@ public final class NexusHubManager {
 
         registerAliasIfPresent(zones, "ui", "dm_mod");
         registerAliasIfPresent(zones, "telemetry", "dm_mod");
+
+        // Fallback aliases for lab zones when only slot-based zones exist.
+        registerAliasFallbackIfMissingZone(zones, "showcase", "spawn");
+        registerAliasFallbackIfMissingZone(zones, "integration", "spawn");
+        registerAliasFallbackIfMissingZone(zones, "sandbox", "spawn");
+        registerAliasFallbackIfMissingZone(zones, "mechanics", "spawn");
     }
 
     private void registerAliasIfPresent(@Nonnull ZoneRegistry zones, @Nonnull String alias, @Nonnull String target) {
         if (zones.resolveAlias(alias) != null) {
+            return;
+        }
+        if (zones.getZoneById(target).isPresent()) {
+            zones.registerAlias(alias, target);
+        }
+    }
+
+    private void registerAliasFallbackIfMissingZone(
+        @Nonnull ZoneRegistry zones,
+        @Nonnull String alias,
+        @Nonnull String target
+    ) {
+        if (zones.resolveAlias(alias) != null || zones.getZoneById(alias).isPresent()) {
             return;
         }
         if (zones.getZoneById(target).isPresent()) {

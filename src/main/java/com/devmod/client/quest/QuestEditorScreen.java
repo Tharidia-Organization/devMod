@@ -130,12 +130,12 @@ public class QuestEditorScreen extends ModScreen {
 
         // Calculate scaled dimensions for layout
         UIScaleManager.update();
-        int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int sPadding = UIScaleManager.scale(PADDING);
-        int sQuestListWidth = UIScaleManager.scale(QUEST_LIST_WIDTH);
-        int sTaskListWidth = UIScaleManager.scale(TASK_LIST_WIDTH);
-        int sFieldHeight = UIScaleManager.scale(18);
-        int sButtonSize = UIScaleManager.scale(20);
+        int sHeaderHeight = s(HEADER_HEIGHT);
+        int sPadding = s(PADDING);
+        int sQuestListWidth = s(QUEST_LIST_WIDTH);
+        int sTaskListWidth = s(TASK_LIST_WIDTH);
+        int sFieldHeight = s(18);
+        int sButtonSize = s(20);
 
         int contentTop = sHeaderHeight + sPadding;
 
@@ -143,7 +143,7 @@ public class QuestEditorScreen extends ModScreen {
         int noteFieldX = sQuestListWidth + sTaskListWidth + sPadding * 3;
         int noteFieldWidth = width - noteFieldX - sPadding;
 
-        EditBox questNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + UIScaleManager.scale(40), Math.max(UIScaleManager.scale(100), noteFieldWidth), sFieldHeight + 2, I18n.translate("devmod.quest.quest_note"));
+        EditBox questNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + s(40), Math.max(s(100), noteFieldWidth), sFieldHeight + s(2), I18n.translate("devmod.quest.quest_note"));
         questNoteBox.setMaxLength(200);
         questNoteBox.setHint(I18n.translate("devmod.quest.quest_note_hint"));
         QuestData currentQuest = selectedQuest;
@@ -161,7 +161,7 @@ public class QuestEditorScreen extends ModScreen {
         this.addRenderableWidget(questNoteBox);
 
         // === Task Note Field ===
-        EditBox taskNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + UIScaleManager.scale(120), Math.max(UIScaleManager.scale(100), noteFieldWidth), sFieldHeight + 2, I18n.translate("devmod.quest.task_note"));
+        EditBox taskNoteBox = new EditBox(Objects.requireNonNull(font, "font"), noteFieldX, contentTop + s(120), Math.max(s(100), noteFieldWidth), sFieldHeight + s(2), I18n.translate("devmod.quest.task_note"));
         taskNoteBox.setMaxLength(200);
         taskNoteBox.setHint(I18n.translate("devmod.quest.task_note_hint"));
         QuestTask currentTask = selectedTask;
@@ -179,7 +179,7 @@ public class QuestEditorScreen extends ModScreen {
         this.addRenderableWidget(taskNoteBox);
 
         // === New Quest Name Field ===
-        EditBox newQuestBox = new EditBox(Objects.requireNonNull(font), sPadding, height - UIScaleManager.scale(55), sQuestListWidth - UIScaleManager.scale(25), sFieldHeight, I18n.translate("devmod.quest.new_quest"));
+        EditBox newQuestBox = new EditBox(Objects.requireNonNull(font), sPadding, height - s(55), sQuestListWidth - s(25), sFieldHeight, I18n.translate("devmod.quest.new_quest"));
         newQuestBox.setMaxLength(50);
         newQuestBox.setHint(I18n.translate("devmod.quest.new_quest_hint"));
         newQuestBox.setBordered(false);
@@ -190,7 +190,7 @@ public class QuestEditorScreen extends ModScreen {
 
         // === New Task Description Field ===
         int taskFieldX = sQuestListWidth + sPadding * 2;
-        EditBox newTaskBox = new EditBox(Objects.requireNonNull(font), taskFieldX, height - UIScaleManager.scale(55), sTaskListWidth - UIScaleManager.scale(25), sFieldHeight, I18n.translate("devmod.quest.new_task"));
+        EditBox newTaskBox = new EditBox(Objects.requireNonNull(font), taskFieldX, height - s(55), sTaskListWidth - s(25), sFieldHeight, I18n.translate("devmod.quest.new_task"));
         newTaskBox.setMaxLength(100);
         newTaskBox.setHint(I18n.translate("devmod.quest.new_task_hint"));
         newTaskBox.setBordered(false);
@@ -206,7 +206,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewQuest)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(addQuestButton, sPadding + sQuestListWidth - UIScaleManager.scale(22), height - UIScaleManager.scale(55), sButtonSize, sFieldHeight));
+        this.addRenderableWidget(new EditorButtonWidget(addQuestButton, sPadding + sQuestListWidth - s(22), height - s(55), sButtonSize, sFieldHeight));
 
         // Delete Quest Button
         EditorButton deleteQuestButton = EditorButton.builder("quest-delete", I18n.ui("delete_symbol").getString())
@@ -215,7 +215,7 @@ public class QuestEditorScreen extends ModScreen {
             .tooltip(I18n.translate("devmod.quest.delete_quest").getString())
             .onClick(this::deleteSelectedQuest)
             .build();
-        EditorButtonWidget deleteQuestWidget = new EditorButtonWidget(deleteQuestButton, sPadding + sQuestListWidth - UIScaleManager.scale(22), contentTop, sButtonSize, sFieldHeight);
+        EditorButtonWidget deleteQuestWidget = new EditorButtonWidget(deleteQuestButton, sPadding + sQuestListWidth - s(22), contentTop, sButtonSize, sFieldHeight);
         this.deleteQuestBtnWidget = deleteQuestWidget;
         this.addRenderableWidget(deleteQuestWidget);
 
@@ -225,7 +225,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.SMALL)
             .onClick(this::addNewTask)
             .build();
-        EditorButtonWidget addTaskWidget = new EditorButtonWidget(addTaskButton, taskFieldX + sTaskListWidth - UIScaleManager.scale(22), height - UIScaleManager.scale(55), sButtonSize, sFieldHeight);
+        EditorButtonWidget addTaskWidget = new EditorButtonWidget(addTaskButton, taskFieldX + sTaskListWidth - s(22), height - s(55), sButtonSize, sFieldHeight);
         this.addTaskBtnWidget = addTaskWidget;
         this.addRenderableWidget(addTaskWidget);
 
@@ -236,7 +236,7 @@ public class QuestEditorScreen extends ModScreen {
             .tooltip(I18n.translate("devmod.quest.delete_task").getString())
             .onClick(this::deleteSelectedTask)
             .build();
-        EditorButtonWidget deleteTaskWidget = new EditorButtonWidget(deleteTaskButton, taskFieldX + sTaskListWidth - UIScaleManager.scale(22), contentTop, sButtonSize, sFieldHeight);
+        EditorButtonWidget deleteTaskWidget = new EditorButtonWidget(deleteTaskButton, taskFieldX + sTaskListWidth - s(22), contentTop, sButtonSize, sFieldHeight);
         this.deleteTaskBtnWidget = deleteTaskWidget;
         this.addRenderableWidget(deleteTaskWidget);
 
@@ -246,7 +246,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::completeSelectedTask)
             .build();
-        EditorButtonWidget completeTaskWidget = new EditorButtonWidget(completeTaskButton, noteFieldX, contentTop + UIScaleManager.scale(150), UIScaleManager.scale(100), sButtonSize);
+        EditorButtonWidget completeTaskWidget = new EditorButtonWidget(completeTaskButton, noteFieldX, contentTop + s(150), s(100), sButtonSize);
         this.completeTaskBtnWidget = completeTaskWidget;
         this.addRenderableWidget(completeTaskWidget);
 
@@ -256,7 +256,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::setActiveQuest)
             .build();
-        EditorButtonWidget setActiveWidget = new EditorButtonWidget(setActiveButton, noteFieldX + UIScaleManager.scale(110), contentTop + UIScaleManager.scale(150), UIScaleManager.scale(80), sButtonSize);
+        EditorButtonWidget setActiveWidget = new EditorButtonWidget(setActiveButton, noteFieldX + s(110), contentTop + s(150), s(80), sButtonSize);
         this.setActiveBtnWidget = setActiveWidget;
         this.addRenderableWidget(setActiveWidget);
 
@@ -266,7 +266,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::onClose)
             .build();
-        this.addRenderableWidget(new EditorButtonWidget(closeButton, width / 2 - UIScaleManager.scale(50), height - UIScaleManager.scale(28), UIScaleManager.scale(100), sButtonSize));
+        this.addRenderableWidget(new EditorButtonWidget(closeButton, width / 2 - s(50), height - s(28), s(100), sButtonSize));
 
         // === NEW: Endurance Quest Button === (no state updates needed)
         EditorButton newEnduranceButton = EditorButton.builder("quest-endurance", I18n.ui("endurance_quest").getString())
@@ -275,7 +275,7 @@ public class QuestEditorScreen extends ModScreen {
             .tooltip(I18n.translate("devmod.quest.create_endurance").getString())
             .onClick(this::openEnduranceModal)
             .build();
-        EditorButtonWidget newEnduranceWidget = new EditorButtonWidget(newEnduranceButton, sPadding, height - UIScaleManager.scale(28), UIScaleManager.scale(90), sButtonSize);
+        EditorButtonWidget newEnduranceWidget = new EditorButtonWidget(newEnduranceButton, sPadding, height - s(28), s(90), sButtonSize);
         this.enduranceQuestBtnWidget = newEnduranceWidget;
         this.addRenderableWidget(newEnduranceWidget);
 
@@ -303,16 +303,16 @@ public class QuestEditorScreen extends ModScreen {
         availableMobs.sort(Comparator.comparing(m -> m.getDisplayName()));
         filteredMobs = new ArrayList<>(availableMobs);
 
-        int sModalWidth = UIScaleManager.scale(400);
-        int sModalHeight = UIScaleManager.scale(300);
+        int sModalWidth = s(400);
+        int sModalHeight = s(300);
         int modalX = (width - sModalWidth) / 2;
         int modalY = (height - sModalHeight) / 2;
-        int sFieldHeight = UIScaleManager.scale(18);
-        int sButtonSize = UIScaleManager.scale(20);
-        int sPadding = UIScaleManager.scale(10);
+        int sFieldHeight = s(18);
+        int sButtonSize = s(20);
+        int sPadding = s(10);
 
         // Search field
-        EditBox searchBox = new EditBox(Objects.requireNonNull(font), modalX + sPadding, modalY + UIScaleManager.scale(35), sModalWidth - sPadding * 2, sFieldHeight, I18n.ui("search"));
+        EditBox searchBox = new EditBox(Objects.requireNonNull(font), modalX + sPadding, modalY + s(35), sModalWidth - sPadding * 2, sFieldHeight, I18n.ui("search"));
         searchBox.setHint(I18n.translate("devmod.quest.search_mobs"));
         searchBox.setResponder(this::filterMobs);
         searchBox.setVisible(false);
@@ -329,7 +329,7 @@ public class QuestEditorScreen extends ModScreen {
             .onClick(() -> adjustWaves(-1))
             .build();
         EditorButtonWidget wavesMinusWidget = new EditorButtonWidget(wavesMinusButton,
-            modalX + sModalWidth - UIScaleManager.scale(150), modalY + sModalHeight - UIScaleManager.scale(70), sButtonSize, sButtonSize);
+            modalX + sModalWidth - s(150), modalY + sModalHeight - s(70), sButtonSize, sButtonSize);
         wavesMinusWidget.visible = false;
         this.wavesMinusBtnWidget = wavesMinusWidget;
         this.addRenderableWidget(wavesMinusWidget);
@@ -340,7 +340,7 @@ public class QuestEditorScreen extends ModScreen {
             .onClick(() -> adjustWaves(1))
             .build();
         EditorButtonWidget wavesPlusWidget = new EditorButtonWidget(wavesPlusButton,
-            modalX + sModalWidth - UIScaleManager.scale(80), modalY + sModalHeight - UIScaleManager.scale(70), sButtonSize, sButtonSize);
+            modalX + sModalWidth - s(80), modalY + sModalHeight - s(70), sButtonSize, sButtonSize);
         wavesPlusWidget.visible = false;
         this.wavesPlusBtnWidget = wavesPlusWidget;
         this.addRenderableWidget(wavesPlusWidget);
@@ -355,8 +355,8 @@ public class QuestEditorScreen extends ModScreen {
             .onClick(this::startEnduranceQuest)
             .build();
         EditorButtonWidget startEnduranceWidget = new EditorButtonWidget(startEnduranceButton,
-            modalX + sModalWidth - UIScaleManager.scale(110), modalY + sModalHeight - UIScaleManager.scale(35),
-            UIScaleManager.scale(100), UIScaleManager.scale(25));
+            modalX + sModalWidth - s(110), modalY + sModalHeight - s(35),
+            s(100), s(25));
         startEnduranceWidget.visible = false;
         this.startEnduranceBtnWidget = startEnduranceWidget;
         this.addRenderableWidget(startEnduranceWidget);
@@ -368,7 +368,7 @@ public class QuestEditorScreen extends ModScreen {
             .onClick(this::closeEnduranceModal)
             .build();
         EditorButtonWidget cancelEnduranceWidget = new EditorButtonWidget(cancelEnduranceButton,
-            modalX + sPadding, modalY + sModalHeight - UIScaleManager.scale(35), UIScaleManager.scale(80), UIScaleManager.scale(25));
+            modalX + sPadding, modalY + sModalHeight - s(35), s(80), s(25));
         cancelEnduranceWidget.visible = false;
         this.cancelEnduranceBtnWidget = cancelEnduranceWidget;
         this.addRenderableWidget(cancelEnduranceWidget);
@@ -395,10 +395,10 @@ public class QuestEditorScreen extends ModScreen {
         UIScaleManager.update();
 
         // Calculate scaled dimensions
-        int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int sPadding = UIScaleManager.scale(PADDING);
-        int sQuestListWidth = UIScaleManager.scale(QUEST_LIST_WIDTH);
-        int sTaskListWidth = UIScaleManager.scale(TASK_LIST_WIDTH);
+        int sHeaderHeight = s(HEADER_HEIGHT);
+        int sPadding = s(PADDING);
+        int sQuestListWidth = s(QUEST_LIST_WIDTH);
+        int sTaskListWidth = s(TASK_LIST_WIDTH);
 
         // Background
         renderBackground(Objects.requireNonNull(graphics, "graphics"), mouseX, mouseY, partialTick);
@@ -407,7 +407,7 @@ public class QuestEditorScreen extends ModScreen {
 
         // === Header ===
         graphics.fill(0, 0, width, sHeaderHeight, DesignTokens.Background.HEADER());
-        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), "Quest Editor", width / 2, UIScaleManager.scale(10), DesignTokens.Text.TITLE());
+        UIScaleManager.drawScaledCenteredString(graphics, Objects.requireNonNull(font, "font"), "Quest Editor", width / 2, s(10), DesignTokens.Text.TITLE());
 
         // === Quest List Panel ===
         renderQuestListPanel(graphics, sPadding, contentTop, mouseX, mouseY);
@@ -547,9 +547,9 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private void renderQuestListPanel(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
-        int sQuestListWidth = UIScaleManager.scale(QUEST_LIST_WIDTH);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
-        int sPanelBottomMargin = UIScaleManager.scale(65);
+        int sQuestListWidth = s(QUEST_LIST_WIDTH);
+        int sLineHeight = s(LINE_HEIGHT);
+        int sPanelBottomMargin = s(65);
         int panelHeight = height - y - sPanelBottomMargin;
 
         // Panel background
@@ -560,12 +560,12 @@ public class QuestEditorScreen extends ModScreen {
         g.fill(x + sQuestListWidth - 1, y, x + sQuestListWidth, y + panelHeight, DesignTokens.Border.DEFAULT());
 
         // Header
-        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest", x + UIScaleManager.scale(5), y + UIScaleManager.scale(5), DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest", x + s(5), y + s(5), DesignTokens.Text.TITLE(), false);
 
         // Quest list
         List<QuestData> quests = QuestManager.INSTANCE.getAllQuests();
-        int listY = y + UIScaleManager.scale(22);
-        int maxVisible = (panelHeight - UIScaleManager.scale(25)) / sLineHeight;
+        int listY = y + s(22);
+        int maxVisible = (panelHeight - s(25)) / sLineHeight;
 
         for (int i = questListScroll; i < Math.min(quests.size(), questListScroll + maxVisible); i++) {
             QuestData quest = quests.get(i);
@@ -587,20 +587,20 @@ public class QuestEditorScreen extends ModScreen {
 
             // Quest name with status icon
             String prefix = isActive ? "\u2605 " : "  ";
-            String name = prefix + truncate(quest.getName(), sQuestListWidth - UIScaleManager.scale(30));
+            String name = prefix + truncate(quest.getName(), sQuestListWidth - s(30));
             int color = isActive ? DesignTokens.Accent.GOLD() : (quest.isComplete() ? DesignTokens.Accent.GREEN() : DesignTokens.Text.PRIMARY());
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), name, x + UIScaleManager.scale(5), itemY + 2, color, false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), name, x + s(5), itemY + s(2), color, false);
 
             // Progress indicator
             String progress = Objects.requireNonNull(quest.getProgressSummary(), "progress");
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), progress, x + sQuestListWidth - UIScaleManager.getScaledStringWidth(font, progress) - UIScaleManager.scale(25), itemY + 2, DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), progress, x + sQuestListWidth - UIScaleManager.getScaledStringWidth(font, progress) - s(25), itemY + s(2), DesignTokens.Text.MUTED(), false);
         }
     }
 
     private void renderTaskListPanel(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
-        int sTaskListWidth = UIScaleManager.scale(TASK_LIST_WIDTH);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
-        int sPanelBottomMargin = UIScaleManager.scale(65);
+        int sTaskListWidth = s(TASK_LIST_WIDTH);
+        int sLineHeight = s(LINE_HEIGHT);
+        int sPanelBottomMargin = s(65);
         int panelHeight = height - y - sPanelBottomMargin;
 
         // Panel background
@@ -611,19 +611,19 @@ public class QuestEditorScreen extends ModScreen {
         g.fill(x + sTaskListWidth - 1, y, x + sTaskListWidth, y + panelHeight, DesignTokens.Border.DEFAULT());
 
         // Header
-        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task", x + UIScaleManager.scale(5), y + UIScaleManager.scale(5), DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task", x + s(5), y + s(5), DesignTokens.Text.TITLE(), false);
 
         // Local capture for null safety
         QuestData quest = selectedQuest;
         if (quest == null) {
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Select a quest", x + UIScaleManager.scale(10), y + UIScaleManager.scale(30), DesignTokens.Text.MUTED(), false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Select a quest", x + s(10), y + s(30), DesignTokens.Text.MUTED(), false);
             return;
         }
 
         // Task list
         List<QuestTask> tasks = quest.getTasks();
-        int listY = y + UIScaleManager.scale(22);
-        int maxVisible = (panelHeight - UIScaleManager.scale(25)) / sLineHeight;
+        int listY = y + s(22);
+        int maxVisible = (panelHeight - s(25)) / sLineHeight;
 
         for (int i = taskListScroll; i < Math.min(tasks.size(), taskListScroll + maxVisible); i++) {
             QuestTask task = tasks.get(i);
@@ -645,40 +645,40 @@ public class QuestEditorScreen extends ModScreen {
 
             // Task with status
             String prefix = task.isCompleted() ? "\u2713 " : (isCurrent ? "\u25B6 " : "  ");
-            String desc = prefix + truncate(task.getDescription(), sTaskListWidth - UIScaleManager.scale(20));
+            String desc = prefix + truncate(task.getDescription(), sTaskListWidth - s(20));
             int color = task.isCompleted() ? DesignTokens.Accent.GREEN() : (isCurrent ? DesignTokens.Accent.GOLD() : DesignTokens.Text.PRIMARY());
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), desc, x + UIScaleManager.scale(5), itemY + 2, color, false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), desc, x + s(5), itemY + s(2), color, false);
 
             // Note indicator
             if (task.hasNote()) {
-                UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "\u270E", x + sTaskListWidth - UIScaleManager.scale(15), itemY + 2, DesignTokens.Accent.BLUE(), false);
+                UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "\u270E", x + sTaskListWidth - s(15), itemY + s(2), DesignTokens.Accent.BLUE(), false);
             }
         }
     }
 
     private void renderDetailsPanel(GuiGraphics g, int x, int y, int panelWidth) {
-        if (panelWidth < UIScaleManager.scale(50)) return;
+        if (panelWidth < s(50)) return;
 
         // Section: Quest Note
-        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest Note:", x, y + UIScaleManager.scale(25), DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest Note:", x, y + s(25), DesignTokens.Text.MUTED(), false);
 
         // Section: Task Note
-        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task Note:", x, y + UIScaleManager.scale(105), DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task Note:", x, y + s(105), DesignTokens.Text.MUTED(), false);
 
         // Current selection info (local captures for null safety)
         QuestData quest = selectedQuest;
         if (quest != null) {
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest: " + quest.getName(), x, y + UIScaleManager.scale(5), DesignTokens.Text.TITLE(), false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Quest: " + quest.getName(), x, y + s(5), DesignTokens.Text.TITLE(), false);
         }
 
         QuestTask task = selectedTask;
         if (task != null) {
-            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task: " + truncate(task.getDescription(), panelWidth / 6), x, y + UIScaleManager.scale(85), DesignTokens.Text.TITLE(), false);
+            UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Task: " + truncate(task.getDescription(), panelWidth / 6), x, y + s(85), DesignTokens.Text.TITLE(), false);
         }
 
         // Help text
-        int sLineSpacing = UIScaleManager.scale(12);
-        int helpY = y + UIScaleManager.scale(190);
+        int sLineSpacing = s(12);
+        int helpY = y + s(190);
         UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "Keybind:", x, helpY, DesignTokens.Text.MUTED(), false);
         UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "] = Complete task", x, helpY + sLineSpacing, DesignTokens.Text.DISABLED(), false);
         UIScaleManager.drawScaledString(g, Objects.requireNonNull(font, "font"), "\\ = Toggle HUD", x, helpY + sLineSpacing * 2, DesignTokens.Text.DISABLED(), false);
@@ -698,13 +698,13 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         if (button == 0) {
-            int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-            int sPadding = UIScaleManager.scale(PADDING);
-            int sQuestListWidth = UIScaleManager.scale(QUEST_LIST_WIDTH);
-            int sTaskListWidth = UIScaleManager.scale(TASK_LIST_WIDTH);
-            int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
-            int sListHeaderOffset = UIScaleManager.scale(22);
-            int sPanelBottomMargin = UIScaleManager.scale(65);
+            int sHeaderHeight = s(HEADER_HEIGHT);
+            int sPadding = s(PADDING);
+            int sQuestListWidth = s(QUEST_LIST_WIDTH);
+            int sTaskListWidth = s(TASK_LIST_WIDTH);
+            int sLineHeight = s(LINE_HEIGHT);
+            int sListHeaderOffset = s(22);
+            int sPanelBottomMargin = s(65);
 
             int contentTop = sHeaderHeight + sPadding;
             int panelHeight = height - contentTop - sPanelBottomMargin;
@@ -749,9 +749,9 @@ public class QuestEditorScreen extends ModScreen {
             return true;
         }
 
-        int sPadding = UIScaleManager.scale(PADDING);
-        int sQuestListWidth = UIScaleManager.scale(QUEST_LIST_WIDTH);
-        int sTaskListWidth = UIScaleManager.scale(TASK_LIST_WIDTH);
+        int sPadding = s(PADDING);
+        int sQuestListWidth = s(QUEST_LIST_WIDTH);
+        int sTaskListWidth = s(TASK_LIST_WIDTH);
 
         // Scroll quest list
         if (mouseX >= sPadding && mouseX < sPadding + sQuestListWidth) {
@@ -970,11 +970,11 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private String truncate(String text, int maxWidth) {
-        if (Objects.requireNonNull(font, "font").width(Objects.requireNonNull(text, "text")) <= maxWidth) return text;
+        if (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), Objects.requireNonNull(text, "text")) <= maxWidth) return text;
         String ellipsis = "...";
         int minChars = Math.min(6, text.length()); // Keep at least 6 chars for readability
         String truncated = text;
-        while (font.width(truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
+        while (UIScaleManager.getScaledStringWidth(Objects.requireNonNull(font, "font"), truncated + ellipsis) > maxWidth && truncated.length() > minChars) {
             truncated = truncated.substring(0, truncated.length() - 1);
         }
         return truncated + ellipsis;
@@ -1027,8 +1027,8 @@ public class QuestEditorScreen extends ModScreen {
     }
 
     private void refreshEndlessModeButton() {
-        int sModalWidth = UIScaleManager.scale(400);
-        int sModalHeight = UIScaleManager.scale(300);
+        int sModalWidth = s(400);
+        int sModalHeight = s(300);
         int modalX = (width - sModalWidth) / 2;
         int modalY = (height - sModalHeight) / 2;
         buildEndlessModeButton(modalX, modalY, sModalHeight);
@@ -1047,7 +1047,7 @@ public class QuestEditorScreen extends ModScreen {
             .size(EditorButton.Size.MEDIUM)
             .onClick(this::toggleEndlessMode)
             .build();
-        EditorButtonWidget widget = new EditorButtonWidget(endlessButton, modalX + UIScaleManager.scale(10), modalY + sModalHeight - UIScaleManager.scale(70), UIScaleManager.scale(100), UIScaleManager.scale(20));
+        EditorButtonWidget widget = new EditorButtonWidget(endlessButton, modalX + s(10), modalY + sModalHeight - s(70), s(100), s(20));
         widget.visible = showEnduranceModal;
         endlessModeBtnWidget = widget;
         addRenderableWidget(widget);
@@ -1121,12 +1121,12 @@ public class QuestEditorScreen extends ModScreen {
     private void renderEnduranceModal(GuiGraphics graphics, int mouseX, int mouseY) {
         if (!showEnduranceModal) return;
 
-        int sModalWidth = UIScaleManager.scale(400);
-        int sModalHeight = UIScaleManager.scale(300);
+        int sModalWidth = s(400);
+        int sModalHeight = s(300);
         int modalX = (width - sModalWidth) / 2;
         int modalY = (height - sModalHeight) / 2;
-        int sPadding = UIScaleManager.scale(10);
-        int sItemHeight = UIScaleManager.scale(20);
+        int sPadding = s(10);
+        int sItemHeight = s(20);
 
         // Darken background
         graphics.fill(0, 0, width, height,
@@ -1144,9 +1144,9 @@ public class QuestEditorScreen extends ModScreen {
 
         // Mob list area
         int listX = modalX + sPadding;
-        int listY = modalY + UIScaleManager.scale(58);
+        int listY = modalY + s(58);
         int listWidth = sModalWidth - sPadding * 2;
-        int listHeight = sModalHeight - UIScaleManager.scale(145);
+        int listHeight = sModalHeight - s(145);
 
         graphics.fill(listX, listY, listX + listWidth, listY + listHeight, DesignTokens.Background.PANEL());
 
@@ -1169,15 +1169,15 @@ public class QuestEditorScreen extends ModScreen {
 
             // Tier color indicator
             int tierColor = getTierColor(mob.getTier());
-            graphics.fill(listX + 2, itemY + 2, listX + UIScaleManager.scale(5), itemY + sItemHeight - 2, tierColor);
+            graphics.fill(listX + s(2), itemY + s(2), listX + s(5), itemY + sItemHeight - s(2), tierColor);
 
             // Mob name
-            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), mob.getDisplayName(), listX + sPadding, itemY + UIScaleManager.scale(5), DesignTokens.Text.PRIMARY(), false);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), mob.getDisplayName(), listX + sPadding, itemY + s(5), DesignTokens.Text.PRIMARY(), false);
 
             // Tier badge
             String tierText = Objects.requireNonNull(mob.getTier().name(), "tierText");
             int tierTextWidth = UIScaleManager.getScaledStringWidth(font, tierText);
-            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), tierText, listX + listWidth - tierTextWidth - sPadding, itemY + UIScaleManager.scale(5), tierColor, false);
+            UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), tierText, listX + listWidth - tierTextWidth - sPadding, itemY + s(5), tierColor, false);
         }
 
         // Scrollbar
@@ -1189,16 +1189,16 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         // Stats info
-        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), filteredMobs.size() + " mobs available", listX, listY + listHeight + UIScaleManager.scale(5), DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), filteredMobs.size() + " mobs available", listX, listY + listHeight + s(5), DesignTokens.Text.SECONDARY(), false);
 
         // Wave count display
         String waveText = "Waves: " + enduranceWaves;
-        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), waveText, modalX + sModalWidth - UIScaleManager.scale(125), modalY + sModalHeight - UIScaleManager.scale(65), DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), waveText, modalX + sModalWidth - s(125), modalY + sModalHeight - s(65), DesignTokens.Text.PRIMARY(), false);
 
         // Selected mob info
         EnduranceQuestRegistry.MobQuestConfig currentMob = selectedMob;
         if (currentMob != null) {
-            int infoY = modalY + sModalHeight - UIScaleManager.scale(95);
+            int infoY = modalY + sModalHeight - s(95);
             UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font"), "Selected: " + currentMob.getDisplayName(), listX, infoY, DesignTokens.Accent.GREEN(), false);
         }
     }
@@ -1218,17 +1218,17 @@ public class QuestEditorScreen extends ModScreen {
     private boolean handleEnduranceModalClick(double mouseX, double mouseY) {
         if (!showEnduranceModal) return false;
 
-        int sModalWidth = UIScaleManager.scale(400);
-        int sModalHeight = UIScaleManager.scale(300);
+        int sModalWidth = s(400);
+        int sModalHeight = s(300);
         int modalX = (width - sModalWidth) / 2;
         int modalY = (height - sModalHeight) / 2;
-        int sPadding = UIScaleManager.scale(10);
+        int sPadding = s(10);
 
         int listX = modalX + sPadding;
-        int listY = modalY + UIScaleManager.scale(58);
+        int listY = modalY + s(58);
         int listWidth = sModalWidth - sPadding * 2;
-        int listHeight = sModalHeight - UIScaleManager.scale(145);
-        int sItemHeight = UIScaleManager.scale(20);
+        int listHeight = sModalHeight - s(145);
+        int sItemHeight = s(20);
 
         if (mouseX >= listX && mouseX < listX + listWidth &&
             mouseY >= listY && mouseY < listY + listHeight) {
@@ -1248,17 +1248,17 @@ public class QuestEditorScreen extends ModScreen {
     private boolean handleEnduranceModalScroll(double mouseX, double mouseY, double scrollY) {
         if (!showEnduranceModal) return false;
 
-        int sModalWidth = UIScaleManager.scale(400);
-        int sModalHeight = UIScaleManager.scale(300);
+        int sModalWidth = s(400);
+        int sModalHeight = s(300);
         int modalX = (width - sModalWidth) / 2;
         int modalY = (height - sModalHeight) / 2;
-        int sPadding = UIScaleManager.scale(10);
+        int sPadding = s(10);
 
         int listX = modalX + sPadding;
-        int listY = modalY + UIScaleManager.scale(58);
+        int listY = modalY + s(58);
         int listWidth = sModalWidth - sPadding * 2;
-        int listHeight = sModalHeight - UIScaleManager.scale(145);
-        int sItemHeight = UIScaleManager.scale(20);
+        int listHeight = sModalHeight - s(145);
+        int sItemHeight = s(20);
         int maxVisible = listHeight / sItemHeight;
 
         if (mouseX >= listX && mouseX < listX + listWidth &&
@@ -1270,5 +1270,9 @@ public class QuestEditorScreen extends ModScreen {
         }
 
         return false;
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

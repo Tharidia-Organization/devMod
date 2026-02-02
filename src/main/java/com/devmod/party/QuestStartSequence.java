@@ -443,8 +443,9 @@ public class QuestStartSequence {
                 }
 
                 // Teleport handling
+                java.util.Map<UUID, net.minecraft.core.BlockPos> teleported = java.util.Map.of();
                 if (!EnduranceQuestManager.INSTANCE.isUseInstanceDimensions()) {
-                    EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                    teleported = EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
                         current.members,
                         arenaResult.arena(),
                         arenaResult.handle()
@@ -455,19 +456,32 @@ public class QuestStartSequence {
                         }
                     }
                 } else {
-                    // InstanceManager already teleported; align to template spawns if available
-                    if (arenaResult.handle() != null) {
-                        EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
-                            current.members,
-                            arenaResult.arena(),
-                            arenaResult.handle()
-                        );
-                    }
+                    teleported = EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
+                        current.members,
+                        arenaResult.arena(),
+                        arenaResult.handle()
+                    );
                     for (ServerPlayer member : current.members) {
                         if (member != null && member.isAlive()) {
-                            member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("[DevMod] Teleporting party to instance...")));
+                            member.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                                "[DevMod] Teleporting party to instance...")));
                         }
                     }
+                }
+
+                if (teleported.isEmpty()) {
+                    LOGGER.error("[QuestSequence] No members teleported; cancelling sequence");
+                    current.phase = QuestSequencePayload.Phase.CANCELLED;
+                    broadcastSequenceUpdate(current);
+                    cleanupPreparedArena(current);
+                    for (ServerPlayer member : current.members) {
+                        if (member != null && member.isAlive()) {
+                            member.sendSystemMessage(Objects.requireNonNull(
+                                net.minecraft.network.chat.Component.literal("Teleport failed - arena unavailable.")));
+                        }
+                    }
+                    activeSequences.remove(current.partyId);
+                    return;
                 }
 
                 current.phase = QuestSequencePayload.Phase.WAITING_FOR_ARRIVALS;

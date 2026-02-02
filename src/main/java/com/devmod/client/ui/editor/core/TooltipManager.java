@@ -180,7 +180,7 @@ public final class TooltipManager {
 
         // Calculate dimensions
         int padding = ScaledCoord.scaleDim(TOOLTIP_PADDING);
-        int lineH = ScaledCoord.scaleDim(LINE_HEIGHT);
+        int lineH = Math.max(ScaledCoord.scaleDim(LINE_HEIGHT), com.devmod.client.ui.core.UIScaleManager.getScaledLineHeight(font, 10));
         int margin = ScaledCoord.scaleDim(TOOLTIP_MARGIN);
 
         int maxLineWidth = 0;

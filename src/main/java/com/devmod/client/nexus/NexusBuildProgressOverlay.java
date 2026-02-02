@@ -120,11 +120,14 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
         int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         // Scaled layout values
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int sBarWidth = UIScaleManager.scale(BAR_WIDTH);
         int sBarHeight = UIScaleManager.scale(BAR_HEIGHT);
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
         int sPanelWidth = sBarWidth + sPanelPadding * 2;
-        int sPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int sBarGap = UIScaleManager.scale(6);
+        int sPanelHeight = Math.max(UIScaleManager.scale(PANEL_HEIGHT),
+            sPanelPadding * 2 + lineHeight + sBarGap + sBarHeight + sBarGap + lineHeight);
         int sVerticalOffset = UIScaleManager.scale(VERTICAL_OFFSET);
 
         // Panel position (centered, above hotbar)
@@ -146,11 +149,12 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
             title = "Nexus Hub Ready!";
         }
         int titleWidth = UIScaleManager.getScaledStringWidth(font, title);
-        UIScaleManager.drawScaledString(graphics, font, title, panelX + (sPanelWidth - titleWidth) / 2, panelY + UIScaleManager.scale(8), textPrimaryWithAlpha, false);
+        int titleY = panelY + sPanelPadding;
+        UIScaleManager.drawScaledString(graphics, font, title, panelX + (sPanelWidth - titleWidth) / 2, titleY, textPrimaryWithAlpha, false);
 
         // Draw progress bar background
         int barX = panelX + sPanelPadding;
-        int barY = panelY + UIScaleManager.scale(24);
+        int barY = titleY + lineHeight + sBarGap;
         graphics.fill(barX, barY, barX + sBarWidth, barY + sBarHeight, barBgWithAlpha);
 
         // Draw progress bar fill with gradient
@@ -167,13 +171,13 @@ public final class NexusBuildProgressOverlay implements LayeredDraw.Layer {
 
         // Percentage on the right
         int percentWidth = UIScaleManager.getScaledStringWidth(font, percentText);
-        UIScaleManager.drawScaledString(graphics, font, percentText, barX + sBarWidth - percentWidth, barY + sBarHeight + UIScaleManager.scale(4), textPrimaryWithAlpha, false);
+        UIScaleManager.drawScaledString(graphics, font, percentText, barX + sBarWidth - percentWidth, barY + sBarHeight + sBarGap, textPrimaryWithAlpha, false);
 
         // Step name on the left
         if (!stepText.isEmpty()) {
             int maxStepWidth = Math.max(0, sBarWidth - percentWidth - UIScaleManager.scale(8));
             String displayStep = truncateToWidth(font, stepText, maxStepWidth);
-            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(displayStep), barX, barY + sBarHeight + UIScaleManager.scale(4), textSecondaryWithAlpha, false);
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(displayStep), barX, barY + sBarHeight + sBarGap, textSecondaryWithAlpha, false);
         }
     }
 

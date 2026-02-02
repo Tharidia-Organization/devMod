@@ -115,6 +115,8 @@ public class KitSelectionScreen extends Screen {
     private record ItemGridLayout(int panelX, int panelY, int panelW, int panelH,
                                   int gridX, int gridY, int gridW, int gridH) {}
 
+    private record TabLayout(int startX, int tabW, int tabMargin) {}
+
     private record KitPanelLayout(int panelX, int panelY, int panelW, int panelH, int contentX,
                                   int equipmentLabelY, int equipmentRowY,
                                   int hotbarLabelY, int hotbarRowY,
@@ -632,6 +634,7 @@ public class KitSelectionScreen extends Screen {
         scaledSectionDividerSpacing = UIScaleManager.scaleMin(SECTION_DIVIDER_SPACING, UIScaleManager.MIN_GAP);
         scaledActionButtonHeight = UIScaleManager.scaleMin(ACTION_BUTTON_HEIGHT, 20);
         scaledActionButtonGap = UIScaleManager.scaleMin(ACTION_BUTTON_GAP, UIScaleManager.MIN_GAP);
+        scaledTextLineHeight = UIScaleManager.getScaledLineHeight();
 
         // Dark background
         graphics.fill(0, 0, width, height, COLOR_BG);
@@ -690,6 +693,34 @@ public class KitSelectionScreen extends Screen {
         UIScaleManager.drawScaledString(graphics, font, text, x, y, color, false);
     }
 
+    private String truncateToWidth(net.minecraft.client.gui.Font safeFont, String text, int maxWidth) {
+        if (text == null) {
+            return "";
+        }
+        if (UIScaleManager.getScaledStringWidth(safeFont, text) <= maxWidth) {
+            return text;
+        }
+        String ellipsis = "...";
+        int ellipsisWidth = UIScaleManager.getScaledStringWidth(safeFont, ellipsis);
+        int available = Math.max(0, maxWidth - ellipsisWidth);
+        String trimmed = safeFont.plainSubstrByWidth(text, available);
+        return trimmed + ellipsis;
+    }
+
+    private TabLayout getTabLayout(net.minecraft.client.gui.Font safeFont) {
+        int tabMargin = UIScaleManager.scale(4);
+        String title = I18n.translate("devmod.kit.header.title").getString();
+        int titleW = UIScaleManager.getScaledStringWidth(safeFont, title);
+        int minStartX = scaledPanelPadding + titleW + UIScaleManager.scale(24);
+        int tabStartX = Math.max(UIScaleManager.scale(120), minStartX);
+        int tabs = Category.values().length;
+        int baseTabW = UIScaleManager.scale(80);
+        int available = Math.max(0, width - tabStartX - UIScaleManager.scale(8));
+        int fitTabW = tabs > 0 ? (available - tabMargin * (tabs - 1)) / tabs : baseTabW;
+        int tabW = Math.max(UIScaleManager.scale(52), Math.min(baseTabW, fitTabW));
+        return new TabLayout(tabStartX, tabW, tabMargin);
+    }
+
     private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
         var safeFont = Objects.requireNonNull(font);
 
@@ -702,9 +733,10 @@ public class KitSelectionScreen extends Screen {
             scaledPanelPadding, UIScaleManager.scale(10), COLOR_TEXT);
 
         // Category tabs
-        int tabX = UIScaleManager.scale(120);
-        int tabW = UIScaleManager.scale(80);
-        int tabMargin = UIScaleManager.scale(4);
+        TabLayout tabLayout = getTabLayout(safeFont);
+        int tabX = tabLayout.startX();
+        int tabW = tabLayout.tabW();
+        int tabMargin = tabLayout.tabMargin();
         for (Category cat : Category.values()) {
             boolean selected = cat == selectedCategory;
             boolean hovered = mouseX >= tabX && mouseX < tabX + tabW && mouseY >= tabMargin && mouseY < scaledTabHeight - tabMargin;
@@ -717,7 +749,8 @@ public class KitSelectionScreen extends Screen {
                 graphics.fill(tabX, scaledTabHeight - tabMargin, tabX + tabW, scaledTabHeight - UIScaleManager.scale(2), cat.color);
             }
 
-            String label = Objects.requireNonNull(cat.tabLabel());
+            int maxLabelWidth = Math.max(0, tabW - UIScaleManager.scale(12));
+            String label = truncateToWidth(safeFont, Objects.requireNonNull(cat.tabLabel()), maxLabelWidth);
             int textW = UIScaleManager.getScaledStringWidth(safeFont, label);
             int textX = tabX + (tabW - textW) / 2;
             int textY = tabMargin + (scaledTabHeight - tabMargin * 2 - scaledTextLineHeight) / 2;
@@ -1450,11 +1483,12 @@ public class KitSelectionScreen extends Screen {
     }
 
     private boolean handleCategoryTabClick(int mouseX, int mouseY) {
-        int tabMargin = UIScaleManager.scale(4);
+        TabLayout tabLayout = getTabLayout(Objects.requireNonNull(font));
+        int tabMargin = tabLayout.tabMargin();
         if (mouseY < tabMargin || mouseY >= scaledTabHeight - tabMargin) return false;
 
-        int tabX = UIScaleManager.scale(120);
-        int tabW = UIScaleManager.scale(80);
+        int tabX = tabLayout.startX();
+        int tabW = tabLayout.tabW();
         for (Category cat : Category.values()) {
             if (mouseX >= tabX && mouseX < tabX + tabW) {
                 selectedCategory = cat;

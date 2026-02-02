@@ -349,7 +349,7 @@ public class IntegratedTestSession {
     }
 
     private String formatDuration(java.time.Duration duration) {
-        long seconds = duration.getSeconds();
+        long seconds = duration.toSeconds();
         long minutes = seconds / 60;
         seconds = seconds % 60;
         return String.format("%d:%02d", minutes, seconds);

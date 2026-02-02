@@ -52,13 +52,21 @@ public class EntitySpawnWidget extends AbstractWidget {
         this.config = initialConfig != null ? initialConfig : EntitySpawnConfig.empty();
         this.areaCenter = areaCenter != null ? areaCenter : BlockPos.ZERO;
         this.onConfigChanged = onConfigChanged;
-        this.maxVisiblePoints = (height - HEADER_HEIGHT - 60) / (ROW_HEIGHT + SECTION_SPACING);
+        this.maxVisiblePoints = Math.max(1, (height - s(HEADER_HEIGHT) - s(60)) / (s(ROW_HEIGHT) + s(SECTION_SPACING)));
     }
 
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
         int currentY = getY();
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int sectionSpacing = s(SECTION_SPACING);
+        int headerHeight = s(HEADER_HEIGHT);
+        int listInset = s(4);
+        int listWidthInset = s(8);
+        updateMaxVisiblePoints();
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -68,9 +76,9 @@ public class EntitySpawnWidget extends AbstractWidget {
         );
 
         // Global toggle
-        int toggleX = getX() + getWidth() - TOGGLE_WIDTH;
+        int toggleX = getX() + getWidth() - toggleWidth;
         renderToggle(graphics, config.globalEnabled(), toggleX, currentY, mouseX, mouseY);
-        currentY += HEADER_HEIGHT;
+        currentY += headerHeight;
 
         // If globally disabled, show disabled message
         if (!config.globalEnabled()) {
@@ -83,7 +91,7 @@ public class EntitySpawnWidget extends AbstractWidget {
         }
 
         // Spawn point list background
-        int listHeight = maxVisiblePoints * (ROW_HEIGHT + SECTION_SPACING);
+        int listHeight = maxVisiblePoints * (rowHeight + sectionSpacing);
         graphics.fill(getX(), currentY, getX() + getWidth(), currentY + listHeight, AreaBuilderGuiConstants.COLOR_PANEL);
         graphics.renderOutline(getX(), currentY, getWidth(), listHeight, AreaBuilderGuiConstants.COLOR_BORDER);
 
@@ -91,39 +99,39 @@ public class EntitySpawnWidget extends AbstractWidget {
         if (config.getSpawnPointCount() == 0) {
             UIScaleManager.drawScaledCenteredString(graphics, font,
                 Component.translatable("area.spawns.empty").getString(),
-                getX() + getWidth() / 2, currentY + listHeight / 2 - 4,
+                getX() + getWidth() / 2, currentY + listHeight / 2 - s(4),
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED
             );
         } else {
-            int pointY = currentY + 4;
+            int pointY = currentY + listInset;
             for (int i = scrollOffset; i < Math.min(config.getSpawnPointCount(), scrollOffset + maxVisiblePoints); i++) {
                 EntitySpawnPoint point = config.getSpawnPoint(i);
                 boolean isSelected = i == selectedIndex;
-                boolean isHovered = mouseY >= pointY && mouseY < pointY + ROW_HEIGHT &&
+                boolean isHovered = mouseY >= pointY && mouseY < pointY + rowHeight &&
                                    mouseX >= getX() && mouseX < getX() + getWidth();
 
-                renderSpawnPoint(graphics, point, getX() + 4, pointY, getWidth() - 8,
+                renderSpawnPoint(graphics, point, getX() + listInset, pointY, getWidth() - listWidthInset,
                                isSelected, isHovered, mouseX, mouseY);
-                pointY += ROW_HEIGHT + SECTION_SPACING;
+                pointY += rowHeight + sectionSpacing;
             }
         }
 
-        currentY += listHeight + 8;
+        currentY += listHeight + s(8);
 
         // Add spawn point button
         boolean canAdd = config.canAddSpawnPoint();
-        boolean addHovered = canAdd && mouseX >= getX() && mouseX < getX() + 140 &&
-                            mouseY >= currentY && mouseY < currentY + BUTTON_SIZE;
+        boolean addHovered = canAdd && mouseX >= getX() && mouseX < getX() + s(140) &&
+                            mouseY >= currentY && mouseY < currentY + buttonSize;
         int addBgColor = addHovered ? AreaBuilderGuiConstants.COLOR_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(getX(), currentY, getX() + 140, currentY + BUTTON_SIZE, addBgColor);
-        graphics.renderOutline(getX(), currentY, 140, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(getX(), currentY, getX() + s(140), currentY + buttonSize, addBgColor);
+        graphics.renderOutline(getX(), currentY, s(140), buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
         UIScaleManager.drawScaledString(graphics, font,
             Objects.requireNonNull(Component.translatable("area.spawns.add")),
-            getX() + 6, currentY + 5,
+            getX() + s(6), currentY + s(5),
             canAdd ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
-        currentY += BUTTON_SIZE + 12;
+        currentY += buttonSize + s(12);
 
         // Summary
         int totalCount = config.getTotalSpawnCount();
@@ -138,91 +146,104 @@ public class EntitySpawnWidget extends AbstractWidget {
                                  int x, int y, int width, boolean isSelected, boolean isHovered,
                                  int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int rowHeight = s(ROW_HEIGHT);
+        int buttonSize = s(BUTTON_SIZE);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int pad = s(4);
+        int innerPad = s(10);
 
         // Background
         int bgColor = isSelected ? AreaBuilderGuiConstants.COLOR_TAB_ACTIVE :
                      (isHovered ? AreaBuilderGuiConstants.COLOR_HOVER : DesignTokens.AreaBuilder.TRANSPARENT);
         if (bgColor != 0) {
-            graphics.fill(x, y, x + width, y + ROW_HEIGHT, bgColor);
+            graphics.fill(x, y, x + width, y + rowHeight, bgColor);
         }
 
         // Enabled indicator
         int indicatorColor = point.enabled() ? DesignTokens.AreaBuilder.INDICATOR_ENABLED : DesignTokens.AreaBuilder.INDICATOR_DISABLED;
-        graphics.fill(x, y + 2, x + 4, y + ROW_HEIGHT - 2, indicatorColor);
+        graphics.fill(x, y + s(2), x + s(4), y + rowHeight - s(2), indicatorColor);
 
         // Entity name
         UIScaleManager.drawScaledString(graphics, font,
             point.getEntityDisplayName(),
-            x + 10, y + 4,
+            x + innerPad, y + pad,
             point.enabled() ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_MUTED
         );
 
         // Position
         BlockPos pos = point.position();
         String posText = String.format("(%d, %d, %d)", pos.getX(), pos.getY(), pos.getZ());
-        UIScaleManager.drawScaledString(graphics, font, posText, x + 10, y + 16,
+        UIScaleManager.drawScaledString(graphics, font, posText, x + innerPad, y + s(16),
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Spawn count
         String countText = "x" + point.spawnCount();
-        UIScaleManager.drawScaledString(graphics, font, countText, x + 140, y + 4,
+        UIScaleManager.drawScaledString(graphics, font, countText, x + s(140), y + pad,
             AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
         // Respawn delay
-        UIScaleManager.drawScaledString(graphics, font, point.getFormattedRespawnDelay(), x + 140, y + 16,
+        UIScaleManager.drawScaledString(graphics, font, point.getFormattedRespawnDelay(), x + s(140), y + s(16),
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
 
         // Toggle enabled button
-        int toggleX = x + width - TOGGLE_WIDTH - BUTTON_SIZE - 8;
-        boolean toggleHovered = mouseX >= toggleX && mouseX < toggleX + TOGGLE_WIDTH &&
-                               mouseY >= y + 6 && mouseY < y + 6 + BUTTON_SIZE;
-        renderSmallToggle(graphics, point.enabled(), toggleX, y + 6, toggleHovered);
+        int toggleX = x + width - toggleWidth - buttonSize - s(8);
+        boolean toggleHovered = mouseX >= toggleX && mouseX < toggleX + toggleWidth &&
+                               mouseY >= y + s(6) && mouseY < y + s(6) + buttonSize;
+        renderSmallToggle(graphics, point.enabled(), toggleX, y + s(6), toggleHovered);
 
         // Remove button (X)
-        int removeX = x + width - BUTTON_SIZE - 4;
-        boolean removeHovered = mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
-                               mouseY >= y + 6 && mouseY < y + 6 + BUTTON_SIZE;
+        int removeX = x + width - buttonSize - s(4);
+        boolean removeHovered = mouseX >= removeX && mouseX < removeX + buttonSize &&
+                               mouseY >= y + s(6) && mouseY < y + s(6) + buttonSize;
         int removeBgColor = removeHovered ? DesignTokens.AreaBuilder.DANGER_BG_HOVER : AreaBuilderGuiConstants.COLOR_PANEL;
-        graphics.fill(removeX, y + 6, removeX + BUTTON_SIZE, y + 6 + BUTTON_SIZE, removeBgColor);
-        graphics.renderOutline(removeX, y + 6, BUTTON_SIZE, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
-        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + BUTTON_SIZE / 2, y + 10,
+        graphics.fill(removeX, y + s(6), removeX + buttonSize, y + s(6) + buttonSize, removeBgColor);
+        graphics.renderOutline(removeX, y + s(6), buttonSize, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
+        UIScaleManager.drawScaledCenteredString(graphics, font, "X", removeX + buttonSize / 2, y + s(10),
             removeHovered ? DesignTokens.AreaBuilder.TEXT_WHITE : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
     }
 
     private void renderToggle(GuiGraphics graphics, boolean value, int x, int y, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonSize = s(BUTTON_SIZE);
 
-        boolean isHovered = mouseX >= x && mouseX < x + TOGGLE_WIDTH &&
-                           mouseY >= y && mouseY < y + BUTTON_SIZE;
+        boolean isHovered = mouseX >= x && mouseX < x + toggleWidth &&
+                           mouseY >= y && mouseY < y + buttonSize;
 
         int bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF;
         if (isHovered) {
             bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON_HOVER : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF_HOVER;
         }
 
-        graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_SIZE, bgColor);
-        graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(x, y, x + toggleWidth, y + buttonSize, bgColor);
+        graphics.renderOutline(x, y, toggleWidth, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
 
         String toggleText = Component.translatable(value ? "area.toggle.on" : "area.toggle.off").getString();
-        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + TOGGLE_WIDTH / 2, y + 5, AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
+        UIScaleManager.drawScaledCenteredString(graphics, font, toggleText, x + toggleWidth / 2, y + s(5), AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
     }
 
     private void renderSmallToggle(GuiGraphics graphics, boolean value, int x, int y, boolean isHovered) {
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonSize = s(BUTTON_SIZE);
         int bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF;
         if (isHovered) {
             bgColor = value ? AreaBuilderGuiConstants.COLOR_TOGGLE_ON_HOVER : AreaBuilderGuiConstants.COLOR_TOGGLE_OFF_HOVER;
         }
 
-        graphics.fill(x, y, x + TOGGLE_WIDTH, y + BUTTON_SIZE, bgColor);
-        graphics.renderOutline(x, y, TOGGLE_WIDTH, BUTTON_SIZE, AreaBuilderGuiConstants.COLOR_BORDER);
+        graphics.fill(x, y, x + toggleWidth, y + buttonSize, bgColor);
+        graphics.renderOutline(x, y, toggleWidth, buttonSize, AreaBuilderGuiConstants.COLOR_BORDER);
     }
 
     @Override
     public void onClick(double mouseX, double mouseY, int button) {
+        int toggleWidth = s(TOGGLE_WIDTH);
+        int buttonSize = s(BUTTON_SIZE);
+        int rowHeight = s(ROW_HEIGHT);
+        int sectionSpacing = s(SECTION_SPACING);
         // Global toggle
-        int toggleX = getX() + getWidth() - TOGGLE_WIDTH;
-        if (mouseX >= toggleX && mouseX < toggleX + TOGGLE_WIDTH &&
-            mouseY >= getY() && mouseY < getY() + BUTTON_SIZE) {
+        int toggleX = getX() + getWidth() - toggleWidth;
+        if (mouseX >= toggleX && mouseX < toggleX + toggleWidth &&
+            mouseY >= getY() && mouseY < getY() + buttonSize) {
             config = config.withGlobalEnabled(!config.globalEnabled());
             notifyChange();
             return;
@@ -232,13 +253,14 @@ public class EntitySpawnWidget extends AbstractWidget {
             return;
         }
 
-        int listY = getY() + HEADER_HEIGHT;
-        int listHeight = maxVisiblePoints * (ROW_HEIGHT + SECTION_SPACING);
+        int listY = getY() + s(HEADER_HEIGHT);
+        updateMaxVisiblePoints();
+        int listHeight = maxVisiblePoints * (rowHeight + sectionSpacing);
 
         // Check add button
-        int addY = listY + listHeight + 8;
-        if (mouseX >= getX() && mouseX < getX() + 140 &&
-            mouseY >= addY && mouseY < addY + BUTTON_SIZE) {
+        int addY = listY + listHeight + s(8);
+        if (mouseX >= getX() && mouseX < getX() + s(140) &&
+            mouseY >= addY && mouseY < addY + buttonSize) {
             if (config.canAddSpawnPoint()) {
                 addNewSpawnPoint();
             }
@@ -246,24 +268,24 @@ public class EntitySpawnWidget extends AbstractWidget {
         }
 
         // Check spawn point clicks
-        int pointY = listY + 4;
+        int pointY = listY + s(4);
         for (int i = scrollOffset; i < Math.min(config.getSpawnPointCount(), scrollOffset + maxVisiblePoints); i++) {
-            if (mouseY >= pointY && mouseY < pointY + ROW_HEIGHT) {
-                int pointWidth = getWidth() - 8;
-                int pointX = getX() + 4;
+            if (mouseY >= pointY && mouseY < pointY + rowHeight) {
+                int pointWidth = getWidth() - s(8);
+                int pointX = getX() + s(4);
 
                 // Remove button
-                int removeX = pointX + pointWidth - BUTTON_SIZE - 4;
-                if (mouseX >= removeX && mouseX < removeX + BUTTON_SIZE &&
-                    mouseY >= pointY + 6 && mouseY < pointY + 6 + BUTTON_SIZE) {
+                int removeX = pointX + pointWidth - buttonSize - s(4);
+                if (mouseX >= removeX && mouseX < removeX + buttonSize &&
+                    mouseY >= pointY + s(6) && mouseY < pointY + s(6) + buttonSize) {
                     removeSpawnPoint(i);
                     return;
                 }
 
                 // Toggle enabled
-                int toggleX2 = pointX + pointWidth - TOGGLE_WIDTH - BUTTON_SIZE - 8;
-                if (mouseX >= toggleX2 && mouseX < toggleX2 + TOGGLE_WIDTH &&
-                    mouseY >= pointY + 6 && mouseY < pointY + 6 + BUTTON_SIZE) {
+                int toggleX2 = pointX + pointWidth - toggleWidth - buttonSize - s(8);
+                if (mouseX >= toggleX2 && mouseX < toggleX2 + toggleWidth &&
+                    mouseY >= pointY + s(6) && mouseY < pointY + s(6) + buttonSize) {
                     toggleSpawnPointEnabled(i);
                     return;
                 }
@@ -272,12 +294,13 @@ public class EntitySpawnWidget extends AbstractWidget {
                 selectedIndex = (selectedIndex == i) ? -1 : i;
                 return;
             }
-            pointY += ROW_HEIGHT + SECTION_SPACING;
+            pointY += rowHeight + sectionSpacing;
         }
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        updateMaxVisiblePoints();
         int maxScroll = Math.max(0, config.getSpawnPointCount() - maxVisiblePoints);
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) verticalAmount));
         return true;
@@ -359,5 +382,17 @@ public class EntitySpawnWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.spawns.title")));
+    }
+
+    private void updateMaxVisiblePoints() {
+        int rowHeight = s(ROW_HEIGHT);
+        int sectionSpacing = s(SECTION_SPACING);
+        int headerHeight = s(HEADER_HEIGHT);
+        int available = Math.max(0, getHeight() - headerHeight - s(60));
+        maxVisiblePoints = Math.max(1, available / Math.max(1, rowHeight + sectionSpacing));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

@@ -65,6 +65,14 @@ public class NpcDialogScreen extends Screen {
     private boolean textFullyRevealed = false;
     private final List<EditorButtonWidget> optionButtons = new ArrayList<>();
 
+    // === Scaled layout ===
+    private int scaledDialogWidth;
+    private int scaledDialogHeight;
+    private int scaledPadding;
+    private int scaledButtonWidth;
+    private int scaledButtonHeight;
+    private int scaledButtonSpacing;
+
     public NpcDialogScreen(
         UUID npcId,
         String speakerName,
@@ -86,15 +94,23 @@ public class NpcDialogScreen extends Screen {
     protected void init() {
         super.init();
         optionButtons.clear();
+        UIScaleManager.update();
 
         // Play dialog open sound (BIBBIA ESTETICA R2)
         if (minecraft != null && minecraft.level != null) {
             NpcSounds.playPhaseClient(minecraft.level, NpcSounds.Phase.DIALOG_OPEN);
         }
 
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
-        int buttonY = dialogY + DIALOG_HEIGHT + 10;
-        int buttonX = (width - BUTTON_WIDTH) / 2;
+        scaledDialogWidth = UIScaleManager.scale(DIALOG_WIDTH);
+        scaledDialogHeight = UIScaleManager.scale(DIALOG_HEIGHT);
+        scaledPadding = UIScaleManager.scale(PADDING);
+        scaledButtonWidth = UIScaleManager.scale(BUTTON_WIDTH);
+        scaledButtonHeight = UIScaleManager.scale(BUTTON_HEIGHT);
+        scaledButtonSpacing = UIScaleManager.scale(BUTTON_SPACING);
+
+        int dialogY = (height - scaledDialogHeight) / 2;
+        int buttonY = dialogY + scaledDialogHeight + UIScaleManager.scale(10);
+        int buttonX = (width - scaledButtonWidth) / 2;
 
         for (int i = 0; i < options.size(); i++) {
             NpcDialogOptionData opt = options.get(i);
@@ -106,7 +122,7 @@ public class NpcDialogScreen extends Screen {
                 .onClick(() -> selectOption(opt))
                 .build();
             EditorButtonWidget button = new EditorButtonWidget(optionButton,
-                buttonX, buttonY + i * (BUTTON_HEIGHT + BUTTON_SPACING), BUTTON_WIDTH, BUTTON_HEIGHT);
+                buttonX, buttonY + i * (scaledButtonHeight + scaledButtonSpacing), scaledButtonWidth, scaledButtonHeight);
 
             button.visible = textFullyRevealed;
             optionButtons.add(button);
@@ -142,25 +158,29 @@ public class NpcDialogScreen extends Screen {
         UIScaleManager.update();
         renderBackground(graphics, mouseX, mouseY, partialTick);
 
-        int dialogX = (width - DIALOG_WIDTH) / 2;
-        int dialogY = (height - DIALOG_HEIGHT) / 2;
+        scaledDialogWidth = UIScaleManager.scale(DIALOG_WIDTH);
+        scaledDialogHeight = UIScaleManager.scale(DIALOG_HEIGHT);
+        scaledPadding = UIScaleManager.scale(PADDING);
+
+        int dialogX = (width - scaledDialogWidth) / 2;
+        int dialogY = (height - scaledDialogHeight) / 2;
 
         renderDialogPanel(graphics, dialogX, dialogY);
 
         var safeFont = Objects.requireNonNull(font, "font");
-        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + PADDING, dialogY + PADDING - 4, COLOR_SPEAKER);
+        UIScaleManager.drawScaledString(graphics, safeFont, speakerName, dialogX + scaledPadding, dialogY + scaledPadding - UIScaleManager.scale(4), COLOR_SPEAKER);
 
         int borderColor = textFullyRevealed ? COLOR_BORDER_IDLE : COLOR_BORDER_TALKING;
-        graphics.fill(dialogX + PADDING, dialogY + PADDING + 10,
-            dialogX + DIALOG_WIDTH - PADDING, dialogY + PADDING + 11, borderColor);
+        graphics.fill(dialogX + scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(10),
+            dialogX + scaledDialogWidth - scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(11), borderColor);
 
-        renderDialogText(graphics, dialogX + PADDING, dialogY + PADDING + 20);
+        renderDialogText(graphics, dialogX + scaledPadding, dialogY + scaledPadding + UIScaleManager.scale(20));
 
         if (!textFullyRevealed) {
             String hint = "[Click to skip]";
             int hintWidth = UIScaleManager.getScaledStringWidth(safeFont, hint);
-            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + DIALOG_WIDTH - PADDING - hintWidth,
-                dialogY + DIALOG_HEIGHT - PADDING, COLOR_TEXT_DIM);
+            UIScaleManager.drawScaledString(graphics, safeFont, hint, dialogX + scaledDialogWidth - scaledPadding - hintWidth,
+                dialogY + scaledDialogHeight - scaledPadding, COLOR_TEXT_DIM);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -170,16 +190,17 @@ public class NpcDialogScreen extends Screen {
         // Border color changes based on dialog state (BIBBIA ESTETICA R1)
         int borderColor = textFullyRevealed ? COLOR_BORDER_IDLE : COLOR_BORDER_TALKING;
         int glowColor = NpcState.TALKING.getSecondaryWithAlpha(0x88);
+        int glowOffset = UIScaleManager.scale(2);
 
         // Glow effect
-        graphics.fill(x - 2, y - 2, x + DIALOG_WIDTH + 2, y + DIALOG_HEIGHT + 2, glowColor);
+        graphics.fill(x - glowOffset, y - glowOffset, x + scaledDialogWidth + glowOffset, y + scaledDialogHeight + glowOffset, glowColor);
         // Background
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, COLOR_PANEL_BG);
+        graphics.fill(x, y, x + scaledDialogWidth, y + scaledDialogHeight, COLOR_PANEL_BG);
         // Borders
-        graphics.fill(x, y, x + DIALOG_WIDTH, y + 1, borderColor);
-        graphics.fill(x, y + DIALOG_HEIGHT - 1, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, borderColor);
-        graphics.fill(x, y, x + 1, y + DIALOG_HEIGHT, borderColor);
-        graphics.fill(x + DIALOG_WIDTH - 1, y, x + DIALOG_WIDTH, y + DIALOG_HEIGHT, borderColor);
+        graphics.fill(x, y, x + scaledDialogWidth, y + 1, borderColor);
+        graphics.fill(x, y + scaledDialogHeight - 1, x + scaledDialogWidth, y + scaledDialogHeight, borderColor);
+        graphics.fill(x, y, x + 1, y + scaledDialogHeight, borderColor);
+        graphics.fill(x + scaledDialogWidth - 1, y, x + scaledDialogWidth, y + scaledDialogHeight, borderColor);
     }
 
     private void renderDialogText(GuiGraphics graphics, int x, int y) {
@@ -187,7 +208,7 @@ public class NpcDialogScreen extends Screen {
         int charsDrawn = 0;
         int currentY = y;
         int lineHeight = UIScaleManager.getScaledLineHeight();
-        int maxWidth = DIALOG_WIDTH - PADDING * 2;
+        int maxWidth = scaledDialogWidth - scaledPadding * 2;
 
         for (String line : lines) {
             if (line.isEmpty()) {

@@ -434,12 +434,40 @@ public class RenderEvents {
             return;
         }
 
-        if (mc.screen instanceof net.minecraft.client.gui.screens.DeathScreen
-            && com.devmod.client.endurance.ClientQuestCache.shouldSuppressVanillaDeathScreen()) {
-            LOGGER.info("[EnduranceQuest][Client] Replacing vanilla DeathScreen with QuestDeathScreen");
-            com.devmod.client.ui.ScreenSafety.openSafe(
-                "quest_death",
-                () -> new com.devmod.client.endurance.QuestDeathScreen());
+        if (mc.screen instanceof net.minecraft.client.gui.screens.DeathScreen) {
+            boolean pendingEnd = com.devmod.client.endurance.ClientQuestCache.isPendingQuestEnd();
+            boolean playerDead = mc.player == null || mc.player.isDeadOrDying();
+            boolean hasQuest = com.devmod.client.endurance.ClientQuestCache.hasActiveQuest();
+            boolean shouldSuppress = com.devmod.client.endurance.ClientQuestCache.shouldSuppressVanillaDeathScreen();
+
+            // Log state for debugging
+            LOGGER.info("[DeathScreenDebug] DeathScreen detected: pendingEnd={}, playerDead={}, health={}, hasQuest={}, shouldSuppress={}",
+                pendingEnd, playerDead,
+                mc.player != null ? mc.player.getHealth() : -1,
+                hasQuest, shouldSuppress);
+
+            if (pendingEnd) {
+                // Quest is ending (player clicked give up), close death screen completely
+                // The server will handle respawn and teleport
+                LOGGER.info("[EnduranceQuest][Client] Closing death screen - quest ending (pendingEnd=true)");
+                mc.setScreen(null);
+            } else if (!playerDead) {
+                // Player is alive but death screen is visible - close it
+                // This happens after recovery when the player was respawned with full health
+                LOGGER.info("[EnduranceQuest][Client] Closing death screen - player is alive (health={})", mc.player != null ? mc.player.getHealth() : "?");
+                mc.setScreen(null);
+            } else if (shouldSuppress && hasQuest) {
+                // Only show QuestDeathScreen if there's actually an active quest
+                // This prevents showing empty quest death screen after quest ends
+                LOGGER.info("[EnduranceQuest][Client] Replacing vanilla DeathScreen with QuestDeathScreen");
+                com.devmod.client.ui.ScreenSafety.openSafe(
+                    "quest_death",
+                    () -> new com.devmod.client.endurance.QuestDeathScreen());
+            } else {
+                // Vanilla death screen is showing and we're not suppressing - log why
+                LOGGER.info("[DeathScreenDebug] Allowing vanilla DeathScreen: playerDead={}, hasQuest={}, shouldSuppress={}",
+                    playerDead, hasQuest, shouldSuppress);
+            }
         }
 
         // === KEYBIND HANDLING (correct way for NeoForge) ===

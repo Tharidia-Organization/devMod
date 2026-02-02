@@ -388,7 +388,7 @@ public class DialogPreviewScreen extends Screen {
         if (currentNode == null) return 0;
 
         int total = 0;
-        int maxWidth = DIALOG_WIDTH - PADDING * 2;
+        int maxWidth = UIScaleManager.scale(DIALOG_WIDTH) - UIScaleManager.scale(PADDING) * 2;
         for (String line : currentNode.lines()) {
             if (line.isEmpty()) continue;
             List<String> wrapped = wrapLine(line, maxWidth);

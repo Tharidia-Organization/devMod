@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +101,13 @@ public class TestHarnessCommands {
                     .then(Commands.literal("all")
                         .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_EXPORT_ALL, ctx))))
                 .then(Commands.literal("autosmoke")
-                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_AUTOSMOKE, ctx))))
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_AUTOSMOKE, ctx)))
+                .then(Commands.literal("killwave")
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_KILLWAVE, ctx)))
+                .then(Commands.literal("die")
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_DIE, ctx)))
+                .then(Commands.literal("skipwave")
+                    .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_ENDURANCE_SKIP_WAVE, ctx))))
 
             // /devtest debugbox <size> - Adds a debug box at player position
             .then(Commands.literal("debugbox")
@@ -318,6 +325,39 @@ public class TestHarnessCommands {
             .precondition(ActionPreconditions.requiresPermissionOrClient(2))
             .commandHint("devtest endurance autosmoke")
             .handler(context -> handleCommand(context, "devtest endurance autosmoke", TestHarnessCommands::enduranceAutoSmoke))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TEST_ENDURANCE_KILLWAVE)
+            .labelKey("devmod.action.test.endurance.killwave")
+            .descriptionKey("devmod.action.test.endurance.killwave.desc")
+            .category(ActionCategory.TESTING)
+            .menuPath("Root/Testing/Endurance/Kill Wave")
+            .icon(Items.DIAMOND_SWORD)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devtest endurance killwave")
+            .handler(context -> handleCommand(context, "devtest endurance killwave", TestHarnessCommands::enduranceKillWave))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TEST_ENDURANCE_DIE)
+            .labelKey("devmod.action.test.endurance.die")
+            .descriptionKey("devmod.action.test.endurance.die.desc")
+            .category(ActionCategory.TESTING)
+            .menuPath("Root/Testing/Endurance/Simulate Death")
+            .icon(Items.SKELETON_SKULL)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devtest endurance die")
+            .handler(context -> handleCommand(context, "devtest endurance die", TestHarnessCommands::enduranceDie))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.TEST_ENDURANCE_SKIP_WAVE)
+            .labelKey("devmod.action.test.endurance.skipwave")
+            .descriptionKey("devmod.action.test.endurance.skipwave.desc")
+            .category(ActionCategory.TESTING)
+            .menuPath("Root/Testing/Endurance/Skip Wave")
+            .icon(Items.ENDER_PEARL)
+            .precondition(ActionPreconditions.requiresPermissionOrClient(2))
+            .commandHint("devtest endurance skipwave")
+            .handler(context -> handleCommand(context, "devtest endurance skipwave", TestHarnessCommands::enduranceSkipWave))
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.TEST_DEBUGBOX)
@@ -601,6 +641,18 @@ public class TestHarnessCommands {
         return runEnduranceAutoSmoke(ctx.getSource());
     }
 
+    private static int enduranceKillWave(CommandContext<CommandSourceStack> ctx) {
+        return runEnduranceKillWave(ctx.getSource());
+    }
+
+    private static int enduranceDie(CommandContext<CommandSourceStack> ctx) {
+        return runEnduranceDie(ctx.getSource());
+    }
+
+    private static int enduranceSkipWave(CommandContext<CommandSourceStack> ctx) {
+        return runEnduranceSkipWave(ctx.getSource());
+    }
+
     private static int debugBoxFromContext(CommandContext<CommandSourceStack> ctx) {
         if (!FMLEnvironment.dist.isClient()) {
             ctx.getSource().sendFailure(I18n.translate("devmod.testing.client_only"));
@@ -829,12 +881,159 @@ public class TestHarnessCommands {
             return 0;
         }
 
-        // Force complete wave 1 to reach checkpoint
-        EnduranceQuestManager.INSTANCE.completeWave(player);
-        // Exit at checkpoint to finish flow
-        EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
+        // Quest start is ASYNC - schedule wave completion after session is ready
+        // The instance dimension creation happens asynchronously, so we need to poll
+        // for the session to be fully initialized (arena != null, state == IN_PROGRESS)
+        // Use CompletableFuture.delayedExecutor for proper delayed execution
+        var server = player.getServer();
+        if (server != null) {
+            scheduleAutoSmokeCompletion(server, player.getUUID(), 0);
+        }
 
-        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Endurance auto-smoke run executed"), false);
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Endurance auto-smoke run started (async completion pending)"), false);
+        return 1;
+    }
+
+    /**
+     * Poll for session readiness and complete the auto-smoke test.
+     * Uses CompletableFuture.delayedExecutor for proper delayed execution.
+     * @param attempt Current attempt number (for timeout)
+     */
+    private static void scheduleAutoSmokeCompletion(net.minecraft.server.MinecraftServer server, UUID playerId, int attempt) {
+        if (attempt > 50) {
+            // Timeout after 50 attempts * 200ms = 10 seconds
+            DevMod.LOGGER.warn("[AutoSmoke] Timeout waiting for session to be ready for player {}", playerId);
+            return;
+        }
+
+        // Use delayed executor: wait 200ms between attempts (about 4 ticks at 20 TPS)
+        java.util.concurrent.CompletableFuture.delayedExecutor(200, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .execute(() -> {
+                // Execute the check on the server thread
+                server.execute(() -> {
+                    boolean inQuest = EnduranceQuestManager.INSTANCE.isPlayerInQuest(playerId);
+                    var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(playerId);
+
+                    DevMod.LOGGER.info("[AutoSmoke] attempt={}, inQuest={}, sessionPresent={}",
+                        attempt, inQuest, sessionOpt.isPresent());
+
+                    // First check if session exists at all (using isPlayerInQuest which doesn't filter initializing)
+                    if (!inQuest) {
+                        // Session truly doesn't exist - quest was cancelled
+                        DevMod.LOGGER.warn("[AutoSmoke] Session not found for player {} (quest may have been cancelled)", playerId);
+                        return;
+                    }
+
+                    // Session exists - check if it's fully initialized (getActiveSession filters initializing sessions)
+                    if (sessionOpt.isEmpty()) {
+                        // Session exists but is still initializing - retry
+                        scheduleAutoSmokeCompletion(server, playerId, attempt + 1);
+                        return;
+                    }
+
+                    var session = sessionOpt.get();
+                    var quest = session.getQuest();
+
+                    // Check if session is fully ready (arena set, quest in progress)
+                    if (session.getArena() == null || quest.getState() != com.devmod.endurance.EnduranceQuestState.IN_PROGRESS) {
+                        // Not ready yet, retry
+                        scheduleAutoSmokeCompletion(server, playerId, attempt + 1);
+                        return;
+                    }
+
+                    // Session is ready - get player and complete
+                    var player = server.getPlayerList().getPlayer(playerId);
+                    if (player == null) {
+                        DevMod.LOGGER.warn("[AutoSmoke] Player {} disconnected", playerId);
+                        return;
+                    }
+
+                    // Force complete wave 1 to reach checkpoint
+                    EnduranceQuestManager.INSTANCE.completeWave(player);
+                    // Exit at checkpoint to finish flow
+                    EnduranceQuestManager.INSTANCE.exitAtCheckpoint(player);
+
+                    DevMod.LOGGER.info("[AutoSmoke] Completed auto-smoke test for player {} after {} attempts", player.getName().getString(), attempt);
+                });
+            });
+    }
+
+    private static int runEnduranceKillWave(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+        if (!EnduranceQuestManager.INSTANCE.isPlayerInQuest(player.getUUID())) {
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Not in an active Endurance quest")));
+            return 0;
+        }
+
+        // Get the arena for this player and kill all quest mobs
+        var sessionOpt = EnduranceQuestManager.INSTANCE.getActiveSession(player.getUUID());
+        if (sessionOpt.isEmpty()) {
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("No active session found")));
+            return 0;
+        }
+
+        var session = sessionOpt.get();
+        var arena = session.getArena();
+        if (arena == null) {
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("No arena found")));
+            return 0;
+        }
+
+        // Kill all mobs in the arena
+        int killed = 0;
+        net.minecraft.server.level.ServerLevel level = arena.getLevel();
+        AABB bounds = arena.getBounds();
+        for (net.minecraft.world.entity.Entity entity : level.getAllEntities()) {
+            if (entity instanceof net.minecraft.world.entity.Mob mob && bounds.contains(entity.position())) {
+                // Check if this is a quest mob (not a player or other special entity)
+                if (mob.isAlive() && !mob.isRemoved()) {
+                    mob.kill();
+                    killed++;
+                }
+            }
+        }
+
+        final int finalKilled = killed;
+        source.sendSuccess(() -> Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+            String.format("Killed %d mobs in arena", finalKilled))), false);
+        return 1;
+    }
+
+    private static int runEnduranceDie(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+        if (!EnduranceQuestManager.INSTANCE.isPlayerInQuest(player.getUUID())) {
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Not in an active Endurance quest")));
+            return 0;
+        }
+
+        // Kill the player to trigger death handling
+        player.kill();
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Player death simulated"), false);
+        return 1;
+    }
+
+    private static int runEnduranceSkipWave(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+        if (!EnduranceQuestManager.INSTANCE.isPlayerInQuest(player.getUUID())) {
+            source.sendFailure(Objects.requireNonNull(net.minecraft.network.chat.Component.literal("Not in an active Endurance quest")));
+            return 0;
+        }
+
+        // Force complete the current wave
+        EnduranceQuestManager.INSTANCE.completeWave(player);
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal("Wave skipped - checkpoint reached"), false);
         return 1;
     }
 

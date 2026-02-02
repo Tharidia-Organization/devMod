@@ -1,5 +1,8 @@
 package com.devmod.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -17,6 +20,8 @@ import com.devmod.config.Config;
 import com.devmod.damage.DamageBreakdown;
 
 public final class ClientVFXHelper {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientVFXHelper.class);
 
     private ClientVFXHelper() {
         // Utility class - prevent instantiation
@@ -94,13 +99,26 @@ public final class ClientVFXHelper {
      * Note: Panel spawning is now handled by ImpactHudController.
      */
     public static void addImpactVFX(Vec3 hitPoint, Vec3 slashDirection, ImpactData impactData) {
-        // Trigger headshot audio feedback if hit was to the head
-        if (impactData != null && impactData.getBodyPart() == BodyPart.HEAD && isLocalAttacker(impactData)) {
-            HeadshotFlashVFX.trigger();
-        }
+        LOGGER.debug("[ClientVFXHelper] addImpactVFX called: hitPoint={}, thread={}",
+            hitPoint, Thread.currentThread().getName());
 
         // Only add VFX effects if we have a hit point
-        if (hitPoint != null) {
+        if (hitPoint == null) {
+            LOGGER.debug("[ClientVFXHelper] hitPoint is null, skipping VFX");
+            return;
+        }
+
+        // Schedule VFX on render thread (required for Effekseer OpenGL calls)
+        Minecraft mc = Minecraft.getInstance();
+        mc.execute(() -> {
+            LOGGER.debug("[ClientVFXHelper] Executing on render thread: effekseerEnabled={}",
+                isEffekseerEnabled());
+
+            // Trigger headshot audio feedback if hit was to the head
+            if (impactData != null && impactData.getBodyPart() == BodyPart.HEAD && isLocalAttacker(impactData)) {
+                HeadshotFlashVFX.trigger();
+            }
+
             if (isEffekseerEnabled()) {
                 // Use Effekseer particle system
                 ImpactEffekseerVFX.playImpactEffect(hitPoint, impactData);
@@ -108,7 +126,7 @@ public final class ClientVFXHelper {
                 // Use legacy CPU/GPU VFX
                 ImpactVFX.addImpact(hitPoint, slashDirection, impactData);
             }
-        }
+        });
         // Panel spawning is handled by ImpactHudController.onImpact()
     }
 

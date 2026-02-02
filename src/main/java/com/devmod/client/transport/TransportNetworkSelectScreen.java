@@ -200,6 +200,10 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
     private void renderNodeItem(GuiGraphics graphics, NetworkNodeInfo node, int x, int y, int width, int height, boolean hovered) {
         boolean selected = node.equals(selectedNode);
         boolean available = node.available();
+        int sTextInset = UIScaleManager.scale(8);
+        int sTextTop = UIScaleManager.scale(4);
+        int sTextBottom = UIScaleManager.scale(14);
+        int sRightInset = UIScaleManager.scale(4);
 
         // Background
         int bgColor;
@@ -215,45 +219,45 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
         // Color indicator (left strip)
         int nodeColor = TransportColor.fromIndex(node.colorIndex()).getColorValue();
         int indicatorColor = available ? ((0xFF << 24) | (nodeColor & 0xFFFFFF)) : 0xFF555555;
-        graphics.fill(x, y, x + 4, y + height, indicatorColor);
+        graphics.fill(x, y, x + UIScaleManager.scale(4), y + height, indicatorColor);
 
         // Selection border
         if (selected) {
             int selColor = (0xFF << 24) | (color.getColorValue() & 0xFFFFFF);
-            renderBorder(graphics, x, y, width, height, selColor, 1);
+            renderBorder(graphics, x, y, width, height, selColor, UIScaleManager.scale(1));
         }
 
         // Node name
         int textColor = available ? DesignTokens.Text.PRIMARY : DesignTokens.Text.MUTED;
         String displayName = node.displayName().isEmpty() ? "Unnamed" : node.displayName();
-        UIScaleManager.drawScaledString(graphics, font, displayName, x + 8, y + 4, textColor);
+        UIScaleManager.drawScaledString(graphics, font, displayName, x + sTextInset, y + sTextTop, textColor);
 
         // Coordinates
         String coordText = node.getCoordinatesString();
-        UIScaleManager.drawScaledString(graphics, font, coordText, x + 8, y + 14, DesignTokens.Text.SECONDARY);
+        UIScaleManager.drawScaledString(graphics, font, coordText, x + sTextInset, y + sTextBottom, DesignTokens.Text.SECONDARY);
 
         // Dimension (right side)
         String dimText = formatDimension(node.dimension());
         int dimWidth = UIScaleManager.getScaledStringWidth(font, dimText);
-        UIScaleManager.drawScaledString(graphics, font, dimText, x + width - dimWidth - 4, y + 4, DesignTokens.Text.MUTED);
+        UIScaleManager.drawScaledString(graphics, font, dimText, x + width - dimWidth - sRightInset, y + sTextTop, DesignTokens.Text.MUTED);
 
         // Availability status
         if (!available) {
             String unavailText = "Unavailable";
             int unavailWidth = UIScaleManager.getScaledStringWidth(font, unavailText);
-            UIScaleManager.drawScaledString(graphics, font, unavailText, x + width - unavailWidth - 4, y + 14, DesignTokens.Semantic.ERROR);
+            UIScaleManager.drawScaledString(graphics, font, unavailText, x + width - unavailWidth - sRightInset, y + sTextBottom, DesignTokens.Semantic.ERROR);
         } else if (node.distanceBlocks() >= 0) {
             String distText = node.distanceBlocks() + "m";
             int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
-            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - sRightInset, y + sTextBottom, DesignTokens.Text.MUTED);
         } else if (node.distanceBlocks() == -2) {
             String distText = I18n.translate("devmod.transport.distance.cross_dim_badge").getString();
             int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
-            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - sRightInset, y + sTextBottom, DesignTokens.Text.MUTED);
         } else {
             String distText = I18n.translate("devmod.transport.distance.unknown").getString();
             int distWidth = UIScaleManager.getScaledStringWidth(font, distText);
-            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - 4, y + 14, DesignTokens.Text.MUTED);
+            UIScaleManager.drawScaledString(graphics, font, distText, x + width - distWidth - sRightInset, y + sTextBottom, DesignTokens.Text.MUTED);
         }
     }
 
@@ -274,7 +278,7 @@ public class TransportNetworkSelectScreen extends BaseDevModScreen {
      * Renders a border around a rectangle.
      */
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color) {
-        renderBorder(graphics, x, y, width, height, color, BORDER_THICKNESS);
+        renderBorder(graphics, x, y, width, height, color, UIScaleManager.scale(BORDER_THICKNESS));
     }
 
     private void renderBorder(GuiGraphics graphics, int x, int y, int width, int height, int color, int thickness) {

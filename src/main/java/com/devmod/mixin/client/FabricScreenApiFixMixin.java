@@ -86,12 +86,14 @@ public class FabricScreenApiFixMixin {
         // Suppress vanilla DeathScreen during quest death/respawn flow
         // Our custom QuestDeathScreen is sent via network packet from server
         // Uses shouldSuppressVanillaDeathScreen() which persists through respawn
+        // Also suppress if pendingQuestEnd is true (player clicked give up, waiting for teleport)
         if (newScreen instanceof DeathScreen) {
             boolean suppress = ClientQuestCache.shouldSuppressVanillaDeathScreen();
             boolean inInstance = ClientQuestCache.isInInstanceDimension();
-            if (suppress || inInstance) {
-                LOGGER.info("[EnduranceQuest][Client] Suppressing vanilla DeathScreen (suppress={}, inInstance={})",
-                    suppress, inInstance);
+            boolean pendingEnd = ClientQuestCache.isPendingQuestEnd();
+            if (suppress || inInstance || pendingEnd) {
+                LOGGER.info("[EnduranceQuest][Client] Suppressing vanilla DeathScreen (suppress={}, inInstance={}, pendingEnd={})",
+                    suppress, inInstance, pendingEnd);
                 ci.cancel();
                 return;
             }

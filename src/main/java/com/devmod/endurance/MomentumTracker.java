@@ -68,21 +68,26 @@ public class MomentumTracker implements QuestLifecycleListener {
 
     /**
      * Tracks momentum for a single player.
+     * Thread-safe: Uses synchronized methods for compound operations.
      */
     public static class MomentumSession {
         private final UUID playerId;
-        private float momentum = 50f; // Start at 50%
-        private long lastKillTime;
-        private long lastTickTime;
-        private MomentumState currentState = MomentumState.BUILDING;
-        private boolean inOverdrive = false;
-        private long overdriveStartTime = 0;
-        private boolean stateChanged = false;
+        // Lock for compound operations that span multiple fields
+        private final Object stateLock = new Object();
 
-        // Statistics
-        private int overdriveCount = 0;
-        private long totalOverdriveTime = 0;
-        private int stagnantCount = 0;
+        // Volatile for thread visibility (all accessed from tick and combat threads)
+        private volatile float momentum = 50f; // Start at 50%
+        private volatile long lastKillTime;
+        private volatile long lastTickTime;
+        private volatile MomentumState currentState = MomentumState.BUILDING;
+        private volatile boolean inOverdrive = false;
+        private volatile long overdriveStartTime = 0;
+        private volatile boolean stateChanged = false;
+
+        // Statistics - volatile for thread visibility
+        private volatile int overdriveCount = 0;
+        private volatile long totalOverdriveTime = 0;
+        private volatile int stagnantCount = 0;
 
         public MomentumSession(UUID playerId) {
             this.playerId = playerId;
@@ -92,78 +97,84 @@ public class MomentumTracker implements QuestLifecycleListener {
 
         /**
          * Called when player kills an enemy.
+         * Thread-safe: Synchronized to prevent race with tick().
          */
         public MomentumResult onKill() {
-            long now = System.currentTimeMillis();
-            lastKillTime = now;
-            stateChanged = false;
+            synchronized (stateLock) {
+                long now = System.currentTimeMillis();
+                lastKillTime = now;
+                stateChanged = false;
 
-            // If in overdrive, don't add more momentum but refresh timer
-            if (inOverdrive) {
-                // Extend overdrive slightly with each kill (max +3 sec)
-                long elapsed = now - overdriveStartTime;
-                if (elapsed < OVERDRIVE_DURATION_MS) {
-                    overdriveStartTime = now - Math.max(0, elapsed - 1000);
+                // If in overdrive, don't add more momentum but refresh timer
+                if (inOverdrive) {
+                    // Extend overdrive slightly with each kill (max +3 sec)
+                    long elapsed = now - overdriveStartTime;
+                    if (elapsed < OVERDRIVE_DURATION_MS) {
+                        overdriveStartTime = now - Math.max(0, elapsed - 1000);
+                    }
+                    return new MomentumResult(currentState, getDamageMultiplier(), getStyleMultiplier(), false, true);
                 }
-                return new MomentumResult(currentState, getDamageMultiplier(), getStyleMultiplier(), false, true);
+
+                // Add momentum
+                float oldMomentum = momentum;
+                momentum = Math.min(OVERDRIVE_THRESHOLD, momentum + KILL_MOMENTUM_GAIN);
+
+                // Check for overdrive trigger
+                if (momentum >= OVERDRIVE_THRESHOLD && !inOverdrive) {
+                    triggerOverdrive(now);
+                    stateChanged = true;
+                }
+
+                // Update state
+                updateState();
+
+                LOGGER.debug("[Momentum] Player {} kill: {}% -> {}%, state: {}",
+                    playerId, (int)oldMomentum, (int)momentum, currentState);
+
+                return new MomentumResult(currentState, getDamageMultiplier(), getStyleMultiplier(), stateChanged, inOverdrive);
             }
-
-            // Add momentum
-            float oldMomentum = momentum;
-            momentum = Math.min(OVERDRIVE_THRESHOLD, momentum + KILL_MOMENTUM_GAIN);
-
-            // Check for overdrive trigger
-            if (momentum >= OVERDRIVE_THRESHOLD && !inOverdrive) {
-                triggerOverdrive(now);
-                stateChanged = true;
-            }
-
-            // Update state
-            updateState();
-
-            LOGGER.debug("[Momentum] Player {} kill: {}% -> {}%, state: {}",
-                playerId, (int)oldMomentum, (int)momentum, currentState);
-
-            return new MomentumResult(currentState, getDamageMultiplier(), getStyleMultiplier(), stateChanged, inOverdrive);
         }
 
         /**
          * Called every tick to process decay.
+         * Thread-safe: Synchronized to prevent race with onKill().
          */
         public void tick() {
-            long now = System.currentTimeMillis();
-            long deltaMs = now - lastTickTime;
-            lastTickTime = now;
+            synchronized (stateLock) {
+                long now = System.currentTimeMillis();
+                long deltaMs = now - lastTickTime;
+                lastTickTime = now;
 
-            stateChanged = false;
+                stateChanged = false;
 
-            // Handle overdrive expiration
-            if (inOverdrive) {
-                if (now - overdriveStartTime >= OVERDRIVE_DURATION_MS) {
-                    endOverdrive();
-                    stateChanged = true;
+                // Handle overdrive expiration
+                if (inOverdrive) {
+                    if (now - overdriveStartTime >= OVERDRIVE_DURATION_MS) {
+                        endOverdrive();
+                        stateChanged = true;
+                    }
+                    return; // No decay during overdrive
                 }
-                return; // No decay during overdrive
-            }
 
-            // Check grace period
-            if (now - lastKillTime < GRACE_PERIOD_MS) {
-                return; // No decay during grace period
-            }
+                // Check grace period
+                if (now - lastKillTime < GRACE_PERIOD_MS) {
+                    return; // No decay during grace period
+                }
 
-            // Apply decay
-            float decayAmount = (IDLE_DECAY_PER_SECOND * deltaMs) / 1000f;
-            momentum = Math.max(0, momentum - decayAmount);
+                // Apply decay
+                float decayAmount = (IDLE_DECAY_PER_SECOND * deltaMs) / 1000f;
+                momentum = Math.max(0, momentum - decayAmount);
 
-            // Check for stagnant
-            MomentumState oldState = currentState;
-            updateState();
+                // Check for stagnant
+                MomentumState oldState = currentState;
+                updateState();
 
-            if (currentState != oldState) {
-                stateChanged = true;
-                if (currentState == MomentumState.STAGNANT) {
-                    stagnantCount++;
-                    LOGGER.debug("[Momentum] Player {} became STAGNANT", playerId);
+                if (currentState != oldState) {
+                    stateChanged = true;
+                    if (currentState == MomentumState.STAGNANT) {
+                        stagnantCount++;
+                        LOGGER.debug("[Momentum] Player {} became STAGNANT", playerId);
+                    }
                 }
             }
         }
@@ -322,9 +333,12 @@ public class MomentumTracker implements QuestLifecycleListener {
 
     /**
      * Process tick for all active sessions.
+     * Thread-safe: Creates snapshot of sessions to avoid iteration issues during concurrent modification.
      */
     public void tick() {
-        for (MomentumSession session : sessions.values()) {
+        // Create snapshot to avoid weakly-consistent iterator skipping/duplicating entries
+        // during concurrent add/remove operations
+        for (MomentumSession session : java.util.List.copyOf(sessions.values())) {
             session.tick();
         }
     }

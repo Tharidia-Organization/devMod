@@ -108,34 +108,34 @@ public class MobEquipmentScreen extends Screen {
         int inputX = panelX + scaledPanelWidth - UIScaleManager.scale(DesignTokens.Spacing.PANEL_PADDING) - scaledInputWidth;
 
         // Start after header
-        int fieldY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING + 20;
+        int fieldY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + s(DesignTokens.Spacing.PANEL_PADDING) + s(20);
 
         // Weapons section fields
         String mainHandValue = getItemName(EquipmentSlot.MAINHAND);
         originalMainHand = normalize(mainHandValue);
         mainHand = createInputField(inputX, fieldY, mainHandValue);
-        fieldY += ROW_HEIGHT;
+        fieldY += s(ROW_HEIGHT);
 
         String offHandValue = getItemName(EquipmentSlot.OFFHAND);
         originalOffHand = normalize(offHandValue);
         offHand = createInputField(inputX, fieldY, offHandValue);
-        fieldY += ROW_HEIGHT + DesignTokens.Spacing.GAP_LARGE + 16; // separator + section header
+        fieldY += s(ROW_HEIGHT) + s(DesignTokens.Spacing.GAP_LARGE) + s(16); // separator + section header
 
         // Armor section fields
         String headValue = getItemName(EquipmentSlot.HEAD);
         originalHead = normalize(headValue);
         head = createInputField(inputX, fieldY, headValue);
-        fieldY += ROW_HEIGHT;
+        fieldY += s(ROW_HEIGHT);
 
         String chestValue = getItemName(EquipmentSlot.CHEST);
         originalChest = normalize(chestValue);
         chest = createInputField(inputX, fieldY, chestValue);
-        fieldY += ROW_HEIGHT;
+        fieldY += s(ROW_HEIGHT);
 
         String legsValue = getItemName(EquipmentSlot.LEGS);
         originalLegs = normalize(legsValue);
         legs = createInputField(inputX, fieldY, legsValue);
-        fieldY += ROW_HEIGHT;
+        fieldY += s(ROW_HEIGHT);
 
         String feetValue = getItemName(EquipmentSlot.FEET);
         originalFeet = normalize(feetValue);
@@ -144,7 +144,7 @@ public class MobEquipmentScreen extends Screen {
     }
 
     private EditBox createInputField(int x, int y, String value) {
-        EditBox field = new EditBox(Objects.requireNonNull(font), x, y, INPUT_WIDTH, 18,
+        EditBox field = new EditBox(Objects.requireNonNull(font), x, y, s(INPUT_WIDTH), s(18),
             Objects.requireNonNull(Component.empty()));
         if (value == null) value = "";
         field.setValue(value);
@@ -185,68 +185,70 @@ public class MobEquipmentScreen extends Screen {
         // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
 
-        int panelX = (this.width - PANEL_WIDTH) / 2;
-        int panelY = (this.height - PANEL_HEIGHT) / 2;
+        int panelW = s(PANEL_WIDTH);
+        int panelH = s(PANEL_HEIGHT);
+        int panelX = (this.width - panelW) / 2;
+        int panelY = (this.height - panelH) / 2;
 
         // Main panel
         var safeFont = Objects.requireNonNull(font);
-        AxiomRenderer.drawPanel(graphics, safeFont, panelX, panelY, PANEL_WIDTH, PANEL_HEIGHT,
+        AxiomRenderer.drawPanel(graphics, safeFont, panelX, panelY, panelW, panelH,
             "Equipment: " + mob.getName().getString());
         updateButtonStates();
 
-        int contentX = panelX + DesignTokens.Spacing.PANEL_PADDING;
-        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.PANEL_PADDING;
-        int contentWidth = PANEL_WIDTH - DesignTokens.Spacing.PANEL_PADDING * 2;
+        int contentX = panelX + s(DesignTokens.Spacing.PANEL_PADDING);
+        int contentY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + s(DesignTokens.Spacing.PANEL_PADDING);
+        int contentWidth = panelW - s(DesignTokens.Spacing.PANEL_PADDING) * 2;
 
         // Weapons section header
         AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Weapons");
-        contentY += 16;
+        contentY += s(16);
 
         // Weapon slots
         drawEquipmentLabel(graphics, contentX, contentY, "Main Hand:", DesignTokens.Accent.RED(),
             mob.getItemBySlot(EquipmentSlot.MAINHAND));
-        contentY += ROW_HEIGHT;
+        contentY += s(ROW_HEIGHT);
 
         drawEquipmentLabel(graphics, contentX, contentY, "Off Hand:", DesignTokens.Accent.BLUE(),
             mob.getItemBySlot(EquipmentSlot.OFFHAND));
-        contentY += ROW_HEIGHT;
+        contentY += s(ROW_HEIGHT);
 
         // Separator
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
-        contentY += DesignTokens.Spacing.GAP_LARGE;
+        contentY += s(DesignTokens.Spacing.GAP_LARGE);
 
         // Armor section header
         AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, contentY, "Armor");
-        contentY += 16;
+        contentY += s(16);
 
         // Armor slots
         drawEquipmentLabel(graphics, contentX, contentY, "Head:", DesignTokens.Accent.CYAN,
             mob.getItemBySlot(EquipmentSlot.HEAD));
-        contentY += ROW_HEIGHT;
+        contentY += s(ROW_HEIGHT);
 
         drawEquipmentLabel(graphics, contentX, contentY, "Chest:", DesignTokens.Accent.GREEN,
             mob.getItemBySlot(EquipmentSlot.CHEST));
-        contentY += ROW_HEIGHT;
+        contentY += s(ROW_HEIGHT);
 
         drawEquipmentLabel(graphics, contentX, contentY, "Legs:", DesignTokens.Accent.RED,
             mob.getItemBySlot(EquipmentSlot.LEGS));
-        contentY += ROW_HEIGHT;
+        contentY += s(ROW_HEIGHT);
 
         drawEquipmentLabel(graphics, contentX, contentY, "Feet:", DesignTokens.Accent.PURPLE(),
             mob.getItemBySlot(EquipmentSlot.FEET));
-        contentY += ROW_HEIGHT + DesignTokens.Spacing.GAP_LARGE;
+        contentY += s(ROW_HEIGHT) + s(DesignTokens.Spacing.GAP_LARGE);
 
         // Separator
         AxiomRenderer.drawSeparator(graphics, contentX, contentY, contentWidth);
-        contentY += DesignTokens.Spacing.GAP_LARGE;
+        contentY += s(DesignTokens.Spacing.GAP_LARGE);
 
         // Action buttons
-        int buttonWidth = 100;
-        int buttonGap = 10;
-        int buttonsX = panelX + (PANEL_WIDTH - buttonWidth * 2 - buttonGap) / 2;
+        int buttonWidth = s(100);
+        int buttonGap = s(10);
+        int buttonsX = panelX + (panelW - buttonWidth * 2 - buttonGap) / 2;
         int backX = buttonsX + buttonWidth + buttonGap;
-        applyButton.render(graphics, buttonsX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
-        backButton.render(graphics, backX, contentY, buttonWidth, DesignTokens.Size.BUTTON_HEIGHT, mouseX, mouseY);
+        applyButton.render(graphics, buttonsX, contentY, buttonWidth, s(DesignTokens.Size.BUTTON_HEIGHT), mouseX, mouseY);
+        backButton.render(graphics, backX, contentY, buttonWidth, s(DesignTokens.Size.BUTTON_HEIGHT), mouseX, mouseY);
 
         renderInputBackgrounds(graphics);
 
@@ -270,7 +272,7 @@ public class MobEquipmentScreen extends Screen {
             String msg = errorMessage != null ? errorMessage : "";
             int textWidth = safeFont.width(msg);
             int errorX = (this.width - textWidth) / 2;
-            UIScaleManager.drawScaledString(graphics, safeFont, msg, errorX, panelY + PANEL_HEIGHT + 8, DesignTokens.Accent.RED(), false);
+            UIScaleManager.drawScaledString(graphics, safeFont, msg, errorX, panelY + panelH + s(8), DesignTokens.Accent.RED(), false);
 
             errorDisplayTicks--;
             if (errorDisplayTicks <= 0) {
@@ -280,7 +282,7 @@ public class MobEquipmentScreen extends Screen {
         }
 
         // Footer hint
-        int footerY = panelY + PANEL_HEIGHT + (errorMessage != null ? 24 : 8);
+        int footerY = panelY + panelH + (errorMessage != null ? s(24) : s(8));
         AxiomRenderer.drawHint(graphics, safeFont, panelX, footerY, "Enter item IDs (e.g., minecraft:diamond_sword). Leave blank to clear.");
 
         if (showingConfirmDialog) {
@@ -306,14 +308,14 @@ public class MobEquipmentScreen extends Screen {
 
     private void drawEquipmentLabel(GuiGraphics graphics, int x, int y, String label, int accentColor, ItemStack currentItem) {
         // Accent bar
-        graphics.fill(x, y + 4, x + 3, y + 14, accentColor);
+        graphics.fill(x, y + s(4), x + s(3), y + s(14), accentColor);
 
         // Label
-        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, x + 8, y + 5, DesignTokens.Text.PRIMARY(), false);
+        UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), label, x + s(8), y + s(5), DesignTokens.Text.PRIMARY(), false);
 
         // Current item preview (if any)
         if (!currentItem.isEmpty()) {
-            graphics.renderItem(currentItem, x + 70, y);
+            graphics.renderItem(currentItem, x + s(70), y);
         }
     }
 
@@ -324,9 +326,11 @@ public class MobEquipmentScreen extends Screen {
             boolean handled = discardButton.mouseClicked(mouseX, mouseY, button) ||
                 cancelDiscardButton.mouseClicked(mouseX, mouseY, button);
             if (!handled) {
-                int dx = (this.width - DIALOG_WIDTH) / 2;
-                int dy = (this.height - DIALOG_HEIGHT) / 2;
-                if (!AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT)) {
+                int dialogW = s(DIALOG_WIDTH);
+                int dialogH = s(DIALOG_HEIGHT);
+                int dx = (this.width - dialogW) / 2;
+                int dy = (this.height - dialogH) / 2;
+                if (!AxiomRenderer.isMouseOver((int) mouseX, (int) mouseY, dx, dy, dialogW, dialogH)) {
                     showingConfirmDialog = false;
                 }
             }
@@ -550,28 +554,34 @@ public class MobEquipmentScreen extends Screen {
         graphics.fill(0, 0, this.width, this.height,
             DesignTokens.withAlpha(DesignTokens.Mask.NONE, DesignTokens.Alpha.A63));
 
-        int dx = (this.width - DIALOG_WIDTH) / 2;
-        int dy = (this.height - DIALOG_HEIGHT) / 2;
+        int dialogW = s(DIALOG_WIDTH);
+        int dialogH = s(DIALOG_HEIGHT);
+        int dx = (this.width - dialogW) / 2;
+        int dy = (this.height - dialogH) / 2;
 
-        graphics.fill(dx, dy, dx + DIALOG_WIDTH, dy + DIALOG_HEIGHT, DesignTokens.Background.PANEL_SOLID());
-        AxiomRenderer.drawBorder(graphics, dx, dy, DIALOG_WIDTH, DIALOG_HEIGHT, DesignTokens.Accent.ORANGE());
+        graphics.fill(dx, dy, dx + dialogW, dy + dialogH, DesignTokens.Background.PANEL_SOLID());
+        AxiomRenderer.drawBorder(graphics, dx, dy, dialogW, dialogH, DesignTokens.Accent.ORANGE());
 
         var safeFont = Objects.requireNonNull(font);
         String title = "Unsaved Changes";
-        int titleX = dx + (DIALOG_WIDTH - safeFont.width(title)) / 2;
-        UIScaleManager.drawScaledString(graphics, safeFont, title, titleX, dy + 10, DesignTokens.Text.PRIMARY(), false);
+        int titleX = dx + (dialogW - safeFont.width(title)) / 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, title, titleX, dy + s(10), DesignTokens.Text.PRIMARY(), false);
 
         String msg1 = "Discard equipment edits?";
-        int msgX = dx + (DIALOG_WIDTH - safeFont.width(msg1)) / 2;
-        UIScaleManager.drawScaledString(graphics, safeFont, msg1, msgX, dy + 28, DesignTokens.Text.SECONDARY(), false);
+        int msgX = dx + (dialogW - safeFont.width(msg1)) / 2;
+        UIScaleManager.drawScaledString(graphics, safeFont, msg1, msgX, dy + s(28), DesignTokens.Text.SECONDARY(), false);
 
-        int btnW = 90;
-        int btnH = DesignTokens.Size.BUTTON_HEIGHT;
-        int btnGap = 10;
-        int btnX = dx + (DIALOG_WIDTH - (btnW * 2 + btnGap)) / 2;
-        int btnY = dy + DIALOG_HEIGHT - 26;
+        int btnW = s(90);
+        int btnH = s(DesignTokens.Size.BUTTON_HEIGHT);
+        int btnGap = s(10);
+        int btnX = dx + (dialogW - (btnW * 2 + btnGap)) / 2;
+        int btnY = dy + dialogH - s(26);
 
         discardButton.render(graphics, btnX, btnY, btnW, btnH, mouseX, mouseY);
         cancelDiscardButton.render(graphics, btnX + btnW + btnGap, btnY, btnW, btnH, mouseX, mouseY);
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

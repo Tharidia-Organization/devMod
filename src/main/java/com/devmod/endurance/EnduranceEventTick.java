@@ -25,8 +25,10 @@ import com.devmod.endurance.analytics.LiveAnalyticsHookManager;
 import com.devmod.endurance.combat.ComboSystemFacade;
 import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.nutrition.NutritionBridgeSystem;
+import com.devmod.endurance.services.InstanceServicesFacade;
 import com.devmod.party.QuestSequencePayload;
 import com.devmod.party.QuestStartSequence;
+import com.devmod.runtime.DynamicDimensionManager;
 import com.devmod.runtime.environment.DimensionEnvironmentManager;
 import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
@@ -98,6 +100,9 @@ public class EnduranceEventTick {
                 EnduranceQuestManager.ActiveQuestSession session = entry.getValue();
                 ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerId));
                 if (player != null) {
+                    if (!session.shouldProcessGameplay()) {
+                        continue;
+                    }
                     boolean spectator = session.isPartySpectator();
                     ArenaContext arena = session.getArena();
                     if (!spectator && arena != null) {
@@ -670,7 +675,15 @@ public class EnduranceEventTick {
                         handle.primaryPlayerSpawn().y(),
                         handle.primaryPlayerSpawn().z())
                     : arena.getCenter();
-                double targetY = enforceY ? targetPos.getY() : Math.max(targetPos.getY(), bounds.minY + 1.0);
+                // If outsideY, use the center of the arena bounds for Y, not the spawn pos
+                // This fixes issues where spawn positions are incorrectly stored outside bounds
+                double targetY;
+                if (outsideY) {
+                    // Place player at center Y of the arena bounds
+                    targetY = (bounds.minY + bounds.maxY) / 2.0;
+                } else {
+                    targetY = enforceY ? targetPos.getY() : Math.max(targetPos.getY(), bounds.minY + 1.0);
+                }
                 long now = System.currentTimeMillis();
                 if (activeSession.canLogConfinement(now, CONFINEMENT_LOG_COOLDOWN_MS)) {
                     activeSession.markConfinementLog(now);
@@ -680,23 +693,25 @@ public class EnduranceEventTick {
                         outsideXZ, outsideY,
                         bounds.minX, bounds.minY, bounds.minZ,
                         bounds.maxX, bounds.maxY, bounds.maxZ,
-                        targetPos.getX(), targetPos.getY(), targetPos.getZ(),
+                        targetPos.getX(), targetY, targetPos.getZ(),
                         activeSession.getQuest().getCurrentWave(),
                         activeSession.getQuest().getQuestId());
                 }
-                // Use the full teleport method to ensure proper client sync.
-                // Simple teleportTo(x,y,z) doesn't force network sync when client is stuck in "loading terrain".
+                // Use aggressive teleport that forces client sync
                 net.minecraft.server.level.ServerLevel level = arena.getLevel();
                 level.getChunkAt(targetPos); // Ensure chunk is loaded on server
-                player.teleportTo(
-                    level,
-                    targetPos.getX() + 0.5,
-                    targetY,
-                    targetPos.getZ() + 0.5,
-                    Objects.requireNonNull(java.util.Set.<net.minecraft.world.entity.RelativeMovement>of(), "teleport flags"),
-                    player.getYRot(),
-                    player.getXRot()
-                );
+
+                // Stop any movement and reset player state before teleporting
+                player.setDeltaMovement(0, 0, 0);
+                player.fallDistance = 0;
+
+                // Force position update using connection for reliable client sync
+                double tx = targetPos.getX() + 0.5;
+                double tz = targetPos.getZ() + 0.5;
+                player.connection.teleport(tx, targetY, tz, player.getYRot(), player.getXRot());
+
+                // Also set the position directly as fallback
+                player.moveTo(tx, targetY, tz, player.getYRot(), player.getXRot());
             }
         }
     }
@@ -737,16 +752,33 @@ public class EnduranceEventTick {
                 player.getName().getString());
             return;
         }
-        boolean teleported = com.devmod.runtime.DynamicDimensionManager.INSTANCE.teleportToInstance(player, instanceId);
+        boolean teleported = EnduranceQuestManager.INSTANCE.teleportPlayerToArena(
+            player,
+            session,
+            true,
+            false
+        );
         if (teleported) {
-            EnduranceQuestManager.INSTANCE.teleportPlayersToArena(
-                List.of(player), arena, session.getArenaHandle(), true);
             EndurancePlayerStateManager.INSTANCE.applySafeWindowEffects(player, EnduranceQuestManager.SAFE_WINDOW_TICKS);
             LOGGER.info("[EnduranceQuest] Recovered player {} to instance {}",
                 player.getName().getString(), instanceId);
         } else {
-            LOGGER.error("[EnduranceQuest] Failed to recover player {} to instance {}",
-                player.getName().getString(), instanceId);
+            boolean instanceAlive = InstanceServicesFacade.INSTANCE.getInstance(instanceId)
+                .map(instance -> instance.getState().isAlive())
+                .orElse(false);
+            boolean dimensionAlive = DynamicDimensionManager.INSTANCE.hasDimension(instanceId);
+            if (!instanceAlive || !dimensionAlive) {
+                LOGGER.error("[EnduranceQuest] Recovery failed for {} - instance unavailable (instanceAlive={}, dimensionAlive={})",
+                    player.getName().getString(), instanceAlive, dimensionAlive);
+                EnduranceQuestManager.INSTANCE.handleCriticalTeleportFailure(
+                    player,
+                    session,
+                    "instance_unavailable"
+                );
+            } else {
+                LOGGER.warn("[EnduranceQuest] Failed to recover player {} to instance {} (instance alive, will retry)",
+                    player.getName().getString(), instanceId);
+            }
         }
     }
 
@@ -947,8 +979,12 @@ public class EnduranceEventTick {
 
         // Notify player about respawned mobs
         UUID playerId = session.getPlayerId();
+        if (playerId == null) {
+            // Party session without primary player - skip notification
+            return;
+        }
         var serverInstance = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
-        ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(Objects.requireNonNull(playerId)) : null;
+        ServerPlayer player = serverInstance != null ? serverInstance.getPlayerList().getPlayer(playerId) : null;
         if (player != null) {
             player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.endurance.mobs_respawned", successfulRespawns)
                 .withStyle(SharedColorTokens.Chat.YELLOW)));

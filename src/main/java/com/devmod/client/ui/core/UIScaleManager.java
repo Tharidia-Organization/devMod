@@ -636,6 +636,33 @@ public final class UIScaleManager {
     }
 
     /**
+     * Gets a scaled line height that guarantees enough space for the current font.
+     * Ensures the result is at least the font line height plus a minimal gap.
+     *
+     * @param font The current font (may be null)
+     * @return The scaled line height in pixels
+     */
+    public static int getScaledLineHeight(net.minecraft.client.gui.Font font) {
+        return getScaledLineHeight(font, 9);
+    }
+
+    /**
+     * Gets a scaled line height using a base line height target.
+     * Ensures the result is at least the font line height plus a minimal gap.
+     *
+     * @param font The current font (may be null)
+     * @param baseLineHeight The base line height at 1x scale
+     * @return The scaled line height in pixels
+     */
+    public static int getScaledLineHeight(net.minecraft.client.gui.Font font, int baseLineHeight) {
+        int fontHeight = font != null ? font.lineHeight : MIN_LINE_HEIGHT;
+        int minGap = scaleMin(2, MIN_GAP);
+        int minLine = fontHeight + minGap;
+        int scaledBase = Math.max(MIN_LINE_HEIGHT, scale(baseLineHeight));
+        return Math.max(minLine, scaledBase);
+    }
+
+    /**
      * Gets the text scale factor for custom text rendering.
      * Text scales at 70% of the rate to prevent tiny/huge text.
      *

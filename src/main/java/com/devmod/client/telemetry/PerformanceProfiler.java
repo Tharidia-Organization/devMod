@@ -113,6 +113,7 @@ public class PerformanceProfiler {
         Font font = mc.font;
         if (font == null) return;
 
+        UIScaleManager.update();
         INSTANCE.updateMetrics();
         INSTANCE.renderOverlay(graphics, font);
     }
@@ -235,57 +236,70 @@ public class PerformanceProfiler {
         Objects.requireNonNull(font, "font");
         int screenWidth = graphics.guiWidth();
 
+        int panelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int padding = UIScaleManager.scale(PADDING);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
+        int barHeight = UIScaleManager.scale(BAR_HEIGHT);
+        int graphHeight = UIScaleManager.scale(20);
+        int gap4 = UIScaleManager.scale(4);
+        int panelHeight = calculatePanelHeight(lineHeight, padding, barHeight, graphHeight, gap4);
+
         // Position: top right corner
-        int panelHeight = calculatePanelHeight();
-        int x = screenWidth - PANEL_WIDTH - PANEL_MARGIN;
-        int y = PANEL_MARGIN;
+        int x = screenWidth - panelWidth - UIScaleManager.scale(PANEL_MARGIN);
+        int y = UIScaleManager.scale(PANEL_MARGIN);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - panelHeight));
 
         // Outer glow (Impact UI style)
-        graphics.fill(x - 1, y - 1, x + PANEL_WIDTH + 1, y + panelHeight + 1, BORDER_GLOW);
+        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + panelHeight + 1, BORDER_GLOW);
 
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + panelHeight, BG_COLOR);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, BG_COLOR);
 
         // Bordo
-        drawBorder(graphics, x, y, PANEL_WIDTH, panelHeight, BORDER_COLOR);
+        drawBorder(graphics, x, y, panelWidth, panelHeight, BORDER_COLOR);
 
-        int textX = x + PADDING;
-        int textY = y + PADDING;
+        int textX = x + padding;
+        int textY = y + padding;
 
         // === Header ===
         UIScaleManager.drawScaledString(graphics, font, "DevMod Profiler", textX, textY, TEXT_CYAN, false);
-        textY += LINE_HEIGHT + 4;
+        textY += lineHeight + gap4;
 
         // === FPS Section ===
         UIScaleManager.drawScaledString(graphics, font, "▸ Performance", textX, textY, TEXT_CYAN, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         int fpsColor = getFpsColor(currentFps);
         UIScaleManager.drawScaledString(graphics, font, String.format("FPS: %d", currentFps), textX + 4, textY, fpsColor, false);
         UIScaleManager.drawScaledString(graphics, font, String.format("\u00A77(min:%d avg:%d max:%d)", minFps, avgFps, maxFps),
             textX + 50, textY, TEXT_GRAY, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Frame time
         int ftColor = getFrameTimeColor(currentFrameTimeMs);
         UIScaleManager.drawScaledString(graphics, font, String.format("Frame: %.2fms", currentFrameTimeMs), textX + 4, textY, ftColor, false);
         UIScaleManager.drawScaledString(graphics, font, String.format("\u00A77(avg:%.1f max:%.1f)", avgFrameTimeMs, maxFrameTimeMs),
             textX + 80, textY, TEXT_GRAY, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // TPS
         int tpsColor = estimatedTps >= 19 ? TEXT_GREEN : (estimatedTps >= 15 ? TEXT_YELLOW : TEXT_RED);
         UIScaleManager.drawScaledString(graphics, font, String.format("TPS: %.1f", estimatedTps), textX + 4, textY, tpsColor, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Frame time graph
-        textY += 2;
-        renderFrameTimeGraph(graphics, textX, textY, PANEL_WIDTH - PADDING * 2, 20);
-        textY += 24;
+        textY += UIScaleManager.scale(2);
+        renderFrameTimeGraph(graphics, textX, textY, panelWidth - padding * 2, graphHeight);
+        textY += graphHeight + gap4;
 
         // === Memory Section ===
         UIScaleManager.drawScaledString(graphics, font, "▸ Memory", textX, textY, TEXT_CYAN, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         Runtime runtime = Runtime.getRuntime();
         long usedMB = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);
@@ -296,17 +310,17 @@ public class PerformanceProfiler {
         int memColor = memPercent > 80 ? TEXT_RED : (memPercent > 60 ? TEXT_YELLOW : TEXT_GREEN);
         UIScaleManager.drawScaledString(graphics, font, String.format("Used: %dMB / %dMB (%.0f%%)", usedMB, totalMB, memPercent),
             textX + 4, textY, memColor, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Memory bar
-        renderBar(graphics, textX + 4, textY, PANEL_WIDTH - PADDING * 2 - 8, BAR_HEIGHT,
+        renderBar(graphics, textX + 4, textY, panelWidth - padding * 2 - 8, barHeight,
             memPercent / 100f, memColor);
-        textY += BAR_HEIGHT + 6;
+        textY += barHeight + UIScaleManager.scale(6);
 
         // === System Timings ===
         if (!systemTimingsAvg.isEmpty()) {
             UIScaleManager.drawScaledString(graphics, font, "▸ System Timings", textX, textY, TEXT_CYAN, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
 
             // Sort by time (descending) and render
             var sortedTimings = systemTimingsAvg.entrySet().stream()
@@ -324,7 +338,7 @@ public class PerformanceProfiler {
 
                 UIScaleManager.drawScaledString(graphics, font, String.format("%-16s %s", name, timeStr),
                     textX + 4, textY, color, false);
-                textY += LINE_HEIGHT;
+                textY += lineHeight;
             }
             textY += 4;
         }
@@ -332,14 +346,14 @@ public class PerformanceProfiler {
         // === Active Counters ===
         if (!activeCounters.isEmpty()) {
             UIScaleManager.drawScaledString(graphics, font, "▸ Active Systems", textX, textY, TEXT_CYAN, false);
-            textY += LINE_HEIGHT;
+            textY += lineHeight;
 
             for (Map.Entry<String, Integer> entry : activeCounters.entrySet()) {
                 int val = entry.getValue();
                 int color = val > 0 ? TEXT_CYAN : TEXT_GRAY;
                 UIScaleManager.drawScaledString(graphics, font, String.format("%-18s %d", entry.getKey(), val),
                     textX + 4, textY, color, false);
-                textY += LINE_HEIGHT;
+                textY += lineHeight;
             }
         }
     }
@@ -402,17 +416,17 @@ public class PerformanceProfiler {
         graphics.fill(x + width - 1, y, x + width, y + height, color);
     }
 
-    private int calculatePanelHeight() {
-        int height = PADDING * 2;
-        height += LINE_HEIGHT + 4; // Header
-        height += LINE_HEIGHT * 5; // Performance section
-        height += 24; // Frame graph
-        height += LINE_HEIGHT * 2 + BAR_HEIGHT + 6; // Memory
+    private int calculatePanelHeight(int lineHeight, int padding, int barHeight, int graphHeight, int gap4) {
+        int height = padding * 2;
+        height += lineHeight + gap4; // Header
+        height += lineHeight * 5; // Performance section
+        height += graphHeight + gap4; // Frame graph
+        height += lineHeight * 2 + barHeight + UIScaleManager.scale(6); // Memory
         if (!systemTimingsAvg.isEmpty()) {
-            height += LINE_HEIGHT + LINE_HEIGHT * Math.min(8, systemTimingsAvg.size()) + 4;
+            height += lineHeight + lineHeight * Math.min(8, systemTimingsAvg.size()) + gap4;
         }
         if (!activeCounters.isEmpty()) {
-            height += LINE_HEIGHT + LINE_HEIGHT * activeCounters.size();
+            height += lineHeight + lineHeight * activeCounters.size();
         }
         return height;
     }

@@ -79,35 +79,37 @@ public class MobConfigScreen extends Screen {
         // Update animations
         state.updateAnimations();
 
-        int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
-        int panelY = (this.height - MobConfigScreenRenderer.PANEL_HEIGHT) / 2;
+        int panelW = MobConfigScreenRenderer.scaledPanelWidth();
+        int panelH = MobConfigScreenRenderer.scaledPanelHeight();
+        int panelX = (this.width - panelW) / 2;
+        int panelY = (this.height - panelH) / 2;
 
         // Main panel with gradient header
         renderer.drawMainPanel(graphics, panelX, panelY);
 
         // Global mode warning banner
         if (state.isGlobalMode) {
-            renderer.drawGlobalModeWarning(graphics, panelX, panelY - 28);
+            renderer.drawGlobalModeWarning(graphics, panelX, panelY - s(28));
         }
 
         // Tab bar
         renderer.drawTabs(graphics, panelX, panelY, mouseX, mouseY);
 
         // Content area
-        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8;
+        int contentY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + MobConfigScreenRenderer.scaledTabHeight() + s(8);
 
         // Left side: Mob preview
-        int previewX = panelX + 15;
-        int previewY = contentY + 10;
+        int previewX = panelX + s(15);
+        int previewY = contentY + s(10);
         renderer.drawMobPreview(graphics, previewX, previewY, mouseX, mouseY);
 
         // Right side: Sliders
-        int slidersX = panelX + MobConfigScreenRenderer.PREVIEW_SIZE + 40;
-        int slidersY = contentY + 5;
+        int slidersX = panelX + MobConfigScreenRenderer.scaledPreviewSize() + s(40);
+        int slidersY = contentY + s(5);
         renderer.drawSliders(graphics, slidersX, slidersY, mouseX, mouseY);
 
         // Bottom section
-        int bottomY = panelY + MobConfigScreenRenderer.PANEL_HEIGHT - 80;
+        int bottomY = panelY + panelH - s(80);
         renderer.drawBottomSection(graphics, panelX, bottomY, mouseX, mouseY);
 
         // Tooltips
@@ -154,8 +156,10 @@ public class MobConfigScreen extends Screen {
             return handleConfirmDialogClick(mx, my);
         }
 
-        int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
-        int panelY = (this.height - MobConfigScreenRenderer.PANEL_HEIGHT) / 2;
+        int panelW = MobConfigScreenRenderer.scaledPanelWidth();
+        int panelH = MobConfigScreenRenderer.scaledPanelHeight();
+        int panelX = (this.width - panelW) / 2;
+        int panelY = (this.height - panelH) / 2;
 
         // Tab clicks
         if (handleTabClick(mx, my, panelX, panelY)) return true;
@@ -172,8 +176,8 @@ public class MobConfigScreen extends Screen {
         }
 
         // Mode toggle
-        int bottomY = panelY + MobConfigScreenRenderer.PANEL_HEIGHT - 80;
-        if (AxiomRenderer.isMouseOver(mx, my, panelX + 15, bottomY, 120, 22)) {
+        int bottomY = panelY + panelH - s(80);
+        if (AxiomRenderer.isMouseOver(mx, my, panelX + s(15), bottomY, s(120), s(22))) {
             state.toggleMode();
             return true;
         }
@@ -189,16 +193,16 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleSavePresetDialogClick(int mx, int my, int button) {
         MobConfigScreenState state = requireState();
-        int dw = 200;
-        int dh = 90;
+        int dw = s(200);
+        int dh = s(90);
         int dx = (this.width - dw) / 2;
         int dy = (this.height - dh) / 2;
 
-        int btnW = 60;
-        int btnH = 18;
-        int btnGap = 10;
+        int btnW = s(60);
+        int btnH = s(18);
+        int btnGap = s(10);
         int btnsX = dx + (dw - (btnW * 2 + btnGap)) / 2;
-        int btnsY = dy + dh - 28;
+        int btnsY = dy + dh - s(28);
 
         if (button == 0 && AxiomRenderer.isMouseOver(mx, my, btnsX, btnsY, btnW, btnH)) {
             if (state.presetNameInput.length() > 0) {
@@ -220,16 +224,16 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleDeletePresetDialogClick(int mx, int my, int button) {
         MobConfigScreenState state = requireState();
-        int dw = 220;
-        int dh = 80;
+        int dw = s(220);
+        int dh = s(80);
         int dx = (this.width - dw) / 2;
         int dy = (this.height - dh) / 2;
 
-        int btnW = 60;
-        int btnH = 18;
-        int btnGap = 10;
+        int btnW = s(60);
+        int btnH = s(18);
+        int btnGap = s(10);
         int btnsX = dx + (dw - (btnW * 2 + btnGap)) / 2;
-        int btnsY = dy + dh - 28;
+        int btnsY = dy + dh - s(28);
 
         if (button == 0 && AxiomRenderer.isMouseOver(mx, my, btnsX, btnsY, btnW, btnH)) {
             String presetToDelete = state.deleteConfirmPreset;
@@ -250,13 +254,15 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleConfirmDialogClick(int mx, int my) {
         MobConfigScreenState state = requireState();
-        int dx = (this.width - MobConfigScreenRenderer.DIALOG_WIDTH) / 2;
-        int dy = (this.height - MobConfigScreenRenderer.DIALOG_HEIGHT) / 2;
-        int btnW = 80;
-        int btnH = 22;
-        int btnGap = 20;
-        int btnsX = dx + (MobConfigScreenRenderer.DIALOG_WIDTH - (btnW * 2 + btnGap)) / 2;
-        int btnsY = dy + MobConfigScreenRenderer.DIALOG_HEIGHT - 35;
+        int dialogW = MobConfigScreenRenderer.scaledDialogWidth();
+        int dialogH = MobConfigScreenRenderer.scaledDialogHeight();
+        int dx = (this.width - dialogW) / 2;
+        int dy = (this.height - dialogH) / 2;
+        int btnW = s(80);
+        int btnH = s(22);
+        int btnGap = s(20);
+        int btnsX = dx + (dialogW - (btnW * 2 + btnGap)) / 2;
+        int btnsY = dy + dialogH - s(35);
 
         if (AxiomRenderer.isMouseOver(mx, my, btnsX, btnsY, btnW, btnH)) {
             state.confirmedDiscard = true;
@@ -271,7 +277,7 @@ public class MobConfigScreen extends Screen {
             return true;
         }
 
-        if (!AxiomRenderer.isMouseOver(mx, my, dx, dy, MobConfigScreenRenderer.DIALOG_WIDTH, MobConfigScreenRenderer.DIALOG_HEIGHT)) {
+        if (!AxiomRenderer.isMouseOver(mx, my, dx, dy, dialogW, dialogH)) {
             state.showingConfirmDialog = false;
             return true;
         }
@@ -281,11 +287,13 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleTabClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
-        int tabsX = panelX + 10;
-        int tabsY = panelY + DesignTokens.Spacing.HEADER_HEIGHT;
+        int tabsX = panelX + s(10);
+        int tabsY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT);
+        int tabW = MobConfigScreenRenderer.scaledTabWidth();
+        int tabH = MobConfigScreenRenderer.scaledTabHeight();
         for (int i = 0; i < 3; i++) {
-            int tx = tabsX + i * (MobConfigScreenRenderer.TAB_WIDTH + 4);
-            if (AxiomRenderer.isMouseOver(mx, my, tx, tabsY, MobConfigScreenRenderer.TAB_WIDTH, MobConfigScreenRenderer.TAB_HEIGHT)) {
+            int tx = tabsX + i * (tabW + s(4));
+            if (AxiomRenderer.isMouseOver(mx, my, tx, tabsY, tabW, tabH)) {
                 if (state.editingSlider >= 0) {
                     state.commitNumericInput();
                 }
@@ -298,9 +306,10 @@ public class MobConfigScreen extends Screen {
 
     private boolean handlePreviewClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
-        int previewX = panelX + 15;
-        int previewY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
-        if (AxiomRenderer.isMouseOver(mx, my, previewX, previewY, MobConfigScreenRenderer.PREVIEW_SIZE, MobConfigScreenRenderer.PREVIEW_SIZE + 20)) {
+        int previewX = panelX + s(15);
+        int previewY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + MobConfigScreenRenderer.scaledTabHeight() + s(8) + s(10);
+        int previewSize = MobConfigScreenRenderer.scaledPreviewSize();
+        if (AxiomRenderer.isMouseOver(mx, my, previewX, previewY, previewSize, previewSize + s(20))) {
             state.isDraggingPreview = true;
             state.dragStartX = mx;
             state.dragStartY = my;
@@ -313,20 +322,20 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleSliderClick(int mx, int my, int panelX, int panelY) {
         MobConfigScreenState state = requireState();
-        int slidersX = panelX + MobConfigScreenRenderer.PREVIEW_SIZE + 40;
-        int contentY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 5;
+        int slidersX = panelX + MobConfigScreenRenderer.scaledPreviewSize() + s(40);
+        int contentY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + MobConfigScreenRenderer.scaledTabHeight() + s(8) + s(5);
         int numSliders = state.selectedTab == 2 ? 1 : 3;
 
         for (int i = 0; i < numSliders; i++) {
-            int rowY = contentY + i * (MobConfigScreenRenderer.ROW_HEIGHT + 16);
-            int sliderY = rowY + 12;
+            int rowY = contentY + i * (MobConfigScreenRenderer.scaledRowHeight() + s(16));
+            int sliderY = rowY + s(12);
             int sliderId = state.selectedTab * 10 + i;
 
             // Value text click
-            int valueX = slidersX + MobConfigScreenRenderer.SLIDER_WIDTH + 10;
-            int valueW = 35;
-            int valueH = 12;
-            if (AxiomRenderer.isMouseOver(mx, my, valueX - 2, rowY - 2, valueW + 4, valueH + 2)) {
+            int valueX = slidersX + MobConfigScreenRenderer.scaledSliderWidth() + s(10);
+            int valueW = s(35);
+            int valueH = s(12);
+            if (AxiomRenderer.isMouseOver(mx, my, valueX - s(2), rowY - s(2), valueW + s(4), valueH + s(2))) {
                 if (state.editingSlider != sliderId) {
                     state.commitNumericInput();
                     state.editingSlider = sliderId;
@@ -338,12 +347,12 @@ public class MobConfigScreen extends Screen {
             }
 
             // Slider track click
-            if (AxiomRenderer.isMouseOver(mx, my, slidersX - 5, sliderY - 5, MobConfigScreenRenderer.SLIDER_WIDTH + 10, MobConfigScreenRenderer.SLIDER_HEIGHT + 10)) {
+            if (AxiomRenderer.isMouseOver(mx, my, slidersX - s(5), sliderY - s(5), MobConfigScreenRenderer.scaledSliderWidth() + s(10), MobConfigScreenRenderer.scaledSliderHeight() + s(10))) {
                 if (state.editingSlider >= 0) {
                     state.commitNumericInput();
                 }
                 state.activeSlider = sliderId;
-                state.updateSliderValue(mx, slidersX, MobConfigScreenRenderer.SLIDER_WIDTH);
+                state.updateSliderValue(mx, slidersX, MobConfigScreenRenderer.scaledSliderWidth());
                 return true;
             }
         }
@@ -352,22 +361,22 @@ public class MobConfigScreen extends Screen {
 
     private boolean handleActionButtons(int mx, int my, int panelX, int bottomY) {
         MobConfigScreenState state = requireState();
-        int btnY = bottomY + 56;
-        int btnW = 70;
-        int btnH = 22;
-        int btnGap = 8;
+        int btnY = bottomY + s(56);
+        int btnW = s(70);
+        int btnH = s(22);
+        int btnGap = s(8);
         boolean hasStatChanges = state.hasStatChanges();
         boolean hasUnsavedChanges = state.hasUnsavedChanges();
 
-        int resetX = panelX + 15;
-        if (AxiomRenderer.isMouseOver(mx, my, resetX, btnY, 55, btnH)) {
+        int resetX = panelX + s(15);
+        if (AxiomRenderer.isMouseOver(mx, my, resetX, btnY, s(55), btnH)) {
             if (hasStatChanges) {
                 state.resetToOriginal();
             }
             return true;
         }
 
-        int applyX = panelX + MobConfigScreenRenderer.PANEL_WIDTH - btnW - btnGap - btnW - 15;
+        int applyX = panelX + MobConfigScreenRenderer.scaledPanelWidth() - btnW - btnGap - btnW - s(15);
         if (AxiomRenderer.isMouseOver(mx, my, applyX, btnY, btnW, btnH)) {
             if (hasUnsavedChanges) {
                 state.save();
@@ -388,11 +397,11 @@ public class MobConfigScreen extends Screen {
 
     private boolean handlePresetClick(int mx, int my, int panelX, int bottomY, int button) {
         MobConfigScreenState state = requireState();
-        int presetX = panelX + 150;
-        int presetY = bottomY - 3 + 12;
-        int presetW = 55;
-        int presetH = 16;
-        int gap = 4;
+        int presetX = panelX + s(150);
+        int presetY = bottomY - s(3) + s(12);
+        int presetW = s(55);
+        int presetH = s(16);
+        int gap = s(4);
 
         // Built-in presets
         for (int i = 0; i < MobConfigScreenState.PRESET_NAMES.size(); i++) {
@@ -409,25 +418,25 @@ public class MobConfigScreen extends Screen {
 
         // User presets section
         String[] userPresetNames = MobPresetManager.getPresetNames();
-        int userY = presetY + 2 * (presetH + gap) + 6;
+        int userY = presetY + 2 * (presetH + gap) + s(6);
 
         // Save button
-        int saveBtnX = presetX + 20;
-        if (MobPresetManager.canAddPreset() && AxiomRenderer.isMouseOver(mx, my, saveBtnX, userY - 1, 12, 10)) {
+        int saveBtnX = presetX + s(20);
+        if (MobPresetManager.canAddPreset() && AxiomRenderer.isMouseOver(mx, my, saveBtnX, userY - s(1), s(12), s(10))) {
             state.showSavePresetDialog = true;
             state.presetNameInput.setLength(0);
             return true;
         }
 
         // User preset buttons
-        int userPresetW = 45;
-        int userPresetH = 14;
-        int userStartX = presetX + 40;
+        int userPresetW = s(45);
+        int userPresetH = s(14);
+        int userStartX = presetX + s(40);
         int maxVisible = 3;
 
         for (int i = 0; i < Math.min(userPresetNames.length, maxVisible); i++) {
-            int px = userStartX + i * (userPresetW + 2);
-            int py = userY - 2;
+            int px = userStartX + i * (userPresetW + s(2));
+            int py = userY - s(2);
 
             if (AxiomRenderer.isMouseOver(mx, my, px, py, userPresetW, userPresetH)) {
                 if (button == 1) {
@@ -458,10 +467,10 @@ public class MobConfigScreen extends Screen {
         }
 
         if (state.activeSlider >= 0 && button == 0) {
-            int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
-            int slidersX = panelX + MobConfigScreenRenderer.PREVIEW_SIZE + 40;
-            state.updateSliderValue((int) mouseX, slidersX, MobConfigScreenRenderer.SLIDER_WIDTH);
-            return true;
+        int panelX = (this.width - MobConfigScreenRenderer.scaledPanelWidth()) / 2;
+        int slidersX = panelX + MobConfigScreenRenderer.scaledPreviewSize() + s(40);
+        state.updateSliderValue((int) mouseX, slidersX, MobConfigScreenRenderer.scaledSliderWidth());
+        return true;
         }
 
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -480,13 +489,14 @@ public class MobConfigScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         MobConfigScreenState state = requireState();
-        int panelX = (this.width - MobConfigScreenRenderer.PANEL_WIDTH) / 2;
-        int panelY = (this.height - MobConfigScreenRenderer.PANEL_HEIGHT) / 2;
-        int previewX = panelX + 15;
-        int previewY = panelY + DesignTokens.Spacing.HEADER_HEIGHT + MobConfigScreenRenderer.TAB_HEIGHT + 8 + 10;
+        int panelX = (this.width - MobConfigScreenRenderer.scaledPanelWidth()) / 2;
+        int panelY = (this.height - MobConfigScreenRenderer.scaledPanelHeight()) / 2;
+        int previewX = panelX + s(15);
+        int previewY = panelY + s(DesignTokens.Spacing.HEADER_HEIGHT) + MobConfigScreenRenderer.scaledTabHeight() + s(8) + s(10);
+        int previewSize = MobConfigScreenRenderer.scaledPreviewSize();
 
-        if (mouseX >= previewX && mouseX < previewX + MobConfigScreenRenderer.PREVIEW_SIZE &&
-            mouseY >= previewY && mouseY < previewY + MobConfigScreenRenderer.PREVIEW_SIZE) {
+        if (mouseX >= previewX && mouseX < previewX + previewSize &&
+            mouseY >= previewY && mouseY < previewY + previewSize) {
             state.previewZoom = Mth.clamp(state.previewZoom + (float) scrollY * 0.1f, 0.5f, 2.0f);
             return true;
         }
@@ -641,5 +651,9 @@ public class MobConfigScreen extends Screen {
     @Override
     protected void renderMenuBackground(@Nonnull GuiGraphics graphics) {
         // Don't render default background
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

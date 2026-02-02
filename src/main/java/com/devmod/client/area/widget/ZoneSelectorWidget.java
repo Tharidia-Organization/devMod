@@ -68,7 +68,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
         this.selectedZoneId = initialZoneId;
         this.onZoneSelected = Objects.requireNonNull(onZoneSelected);
         this.searchBox = new EditBox(Objects.requireNonNull(Minecraft.getInstance().font),
-            x + 2, y + 15 + 2, width - 4, AreaBuilderGuiConstants.FIELD_HEIGHT,
+            x + s(2), y + s(15) + s(2), width - s(4), AreaBuilderGuiConstants.scaledFieldHeight(),
             Objects.requireNonNull(Component.translatable("area.zone.search")));
         this.searchBox.setHint(Objects.requireNonNull(Component.translatable("area.zone.search")));
         this.searchBox.setMaxLength(64);
@@ -144,6 +144,13 @@ public class ZoneSelectorWidget extends AbstractWidget {
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font);
         updateLayout(font.lineHeight);
+        int itemHeight = s(ITEM_HEIGHT);
+        int itemInset = s(1);
+        int itemTextYOffset = s(6);
+        int listPadding = s(4);
+        int scrollbarWidth = s(4);
+        int scrollbarInset = s(6);
+        int scrollbarMinThumb = s(20);
 
         // Title
         UIScaleManager.drawScaledString(graphics, font,
@@ -167,30 +174,30 @@ public class ZoneSelectorWidget extends AbstractWidget {
             String msgKey = allZones.isEmpty() ? "area.zone.loading" : "area.zone.empty";
             UIScaleManager.drawScaledCenteredString(graphics, font,
                 Component.translatable(msgKey).getString(),
-                getX() + getWidth() / 2, listY + listHeight / 2 - 4,
+                getX() + getWidth() / 2, listY + listHeight / 2 - s(4),
                 AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
         }
 
         // Draw visible zones
         for (int i = 0; i < visibleItems && i + scrollOffset < filteredZones.size(); i++) {
             ZoneSummary zone = filteredZones.get(i + scrollOffset);
-            int itemY = listY + i * ITEM_HEIGHT;
+            int itemY = listY + i * itemHeight;
 
             boolean isHovered = mouseX >= getX() && mouseX < getX() + getWidth() &&
-                               mouseY >= itemY && mouseY < itemY + ITEM_HEIGHT;
+                               mouseY >= itemY && mouseY < itemY + itemHeight;
             boolean isSelected = Objects.equals(zone.id(), selectedZoneId);
 
             // Item background
             if (isSelected) {
-                graphics.fill(getX() + 1, itemY, getX() + getWidth() - 1, itemY + ITEM_HEIGHT - 1,
+                graphics.fill(getX() + itemInset, itemY, getX() + getWidth() - itemInset, itemY + itemHeight - itemInset,
                     AreaBuilderGuiConstants.COLOR_TAB_ACTIVE);
             } else if (isHovered) {
-                graphics.fill(getX() + 1, itemY, getX() + getWidth() - 1, itemY + ITEM_HEIGHT - 1,
+                graphics.fill(getX() + itemInset, itemY, getX() + getWidth() - itemInset, itemY + itemHeight - itemInset,
                     AreaBuilderGuiConstants.COLOR_HOVER);
             }
 
             // Zone name
-            UIScaleManager.drawScaledString(graphics, font, zone.displayName(), getX() + 4, itemY + 6,
+            UIScaleManager.drawScaledString(graphics, font, zone.displayName(), getX() + listPadding, itemY + itemTextYOffset,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY);
 
             // Area count indicator
@@ -198,26 +205,26 @@ public class ZoneSelectorWidget extends AbstractWidget {
                 String countStr = "(" + zone.areaCount() + ")";
                 int countWidth = UIScaleManager.getScaledStringWidth(font, countStr);
                 UIScaleManager.drawScaledString(graphics, font, countStr,
-                    getX() + getWidth() - countWidth - 4, itemY + 6, AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
+                    getX() + getWidth() - countWidth - listPadding, itemY + itemTextYOffset, AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
             }
         }
 
         // Scrollbar if needed
         if (filteredZones.size() > visibleItems) {
-            int scrollbarX = getX() + getWidth() - 6;
+            int scrollbarX = getX() + getWidth() - scrollbarInset;
             int scrollbarHeight = listHeight;
-            int thumbHeight = Math.max(20, scrollbarHeight * visibleItems / filteredZones.size());
+            int thumbHeight = Math.max(scrollbarMinThumb, scrollbarHeight * visibleItems / filteredZones.size());
             int maxScroll = filteredZones.size() - visibleItems;
             int thumbY = listY + (scrollbarHeight - thumbHeight) * scrollOffset / maxScroll;
 
             // Track
-            graphics.fill(scrollbarX, listY, scrollbarX + 4, listY + scrollbarHeight, AreaBuilderGuiConstants.COLOR_SCROLLBAR_TRACK);
+            graphics.fill(scrollbarX, listY, scrollbarX + scrollbarWidth, listY + scrollbarHeight, AreaBuilderGuiConstants.COLOR_SCROLLBAR_TRACK);
             // Thumb
-            graphics.fill(scrollbarX, thumbY, scrollbarX + 4, thumbY + thumbHeight, AreaBuilderGuiConstants.COLOR_SCROLLBAR_THUMB);
+            graphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth, thumbY + thumbHeight, AreaBuilderGuiConstants.COLOR_SCROLLBAR_THUMB);
         }
 
         // Selected zone info
-        int infoY = listY + listHeight + 8;
+        int infoY = listY + listHeight + s(8);
         String selectedName = selectedZoneId != null
             ? getZoneDisplayName(selectedZoneId)
             : Objects.requireNonNull(Objects.requireNonNull(Component.translatable("area.zone.none")).getString());
@@ -239,15 +246,20 @@ public class ZoneSelectorWidget extends AbstractWidget {
     }
 
     private void updateLayout(int fontHeight) {
-        searchY = getY() + fontHeight + HEADER_GAP;
-        listY = searchY + AreaBuilderGuiConstants.FIELD_HEIGHT + HEADER_GAP;
-        int infoHeight = fontHeight + FOOTER_GAP;
+        int itemHeight = s(ITEM_HEIGHT);
+        int headerGap = s(HEADER_GAP);
+        int footerGap = s(FOOTER_GAP);
+        int fieldHeight = AreaBuilderGuiConstants.scaledFieldHeight();
+        searchY = getY() + fontHeight + headerGap;
+        listY = searchY + fieldHeight + headerGap;
+        int infoHeight = fontHeight + footerGap;
         int availableHeight = getHeight() - (listY - getY()) - infoHeight;
-        visibleItems = Math.max(1, Math.min(MAX_VISIBLE_ITEMS, availableHeight / ITEM_HEIGHT));
-        listHeight = visibleItems * ITEM_HEIGHT;
-        searchBox.setX(getX() + 2);
+        visibleItems = Math.max(1, Math.min(MAX_VISIBLE_ITEMS, availableHeight / itemHeight));
+        listHeight = visibleItems * itemHeight;
+        searchBox.setX(getX() + s(2));
         searchBox.setY(searchY);
-        searchBox.setWidth(Math.max(40, getWidth() - 4));
+        searchBox.setWidth(Math.max(s(40), getWidth() - s(4)));
+        searchBox.setHeight(fieldHeight);
         int maxScroll = Math.max(0, filteredZones.size() - Math.max(1, visibleItems));
         if (scrollOffset > maxScroll) {
             scrollOffset = maxScroll;
@@ -258,7 +270,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
     public void onClick(double mouseX, double mouseY, int button) {
         // Check if clicking in list area
         if (mouseY >= listY && mouseY < listY + listHeight) {
-            int clickedIndex = (int) ((mouseY - listY) / ITEM_HEIGHT) + scrollOffset;
+            int clickedIndex = (int) ((mouseY - listY) / s(ITEM_HEIGHT)) + scrollOffset;
             if (clickedIndex >= 0 && clickedIndex < filteredZones.size()) {
                 ZoneSummary zone = filteredZones.get(clickedIndex);
                 if (!Objects.equals(zone.id(), selectedZoneId)) {
@@ -319,5 +331,9 @@ public class ZoneSelectorWidget extends AbstractWidget {
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.builder.linked_zone")));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

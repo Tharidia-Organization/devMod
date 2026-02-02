@@ -156,14 +156,34 @@ public class EnduranceEventHandler {
                 player, session.getQuest(), comboSession, mutatorSession, policy, session);
         }
 
-        // Send completion screen to client (only if quest completed or exited at checkpoint)
+        // Send completion screen to client AFTER a short delay to allow teleport to complete
+        // This prevents the screen from being closed by dimension change
         if (rewards != null) {
-            com.devmod.network.NetworkHandler.sendQuestCompletionScreen(
-                player, session, rewards, comboSession, maxCombo);
+            final RewardSystem.QuestRewards finalRewards = rewards;
+            final IComboSession finalComboSession = comboSession;
+            final int finalMaxCombo = maxCombo;
+            final UUID finalPlayerId = playerId;
+            final EnduranceQuestManager.ActiveQuestSession finalSession = session;
+            final boolean finalPractice = practice;
 
-            // Send mailbox notification with reward summary
-            if (!practice) {
-                sendQuestRewardMailbox(player, session, rewards, completed);
+            // Schedule completion screen to be sent after 10 ticks (500ms) to allow teleport
+            var server = player.getServer();
+            if (server != null) {
+                server.execute(() -> {
+                    // Use another delayed task to ensure we're past the teleport
+                    server.tell(new net.minecraft.server.TickTask(server.getTickCount() + 10, () -> {
+                        ServerPlayer currentPlayer = server.getPlayerList().getPlayer(finalPlayerId);
+                        if (currentPlayer != null) {
+                            com.devmod.network.NetworkHandler.sendQuestCompletionScreen(
+                                currentPlayer, finalSession, finalRewards, finalComboSession, finalMaxCombo);
+
+                            // Send mailbox notification with reward summary
+                            if (!finalPractice) {
+                                sendQuestRewardMailbox(currentPlayer, finalSession, finalRewards, completed);
+                            }
+                        }
+                    }));
+                });
             }
         }
 
@@ -938,6 +958,21 @@ public class EnduranceEventHandler {
      */
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent.Post event) {
+        // [CombatDebug] Log all damage events involving players or quest mobs
+        var target = event.getEntity();
+        var attacker = event.getSource().getEntity();
+        boolean isQuestMob = EnduranceEventCombat.isQuestMob(target);
+        boolean playerIsTarget = target instanceof ServerPlayer;
+        boolean playerIsAttacker = attacker instanceof ServerPlayer;
+        if ((isQuestMob || playerIsTarget) && event.getNewDamage() > 0f) {
+            LOGGER.info("[CombatDebug] LivingDamageEvent.Post: target={}, attacker={}, damage={}, isQuestMob={}, playerTarget={}, playerAttacker={}",
+                target.getName().getString(),
+                attacker != null ? attacker.getName().getString() : "null",
+                event.getNewDamage(),
+                isQuestMob,
+                playerIsTarget,
+                playerIsAttacker);
+        }
         EnduranceEventCombat.handleDamagePost(event.getEntity(), event.getSource(), event.getNewDamage());
     }
 
@@ -992,6 +1027,16 @@ public class EnduranceEventHandler {
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         LivingEntity entity = event.getEntity();
+
+        // UNCONDITIONAL DEBUG LOG - log ALL deaths
+        if (entity instanceof ServerPlayer p) {
+            LOGGER.info("[DeathDebug] PLAYER DEATH EVENT: player={}, dimension={}, source={}, health={}, isDeadOrDying={}",
+                p.getName().getString(),
+                p.level().dimension().location(),
+                event.getSource() != null ? event.getSource().type().msgId() : "null",
+                p.getHealth(),
+                p.isDeadOrDying());
+        }
 
         // Check if this is a quest mob
         if (EnduranceEventCombat.isQuestMob(entity)) {

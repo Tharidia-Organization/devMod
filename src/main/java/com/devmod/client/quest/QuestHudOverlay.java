@@ -127,7 +127,7 @@ public class QuestHudOverlay {
         int sMarginRight = UIScaleManager.scale(MARGIN_RIGHT);
         int sMarginBottom = UIScaleManager.scale(MARGIN_BOTTOM);
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
 
         // Calculate panel dimensions
         int panelHeight = calculatePanelHeight(activeQuest, sPanelPadding, sLineHeight);

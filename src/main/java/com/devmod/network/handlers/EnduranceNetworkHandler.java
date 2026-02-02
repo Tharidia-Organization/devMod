@@ -55,6 +55,8 @@ import com.devmod.endurance.TensionUpdatePayload;
 import com.devmod.endurance.WaveDirective;
 import com.devmod.endurance.WaveDirectiveChoicesPayload;
 import com.devmod.endurance.WaveDirectiveSelectionPayload;
+import com.devmod.endurance.EnduranceLogger;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.endurance.config.ConfigProposalManager;
 import com.devmod.endurance.config.ConfigScope;
@@ -689,9 +691,7 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
                     }
                     case GIVE_UP_AFTER_DEATH -> {
                         if (awaitingRespawn) {
-                            if (!confirmAbandon(player, session)) {
-                                return;
-                            }
+                            // No confirmation needed - player explicitly clicked "Give Up" on QuestDeathScreen
                             EnduranceQuestManager.INSTANCE.handleRespawnChoice(player, false);
                             LOGGER.info("[EnduranceQuest] Player {} gave up after death",
                                 player.getName().getString());
@@ -852,6 +852,9 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
 
     public static void sendQuestDeathScreen(ServerPlayer player, int currentWave, int totalWaves,
             boolean endlessMode, int pointsEarned, int deathsThisRun, int respawnCost) {
+        EnduranceLogger.phase(Phase.DEATH_SCREEN, player, null,
+            "Showing death screen: wave=%d/%d, points=%d, deaths=%d, respawnCost=%d",
+            currentWave, totalWaves, pointsEarned, deathsThisRun, respawnCost);
         QuestDeathPayload payload = new QuestDeathPayload(
             currentWave, totalWaves, endlessMode, pointsEarned, deathsThisRun, respawnCost);
         sendPacket(player, payload);
@@ -1073,6 +1076,10 @@ public final class EnduranceNetworkHandler extends NetworkHandlerBase implements
             achievementNames
         );
 
+        EnduranceLogger.phase(Phase.RESULTS_SCREEN, player, quest.getQuestId(),
+            "Showing results: wave=%d/%d, duration=%dms, tokens=%d, kills=%d, deaths=%d, maxCombo=%d",
+            quest.getCurrentWave(), quest.getTotalWaves(), quest.getSessionDuration(),
+            rewards.tokensEarned, quest.getMobsKilledThisSession(), quest.getDeathsThisSession(), maxCombo);
         sendPacket(player, payload);
     }
 

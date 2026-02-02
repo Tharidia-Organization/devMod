@@ -114,7 +114,7 @@ public class EconomyOverlay {
 
         int sPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
         int sPanelPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
         int sHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
         int sMobEntryHeight = UIScaleManager.scale(MOB_ENTRY_HEIGHT);
         int sMarginRight = UIScaleManager.scale(MARGIN_RIGHT);
@@ -129,8 +129,8 @@ public class EconomyOverlay {
         }
 
         int panelHeight = viewMode == 0
-            ? calculateEconomyPanelHeight()
-            : calculateMobPanelHeightSafe(cachedMobStats);
+            ? calculateEconomyPanelHeight(sLineHeight)
+            : calculateMobPanelHeightSafe(cachedMobStats, sLineHeight);
         int safeLeft = UIScaleManager.getSafeLeft();
         int safeRight = UIScaleManager.getSafeRight();
         int safeTop = UIScaleManager.getSafeTop();
@@ -187,7 +187,7 @@ public class EconomyOverlay {
                                            int panelWidth, int panelPadding,
                                            int lineHeight, int headerHeight) {
         var safeFont = Objects.requireNonNull(font);
-        int height = calculateEconomyPanelHeight();
+        int height = calculateEconomyPanelHeight(lineHeight);
 
         // Background with gradient effect
         graphics.fill(x, y, x + panelWidth, y + headerHeight, PANEL_BG_HEADER);
@@ -289,7 +289,7 @@ public class EconomyOverlay {
                                            int mobEntryHeight) {
         var safeFont = Objects.requireNonNull(font);
         final var safeMobStats = cachedMobStats;
-        int height = calculateMobPanelHeightSafe(safeMobStats);
+        int height = calculateMobPanelHeightSafe(safeMobStats, lineHeight);
 
         // Background
         graphics.fill(x, y, x + panelWidth, y + headerHeight, PANEL_BG_HEADER);
@@ -541,9 +541,8 @@ public class EconomyOverlay {
         }
     }
 
-    private static int calculateEconomyPanelHeight() {
+    private static int calculateEconomyPanelHeight(int lineHeight) {
         int headerHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         int height = headerHeight;
         height += lineHeight + 6;   // Session
         height += lineHeight * 4 + 8; // Stats grid
@@ -555,9 +554,9 @@ public class EconomyOverlay {
         return height;
     }
 
-    private static int calculateMobPanelHeightSafe(@Nullable List<EconomyMetricsService.MobDropSummary> mobStats) {
+    private static int calculateMobPanelHeightSafe(@Nullable List<EconomyMetricsService.MobDropSummary> mobStats,
+                                                   int lineHeight) {
         int headerHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         int mobEntryHeight = UIScaleManager.scale(MOB_ENTRY_HEIGHT);
         int height = headerHeight;
         height += lineHeight + 4;    // Total kills header

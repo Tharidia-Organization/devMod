@@ -100,48 +100,52 @@ public class WaveDirectiveScreen extends Screen {
 
         Font font = Objects.requireNonNull(Objects.requireNonNull(minecraft, "minecraft").font, "font");
         int choicesCount = choices.size();
-        int panelHeight = PANEL_PADDING * 2 + 24 + choicesCount * CARD_HEIGHT + (choicesCount - 1) * CARD_GAP;
-        int panelX = (width - PANEL_WIDTH) / 2;
+        int panelPadding = s(PANEL_PADDING);
+        int panelWidth = s(PANEL_WIDTH);
+        int cardHeight = s(CARD_HEIGHT);
+        int cardGap = s(CARD_GAP);
+        int panelHeight = panelPadding * 2 + s(24) + choicesCount * cardHeight + (choicesCount - 1) * cardGap;
+        int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
 
         int bgTop = DesignTokens.Bg.LEVEL_1;
         int bgBottom = DesignTokens.Bg.LEVEL_0;
-        graphics.fill(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + panelHeight + 2, DesignTokens.Stroke.DEFAULT);
+        graphics.fill(panelX - s(2), panelY - s(2), panelX + panelWidth + s(2), panelY + panelHeight + s(2), DesignTokens.Stroke.DEFAULT);
         for (int i = 0; i < panelHeight; i++) {
             float t = (float) i / panelHeight;
             int lineColor = lerpColor(bgTop, bgBottom, t);
-            graphics.fill(panelX, panelY + i, panelX + PANEL_WIDTH, panelY + i + 1, lineColor);
+            graphics.fill(panelX, panelY + i, panelX + panelWidth, panelY + i + 1, lineColor);
         }
 
         UIScaleManager.drawScaledCenteredString(graphics, font, Objects.requireNonNull(I18n.translate("devmod.endurance.directive.choose_title").getString()),
-            width / 2, panelY + 6, DesignTokens.Text.PRIMARY);
-        renderCountdown(graphics, font, panelX, panelY, PANEL_WIDTH);
+            width / 2, panelY + s(6), DesignTokens.Text.PRIMARY);
+        renderCountdown(graphics, font, panelX, panelY, panelWidth);
 
-        int cardWidth = PANEL_WIDTH - PANEL_PADDING * 2;
-        int cardX = panelX + PANEL_PADDING;
-        int cardY = panelY + PANEL_PADDING + 18;
+        int cardWidth = panelWidth - panelPadding * 2;
+        int cardX = panelX + panelPadding;
+        int cardY = panelY + panelPadding + s(18);
 
         for (int i = 0; i < choices.size(); i++) {
             WaveDirectiveChoicesPayload.DirectiveChoice choice = choices.get(i);
-            int y = cardY + i * (CARD_HEIGHT + CARD_GAP);
+            int y = cardY + i * (cardHeight + cardGap);
             int borderColor = DesignTokens.Stroke.MUTED;
             int cardColor = DesignTokens.Surface.LEVEL_0;
-            graphics.fill(cardX - 1, y - 1, cardX + cardWidth + 1, y + CARD_HEIGHT + 1, borderColor);
-            graphics.fill(cardX, y, cardX + cardWidth, y + CARD_HEIGHT, cardColor);
+            graphics.fill(cardX - s(1), y - s(1), cardX + cardWidth + s(1), y + cardHeight + s(1), borderColor);
+            graphics.fill(cardX, y, cardX + cardWidth, y + cardHeight, cardColor);
 
             var safeFont = Objects.requireNonNull(font, "font");
             String name = choice.name() != null ? choice.name()
                 : Objects.requireNonNull(I18n.translate("devmod.endurance.directive.fallback_name").getString());
-            UIScaleManager.drawScaledString(graphics, safeFont, name, cardX + 8, y + 6,
+            UIScaleManager.drawScaledString(graphics, safeFont, name, cardX + s(8), y + s(6),
                 DesignTokens.Text.PRIMARY, false);
 
             String desc = choice.description() != null ? choice.description() : "";
-            List<String> lines = wrapText(font, desc, cardWidth - 120);
+            List<String> lines = wrapText(font, desc, cardWidth - s(120));
             int lineHeight = UIScaleManager.getScaledLineHeight();
             for (int lineIndex = 0; lineIndex < Math.min(2, lines.size()); lineIndex++) {
                 UIScaleManager.drawScaledString(graphics, safeFont,
                     Objects.requireNonNull(lines.get(lineIndex), "lineText"),
-                    cardX + 8, y + 20 + lineIndex * lineHeight, DesignTokens.Text.SECONDARY, false);
+                    cardX + s(8), y + s(20) + lineIndex * lineHeight, DesignTokens.Text.SECONDARY, false);
             }
 
             String rewardText = Objects.requireNonNull(I18n.translate(
@@ -149,14 +153,14 @@ public class WaveDirectiveScreen extends Screen {
                 String.format("%.2f", choice.rewardMultiplier())
             ).getString());
             UIScaleManager.drawScaledString(graphics, safeFont, rewardText,
-                cardX + 8, y + CARD_HEIGHT - 16,
+                cardX + s(8), y + cardHeight - s(16),
                 DesignTokens.Semantic.WARNING, false);
 
             EditorButton btn = selectButtons.size() > i ? selectButtons.get(i) : null;
             if (btn != null) {
-                int btnWidth = 80;
-                int btnHeight = 20;
-                btn.render(graphics, cardX + cardWidth - btnWidth - 8, y + CARD_HEIGHT / 2 - btnHeight / 2,
+                int btnWidth = s(80);
+                int btnHeight = s(20);
+                btn.render(graphics, cardX + cardWidth - btnWidth - s(8), y + cardHeight / 2 - btnHeight / 2,
                     btnWidth, btnHeight, mouseX, mouseY);
             }
         }
@@ -262,14 +266,19 @@ public class WaveDirectiveScreen extends Screen {
         }
         String text = Objects.requireNonNull(I18n.ui("selection_time_remaining", remaining).getString());
         int textWidth = UIScaleManager.getScaledStringWidth(font, text);
-        int x = panelX + panelWidth - textWidth - COUNTDOWN_PADDING;
-        int y = panelY + 6;
+        int padding = s(COUNTDOWN_PADDING);
+        int x = panelX + panelWidth - textWidth - padding;
+        int y = panelY + s(6);
 
         int bgColor = DesignTokens.withAlpha(DesignTokens.Bg.LEVEL_0, 160);
-        graphics.fill(x - 4, y - 2, x + textWidth + 4, y + font.lineHeight + 2, bgColor);
+        graphics.fill(x - s(4), y - s(2), x + textWidth + s(4), y + font.lineHeight + s(2), bgColor);
 
         float pulse = countdown.getPulse();
         int textColor = DesignTokens.withAlpha(countdown.getColor(), (int) (255 * pulse));
         UIScaleManager.drawScaledString(graphics, font, text, x, y, textColor, false);
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

@@ -166,7 +166,13 @@ public class UnifiedToastOverlay {
 
         // Scaled layout values
         int sScreenMargin = UIScaleManager.scale(SCREEN_MARGIN);
-        int sToastHeight = UIScaleManager.scale(TOAST_HEIGHT);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int sPadding = UIScaleManager.scale(PADDING);
+        int sIconSize = UIScaleManager.scale(ICON_SIZE);
+        int sTextGap = UIScaleManager.scale(2);
+        int textBlockHeight = lineHeight * 3 + sTextGap * 2;
+        int contentHeight = Math.max(textBlockHeight, sIconSize);
+        int sToastHeight = Math.max(UIScaleManager.scale(TOAST_HEIGHT), sPadding * 2 + contentHeight);
         int sToastSpacing = UIScaleManager.scale(TOAST_SPACING);
         int toastWidth = getToastWidth(screenWidth);
 
@@ -221,7 +227,7 @@ public class UnifiedToastOverlay {
             }
 
             boolean hovered = hoveredToastIndex == i;
-            renderToast(graphics, font, entry, renderX, renderY, toastWidth, sToastHeight, opacity, hovered, now);
+            renderToast(graphics, font, entry, renderX, renderY, toastWidth, sToastHeight, lineHeight, opacity, hovered, now);
 
             yOffset += sToastHeight + sToastSpacing;
         }
@@ -256,7 +262,8 @@ public class UnifiedToastOverlay {
     }
 
     private static void renderToast(GuiGraphics graphics, Font font, ToastEntry entry,
-                                     int x, int y, int width, int height, float opacity, boolean hovered, long now) {
+                                     int x, int y, int width, int height, int lineHeight,
+                                     float opacity, boolean hovered, long now) {
         Notification notification = entry.notification;
         int accentColor = entry.accentColor;
         int alpha = (int) (opacity * 255);
@@ -264,6 +271,7 @@ public class UnifiedToastOverlay {
         // Scaled layout values
         int sPadding = UIScaleManager.scale(PADDING);
         int sIconSize = UIScaleManager.scale(ICON_SIZE);
+        int sTextGap = UIScaleManager.scale(2);
 
         // Background with hover effect
         int bgAlpha = (alpha * DesignTokens.Alpha.A88) / 255;
@@ -328,7 +336,7 @@ public class UnifiedToastOverlay {
                 NotificationUiTheme.withAlpha(NotificationUiTheme.RGB_TEXT_PRIMARY, titleAlpha), true);
 
         // Message
-        int msgY = titleY + UIScaleManager.scale(14);
+        int msgY = titleY + lineHeight + sTextGap;
         String message = entry.cachedMessage;
         int msgAlpha = (alpha * 187) / 255;
         UIScaleManager.drawScaledString(graphics, font, message, contentX, msgY,
@@ -338,7 +346,7 @@ public class UnifiedToastOverlay {
         String category = entry.categoryLabel;
         int catWidth = entry.cachedCategoryWidth;
         int catX = x + width - sPadding - catWidth;
-        int catY = y + height - sPadding - UIScaleManager.scale(6);
+        int catY = y + height - sPadding - lineHeight;
         int catAlpha = (alpha * DesignTokens.Alpha.A53) / 255;
         UIScaleManager.drawScaledString(graphics, font, category, catX, catY,
                 NotificationUiTheme.withAlpha(accentColor, catAlpha));

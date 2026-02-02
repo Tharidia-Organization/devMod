@@ -82,6 +82,10 @@ public class SeasonPassScreen extends Screen {
     private long lastSyncTime = 0;
     private List<ClientSeasonPassCache.RewardEntry> rewardEntries = List.of();
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     public SeasonPassScreen() {
         super(Component.translatable("devmod.ui.season_pass.title"));
     }
@@ -184,8 +188,8 @@ public class SeasonPassScreen extends Screen {
         renderBackground(g, mouseX, mouseY, partialTick);
 
         // Scale dimensions for responsiveness
-        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
+        int scaledPanelWidth = s(PANEL_WIDTH);
+        int scaledPanelHeight = s(PANEL_HEIGHT);
 
         int centerX = width / 2;
         int centerY = height / 2;
@@ -199,15 +203,15 @@ public class SeasonPassScreen extends Screen {
         renderHeader(g, centerX, panelY, scaledPanelWidth, fadeProgress);
 
         // Progress bar
-        int margin = UIScaleManager.scale(30);
-        int progressHeight = UIScaleManager.scale(20);
-        renderProgressBar(g, panelX + margin, panelY + UIScaleManager.scale(85), scaledPanelWidth - margin * 2, progressHeight, fadeProgress);
+        int margin = s(30);
+        int progressHeight = s(20);
+        renderProgressBar(g, panelX + margin, panelY + s(85), scaledPanelWidth - margin * 2, progressHeight, fadeProgress);
 
         // Tier cards
-        renderTierCards(g, panelX + margin, panelY + UIScaleManager.scale(130), scaledPanelWidth, mouseX, mouseY, fadeProgress);
+        renderTierCards(g, panelX + margin, panelY + s(130), scaledPanelWidth, mouseX, mouseY, fadeProgress);
 
         // Legend
-        renderLegend(g, panelX + margin, panelY + scaledPanelHeight - UIScaleManager.scale(60), fadeProgress);
+        renderLegend(g, panelX + margin, panelY + scaledPanelHeight - s(60), fadeProgress);
 
         // Sync status and close hint
         int hintColor = applyAlpha(COLOR_TEXT_DIM, fadeProgress * 0.7f);
@@ -222,7 +226,7 @@ public class SeasonPassScreen extends Screen {
         } else if (!synced) {
             syncStatus = " | Not synced";
         }
-        UIScaleManager.drawScaledCenteredString(g, f, "Press ESC to close" + syncStatus, centerX, panelY + scaledPanelHeight - UIScaleManager.scale(20), hintColor);
+        UIScaleManager.drawScaledCenteredString(g, f, "Press ESC to close" + syncStatus, centerX, panelY + scaledPanelHeight - s(20), hintColor);
 
         super.render(g, mouseX, mouseY, partialTick);
     }
@@ -231,11 +235,13 @@ public class SeasonPassScreen extends Screen {
         // Outer glow
         int glowAlpha = (int) (DesignTokens.Alpha.A20 * alpha);
         int glowColor = (glowAlpha << 24) | (COLOR_BORDER & DesignTokens.Mask.RGB);
-        g.fill(x - 5, y - 5, x + w + 5, y + h + 5, glowColor);
+        int glow = s(5);
+        g.fill(x - glow, y - glow, x + w + glow, y + h + glow, glowColor);
 
         // Border
         int borderColor = applyAlpha(COLOR_BORDER, alpha);
-        g.fill(x - 2, y - 2, x + w + 2, y + h + 2, borderColor);
+        int border = s(2);
+        g.fill(x - border, y - border, x + w + border, y + h + border, borderColor);
 
         // Background gradient
         int topColor = applyAlpha(COLOR_BG_TOP, alpha);
@@ -316,10 +322,11 @@ public class SeasonPassScreen extends Screen {
 
         // Border
         int borderColor = applyAlpha(COLOR_BORDER, alpha * 0.5f);
-        g.fill(x, y, x + w, y + 1, borderColor);
-        g.fill(x, y + h - 1, x + w, y + h, borderColor);
-        g.fill(x, y, x + 1, y + h, borderColor);
-        g.fill(x + w - 1, y, x + w, y + h, borderColor);
+        int line = s(1);
+        g.fill(x, y, x + w, y + line, borderColor);
+        g.fill(x, y + h - line, x + w, y + h, borderColor);
+        g.fill(x, y, x + line, y + h, borderColor);
+        g.fill(x + w - line, y, x + w, y + h, borderColor);
 
         // XP text with sync indicator
         int textColor = applyAlpha(COLOR_TEXT, alpha);
@@ -329,15 +336,15 @@ public class SeasonPassScreen extends Screen {
             textColor = applyAlpha(COLOR_TEXT_DIM, alpha);
         }
         int textWidth = UIScaleManager.getScaledStringWidth(f, xpText);
-        UIScaleManager.drawScaledString(g, f, xpText, x + (w - textWidth) / 2, y + (h - 8) / 2, textColor, true);
+        UIScaleManager.drawScaledString(g, f, xpText, x + (w - textWidth) / 2, y + (h - s(8)) / 2, textColor, true);
     }
 
     private void renderTierCards(GuiGraphics g, int startX, int startY, int scaledPanelWidth, int mouseX, int mouseY, float alpha) {
         @Nonnull Font f = safeFont();
-        int scaledCardWidth = UIScaleManager.scale(TIER_CARD_WIDTH);
-        int scaledCardHeight = UIScaleManager.scale(TIER_CARD_HEIGHT);
-        int cardSpacing = UIScaleManager.scale(10);
-        int margin = UIScaleManager.scale(30);
+        int scaledCardWidth = s(TIER_CARD_WIDTH);
+        int scaledCardHeight = s(TIER_CARD_HEIGHT);
+        int cardSpacing = s(10);
+        int margin = s(30);
         int totalWidth = VISIBLE_TIERS * (scaledCardWidth + cardSpacing) - cardSpacing;
         int offsetX = (scaledPanelWidth - margin * 2 - totalWidth) / 2;
 
@@ -359,11 +366,11 @@ public class SeasonPassScreen extends Screen {
         // Scroll arrows
         if (scrollOffset > 0) {
             int arrowColor = applyAlpha(COLOR_TEXT, alpha);
-            UIScaleManager.drawScaledString(g, f, "<", startX + UIScaleManager.scale(5), startY + scaledCardHeight / 2, arrowColor, false);
+            UIScaleManager.drawScaledString(g, f, "<", startX + s(5), startY + scaledCardHeight / 2, arrowColor, false);
         }
         if (scrollOffset + VISIBLE_TIERS < maxTier) {
             int arrowColor = applyAlpha(COLOR_TEXT, alpha);
-            UIScaleManager.drawScaledString(g, f, ">", startX + scaledPanelWidth - margin - UIScaleManager.scale(40), startY + scaledCardHeight / 2, arrowColor, false);
+            UIScaleManager.drawScaledString(g, f, ">", startX + scaledPanelWidth - margin - s(40), startY + scaledCardHeight / 2, arrowColor, false);
         }
     }
 
@@ -415,9 +422,9 @@ public class SeasonPassScreen extends Screen {
         boolean premiumClaimed = rewardEntry != null && rewardEntry.premiumClaimed();
 
         // Free track reward
-        int inset = UIScaleManager.scale(5);
-        int rowHeight = UIScaleManager.scale(20);
-        int freeY = y + UIScaleManager.scale(40);
+        int inset = s(5);
+        int rowHeight = s(20);
+        int freeY = y + s(40);
         int freeColor;
         if (freeClaimed) {
             freeColor = applyAlpha(COLOR_CLAIMED, alpha);
@@ -428,21 +435,21 @@ public class SeasonPassScreen extends Screen {
         }
         g.fill(x + inset, freeY, x + cardWidth - inset, freeY + rowHeight, applyAlpha(COLOR_FREE_TRACK, alpha * 0.2f));
         String freeLabel = rewardEntry != null && !rewardEntry.getSafeFreeRewardName().isEmpty()
-            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafeFreeRewardName(), cardWidth - UIScaleManager.scale(18)))
+            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafeFreeRewardName(), cardWidth - s(18)))
             : (tier % 5 == 0 ? "Reward" : "-");
 
         // Show checkmark for claimed free rewards
-        int textY = freeY + UIScaleManager.scale(6);
+        int textY = freeY + s(6);
         if (freeClaimed) {
-            UIScaleManager.drawScaledString(g, f, "\u2713", x + UIScaleManager.scale(7), textY, applyAlpha(COLOR_CLAIMED, alpha), false);
-            UIScaleManager.drawScaledString(g, f, freeLabel, x + UIScaleManager.scale(18), textY, freeColor, false);
+            UIScaleManager.drawScaledString(g, f, "\u2713", x + s(7), textY, applyAlpha(COLOR_CLAIMED, alpha), false);
+            UIScaleManager.drawScaledString(g, f, freeLabel, x + s(18), textY, freeColor, false);
         } else {
             int freeLabelWidth = UIScaleManager.getScaledStringWidth(f, freeLabel);
             UIScaleManager.drawScaledString(g, f, freeLabel, x + (cardWidth - freeLabelWidth) / 2, textY, freeColor, false);
         }
 
         // Premium track reward
-        int premiumY = y + UIScaleManager.scale(65);
+        int premiumY = y + s(65);
         int premiumColor;
         if (premiumClaimed) {
             premiumColor = applyAlpha(COLOR_CLAIMED, alpha);
@@ -453,14 +460,14 @@ public class SeasonPassScreen extends Screen {
         }
         g.fill(x + inset, premiumY, x + cardWidth - inset, premiumY + rowHeight, applyAlpha(COLOR_PREMIUM_TRACK, alpha * 0.2f));
         String premiumLabel = rewardEntry != null && !rewardEntry.getSafePremiumRewardName().isEmpty()
-            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafePremiumRewardName(), cardWidth - UIScaleManager.scale(18)))
+            ? Objects.requireNonNull(truncateLabel(rewardEntry.getSafePremiumRewardName(), cardWidth - s(18)))
             : "Premium";
 
         // Show checkmark for claimed premium rewards
-        int premiumTextY = premiumY + UIScaleManager.scale(6);
+        int premiumTextY = premiumY + s(6);
         if (premiumClaimed) {
-            UIScaleManager.drawScaledString(g, f, "\u2713", x + UIScaleManager.scale(7), premiumTextY, applyAlpha(COLOR_CLAIMED, alpha), false);
-            UIScaleManager.drawScaledString(g, f, premiumLabel, x + UIScaleManager.scale(18), premiumTextY, premiumColor, false);
+            UIScaleManager.drawScaledString(g, f, "\u2713", x + s(7), premiumTextY, applyAlpha(COLOR_CLAIMED, alpha), false);
+            UIScaleManager.drawScaledString(g, f, premiumLabel, x + s(18), premiumTextY, premiumColor, false);
         } else {
             int premiumLabelWidth = UIScaleManager.getScaledStringWidth(f, premiumLabel);
             UIScaleManager.drawScaledString(g, f, premiumLabel, x + (cardWidth - premiumLabelWidth) / 2, premiumTextY, premiumColor, false);
@@ -469,29 +476,29 @@ public class SeasonPassScreen extends Screen {
         // Lock icon for locked tiers, or claim indicator for unclaimed
         if (!unlocked) {
             int lockColor = applyAlpha(COLOR_LOCKED, alpha);
-            UIScaleManager.drawScaledCenteredString(g, f, "\uD83D\uDD12", x + cardWidth / 2, y + cardHeight - UIScaleManager.scale(15), lockColor);
+            UIScaleManager.drawScaledCenteredString(g, f, "\uD83D\uDD12", x + cardWidth / 2, y + cardHeight - s(15), lockColor);
         } else if ((freeUnlocked && !freeClaimed) || (premiumUnlocked && hasPremium && !premiumClaimed)) {
             // Show exclamation for claimable rewards
             int claimColor = applyAlpha(COLOR_BADGE, alpha);
-            UIScaleManager.drawScaledCenteredString(g, f, "!", x + cardWidth / 2, y + cardHeight - UIScaleManager.scale(15), claimColor);
+            UIScaleManager.drawScaledCenteredString(g, f, "!", x + cardWidth / 2, y + cardHeight - s(15), claimColor);
         }
     }
 
     private void renderLegend(GuiGraphics g, int x, int y, float alpha) {
         @Nonnull Font f = safeFont();
 
-        int boxSize = UIScaleManager.scale(12);
-        int textOffset = UIScaleManager.scale(18);
+        int boxSize = s(12);
+        int textOffset = s(18);
 
         // Free track legend
         int freeBoxColor = applyAlpha(COLOR_FREE_TRACK, alpha);
         g.fill(x, y, x + boxSize, y + boxSize, freeBoxColor);
         int freeLabelColor = applyAlpha(COLOR_TEXT, alpha);
         String freeTrackText = Objects.requireNonNull(I18n.translate("devmod.ui.season_pass.free_track").getString());
-        UIScaleManager.drawScaledString(g, f, freeTrackText, x + textOffset, y + UIScaleManager.scale(2), freeLabelColor, false);
+        UIScaleManager.drawScaledString(g, f, freeTrackText, x + textOffset, y + s(2), freeLabelColor, false);
 
         // Premium track legend
-        int premiumOffset = UIScaleManager.scale(120);
+        int premiumOffset = s(120);
         int premiumBoxColor = applyAlpha(COLOR_PREMIUM_TRACK, alpha);
         g.fill(x + premiumOffset, y, x + premiumOffset + boxSize, y + boxSize, premiumBoxColor);
         int premiumLabelColor = applyAlpha(COLOR_TEXT, alpha);
@@ -500,7 +507,7 @@ public class SeasonPassScreen extends Screen {
             String lockedText = Objects.requireNonNull(I18n.translate("devmod.ui.season_pass.locked").getString());
             premiumText += " (" + lockedText + ")";
         }
-        UIScaleManager.drawScaledString(g, f, premiumText, x + premiumOffset + textOffset, y + UIScaleManager.scale(2), premiumLabelColor, false);
+        UIScaleManager.drawScaledString(g, f, premiumText, x + premiumOffset + textOffset, y + s(2), premiumLabelColor, false);
     }
 
     // === Scroll handling ===

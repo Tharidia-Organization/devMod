@@ -37,30 +37,31 @@ public class InstanceData {
 
     // === Players ===
     private final Set<UUID> currentPlayers;
+    private final Object playerLock = new Object(); // Lock for player add/remove to prevent race conditions
     private final int maxPlayers;
     private final UUID ownerId;  // Player who created the instance
 
-    // === Arena ===
+    // === Arena === (volatile for thread visibility across teleport/creation threads)
     @Nullable
-    private BlockPos arenaCenter;
-    private int arenaRadius;
+    private volatile BlockPos arenaCenter;
+    private volatile int arenaRadius;
     @Nullable
-    private String arenaTemplate;
-    private int arenaTemplateVersion;
+    private volatile String arenaTemplate;
+    private volatile int arenaTemplateVersion;
     @Nullable
-    private String arenaPolicyId;
-    private int arenaPolicyVersion;
+    private volatile String arenaPolicyId;
+    private volatile int arenaPolicyVersion;
 
-    // === Quest State ===
+    // === Quest State === (volatile for thread visibility across quest/wave threads)
     @Nullable
-    private ResourceLocation questMobId;
-    private int currentWave;
-    private int totalWaves;
-    private long questStartTime;
-    private boolean endlessMode;
+    private volatile ResourceLocation questMobId;
+    private volatile int currentWave;
+    private volatile int totalWaves;
+    private volatile long questStartTime;
+    private volatile boolean endlessMode;
 
-    // === Cleanup ===
-    private long markedForDestructionAt;
+    // === Cleanup === (volatile for thread-safe destruction scheduling)
+    private volatile long markedForDestructionAt;
     public static final long DESTROY_DELAY_MS = 5000; // 5 seconds
 
     /**
@@ -129,32 +130,45 @@ public class InstanceData {
      * @return true if the transition was valid, false if it was forced or failed
      */
     public boolean setState(InstanceState newState) {
-        InstanceState oldState = this.state.get();
+        // Use a loop instead of recursion to prevent StackOverflowError
+        // when multiple threads contend for state changes
+        boolean valid = false;
+        int retries = 0;
+        final int MAX_RETRIES = 100; // Safety limit to prevent infinite loops
 
-        if (oldState == newState) {
-            LOGGER.debug("[Instance] {} already in state {}", instanceId, newState);
-            return true;
-        }
+        while (retries < MAX_RETRIES) {
+            InstanceState oldState = this.state.get();
 
-        boolean valid = oldState.canTransitionTo(newState);
-        if (!valid) {
-            LOGGER.warn("[Instance] {} INVALID state transition: {} -> {} (valid: {})",
-                instanceId, oldState, newState, oldState.getValidNextStates());
-            // Still allow the transition to prevent deadlocks, but log the warning
-        }
+            if (oldState == newState) {
+                LOGGER.debug("[Instance] {} already in state {}", instanceId, newState);
+                return true;
+            }
 
-        // Use CAS to ensure atomic state transition
-        if (!this.state.compareAndSet(oldState, newState)) {
+            valid = oldState.canTransitionTo(newState);
+            if (!valid) {
+                LOGGER.warn("[Instance] {} INVALID state transition: {} -> {} (valid: {})",
+                    instanceId, oldState, newState, oldState.getValidNextStates());
+                // Still allow the transition to prevent deadlocks, but log the warning
+            }
+
+            // Use CAS to ensure atomic state transition
+            if (this.state.compareAndSet(oldState, newState)) {
+                LOGGER.info("[Instance] {} state changed: {} -> {}{}", instanceId, oldState, newState,
+                    valid ? "" : " [FORCED]");
+                return valid;
+            }
+
             // State was changed by another thread, retry
-            LOGGER.debug("[Instance] {} state transition conflict, retrying {} -> {}",
-                instanceId, oldState, newState);
-            return setState(newState);
+            LOGGER.debug("[Instance] {} state transition conflict (attempt {}), retrying {} -> {}",
+                instanceId, retries + 1, oldState, newState);
+            retries++;
         }
 
-        LOGGER.info("[Instance] {} state changed: {} -> {}{}", instanceId, oldState, newState,
-            valid ? "" : " [FORCED]");
-
-        return valid;
+        // Exceeded retry limit - force the state change to prevent stuck instances
+        LOGGER.error("[Instance] {} setState exceeded {} retries, forcing state to {}",
+            instanceId, MAX_RETRIES, newState);
+        forceState(newState);
+        return false;
     }
 
     /**
@@ -176,36 +190,49 @@ public class InstanceData {
 
     public boolean canAcceptPlayers() {
         InstanceState currentState = state.get();
-        return (currentState == InstanceState.READY || currentState == InstanceState.ACTIVE)
+        return (currentState == InstanceState.CREATING
+            || currentState == InstanceState.READY
+            || currentState == InstanceState.ACTIVE)
             && currentPlayers.size() < maxPlayers;
     }
 
     // === Player Management ===
 
     public boolean addPlayer(UUID playerId) {
-        if (!canAcceptPlayers()) {
-            return false;
+        // Synchronize with removePlayer to prevent race condition where:
+        // - Thread A removes last player, checks isEmpty() -> true, schedules destruction
+        // - Thread B adds new player, but destruction is already scheduled
+        synchronized (playerLock) {
+            if (!canAcceptPlayers()) {
+                return false;
+            }
+            boolean added = currentPlayers.add(playerId);
+            if (added) {
+                LOGGER.debug("[Instance] Player {} joined instance {}", playerId, instanceId);
+            }
+            return added;
         }
-        boolean added = currentPlayers.add(playerId);
-        if (added) {
-            LOGGER.debug("[Instance] Player {} joined instance {}", playerId, instanceId);
-        }
-        return added;
     }
 
     public boolean removePlayer(UUID playerId) {
-        boolean removed = currentPlayers.remove(playerId);
-        if (removed) {
-            LOGGER.debug("[Instance] Player {} left instance {}", playerId, instanceId);
+        // Synchronize with addPlayer to prevent race condition where:
+        // - This thread removes last player, checks isEmpty() -> true
+        // - Another thread is about to add a new player
+        // - This thread schedules destruction before the add completes
+        synchronized (playerLock) {
+            boolean removed = currentPlayers.remove(playerId);
+            if (removed) {
+                LOGGER.debug("[Instance] Player {} left instance {}", playerId, instanceId);
 
-            // Check if instance is now empty - schedule destruction for both READY and ACTIVE states
-            // This handles edge cases like teleport failures during READY state
-            InstanceState currentState = state.get();
-            if (currentPlayers.isEmpty() && (currentState == InstanceState.ACTIVE || currentState == InstanceState.READY)) {
-                scheduleDestruction();
+                // Check if instance is now empty - schedule destruction for both READY and ACTIVE states
+                // This handles edge cases like teleport failures during READY state
+                InstanceState currentState = state.get();
+                if (currentPlayers.isEmpty() && (currentState == InstanceState.ACTIVE || currentState == InstanceState.READY)) {
+                    scheduleDestruction();
+                }
             }
+            return removed;
         }
-        return removed;
     }
 
     public boolean hasPlayer(UUID playerId) {
@@ -236,15 +263,16 @@ public class InstanceData {
     }
 
     // === Destruction Scheduling ===
+    // Synchronized to prevent TOCTOU race conditions on markedForDestructionAt
 
-    public void scheduleDestruction() {
+    public synchronized void scheduleDestruction() {
         if (markedForDestructionAt == 0) {
             markedForDestructionAt = System.currentTimeMillis();
             LOGGER.info("[Instance] {} scheduled for destruction in {}ms", instanceId, DESTROY_DELAY_MS);
         }
     }
 
-    public void cancelDestruction() {
+    public synchronized void cancelDestruction() {
         if (markedForDestructionAt > 0) {
             markedForDestructionAt = 0;
             LOGGER.info("[Instance] {} destruction cancelled", instanceId);
@@ -252,10 +280,12 @@ public class InstanceData {
     }
 
     public boolean isMarkedForDestruction() {
+        // Simple read of volatile field - no sync needed
         return markedForDestructionAt > 0;
     }
 
-    public boolean shouldDestroy() {
+    public synchronized boolean shouldDestroy() {
+        // Synchronized to ensure consistent read of markedForDestructionAt
         return markedForDestructionAt > 0
             && System.currentTimeMillis() >= markedForDestructionAt + DESTROY_DELAY_MS;
     }

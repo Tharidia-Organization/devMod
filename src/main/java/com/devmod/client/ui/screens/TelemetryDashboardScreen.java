@@ -58,6 +58,7 @@ public class TelemetryDashboardScreen extends Screen {
     private List<String> cachedStats = new ArrayList<>();
     private int scrollOffset = 0;
     private int mouseX, mouseY;
+    private int scaledRowHeight;
 
     // Blur control
     private int originalBlurValue = 0;
@@ -116,6 +117,7 @@ public class TelemetryDashboardScreen extends Screen {
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         Font safeFont = getSafeFont();
+        scaledRowHeight = UIScaleManager.scaleMin(ROW_HEIGHT, 22);
 
         // Dark background
         AxiomRenderer.drawScreenBackground(graphics, this.width, this.height);
@@ -236,14 +238,14 @@ public class TelemetryDashboardScreen extends Screen {
         Font safeFont = getSafeFont();
         int contentWidth = UIScaleManager.scale(CONTENT_WIDTH);
         String safeName = Objects.requireNonNull(name, "name");
-        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, ROW_HEIGHT - 2);
+        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, scaledRowHeight - 2);
 
         if (hovered) {
-            graphics.fill(x - 2, y, x + contentWidth + 2, y + ROW_HEIGHT - 2, DesignTokens.Background.HOVER());
+            graphics.fill(x - 2, y, x + contentWidth + 2, y + scaledRowHeight - 2, DesignTokens.Background.HOVER());
         }
 
         // Accent bar
-        graphics.fill(x, y + 4, x + 3, y + ROW_HEIGHT - 6, accentColor);
+        graphics.fill(x, y + 4, x + 3, y + scaledRowHeight - 6, accentColor);
 
         // Name + dynamic hotkey from KeyMapping
         UIScaleManager.drawScaledString(graphics, safeFont, safeName, x + 10, y + 6, DesignTokens.Text.PRIMARY(), false);
@@ -258,10 +260,12 @@ public class TelemetryDashboardScreen extends Screen {
         UIScaleManager.drawScaledString(graphics, safeFont, hotkeyLabel, x + 10 + nameWidth + 6, y + 6, hotkeyColor, false);
 
         // Toggle
-        int toggleX = x + contentWidth - DesignTokens.Size.TOGGLE_WIDTH;
-        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y + 3, DesignTokens.Size.TOGGLE_WIDTH, DesignTokens.Size.TOGGLE_HEIGHT, enabled, hovered);
+        int toggleW = UIScaleManager.scale(DesignTokens.Size.TOGGLE_WIDTH);
+        int toggleH = UIScaleManager.scale(DesignTokens.Size.TOGGLE_HEIGHT);
+        int toggleX = x + contentWidth - toggleW;
+        AxiomRenderer.drawToggle(graphics, safeFont, toggleX, y + 3, toggleW, toggleH, enabled, hovered);
 
-        return y + ROW_HEIGHT;
+        return y + scaledRowHeight;
     }
 
     private void renderExportTab(GuiGraphics graphics, int x, int y) {
@@ -293,16 +297,16 @@ public class TelemetryDashboardScreen extends Screen {
         Font safeFont = getSafeFont();
         int contentWidth = UIScaleManager.scale(CONTENT_WIDTH);
         String safeLabel = Objects.requireNonNull(label, "label");
-        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, ROW_HEIGHT - 4);
+        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, scaledRowHeight - 4);
 
         int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
-        graphics.fill(x, y, x + contentWidth, y + ROW_HEIGHT - 4, bgColor);
+        graphics.fill(x, y, x + contentWidth, y + scaledRowHeight - 4, bgColor);
 
         // Accent bar
-        graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, accentColor);
+        graphics.fill(x, y, x + 3, y + scaledRowHeight - 4, accentColor);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, contentWidth, ROW_HEIGHT - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y, contentWidth, scaledRowHeight - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
         // Text
         UIScaleManager.drawScaledString(graphics, safeFont, safeLabel, x + 10, y + 5, DesignTokens.Text.PRIMARY(), false);
@@ -310,7 +314,7 @@ public class TelemetryDashboardScreen extends Screen {
         // Arrow
         UIScaleManager.drawScaledString(graphics, safeFont, ">", x + contentWidth - 12, y + 5, hovered ? DesignTokens.Text.ACCENT() : DesignTokens.Text.MUTED(), false);
 
-        return y + ROW_HEIGHT;
+        return y + scaledRowHeight;
     }
 
     private void renderStatsTab(GuiGraphics graphics, int x, int y) {
@@ -532,33 +536,33 @@ public class TelemetryDashboardScreen extends Screen {
             int btnWidth = (contentWidth - 10) / 2;
 
             // "Confirm" button
-            boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, btnWidth, ROW_HEIGHT - 4);
+            boolean confirmHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, btnWidth, scaledRowHeight - 4);
             int confirmBg = confirmHovered
                 ? DesignTokens.TelemetryDashboard.CONFIRM_HOVER_BG
                 : DesignTokens.Background.PANEL();
-            graphics.fill(x, y, x + btnWidth, y + ROW_HEIGHT - 4, confirmBg);
-            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, DesignTokens.Accent.RED());
-            AxiomRenderer.drawBorder(graphics, x, y, btnWidth, ROW_HEIGHT - 4, DesignTokens.Accent.RED());
+            graphics.fill(x, y, x + btnWidth, y + scaledRowHeight - 4, confirmBg);
+            graphics.fill(x, y, x + 3, y + scaledRowHeight - 4, DesignTokens.Accent.RED());
+            AxiomRenderer.drawBorder(graphics, x, y, btnWidth, scaledRowHeight - 4, DesignTokens.Accent.RED());
             String confirmText = "Yes, Clear All";
             int confirmWidth = UIScaleManager.getScaledStringWidth(safeFont, confirmText);
             UIScaleManager.drawScaledString(graphics, safeFont, confirmText, x + (btnWidth - confirmWidth) / 2, y + 5, DesignTokens.Accent.RED(), false);
 
             // "Cancel" button
             int cancelX = x + btnWidth + 10;
-            boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, y, btnWidth, ROW_HEIGHT - 4);
+            boolean cancelHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, cancelX, y, btnWidth, scaledRowHeight - 4);
             int cancelBg = cancelHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
-            graphics.fill(cancelX, y, cancelX + btnWidth, y + ROW_HEIGHT - 4, cancelBg);
-            AxiomRenderer.drawBorder(graphics, cancelX, y, btnWidth, ROW_HEIGHT - 4, DesignTokens.Border.DEFAULT());
+            graphics.fill(cancelX, y, cancelX + btnWidth, y + scaledRowHeight - 4, cancelBg);
+            AxiomRenderer.drawBorder(graphics, cancelX, y, btnWidth, scaledRowHeight - 4, DesignTokens.Border.DEFAULT());
             String cancelText = "Cancel";
             int cancelWidth = UIScaleManager.getScaledStringWidth(safeFont, cancelText);
             UIScaleManager.drawScaledString(graphics, safeFont, cancelText, cancelX + (btnWidth - cancelWidth) / 2, y + 5, DesignTokens.Text.PRIMARY(), false);
         } else {
             // Normal clear button
-            boolean clearHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, ROW_HEIGHT);
+            boolean clearHovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, scaledRowHeight);
             int clearBg = clearHovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
-            graphics.fill(x, y, x + contentWidth, y + ROW_HEIGHT - 4, clearBg);
-            graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, DesignTokens.Accent.RED());
-            AxiomRenderer.drawBorder(graphics, x, y, contentWidth, ROW_HEIGHT - 4, clearHovered ? DesignTokens.Accent.RED() : DesignTokens.Border.DEFAULT());
+            graphics.fill(x, y, x + contentWidth, y + scaledRowHeight - 4, clearBg);
+            graphics.fill(x, y, x + 3, y + scaledRowHeight - 4, DesignTokens.Accent.RED());
+            AxiomRenderer.drawBorder(graphics, x, y, contentWidth, scaledRowHeight - 4, clearHovered ? DesignTokens.Accent.RED() : DesignTokens.Border.DEFAULT());
             String clearText = "Clear All Heatmaps";
             int textWidth = UIScaleManager.getScaledStringWidth(safeFont, clearText);
             UIScaleManager.drawScaledString(graphics, safeFont, clearText, x + (contentWidth - textWidth) / 2, y + 5, DesignTokens.Accent.RED(), false);
@@ -570,16 +574,16 @@ public class TelemetryDashboardScreen extends Screen {
         int contentWidth = UIScaleManager.scale(CONTENT_WIDTH);
         String safeName = Objects.requireNonNull(name, "name");
         boolean enabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
-        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, ROW_HEIGHT - 4);
+        boolean hovered = AxiomRenderer.isMouseOver(mouseX, mouseY, x, y, contentWidth, scaledRowHeight - 4);
 
         int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
-        graphics.fill(x, y, x + contentWidth, y + ROW_HEIGHT - 4, bgColor);
+        graphics.fill(x, y, x + contentWidth, y + scaledRowHeight - 4, bgColor);
 
         // Accent bar
-        graphics.fill(x, y, x + 3, y + ROW_HEIGHT - 4, accentColor);
+        graphics.fill(x, y, x + 3, y + scaledRowHeight - 4, accentColor);
 
         // Border
-        AxiomRenderer.drawBorder(graphics, x, y, contentWidth, ROW_HEIGHT - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
+        AxiomRenderer.drawBorder(graphics, x, y, contentWidth, scaledRowHeight - 4, hovered ? DesignTokens.Border.ACCENT() : DesignTokens.Border.DEFAULT());
 
         // Text
         UIScaleManager.drawScaledString(graphics, safeFont, "Load " + safeName, x + 10, y + 5, DesignTokens.Text.PRIMARY(), false);
@@ -591,7 +595,7 @@ public class TelemetryDashboardScreen extends Screen {
             UIScaleManager.drawScaledString(graphics, safeFont, status, x + contentWidth - statusWidth - 8, y + 5, DesignTokens.Accent.GREEN(), false);
         }
 
-        return y + ROW_HEIGHT;
+        return y + scaledRowHeight;
     }
 
     @Override
@@ -599,6 +603,7 @@ public class TelemetryDashboardScreen extends Screen {
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
         UIScaleManager.update();
+        scaledRowHeight = UIScaleManager.scaleMin(ROW_HEIGHT, 22);
         int mx = (int) mouseX;
         int my = (int) mouseY;
         int scaledTabWidth = UIScaleManager.scale(TAB_WIDTH);
@@ -656,11 +661,11 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (String actionId : actionIds) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 2)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 2)) {
                 invokeAction(actionId);
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
         return false;
     }
@@ -692,17 +697,17 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (int i = 0; i < exportActions.length; i++) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 invokeAction(exportActions[i]);
                 showMessage(I18n.translate(exportMessages[i]).getString());
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
 
         // Gap + Damage Statistics button
         y += 8;
-        if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+        if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
             invokeAction(ActionIds.TELEMETRY_EXPORT_DAMAGE_STATS);
             showMessage(I18n.translate("devmod.telemetry.exported_damage_stats").getString());
             return true;
@@ -724,11 +729,11 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (String actionId : opsActions) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 invokeAction(actionId);
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
 
         y += 8;
@@ -741,11 +746,11 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (String actionId : dungeonActions) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 invokeAction(actionId);
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
 
         return false;
@@ -769,11 +774,11 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (String actionId : dataActions) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 invokeAction(actionId);
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
         return false;
     }
@@ -794,11 +799,11 @@ public class TelemetryDashboardScreen extends Screen {
         };
 
         for (String actionId : scanActions) {
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 invokeAction(actionId);
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
 
         return false;
@@ -874,14 +879,14 @@ public class TelemetryDashboardScreen extends Screen {
 
         for (int i = 0; i < types.length; i++) {
             HeatmapType type = types[i];
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 boolean currentlyEnabled = HeatmapVisualizer.INSTANCE.isEnabled(type);
                 invokeAction(actionIds[i]);
                 String status = currentlyEnabled ? "\u00A7cOFF" : "\u00A7aON";
                 showMessage(I18n.translate("devmod.render.heatmap_type_toggle_status", type.name(), status).getString());
                 return true;
             }
-            y += ROW_HEIGHT;
+            y += scaledRowHeight;
         }
 
         y += 12; // gap before clear button
@@ -891,7 +896,7 @@ public class TelemetryDashboardScreen extends Screen {
             int btnWidth = (contentWidth - 10) / 2;
 
             // "Yes, Clear All" button
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, btnWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, btnWidth, scaledRowHeight - 4)) {
                 invokeConfirmedAction(ActionIds.DEBUG_HEATMAP_CLEAR_ALL);
                 showMessage(I18n.translate("devmod.render.heatmaps_cleared").getString());
                 showClearConfirmation = false;
@@ -900,13 +905,13 @@ public class TelemetryDashboardScreen extends Screen {
 
             // "Cancel" button
             int cancelX = x + btnWidth + 10;
-            if (AxiomRenderer.isMouseOver(mx, my, cancelX, y, btnWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, cancelX, y, btnWidth, scaledRowHeight - 4)) {
                 showClearConfirmation = false;
                 return true;
             }
         } else {
             // Show confirmation first
-            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, ROW_HEIGHT - 4)) {
+            if (AxiomRenderer.isMouseOver(mx, my, x, y, contentWidth, scaledRowHeight - 4)) {
                 showClearConfirmation = true;
                 return true;
             }

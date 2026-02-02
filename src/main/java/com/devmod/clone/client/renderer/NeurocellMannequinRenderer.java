@@ -148,15 +148,16 @@ public class NeurocellMannequinRenderer implements BlockEntityRenderer<Neurocell
         applyEquipment(player, blockEntity);
 
         // Calculate rotation based on mode
-        float totalRotation;
+        // Using if-else instead of switch to avoid synthetic class generation issues
         RotationMode rotationMode = blockEntity.getRotationMode();
         float baseRotation = blockEntity.getRotationAngle();
+        float totalRotation;
 
-        switch (rotationMode) {
-            case FIXED -> totalRotation = baseRotation;
-            case MANUAL -> totalRotation = baseRotation;
-            case AUTO -> totalRotation = baseRotation + (animTime * 8.0f);
-            default -> totalRotation = baseRotation + (animTime * 8.0f);
+        if (rotationMode == RotationMode.FIXED || rotationMode == RotationMode.MANUAL) {
+            totalRotation = baseRotation;
+        } else {
+            // AUTO mode or any other: add animated rotation
+            totalRotation = baseRotation + (animTime * 8.0f);
         }
 
         // Render the player model

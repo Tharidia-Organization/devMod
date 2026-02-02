@@ -107,14 +107,22 @@ public class PartyQuestSession {
     }
     public int getActiveMemberCount() { return activeMembers.size(); }
 
-    public void markSpectator(UUID memberId) {
+    /**
+     * Mark a member as spectator (dead/inactive).
+     * Thread-safe: Synchronized to atomically update multiple collections.
+     */
+    public synchronized void markSpectator(UUID memberId) {
         if (memberId == null) return;
         activeMembers.remove(memberId);
         spectators.add(memberId);
         waveReadyMembers.remove(memberId);
     }
 
-    public void markActive(UUID memberId) {
+    /**
+     * Mark a member as active (alive/participating).
+     * Thread-safe: Synchronized to atomically update multiple collections.
+     */
+    public synchronized void markActive(UUID memberId) {
         if (memberId == null) return;
         spectators.remove(memberId);
         activeMembers.add(memberId);
@@ -122,7 +130,11 @@ public class PartyQuestSession {
         waveReadyMembers.remove(memberId);
     }
 
-    public void markWaveReady(UUID memberId) {
+    /**
+     * Mark a member as ready for the next wave.
+     * Thread-safe: Synchronized to prevent check-then-act race.
+     */
+    public synchronized void markWaveReady(UUID memberId) {
         if (memberId == null) return;
         if (activeMembers.contains(memberId)) {
             waveReadyMembers.add(memberId);
@@ -133,14 +145,22 @@ public class PartyQuestSession {
         return memberId != null && waveReadyMembers.contains(memberId);
     }
 
-    public boolean isReadyForNextWave() {
+    /**
+     * Check if all active members are ready for next wave.
+     * Thread-safe: Synchronized to prevent TOCTOU race.
+     */
+    public synchronized boolean isReadyForNextWave() {
         if (activeMembers.isEmpty()) {
             return false;
         }
         return waveReadyMembers.containsAll(activeMembers);
     }
 
-    public void clearWaveReady() {
+    /**
+     * Clear wave ready status for all members.
+     * Thread-safe: Synchronized to prevent race with markWaveReady.
+     */
+    public synchronized void clearWaveReady() {
         waveReadyMembers.clear();
     }
 
@@ -172,7 +192,11 @@ public class PartyQuestSession {
         return false;
     }
 
-    public boolean isWiped() {
+    /**
+     * Check if all members are spectators (party wipe).
+     * Thread-safe: Synchronized to get consistent read.
+     */
+    public synchronized boolean isWiped() {
         return activeMembers.isEmpty();
     }
 
@@ -180,11 +204,12 @@ public class PartyQuestSession {
      * Atomically end the session if it's currently active.
      * Uses compare-and-set to prevent race conditions where multiple threads
      * try to end the session simultaneously with different statuses.
+     * Thread-safe: Synchronized to ensure endTime is set atomically with status change.
      *
      * @param newStatus The status to set (defaults to CANCELLED if null)
      * @return true if this call successfully ended the session, false if already ended
      */
-    public boolean end(Status newStatus) {
+    public synchronized boolean end(Status newStatus) {
         Status targetStatus = newStatus != null ? newStatus : Status.CANCELLED;
         // Atomic compare-and-set: only succeeds if currently ACTIVE
         if (status.compareAndSet(Status.ACTIVE, targetStatus)) {

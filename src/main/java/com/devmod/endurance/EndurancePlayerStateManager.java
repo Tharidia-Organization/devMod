@@ -15,6 +15,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
+import com.devmod.endurance.EnduranceLogger.Phase;
 
 public class EndurancePlayerStateManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(EndurancePlayerStateManager.class);
@@ -38,24 +39,34 @@ public class EndurancePlayerStateManager {
         // Save original game mode (always needed for both modes)
         session.setOriginalGameMode(player.gameMode.getGameModeForPlayer());
 
-        // Only save inventory locally for LEGACY mode (non-instance)
-        // In Instance mode, RecoverySystem already saved a full snapshot
+        // ALWAYS save inventory locally as a backup, even in Instance mode
+        // This serves as a fallback if RecoverySystem fails to restore properly
+        ListTag inventoryTag = new ListTag();
+        player.getInventory().save(inventoryTag);
+        session.setSavedInventory(inventoryTag);
+
         if (!session.isInInstanceDimension()) {
-            ListTag inventoryTag = new ListTag();
-            player.getInventory().save(inventoryTag);
-            session.setSavedInventory(inventoryTag);
             LOGGER.info("[EnduranceQuest] Prepared player {} for quest (saved {} inventory slots, was in {} mode)",
                 player.getName().getString(), inventoryTag.size(), session.getOriginalGameMode());
         } else {
-            LOGGER.info("[EnduranceQuest] Prepared player {} for INSTANCE quest (state saved by RecoverySystem)",
-                player.getName().getString());
+            LOGGER.info("[EnduranceQuest] Prepared player {} for INSTANCE quest (backup: {} slots, primary: RecoverySystem)",
+                player.getName().getString(), inventoryTag.size());
         }
 
         // Clear the player's inventory completely
         player.getInventory().clearContent();
 
         // Set to survival mode
+        GameType beforeMode = player.gameMode.getGameModeForPlayer();
         player.setGameMode(GameType.SURVIVAL);
+        GameType afterMode = player.gameMode.getGameModeForPlayer();
+        LOGGER.info("[CombatDebug] preparePlayerForQuest: player={}, gameModeBefore={}, gameModeAfter={}, isAlive={}, pos=({}, {}, {}), dim={}",
+            player.getName().getString(),
+            beforeMode,
+            afterMode,
+            player.isAlive(),
+            player.getX(), player.getY(), player.getZ(),
+            player.level().dimension().location());
 
         // Apply the selected kit (or starter kit if not specified)
         applyKitToPlayer(player, session.getKitId());
@@ -74,6 +85,8 @@ public class EndurancePlayerStateManager {
         if ("TEMPORARY".equals(kitId) &&
             (KitManager.INSTANCE.hasTemporaryKit(player.getUUID()) || KitManager.INSTANCE.hasTemporaryKit())) {
             KitManager.INSTANCE.applyTemporaryKit(player);
+            EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
+                "Applied TEMPORARY kit, inventorySize=%d", player.getInventory().items.size());
             LOGGER.debug("[EnduranceQuest] Applied temporary kit to {}", player.getName().getString());
             return;
         }
@@ -84,6 +97,8 @@ public class EndurancePlayerStateManager {
             var syncedKit = KitManager.INSTANCE.getSyncedCustomKit(player.getUUID(), kitId);
             if (syncedKit.isPresent()) {
                 KitManager.INSTANCE.applyCustomKit(player, syncedKit.get());
+                EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
+                    "Applied SYNCED custom kit: name=%s, id=%s", syncedKit.get().getName(), kitId);
                 LOGGER.debug("[EnduranceQuest] Applied synced custom kit {} to {}",
                     syncedKit.get().getName(), player.getName().getString());
                 return;
@@ -92,6 +107,8 @@ public class EndurancePlayerStateManager {
             var customKit = KitManager.INSTANCE.getCustomKit(kitId);
             if (customKit.isPresent()) {
                 KitManager.INSTANCE.applyCustomKit(player, customKit.get());
+                EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
+                    "Applied CUSTOM kit: name=%s, id=%s", customKit.get().getName(), kitId);
                 LOGGER.debug("[EnduranceQuest] Applied custom kit {} to {}",
                     customKit.get().getName(), player.getName().getString());
                 return;
@@ -104,6 +121,8 @@ public class EndurancePlayerStateManager {
             kit = KitPreset.STARTER;
         }
         KitManager.INSTANCE.applyKit(player, kit);
+        EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
+            "Applied PRESET kit: %s", kit.name());
         LOGGER.debug("[EnduranceQuest] Applied kit {} to {}", kit.name(), player.getName().getString());
     }
 
@@ -143,6 +162,27 @@ public class EndurancePlayerStateManager {
         inventory.add(new ItemStack(Objects.requireNonNull(Items.TORCH), 16));
 
         LOGGER.debug("[EnduranceQuest] Gave starter kit to {}", player.getName().getString());
+    }
+
+    /**
+     * Give an emergency fallback kit when inventory restoration fails.
+     * This is a minimal kit to prevent the player from being left with nothing.
+     * Less items than the starter kit - just essentials for survival.
+     */
+    public void giveEmergencyFallbackKit(ServerPlayer player) {
+        var inventory = player.getInventory();
+
+        // Basic weapon
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.STONE_SWORD)));
+
+        // Minimal food
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.BREAD), 8));
+
+        // Torches for visibility
+        inventory.add(new ItemStack(Objects.requireNonNull(Items.TORCH), 8));
+
+        LOGGER.warn("[EnduranceQuest] Gave emergency fallback kit to {} (inventory restore failed)",
+            player.getName().getString());
     }
 
     /**
@@ -191,6 +231,8 @@ public class EndurancePlayerStateManager {
         // In Instance mode, RecoverySystem handles FULL restoration (inventory, position, etc.)
         // DO NOT touch player state here - let RecoverySystem do it atomically
         if (session.isInInstanceDimension()) {
+            EnduranceLogger.phase(Phase.CLEANUP, player, session.getQuest().getQuestId(),
+                "Instance mode: delegating restore to RecoverySystem");
             LOGGER.debug("[EnduranceQuest] Instance mode: skipping local restore (RecoverySystem handles it)");
             return false;
         }
@@ -202,8 +244,17 @@ public class EndurancePlayerStateManager {
 
         // Restore original inventory
         ListTag savedInventory = session.getSavedInventory();
+        int restoredSlots = 0;
         if (savedInventory != null && !savedInventory.isEmpty()) {
             player.getInventory().load(savedInventory);
+            restoredSlots = savedInventory.size();
+        } else {
+            // FALLBACK: If saved inventory is missing/empty, give emergency kit
+            // This prevents player from being left with nothing due to save failure
+            LOGGER.warn("[EnduranceQuest] No saved inventory for {} - applying emergency fallback kit",
+                player.getName().getString());
+            giveEmergencyFallbackKit(player);
+            restoredSlots = -1; // Indicate fallback was used
         }
 
         // Restore original game mode
@@ -216,6 +267,9 @@ public class EndurancePlayerStateManager {
         player.setHealth(player.getMaxHealth());
         player.getFoodData().setFoodLevel(20);
 
+        EnduranceLogger.phase(Phase.CLEANUP, player, session.getQuest().getQuestId(),
+            "Legacy restore complete: inventorySlots=%d, gameMode=%s, health=%.1f",
+            restoredSlots, originalMode, player.getHealth());
         LOGGER.info("[EnduranceQuest] Restored player {} state (game mode: {})",
             player.getName().getString(), originalMode);
         return true;

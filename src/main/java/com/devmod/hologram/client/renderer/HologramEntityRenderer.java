@@ -66,9 +66,9 @@ public class HologramEntityRenderer {
                                 float partialTicks) {
         List<HologramEntityData> entities = blockEntity.getEntitiesForRendering(level, level.getGameTime());
         if (entities == null || entities.isEmpty()) {
-            // DEBUG: Log why no entities
+            // DEBUG: Log why no entities (use debug level to avoid performance impact)
             if (level.getGameTime() % 100 == 0) { // Log every 5 seconds
-                org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                org.slf4j.LoggerFactory.getLogger("Hologram").debug(
                     "[EntityRender] No entities from getEntitiesForRendering. showEntities={}, activeFilters={}",
                     blockEntity.isShowEntities(),
                     blockEntity.getActiveEntityFilters()
@@ -80,18 +80,18 @@ public class HologramEntityRenderer {
         // Apply frustum culling
         List<HologramEntityData> visibleEntities = cullEntities(entities, blockEntity);
         if (visibleEntities.isEmpty()) {
-            // DEBUG: Log culling issue
+            // DEBUG: Log culling issue (use debug level to avoid performance impact)
             if (level.getGameTime() % 100 == 0) {
-                org.slf4j.LoggerFactory.getLogger("Hologram").info(
+                org.slf4j.LoggerFactory.getLogger("Hologram").debug(
                     "[EntityRender] All {} entities culled by distance", entities.size()
                 );
             }
             return;
         }
 
-        // DEBUG: Log successful render
+        // DEBUG: Log successful render (use debug level to avoid performance impact)
         if (level.getGameTime() % 100 == 0) {
-            org.slf4j.LoggerFactory.getLogger("Hologram").info(
+            org.slf4j.LoggerFactory.getLogger("Hologram").debug(
                 "[EntityRender] Rendering {} entities (from {} before cull)",
                 visibleEntities.size(), entities.size()
             );

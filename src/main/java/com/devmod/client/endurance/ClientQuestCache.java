@@ -40,6 +40,13 @@ public class ClientQuestCache {
     private static final long SUPPRESSION_TIMEOUT_MS = 10_000; // 10 seconds max
 
     /**
+     * Flag to indicate the player has clicked "give up" and the quest is ending.
+     * This prevents the QuestDeathScreen from being reopened by RenderEvents
+     * while waiting for the server to send the final quest-ended sync.
+     */
+    private static volatile boolean pendingQuestEnd = false;
+
+    /**
      * Update the cache with new data from server.
      * Also synchronizes with IntegratedTestSession if active.
      */
@@ -52,6 +59,7 @@ public class ClientQuestCache {
         if (!payload.hasActiveQuest()) {
             lastWave = 0;
             wasActive = false;
+            pendingQuestEnd = false;  // Quest has ended, clear pending flag
             com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
             com.devmod.client.config.ClientMechanicsCache.INSTANCE.clearActiveQuestContext();
         }
@@ -135,6 +143,7 @@ public class ClientQuestCache {
         cachedData = null;
         lastUpdateTime = 0;
         suppressingVanillaDeathScreen = false;
+        pendingQuestEnd = false;
         lastState = EnduranceQuestState.AVAILABLE;
         com.devmod.client.overlay.QuestSequenceOverlay.INSTANCE.clear();
         EnduranceUiCache.clear();
@@ -146,6 +155,22 @@ public class ClientQuestCache {
      */
     public static boolean hasActiveQuest() {
         return cachedData != null && cachedData.hasActiveQuest();
+    }
+
+    /**
+     * Mark that the player has initiated quest end (give up/abandon).
+     * This prevents QuestDeathScreen from being reopened while waiting for server sync.
+     */
+    public static void setPendingQuestEnd(boolean pending) {
+        pendingQuestEnd = pending;
+        LOGGER.info("[EnduranceQuest][Client] setPendingQuestEnd({})", pending);
+    }
+
+    /**
+     * Check if quest end is pending (player clicked give up, waiting for server).
+     */
+    public static boolean isPendingQuestEnd() {
+        return pendingQuestEnd;
     }
 
     /**
@@ -163,6 +188,8 @@ public class ClientQuestCache {
     /**
      * Stop suppressing vanilla DeathScreen.
      * Called after respawn completes or quest ends.
+     * NOTE: Defers if player is still dead to prevent vanilla screen flash.
+     * Use forceStopDeathScreenSuppression() when quest is intentionally ending.
      */
     public static void stopDeathScreenSuppression() {
         if (isPlayerDead()) {
@@ -176,13 +203,30 @@ public class ClientQuestCache {
     }
 
     /**
+     * Force stop suppressing vanilla DeathScreen, even if player is dead.
+     * Use this when the quest is intentionally ending (give up, abandon).
+     * This prevents the QuestDeathScreen from reopening in a loop.
+     */
+    public static void forceStopDeathScreenSuppression() {
+        suppressingVanillaDeathScreen = false;
+        LOGGER.info("[EnduranceQuest][Client] forceStopDeathScreenSuppression (forced, playerDead={})", isPlayerDead());
+    }
+
+    /**
      * Check if vanilla DeathScreen should be suppressed.
      * Returns true if:
      * - There's an active quest, OR
+     * - Quest end is pending and player is still dead (recovery in progress), OR
      * - We're in the death/respawn flow (suppression flag is set and not timed out)
      */
     public static boolean shouldSuppressVanillaDeathScreen() {
         if (hasActiveQuest()) {
+            return true;
+        }
+        // Keep suppressing if quest end is pending and player is dead.
+        // This handles the race between quest completion packet and player respawn sync.
+        // The player might still appear dead client-side even though server has respawned them.
+        if (pendingQuestEnd && isPlayerDead()) {
             return true;
         }
         if (suppressingVanillaDeathScreen) {

@@ -64,7 +64,8 @@ public class QuickHelpOverlay {
 
         // Calculate panel size
         int panelWidth = Math.min(UIScaleManager.scale(280), UIScaleManager.getSafeWidth());
-        int panelHeight = calculatePanelHeight();
+        int sLineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
+        int panelHeight = calculatePanelHeight(sLineHeight);
 
         // Position: center-right of screen
         int panelX = screenWidth - panelWidth - UIScaleManager.scale(20);
@@ -81,7 +82,6 @@ public class QuickHelpOverlay {
         graphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BG);
 
         int sPadding = UIScaleManager.scale(PANEL_PADDING);
-        int sLineHeight = UIScaleManager.scale(LINE_HEIGHT);
         int y = panelY + sPadding;
         int x = panelX + sPadding;
         // Title
@@ -95,52 +95,52 @@ public class QuickHelpOverlay {
         y += UIScaleManager.scale(6);
 
         // Core Controls
-        y = renderCategory(graphics, font, x, y, "Core Controls");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_SETTINGS_KEY, "Settings Panel");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Weapon Editor");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_DASHBOARD_KEY, "Telemetry Dashboard");
+        y = renderCategory(graphics, font, x, y, "Core Controls", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_SETTINGS_KEY, "Settings Panel", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_WEAPON_EDITOR_KEY, "Weapon Editor", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_DASHBOARD_KEY, "Telemetry Dashboard", sLineHeight);
         y += UIScaleManager.scale(4);
 
         // Debug Overlays
-        y = renderCategory(graphics, font, x, y, "Debug Overlays");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, "Debug Renderer");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Light Levels");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_HEATMAP_KEY, "Heatmaps");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "Room Bounds");
+        y = renderCategory(graphics, font, x, y, "Debug Overlays", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_DEBUG_OVERLAY_KEY, "Debug Renderer", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LIGHT_OVERLAY_KEY, "Light Levels", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_HEATMAP_KEY, "Heatmaps", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_ROOM_BOUNDS_KEY, "Room Bounds", sLineHeight);
         y += UIScaleManager.scale(4);
 
         // Spatial Analysis
-        y = renderCategory(graphics, font, x, y, "Spatial & AI");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Pathfinding");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LOS_KEY, "Line of Sight");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Safe Spots");
+        y = renderCategory(graphics, font, x, y, "Spatial & AI", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PATHFINDING_KEY, "Pathfinding", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_LOS_KEY, "Line of Sight", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_SAFE_SPOT_KEY, "Safe Spots", sLineHeight);
         y += UIScaleManager.scale(4);
 
         // Quest System
-        y = renderCategory(graphics, font, x, y, "Quest System");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_QUEST_HUD_KEY, "Quest HUD");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY, "Endurance Quest");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_CONTINUE_KEY, "Continue (in quest)");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_EXIT_KEY, "Exit Quest");
+        y = renderCategory(graphics, font, x, y, "Quest System", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_QUEST_HUD_KEY, "Quest HUD", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.OPEN_ENDURANCE_QUEST_KEY, "Endurance Quest", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_CONTINUE_KEY, "Continue (in quest)", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.QUEST_EXIT_KEY, "Exit Quest", sLineHeight);
         y += 4;
 
         // Performance
-        y = renderCategory(graphics, font, x, y, "Performance");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_FPS_TRACKER_KEY, "FPS Tracker");
-        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PROFILER_KEY, "Profiler");
+        y = renderCategory(graphics, font, x, y, "Performance", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_FPS_TRACKER_KEY, "FPS Tracker", sLineHeight);
+        y = renderKeybind(graphics, font, x, y, KeyInputHandler.TOGGLE_PROFILER_KEY, "Profiler", sLineHeight);
 
         // Footer hint
         y += UIScaleManager.scale(8);
         UIScaleManager.drawScaledCenteredString(graphics, safeFont, "Press K for full settings", panelX + panelWidth / 2, y, OverlayTheme.Help.HINT);
     }
 
-    private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, String name) {
+    private static int renderCategory(GuiGraphics graphics, Font font, int x, int y, String name, int lineHeight) {
         UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font), name, x, y, TEXT_CATEGORY, false);
-        return y + UIScaleManager.scale(LINE_HEIGHT) + UIScaleManager.scale(2);
+        return y + lineHeight + UIScaleManager.scale(2);
     }
 
     private static int renderKeybind(GuiGraphics graphics, Font font, int x, int y,
-                                      KeyMapping key, String description) {
+                                      KeyMapping key, String description, int lineHeight) {
         // Skip unbound keys - they show as "Not bound" or similar
         if (key.isUnbound()) {
             return y; // Don't advance Y, effectively hiding this entry
@@ -151,7 +151,6 @@ public class QuickHelpOverlay {
         String keyName = Objects.requireNonNull(key.getTranslatedKeyMessage().getString());
         int keyBgWidth = Math.max(UIScaleManager.scale(KEY_WIDTH), UIScaleManager.getScaledStringWidth(safeFont, keyName) + UIScaleManager.scale(8));
 
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         graphics.fill(x, y - 1, x + keyBgWidth, y + lineHeight - 1, OverlayTheme.Help.KEY_BG);
 
         int keyTextX = x + (keyBgWidth - UIScaleManager.getScaledStringWidth(safeFont, Objects.requireNonNull(keyName))) / 2;
@@ -163,13 +162,12 @@ public class QuickHelpOverlay {
         String display = truncateToWidth(safeFont, description, available);
         UIScaleManager.drawScaledString(graphics, safeFont, display, x + keyBgWidth + UIScaleManager.scale(8), y, TEXT_DESC, false);
 
-        return y + UIScaleManager.scale(LINE_HEIGHT) + UIScaleManager.scale(1);
+        return y + lineHeight + UIScaleManager.scale(1);
     }
 
-    private static int calculatePanelHeight() {
+    private static int calculatePanelHeight(int lineHeight) {
         // Title + separator + 4 categories with entries + footer
         int padding = UIScaleManager.scale(PANEL_PADDING);
-        int lineHeight = UIScaleManager.scale(LINE_HEIGHT);
         return padding * 2
             + lineHeight + UIScaleManager.scale(6)     // Title
             + UIScaleManager.scale(6)                  // Separator

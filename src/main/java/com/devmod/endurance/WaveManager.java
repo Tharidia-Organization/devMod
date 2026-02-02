@@ -31,6 +31,7 @@ import net.minecraft.world.item.Items;
 
 import com.devmod.DevMod;
 import com.devmod.debug.DiagnosticLogger;
+import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.arena.api.ArenaHandle;
 import com.devmod.arena.registry.ArenaTemplate;
 import com.devmod.arena.registry.ArenaTemplateRegistry;
@@ -383,6 +384,10 @@ public class WaveManager {
 
         DiagnosticLogger.quest("startWave: wave=%d, players=%d, questType=%s, arenaId=%s",
             waveNumber, playerCount, questType, arena != null ? arena.getId() : "null");
+
+        // Structured logging for wave start
+        EnduranceLogger.wave(Phase.WAVE_START, null, quest.getQuestId(), waveNumber, quest.getTotalWaves(),
+            "Starting wave with players=%d, questType=%s", playerCount, questType);
 
         if (arena == null || handle == null || handle.mobSpawnPositions() == null || handle.mobSpawnPositions().isEmpty()) {
             handleWaveStartFailure(session, "missing_handle_or_spawns");
@@ -745,6 +750,9 @@ public class WaveManager {
                     waveState.addSpawnedMob(mob.getUUID(), appliedAffix, objectiveTarget);
                     successfulSpawns++;
                     awakeMobAI(mob, level);
+                    EnduranceLogger.mob(Phase.MOB_SPAWN, waveState.quest.getQuestId(), waveState.waveNumber,
+                        mob.getUUID(), mobConfig.getMobId().getPath(), "Spawned at pos=%s, affix=%s",
+                        spawnPos, appliedAffix);
                     if (handle != null) {
                         EnduranceTelemetryService.INSTANCE.recordSpawnHeatmap(
                             waveState.quest.getQuestId(), handle, spawnPos);
@@ -1102,9 +1110,24 @@ public class WaveManager {
     private void notifyWaveComplete(EnduranceQuestManager.ActiveQuestSession session,
                                     @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player,
                                     WaveState waveState) {
-        if (waveState == null || waveState.isCompletionNotified()) {
+        if (waveState == null) {
             return;
         }
+
+        // Thread-safe check-and-set to prevent duplicate completion notifications
+        // Uses synchronized block to ensure atomic read-modify-write
+        synchronized (waveState) {
+            if (waveState.isCompletionNotified()) {
+                return;
+            }
+            waveState.markCompletionNotified();
+        }
+
+        // Structured logging for wave completion
+        EnduranceLogger.wave(Phase.WAVE_COMPLETE, player, waveState.quest.getQuestId(),
+            waveState.waveNumber, waveState.quest.getTotalWaves(),
+            "Wave complete: killed=%d/%d, duration=%dms", waveState.killed, waveState.totalToSpawn,
+            System.currentTimeMillis() - waveState.getWaveStartTime());
         PartyQuestSession partySession = session.getPartyId() != null
             ? EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId()).orElse(null)
             : null;
@@ -1112,7 +1135,7 @@ public class WaveManager {
             handlePartyWaveComplete(session, partySession, waveState, player);
             return;
         }
-        waveState.markCompletionNotified();
+        // markCompletionNotified() already called in synchronized block above
         waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
 
         ArenaContext arena = session.getArena();
@@ -1143,7 +1166,7 @@ public class WaveManager {
                                          PartyQuestSession partySession,
                                          WaveState waveState,
                                          @javax.annotation.Nullable net.minecraft.server.level.ServerPlayer player) {
-        waveState.markCompletionNotified();
+        // markCompletionNotified() already called in notifyWaveComplete() synchronized block
         waveState.advanceSpawnIndex(waveState.getSpawnPlan().size());
 
         ArenaContext arena = session.getArena();
@@ -1653,6 +1676,9 @@ public class WaveManager {
 
         if (tracked) {
             waveState.recordKill(mobId);
+            EnduranceLogger.mob(Phase.MOB_DEATH, waveState.quest.getQuestId(), waveState.waveNumber,
+                mobId, "unknown", "Killed: %d/%d, remaining=%d",
+                waveState.killed, waveState.totalToSpawn, waveState.spawnedMobs.size() - waveState.killed);
             DiagnosticLogger.quest("mobKilled: wave=%d, killed=%d/%d, remaining=%d",
                 waveState.waveNumber, waveState.killed, waveState.totalToSpawn,
                 waveState.spawnedMobs.size() - waveState.killed);
@@ -1712,14 +1738,21 @@ public class WaveManager {
      * This is used when transitioning between waves to allow the next wave to start.
      * Does not despawn mobs (they should already be gone when wave completes).
      */
+    /**
+     * Clear wave state for an arena if the wave is complete.
+     * Thread-safe: Uses computeIfPresent for atomic check-and-remove to prevent TOCTOU race.
+     */
     public boolean clearCompletedWaveState(UUID arenaId) {
-        WaveState state = activeWaves.get(arenaId);
-        if (state != null && state.isComplete()) {
-            activeWaves.remove(arenaId);
-            LOGGER.debug("[WaveManager] Cleared completed wave state for arena {}", arenaId);
-            return true;
-        }
-        return false;
+        final boolean[] removed = {false};
+        activeWaves.computeIfPresent(arenaId, (key, state) -> {
+            if (state.isComplete()) {
+                removed[0] = true;
+                LOGGER.debug("[WaveManager] Cleared completed wave state for arena {}", arenaId);
+                return null; // Remove from map
+            }
+            return state; // Keep in map
+        });
+        return removed[0];
     }
 
     // =========================================================================
@@ -1764,10 +1797,16 @@ public class WaveManager {
 
             int targetGoalCount = mob.targetSelector.getAvailableGoals().size();
             int behaviorGoalCount = mob.goalSelector.getAvailableGoals().size();
-            LOGGER.debug("[EnduranceQuest] Registered EnduranceAI for {} (target goals={}, behavior goals={})",
+            net.minecraft.world.entity.LivingEntity target = mob.getTarget();
+            boolean noAI = mob.isNoAi();
+            LOGGER.info("[AIDebug] awakeMobAI: mob={}, mobId={}, target={}, noAI={}, targetGoals={}, behaviorGoals={}, pos={}",
                 mob.getType().toString(),
+                mob.getUUID(),
+                target != null ? target.getName().getString() : "null",
+                noAI,
                 targetGoalCount,
-                behaviorGoalCount);
+                behaviorGoalCount,
+                mob.blockPosition());
 
         } catch (Exception e) {
             LOGGER.warn("[EnduranceQuest] Failed to awaken AI for {}: {}",

@@ -44,6 +44,10 @@ public class TemplateEditorScreen extends Screen {
     @Nullable
     private EditorButton applyButton;
 
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
+    }
+
     public TemplateEditorScreen(String zoneId,
                                 int minX, int minZ, int maxX, int maxZ, int floorY,
                                 List<RoomTemplate> availableTemplates,
@@ -62,23 +66,27 @@ public class TemplateEditorScreen extends Screen {
     @Override
     protected void init() {
         super.init();
+        UIScaleManager.update();
 
-        this.leftPos = (this.width - EDITOR_WIDTH) / 2;
-        this.topPos = (this.height - EDITOR_HEIGHT) / 2;
+        int sEditorWidth = s(EDITOR_WIDTH);
+        int sEditorHeight = s(EDITOR_HEIGHT);
+        int sPadding = s(PADDING);
+        this.leftPos = (this.width - sEditorWidth) / 2;
+        this.topPos = (this.height - sEditorHeight) / 2;
         templateButtons.clear();
 
         // Template buttons
-        int buttonY = topPos + 60;
+        int buttonY = topPos + s(60);
         int buttonIndex = 0;
-        int listButtonHeight = EditorButton.Size.MEDIUM.height();
-        int listRowStride = listButtonHeight + DesignTokens.Spacing.SM;
-        int listButtonWidth = EDITOR_WIDTH - PADDING * 2 - 100;
+        int listButtonHeight = s(EditorButton.Size.MEDIUM.height());
+        int listRowStride = listButtonHeight + s(DesignTokens.Spacing.SM);
+        int listButtonWidth = sEditorWidth - sPadding * 2 - s(100);
 
         for (RoomTemplate template : availableTemplates) {
             if (buttonIndex >= 8) break; // Max visible
 
             int y = buttonY + (buttonIndex - scrollOffset) * listRowStride;
-            if (y >= topPos + 60 && y < topPos + EDITOR_HEIGHT - 80) {
+            if (y >= topPos + s(60) && y < topPos + sEditorHeight - s(80)) {
                 final String templateId = template.templateId();
                 EditorButton.Style style = templateId.equals(selectedTemplateId)
                     ? EditorButton.Style.PRIMARY
@@ -88,7 +96,7 @@ public class TemplateEditorScreen extends Screen {
                     .size(EditorButton.Size.MEDIUM)
                     .onClick(() -> selectTemplate(templateId))
                     .build();
-                EditorButtonWidget widget = new EditorButtonWidget(templateButton, leftPos + PADDING, y, listButtonWidth, listButtonHeight);
+                EditorButtonWidget widget = new EditorButtonWidget(templateButton, leftPos + sPadding, y, listButtonWidth, listButtonHeight);
                 templateButtons.add(widget);
                 addRenderableWidget(widget);
             }
@@ -96,10 +104,10 @@ public class TemplateEditorScreen extends Screen {
         }
 
         // Apply button
-        int buttonRowY = topPos + EDITOR_HEIGHT - PADDING - listButtonHeight;
-        int actionWidth = DesignTokens.Size.BUTTON_WIDTH_MEDIUM;
-        int cancelWidth = DesignTokens.Size.BUTTON_WIDTH;
-        int actionGap = DesignTokens.Spacing.SM;
+        int buttonRowY = topPos + sEditorHeight - sPadding - listButtonHeight;
+        int actionWidth = s(DesignTokens.Size.BUTTON_WIDTH_MEDIUM);
+        int cancelWidth = s(DesignTokens.Size.BUTTON_WIDTH);
+        int actionGap = s(DesignTokens.Spacing.SM);
 
         applyButton = EditorButton.builder("apply_template", Component.translatable("gui.devmod.template.apply").getString())
             .style(EditorButton.Style.PRIMARY)
@@ -107,7 +115,7 @@ public class TemplateEditorScreen extends Screen {
             .onClick(this::applyTemplate)
             .build();
         addRenderableWidget(new EditorButtonWidget(applyButton,
-            leftPos + EDITOR_WIDTH - PADDING - actionWidth * 2 - actionGap,
+            leftPos + sEditorWidth - sPadding - actionWidth * 2 - actionGap,
             buttonRowY,
             actionWidth,
             listButtonHeight));
@@ -118,7 +126,7 @@ public class TemplateEditorScreen extends Screen {
             .onClick(this::clearAndApplyTemplate)
             .build();
         addRenderableWidget(new EditorButtonWidget(clearApplyButton,
-            leftPos + EDITOR_WIDTH - PADDING - actionWidth,
+            leftPos + sEditorWidth - sPadding - actionWidth,
             buttonRowY,
             actionWidth,
             listButtonHeight));
@@ -129,7 +137,7 @@ public class TemplateEditorScreen extends Screen {
             .onClick(this::onClose)
             .build();
         addRenderableWidget(new EditorButtonWidget(cancelButton,
-            leftPos + PADDING,
+            leftPos + sPadding,
             buttonRowY,
             cancelWidth,
             listButtonHeight));
@@ -186,13 +194,16 @@ public class TemplateEditorScreen extends Screen {
         // Get zone color
         ZoneTemplate zone = ZoneTemplate.fromString(zoneId);
         int borderColor = zone.getColorWithAlpha();
+        int sEditorWidth = s(EDITOR_WIDTH);
+        int sEditorHeight = s(EDITOR_HEIGHT);
+        int sPadding = s(PADDING);
         AxiomRenderer.drawPanelWithHeader(
             graphics,
             font,
             leftPos,
             topPos,
-            EDITOR_WIDTH,
-            EDITOR_HEIGHT,
+            sEditorWidth,
+            sEditorHeight,
             this.title.getString(),
             DesignTokens.Background.PANEL,
             DesignTokens.Background.HEADER,
@@ -201,15 +212,15 @@ public class TemplateEditorScreen extends Screen {
         );
 
         // Zone info
-        int infoY = topPos + DesignTokens.Spacing.HEADER_HEIGHT + DesignTokens.Spacing.SM;
+        int infoY = topPos + s(DesignTokens.Spacing.HEADER_HEIGHT) + s(DesignTokens.Spacing.SM);
         String info = String.format("Zone: %s | Size: %dx%d | Templates: %d",
             zoneId, maxX - minX, maxZ - minZ, availableTemplates.size());
-        UIScaleManager.drawScaledString(graphics, this.font, info, leftPos + PADDING, infoY, DesignTokens.Text.SECONDARY, false);
+        UIScaleManager.drawScaledString(graphics, this.font, info, leftPos + sPadding, infoY, DesignTokens.Text.SECONDARY, false);
 
         // Selected template info
         if (selectedTemplateId != null && !selectedTemplateId.isEmpty()) {
             UIScaleManager.drawScaledString(graphics, this.font, "Selected: " + selectedTemplateId,
-                leftPos + PADDING, infoY + DesignTokens.Spacing.SM, DesignTokens.Text.PRIMARY, false);
+                leftPos + sPadding, infoY + s(DesignTokens.Spacing.SM), DesignTokens.Text.PRIMARY, false);
         }
 
         // Render widgets

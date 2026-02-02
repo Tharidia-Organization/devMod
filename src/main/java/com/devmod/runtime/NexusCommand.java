@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -21,28 +22,39 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.AABB;
 
 import com.devmod.area.data.AreaDefinition;
 import com.devmod.area.data.AreaRegistry;
 import com.devmod.config.Config;
+import com.devmod.entity.ModEntities;
 import com.devmod.mailbox.ticket.TicketCategory;
 import com.devmod.mailbox.ticket.TicketManager;
 import com.devmod.nexus.data.ZoneSlot;
 import com.devmod.nexus.data.ZoneSlotRegistry;
 import com.devmod.nexus.runtime.NexusHubManager;
+import com.devmod.npc.data.NpcAppearance;
+import com.devmod.npc.data.NpcBehavior;
+import com.devmod.npc.data.NpcConfiguration;
+import com.devmod.npc.data.NpcRegistry;
+import com.devmod.npc.dialog.DialogPresets;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
 import com.devmod.zone.runtime.ZoneResolver;
+import com.devmod.clone.entity.PlayerCloneEntity;
 
 /**
  * Admin commands for Nexus hub control.
  */
 public final class NexusCommand {
     private static final int ITEMS_PER_PAGE = 10;
+    private static final String AVATAR_TAG = "devmod:nexus_avatar";
 
     private NexusCommand() {}
 
@@ -137,6 +149,15 @@ public final class NexusCommand {
                         .then(Commands.literal("instances")
                             .requires(source -> source.hasPermission(Config.ADMIN_PANEL_PERMISSION_LEVEL.get()))
                             .executes(NexusCommand::openAdminInstancePanel)))
+                    .then(Commands.literal("avatar")
+                        .then(Commands.literal("status")
+                            .executes(NexusCommand::avatarStatus))
+                        .then(Commands.literal("spawn")
+                            .requires(source -> source.hasPermission(2))
+                            .executes(NexusCommand::avatarSpawn))
+                        .then(Commands.literal("remove")
+                            .requires(source -> source.hasPermission(2))
+                            .executes(NexusCommand::avatarRemove)))
                     .then(Commands.literal("teleport")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.argument("slotId", Objects.requireNonNull(StringArgumentType.word(), "StringArgumentType.word"))
@@ -162,6 +183,12 @@ public final class NexusCommand {
             Component.literal("\u00A77/\u00A7fdevmod nexus hub \u00A77- open Testing Hub (F7)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("\u00A77/\u00A7fdevmod nexus riftstamp \u00A77- spawn a RiftStamp portal (admin)")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77/\u00A7fdevmod nexus avatar status \u00A77- avatar status")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77/\u00A7fdevmod nexus avatar spawn \u00A77- spawn avatar (admin)")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77/\u00A7fdevmod nexus avatar remove \u00A77- remove avatar (admin)")), false);
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("\u00A77/\u00A7fdevmod nexus zones \u00A77- list zone ids")), false);
         if (source.hasPermission(2)) {
@@ -381,6 +408,7 @@ public final class NexusCommand {
             source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
+        NexusHubManager.INSTANCE.initialize(Objects.requireNonNull(source.getServer()));
         Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveByNameOrAlias(
             Objects.requireNonNull(source.getServer()), Objects.requireNonNull(zoneId));
         if (zoneOpt.isEmpty()) {
@@ -453,6 +481,188 @@ public final class NexusCommand {
         source.sendSuccess(() -> Objects.requireNonNull(
             Component.literal("\u00A7aRiftStamp opened for 60 seconds.")), true);
         return 1;
+    }
+
+    private static int avatarStatus(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel level = resolveNexusLevel(server);
+        if (level == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus dimension not available.")));
+            return 0;
+        }
+
+        int count = getAvatarEntities(level).size();
+        String status = count > 0 ? "\u00A7aACTIVE" : "\u00A7cMISSING";
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A7eAvatar: " + status + " \u00A77(count=" + count + ")")), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77Name: \u00A7f" + Config.NEXUS_AVATAR_NAME.get())), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77Enabled: \u00A7f" + Config.NEXUS_AVATAR_ENABLED.get())), false);
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A77Dialog Set: \u00A7f" + DialogPresets.GUIDE_BASIC_ID)), false);
+        return 1;
+    }
+
+    private static int avatarSpawn(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
+            return 0;
+        }
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+        if (!Config.NEXUS_ENABLED.get()) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus is disabled in config"), "message"));
+            return 0;
+        }
+
+        ServerLevel level = resolveNexusLevel(server);
+        if (level == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus dimension not available.")));
+            return 0;
+        }
+
+        int removed = removeAvatarEntities(level, server);
+
+        String displayName = Config.NEXUS_AVATAR_NAME.get();
+        if (displayName == null || displayName.isBlank()) {
+            displayName = "NEXA";
+        }
+
+        NpcBehavior behavior = new NpcBehavior(
+            Config.NEXUS_AVATAR_FLOAT_ENABLED.get(),
+            Config.NEXUS_AVATAR_FLOAT_AMPLITUDE.get().floatValue(),
+            Config.NEXUS_AVATAR_FLOAT_SPEED.get().floatValue(),
+            true,
+            true
+        );
+
+        NpcAppearance appearance = new NpcAppearance(
+            Config.NEXUS_AVATAR_PARTICLES_ENABLED.get(),
+            BuiltInRegistries.PARTICLE_TYPE.getKey(
+                Objects.requireNonNull(net.minecraft.core.particles.ParticleTypes.END_ROD)),
+            Config.NEXUS_AVATAR_PARTICLE_INTERVAL.get(),
+            Config.NEXUS_AVATAR_GLOW.get()
+        );
+
+        NpcConfiguration config = NpcConfiguration.createDefault(displayName, player.getUUID())
+            .withBehavior(behavior)
+            .withAppearance(appearance)
+            .withDialogSetId(DialogPresets.GUIDE_BASIC_ID);
+
+        String skin = Config.NEXUS_AVATAR_SKIN.get();
+        if (skin != null && skin.startsWith("player:")) {
+            String name = skin.substring("player:".length()).trim();
+            if (!name.isEmpty()) {
+                UUID skinUuid = resolvePlayerUuid(server, name);
+                config = config.withSkin(skinUuid, name);
+            }
+        }
+
+        BlockPos hubOrigin = NexusDimensionManager.getHubOrigin();
+        int offset = Math.max(1, Config.NEXUS_AVATAR_FLOAT_OFFSET.get());
+        BlockPos spawnPos = hubOrigin.above(offset);
+
+        PlayerCloneEntity avatar = new PlayerCloneEntity(ModEntities.PLAYER_CLONE.get(), level);
+        avatar.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+
+        NpcConfiguration registered = config.withSpawnLocation(spawnPos, level.dimension());
+        NpcRegistry.get(server).createNpc(registered);
+
+        avatar.setNpcMode(registered);
+        avatar.addTag(AVATAR_TAG);
+        level.addFreshEntity(avatar);
+
+        if (removed > 0) {
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("\u00A7aAvatar respawned. Removed " + removed + " existing avatar(s).")), true);
+        } else {
+            source.sendSuccess(() -> Objects.requireNonNull(Component.literal("\u00A7aAvatar spawned.")), true);
+        }
+        return 1;
+    }
+
+    private static int avatarRemove(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            return 0;
+        }
+        ServerLevel level = resolveNexusLevel(server);
+        if (level == null) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cNexus dimension not available.")));
+            return 0;
+        }
+
+        int removed = removeAvatarEntities(level, server);
+        if (removed == 0) {
+            source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7eNo avatar found.")));
+            return 0;
+        }
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("\u00A7aRemoved " + removed + " avatar(s).")), true);
+        return 1;
+    }
+
+    private static ServerLevel resolveNexusLevel(@Nonnull MinecraftServer server) {
+        ServerLevel level = server.getLevel(NexusDimensionManager.NEXUS_DIMENSION);
+        if (level == null) {
+            NexusDimensionManager.INSTANCE.ensureNexusDimension(server);
+            level = server.getLevel(NexusDimensionManager.NEXUS_DIMENSION);
+        }
+        return level;
+    }
+
+    private static List<PlayerCloneEntity> getAvatarEntities(@Nonnull ServerLevel level) {
+        BlockPos hubOrigin = NexusDimensionManager.getHubOrigin();
+        AABB search = new AABB(hubOrigin).inflate(256);
+        return level.getEntitiesOfClass(PlayerCloneEntity.class, search,
+            entity -> entity.isNpc() && entity.getTags().contains(AVATAR_TAG));
+    }
+
+    private static int removeAvatarEntities(@Nonnull ServerLevel level, @Nonnull MinecraftServer server) {
+        List<PlayerCloneEntity> avatars = getAvatarEntities(level);
+        if (avatars.isEmpty()) {
+            return 0;
+        }
+        NpcRegistry registry = NpcRegistry.get(server);
+        int removed = 0;
+        for (PlayerCloneEntity avatar : avatars) {
+            UUID configId = avatar.getNpcConfigId();
+            avatar.discard();
+            if (configId != null) {
+                registry.deleteNpc(configId);
+            }
+            removed++;
+        }
+        return removed;
+    }
+
+    @Nullable
+    private static UUID resolvePlayerUuid(@Nonnull MinecraftServer server, @Nonnull String name) {
+        if (name.isBlank()) {
+            return null;
+        }
+        ServerPlayer online = server.getPlayerList().getPlayerByName(name);
+        if (online != null) {
+            return online.getUUID();
+        }
+        var profileCache = server.getProfileCache();
+        if (profileCache != null) {
+            var profileOpt = profileCache.get(name);
+            if (profileOpt.isPresent()) {
+                return profileOpt.get().getId();
+            }
+        }
+        return null;
     }
 
     private static int submitTicket(CommandContext<CommandSourceStack> ctx, TicketCategory category)

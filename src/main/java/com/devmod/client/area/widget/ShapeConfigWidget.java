@@ -51,7 +51,7 @@ public class ShapeConfigWidget extends AbstractWidget {
         );
 
         int columns = AreaBuilderGuiConstants.GRID_COLUMNS;
-        int spacing = AreaBuilderGuiConstants.GRID_SPACING;
+        int spacing = AreaBuilderGuiConstants.scaledGridSpacing();
         int startY = getStartY(font);
         int cellSize = getCellSize(font, columns, spacing);
 
@@ -80,7 +80,7 @@ public class ShapeConfigWidget extends AbstractWidget {
             // Draw icon
             ItemStack icon = new ItemStack(Objects.requireNonNull(AreaBuilderIcons.getShapeIcon(shape.name())));
             int iconX = cellX + (cellSize - 16) / 2;
-            int iconY = cellY + 8;
+            int iconY = cellY + s(8);
             graphics.renderItem(icon, iconX, iconY);
 
             // Draw shape name
@@ -88,7 +88,7 @@ public class ShapeConfigWidget extends AbstractWidget {
                 Component.translatable("area.shape." + shape.getSerializedName())).getString());
             int textWidth = UIScaleManager.getScaledStringWidth(font, name);
             int textX = cellX + (cellSize - textWidth) / 2;
-            int textY = cellY + cellSize - 20;
+            int textY = cellY + cellSize - s(20);
             UIScaleManager.drawScaledString(graphics, font, name, textX, textY,
                 isSelected ? AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY : AreaBuilderGuiConstants.COLOR_TEXT_SECONDARY
             );
@@ -99,7 +99,7 @@ public class ShapeConfigWidget extends AbstractWidget {
     public void onClick(double mouseX, double mouseY, int button) {
         var font = Objects.requireNonNull(net.minecraft.client.Minecraft.getInstance().font);
         int columns = AreaBuilderGuiConstants.GRID_COLUMNS;
-        int spacing = AreaBuilderGuiConstants.GRID_SPACING;
+        int spacing = AreaBuilderGuiConstants.scaledGridSpacing();
         int startY = getStartY(font);
         int cellSize = getCellSize(font, columns, spacing);
 
@@ -133,21 +133,25 @@ public class ShapeConfigWidget extends AbstractWidget {
     }
 
     private int getStartY(net.minecraft.client.gui.Font font) {
-        return getY() + font.lineHeight + 6;
+        return getY() + font.lineHeight + s(6);
     }
 
     private int getCellSize(net.minecraft.client.gui.Font font, int columns, int spacing) {
         int rows = (shapes.length + columns - 1) / columns;
-        int reserved = font.lineHeight + 20;
+        int reserved = font.lineHeight + s(20);
         int availableHeight = Math.max(0, getHeight() - reserved);
         int size = (availableHeight - (rows - 1) * spacing) / rows;
-        size = Math.min(size, AreaBuilderGuiConstants.GRID_CELL_SIZE);
-        return Math.max(size, MIN_CELL_SIZE);
+        size = Math.min(size, AreaBuilderGuiConstants.scaledGridCellSize());
+        return Math.max(size, s(MIN_CELL_SIZE));
     }
 
     @Override
     protected void updateWidgetNarration(@Nonnull NarrationElementOutput narration) {
         narration.add(net.minecraft.client.gui.narration.NarratedElementType.TITLE,
             Objects.requireNonNull(Component.translatable("area.builder.tab.shape")));
+    }
+
+    private static int s(int value) {
+        return UIScaleManager.scale(value);
     }
 }

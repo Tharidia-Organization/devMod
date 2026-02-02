@@ -37,6 +37,7 @@ public class SettingsData {
         public boolean renderAsBlocks = false;
         public int followRangeColor = DesignTokens.Basic.RED; // Red
         public boolean partyHudEnabled = true; // Party member HUD during quests
+        public boolean hubAdvancedMode = false; // Show advanced options in hub screens
     }
 
     /**
@@ -162,6 +163,7 @@ public class SettingsData {
         copy.general.renderAsBlocks = this.general.renderAsBlocks;
         copy.general.followRangeColor = this.general.followRangeColor;
         copy.general.partyHudEnabled = this.general.partyHudEnabled;
+        copy.general.hubAdvancedMode = this.general.hubAdvancedMode;
 
         // Debug
         copy.debug.developerMode = this.debug.developerMode;

@@ -348,6 +348,11 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
         try {
             String timestamp = ZonedDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
             Path backup = file.resolveSibling(file.getFileName() + "." + timestamp + BACKUP_SUFFIX);
+            int attempt = 1;
+            while (Files.exists(backup)) {
+                backup = file.resolveSibling(file.getFileName() + "." + timestamp + "_" + attempt + BACKUP_SUFFIX);
+                attempt++;
+            }
             Files.copy(file, backup);
 
             // Clean old backups

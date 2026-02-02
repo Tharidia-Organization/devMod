@@ -196,28 +196,43 @@ public class FpsTracker {
     }
 
     private void renderOverlay(@Nonnull GuiGraphics graphics, @Nonnull Font font) {
-        // Position: top left corner
-        int x = PANEL_MARGIN;
-        int y = PANEL_MARGIN;
+        // Scaled layout
+        int panelWidth = UIScaleManager.scale(PANEL_WIDTH);
+        int padding = UIScaleManager.scale(PADDING);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, LINE_HEIGHT);
+        int gap2 = UIScaleManager.scale(2);
+        int graphHeight = UIScaleManager.scale(15);
+
+        int panelHeight = padding * 2 + (lineHeight * 5) + (gap2 * 2) + graphHeight;
+
+        // Position: top left corner (clamped to safe area)
+        int x = UIScaleManager.scale(PANEL_MARGIN);
+        int y = UIScaleManager.scale(PANEL_MARGIN);
+        int safeLeft = UIScaleManager.getSafeLeft();
+        int safeRight = UIScaleManager.getSafeRight();
+        int safeTop = UIScaleManager.getSafeTop();
+        int safeBottom = UIScaleManager.getSafeBottom();
+        x = Math.max(safeLeft, Math.min(x, safeRight - panelWidth));
+        y = Math.max(safeTop, Math.min(y, safeBottom - panelHeight));
 
         // Outer glow (Impact UI style)
-        graphics.fill(x - 1, y - 1, x + PANEL_WIDTH + 1, y + PANEL_HEIGHT + 1, BORDER_GLOW);
+        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + panelHeight + 1, BORDER_GLOW);
 
         // Background
-        graphics.fill(x, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BG_COLOR);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, BG_COLOR);
 
         // Border
-        graphics.fill(x, y, x + PANEL_WIDTH, y + 1, BORDER_COLOR);
-        graphics.fill(x, y + PANEL_HEIGHT - 1, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
-        graphics.fill(x, y, x + 1, y + PANEL_HEIGHT, BORDER_COLOR);
-        graphics.fill(x + PANEL_WIDTH - 1, y, x + PANEL_WIDTH, y + PANEL_HEIGHT, BORDER_COLOR);
+        graphics.fill(x, y, x + panelWidth, y + 1, BORDER_COLOR);
+        graphics.fill(x, y + panelHeight - 1, x + panelWidth, y + panelHeight, BORDER_COLOR);
+        graphics.fill(x, y, x + 1, y + panelHeight, BORDER_COLOR);
+        graphics.fill(x + panelWidth - 1, y, x + panelWidth, y + panelHeight, BORDER_COLOR);
 
-        int textX = x + PADDING;
-        int textY = y + PADDING;
+        int textX = x + padding;
+        int textY = y + padding;
 
         // Titolo (Impact UI cyan)
         UIScaleManager.drawScaledString(graphics, font, "Performance", textX, textY, TEXT_CYAN, false);
-        textY += LINE_HEIGHT + 2;
+        textY += lineHeight + gap2;
 
         // FPS with color based on value
         int fpsColor = getFpsColor(currentFps);
@@ -227,18 +242,18 @@ public class FpsTracker {
         // Min/Max on the same row
         @Nonnull String minMaxStr = Objects.requireNonNull(String.format("\u00A77(%d-%d)", minFps, maxFps), "minMaxStr");
         UIScaleManager.drawScaledString(graphics, font, minMaxStr, textX + 55, textY, TEXT_GRAY, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Average FPS
         @Nonnull String avgStr = Objects.requireNonNull(String.format("Avg: %d fps", avgFps), "avgStr");
         UIScaleManager.drawScaledString(graphics, font, avgStr, textX, textY, TEXT_GRAY, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Frame time
         int ftColor = getFrameTimeColor(frameTimeMs);
         @Nonnull String ftStr = Objects.requireNonNull(String.format("Frame: %.1fms", frameTimeMs), "ftStr");
         UIScaleManager.drawScaledString(graphics, font, ftStr, textX, textY, ftColor, false);
-        textY += LINE_HEIGHT;
+        textY += lineHeight;
 
         // Memory
         Runtime runtime = Runtime.getRuntime();
@@ -249,10 +264,10 @@ public class FpsTracker {
         int memColor = memPercent > 80 ? TEXT_RED : (memPercent > 60 ? TEXT_YELLOW : TEXT_GREEN);
         @Nonnull String memStr = Objects.requireNonNull(String.format("Mem: %dMB/%.0f%%", usedMB, memPercent), "memStr");
         UIScaleManager.drawScaledString(graphics, font, memStr, textX, textY, memColor, false);
-        textY += LINE_HEIGHT + 2;
+        textY += lineHeight + gap2;
 
         // Mini grafico FPS
-        renderFpsGraph(graphics, textX, textY, PANEL_WIDTH - PADDING * 2, 15);
+        renderFpsGraph(graphics, textX, textY, panelWidth - padding * 2, graphHeight);
     }
 
     private void renderFpsGraph(GuiGraphics graphics, int x, int y, int width, int height) {

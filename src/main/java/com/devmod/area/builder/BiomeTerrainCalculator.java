@@ -128,7 +128,7 @@ public final class BiomeTerrainCalculator {
 
         // Create distinct islands using threshold
         if (islandNoise < 0.35) {
-            return -1; // No terrain here (gap)
+            return baseY - 1; // No terrain here (gap below base)
         }
 
         // Height variation on islands
