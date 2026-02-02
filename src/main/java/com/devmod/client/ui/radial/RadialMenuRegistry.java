@@ -842,7 +842,6 @@ public final class RadialMenuRegistry {
             .color(DesignTokens.Radial.PLAY_PARTY)
             .icon("")
             .iconStack(stack(Items.TOTEM_OF_UNDYING))
-            .item(RadialMenuItem.registry(ActionIds.UI_PLAY_HUB_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_SEASON_PASS_OPEN))

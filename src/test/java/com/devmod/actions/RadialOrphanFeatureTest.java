@@ -93,6 +93,8 @@ class RadialOrphanFeatureTest {
 
         Set<String> excluded = Set.of(
             ActionIds.UI_RADIAL_OPEN, ActionIds.UI_MAILBOX_OPEN, ActionIds.UI_TESTER_TASKS_OPEN,
+            // Hub screens (accessible via other hubs, not needed in radial menu directly)
+            ActionIds.UI_PLAY_HUB_OPEN,
             // Admin commands (available via /mailbox and /news commands, not radial menu)
             ActionIds.MAILBOX_COMMAND_HELP, ActionIds.MAILBOX_COMMAND_STATS,
             ActionIds.MAILBOX_COMMAND_SEND, ActionIds.MAILBOX_COMMAND_BROADCAST,

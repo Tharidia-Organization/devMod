@@ -40,6 +40,7 @@ import com.devmod.components.UsableComponents;
 import com.devmod.components.WeaponComponents;
 import com.devmod.config.Config;
 import com.devmod.config.ConfigValidator;
+import com.devmod.config.ClientVisualConfig;
 import com.devmod.config.EditorClientConfig;
 import com.devmod.config.GameMechanicsConfig;
 import com.devmod.config.GameplayOverridesManager;
@@ -156,6 +157,7 @@ public class DevMod {
         modContainer.registerConfig(ModConfig.Type.COMMON, GameMechanicsConfig.SPEC, "devmod-mechanics.toml");
         modContainer.registerConfig(ModConfig.Type.COMMON, PortalConfig.SPEC, "devmod-portals.toml");
         modContainer.registerConfig(ModConfig.Type.CLIENT, EditorClientConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientVisualConfig.SPEC, "devmod-client-visuals.toml");
 
         // Register config reload listener for runtime updates
         eventBus.addListener(DevMod::onConfigReload);

@@ -14,7 +14,9 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
@@ -28,6 +30,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
 import com.devmod.client.rendering.CustomRenderTypes;
+import com.devmod.config.ClientVisualConfig;
 @OnlyIn(Dist.CLIENT)
 public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEntity> {
     private static final int OVAL_SEGMENTS = 48;
@@ -79,7 +82,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         TelepadEffekseerController.update(be, intensity, vortexRotation);
 
         // First: Render depth-writing base layer using RenderType (for cloud occlusion)
-        renderDepthBase(be, poseStack, bufferSource, intensity);
+        renderDepthBase(be, poseStack, bufferSource, intensity, packedOverlay);
 
         // Second: Render the visual portal with RenderSystem (original vortex effect)
         renderPortal(be, poseStack, gameTime, intensity);
@@ -90,7 +93,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
      * Note: This won't occlude the player in third person due to render order.
      */
     private void renderDepthBase(TelepadBlockEntity be, PoseStack poseStack, MultiBufferSource bufferSource,
-                                  float intensity) {
+                                  float intensity, int packedOverlay) {
         poseStack.pushPose();
 
         // Position portal above telepad center
@@ -106,12 +109,17 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         };
         poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
 
-        Matrix4f matrix = poseStack.last().pose();
+        PoseStack.Pose pose = poseStack.last();
+        Matrix4f matrix = pose.pose();
         float halfWidth = TelepadPortalGeometry.getHalfWidth();
         float halfHeight = TelepadPortalGeometry.getHalfHeight();
+        int fullBright = LightTexture.FULL_BRIGHT;
+        boolean compatMode = ClientVisualConfig.TELEPAD_PORTAL_COMPAT_MODE.get();
 
-        // Render depth base using textureless POSITION_COLOR to avoid GPU-specific atlas artifacts.
-        VertexConsumer consumer = bufferSource.getBuffer(CustomRenderTypes.TRANSLUCENT_POSITION_COLOR);
+        // Use textureless POSITION_COLOR in compatibility mode to avoid GPU-specific atlas artifacts.
+        VertexConsumer consumer = bufferSource.getBuffer(compatMode
+                ? CustomRenderTypes.TRANSLUCENT_POSITION_COLOR
+                : RenderType.translucent());
 
         // Dark base color (nearly black, fully opaque for depth writing)
         float r = 0.02f * intensity;
@@ -145,30 +153,102 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
                 float oy2 = (float) Math.cos(angle2) * halfHeight * outerRadius + halfHeight;
 
                 // Front face quad
-                consumer.addVertex(matrix, ix1, iy1, frontZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ix1, iy1, frontZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ix1, iy1, frontZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, 1);
+                }
 
-                consumer.addVertex(matrix, ox1, oy1, frontZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ox1, oy1, frontZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ox1, oy1, frontZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, 1);
+                }
 
-                consumer.addVertex(matrix, ox2, oy2, frontZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ox2, oy2, frontZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ox2, oy2, frontZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, 1);
+                }
 
-                consumer.addVertex(matrix, ix2, iy2, frontZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ix2, iy2, frontZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ix2, iy2, frontZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, 1);
+                }
 
                 // Back face quad
-                consumer.addVertex(matrix, ix1, iy1, backZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ix1, iy1, backZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ix1, iy1, backZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, -1);
+                }
 
-                consumer.addVertex(matrix, ix2, iy2, backZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ix2, iy2, backZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ix2, iy2, backZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, -1);
+                }
 
-                consumer.addVertex(matrix, ox2, oy2, backZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ox2, oy2, backZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ox2, oy2, backZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, -1);
+                }
 
-                consumer.addVertex(matrix, ox1, oy1, backZ)
-                        .setColor(r, g, b, a);
+                if (compatMode) {
+                    consumer.addVertex(matrix, ox1, oy1, backZ)
+                            .setColor(r, g, b, a);
+                } else {
+                    consumer.addVertex(matrix, ox1, oy1, backZ)
+                            .setColor(r, g, b, a)
+                            .setUv(0.5f, 0.5f)
+                            .setOverlay(packedOverlay)
+                            .setLight(fullBright)
+                            .setNormal(pose, 0, 0, -1);
+                }
             }
         }
 
