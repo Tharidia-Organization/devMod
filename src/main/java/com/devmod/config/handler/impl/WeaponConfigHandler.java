@@ -1,8 +1,10 @@
 package com.devmod.config.handler.impl;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -11,15 +13,23 @@ import javax.annotation.Nullable;
 
 import com.google.gson.reflect.TypeToken;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 
+import com.devmod.attributes.ModAttributes;
 import com.devmod.components.WeaponComponents;
 import com.devmod.config.component.BooleanComponent;
 import com.devmod.config.component.FloatComponent;
@@ -513,5 +523,162 @@ public class WeaponConfigHandler extends AbstractConfigHandler<WeaponStats> {
                 // Component set failed
             }
         }
+
+        // Apply attribute modifiers to the item stack
+        try {
+            ItemAttributeModifiers attrMods = buildAttributeModifiers(stack, clamped);
+            stack.set(DataComponents.ATTRIBUTE_MODIFIERS, attrMods);
+        } catch (Exception e) {
+            // Attribute modifier application failed - log but don't break
+            logger.warn("[WeaponConfig] Failed to apply attribute modifiers: {}", e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ATTRIBUTE MODIFIER BUILDER
+    // ═══════════════════════════════════════════════════════════════
+
+    private static final String DEVMOD_NAMESPACE = "devmod";
+
+    /**
+     * Build ItemAttributeModifiers from WeaponStats.
+     * This converts the stats values into actual Minecraft attribute modifiers
+     * that affect gameplay (damage, speed, reach, etc.).
+     */
+    private ItemAttributeModifiers buildAttributeModifiers(ItemStack stack, WeaponStats stats) {
+        List<ItemAttributeModifiers.Entry> entries = new ArrayList<>();
+
+        // Get existing modifiers to preserve showInTooltip setting
+        ItemAttributeModifiers existing = stack.getOrDefault(
+            DataComponents.ATTRIBUTE_MODIFIERS,
+            ItemAttributeModifiers.EMPTY
+        );
+
+        // Attack Damage
+        if (stats.getAttackDamage() != 0) {
+            addModifier(entries, Attributes.ATTACK_DAMAGE, "attack_damage", stats.getAttackDamage());
+        }
+
+        // Attack Speed
+        if (stats.getAttackSpeed() != 0) {
+            addModifier(entries, Attributes.ATTACK_SPEED, "attack_speed", stats.getAttackSpeed());
+        }
+
+        // Attack Reach (Entity Interaction Range)
+        if (stats.getAttackReach() != 0) {
+            addModifier(entries, Attributes.ENTITY_INTERACTION_RANGE, "attack_reach", stats.getAttackReach());
+        }
+
+        // Attack Knockback
+        if (stats.getAttackKnockback() != 0) {
+            addModifier(entries, Attributes.ATTACK_KNOCKBACK, "attack_knockback", stats.getAttackKnockback());
+        }
+
+        // Sweeping Damage Ratio
+        if (stats.getSweepingRatio() != 0) {
+            addModifier(entries, Attributes.SWEEPING_DAMAGE_RATIO, "sweeping_ratio", stats.getSweepingRatio());
+        }
+
+        // Custom DevMod attributes (DeferredHolder implements Holder<Attribute>)
+        try {
+            // Crit Chance
+            if (stats.getCritChance() != 0 && ModAttributes.CRIT_CHANCE != null && ModAttributes.CRIT_CHANCE.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.CRIT_CHANCE, "crit_chance", stats.getCritChance());
+            }
+
+            // Crit Damage/Multiplier
+            if (stats.getCritDamage() != 0 && ModAttributes.CRIT_MULTIPLIER != null && ModAttributes.CRIT_MULTIPLIER.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.CRIT_MULTIPLIER, "crit_multiplier", stats.getCritDamage());
+            }
+
+            // Armor Shred
+            if (stats.getArmorShred() != 0 && ModAttributes.ARMOR_SHRED != null && ModAttributes.ARMOR_SHRED.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.ARMOR_SHRED, "armor_shred", stats.getArmorShred());
+            }
+
+            // Lifesteal
+            if (stats.getLifesteal() != 0 && ModAttributes.LIFE_STEAL != null && ModAttributes.LIFE_STEAL.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.LIFE_STEAL, "lifesteal", stats.getLifesteal());
+            }
+
+            // Damage Bonus
+            if (stats.getDamageBonus() != 0 && ModAttributes.DAMAGE_BONUS != null && ModAttributes.DAMAGE_BONUS.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.DAMAGE_BONUS, "damage_bonus", stats.getDamageBonus());
+            }
+
+            // Damage vs Undead
+            if (stats.getDamageVsUndead() != 0 && ModAttributes.DAMAGE_VS_UNDEAD != null && ModAttributes.DAMAGE_VS_UNDEAD.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.DAMAGE_VS_UNDEAD, "damage_vs_undead", stats.getDamageVsUndead());
+            }
+
+            // Damage vs Arthropods
+            if (stats.getDamageVsArthropods() != 0 && ModAttributes.DAMAGE_VS_ARTHROPODS != null && ModAttributes.DAMAGE_VS_ARTHROPODS.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.DAMAGE_VS_ARTHROPODS, "damage_vs_arthropods", stats.getDamageVsArthropods());
+            }
+
+            // Damage vs Players
+            if (stats.getDamageVsPlayers() != 0 && ModAttributes.DAMAGE_VS_PLAYERS != null && ModAttributes.DAMAGE_VS_PLAYERS.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.DAMAGE_VS_PLAYERS, "damage_vs_players", stats.getDamageVsPlayers());
+            }
+
+            // True Damage Percent
+            if (stats.getTrueDamagePercent() != 0 && ModAttributes.TRUE_DAMAGE_PERCENT != null && ModAttributes.TRUE_DAMAGE_PERCENT.isBound()) {
+                addModifierWithHolder(entries, ModAttributes.TRUE_DAMAGE_PERCENT, "true_damage_percent", stats.getTrueDamagePercent());
+            }
+        } catch (Exception e) {
+            // ModAttributes may not be fully initialized, skip custom attributes
+            logger.debug("[WeaponConfig] Custom attributes not available: {}", e.getMessage());
+        }
+
+        // Add custom attribute modifiers from stats
+        for (WeaponStats.AttributeModifierData customMod : stats.getCustomAttributeModifiers()) {
+            if (customMod == null || customMod.attributeId == null || customMod.attributeId.isEmpty()) {
+                continue;
+            }
+            try {
+                ResourceLocation attrLoc = ResourceLocation.tryParse(customMod.attributeId);
+                if (attrLoc == null) continue;
+
+                // Try to get the attribute holder from registry
+                var registry = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE;
+                var attrOpt = registry.getHolder(attrLoc);
+                if (attrOpt.isEmpty()) continue;
+
+                Holder<Attribute> holder = attrOpt.get();
+                AttributeModifier.Operation op = switch (customMod.operation) {
+                    case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                    case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                    default -> AttributeModifier.Operation.ADD_VALUE;
+                };
+
+                ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(DEVMOD_NAMESPACE, "custom_" + attrLoc.getPath());
+                AttributeModifier modifier = new AttributeModifier(modId, customMod.amount, op);
+                entries.add(new ItemAttributeModifiers.Entry(holder, modifier, EquipmentSlotGroup.MAINHAND));
+            } catch (Exception e) {
+                logger.debug("[WeaponConfig] Failed to apply custom attribute {}: {}", customMod.attributeId, e.getMessage());
+            }
+        }
+
+        return new ItemAttributeModifiers(entries, existing.showInTooltip());
+    }
+
+    /**
+     * Add a vanilla attribute modifier entry.
+     */
+    private void addModifier(List<ItemAttributeModifiers.Entry> entries,
+                             Holder<Attribute> attribute, String name, double value) {
+        ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(DEVMOD_NAMESPACE, name);
+        AttributeModifier modifier = new AttributeModifier(modId, value, AttributeModifier.Operation.ADD_VALUE);
+        entries.add(new ItemAttributeModifiers.Entry(attribute, modifier, EquipmentSlotGroup.MAINHAND));
+    }
+
+    /**
+     * Add a custom attribute modifier entry with an existing holder.
+     */
+    private void addModifierWithHolder(List<ItemAttributeModifiers.Entry> entries,
+                                       Holder<Attribute> holder, String name, double value) {
+        ResourceLocation modId = ResourceLocation.fromNamespaceAndPath(DEVMOD_NAMESPACE, name);
+        AttributeModifier modifier = new AttributeModifier(modId, value, AttributeModifier.Operation.ADD_VALUE);
+        entries.add(new ItemAttributeModifiers.Entry(holder, modifier, EquipmentSlotGroup.MAINHAND));
     }
 }

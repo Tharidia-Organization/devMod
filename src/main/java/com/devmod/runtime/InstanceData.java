@@ -190,8 +190,7 @@ public class InstanceData {
 
     public boolean canAcceptPlayers() {
         InstanceState currentState = state.get();
-        return (currentState == InstanceState.CREATING
-            || currentState == InstanceState.READY
+        return (currentState == InstanceState.READY
             || currentState == InstanceState.ACTIVE)
             && currentPlayers.size() < maxPlayers;
     }

@@ -1376,6 +1376,32 @@ public final class RadialMenuScreen extends Screen {
         );
         hoveredMacro = hoverResult.hoveredMacro();
 
+        if (hoverResult.centerHovered()) {
+            if (currentCategory != null && currentCategory.hasParent()) {
+                navigateBack();
+            } else {
+                animator.startClose();
+            }
+            return true;
+        }
+
+        if (hoveredMacro != null) {
+            if (!macroHasVisibleCategories(hoveredMacro)) {
+                showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.no_items_mode"));
+                return true;
+            }
+            if (hoveredMacro != selectedMacro) {
+                transitionFromMacro = selectedMacro;
+                selectedMacro = hoveredMacro;
+                animator.startMacroTransition();
+                selectedCategoryIndex = RadialMenuConstants.NO_SELECTION;
+                selectedItemIndex = RadialMenuConstants.NO_SELECTION;
+                clearSubcategory();
+                playSound(RadialMenuConstants.SOUND_PITCH_MACRO_SWITCH);
+            }
+            return true;
+        }
+
         // Check favorites first
         if (editMode && selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             removeFavorite(selectedFavoriteIndex);
@@ -1733,6 +1759,22 @@ public final class RadialMenuScreen extends Screen {
                 return;
             }
             List<RadialMenuItem> visibleItems = getVisibleItems(cat);
+            if (selectedItemIndex == RadialMenuConstants.NO_SELECTION && !visibleItems.isEmpty()) {
+                RadialMenuItem item = visibleItems.get(0);
+                if (item.isSubcategoryLink()) {
+                    RadialCategory subcategory = item.getLinkedSubcategory();
+                    if (subcategory != null) {
+                        navigateTo(subcategory);
+                        return;
+                    }
+                }
+                if (editMode) {
+                    toggleFavorite(item, cat);
+                } else {
+                    executeItem(item);
+                }
+                return;
+            }
             if (selectedItemIndex >= 0 && selectedItemIndex < visibleItems.size()) {
                 RadialMenuItem item = visibleItems.get(selectedItemIndex);
 

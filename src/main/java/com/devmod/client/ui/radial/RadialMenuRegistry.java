@@ -394,6 +394,7 @@ public final class RadialMenuRegistry {
             .color(DesignTokens.Radial.ARENA_MANAGE)
             .icon("")
             .iconStack(stack(Items.COMMAND_BLOCK))
+            .item(RadialMenuItem.registry(ActionIds.UI_ARENA_HUB_OPEN))
             .item(RadialMenuItem.registry(ActionIds.ARENA_HELP))
             .item(RadialMenuItem.registry(ActionIds.ARENA_CREATE))
             .item(RadialMenuItem.registry(ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN))
@@ -639,6 +640,9 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_STATS),
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_PERKS),
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_SMOKE),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_KILLWAVE),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_DIE),
+            RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_SKIP_WAVE),
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_EXPORT_TABLE),
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_EXPORT_ALL),
             RadialMenuItem.registry(ActionIds.TEST_ENDURANCE_AUTOSMOKE)
@@ -743,6 +747,7 @@ public final class RadialMenuRegistry {
         RadialCategory nexus = commands.addSubcategory("nexus", "Nexus", DesignTokens.Radial.TOOLS_COMMANDS,
             stack(Items.NETHER_STAR));
         nexus.addItems(
+            RadialMenuItem.registry(ActionIds.UI_NEXUS_HUB_OPEN),
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_HELP),
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_STATUS),
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_ZONES)
@@ -837,6 +842,7 @@ public final class RadialMenuRegistry {
             .color(DesignTokens.Radial.PLAY_PARTY)
             .icon("")
             .iconStack(stack(Items.TOTEM_OF_UNDYING))
+            .item(RadialMenuItem.registry(ActionIds.UI_PLAY_HUB_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SCREEN_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_ENDURANCE_SHOP_OPEN))
             .item(RadialMenuItem.registry(ActionIds.UI_SEASON_PASS_OPEN))

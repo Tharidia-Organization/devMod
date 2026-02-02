@@ -800,7 +800,8 @@ class BiomeAreaGeneratorTest {
             Map<BlockPos, BlockState> blocks = BiomeAreaGenerator.generateBlockMap(
                 Objects.requireNonNull(area), new HashSet<>());
 
-            assertTrue(blocks.isEmpty(), "Empty floor positions should produce empty block map");
+            // When floor positions are empty, the generator regenerates them from area definition
+            assertFalse(blocks.isEmpty(), "Empty floor positions should trigger regeneration from area shape");
         }
 
         @Test

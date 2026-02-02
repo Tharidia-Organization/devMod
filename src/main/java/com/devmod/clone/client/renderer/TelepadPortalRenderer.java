@@ -14,9 +14,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
@@ -29,6 +27,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.clone.block.TelepadBlock;
 import com.devmod.clone.block.entity.TelepadBlockEntity;
+import com.devmod.client.rendering.CustomRenderTypes;
 @OnlyIn(Dist.CLIENT)
 public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEntity> {
     private static final int OVAL_SEGMENTS = 48;
@@ -80,7 +79,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         TelepadEffekseerController.update(be, intensity, vortexRotation);
 
         // First: Render depth-writing base layer using RenderType (for cloud occlusion)
-        renderDepthBase(be, poseStack, bufferSource, intensity, packedOverlay);
+        renderDepthBase(be, poseStack, bufferSource, intensity);
 
         // Second: Render the visual portal with RenderSystem (original vortex effect)
         renderPortal(be, poseStack, gameTime, intensity);
@@ -91,7 +90,7 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
      * Note: This won't occlude the player in third person due to render order.
      */
     private void renderDepthBase(TelepadBlockEntity be, PoseStack poseStack, MultiBufferSource bufferSource,
-                                  float intensity, int packedOverlay) {
+                                  float intensity) {
         poseStack.pushPose();
 
         // Position portal above telepad center
@@ -107,14 +106,12 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
         };
         poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
 
-        PoseStack.Pose pose = poseStack.last();
-        Matrix4f matrix = pose.pose();
+        Matrix4f matrix = poseStack.last().pose();
         float halfWidth = TelepadPortalGeometry.getHalfWidth();
         float halfHeight = TelepadPortalGeometry.getHalfHeight();
-        int fullBright = LightTexture.FULL_BRIGHT;
 
-        // Render depth base using RenderType.translucent()
-        VertexConsumer consumer = bufferSource.getBuffer(RenderType.translucent());
+        // Render depth base using textureless POSITION_COLOR to avoid GPU-specific atlas artifacts.
+        VertexConsumer consumer = bufferSource.getBuffer(CustomRenderTypes.TRANSLUCENT_POSITION_COLOR);
 
         // Dark base color (nearly black, fully opaque for depth writing)
         float r = 0.02f * intensity;
@@ -149,61 +146,29 @@ public class TelepadPortalRenderer implements BlockEntityRenderer<TelepadBlockEn
 
                 // Front face quad
                 consumer.addVertex(matrix, ix1, iy1, frontZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, 1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ox1, oy1, frontZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, 1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ox2, oy2, frontZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, 1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ix2, iy2, frontZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, 1);
+                        .setColor(r, g, b, a);
 
                 // Back face quad
                 consumer.addVertex(matrix, ix1, iy1, backZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, -1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ix2, iy2, backZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, -1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ox2, oy2, backZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, -1);
+                        .setColor(r, g, b, a);
 
                 consumer.addVertex(matrix, ox1, oy1, backZ)
-                        .setColor(r, g, b, a)
-                        .setUv(0.5f, 0.5f)
-                        .setOverlay(packedOverlay)
-                        .setLight(fullBright)
-                        .setNormal(pose, 0, 0, -1);
+                        .setColor(r, g, b, a);
             }
         }
 
