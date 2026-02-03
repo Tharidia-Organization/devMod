@@ -50,6 +50,7 @@ import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.config.VisibilitySupplierRegistry;
 import com.devmod.client.ui.radial.input.RadialSearchHandler;
+import com.devmod.client.ui.radial.input.RadialSelectionMath;
 import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.client.ui.radial.render.RadialCategoryRenderer;
 import com.devmod.client.ui.radial.render.RadialGeometry;
@@ -876,8 +877,7 @@ public final class RadialMenuScreen extends Screen {
             return;
         }
 
-        double angle = Math.atan2(dy, dx);
-        if (angle < 0) angle += RadialMenuConstants.TWO_PI;
+        double angle = RadialSelectionMath.normalizedAngle(dx, dy);
 
         // Check favorites ring (between macro hub and inner radius)
         if (RadialMenuScaler.hasFavoritesRing()
@@ -888,10 +888,7 @@ public final class RadialMenuScreen extends Screen {
             double favSegmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
             double favStartOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
 
-            double favAdjustedAngle = angle - favStartOffset;
-            if (favAdjustedAngle < 0) favAdjustedAngle += RadialMenuConstants.TWO_PI;
-
-            selectedFavoriteIndex = (int)(favAdjustedAngle / favSegmentAngle) % numFavorites;
+            selectedFavoriteIndex = RadialSelectionMath.segmentIndex(angle, favStartOffset, numFavorites);
 
             double favMidAngle = favStartOffset + selectedFavoriteIndex * favSegmentAngle;
             double favX = centerX + Math.cos(favMidAngle) * favoritesRadius;
@@ -924,10 +921,7 @@ public final class RadialMenuScreen extends Screen {
         double segmentAngle = RadialMenuConstants.TWO_PI / numCategories;
         double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET - segmentAngle / 2;
 
-        double adjustedAngle = angle - startOffset;
-        if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
-
-        int computedCategoryIndex = (int)(adjustedAngle / segmentAngle) % numCategories;
+        int computedCategoryIndex = RadialSelectionMath.segmentIndex(angle, startOffset, numCategories);
         boolean inSubcategory = isInSubcategory();
         if (inSubcategory) {
             int topLevelIndex = resolveTopLevelCategoryIndex(currentCategory);

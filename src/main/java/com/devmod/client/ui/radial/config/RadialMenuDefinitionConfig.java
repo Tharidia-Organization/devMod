@@ -55,6 +55,7 @@ public final class RadialMenuDefinitionConfig {
      */
     public record RootConfig(
         int schemaVersion,
+        boolean preserveOrdering,
         List<MacroCategoryConfig> macroCategories
     ) {
         public RootConfig {

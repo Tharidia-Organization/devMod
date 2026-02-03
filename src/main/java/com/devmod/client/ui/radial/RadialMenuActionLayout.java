@@ -123,7 +123,7 @@ public final class RadialMenuActionLayout {
 
     private static final Map<String, String> ACTION_MENU_OVERRIDES = Map.ofEntries(
         Map.entry(ActionIds.UI_SETTINGS_OPEN, "Root/Settings"),
-        Map.entry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, "Root/Telemetry"),
+        Map.entry(ActionIds.UI_TELEMETRY_DASHBOARD_OPEN, "Root/Telemetry/Dashboard"),
         Map.entry(ActionIds.UI_TESTING_HUB_OPEN, "Root/Testing"),
         Map.entry(ActionIds.UI_QA_TESTING_OPEN, "Root/Testing/QA Suite"),
         Map.entry(ActionIds.UI_EDITOR_HUB_OPEN, "Root/Editors"),
