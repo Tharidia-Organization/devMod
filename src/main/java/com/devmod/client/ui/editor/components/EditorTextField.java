@@ -14,6 +14,7 @@ import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public class EditorTextField {
 
@@ -132,7 +133,10 @@ public class EditorTextField {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        int height = DesignTokens.Size.INPUT_HEIGHT + INPUT_PADDING; // Label + input
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int inputHeight = ScaledCoord.scaleDim(DesignTokens.Size.INPUT_HEIGHT);
+        int inputPadding = ScaledCoord.scaleDim(INPUT_PADDING);
+        int height = inputHeight + inputPadding; // Label + input
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
 
         // Check hover
@@ -144,11 +148,10 @@ public class EditorTextField {
         if (label != null && !label.isEmpty()) {
             int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             UIScaleManager.drawScaledString(graphics, font, label, x, currentY, labelColor, false);
-            currentY += LABEL_LINE_HEIGHT;
+            currentY += Math.max(ScaledCoord.scaleDim(LABEL_LINE_HEIGHT), lineHeight);
         }
 
         // Input field
-        int inputHeight = DesignTokens.Size.INPUT_HEIGHT;
         this.inputBounds = new ResponsiveLayout.Rect(x, currentY, width, inputHeight);
 
         // Background
@@ -169,11 +172,11 @@ public class EditorTextField {
         AxiomRenderer.drawBorder(graphics, x, currentY, width, inputHeight, borderColor);
 
         // Enable scissor for text clipping
-        int textPadding = TEXT_PADDING;
+        int textPadding = ScaledCoord.scaleDim(TEXT_PADDING);
         graphics.enableScissor(x + textPadding, currentY, x + width - textPadding, currentY + inputHeight);
 
         // Text content
-        int textY = currentY + (inputHeight - TEXT_HEIGHT) / 2;
+        int textY = currentY + (inputHeight - lineHeight) / 2;
         int textX = x + textPadding - scrollOffset;
 
         if (value.isEmpty() && !focused) {
@@ -192,7 +195,8 @@ public class EditorTextField {
                 String prefixEnd = Objects.requireNonNull(value.substring(0, selEnd), "selection end prefix cannot be null");
                 int selX1 = textX + UIScaleManager.getScaledStringWidth(font, prefixStart);
                 int selX2 = textX + UIScaleManager.getScaledStringWidth(font, prefixEnd);
-                graphics.fill(selX1, currentY + CURSOR_INSET, selX2, currentY + inputHeight - CURSOR_INSET,
+                int cursorInset = ScaledCoord.scaleDim(CURSOR_INSET);
+                graphics.fill(selX1, currentY + cursorInset, selX2, currentY + inputHeight - cursorInset,
                              DesignTokens.withAlpha(DesignTokens.Accent.CYAN(), SELECTION_ALPHA));
             }
 
@@ -200,7 +204,8 @@ public class EditorTextField {
             if (focused && cursorVisible) {
                 String cursorPrefix = Objects.requireNonNull(value.substring(0, cursorPosition), "cursor prefix cannot be null");
                 int cursorX = textX + UIScaleManager.getScaledStringWidth(font, cursorPrefix);
-                graphics.fill(cursorX, currentY + CURSOR_INSET, cursorX + CURSOR_WIDTH, currentY + inputHeight - CURSOR_INSET,
+                int cursorInset = ScaledCoord.scaleDim(CURSOR_INSET);
+                graphics.fill(cursorX, currentY + cursorInset, cursorX + CURSOR_WIDTH, currentY + inputHeight - cursorInset,
                              DesignTokens.Text.PRIMARY());
             }
         }
@@ -211,7 +216,7 @@ public class EditorTextField {
     }
 
     public int calculateHeight() {
-        return DesignTokens.Size.INPUT_HEIGHT + INPUT_PADDING;
+        return ScaledCoord.scaleDim(DesignTokens.Size.INPUT_HEIGHT) + ScaledCoord.scaleDim(INPUT_PADDING);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -228,10 +233,10 @@ public class EditorTextField {
                 selectionStart = -1;
             } else {
                 // Calculate cursor position from click
-                int relativeX = (int) mouseX - inputBounds.x() - TEXT_PADDING + scrollOffset;
-                cursorPosition = getCharacterIndexAt(relativeX);
-                selectionStart = -1;
-            }
+            int relativeX = (int) mouseX - inputBounds.x() - ScaledCoord.scaleDim(TEXT_PADDING) + scrollOffset;
+            cursorPosition = getCharacterIndexAt(relativeX);
+            selectionStart = -1;
+        }
             return true;
         } else if (focused) {
             focused = false;
@@ -495,9 +500,9 @@ public class EditorTextField {
         int visibleWidth = inputBounds.width() - TEXT_PADDING * 2;
 
         if (cursorX - scrollOffset < 0) {
-            scrollOffset = Math.max(0, cursorX - CURSOR_SCROLL_MARGIN);
+            scrollOffset = Math.max(0, cursorX - ScaledCoord.scaleDim(CURSOR_SCROLL_MARGIN));
         } else if (cursorX - scrollOffset > visibleWidth) {
-            scrollOffset = cursorX - visibleWidth + CURSOR_SCROLL_MARGIN;
+            scrollOffset = cursorX - visibleWidth + ScaledCoord.scaleDim(CURSOR_SCROLL_MARGIN);
         }
     }
 

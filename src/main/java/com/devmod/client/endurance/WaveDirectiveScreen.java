@@ -168,6 +168,7 @@ public class WaveDirectiveScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         for (EditorButton btn : selectButtons) {
             if (btn.mouseClicked(mouseX, mouseY, button)) {
                 return true;
@@ -178,6 +179,7 @@ public class WaveDirectiveScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         for (EditorButton btn : selectButtons) {
             if (btn.mouseReleased(mouseX, mouseY, button)) {
                 return true;

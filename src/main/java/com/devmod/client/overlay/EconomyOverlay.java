@@ -15,19 +15,17 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import com.devmod.DevMod;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 import com.devmod.telemetry.economy.EconomyMetricsService;
 
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-
+/**
+ * Economy tracking overlay for loot and item statistics.
+ * Registration is handled by ClientModEvents - do not add @EventBusSubscriber.
+ */
 public class EconomyOverlay {
     private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
 
@@ -86,7 +84,6 @@ public class EconomyOverlay {
     private static List<EconomyMetricsService.MobDropSummary> cachedMobStats = null;
     private static int cachedTotalKills = 0;
 
-    @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
             Objects.requireNonNull(VanillaGuiLayers.HOTBAR),

@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Unified payload for mailbox actions (read, delete, claim).
@@ -105,6 +106,6 @@ public record MailboxActionPayload(
 
     @Override
     public int estimatedSize() {
-        return 1 + 16; // VarInt for action + UUID
+        return PayloadSizeUtil.varIntSize(action.ordinal()) + 16;
     }
 }

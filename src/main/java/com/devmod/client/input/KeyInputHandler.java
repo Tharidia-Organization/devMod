@@ -389,7 +389,7 @@ public class KeyInputHandler {
             "key.devmod.dash",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_UNKNOWN,
+            GLFW.GLFW_KEY_I,
             "key.categories.devmod.abilities"
     );
 
@@ -397,7 +397,7 @@ public class KeyInputHandler {
             "key.devmod.dodge",
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_UNKNOWN,
+            GLFW.GLFW_KEY_O,
             "key.categories.devmod.abilities"
     );
 

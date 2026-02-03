@@ -71,7 +71,7 @@ public class TelepadConfigScreen extends Screen {
 
         nameField = new EditBox(font, panelX + PADDING, fieldY, fieldWidth, 20,
             Component.translatable("screen.devmod.telepad.name"));
-        nameField.setMaxLength(32);
+        nameField.setMaxLength(TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH);
         nameField.setValue(telepadName);
         nameField.setHint(Component.literal("Enter network name..."));
         nameField.setBordered(false);

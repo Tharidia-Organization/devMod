@@ -71,11 +71,20 @@ public final class ActionRegistry {
 
     private ActionRegistry() {}
 
+    /**
+     * Registers an action. Throws IllegalStateException if an action with the same ID already exists.
+     * This fail-fast behavior helps catch duplicate registrations during development.
+     *
+     * @param action The action to register
+     * @throws IllegalStateException if an action with the same ID is already registered
+     */
     public static void register(RadialAction action) {
         Objects.requireNonNull(action, "action");
         RadialAction existing = ACTIONS.putIfAbsent(action.getId(), action);
         if (existing != null) {
-            DevMod.LOGGER.warn("[ActionRegistry] Duplicate action id {}, keeping original", action.getId());
+            throw new IllegalStateException(
+                "[ActionRegistry] Duplicate action id: " + action.getId() + ". "
+                + "Action already registered with label: " + existing.getLabelKey());
         }
     }
 

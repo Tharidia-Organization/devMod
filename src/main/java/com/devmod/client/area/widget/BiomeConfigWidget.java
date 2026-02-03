@@ -84,7 +84,7 @@ public class BiomeConfigWidget extends AbstractWidget {
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(
             net.minecraft.client.Minecraft.getInstance().font, "font");
-        updateLayout(font.lineHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(font, 10));
         int buttonHeight = s(BUTTON_HEIGHT);
         int buttonWidth = s(BUTTON_WIDTH);
 
@@ -166,8 +166,15 @@ public class BiomeConfigWidget extends AbstractWidget {
             graphics.renderOutline(btnX, terrainButtonsY, buttonWidth, buttonHeight,
                 isSelected ? AreaBuilderGuiConstants.COLOR_SELECTED_BORDER : AreaBuilderGuiConstants.COLOR_BORDER);
 
-            UIScaleManager.drawScaledCenteredString(graphics, font,
-                Component.translatable("area.biome.terrain." + style.getSerializedName()).getString(),
+            String styleName = Component.translatable("area.biome.terrain." + style.getSerializedName()).getString();
+            int maxTextWidth = buttonWidth - s(8);
+            if (UIScaleManager.getScaledStringWidth(font, styleName) > maxTextWidth) {
+                while (styleName.length() > 2 && UIScaleManager.getScaledStringWidth(font, styleName + "..") > maxTextWidth) {
+                    styleName = styleName.substring(0, styleName.length() - 1);
+                }
+                styleName = styleName + "..";
+            }
+            UIScaleManager.drawScaledCenteredString(graphics, font, styleName,
                 btnX + buttonWidth / 2, terrainButtonsY + s(5),
                 isSelected ? primaryColor : secondaryColor);
 
@@ -226,9 +233,8 @@ public class BiomeConfigWidget extends AbstractWidget {
 
     @Override
     public void onClick(double mouseX, double mouseY, int button) {
-        int fontHeight = Objects.requireNonNull(
-            net.minecraft.client.Minecraft.getInstance().font, "font").lineHeight;
-        updateLayout(fontHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(
+            net.minecraft.client.Minecraft.getInstance().font, 10));
         int toggleWidth = s(TOGGLE_WIDTH);
         int buttonWidth = s(BUTTON_WIDTH);
         int buttonHeight = s(BUTTON_HEIGHT);
@@ -305,9 +311,8 @@ public class BiomeConfigWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int fontHeight = Objects.requireNonNull(
-            net.minecraft.client.Minecraft.getInstance().font, "font").lineHeight;
-        updateLayout(fontHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(
+            net.minecraft.client.Minecraft.getInstance().font, 10));
         if (biomeEnabled && seedField.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }

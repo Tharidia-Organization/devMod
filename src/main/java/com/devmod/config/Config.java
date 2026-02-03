@@ -381,15 +381,15 @@ public class Config {
 
         IMPACT_VFX_VORTEX_ENABLED = BUILDER
                 .comment("Enable impact vortex VFX")
-                .define("impactVfxVortexEnabled", true);
+                .define("impactVfxVortexEnabled", false);
 
         IMPACT_VFX_SLASH_ENABLED = BUILDER
-                .comment("Enable impact slash VFX")
-                .define("impactVfxSlashEnabled", true);
+                .comment("Enable impact slash VFX (white residual light effect)")
+                .define("impactVfxSlashEnabled", false);
 
         IMPACT_VFX_LINES_ENABLED = BUILDER
                 .comment("Enable impact connection lines VFX")
-                .define("impactVfxLinesEnabled", true);
+                .define("impactVfxLinesEnabled", false);
 
         IMPACT_VFX_GLYPHS_ENABLED = BUILDER
                 .comment("Enable combat language glyphs (minimal 3D symbols)")

@@ -31,6 +31,7 @@ import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class EnchantmentListSection implements EditorSection.CustomSection {
 
@@ -241,6 +242,8 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
     }
 
     private int getGroupedHeight() {
+        int groupHeaderHeight = ScaledCoord.scaleDim(GROUP_HEADER_HEIGHT);
+        int entryHeight = getEntryHeight();
         int height = 0;
         for (EnchantGroup group : GROUP_ORDER) {
             int count = 0;
@@ -250,10 +253,20 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
                 }
             }
             if (count > 0) {
-                height += GROUP_HEADER_HEIGHT + count * ENTRY_HEIGHT;
+                height += groupHeaderHeight + count * entryHeight;
             }
         }
         return height;
+    }
+
+    private int getEntryHeight() {
+        int base = ScaledCoord.scaleDim(ENTRY_HEIGHT);
+        if (!filteredEntries.isEmpty()) {
+            int sliderHeight = filteredEntries.get(0).slider.calculateHeight();
+            int pad = ScaledCoord.scaleDim(8);
+            return Math.max(base, sliderHeight + pad);
+        }
+        return base;
     }
 
     private String getEnchantmentName(Holder<Enchantment> holder) {
@@ -377,9 +390,15 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
 
     @Override
     public int getHeight() {
-        int listHeight = filteredEntries.isEmpty() ? EMPTY_STATE_HEIGHT : getGroupedHeight();
-        return HEADER_HEIGHT + SEARCH_TOP_PADDING + searchField.calculateHeight()
-            + SEARCH_BOTTOM_PADDING + listHeight + BOTTOM_PADDING;
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int searchTop = ScaledCoord.scaleDim(SEARCH_TOP_PADDING);
+        int searchBottom = ScaledCoord.scaleDim(SEARCH_BOTTOM_PADDING);
+        int bottomPad = ScaledCoord.scaleDim(BOTTOM_PADDING);
+        int listHeight = filteredEntries.isEmpty()
+            ? ScaledCoord.scaleDim(EMPTY_STATE_HEIGHT)
+            : getGroupedHeight();
+        return headerHeight + searchTop + searchField.calculateHeight()
+            + searchBottom + listHeight + bottomPad;
     }
 
     @Override
@@ -387,29 +406,37 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
 
         int y = bounds.y();
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int textInset = ScaledCoord.scaleDim(TEXT_INSET_X);
+        int searchTop = ScaledCoord.scaleDim(SEARCH_TOP_PADDING);
+        int searchBottom = ScaledCoord.scaleDim(SEARCH_BOTTOM_PADDING);
+        int groupHeaderHeight = ScaledCoord.scaleDim(GROUP_HEADER_HEIGHT);
+        int entryHeight = getEntryHeight();
+        int entryPad = ScaledCoord.scaleDim(4);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
 
         // Header
-        graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + HEADER_HEIGHT,
+        graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + headerHeight,
             DesignTokens.Background.HEADER());
-        UIScaleManager.drawScaledString(graphics, font, title, bounds.x() + TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, title, bounds.x() + textInset,
+            y + (headerHeight - lineHeight) / 2, DesignTokens.Text.TITLE(), false);
 
         // Count active enchantments
         long activeCount = entries.stream().filter(e -> e.currentLevel > 0).count();
         String countText = "(" + activeCount + " active)";
         int countWidth = UIScaleManager.getScaledStringWidth(font, countText);
-        UIScaleManager.drawScaledString(graphics, font, countText, bounds.x() + bounds.width() - countWidth - TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, font, countText, bounds.x() + bounds.width() - countWidth - textInset,
+            y + (headerHeight - lineHeight) / 2, DesignTokens.Text.MUTED(), false);
 
-        y += HEADER_HEIGHT;
+        y += headerHeight;
 
-        y += SEARCH_TOP_PADDING;
-        searchField.render(graphics, bounds.x() + TEXT_INSET_X, y,
-            bounds.width() - TEXT_INSET_X * 2, mouseX, mouseY);
-        y += searchField.calculateHeight() + SEARCH_BOTTOM_PADDING;
+        y += searchTop;
+        searchField.render(graphics, bounds.x() + textInset, y,
+            bounds.width() - textInset * 2, mouseX, mouseY);
+        y += searchField.calculateHeight() + searchBottom;
 
         if (filteredEntries.isEmpty()) {
-            UIScaleManager.drawScaledString(graphics, font, EMPTY_STATE_TEXT, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, EMPTY_STATE_TEXT, bounds.x() + textInset, y,
                 DesignTokens.Text.MUTED(), false);
             return;
         }
@@ -425,15 +452,16 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
             if (!hasGroup) {
                 continue;
             }
-            UIScaleManager.drawScaledString(graphics, font, group.label, bounds.x() + TEXT_INSET_X, y,
+            UIScaleManager.drawScaledString(graphics, font, group.label, bounds.x() + textInset, y,
                 DesignTokens.Text.SECONDARY(), false);
-            y += GROUP_HEADER_HEIGHT;
+            y += groupHeaderHeight;
             for (EnchantmentEntry entry : filteredEntries) {
                 if (getGroupFor(entry) != group) {
                     continue;
                 }
-                entry.slider.render(graphics, bounds.x() + 4, y + 4, bounds.width() - 8, mouseX, mouseY);
-                y += ENTRY_HEIGHT;
+                entry.slider.render(graphics, bounds.x() + entryPad, y + entryPad,
+                    bounds.width() - entryPad * 2, mouseX, mouseY);
+                y += entryHeight;
             }
         }
     }
@@ -491,6 +519,19 @@ public final class EnchantmentListSection implements EditorSection.CustomSection
         }
         for (EnchantmentEntry entry : filteredEntries) {
             if (entry.slider.charTyped(chr, modifiers)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean hasFocusedInput() {
+        if (searchField.isFocused()) {
+            return true;
+        }
+        for (EnchantmentEntry entry : filteredEntries) {
+            if (entry.slider.hasInputFocused()) {
                 return true;
             }
         }

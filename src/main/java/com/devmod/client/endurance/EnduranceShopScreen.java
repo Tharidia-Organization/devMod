@@ -667,6 +667,8 @@ public class EnduranceShopScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
+        updateScaledMetrics();
         int mx = (int) mouseX;
         int my = (int) mouseY;
         ShopLayout layout = getLayout();
@@ -735,6 +737,8 @@ public class EnduranceShopScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        UIScaleManager.update();
+        updateScaledMetrics();
         scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * UIScaleManager.scale(20))));
         return true;
     }

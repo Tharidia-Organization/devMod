@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.area.data.AreaDefinition;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Client -> Server payload to save an area configuration.
@@ -85,7 +86,7 @@ public record SaveAreaPayload(
         if (existingAreaId != null) {
             size += 16;
         }
-        size += 5; // VarInt
+        size += PayloadSizeUtil.varIntSize(expectedRevision);
         return size;
     }
 

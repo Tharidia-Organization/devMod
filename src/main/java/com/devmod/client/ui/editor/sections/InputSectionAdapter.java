@@ -63,4 +63,9 @@ public final class InputSectionAdapter implements EditorSection.InputSection {
     public boolean charTyped(char chr, int modifiers) {
         return field.charTyped(chr, modifiers);
     }
+
+    @Override
+    public boolean hasFocusedInput() {
+        return field.isFocused();
+    }
 }

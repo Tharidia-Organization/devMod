@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 
 import com.devmod.network.NetworkHandler;
 
@@ -26,7 +25,6 @@ public class StaminaSystem {
     private static final float DEFAULT_REGEN_RATE = 10.0f; // Per second
     private static final float DEFAULT_REGEN_DELAY = 1.0f; // Seconds before regen starts after use
     private static final float SPRINT_COST_PER_SECOND = 5.0f;
-    private static final float JUMP_COST = 5.0f;
 
     // Player stamina data
     private final Map<UUID, StaminaData> playerStamina = new ConcurrentHashMap<>();
@@ -57,21 +55,6 @@ public class StaminaSystem {
     }
 
     /**
-     * Get stamina as percentage (0.0 - 1.0).
-     */
-    public float getStaminaPercent(UUID playerId) {
-        float max = getMaxStamina(playerId);
-        return max > 0 ? getStamina(playerId) / max : 0;
-    }
-
-    /**
-     * Check if player has enough stamina for an action.
-     */
-    public boolean hasStamina(UUID playerId, float amount) {
-        return getStamina(playerId) >= amount;
-    }
-
-    /**
      * Consume stamina for an action. Returns true if successful.
      */
     public boolean consumeStamina(UUID playerId, float amount) {
@@ -91,60 +74,12 @@ public class StaminaSystem {
     }
 
     /**
-     * Force consume stamina (can go negative for exhaustion effects).
-     */
-    public void forceConsumeStamina(UUID playerId, float amount) {
-        StaminaData data = getStaminaData(playerId);
-        data.currentStamina = Math.max(-20, data.currentStamina - amount); // Cap negative at -20
-        data.regenDelayTicks = (int) (data.regenDelay * 20);
-    }
-
-    /**
-     * Restore stamina (from items, perks, etc.).
-     */
-    public void restoreStamina(UUID playerId, float amount) {
-        StaminaData data = getStaminaData(playerId);
-        float maxStamina = getMaxStamina(playerId);
-        data.currentStamina = Math.min(maxStamina, data.currentStamina + amount);
-    }
-
-    /**
      * Set stamina to full.
      */
     public void fillStamina(UUID playerId) {
         StaminaData data = getStaminaData(playerId);
         data.currentStamina = getMaxStamina(playerId);
         data.regenDelayTicks = 0;
-    }
-
-    /**
-     * Check if player is exhausted (stamina <= 0).
-     */
-    public boolean isExhausted(UUID playerId) {
-        return getStamina(playerId) <= 0;
-    }
-
-    /**
-     * Apply a temporary modifier to max stamina.
-     */
-    public void setMaxStaminaMultiplier(UUID playerId, float multiplier) {
-        getStaminaData(playerId).maxStaminaMultiplier = multiplier;
-    }
-
-    /**
-     * Apply a temporary modifier to regen rate.
-     */
-    public void setRegenRateMultiplier(UUID playerId, float multiplier) {
-        getStaminaData(playerId).regenRateMultiplier = multiplier;
-    }
-
-    /**
-     * Reset modifiers to default.
-     */
-    public void resetModifiers(UUID playerId) {
-        StaminaData data = getStaminaData(playerId);
-        data.maxStaminaMultiplier = 1.0f;
-        data.regenRateMultiplier = 1.0f;
     }
 
     /**
@@ -159,7 +94,7 @@ public class StaminaSystem {
         if (player.isSprinting() && !player.isCreative() && !player.isSpectator()) {
             float sprintCost = (SPRINT_COST_PER_SECOND / 20.0f) * data.consumptionMultiplier;
             if (data.currentStamina > 0) {
-                data.currentStamina -= sprintCost;
+                data.currentStamina = Math.max(0, data.currentStamina - sprintCost);
                 data.regenDelayTicks = (int) (data.regenDelay * 20);
             } else {
                 // Out of stamina - stop sprinting
@@ -185,21 +120,6 @@ public class StaminaSystem {
     }
 
     /**
-     * Handle player jump - consume stamina.
-     */
-    public void onPlayerJump(Player player) {
-        if (player.isCreative() || player.isSpectator()) return;
-
-        StaminaData data = getStaminaData(player.getUUID());
-        float cost = JUMP_COST * data.consumptionMultiplier;
-
-        if (data.currentStamina >= cost) {
-            data.currentStamina -= cost;
-            data.regenDelayTicks = (int) (data.regenDelay * 20);
-        }
-    }
-
-    /**
      * Sync stamina data to client for HUD display.
      */
     private void syncToClient(ServerPlayer player, StaminaData data) {
@@ -212,20 +132,6 @@ public class StaminaSystem {
      */
     public void cleanupPlayer(UUID playerId) {
         playerStamina.remove(playerId);
-    }
-
-    /**
-     * Get stamina cost multiplier for a player.
-     */
-    public float getConsumptionMultiplier(UUID playerId) {
-        return getStaminaData(playerId).consumptionMultiplier;
-    }
-
-    /**
-     * Set stamina cost multiplier (from perks).
-     */
-    public void setConsumptionMultiplier(UUID playerId, float multiplier) {
-        getStaminaData(playerId).consumptionMultiplier = multiplier;
     }
 
     /**
@@ -250,11 +156,6 @@ public class StaminaSystem {
     public static class StaminaCosts {
         public static final float DASH = 25.0f;
         public static final float DODGE = 20.0f;
-        public static final float DOUBLE_JUMP = 15.0f;
         public static final float SPRINT_PER_SECOND = SPRINT_COST_PER_SECOND;
-        public static final float JUMP = JUMP_COST;
-        public static final float HEAVY_ATTACK = 30.0f;
-        public static final float BLOCK = 10.0f;
-        public static final float PARRY = 15.0f;
     }
 }

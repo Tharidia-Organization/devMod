@@ -162,15 +162,14 @@ public class OpenExternalConfirmScreen extends Screen {
                 // Log telemetry
                 logExternalOpen(true, null);
 
-                // Close after short delay
-                Minecraft.getInstance().tell(() -> {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    onClose();
-                });
+                // Close after short delay using scheduler (non-blocking)
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r, "Dashboard-Close-Delay");
+                    t.setDaemon(true);
+                    return t;
+                }).schedule(() -> {
+                    Minecraft.getInstance().tell(this::onClose);
+                }, 500, java.util.concurrent.TimeUnit.MILLISECONDS);
             } else {
                 // Desktop not supported, offer copy instead
                 statusMessage = Component.translatable("devmod.ui.open_external.desktop_not_supported").getString();

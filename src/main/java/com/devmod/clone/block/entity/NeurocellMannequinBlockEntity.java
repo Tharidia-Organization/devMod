@@ -66,6 +66,13 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
     );
 
     /**
+     * Cached inventory container for menu access.
+     * Must be the same instance across all menu interactions to prevent item loss.
+     */
+    @Nullable
+    private MannequinContainer cachedInventory;
+
+    /**
      * Manual rotation angle for the mannequin display (degrees).
      */
     private float rotationAngle = 0f;
@@ -387,6 +394,9 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
         } else {
             skinUUID = null;
         }
+
+        // Sync equipment to cached container if it exists
+        syncEquipmentToContainer();
     }
 
     @Override
@@ -443,54 +453,93 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
 
     /**
      * Get the inventory container for menu access.
+     * Returns a cached instance to prevent item loss from multiple container creations.
      */
     @Nonnull
     public Container getInventory() {
-        // Create a container view that syncs bidirectionally with equipment array
-        SimpleContainer container = new SimpleContainer(6) {
-            @Override
-            public void setChanged() {
-                super.setChanged();
-                // Sync container back to equipment array
-                for (int i = 0; i < 6; i++) {
-                    equipment.set(i, Objects.requireNonNull(this.getItem(i).copy()));
-                }
-                NeurocellMannequinBlockEntity.this.setChanged();
-                NeurocellMannequinBlockEntity.this.onEquipmentChanged();
-            }
+        MannequinContainer inv = cachedInventory;
+        if (inv == null) {
+            inv = new MannequinContainer();
+            cachedInventory = inv;
+        }
+        return inv;
+    }
 
-            @Override
-            public void setItem(int slot, @Nonnull ItemStack stack) {
-                super.setItem(slot, stack);
-                equipment.set(slot, Objects.requireNonNull(stack.copy()));
-                NeurocellMannequinBlockEntity.this.setChanged();
-                NeurocellMannequinBlockEntity.this.onEquipmentChanged();
-            }
+    /**
+     * Syncs the equipment array to the cached container (for NBT loading).
+     */
+    private void syncEquipmentToContainer() {
+        if (cachedInventory != null) {
+            cachedInventory.syncFromEquipment();
+        }
+    }
 
-            @Override
-            @Nonnull
-            public ItemStack removeItem(int slot, int amount) {
-                ItemStack result = Objects.requireNonNull(super.removeItem(slot, amount));
-                equipment.set(slot, Objects.requireNonNull(this.getItem(slot).copy()));
-                NeurocellMannequinBlockEntity.this.setChanged();
-                NeurocellMannequinBlockEntity.this.onEquipmentChanged();
-                return result;
-            }
+    /**
+     * Inner container class that maintains bidirectional sync with equipment array.
+     * This is a single cached instance to prevent item loss bugs.
+     */
+    private class MannequinContainer extends SimpleContainer {
 
-            @Override
-            @Nonnull
-            public ItemStack removeItemNoUpdate(int slot) {
-                ItemStack result = Objects.requireNonNull(super.removeItemNoUpdate(slot));
-                equipment.set(slot, Objects.requireNonNull(this.getItem(slot).copy()));
-                return result;
-            }
-        };
-
-        // Initialize with current equipment
-        for (int i = 0; i < 6; i++) {
-            container.setItem(i, Objects.requireNonNull(equipment.get(i).copy()));
+        MannequinContainer() {
+            super(6);
+            syncFromEquipment();
         }
 
-        return container;
+        /**
+         * Sync container contents from equipment array.
+         * Called after NBT loading or when equipment is changed externally.
+         */
+        void syncFromEquipment() {
+            for (int i = 0; i < 6; i++) {
+                // Use super to avoid triggering callbacks during sync
+                super.setItem(i, Objects.requireNonNull(equipment.get(i).copy()));
+            }
+        }
+
+        @Override
+        public void setChanged() {
+            super.setChanged();
+            // Sync container back to equipment array
+            for (int i = 0; i < 6; i++) {
+                equipment.set(i, Objects.requireNonNull(this.getItem(i).copy()));
+            }
+            // Evita cascata: chiama direttamente i metodi necessari invece di onEquipmentChanged()
+            // che richiamerebbe setChanged() creando un loop
+            NeurocellMannequinBlockEntity.this.setChanged();
+            syncToClient();
+            updateActiveState(hasEquipment());
+        }
+
+        @Override
+        public void setItem(int slot, @Nonnull ItemStack stack) {
+            super.setItem(slot, stack);
+            // super.setItem() già triggera setChanged() che gestisce sync e state update
+            if (slot >= 0 && slot < 6) {
+                equipment.set(slot, Objects.requireNonNull(stack.copy()));
+            }
+        }
+
+        @Override
+        @Nonnull
+        public ItemStack removeItem(int slot, int amount) {
+            ItemStack result = Objects.requireNonNull(super.removeItem(slot, amount));
+            // super.removeItem() già triggera setChanged() se item rimosso
+            if (slot >= 0 && slot < 6) {
+                equipment.set(slot, Objects.requireNonNull(this.getItem(slot).copy()));
+            }
+            return result;
+        }
+
+        @Override
+        @Nonnull
+        public ItemStack removeItemNoUpdate(int slot) {
+            ItemStack result = Objects.requireNonNull(super.removeItemNoUpdate(slot));
+            if (slot >= 0 && slot < 6) {
+                equipment.set(slot, Objects.requireNonNull(this.getItem(slot).copy()));
+                // Marca per salvataggio NBT per evitare duplicazione item al reload
+                NeurocellMannequinBlockEntity.this.setChanged();
+            }
+            return result;
+        }
     }
 }

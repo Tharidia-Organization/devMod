@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.components.EditorToggle;
 import com.devmod.client.ui.editor.components.RecipeGridComponent;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.client.ui.editor.sections.InputSectionAdapter;
 import com.devmod.client.ui.editor.sections.SimpleHeaderSection;
 import com.devmod.client.ui.editor.sections.SimpleSpacer;
@@ -231,12 +232,12 @@ public class RecipeModuleUI {
         public String getLabel() { return ""; }
 
         @Override
-        public int getHeight() { return 88; }
+        public int getHeight() { return ScaledCoord.scaleDim(88); }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             grid.render(graphics, Objects.requireNonNull(Minecraft.getInstance().font, "font"),
-                bounds.x() + 8, bounds.y() + 4, mouseX, mouseY);
+                bounds.x() + ScaledCoord.scaleDim(8), bounds.y() + ScaledCoord.scaleDim(4), mouseX, mouseY);
         }
 
         @Override
@@ -266,16 +267,22 @@ public class RecipeModuleUI {
         public String getLabel() { return ""; }
 
         @Override
-        public int getHeight() { return 32; }
+        public int getHeight() { return ScaledCoord.scaleDim(32); }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
-            graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + 36, bounds.y() + 32, DesignTokens.Background.INPUT());
-            graphics.renderItem(Objects.requireNonNull(item, "item"), bounds.x() + 12, bounds.y() + 8);
+            int inset = ScaledCoord.scaleDim(4);
+            int boxSize = ScaledCoord.scaleDim(32);
+            graphics.fill(bounds.x() + inset, bounds.y(), bounds.x() + inset + boxSize, bounds.y() + boxSize,
+                DesignTokens.Background.INPUT());
+            graphics.renderItem(Objects.requireNonNull(item, "item"),
+                bounds.x() + inset + ScaledCoord.scaleDim(8), bounds.y() + ScaledCoord.scaleDim(8));
 
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             String name = Objects.requireNonNull(item.getHoverName().getString(), "itemName");
-            UIScaleManager.drawScaledString(graphics, font, name, bounds.x() + 44, bounds.y() + 12, DesignTokens.Text.PRIMARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, name,
+                bounds.x() + ScaledCoord.scaleDim(44), bounds.y() + ScaledCoord.scaleDim(12),
+                DesignTokens.Text.PRIMARY(), false);
         }
     }
 
@@ -305,7 +312,7 @@ public class RecipeModuleUI {
         public String getLabel() { return ""; }
 
         @Override
-        public int getHeight() { return 24; }
+        public int getHeight() { return ScaledCoord.scaleDim(24); }
 
         @Override
         public List<String> getOptions() { return options; }
@@ -326,9 +333,12 @@ public class RecipeModuleUI {
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-            graphics.fill(bounds.x() + 4, bounds.y(), bounds.x() + bounds.width() - 4, bounds.y() + 20,
+            int inset = ScaledCoord.scaleDim(4);
+            int height = ScaledCoord.scaleDim(20);
+            graphics.fill(bounds.x() + inset, bounds.y(), bounds.x() + bounds.width() - inset, bounds.y() + height,
                 DesignTokens.Background.INPUT());
-            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(selected.getId(), "categoryId"), bounds.x() + 8, bounds.y() + 6,
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(selected.getId(), "categoryId"),
+                bounds.x() + ScaledCoord.scaleDim(8), bounds.y() + ScaledCoord.scaleDim(6),
                 DesignTokens.Text.PRIMARY(), false);
         }
 
@@ -356,34 +366,35 @@ public class RecipeModuleUI {
         public String getLabel() { return ""; }
 
         @Override
-        public int getHeight() { return 40; }
+        public int getHeight() { return ScaledCoord.scaleDim(40); }
 
         @Override
         public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
             Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
             RecipeValidator.ValidationResult result = resultSupplier.get();
 
-            int y = bounds.y() + 4;
+            int y = bounds.y() + ScaledCoord.scaleDim(4);
 
             if (result.valid()) {
                 int color = result.hasWarnings() ? DesignTokens.Text.WARNING() : DesignTokens.Accent.GREEN();
-                UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(result.getSummary(), "summary"), bounds.x() + 8, y, color, false);
+                UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(result.getSummary(), "summary"),
+                    bounds.x() + ScaledCoord.scaleDim(8), y, color, false);
 
-                y += 12;
+                y += ScaledCoord.scaleDim(12);
                 for (String warning : result.warnings()) {
                     UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull("- " + warning, "warning"),
-                        bounds.x() + 12, y, DesignTokens.Text.MUTED(), false);
-                    y += 10;
+                        bounds.x() + ScaledCoord.scaleDim(12), y, DesignTokens.Text.MUTED(), false);
+                    y += ScaledCoord.scaleDim(10);
                 }
             } else {
                 UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(result.getSummary(), "summary"),
-                    bounds.x() + 8, y, DesignTokens.Accent.RED(), false);
+                    bounds.x() + ScaledCoord.scaleDim(8), y, DesignTokens.Accent.RED(), false);
 
-                y += 12;
+                y += ScaledCoord.scaleDim(12);
                 for (String error : result.errors()) {
                     UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull("- " + error, "error"),
-                        bounds.x() + 12, y, DesignTokens.Accent.RED(), false);
-                    y += 10;
+                        bounds.x() + ScaledCoord.scaleDim(12), y, DesignTokens.Accent.RED(), false);
+                    y += ScaledCoord.scaleDim(10);
                 }
             }
         }

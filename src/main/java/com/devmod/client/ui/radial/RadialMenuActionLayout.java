@@ -36,8 +36,9 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_RADIAL_OPEN
     );
 
-    // Curated radial menu: only hub/screen entry points.
+    // Curated radial menu: hub/screen entry points + key Combat actions.
     private static final Set<String> CURATED_ACTIONS = Set.of(
+        // Hub/screen entry points
         ActionIds.UI_SETTINGS_OPEN,
         ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
         ActionIds.UI_TESTING_HUB_OPEN,
@@ -47,7 +48,40 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_PLAY_HUB_OPEN,
         ActionIds.UI_ARENA_HUB_OPEN,
         ActionIds.UI_NEXUS_HUB_OPEN,
-        ActionIds.UI_VOXELLAB_OPEN
+        ActionIds.UI_VOXELLAB_OPEN,
+        // Combat - Diagnostics
+        ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
+        ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,
+        ActionIds.DEBUG_ECONOMY_TOGGLE,
+        ActionIds.DEBUG_ECONOMY_VIEW_CYCLE,
+        ActionIds.DEBUG_ECONOMY_SORT_CYCLE,
+        ActionIds.DEBUG_IMPACT_DISMISS,
+        // Combat - Heatmaps
+        ActionIds.DEBUG_HEATMAP_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_CYCLE,
+        ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
+        ActionIds.DEBUG_HEATMAP_CLEAR_ALL,
+        ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_STUCK_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_AGGRO_DROP_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
+        ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE,
+        // Combat - Abilities
+        ActionIds.ABILITY_DASH,
+        ActionIds.ABILITY_DODGE,
+        ActionIds.UI_STAMINA_EDITOR_OPEN,
+        // Combat - Impact HUD
+        ActionIds.HUD_IMPACT_TOGGLE,
+        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
+        ActionIds.HUD_IMPACT_3D_TOGGLE,
+        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
+        ActionIds.HUD_IMPACT_SHOW_RECAP,
+        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
+        ActionIds.HUD_IMPACT_PRESET_DETAILED,
+        ActionIds.HUD_IMPACT_PRESET_TRAINING
     );
 
     private static final Map<String, String> ACTION_MENU_OVERRIDES = Map.ofEntries(

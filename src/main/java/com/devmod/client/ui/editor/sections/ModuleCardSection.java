@@ -14,6 +14,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.EditorStartTab;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class ModuleCardSection implements EditorSection.CustomSection {
 
@@ -66,7 +67,7 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
 
     @Override
     public int getHeight() {
-        return CARD_HEIGHT + CARD_PADDING;
+        return ScaledCoord.scaleDim(CARD_HEIGHT + CARD_PADDING);
     }
 
     @Override
@@ -75,12 +76,17 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
         @Nonnull String safeIcon = Objects.requireNonNull(Objects.requireNonNullElse(icon, ""), "icon");
         @Nonnull String safeTitle = Objects.requireNonNull(Objects.requireNonNullElse(title, ""), "title");
         @Nonnull String safeDescription = Objects.requireNonNull(Objects.requireNonNullElse(description, ""), "description");
+        int cardHeight = ScaledCoord.scaleDim(CARD_HEIGHT);
+        int cardPadding = ScaledCoord.scaleDim(CARD_PADDING);
+        int iconSize = ScaledCoord.scaleDim(ICON_SIZE);
+        int hoverBorder = Math.max(1, ScaledCoord.scaleDim(HOVER_BORDER_WIDTH));
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
 
         // Store bounds for hit testing
         lastX = bounds.x();
         lastY = bounds.y();
         lastWidth = bounds.width();
-        lastHeight = CARD_HEIGHT;
+        lastHeight = cardHeight;
 
         // Check hover
         hovered = mouseX >= lastX && mouseX < lastX + lastWidth
@@ -88,35 +94,37 @@ public final class ModuleCardSection implements EditorSection.CustomSection {
 
         // Background
         int bgColor = hovered ? DesignTokens.Background.HOVER() : DesignTokens.Background.PANEL();
-        graphics.fill(lastX, lastY, lastX + lastWidth, lastY + CARD_HEIGHT, bgColor);
+        graphics.fill(lastX, lastY, lastX + lastWidth, lastY + cardHeight, bgColor);
 
         // Border (accent on hover)
         int borderColor = hovered ? accentColor : DesignTokens.Border.DEFAULT();
-        drawBorder(graphics, lastX, lastY, lastWidth, CARD_HEIGHT, borderColor, hovered ? HOVER_BORDER_WIDTH : 1);
+        drawBorder(graphics, lastX, lastY, lastWidth, cardHeight, borderColor, hovered ? hoverBorder : 1);
 
         // Icon area
-        int iconX = lastX + CARD_PADDING;
-        int iconY = lastY + (CARD_HEIGHT - ICON_SIZE) / 2;
-        graphics.fill(iconX, iconY, iconX + ICON_SIZE, iconY + ICON_SIZE,
+        int iconX = lastX + cardPadding;
+        int iconY = lastY + (cardHeight - iconSize) / 2;
+        graphics.fill(iconX, iconY, iconX + iconSize, iconY + iconSize,
             DesignTokens.withAlpha(accentColor, DesignTokens.Alpha.A27));
 
         // Icon text (emoji/symbol)
-        int iconTextX = iconX + (ICON_SIZE - UIScaleManager.getScaledStringWidth(font, safeIcon)) / 2;
-        int iconTextY = iconY + (ICON_SIZE - 8) / 2;
+        int iconTextX = iconX + (iconSize - UIScaleManager.getScaledStringWidth(font, safeIcon)) / 2;
+        int iconTextY = iconY + (iconSize - lineHeight) / 2;
         UIScaleManager.drawScaledString(graphics, font, safeIcon, iconTextX, iconTextY, accentColor, false);
 
         // Title
-        int textX = iconX + ICON_SIZE + CARD_PADDING;
-        UIScaleManager.drawScaledString(graphics, font, safeTitle, textX, lastY + TITLE_Y_OFFSET, DesignTokens.Text.TITLE(), false);
+        int textX = iconX + iconSize + cardPadding;
+        UIScaleManager.drawScaledString(graphics, font, safeTitle, textX, lastY + ScaledCoord.scaleDim(TITLE_Y_OFFSET),
+            DesignTokens.Text.TITLE(), false);
 
         // Description
-        UIScaleManager.drawScaledString(graphics, font, safeDescription, textX, lastY + DESC_Y_OFFSET, DesignTokens.Text.SECONDARY(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeDescription, textX, lastY + ScaledCoord.scaleDim(DESC_Y_OFFSET),
+            DesignTokens.Text.SECONDARY(), false);
 
         // Arrow indicator on hover
         if (hovered) {
             String arrow = "→";
-            int arrowX = lastX + lastWidth - CARD_PADDING - UIScaleManager.getScaledStringWidth(font, arrow);
-            int arrowY = lastY + (CARD_HEIGHT - 8) / 2;
+            int arrowX = lastX + lastWidth - cardPadding - UIScaleManager.getScaledStringWidth(font, arrow);
+            int arrowY = lastY + (cardHeight - lineHeight) / 2;
             UIScaleManager.drawScaledString(graphics, font, arrow, arrowX, arrowY, accentColor, false);
         }
     }

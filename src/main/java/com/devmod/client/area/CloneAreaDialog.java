@@ -123,7 +123,7 @@ public final class CloneAreaDialog extends BaseOverlay {
                                  int x, int y, int width, int height,
                                  int mouseX, int mouseY) {
         padding = ScaledCoord.scaleDim(DesignTokens.Spacing.XL);
-        int labelHeight = font.lineHeight;
+        int labelHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int fieldHeight = ScaledCoord.scaleDim(20);
         int coordFieldWidth = ScaledCoord.scaleDim(60);
 

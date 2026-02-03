@@ -30,8 +30,8 @@ public final class AreaBuilderGuiConstants {
     /** Height of each tab button */
     public static final int TAB_HEIGHT = 24;
 
-    /** Width of each tab button */
-    public static final int TAB_WIDTH = 64;
+    /** Width of each tab button - sized to fit longest label "Dimensions" */
+    public static final int TAB_WIDTH = 80;
 
     /** Spacing between tab buttons */
     public static final int TAB_SPACING = 2;
@@ -186,6 +186,34 @@ public final class AreaBuilderGuiConstants {
     public static final int COLOR_OVERLAY_DARK = DesignTokens.AreaBuilder.OVERLAY_DARK;
 
     // ============================================================================
+    // WIDGET LAYOUT (standardized across all widgets)
+    // ============================================================================
+
+    /** Standard row height for toggles and options */
+    public static final int ROW_HEIGHT = 24;
+
+    /** Standard toggle button width */
+    public static final int TOGGLE_WIDTH = 40;
+
+    /** Standard option button height (smaller buttons) */
+    public static final int OPTION_BUTTON_HEIGHT = 18;
+
+    /** Style button width (for wall styles, presets, etc.) */
+    public static final int STYLE_BUTTON_WIDTH = 70;
+
+    /** Size button width (for grid sizes, alignments) */
+    public static final int SIZE_BUTTON_WIDTH = 80;
+
+    /** Gap between title and content */
+    public static final int TITLE_GAP = 16;
+
+    /** Gap between sections */
+    public static final int SECTION_GAP = 14;
+
+    /** Gap between blocks of options */
+    public static final int BLOCK_GAP = 8;
+
+    // ============================================================================
     // LIST/GRID
     // ============================================================================
 
@@ -198,8 +226,8 @@ public final class AreaBuilderGuiConstants {
     /** Columns in preset/shape grid */
     public static final int GRID_COLUMNS = 2;
 
-    /** Cell size in grid */
-    public static final int GRID_CELL_SIZE = 80;
+    /** Cell size in grid - sized to fit shape names like "Rectangular" */
+    public static final int GRID_CELL_SIZE = 90;
 
     /** Spacing between grid cells */
     public static final int GRID_SPACING = 4;
@@ -246,9 +274,12 @@ public final class AreaBuilderGuiConstants {
         return UIScaleManager.scale(TAB_HEIGHT);
     }
 
-    /** Scaled tab width */
+    /** Minimum tab width to prevent over-truncation */
+    private static final int TAB_WIDTH_MIN = 60;
+
+    /** Scaled tab width with minimum */
     public static int scaledTabWidth() {
-        return UIScaleManager.scale(TAB_WIDTH);
+        return Math.max(TAB_WIDTH_MIN, UIScaleManager.scale(TAB_WIDTH));
     }
 
     /** Scaled tab spacing */
@@ -301,13 +332,68 @@ public final class AreaBuilderGuiConstants {
         return UIScaleManager.scale(LIST_ITEM_SPACING);
     }
 
-    /** Scaled grid cell size */
+    /** Minimum grid cell size to prevent over-truncation */
+    private static final int GRID_CELL_SIZE_MIN = 60;
+
+    /** Scaled grid cell size with minimum */
     public static int scaledGridCellSize() {
-        return UIScaleManager.scale(GRID_CELL_SIZE);
+        return Math.max(GRID_CELL_SIZE_MIN, UIScaleManager.scale(GRID_CELL_SIZE));
     }
 
     /** Scaled grid spacing */
     public static int scaledGridSpacing() {
         return UIScaleManager.scale(GRID_SPACING);
+    }
+
+    /** Scaled row height */
+    public static int scaledRowHeight() {
+        return UIScaleManager.scale(ROW_HEIGHT);
+    }
+
+    /** Scaled toggle width */
+    public static int scaledToggleWidth() {
+        return UIScaleManager.scale(TOGGLE_WIDTH);
+    }
+
+    /** Scaled option button height */
+    public static int scaledOptionButtonHeight() {
+        return UIScaleManager.scale(OPTION_BUTTON_HEIGHT);
+    }
+
+    /** Scaled style button width */
+    public static int scaledStyleButtonWidth() {
+        return UIScaleManager.scale(STYLE_BUTTON_WIDTH);
+    }
+
+    /** Scaled size button width */
+    public static int scaledSizeButtonWidth() {
+        return UIScaleManager.scale(SIZE_BUTTON_WIDTH);
+    }
+
+    /** Scaled title gap */
+    public static int scaledTitleGap() {
+        return UIScaleManager.scale(TITLE_GAP);
+    }
+
+    /** Scaled section gap */
+    public static int scaledSectionGap() {
+        return UIScaleManager.scale(SECTION_GAP);
+    }
+
+    /** Scaled block gap */
+    public static int scaledBlockGap() {
+        return UIScaleManager.scale(BLOCK_GAP);
+    }
+
+    /**
+     * Calculates how many buttons fit in a row for a given button width.
+     * @param availableWidth the total available width
+     * @param buttonWidth the width of each button
+     * @param spacing the spacing between buttons
+     * @return the number of buttons that fit in one row
+     */
+    public static int buttonsPerRow(int availableWidth, int buttonWidth, int spacing) {
+        if (buttonWidth + spacing <= 0) return 1;
+        return Math.max(1, (availableWidth + spacing) / (buttonWidth + spacing));
     }
 }

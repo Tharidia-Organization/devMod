@@ -590,6 +590,7 @@ public class QuestCompletionScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         if (button == 0 && continueButton != null && continueButton.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -598,6 +599,7 @@ public class QuestCompletionScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         boolean handled = false;
         if (continueButton != null) {
             handled = continueButton.mouseReleased(mouseX, mouseY, button);

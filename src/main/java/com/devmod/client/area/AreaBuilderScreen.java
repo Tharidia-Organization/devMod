@@ -158,6 +158,10 @@ public class AreaBuilderScreen extends BaseDevModScreen {
     @Nullable private static List<TemplateListPayload.TemplateSummary> cachedTemplates;
     private static long templateCacheTime;
 
+    private int lastLayoutWidth = -1;
+    private int lastLayoutHeight = -1;
+    private float lastLayoutScale = -1f;
+
     public AreaBuilderScreen(
             @Nullable AreaDefinition existingArea,
             @Nullable BlockPos editorPosition,
@@ -199,7 +203,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
     private Layout layout() {
         UIScaleManager.update();
-        int fontHeight = this.font != null ? this.font.lineHeight : 9;
+        int fontHeight = UIScaleManager.getScaledLineHeight(this.font, 10);
         return Layout.forScreen(this.width, this.height, fontHeight);
     }
 
@@ -213,7 +217,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         int tabY = layout.tabY;
 
         EditBox nameBox = new EditBox(Objects.requireNonNull(this.font), layout.nameFieldX, layout.nameFieldY,
-            layout.nameFieldWidth, AreaBuilderGuiConstants.FIELD_HEIGHT,
+            layout.nameFieldWidth, AreaBuilderGuiConstants.scaledFieldHeight(),
             Objects.requireNonNull(Component.translatable("area.builder.name_label")));
         nameBox.setValue(areaName != null ? areaName : "");
         nameBox.setMaxLength(AreaBuilderNaming.MAX_DISPLAY_NAME_LENGTH);
@@ -307,7 +311,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         updateActionButtons();
 
         // Template buttons (left side of action bar)
-        int templateBtnWidth = UIScaleManager.scale(70);
+        int templateBtnWidth = UIScaleManager.scale(90); // Sized to fit "Load Template" / "Save Template"
         int templateBtnSpacing = UIScaleManager.scale(4);
         int templateBtnX = actionButtonsStartX - templateBtnWidth * 2 - templateBtnSpacing - UIScaleManager.scale(20);
 
@@ -456,11 +460,11 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         }
 
         // Split the area: left for dimensions, right for grid settings
-        int dimensionsWidth = width / 2 - 10;
-        int gridWidth = width / 2 - 10;
+        int columnGap = UIScaleManager.scale(20);
+        int columnWidth = Math.max(0, (width - columnGap) / 2);
 
         dimensionsWidget = new DimensionsWidget(
-            x, y, dimensionsWidth, height,
+            x, y, columnWidth, height,
             dimensions,
             dims -> {
                 this.dimensions = dims;
@@ -471,7 +475,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         this.addRenderableWidget(Objects.requireNonNull(dimensionsWidget));
 
         gridSettingsWidget = new GridSettingsWidget(
-            x + dimensionsWidth + 20, y, gridWidth, height,
+            x + columnWidth + columnGap, y, columnWidth, height,
             gridSettings,
             settings -> {
                 this.gridSettings = settings;
@@ -499,7 +503,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
     private void initBiomeTab(int x, int y, int width, int height) {
         // Split the area: left for selector, right for config
-        int selectorWidth = width / 2 - 10;
+        int columnGap = UIScaleManager.scale(20);
+        int selectorWidth = Math.max(0, (width - columnGap) / 2);
 
         biomeSelector = new BiomeSelectorWidget(
             x, y, selectorWidth, height,
@@ -517,7 +522,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         this.addRenderableWidget(biomeSelector);
 
         biomeConfigWidget = new BiomeConfigWidget(
-            x + selectorWidth + 20, y, selectorWidth, height,
+            x + selectorWidth + columnGap, y, selectorWidth, height,
             biomeConfig,
             useBiomeGeneration,
             enabled -> {
@@ -534,8 +539,9 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
     private void initOptionsTab(int x, int y, int width, int height) {
         // Split the area: left for options, right for zone selector
-        int optionsWidth = width / 2 - 10;
-        int zoneSelectorWidth = width / 2 - 10;
+        int columnGap = UIScaleManager.scale(20);
+        int optionsWidth = Math.max(0, (width - columnGap) / 2);
+        int zoneSelectorWidth = optionsWidth;
 
         optionsWidget = new OptionsWidget(
             x, y, optionsWidth, height,
@@ -548,7 +554,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         this.addRenderableWidget(optionsWidget);
 
         zoneSelectorWidget = new ZoneSelectorWidget(
-            x + optionsWidth + 20, y, zoneSelectorWidth, height,
+            x + optionsWidth + columnGap, y, zoneSelectorWidth, height,
             linkedZoneId,
             zoneId -> {
                 this.linkedZoneId = zoneId;
@@ -560,6 +566,13 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        if (width != lastLayoutWidth || height != lastLayoutHeight || lastLayoutScale != UIScaleManager.getEffectiveScale()) {
+            lastLayoutWidth = width;
+            lastLayoutHeight = height;
+            lastLayoutScale = UIScaleManager.getEffectiveScale();
+            rebuildWidgets();
+            return;
+        }
         // CLI-01 fix: Check for save request timeout
         if (awaitingSaveAck && saveRequestTimestamp > 0) {
             long elapsed = System.currentTimeMillis() - saveRequestTimestamp;
@@ -592,6 +605,8 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY
         );
 
+        renderInputBackgrounds(graphics);
+
         // Name label
         UIScaleManager.drawScaledString(
             graphics,
@@ -611,7 +626,7 @@ public class AreaBuilderScreen extends BaseDevModScreen {
 
         // Summary bar at bottom
         var fontRef = Objects.requireNonNull(this.font);
-        int summaryY = layout.actionBarY - fontRef.lineHeight - SUMMARY_GAP;
+        int summaryY = layout.actionBarY - UIScaleManager.getScaledLineHeight(fontRef, 10) - SUMMARY_GAP;
         Component shapeName = Component.translatable("area.shape." + selectedShape.getSerializedName());
         Component presetName = Component.translatable("area.preset." + selectedPreset);
         Component biomeName = useBiomeGeneration
@@ -625,8 +640,6 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         );
         UIScaleManager.drawScaledCenteredString(graphics, fontRef, Objects.requireNonNull(summary), centerX, summaryY,
             AreaBuilderGuiConstants.COLOR_TEXT_MUTED);
-
-        renderInputBackgrounds(graphics);
 
         // Render template selector overlay if visible
         TemplateSelectorWidget selector = templateSelector;
@@ -845,13 +858,13 @@ public class AreaBuilderScreen extends BaseDevModScreen {
             useBiome ? biomeConfig.terrainStyle() : "N/A",
             useBiome ? biomeConfig.getEffectiveSeed() : 0);
 
-        // Create client-side preview with biome info if enabled
-        AreaPreviewPayload preview = AreaPreviewPayload.boundingBox(
+        // Create client-side preview with shape-accurate outline
+        // FIX: Use fromShape() instead of boundingBox() to show correct shape preview
+        AreaPreviewPayload preview = AreaPreviewPayload.fromShape(
             center,
-            dimensions.width(),
-            dimensions.length(),
-            dimensions.height(),
-            selectedShape.getSerializedName(),
+            selectedShape,
+            dimensions,
+            selectedShape == AreaShape.CUSTOM_NBT ? customNbt : (selectedShape == AreaShape.PATH ? pathNbt : null),
             useBiome,
             useBiome ? biomeConfig.biomeId().toString() : "",
             useBiome ? biomeConfig.terrainStyle().getSerializedName().toUpperCase(Locale.ROOT) : "NATURAL",
@@ -1318,17 +1331,18 @@ public class AreaBuilderScreen extends BaseDevModScreen {
         private static Layout forScreen(int screenWidth, int screenHeight, int fontHeight) {
             int padding = AreaBuilderGuiConstants.scaledContentPadding();
             int titleY = padding;
-            int nameLabelY = titleY + fontHeight + (padding / 2);
+            int headerGap = UIScaleManager.scale(6);
+            int nameLabelY = titleY + fontHeight + headerGap;
             int nameFieldX = padding;
-            int nameFieldY = nameLabelY + fontHeight + (padding / 2);
+            int nameFieldY = nameLabelY + fontHeight + UIScaleManager.scale(6);
             int nameFieldWidth = screenWidth - padding * 2;
-            int tabY = nameFieldY + AreaBuilderGuiConstants.scaledFieldHeight() + padding;
-            int tabStartX = (screenWidth - AreaBuilderGuiConstants.scaledTabBarWidth()) / 2;
+            int tabY = nameFieldY + AreaBuilderGuiConstants.scaledFieldHeight() + UIScaleManager.scale(12);
+            int tabStartX = Math.max(padding, (screenWidth - AreaBuilderGuiConstants.scaledTabBarWidth()) / 2);
             int contentX = padding;
-            int contentY = tabY + AreaBuilderGuiConstants.scaledTabHeight() + padding;
-            int contentWidth = screenWidth - padding * 2;
+            int contentY = tabY + AreaBuilderGuiConstants.scaledTabHeight() + UIScaleManager.scale(12);
+            int contentWidth = Math.max(0, screenWidth - padding * 2);
             int actionBarY = screenHeight - padding - AreaBuilderGuiConstants.scaledActionBarHeight();
-            int contentHeight = actionBarY - contentY - padding;
+            int contentHeight = Math.max(0, actionBarY - contentY - padding);
             int buttonY = actionBarY + (AreaBuilderGuiConstants.scaledActionBarHeight() - AreaBuilderGuiConstants.scaledButtonHeight()) / 2;
             return new Layout(titleY, nameLabelY, nameFieldX, nameFieldY, nameFieldWidth,
                 tabY, tabStartX, contentX, contentY, contentWidth, contentHeight, actionBarY, buttonY);

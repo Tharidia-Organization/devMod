@@ -13,6 +13,7 @@ import net.minecraft.world.InteractionHand;
 
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.npc.data.NpcConfiguration;
 
 /**
@@ -80,12 +81,12 @@ public record SaveNpcConfigPayload(
         int size = 512; // Estimate for NpcConfiguration
         size += 2; // 2 booleans
         if (hand != null) {
-            size += 1;
+            size += PayloadSizeUtil.varIntSize(hand.ordinal());
         }
         if (existingNpcId != null) {
             size += 16;
         }
-        size += 5; // VarInt
+        size += PayloadSizeUtil.varIntSize(expectedRevision);
         return size;
     }
 

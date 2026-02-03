@@ -11,6 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.NetworkConstants;
 import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
@@ -26,6 +27,8 @@ public record TelepadConfigPayload(
     String telepadName
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
+    public static final int MAX_TELEPAD_NAME_LENGTH = NetworkConstants.MAX_SMALL_STRING;
+
     public static final Type<TelepadConfigPayload> TYPE =
         new Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "telepad_config")));
 
@@ -34,13 +37,14 @@ public record TelepadConfigPayload(
 
     private static void encode(FriendlyByteBuf buf, TelepadConfigPayload payload) {
         buf.writeBlockPos(Objects.requireNonNull(payload.pos));
-        buf.writeUtf(Objects.requireNonNull(payload.telepadName));
+        String safeName = NetworkConstants.truncate(payload.telepadName, MAX_TELEPAD_NAME_LENGTH);
+        buf.writeUtf(safeName, MAX_TELEPAD_NAME_LENGTH);
     }
 
     private static TelepadConfigPayload decode(FriendlyByteBuf buf) {
         return new TelepadConfigPayload(
             buf.readBlockPos(),
-            buf.readUtf()
+            buf.readUtf(MAX_TELEPAD_NAME_LENGTH)
         );
     }
 
@@ -53,7 +57,8 @@ public record TelepadConfigPayload(
     @Override
     public int estimatedSize() {
         long size = 8; // BlockPos
-        size += PayloadSizeUtil.estimatedUtfSize(telepadName);
+        String safeName = NetworkConstants.truncate(telepadName, MAX_TELEPAD_NAME_LENGTH);
+        size += PayloadSizeUtil.estimatedUtfSize(safeName);
         return PayloadSizeUtil.clampToInt(size);
     }
 }

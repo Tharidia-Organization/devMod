@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.config.ConfigScope;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 public record RequestMobPoolConfigPayload(ConfigScope scope)
     implements CustomPacketPayload, PayloadValidation.SizedPayload {
@@ -45,6 +46,6 @@ public record RequestMobPoolConfigPayload(ConfigScope scope)
 
     @Override
     public int estimatedSize() {
-        return 1;
+        return PayloadSizeUtil.varIntSize(scope.ordinal());
     }
 }

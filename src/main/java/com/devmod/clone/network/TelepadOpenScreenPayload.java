@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
+import com.devmod.network.NetworkConstants;
 import com.devmod.network.PayloadSizeUtil;
 import com.devmod.network.PayloadValidation;
 
@@ -32,13 +33,14 @@ public record TelepadOpenScreenPayload(
 
     private static void encode(FriendlyByteBuf buf, TelepadOpenScreenPayload payload) {
         buf.writeBlockPos(payload.pos);
-        buf.writeUtf(payload.telepadName);
+        String safeName = NetworkConstants.truncate(payload.telepadName, TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH);
+        buf.writeUtf(safeName, TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH);
     }
 
     private static TelepadOpenScreenPayload decode(FriendlyByteBuf buf) {
         return new TelepadOpenScreenPayload(
             buf.readBlockPos(),
-            buf.readUtf()
+            buf.readUtf(TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH)
         );
     }
 
@@ -51,7 +53,8 @@ public record TelepadOpenScreenPayload(
     @Override
     public int estimatedSize() {
         long size = 8; // BlockPos
-        size += PayloadSizeUtil.estimatedUtfSize(telepadName);
+        String safeName = NetworkConstants.truncate(telepadName, TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH);
+        size += PayloadSizeUtil.estimatedUtfSize(safeName);
         return PayloadSizeUtil.clampToInt(size);
     }
 }

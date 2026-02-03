@@ -123,7 +123,8 @@ public final class InputRouter {
         if (context.footer().mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
-        if (context.leftColumn().mouseClicked(mouseX, mouseY, button)) {
+        // Only process left column clicks if it's visible
+        if (context.isLeftColumnVisible() && context.leftColumn().mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
         if (context.scrollArea().mouseClicked(mouseX, mouseY, button)) {
@@ -273,6 +274,15 @@ public final class InputRouter {
      * @return true if the key was consumed
      */
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // PRIORITY 0: Module text input fields (HIGHEST PRIORITY)
+        // When a text field is focused, route ALL input to it (bypassing editor keybinds)
+        // This prevents keybinds like M, F5, number keys from interfering with text input
+        EditorModule moduleForInput = context.activeModule();
+        if (moduleForInput != null && moduleForInput.hasFocusedInput()) {
+            // All keys go directly to the module's focused text field
+            return moduleForInput.keyPressed(keyCode, scanCode, modifiers);
+        }
+
         // Debug overlay shortcuts (global)
         if (DebugOverlay.handleKeyPressed(keyCode, modifiers)) {
             return true;
@@ -474,6 +484,13 @@ public final class InputRouter {
      * Route character typed.
      */
     public boolean charTyped(char chr, int modifiers) {
+        // PRIORITY 0: Module text input fields (HIGHEST PRIORITY)
+        // When a text field is focused, all character input goes directly to it
+        EditorModule moduleForInput = context.activeModule();
+        if (moduleForInput != null && moduleForInput.hasFocusedInput()) {
+            return moduleForInput.charTyped(chr, modifiers);
+        }
+
         // Block input when low-confidence dialog is visible
         if (context.lowConfidenceDetector().isVisible()) {
             return context.lowConfidenceDetector().charTyped(chr, modifiers);
@@ -595,6 +612,8 @@ public final class InputRouter {
         boolean isPreviewMode();
         boolean showDevPanel();
         void toggleDevPanel();
+        /** Returns true if the left column is visible in the current layout. */
+        boolean isLeftColumnVisible();
 
         // Actions
         void showStatus(String message, int color);

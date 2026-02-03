@@ -76,6 +76,12 @@ public interface EditorModule {
     boolean keyPressed(int keyCode, int scanCode, int modifiers);
     boolean charTyped(char chr, int modifiers);
 
+    /**
+     * Check if any input field in this module currently has focus.
+     * Used by InputRouter to give text input priority over keybinds.
+     */
+    default boolean hasFocusedInput() { return false; }
+
     // ═══════════════════════════════════════════════════════════════
     // STATE MANAGEMENT
     // ═══════════════════════════════════════════════════════════════

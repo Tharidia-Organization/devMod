@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Server -> Client payload to open the Nexus Editor Central screen.
@@ -135,15 +136,24 @@ public record OpenEditorCentralPayload(
 
     @Override
     public int estimatedSize() {
-        // L-03 fix: More accurate size estimation including H-07 fields
-        // Base: VarInt count + mainHub bool + canCreateAreas bool + hasMoreAreas bool + totalAreaCount VarInt
-        int size = 1 + 1 + 1 + 1 + 5;
+        int size = PayloadSizeUtil.varIntSize(areas.size());
+        size += 1; // mainHubId present
+        size += 1; // canCreateAreas
+        size += 1; // hasMoreAreas
+        size += PayloadSizeUtil.varIntSize(totalAreaCount);
         if (mainHubId != null) {
             size += 16;
         }
-        // Each AreaSummary: UUID(16) + name(~65) + shapeType(~14) + dims(9) + bool(1) + long(8) = ~113
-        // Use 150 bytes as conservative estimate for UTF-8 multibyte characters
-        size += areas.size() * 150;
+        for (AreaSummary summary : areas) {
+            size += 16; // UUID
+            size += PayloadSizeUtil.estimatedUtfSize(summary.name());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.shapeType());
+            size += PayloadSizeUtil.varIntSize(summary.width());
+            size += PayloadSizeUtil.varIntSize(summary.length());
+            size += PayloadSizeUtil.varIntSize(summary.height());
+            size += 1; // isMainHub
+            size += 8; // createdAt
+        }
         return size;
     }
 

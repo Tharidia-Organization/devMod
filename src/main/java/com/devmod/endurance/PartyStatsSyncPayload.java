@@ -1,6 +1,5 @@
 package com.devmod.endurance;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Network payload for syncing party wave statistics from server to all party members.
@@ -157,27 +157,34 @@ public record PartyStatsSyncPayload(
     @Override
     public int estimatedSize() {
         int size = 0;
-        size += 4 + 4 + 8; // waveNumber, totalWaves, waveDurationMs
-        size += 4; // player count
+        size += PayloadSizeUtil.varIntSize(waveNumber);
+        size += PayloadSizeUtil.varIntSize(totalWaves);
+        size += 8; // waveDurationMs
+        size += PayloadSizeUtil.varIntSize(players.size());
         for (PlayerEntry player : players) {
-            size += estimatedUtfSize(player.playerId);
-            size += estimatedUtfSize(player.playerName);
-            size += 4 * 7; // kills, eliteKills, damageDealt, damageTaken, deaths, maxCombo (varints)
-            size += 4 + 4 + 1; // dps, killPercent, wasSpectator
+            size += PayloadSizeUtil.estimatedUtfSize(player.playerId);
+            size += PayloadSizeUtil.estimatedUtfSize(player.playerName);
+            size += PayloadSizeUtil.varIntSize(player.kills);
+            size += PayloadSizeUtil.varIntSize(player.eliteKills);
+            size += PayloadSizeUtil.varIntSize(player.damageDealt);
+            size += PayloadSizeUtil.varIntSize(player.damageTaken);
+            size += PayloadSizeUtil.varIntSize(player.deaths);
+            size += PayloadSizeUtil.varIntSize(player.maxCombo);
+            size += 4; // dps
+            size += 4; // killPercent
+            size += 1; // wasSpectator
         }
-        size += 4 * 6; // party totals (varints)
-        size += 4 + 1; // partyDPS, partyNoDamageWave
-        size += estimatedUtfSize(mvpPlayerId);
-        size += estimatedUtfSize(mvpReason);
+        size += PayloadSizeUtil.varIntSize(partyTotalKills);
+        size += PayloadSizeUtil.varIntSize(partyEliteKills);
+        size += PayloadSizeUtil.varIntSize(partyTotalDamageDealt);
+        size += PayloadSizeUtil.varIntSize(partyTotalDamageTaken);
+        size += PayloadSizeUtil.varIntSize(partyDeaths);
+        size += PayloadSizeUtil.varIntSize(partyMaxCombo);
+        size += 4; // partyDPS
+        size += 1; // partyNoDamageWave
+        size += PayloadSizeUtil.estimatedUtfSize(mvpPlayerId);
+        size += PayloadSizeUtil.estimatedUtfSize(mvpReason);
         return size;
-    }
-
-    private static int estimatedUtfSize(String value) {
-        if (value == null || value.isEmpty()) {
-            return 1;
-        }
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        return 1 + bytes.length;
     }
 
     /**

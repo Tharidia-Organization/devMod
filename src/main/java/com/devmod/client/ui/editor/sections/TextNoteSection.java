@@ -10,6 +10,7 @@ import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class TextNoteSection implements EditorSection.CustomSection {
     private static final int DEFAULT_HEIGHT = 16;
@@ -42,12 +43,14 @@ public final class TextNoteSection implements EditorSection.CustomSection {
     public String getLabel() { return ""; }
 
     @Override
-    public int getHeight() { return height; }
+    public int getHeight() { return ScaledCoord.scaleDim(height); }
 
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
+        int insetX = ScaledCoord.scaleDim(textInsetX);
+        int offsetY = Math.max(0, ScaledCoord.scaleDim(textOffsetY));
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(text, "text"),
-            bounds.x() + textInsetX, bounds.y() + textOffsetY, textColor, false);
+            bounds.x() + insetX, bounds.y() + offsetY, textColor, false);
     }
 }

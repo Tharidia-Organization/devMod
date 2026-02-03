@@ -25,16 +25,22 @@ import com.devmod.actions.client.ClientActionContexts;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.components.EditorButton;
+import com.devmod.client.ui.editor.components.EditorCard;
+import com.devmod.client.ui.editor.components.EditorIcons;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.util.I18n;
+
+import net.minecraft.world.item.ItemStack;
 
 @OnlyIn(Dist.CLIENT)
 public class EditorHubScreen extends Screen {
 
-    private static final int CONTENT_WIDTH = 340;
-    private static final int HEADER_GAP = 18;
-    private static final int BUTTON_GAP = 4;
-    private static final int SECTION_GAP = 12;
+    // Layout constants - Modern Cards style
+    private static final int CONTENT_WIDTH = 380;
+    private static final int HEADER_GAP = 12;
+    private static final int BUTTON_GAP = 6;
+    private static final int CARD_PADDING = 12;
+    private static final int CARD_GAP = 16;
 
     @Nullable
     private final Screen parent;
@@ -67,31 +73,35 @@ public class EditorHubScreen extends Screen {
     }
 
     private void buildSections() {
+        // Item Editors section
         addSection("devmod.editor_hub.section.items",
-            actionButton("editor-item-auto", ActionIds.UI_ITEM_EDITOR_OPEN_AUTO, EditorButton.Style.PRIMARY),
-            actionButton("editor-item-weapon", ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON, EditorButton.Style.NORMAL),
-            actionButton("editor-item-armor", ActionIds.UI_ITEM_EDITOR_OPEN_ARMOR, EditorButton.Style.NORMAL),
-            actionButton("editor-item-shield", ActionIds.UI_ITEM_EDITOR_OPEN_SHIELD, EditorButton.Style.NORMAL),
-            actionButton("editor-item-general", ActionIds.UI_ITEM_EDITOR_OPEN_GENERAL, EditorButton.Style.NORMAL),
-            actionButton("editor-item-recipe", ActionIds.UI_ITEM_EDITOR_OPEN_RECIPE, EditorButton.Style.NORMAL),
-            actionButton("editor-item-food", ActionIds.UI_ITEM_EDITOR_OPEN_FOOD, EditorButton.Style.NORMAL),
-            actionButton("editor-item-fuel", ActionIds.UI_ITEM_EDITOR_OPEN_FUEL, EditorButton.Style.NORMAL),
-            actionButton("editor-item-usable", ActionIds.UI_ITEM_EDITOR_OPEN_USABLE, EditorButton.Style.NORMAL)
+            actionButton("editor-item-auto", ActionIds.UI_ITEM_EDITOR_OPEN_AUTO, EditorButton.Style.PRIMARY, EditorIcons.ITEM_AUTO),
+            actionButton("editor-item-weapon", ActionIds.UI_ITEM_EDITOR_OPEN_WEAPON, EditorButton.Style.NORMAL, EditorIcons.WEAPON),
+            actionButton("editor-item-armor", ActionIds.UI_ITEM_EDITOR_OPEN_ARMOR, EditorButton.Style.NORMAL, EditorIcons.ARMOR),
+            actionButton("editor-item-shield", ActionIds.UI_ITEM_EDITOR_OPEN_SHIELD, EditorButton.Style.NORMAL, EditorIcons.SHIELD),
+            actionButton("editor-item-general", ActionIds.UI_ITEM_EDITOR_OPEN_GENERAL, EditorButton.Style.NORMAL, EditorIcons.ITEM_GENERAL),
+            actionButton("editor-item-recipe", ActionIds.UI_ITEM_EDITOR_OPEN_RECIPE, EditorButton.Style.NORMAL, EditorIcons.RECIPE),
+            actionButton("editor-item-food", ActionIds.UI_ITEM_EDITOR_OPEN_FOOD, EditorButton.Style.NORMAL, EditorIcons.FOOD),
+            actionButton("editor-item-fuel", ActionIds.UI_ITEM_EDITOR_OPEN_FUEL, EditorButton.Style.NORMAL, EditorIcons.FUEL),
+            actionButton("editor-item-usable", ActionIds.UI_ITEM_EDITOR_OPEN_USABLE, EditorButton.Style.NORMAL, EditorIcons.USABLE)
         );
 
+        // Mob Editors section
         addSection("devmod.editor_hub.section.mobs",
-            actionButton("editor-mob-config", ActionIds.UI_MOB_CONFIG_OPEN, EditorButton.Style.NORMAL),
-            actionButton("editor-mob-equipment", ActionIds.UI_MOB_EQUIPMENT_OPEN, EditorButton.Style.NORMAL)
+            actionButton("editor-mob-config", ActionIds.UI_MOB_CONFIG_OPEN, EditorButton.Style.NORMAL, EditorIcons.MOB),
+            actionButton("editor-mob-equipment", ActionIds.UI_MOB_EQUIPMENT_OPEN, EditorButton.Style.NORMAL, EditorIcons.MOB_EQUIPMENT)
         );
 
+        // Quest & Endurance section
         addSection("devmod.editor_hub.section.quests",
-            actionButton("editor-quest", ActionIds.UI_QUEST_EDITOR_OPEN, EditorButton.Style.NORMAL),
-            actionButton("editor-endurance", ActionIds.UI_ENDURANCE_EDITOR_OPEN, EditorButton.Style.NORMAL),
-            actionButton("editor-stamina", ActionIds.UI_STAMINA_EDITOR_OPEN, EditorButton.Style.NORMAL)
+            actionButton("editor-quest", ActionIds.UI_QUEST_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.QUEST),
+            actionButton("editor-endurance", ActionIds.UI_ENDURANCE_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.ENDURANCE),
+            actionButton("editor-stamina", ActionIds.UI_STAMINA_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.STAMINA)
         );
 
+        // World Tools section
         addSection("devmod.editor_hub.section.world",
-            actionButton("editor-room-bounds", ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN, EditorButton.Style.NORMAL)
+            actionButton("editor-room-bounds", ActionIds.UI_ROOM_BOUNDS_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.ROOM_BOUNDS)
         );
     }
 
@@ -102,10 +112,10 @@ public class EditorHubScreen extends Screen {
         allButtons.addAll(list);
     }
 
-    private EditorButton actionButton(String id, String actionId, EditorButton.Style style) {
+    private EditorButton actionButton(String id, String actionId, EditorButton.Style style, ItemStack icon) {
         String label = resolveLabel(actionId);
         String description = resolveDescription(actionId);
-        EditorButton button = new EditorButton(id, label).style(style);
+        EditorButton button = new EditorButton(id, label).style(style).itemIcon(icon);
         if (!description.isBlank()) {
             button.tooltip(description);
         }
@@ -145,25 +155,47 @@ public class EditorHubScreen extends Screen {
 
         int scaledContentWidth = UIScaleManager.scale(CONTENT_WIDTH);
         int scaledButtonHeight = UIScaleManager.scale(DesignTokens.Size.BUTTON_HEIGHT);
+        int scaledCardPadding = UIScaleManager.scale(CARD_PADDING);
+        int scaledHeaderGap = UIScaleManager.scale(HEADER_GAP);
+        int scaledButtonGap = UIScaleManager.scale(BUTTON_GAP);
+        int scaledCardGap = UIScaleManager.scale(CARD_GAP);
         int contentX = (this.width - scaledContentWidth) / 2;
         int y = UIScaleManager.scale(28);
 
         for (Section section : sections) {
-            AxiomRenderer.drawSectionHeader(graphics, safeFont, contentX, y, section.title());
-            y += UIScaleManager.scale(HEADER_GAP);
+            // Calculate card height
+            int buttonCount = section.buttons().size();
+            int headerHeight = UIScaleManager.getScaledLineHeight() + 4; // Header text + underline
+            int buttonsHeight = buttonCount * scaledButtonHeight + (buttonCount - 1) * scaledButtonGap;
+            int cardHeight = scaledCardPadding * 2 + headerHeight + scaledHeaderGap + buttonsHeight;
+
+            // Draw card container
+            EditorCard.render(graphics, contentX, y, scaledContentWidth, cardHeight);
+
+            // Draw section header with accent underline inside card
+            int headerX = contentX + scaledCardPadding;
+            int headerY = y + scaledCardPadding;
+            AxiomRenderer.drawEnhancedSectionHeader(graphics, safeFont, headerX, headerY,
+                scaledContentWidth - scaledCardPadding * 2, section.title());
+
+            // Draw buttons inside card
+            int buttonY = headerY + headerHeight + scaledHeaderGap;
+            int buttonWidth = scaledContentWidth - scaledCardPadding * 2;
 
             for (EditorButton button : section.buttons()) {
-                button.render(graphics, contentX, y, scaledContentWidth, scaledButtonHeight, mouseX, mouseY);
-                y += scaledButtonHeight + UIScaleManager.scale(BUTTON_GAP);
+                button.render(graphics, headerX, buttonY, buttonWidth, scaledButtonHeight, mouseX, mouseY);
+                buttonY += scaledButtonHeight + scaledButtonGap;
             }
 
-            y += UIScaleManager.scale(SECTION_GAP);
+            y += cardHeight + scaledCardGap;
         }
 
-        int buttonWidth = UIScaleManager.scale(110);
-        int buttonX = (this.width - buttonWidth) / 2;
-        int buttonY = this.height - UIScaleManager.scale(32);
-        backButton.render(graphics, buttonX, buttonY, buttonWidth, scaledButtonHeight, mouseX, mouseY);
+        // Back button with icon at bottom
+        backButton.itemIcon(EditorIcons.BACK);
+        int backButtonWidth = UIScaleManager.scale(110);
+        int backButtonX = (this.width - backButtonWidth) / 2;
+        int backButtonY = this.height - UIScaleManager.scale(32);
+        backButton.render(graphics, backButtonX, backButtonY, backButtonWidth, scaledButtonHeight, mouseX, mouseY);
     }
 
     @Override

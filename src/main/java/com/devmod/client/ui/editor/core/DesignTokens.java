@@ -3961,8 +3961,12 @@ public final class DesignTokens {
         public static final int STATUS_LOADING = 0xFFFF55;
         /** Control area background (semi-transparent black). */
         public static final int CONTROL_BG = 0x40000000;
+        /** Control area border (semi-transparent gray). */
+        public static final int CONTROL_BORDER = 0x60808080;
         /** Slot label text (medium gray). */
         public static final int SLOT_LABEL = 0x666666;
+        /** Slot background (very subtle dark). */
+        public static final int SLOT_BG = 0x20000000;
 
         private Neurocell() {}
     }

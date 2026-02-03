@@ -241,6 +241,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private String statusMessage = null;
     private int statusColor = 0;
     private int statusTicks = 0;
+    private float lastScale = -1f;  // Track scale for layout recalculation
+    private int lastWidth = -1;     // Track dimensions for layout recalculation
+    private int lastHeight = -1;
 
     // Dialog state
     @Nullable
@@ -340,6 +343,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         float uiScale = EditorScaleCalculator.getEffectiveScale(width, height, EditorConfig.getUiScaleSetting());
         ScaledCoord.setScale(uiScale);
         var screenFit = EditorScaleCalculator.calculateFit(width, height, uiScale);
+
+        // Track current scale and dimensions for render-time recalculation
+        lastScale = uiScale;
+        lastWidth = width;
+        lastHeight = height;
 
         // Calculate layout for screen dimensions
         layout.calculate(width, height, screenFit, uiScale);
@@ -848,6 +856,22 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public void render(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         UIScaleManager.update();
+
+        // Keep ScaledCoord in sync with current screen dimensions
+        // This ensures proper scaling even when window is resized between init() calls
+        float currentScale = EditorScaleCalculator.getEffectiveScale(width, height, EditorConfig.getUiScaleSetting());
+        ScaledCoord.setScale(currentScale);
+
+        // Recalculate layout if scale or dimensions changed (handles resize without full init)
+        if (Math.abs(currentScale - lastScale) > 0.001f || width != lastWidth || height != lastHeight) {
+            lastScale = currentScale;
+            lastWidth = width;
+            lastHeight = height;
+            var screenFit = EditorScaleCalculator.calculateFit(width, height, currentScale);
+            layout.calculate(width, height, screenFit, currentScale);
+            editorLayout.computePositions(screenFit, currentScale);
+        }
+
         perfMonitor.startFrame();
         TooltipManager.INSTANCE.beginFrame(width, height);
         boolean blockBaseOverlays = hasBlockingOverlay();
@@ -893,13 +917,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             }
         }
 
-        // Left column (preview + slots + info)
+        // Left column (preview + slots + info) - only render if visible in responsive layout
         EditorModule module = activeModule;
-        if (module != null) {
-            updateLeftColumnStats();
-            leftColumn.pendingChanges(module.getPendingChanges().size());
+        if (editorLayout.isLeftColumnVisible()) {
+            if (module != null) {
+                updateLeftColumnStats();
+                leftColumn.pendingChanges(module.getPendingChanges().size());
+            }
+            leftColumn.render(graphics, leftBounds.x(), leftBounds.y(), leftBounds.width(), leftBounds.height(), mouseX, mouseY, partialTick);
         }
-        leftColumn.render(graphics, leftBounds.x(), leftBounds.y(), leftBounds.width(), leftBounds.height(), mouseX, mouseY, partialTick);
 
         // Content area (scrollable)
         int contentX = contentBounds.x() + DesignTokens.Spacing.MD;
@@ -924,9 +950,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             perfMonitor.endTiming("render_content");
         }
 
-        // Render multi-edit panel if visible (placed beneath left column area)
+        // Render multi-edit panel if visible (placed beneath left column area) - only when left column visible
         MultiEditPanel mePanel = multiEditPanel;
-        if (showMultiEditPanel && mePanel != null) {
+        if (showMultiEditPanel && mePanel != null && editorLayout.isLeftColumnVisible()) {
             int panelX = leftBounds.x() + DesignTokens.Spacing.MD;
             int panelY = contentY + DesignTokens.Spacing.MD;
             int panelW = leftBounds.width() - DesignTokens.Spacing.MD * 2;
@@ -1026,6 +1052,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
     private void renderSidePanels(GuiGraphics graphics, int mouseX, int mouseY, boolean allowTooltips) {
         var safeFont = Objects.requireNonNull(font, "font cannot be null");
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
         int favoritesTitleOffsetX = s(FAVORITES_TITLE_OFFSET_X);
         int favoritesTitleOffsetY = s(FAVORITES_TITLE_OFFSET_Y);
         int favoritesRowHeight = s(FAVORITES_ROW_HEIGHT);
@@ -1074,8 +1101,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                             label, leftPanel.x(), rowY, leftPanel.width(), rowHeight, TooltipManager.TooltipPosition.AUTO);
                     }
                 }
+                int rowTextY = rowY + Math.max(0, (rowHeight - lineHeight) / 2);
                 UIScaleManager.drawScaledString(graphics, safeFont, FAVORITES_LABEL_PREFIX + label, leftPanel.x() + favoritesRowTextOffsetX,
-                    rowY + favoritesRowTextOffsetY,
+                    rowTextY,
                     hovered ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY(), false);
             }
 
@@ -1089,8 +1117,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                 int btnX = leftPanel.x() + favoritesPinButtonOffsetX;
                 graphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, DesignTokens.Button.NORMAL());
                 AxiomRenderer.drawBorder(graphics, btnX, btnY, btnW, btnH, DesignTokens.Stroke.DEFAULT);
+                int pinTextY = btnY + Math.max(0, (btnH - lineHeight) / 2);
                 UIScaleManager.drawScaledString(graphics, safeFont, pinLabel, btnX + favoritesPinTextOffsetX,
-                    btnY + favoritesPinTextOffsetY, DesignTokens.Text.PRIMARY(), false);
+                    pinTextY, DesignTokens.Text.PRIMARY(), false);
             }
         }
 
@@ -1102,8 +1131,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
                              DesignTokens.Bg.LEVEL_2);
                 AxiomRenderer.drawBorder(graphics, rightPanel.x(), rightPanel.y(),
                                         rightPanel.width(), rightPanel.height(), DesignTokens.Stroke.DEFAULT);
+                int devTextY = rightPanel.y() + devPanelTextOffsetY;
                 UIScaleManager.drawScaledString(graphics, safeFont, DEV_PANEL_HEADER_TEXT, rightPanel.x() + devPanelTextOffsetX,
-                    rightPanel.y() + devPanelTextOffsetY,
+                    devTextY,
                                    DesignTokens.Text.SECONDARY(), false);
             }
         }
@@ -1143,7 +1173,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int msgY = height - bottomOffset;
         float fontScale = Typography.withUiScale(1.0f);
 
-        int msgHeight = safeFont.lineHeight + paddingY * 2;
+        int msgHeight = UIScaleManager.getScaledLineHeight(safeFont, 10) + paddingY * 2;
         msgWidth = UIScaleManager.getScaledStringWidth(safeFont, safeMessage) + paddingX * 2;
         msgX = Math.max(screenMargin, Math.min(width - msgWidth - screenMargin, msgX));
 
@@ -1164,7 +1194,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int filterHeight = s(HISTORY_FILTER_HEIGHT);
         int listOffsetY = s(HISTORY_PANEL_LIST_OFFSET_Y);
         int listHeightPadding = s(HISTORY_PANEL_LIST_HEIGHT_PADDING);
-        int lineHeight = s(HISTORY_PANEL_LINE_HEIGHT);
+        int lineHeight = Math.max(s(HISTORY_PANEL_LINE_HEIGHT), UIScaleManager.getScaledLineHeight(safeFont, 10));
         int footerOffsetY = s(HISTORY_PANEL_FOOTER_OFFSET_Y);
         int textOffsetX = s(HISTORY_PANEL_TEXT_OFFSET_X);
         int clearWidth = s(HISTORY_PANEL_CLEAR_WIDTH);
@@ -1245,8 +1275,9 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(clearX, clearY, clearX + clearW, clearY + clearH, clearBg);
         AxiomRenderer.drawBorder(graphics, clearX, clearY, clearW, clearH, DesignTokens.Stroke.DEFAULT);
         int clearColor = entries.isEmpty() ? DesignTokens.Text.DISABLED() : DesignTokens.Text.PRIMARY();
+        int clearTextY = clearY + Math.max(0, (clearH - lineHeight) / 2);
         UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_CLEAR_TEXT, clearX + clearTextOffsetX,
-            clearY + clearTextOffsetY, clearColor, false);
+            clearTextY, clearColor, false);
 
         // Rollback button
         int rollbackW = rollbackWidth;
@@ -1259,13 +1290,15 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         graphics.fill(rollbackX, rollbackY, rollbackX + rollbackW, rollbackY + rollbackH, rollbackBg);
         AxiomRenderer.drawBorder(graphics, rollbackX, rollbackY, rollbackW, rollbackH, DesignTokens.Stroke.DEFAULT);
         int rollbackColor = canRollback ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.DISABLED();
+        int rollbackTextY = rollbackY + Math.max(0, (rollbackH - lineHeight) / 2);
         UIScaleManager.drawScaledString(graphics, safeFont, HISTORY_ROLLBACK_TEXT, rollbackX + rollbackTextOffsetX,
-            rollbackY + rollbackTextOffsetY, rollbackColor, false);
+            rollbackTextY, rollbackColor, false);
     }
 
     private void renderHistoryFilters(GuiGraphics graphics, net.minecraft.client.gui.Font font,
                                       int x, int y, int mouseX, int mouseY) {
         historyFilterHits.clear();
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         int cursorX = x + s(HISTORY_PANEL_TITLE_OFFSET_X);
         int cursorY = y + s(HISTORY_PANEL_TITLE_OFFSET_Y) + s(HISTORY_FILTER_OFFSET_Y);
         for (HistoryFilter filter : HistoryFilter.values()) {
@@ -1278,7 +1311,8 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
             graphics.fill(rect.x(), rect.y(), rect.right(), rect.bottom(), bg);
             AxiomRenderer.drawBorder(graphics, rect.x(), rect.y(), rect.width(), rect.height(), DesignTokens.Stroke.DEFAULT);
             int color = selected ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.SECONDARY();
-            UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(5), rect.y() + s(2), color, false);
+            int textY = rect.y() + Math.max(0, (rect.height() - lineHeight) / 2);
+            UIScaleManager.drawScaledString(graphics, font, label, rect.x() + s(5), textY, color, false);
             historyFilterHits.add(new HistoryFilterHit(filter, rect));
             cursorX = rect.right() + s(HISTORY_FILTER_GAP);
         }
@@ -2628,6 +2662,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     @Override
     public void toggleDevPanel() {
         this.showDevPanel = !this.showDevPanel;
+    }
+
+    @Override
+    public boolean isLeftColumnVisible() {
+        return editorLayout.isLeftColumnVisible();
     }
 
     @Override

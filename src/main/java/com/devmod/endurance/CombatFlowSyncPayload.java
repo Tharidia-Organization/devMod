@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.devmod.DevMod;
 import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Syncs combat flow state from server to client for HUD display.
@@ -93,8 +94,20 @@ public record CombatFlowSyncPayload(
 
     @Override
     public int estimatedSize() {
-        // 9 VarInts (5 bytes max each) + 2 floats (4 each) + VarLong (9) + string (34) + VarInt (5)
-        return 9 * 5 + 4 + 4 + 9 + 34 + 5;
+        int size = 0;
+        size += PayloadSizeUtil.varIntSize(combo);
+        size += PayloadSizeUtil.varIntSize(maxCombo);
+        size += PayloadSizeUtil.varIntSize(styleScore);
+        size += PayloadSizeUtil.varIntSize(styleRankOrdinal);
+        size += PayloadSizeUtil.varIntSize(flowStateOrdinal);
+        size += 4; // virtuosoProgress
+        size += 4; // staleRisk
+        size += PayloadSizeUtil.varIntSize(momentumPercent);
+        size += PayloadSizeUtil.varIntSize(momentumStateOrdinal);
+        size += PayloadSizeUtil.varLongSize(overdriveRemainingMs);
+        size += PayloadSizeUtil.estimatedUtfSize(lastActionName);
+        size += PayloadSizeUtil.varIntSize(lastActionPoints);
+        return size;
     }
 
     // === Helper methods for client-side interpretation ===

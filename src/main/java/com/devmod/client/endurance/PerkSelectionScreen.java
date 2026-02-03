@@ -90,6 +90,8 @@ public class PerkSelectionScreen extends Screen {
     private int lastWidth = -1;
     private int lastHeight = -1;
 
+    private record CardLayout(int startX, int cardY, int totalWidth, int cardHeight) {}
+
     public PerkSelectionScreen(int waveNumber, List<PerkChoicesPayload.PerkChoice> choices) {
         this(waveNumber, choices, 0L);
     }
@@ -179,6 +181,19 @@ public class PerkSelectionScreen extends Screen {
         cardHeight = (int) (BASE_CARD_HEIGHT * scale);
     }
 
+    private CardLayout getCardLayout() {
+        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
+        int startX = (width - totalWidth) / 2;
+
+        int reserveTop = UIScaleManager.scale(70);
+        int reserveBottom = UIScaleManager.scale(90);
+        int availableHeight = Math.max(UIScaleManager.scale(120), height - reserveTop - reserveBottom);
+        int effectiveCardHeight = Math.min(cardHeight, availableHeight);
+        int cardY = reserveTop + (availableHeight - effectiveCardHeight) / 2;
+
+        return new CardLayout(startX, cardY, totalWidth, effectiveCardHeight);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -196,6 +211,8 @@ public class PerkSelectionScreen extends Screen {
             lastWidth = width;
             lastHeight = height;
         }
+        CardLayout layout = getCardLayout();
+        cardHeight = layout.cardHeight();
         long elapsed = System.currentTimeMillis() - openTime;
         float fadeProgress = Math.min(1.0f, elapsed / (float) FADE_IN_DURATION);
 
@@ -220,9 +237,8 @@ public class PerkSelectionScreen extends Screen {
         renderCountdown(graphics, fadeProgress);
 
         // Perk cards
-        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
-        int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - cardHeight / 2 + UIScaleManager.scale(20);
+        int startX = layout.startX();
+        int cardY = layout.cardY();
 
         // Track hovered card for comparison panel
         hoveredIndex = -1;
@@ -286,33 +302,37 @@ public class PerkSelectionScreen extends Screen {
         g.fill(cardX + cardW - 3, cardY, cardX + cardW, cardY + cardH, borderColor);
 
         var safeFont = Objects.requireNonNull(font);
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 9);
         int textY = cardY + UIScaleManager.scale(10);
         int contentPadding = UIScaleManager.scale(8);
-        int buttonAreaHeight = UIScaleManager.scale(40); // Reserve space for button at bottom
+        int buttonHeight = Math.min(UIScaleManager.scale(25), cardHeight / 8);
+        int buttonAreaHeight = buttonHeight + UIScaleManager.scale(14); // Reserve space for button at bottom
 
         // === HEADER ROW: Perk name + Tier badge ===
         String tierText = Objects.requireNonNull(perk.tierName());
         int tierBadgeW = UIScaleManager.getScaledStringWidth(safeFont, tierText) + 8;
-        int tierBadgeH = UIScaleManager.scale(14);
+        int tierBadgeH = Math.max(UIScaleManager.scale(14), lineHeight);
 
         // Tier badge (top right)
         g.fill(cardX + cardW - tierBadgeW - contentPadding, textY,
                cardX + cardW - contentPadding, textY + tierBadgeH,
                applyAlpha(perk.tierColor() | DesignTokens.Mask.ALPHA, alpha * 0.85f));
-        UIScaleManager.drawScaledString(g, safeFont, tierText, cardX + cardW - tierBadgeW - contentPadding + 4, textY + 3,
-                     applyAlpha(COLOR_TEXT, alpha));
+        UIScaleManager.drawScaledString(g, safeFont, tierText,
+            cardX + cardW - tierBadgeW - contentPadding + 4,
+            textY + Math.max(0, (tierBadgeH - lineHeight) / 2),
+            applyAlpha(COLOR_TEXT, alpha));
 
         // Perk name (left, truncated to avoid tier badge)
         int maxNameWidth = cardW - tierBadgeW - contentPadding * 3;
         String perkName = truncateText(perk.name(), maxNameWidth);
-        UIScaleManager.drawScaledString(g, safeFont, perkName, cardX + contentPadding, textY + UIScaleManager.scale(2), applyAlpha(COLOR_TEXT, alpha));
-        textY += UIScaleManager.scale(18);
+        UIScaleManager.drawScaledString(g, safeFont, perkName, cardX + contentPadding, textY, applyAlpha(COLOR_TEXT, alpha));
+        textY += lineHeight + UIScaleManager.scale(2);
 
         // === CATEGORY ROW ===
         String categoryName = truncateText(perk.categoryName(), cardW - contentPadding * 2);
         UIScaleManager.drawScaledString(g, safeFont, categoryName, cardX + contentPadding, textY,
-                     applyAlpha(perk.categoryColor() | DesignTokens.Mask.ALPHA, alpha));
-        textY += UIScaleManager.scale(14);
+            applyAlpha(perk.categoryColor() | DesignTokens.Mask.ALPHA, alpha));
+        textY += lineHeight;
 
         // === REQUIRED/SUGGESTED TAG (below category, not overlapping) ===
         if (perk.required() || perk.suggested()) {
@@ -322,27 +342,27 @@ public class PerkSelectionScreen extends Screen {
                 ? EnduranceUiTheme.PerkSelection.TAG_REQUIRED
                 : EnduranceUiTheme.PerkSelection.TAG_OPTIONAL;
             UIScaleManager.drawScaledString(g, safeFont, tagText + " " + tagLabel, cardX + contentPadding, textY, applyAlpha(tagColor, alpha));
-            textY += UIScaleManager.scale(12);
+            textY += lineHeight;
         }
 
         // === DESCRIPTION (word wrap) ===
         textY += UIScaleManager.scale(2); // Small gap
-        int maxDescY = cardY + cardH - buttonAreaHeight - 25; // Leave room for stack info
+        int maxDescY = cardY + cardH - buttonAreaHeight - lineHeight * 2; // Leave room for stack info
         List<String> lines = wrapText(Objects.requireNonNull(perk.description()), cardW - contentPadding * 2);
         int linesRendered = 0;
         for (String line : lines) {
             if (textY > maxDescY || linesRendered >= MAX_DESCRIPTION_LINES) break;
             UIScaleManager.drawScaledString(g, safeFont, line, cardX + contentPadding, textY, applyAlpha(COLOR_TEXT_DIM, alpha));
-            textY += UIScaleManager.scale(10);
+            textY += lineHeight;
             linesRendered++;
         }
 
         // === BOTTOM AREA: Stack info + Synergy info (above button) ===
-        int bottomInfoY = cardY + cardH - buttonAreaHeight - UIScaleManager.scale(14);
+        int bottomInfoY = cardY + cardH - buttonAreaHeight - lineHeight;
         if (perk.stackable()) {
             String stackText = "Stacks: " + perk.currentStacks() + "/" + perk.maxStacks();
             UIScaleManager.drawScaledString(g, safeFont, stackText, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_ACCENT, alpha));
-            bottomInfoY -= UIScaleManager.scale(12);
+            bottomInfoY -= lineHeight;
         }
 
         // === SYNERGY INDICATOR ===
@@ -355,11 +375,11 @@ public class PerkSelectionScreen extends Screen {
                 String synergyBadge = "\u2605 SYNERGY!"; // ★ SYNERGY!
                 UIScaleManager.drawScaledString(g, safeFont, synergyBadge, cardX + contentPadding, bottomInfoY,
                     applyAlpha(EnduranceUiTheme.PerkSelection.SYNERGY_COMPLETE, alpha));
-                bottomInfoY -= UIScaleManager.scale(11);
+                bottomInfoY -= lineHeight;
             } else if (perk.isRecommended()) {
                 String recBadge = "\u2192 Recommended"; // → Recommended
                 UIScaleManager.drawScaledString(g, safeFont, recBadge, cardX + contentPadding, bottomInfoY, applyAlpha(COLOR_SUCCESS, alpha));
-                bottomInfoY -= UIScaleManager.scale(11);
+                bottomInfoY -= lineHeight;
             }
 
             // Show synergy hint on hover
@@ -577,9 +597,9 @@ public class PerkSelectionScreen extends Screen {
     }
 
     private void renderPerkButtons(GuiGraphics graphics, int mouseX, int mouseY, long elapsed) {
-        int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
-        int startX = (width - totalWidth) / 2;
-        int cardY = height / 2 - cardHeight / 2 + UIScaleManager.scale(20);
+        CardLayout layout = getCardLayout();
+        int startX = layout.startX();
+        int cardY = layout.cardY();
 
         for (int i = 0; i < choices.size(); i++) {
             long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
@@ -603,20 +623,24 @@ public class PerkSelectionScreen extends Screen {
             int skipW = UIScaleManager.scale(DesignTokens.Component.BUTTON_MIN_WIDTH * 2);
             int skipH = UIScaleManager.scale(DesignTokens.Component.BUTTON_HEIGHT_LG);
             int skipX = width / 2 - skipW / 2;
-            int skipY = height - UIScaleManager.scale(50);
+            int desiredY = cardY + cardHeight + UIScaleManager.scale(16);
+            int maxY = height - UIScaleManager.scale(40);
+            int skipY = Math.min(desiredY, maxY);
             skip.render(graphics, skipX, skipY, skipW, skipH, mouseX, mouseY);
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         long elapsed = System.currentTimeMillis() - openTime;
 
         if (button == 0) {
             // Perk buttons
-            int totalWidth = choices.size() * cardWidth + (choices.size() - 1) * cardSpacing;
-            int startX = (width - totalWidth) / 2;
-            int cardY = height / 2 - cardHeight / 2 + 20;
+            CardLayout layout = getCardLayout();
+            int startX = layout.startX();
+            int cardY = layout.cardY();
+            int effectiveCardHeight = layout.cardHeight();
 
             for (int i = 0; i < perkButtons.size(); i++) {
                 long cardDelay = FADE_IN_DURATION + i * CARD_STAGGER + 200;
@@ -627,7 +651,7 @@ public class PerkSelectionScreen extends Screen {
                 }
                 // Direct card click select
                 if (mouseX >= cardX && mouseX <= cardX + cardWidth
-                    && mouseY >= cardY && mouseY <= cardY + cardHeight) {
+                    && mouseY >= cardY && mouseY <= cardY + effectiveCardHeight) {
                     selectPerk(i);
                     return true;
                 }
@@ -647,6 +671,7 @@ public class PerkSelectionScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         boolean handled = false;
         long elapsed = System.currentTimeMillis() - openTime;
 

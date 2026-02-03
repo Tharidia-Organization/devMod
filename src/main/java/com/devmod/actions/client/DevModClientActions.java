@@ -125,7 +125,8 @@ public final class DevModClientActions {
         HeatmapType.AGGRO_DROP,
         HeatmapType.KITING
     };
-    private static int currentHeatmapIndex = -1;
+    private static final java.util.concurrent.atomic.AtomicInteger currentHeatmapIndex =
+        new java.util.concurrent.atomic.AtomicInteger(-1);
 
     private DevModClientActions() {}
 
@@ -3088,8 +3089,9 @@ public final class DevModClientActions {
         cycleHeatmapType();
         SettingsManager.INSTANCE.markDirty();
 
-        if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
+        int idx = currentHeatmapIndex.get();
+        if (idx >= 0 && idx < HEATMAP_CYCLE.length) {
+            HeatmapType currentType = HEATMAP_CYCLE[idx];
             int loaded = HeatmapVisualizer.INSTANCE.loadDataFromService(currentType);
             int total = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
             String activeTypes = HeatmapVisualizer.INSTANCE.getActiveTypesString();
@@ -3106,7 +3108,7 @@ public final class DevModClientActions {
             HeatmapVisualizer.INSTANCE.setEnabled(type, enable);
         }
         if (!enable) {
-            currentHeatmapIndex = -1;
+            currentHeatmapIndex.set(-1);
         }
         String status = enable ? "\u00A7aON" : "\u00A7cOFF";
         context.sendSuccess(I18n.translate("devmod.render.heatmap_toggle_status", status), true);
@@ -3117,17 +3119,18 @@ public final class DevModClientActions {
         HeatmapVisualizer.INSTANCE.setEnabled(type, enable);
         int index = heatmapIndex(type);
         if (enable) {
-            currentHeatmapIndex = index;
-        } else if (currentHeatmapIndex == index) {
-            currentHeatmapIndex = -1;
+            currentHeatmapIndex.set(index);
+        } else if (currentHeatmapIndex.get() == index) {
+            currentHeatmapIndex.set(-1);
         }
         String status = enable ? "\u00A7aON" : "\u00A7cOFF";
         context.sendSuccess(I18n.translate("devmod.render.heatmap_type_toggle_status", type.name(), status), true);
     }
 
     private static void clearCurrentHeatmap(ActionContext context) {
-        if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapType currentType = HEATMAP_CYCLE[currentHeatmapIndex];
+        int idx = currentHeatmapIndex.get();
+        if (idx >= 0 && idx < HEATMAP_CYCLE.length) {
+            HeatmapType currentType = HEATMAP_CYCLE[idx];
             HeatmapVisualizer.INSTANCE.clear(currentType);
             int remaining = HeatmapVisualizer.INSTANCE.getDataCount(currentType);
             context.sendSuccess(I18n.translate("devmod.render.heatmap_type_cleared", currentType.name(), remaining), true);
@@ -3138,7 +3141,7 @@ public final class DevModClientActions {
 
     private static void clearAllHeatmaps(ActionContext context) {
         HeatmapVisualizer.INSTANCE.clearAll();
-        currentHeatmapIndex = -1;
+        currentHeatmapIndex.set(-1);
         for (HeatmapType type : HEATMAP_CYCLE) {
             HeatmapVisualizer.INSTANCE.setEnabled(type, false);
         }
@@ -3155,15 +3158,17 @@ public final class DevModClientActions {
     }
 
     private static void cycleHeatmapType() {
-        if (currentHeatmapIndex >= 0 && currentHeatmapIndex < HEATMAP_CYCLE.length) {
-            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], false);
+        int idx = currentHeatmapIndex.get();
+        if (idx >= 0 && idx < HEATMAP_CYCLE.length) {
+            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[idx], false);
         }
-        currentHeatmapIndex++;
-        if (currentHeatmapIndex >= HEATMAP_CYCLE.length) {
-            currentHeatmapIndex = -1;
+        idx++;
+        if (idx >= HEATMAP_CYCLE.length) {
+            idx = -1;
         }
-        if (currentHeatmapIndex >= 0) {
-            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[currentHeatmapIndex], true);
+        currentHeatmapIndex.set(idx);
+        if (idx >= 0) {
+            HeatmapVisualizer.INSTANCE.setEnabled(HEATMAP_CYCLE[idx], true);
         }
     }
 

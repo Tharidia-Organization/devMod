@@ -33,11 +33,27 @@ import com.devmod.clone.network.MannequinSkinPayload;
  * GUI screen for the Neurocell Mannequin container.
  * Shows 6 equipment slots arranged around a mannequin preview.
  * Includes skin customization via player name input.
+ *
+ * Layout:
+ * - Top: Title
+ * - Left column: 4 armor slots (Head, Chest, Legs, Feet)
+ * - Center: Mannequin preview
+ * - Right column: 2 hand slots (Main, Off)
+ * - Below preview: Skin customization section
+ * - Bottom: Player inventory
  */
 public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellMannequinMenu> {
 
     private static final ResourceLocation TEXTURE =
         ResourceLocation.fromNamespaceAndPath("devmod", "textures/gui/neurocell_mannequin.png");
+
+    // Preview area bounds (relative to GUI left/top)
+    private static final int PREVIEW_LEFT = 40;
+    private static final int PREVIEW_TOP = 14;
+    private static final int PREVIEW_RIGHT = 136;
+    private static final int PREVIEW_BOTTOM = 80;
+    private static final int PREVIEW_SCALE = 32;
+    private static final float PREVIEW_Y_OFFSET = 0.0625F;
 
     /** Preview entity for rendering in GUI */
     @Nullable
@@ -50,10 +66,6 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
     /** Button to apply skin */
     @Nullable
     private Button applySkinButton;
-
-    /** Button to reset to Steve */
-    @Nullable
-    private Button resetSkinButton;
 
     /** Status message for skin lookup */
     @Nullable
@@ -68,8 +80,11 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
 
     public NeurocellMannequinScreen(NeurocellMannequinMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
-        this.imageHeight = 186; // Increased for skin controls
-        this.inventoryLabelY = this.imageHeight - 94;
+        this.imageWidth = 176;
+        this.imageHeight = 190;
+        // Layout: Equipment(0-80), SkinControls(82-100), InventoryLabel(110), Inventory(112-166), Hotbar(170-188)
+        this.inventoryLabelY = 110;
+        this.titleLabelY = 6;
     }
 
     @Override
@@ -85,38 +100,45 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
             previewEntity = entity;
         }
 
-        // Skin name input field
+        // Skin controls positioned below the mannequin preview area
+        // Calculate layout based on control area bounds for symmetrical padding
+        int skinControlY = topPos + 82;
+        int controlLeftEdge = leftPos + 7;
+        int controlRightEdge = leftPos + 169;
+        int labelWidth = 36;      // Space for "Skin:" label
+        int buttonWidth = 40;
+        int buttonGap = 2;
+        int rightPadding = 4;
+
+        int fieldX = controlLeftEdge + labelWidth;
+        int fieldWidth = controlRightEdge - fieldX - buttonGap - buttonWidth - rightPadding;
+
+        // Skin name input field - dynamically sized to fit available space
         EditBox nameField = new EditBox(
             Objects.requireNonNull(this.font),
-            leftPos + 30, topPos + 166,
-            80, 14,
+            fieldX, skinControlY,
+            fieldWidth, 16,
             Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.skin_name"))
         );
         nameField.setMaxLength(16);
-        nameField.setHint(Objects.requireNonNull(Component.literal("Player name")));
+        nameField.setHint(Objects.requireNonNull(Component.literal("Player name...")));
+        nameField.setBordered(true);
         skinNameField = nameField;
         this.addRenderableWidget(Objects.requireNonNull(skinNameField));
 
-        // Apply skin button
+        // Apply skin button - aligned with right padding
+        int applyX = fieldX + fieldWidth + buttonGap;
         Button applyBtn = Button.builder(
-            Objects.requireNonNull(Component.literal("Set")),
+            Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.apply")),
             btn -> applySkin()
-        ).bounds(leftPos + 114, topPos + 164, 28, 18).build();
+        ).bounds(applyX, skinControlY, buttonWidth, 16).build();
         applySkinButton = applyBtn;
         this.addRenderableWidget(Objects.requireNonNull(applySkinButton));
 
-        // Reset skin button
-        Button resetBtn = Button.builder(
-            Objects.requireNonNull(Component.literal("Reset")),
-            btn -> resetSkin()
-        ).bounds(leftPos + 144, topPos + 164, 32, 18).build();
-        resetSkinButton = resetBtn;
-        this.addRenderableWidget(Objects.requireNonNull(resetSkinButton));
-
-        // Show current skin if set
+        // Show current skin status
         UUID currentSkin = menu.getSkinUUID();
         if (currentSkin != null) {
-            statusMessage = "Custom skin active";
+            statusMessage = Component.translatable("gui.devmod.mannequin.skin_active").getString();
             statusColor = DesignTokens.Neurocell.STATUS_SUCCESS;
         }
     }
@@ -142,14 +164,14 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
                 UUID uuid = future.join();
                 if (uuid != null) {
                     sendSkinUpdate(uuid);
-                    statusMessage = "Skin applied!";
+                    statusMessage = Component.translatable("gui.devmod.mannequin.skin_applied").getString();
                     statusColor = DesignTokens.Neurocell.STATUS_SUCCESS;
                 } else {
-                    statusMessage = "Player not found";
+                    statusMessage = Component.translatable("gui.devmod.mannequin.player_not_found").getString();
                     statusColor = DesignTokens.Neurocell.STATUS_ERROR;
                 }
             } catch (Exception e) {
-                statusMessage = "Lookup failed";
+                statusMessage = Component.translatable("gui.devmod.mannequin.lookup_failed").getString();
                 statusColor = DesignTokens.Neurocell.STATUS_ERROR;
             }
             lookupFuture = null;
@@ -167,12 +189,12 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
 
         String playerName = nameField.getValue().trim();
         if (playerName.isEmpty()) {
-            statusMessage = "Enter a name";
-            statusColor = DesignTokens.Neurocell.STATUS_WAITING;
+            // If empty, reset to default
+            resetSkin();
             return;
         }
 
-        statusMessage = "Looking up...";
+        statusMessage = Component.translatable("gui.devmod.mannequin.looking_up").getString();
         statusColor = DesignTokens.Neurocell.STATUS_LOADING;
 
         // Start async lookup
@@ -184,7 +206,7 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
      */
     private void resetSkin() {
         sendSkinUpdate(null);
-        statusMessage = "Reset to Steve";
+        statusMessage = Component.translatable("gui.devmod.mannequin.skin_reset").getString();
         statusColor = DesignTokens.Neurocell.STATUS_SUCCESS;
         EditBox nameField = skinNameField;
         if (nameField != null) {
@@ -212,30 +234,64 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
     @Override
     protected void renderBg(@Nonnull GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         // Draw background texture
-        graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        int baseTextureHeight = 186;
+        graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos, 0, 0, imageWidth, baseTextureHeight);
+        if (imageHeight > baseTextureHeight) {
+            int extra = imageHeight - baseTextureHeight;
+            graphics.blit(Objects.requireNonNull(TEXTURE), leftPos, topPos + baseTextureHeight,
+                0, baseTextureHeight - extra, imageWidth, extra);
+        }
 
-        // Draw ghost icons for empty slots
+        // Draw equipment section backgrounds
+        drawEquipmentBackgrounds(graphics);
+
+        // Draw ghost labels for empty slots
         drawSlotGhosts(graphics);
 
         // Render mannequin preview in center
         ArmorStand preview = previewEntity;
         if (preview != null) {
+            // Preview area: centered between armor and hand slots
+            int previewX1 = leftPos + PREVIEW_LEFT;
+            int previewY1 = topPos + PREVIEW_TOP;
+            int previewX2 = leftPos + PREVIEW_RIGHT;
+            int previewY2 = topPos + PREVIEW_BOTTOM;
+
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                 graphics,
-                leftPos + 52,          // x1
-                topPos + 8,            // y1
-                leftPos + 124,         // x2
-                topPos + 78,           // y2
-                35,                    // scale
-                0.0625F,               // yOffset
-                mouseX,                // mouseX
-                mouseY,                // mouseY
+                previewX1, previewY1,
+                previewX2, previewY2,
+                PREVIEW_SCALE,
+                PREVIEW_Y_OFFSET,
+                mouseX, mouseY,
                 Objects.requireNonNull(preview)
             );
         }
 
-        // Draw skin control area background
-        graphics.fill(leftPos + 28, topPos + 162, leftPos + 148, topPos + 182, DesignTokens.Neurocell.CONTROL_BG);
+        // Draw skin control area background (consistent sizing)
+        int skinBgX = leftPos + 7;
+        int skinBgY = topPos + 80;
+        int skinBgWidth = 162;
+        int skinBgHeight = 20;
+        graphics.fill(skinBgX, skinBgY, skinBgX + skinBgWidth, skinBgY + skinBgHeight,
+            DesignTokens.Neurocell.CONTROL_BG);
+        graphics.renderOutline(skinBgX, skinBgY, skinBgWidth, skinBgHeight,
+            DesignTokens.Neurocell.CONTROL_BORDER);
+    }
+
+    /**
+     * Draw subtle backgrounds for equipment slot areas.
+     */
+    private void drawEquipmentBackgrounds(GuiGraphics graphics) {
+        int slotBg = DesignTokens.Neurocell.SLOT_BG;
+
+        // Left armor column background (4 slots at x=8, y=8/26/44/62, each 16x16)
+        // Allineato con slot reali: x=8 to x=24, y=8 to y=78
+        graphics.fill(leftPos + 8, topPos + 8, leftPos + 24, topPos + 78, slotBg);
+
+        // Right hands column background (2 slots at x=152, y=26/44, each 16x16)
+        // Allineato: x=152 to x=168, y=26 to y=60
+        graphics.fill(leftPos + 152, topPos + 26, leftPos + 168, topPos + 60, slotBg);
     }
 
     /**
@@ -251,13 +307,13 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
         for (int i = 0; i < 4; i++) {
             ItemStack stack = menu.getContainer().getItem(i);
             if (stack.isEmpty()) {
-                // Draw slot background highlight
-                graphics.fill(leftPos + 7, topPos + armorY[i] - 1, leftPos + 25, topPos + armorY[i] + 17, ghostColor);
+                // Ghost highlight 16x16 aligned with slot at x=8
+                graphics.fill(leftPos + 8, topPos + armorY[i], leftPos + 24, topPos + armorY[i] + 16, ghostColor);
 
-                // Draw label
+                // Draw label centered in slot using UIScaleManager
                 var renderFont = Objects.requireNonNull(this.font);
                 String label = Objects.requireNonNull(armorLabels[i]);
-                int textWidth = UIScaleManager.getScaledStringWidth(renderFont, label);
+                int textWidth = renderFont.width(label);
                 UIScaleManager.drawScaledString(graphics, renderFont, label,
                     leftPos + 8 + (16 - textWidth) / 2,
                     topPos + armorY[i] + 4,
@@ -272,13 +328,13 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
         for (int i = 0; i < 2; i++) {
             ItemStack stack = menu.getContainer().getItem(4 + i);
             if (stack.isEmpty()) {
-                // Draw slot background highlight
-                graphics.fill(leftPos + 151, topPos + handY[i] - 1, leftPos + 169, topPos + handY[i] + 17, ghostColor);
+                // Ghost highlight 16x16 aligned with slot at x=152
+                graphics.fill(leftPos + 152, topPos + handY[i], leftPos + 168, topPos + handY[i] + 16, ghostColor);
 
-                // Draw label
+                // Draw label centered in slot using UIScaleManager
                 var renderFont = Objects.requireNonNull(this.font);
                 String label = Objects.requireNonNull(handLabels[i]);
-                int textWidth = UIScaleManager.getScaledStringWidth(renderFont, label);
+                int textWidth = renderFont.width(label);
                 UIScaleManager.drawScaledString(graphics, renderFont, label,
                     leftPos + 152 + (16 - textWidth) / 2,
                     topPos + handY[i] + 4,
@@ -291,28 +347,36 @@ public class NeurocellMannequinScreen extends AbstractContainerScreen<NeurocellM
     protected void renderLabels(@Nonnull GuiGraphics graphics, int mouseX, int mouseY) {
         var renderFont = Objects.requireNonNull(this.font);
 
-        // Title (centered)
+        // Title (centered at top) using UIScaleManager for consistent scaling
         String titleStr = Objects.requireNonNull(this.title).getString();
-        int titleWidth = UIScaleManager.getScaledStringWidth(renderFont, titleStr);
-        UIScaleManager.drawScaledString(graphics, renderFont, titleStr, (imageWidth - titleWidth) / 2, this.titleLabelY,
+        int titleWidth = renderFont.width(titleStr);
+        UIScaleManager.drawScaledString(graphics, renderFont, titleStr,
+            (imageWidth - titleWidth) / 2, this.titleLabelY,
             DesignTokens.Neurocell.LABEL_TEXT, false);
 
         // Inventory label
-        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(this.playerInventoryTitle).getString(),
+        UIScaleManager.drawScaledString(graphics, renderFont,
+            Objects.requireNonNull(this.playerInventoryTitle).getString(),
             this.inventoryLabelX, this.inventoryLabelY, DesignTokens.Neurocell.LABEL_TEXT, false);
 
-        // Slot labels
-        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.armor")).getString(),
-            8, 78, DesignTokens.Neurocell.LABEL_TEXT, false);
-        UIScaleManager.drawScaledString(graphics, renderFont, Objects.requireNonNull(Component.translatable("gui.devmod.mannequin.hands")).getString(),
-            140, 78, DesignTokens.Neurocell.LABEL_TEXT, false);
-
-        // Skin label
-        UIScaleManager.drawScaledString(graphics, renderFont, "Skin:", 8, 168, DesignTokens.Neurocell.LABEL_TEXT, false);
-
-        // Status message
-        if (statusMessage != null) {
-            UIScaleManager.drawScaledString(graphics, renderFont, statusMessage, 8, 152, statusColor, false);
+        // Skin label OR status message (same line, y=85)
+        String msg = statusMessage;
+        if (msg != null && !msg.isEmpty()) {
+            // Show status message with truncation
+            String displayMsg = msg;
+            int maxWidth = 36; // Space for "Skin:" label area
+            while (renderFont.width(displayMsg) > maxWidth && displayMsg.length() > 3) {
+                displayMsg = displayMsg.substring(0, displayMsg.length() - 1);
+            }
+            if (displayMsg.length() < msg.length()) {
+                displayMsg = displayMsg + "..";
+            }
+            UIScaleManager.drawScaledString(graphics, renderFont, displayMsg, 8, 85, statusColor, false);
+        } else {
+            // Show skin label
+            String skinLabel = Component.translatable("gui.devmod.mannequin.skin").getString();
+            UIScaleManager.drawScaledString(graphics, renderFont, skinLabel, 8, 85,
+                DesignTokens.Neurocell.LABEL_TEXT, false);
         }
     }
 

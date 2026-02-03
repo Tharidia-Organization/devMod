@@ -13,7 +13,7 @@ import com.devmod.entity.ModEntities;
  * Client-side event handlers for entity rendering.
  * Registers entity renderers on the mod event bus.
  */
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class ClientEntityEvents {
     private ClientEntityEvents() {}
 

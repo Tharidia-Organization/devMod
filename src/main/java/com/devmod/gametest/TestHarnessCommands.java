@@ -24,6 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
 import com.devmod.actions.ActionCategory;
@@ -35,8 +36,11 @@ import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
 import com.devmod.collision.bodypart.BodyPartColors;
+import com.devmod.clone.network.TelepadOpenScreenPayload;
 import com.devmod.combat.HitHelper;
+import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.PartyStatsSyncPayload;
 import com.devmod.stats.WeaponStats;
 import com.devmod.telemetry.duckdb.DuckDBMigrationService;
 import com.devmod.telemetry.duckdb.DuckDBQueryAPI;
@@ -44,6 +48,9 @@ import com.devmod.telemetry.duckdb.DuckDBQueryAPI.EnduranceStats;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 import com.devmod.util.ColorMasks;
 import com.devmod.util.I18n;
+import com.devmod.area.network.AreaNetworkHandler;
+import com.devmod.area.network.AreaPreviewPayload;
+import com.devmod.zone.network.ZoneNetworkHandler;
 
 @EventBusSubscriber(modid = DevMod.MODID)
 public class TestHarnessCommands {
@@ -129,6 +136,12 @@ public class TestHarnessCommands {
             // /devtest qa - Opens Testing Hub (client-side only)
             .then(Commands.literal("qa")
                 .executes(ctx -> ActionCommandInvoker.invoke(ActionIds.TEST_QA_OPEN, ctx)))
+
+            // /devtest payloadsmoke - Sends a small set of payloads for smoke testing
+            .then(Commands.literal("payloadsmoke")
+                .then(Commands.literal("brief")
+                    .executes(TestHarnessCommands::payloadSmokeBrief))
+                .executes(TestHarnessCommands::payloadSmoke))
 
             // /devtest bodypart <part> - Shows body part multiplier info
             .then(Commands.literal("bodypart")
@@ -715,6 +728,74 @@ public class TestHarnessCommands {
         }
         com.devmod.client.gametest.TestHarnessClientDelegate.openTestingHub();
         ctx.getSource().sendSuccess(() -> I18n.translate("devmod.testing.opening_hub"), false);
+        return 1;
+    }
+
+    private static int payloadSmoke(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+
+        // Server -> Client payloads
+        PacketDistributor.sendToPlayer(player, CombatFlowSyncPayload.EMPTY);
+        PartyStatsSyncPayload.PlayerEntry entry = new PartyStatsSyncPayload.PlayerEntry(
+            player.getUUID().toString(),
+            player.getName().getString(),
+            0, 0, 0, 0, 0, 0,
+            0.0f, 0.0f, false
+        );
+        PartyStatsSyncPayload partyStats = new PartyStatsSyncPayload(
+            1, 1, 0L,
+            java.util.List.of(entry),
+            0, 0, 0, 0, 0, 0,
+            0.0f, false,
+            entry.playerId(), "payload smoke"
+        );
+        PacketDistributor.sendToPlayer(player, partyStats);
+        ZoneNetworkHandler.syncZones(player);
+        AreaNetworkHandler.openEditorCentralScreen(player);
+        AreaPreviewPayload preview = AreaPreviewPayload.boundingBox(
+            player.blockPosition(), 3, 3, 3, "BOX", false, "", "NATURAL", 0L);
+        AreaNetworkHandler.sendAreaPreview(player, preview);
+        PacketDistributor.sendToPlayer(player,
+            new TelepadOpenScreenPayload(player.blockPosition(), "SmokeTelepad"));
+
+        // Client -> Server payloads
+        if (FMLEnvironment.dist.isClient()) {
+            com.devmod.client.gametest.TestHarnessClientDelegate.runPayloadSmoke();
+        } else {
+            source.sendFailure(I18n.translate("devmod.testing.client_only"));
+        }
+
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+            "Payload smoke sent (S2C + C2S). Check logs for errors."), false);
+        return 1;
+    }
+
+    private static int payloadSmokeBrief(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(I18n.translate("devmod.testing.no_player"));
+            return 0;
+        }
+
+        // Server -> Client payloads (no UI open)
+        PacketDistributor.sendToPlayer(player, CombatFlowSyncPayload.EMPTY);
+        ZoneNetworkHandler.syncZones(player);
+
+        // Client -> Server payloads
+        if (FMLEnvironment.dist.isClient()) {
+            com.devmod.client.gametest.TestHarnessClientDelegate.runPayloadSmoke();
+        } else {
+            source.sendFailure(I18n.translate("devmod.testing.client_only"));
+        }
+
+        source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(
+            "Payload smoke brief sent (no UI). Check logs for errors."), false);
         return 1;
     }
 

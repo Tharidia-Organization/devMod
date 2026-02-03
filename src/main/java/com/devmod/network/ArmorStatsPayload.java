@@ -54,7 +54,9 @@ public record ArmorStatsPayload(
 
     @Override
     public int estimatedSize() {
-        // ItemStack (~100-500 bytes) + CompoundTag (~50-200 bytes) + bool + VarInt
-        return 256 + statsTag.sizeInBytes();
+        int size = 256 + statsTag.sizeInBytes();
+        size += 1; // isGlobal
+        size += PayloadSizeUtil.varIntSize(slot);
+        return size;
     }
 }

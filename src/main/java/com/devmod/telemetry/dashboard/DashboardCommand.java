@@ -5,9 +5,13 @@ import java.util.Objects;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.Items;
 
 import com.devmod.actions.ActionCategory;
@@ -155,9 +159,8 @@ public class DashboardCommand {
 
         if (server.isRunning()) {
             server.openInBrowser();
-            source.sendSuccess(() -> Component.literal(
-                "Dashboard opened: " + server.getDashboardUrl()
-            ), false);
+            String url = server.getDashboardUrl();
+            source.sendSuccess(() -> createClickableUrlMessage("Dashboard opened: ", url), false);
             return 1;
         } else {
             source.sendFailure(Objects.requireNonNull(Component.literal(
@@ -167,23 +170,33 @@ public class DashboardCommand {
         }
     }
 
+    /**
+     * Creates a chat message with a clickable URL that opens in browser.
+     */
+    private static MutableComponent createClickableUrlMessage(String prefix, String url) {
+        return Component.literal(prefix)
+            .append(Component.literal(url)
+                .withStyle(Style.EMPTY
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                    .withUnderlined(true)
+                    .withColor(ChatFormatting.AQUA)));
+    }
+
     private static int startServer(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         TelemetryDashboardServer server = TelemetryDashboardServer.INSTANCE;
 
         if (server.isRunning()) {
-            source.sendSuccess(() -> Component.literal(
-                "Dashboard server already running at " + server.getDashboardUrl()
-            ), false);
+            String url = server.getDashboardUrl();
+            source.sendSuccess(() -> createClickableUrlMessage("Dashboard server already running at ", url), false);
             return 1;
         }
 
         server.start();
 
         if (server.isRunning()) {
-            source.sendSuccess(() -> Component.literal(
-                "Dashboard server started at " + server.getDashboardUrl()
-            ), false);
+            String url = server.getDashboardUrl();
+            source.sendSuccess(() -> createClickableUrlMessage("Dashboard server started at ", url), false);
             return 1;
         } else {
             source.sendFailure(Objects.requireNonNull(Component.literal(
@@ -212,9 +225,8 @@ public class DashboardCommand {
         TelemetryDashboardServer server = TelemetryDashboardServer.INSTANCE;
 
         if (server.isRunning()) {
-            source.sendSuccess(() -> Component.literal(
-                "Dashboard server is running at " + server.getDashboardUrl()
-            ), false);
+            String url = server.getDashboardUrl();
+            source.sendSuccess(() -> createClickableUrlMessage("Dashboard server is running at ", url), false);
         } else {
             source.sendSuccess(() -> Component.literal("Dashboard server is not running."), false);
         }

@@ -128,6 +128,9 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.CORE.id(), "minecraft:calcite");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:light_gray_stained_glass");
 
+        // Ceiling (FIX: was missing, causing ceiling to be built with air)
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:smooth_stone_slab");
+
         // Lighting
         m.put(NexusPalette.Key.LIGHT.id(), "minecraft:sea_lantern");
         m.put(NexusPalette.Key.LIGHT_WARM.id(), "minecraft:ochre_froglight");
@@ -191,6 +194,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:polished_blackstone");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:polished_blackstone_bricks");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:chiseled_polished_blackstone");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:polished_blackstone");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:iron_block");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:polished_blackstone");
         m.put(NexusPalette.Key.METAL.id(), "minecraft:iron_block");
@@ -209,6 +213,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:budding_amethyst");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:prismarine");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:dark_prismarine");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:dark_prismarine");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:amethyst_block");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:sea_lantern");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:magenta_stained_glass");
@@ -227,6 +232,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:white_concrete");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:white_concrete");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:quartz_pillar");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:smooth_quartz");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:light_gray_concrete");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:white_concrete");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:white_stained_glass");
@@ -245,6 +251,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:gilded_blackstone");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:blackstone");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:polished_blackstone_bricks");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:blackstone");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:magma_block");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:crying_obsidian");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:red_stained_glass");
@@ -264,6 +271,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:end_stone_bricks");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:end_stone_bricks");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:purpur_pillar");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:purpur_slab");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:purpur_block");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:end_rod");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:magenta_stained_glass");
@@ -282,6 +290,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:grass_block");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:oak_planks");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:oak_log");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:oak_planks");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:moss_block");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:flowering_azalea_leaves");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:green_stained_glass");
@@ -303,6 +312,7 @@ public final class AreaPalettePresets {
         m.put(NexusPalette.Key.FLOOR_HUB.id(), "minecraft:waxed_oxidized_copper");
         m.put(NexusPalette.Key.WALL.id(), "minecraft:waxed_exposed_copper");
         m.put(NexusPalette.Key.WALL_FRAME.id(), "minecraft:waxed_cut_copper");
+        m.put(NexusPalette.Key.CEILING.id(), "minecraft:waxed_cut_copper");
         m.put(NexusPalette.Key.ACCENT.id(), "minecraft:lightning_rod");
         m.put(NexusPalette.Key.CORE.id(), "minecraft:waxed_copper_block");
         m.put(NexusPalette.Key.CORE_GLASS.id(), "minecraft:light_blue_stained_glass");

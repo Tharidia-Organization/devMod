@@ -82,6 +82,43 @@ public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetL
         }
     }
 
+    /**
+     * Sanitize a resource path for Minecraft compatibility.
+     * - Resolves ".." parent directory references
+     * - Replaces double underscores with single underscores
+     * - Ensures path is lowercase
+     */
+    private static String sanitizePath(String basePath, String relativePath) {
+        // Normalize to forward slashes and lowercase
+        String normalized = relativePath.replace('\\', '/').toLowerCase(Locale.ROOT);
+
+        // Combine base path with relative path
+        String combined = basePath + "/" + normalized;
+
+        // Resolve ".." segments by splitting and rebuilding
+        String[] parts = combined.split("/");
+        java.util.Deque<String> stack = new java.util.ArrayDeque<>();
+        for (String part : parts) {
+            if (part.isEmpty() || part.equals(".")) {
+                continue;
+            } else if (part.equals("..")) {
+                if (!stack.isEmpty()) {
+                    stack.removeLast();
+                }
+            } else {
+                stack.addLast(part);
+            }
+        }
+        String resolved = String.join("/", stack);
+
+        // Replace double underscores with single underscores (Minecraft rejects __)
+        while (resolved.contains("__")) {
+            resolved = resolved.replace("__", "_");
+        }
+
+        return resolved;
+    }
+
     private void load(
             ResourceManager manager,
             ResourceLocation name, int count,
@@ -93,12 +130,13 @@ public class EffekAssetLoader extends SimplePreparableReloadListener<EffekAssetL
             String effekAssetPath = pathGetter.apply(i);
             String normalizedPath = effekAssetPath.replace('\\', '/');
             String normalizedLower = normalizedPath.toLowerCase(Locale.ROOT);
-            String mcAssetPath = (Path.of("effeks", name.getPath()).getParent() + "/" + normalizedLower)
-                .replace('\\', '/')
-                .replace("//", "/");
-            String fallbackMcAssetPath = ("effeks/" + name.getPath() + "/" + normalizedLower)
-                .replace('\\', '/')
-                .replace("//", "/");
+
+            // Get base path for this effect (e.g., "effeks/impact" for "impact/backstab")
+            String basePath = Path.of("effeks", name.getPath()).getParent().toString().replace('\\', '/');
+
+            // Sanitize the path to handle ".." segments and double underscores
+            String mcAssetPath = sanitizePath(basePath, normalizedLower);
+            String fallbackMcAssetPath = sanitizePath("effeks/" + name.getPath(), normalizedLower);
 
             ResourceLocation main = ResourceLocation.fromNamespaceAndPath(modid, mcAssetPath);
             ResourceLocation fallback = ResourceLocation.fromNamespaceAndPath(modid, fallbackMcAssetPath);

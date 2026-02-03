@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.GameType;
 
@@ -152,10 +154,22 @@ public class EnduranceSessionHandler {
                     .withStyle(SharedColorTokens.Chat.RED)));
                 return;
             }
-            // Ignore deaths during pending sessions (instance still being created)
+            // Handle deaths during pending sessions (instance still being created)
+            // Cancel the quest cleanly to avoid leaving player in a broken state
             if (session.isPending()) {
-                LOGGER.debug("[EnduranceQuest] Ignoring death for player {} - session is pending",
+                LOGGER.info("[EnduranceQuest] Player {} died during pending session - canceling quest",
                     player.getName().getString());
+                session.transitionTo(EnduranceQuestManager.ActiveQuestSession.LifecycleState.FAILED, "died during pending");
+                // Force cleanup of any in-progress instance creation
+                if (session.getInstanceId() != null) {
+                    InstanceArenaManager.INSTANCE.forceEndPlayerQuest(playerId);
+                }
+                EnduranceQuestManager.INSTANCE.sendSoloSequenceUpdate(player, session,
+                    com.devmod.party.QuestSequencePayload.Phase.CANCELLED, 0);
+                player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                    "[DevMod] Quest cancelled - you died before the instance was ready.")
+                    .withStyle(SharedColorTokens.Chat.YELLOW)));
+                activeSessions.remove(playerId);
                 return;
             }
 
@@ -741,6 +755,16 @@ public class EnduranceSessionHandler {
                 // Schedule recovery on next tick to ensure the new player entity is fully added to the world
                 // This fixes issues where teleportTo() fails immediately after respawn
                 if (recoveryPlayer != null) {
+                    // CRITICAL: Apply immediate invulnerability to protect player during the transition tick
+                    // Without this, the player can die again at spawn before recovery teleports them to safety
+                    // Resistance V (amplifier 4) = 100% damage reduction for 3 seconds
+                    recoveryPlayer.addEffect(new MobEffectInstance(
+                        Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE),
+                        60, // 3 seconds - more than enough for recovery to complete
+                        4,  // Amplifier 4 = Resistance V = 100% damage reduction
+                        false,
+                        false
+                    ));
                     final ServerPlayer finalPlayer = recoveryPlayer;
                     final com.devmod.runtime.PlayerInstanceSnapshot finalSnapshot = snapshot;
                     final String finalReason = reason;
@@ -789,16 +813,33 @@ public class EnduranceSessionHandler {
         session.transitionTo(EnduranceQuestManager.ActiveQuestSession.LifecycleState.CLEANUP, reason);
 
         try {
-            boolean restored = EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(player, session);
+            ServerPlayer activePlayer = player;
+            if (!session.isInInstanceDimension() && activePlayer.isDeadOrDying()) {
+                var server = activePlayer.getServer();
+                if (server != null) {
+                    ServerPlayer respawned = server.getPlayerList().respawn(
+                        activePlayer,
+                        false,
+                        net.minecraft.world.entity.Entity.RemovalReason.KILLED
+                    );
+                    if (respawned != null) {
+                        activePlayer = respawned;
+                        LOGGER.info("[EnduranceQuest] Respawned player {} before legacy restore (reason={})",
+                            activePlayer.getName().getString(), reason);
+                    }
+                }
+            }
+
+            boolean restored = EndurancePlayerStateManager.INSTANCE.restorePlayerAfterQuest(activePlayer, session);
             EndurancePlayerStateManager.INSTANCE.cleanupArenaOrInstance(session, success);
-            InstanceRecoveryResult recoveryResult = ensureInstanceRecovery(player, session, reason);
+            InstanceRecoveryResult recoveryResult = ensureInstanceRecovery(activePlayer, session, reason);
             if (session.isInInstanceDimension()
                 && recoveryResult == InstanceRecoveryResult.NO_SNAPSHOT
             ) {
-                var server = player.getServer();
-                ServerPlayer fallbackPlayer = player;
+                var server = activePlayer.getServer();
+                ServerPlayer fallbackPlayer = activePlayer;
                 if (server != null) {
-                    ServerPlayer current = server.getPlayerList().getPlayer(player.getUUID());
+                    ServerPlayer current = server.getPlayerList().getPlayer(activePlayer.getUUID());
                     if (current != null) {
                         fallbackPlayer = current;
                     }
@@ -822,7 +863,7 @@ public class EnduranceSessionHandler {
                             fallbackPlayer.getName().getString(), reason);
                     }
                 } else if (fallbackPlayer == null) {
-                    LOGGER.error("[EnduranceQuest] Fallback recovery failed - respawn returned null for {}", player.getUUID());
+                    LOGGER.error("[EnduranceQuest] Fallback recovery failed - respawn returned null for {}", activePlayer.getUUID());
                 }
             }
             boolean restoreSuccess = restored
@@ -830,7 +871,7 @@ public class EnduranceSessionHandler {
                 || recoveryResult == InstanceRecoveryResult.RECOVERY_PENDING;
 
             // Structured logging for restore result
-            EnduranceLogger.phase(Phase.CLEANUP, player, session.getQuest().getQuestId(),
+            EnduranceLogger.phase(Phase.CLEANUP, activePlayer, session.getQuest().getQuestId(),
                 "Restore complete: localRestore=%s, recoveryResult=%s, finalSuccess=%s",
                 restored, recoveryResult, restoreSuccess);
 

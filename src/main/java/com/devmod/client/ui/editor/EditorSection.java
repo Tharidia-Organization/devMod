@@ -40,6 +40,9 @@ public sealed interface EditorSection permits
     /** Handle character typed */
     default boolean charTyped(char chr, int modifiers) { return false; }
 
+    /** Check if this section has a focused text input field */
+    default boolean hasFocusedInput() { return false; }
+
     // ═══════════════════════════════════════════════════════════════
     // SECTION TYPES
     // ═══════════════════════════════════════════════════════════════

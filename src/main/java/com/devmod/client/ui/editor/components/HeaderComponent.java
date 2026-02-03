@@ -27,8 +27,10 @@ public class HeaderComponent {
     private static final int HEIGHT = DesignTokens.Size.HEADER_HEIGHT;  // 56px (2 rows)
     private static final int ROW_HEIGHT = 28;  // Single row height
     private static final int TAB_WIDTH = DesignTokens.Size.TAB_WIDTH;
+    private static final int TAB_WIDTH_MIN = 50;  // Minimum tab width in compact mode
     private static final int TAB_HEIGHT = DesignTokens.Size.TAB_HEIGHT;
     private static final int TAB_GAP = DesignTokens.Size.TAB_GAP;
+    private static final int TAB_GAP_COMPACT = 2;  // Reduced gap in compact mode
     private static final int CLOSE_BUTTON_SIZE = 20;
     private static final int ARROW_WIDTH = 14;
     private static final int LEFT_PADDING = 10;
@@ -38,6 +40,8 @@ public class HeaderComponent {
         DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A67);
     private static final int FADE_COLOR_TRANSPARENT =
         DesignTokens.withAlpha(DesignTokens.Neutral.N950, DesignTokens.Alpha.A0);
+    /** Width threshold below which compact tab mode is enabled */
+    private static final int COMPACT_WIDTH_THRESHOLD = 400;
 
     // ═══════════════════════════════════════════════════════════════
     // TAB INFO
@@ -169,12 +173,37 @@ public class HeaderComponent {
         // Scale dimensions to current UI scale
         int headerHeight = ScaledCoord.scaleDim(HEIGHT);
         int rowHeight = ScaledCoord.scaleDim(ROW_HEIGHT);
-        int tabWidth = ScaledCoord.scaleDim(TAB_WIDTH);
         int tabHeight = ScaledCoord.scaleDim(TAB_HEIGHT);
-        int tabGap = ScaledCoord.scaleDim(TAB_GAP);
         int closeSize = ScaledCoord.scaleDim(CLOSE_BUTTON_SIZE);
         int arrowWidth = ScaledCoord.scaleDim(ARROW_WIDTH);
         int leftPadding = ScaledCoord.scaleDim(LEFT_PADDING);
+
+        // Determine compact mode based on available width
+        boolean compactMode = width < ScaledCoord.scaleDim(COMPACT_WIDTH_THRESHOLD);
+        int tabWidthBase = ScaledCoord.scaleDim(TAB_WIDTH);
+        int tabWidthMin = ScaledCoord.scaleDim(TAB_WIDTH_MIN);
+        int tabGapBase = ScaledCoord.scaleDim(compactMode ? TAB_GAP_COMPACT : TAB_GAP);
+
+        // Calculate responsive tab width - shrink tabs to fit if possible
+        int availableForTabs = width - leftPadding * 2;
+        int numTabs = tabs.size();
+        int tabWidth;
+        int tabGap;
+        if (numTabs > 0) {
+            int neededWidth = numTabs * tabWidthBase + (numTabs - 1) * tabGapBase;
+            if (neededWidth > availableForTabs) {
+                // Try to fit by reducing tab width (keeping gap)
+                int maxTabWidth = (availableForTabs - (numTabs - 1) * tabGapBase) / numTabs;
+                tabWidth = Math.max(tabWidthMin, maxTabWidth);
+                tabGap = tabGapBase;
+            } else {
+                tabWidth = tabWidthBase;
+                tabGap = tabGapBase;
+            }
+        } else {
+            tabWidth = tabWidthBase;
+            tabGap = tabGapBase;
+        }
 
         this.bounds = new ResponsiveLayout.Rect(x, y, width, headerHeight);
         tabBounds.clear();
@@ -334,11 +363,25 @@ public class HeaderComponent {
             AxiomRenderer.drawBorder(graphics, x, y, width, height, DesignTokens.Border.HOVER());
         }
 
-        // Text (centered) with UI-scale-aware font
+        // Text (centered) with UI-scale-aware font - truncate if needed
         String displayLabel = label != null ? label : "";
         float fontScale = Typography.tabLabelScale();
-        int textWidth = font.width(displayLabel);
-        int textWidthScaled = Math.round(textWidth * fontScale);
+        int textPadding = ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
+        int maxTextWidth = width - textPadding * 2;
+
+        // Truncate label if it doesn't fit
+        int textWidth = Math.round(font.width(displayLabel) * fontScale);
+        if (textWidth > maxTextWidth && displayLabel.length() > 3) {
+            // Truncate with ellipsis
+            while (textWidth > maxTextWidth && displayLabel.length() > 3) {
+                displayLabel = displayLabel.substring(0, displayLabel.length() - 1);
+                textWidth = Math.round(font.width(displayLabel + "...") * fontScale);
+            }
+            displayLabel = displayLabel + "...";
+            textWidth = Math.round(font.width(displayLabel) * fontScale);
+        }
+
+        int textWidthScaled = textWidth;
         int textX = x + (width - textWidthScaled) / 2;
         int textHeight = Math.round(font.lineHeight * fontScale);
         int textY = y + (height - textHeight) / 2;

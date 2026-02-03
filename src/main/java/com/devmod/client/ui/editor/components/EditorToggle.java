@@ -15,6 +15,7 @@ import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public class EditorToggle {
 
@@ -164,7 +165,7 @@ public class EditorToggle {
 
     /** Height of this control (without external spacing). */
     public int calculateHeight() {
-        return TOGGLE_HEIGHT;
+        return ScaledCoord.scaleDim(TOGGLE_HEIGHT);
     }
 
     /**
@@ -174,15 +175,23 @@ public class EditorToggle {
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         // Some callers (e.g., layout measurement) may pass a null graphics; just skip drawing.
         if (graphics == null) {
-            this.bounds = new ResponsiveLayout.Rect(x, y, width, TOGGLE_HEIGHT);
+            int height = ScaledCoord.scaleDim(TOGGLE_HEIGHT);
+            this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
             this.toggleBounds = ResponsiveLayout.Rect.EMPTY;
-            return TOGGLE_HEIGHT;
+            return height;
         }
 
         @Nonnull GuiGraphics safeGraphics = Objects.requireNonNull(graphics, "graphics");
         @Nonnull net.minecraft.client.gui.Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
 
-        int height = TOGGLE_HEIGHT;
+        int height = ScaledCoord.scaleDim(TOGGLE_HEIGHT);
+        int toggleWidth = ScaledCoord.scaleDim(TOGGLE_WIDTH);
+        int trackHeight = ScaledCoord.scaleDim(TRACK_HEIGHT);
+        int handleSize = ScaledCoord.scaleDim(HANDLE_SIZE);
+        int handleMargin = ScaledCoord.scaleDim(HANDLE_MARGIN);
+        int badgeGap = ScaledCoord.scaleDim(BADGE_GAP);
+        int stateTextGap = ScaledCoord.scaleDim(STATE_TEXT_GAP);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         this.bounds = new ResponsiveLayout.Rect(x, y, width, height);
 
         // Check hover state
@@ -192,20 +201,20 @@ public class EditorToggle {
         int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
         labelColor = applyAlpha(labelColor);
         String safeLabel = Objects.requireNonNullElse(label, "");
-        UIScaleManager.drawScaledString(safeGraphics, font, safeLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+        UIScaleManager.drawScaledString(safeGraphics, font, safeLabel, x, y + (height - lineHeight) / 2, labelColor, false);
 
         // Source badge (inline after label)
         SourceBadge badge = SHOW_SOURCE_BADGE ? this.sourceBadge : null;
         if (badge != null) {
-            int badgeX = x + UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(safeLabel, "safeLabel")) + BADGE_GAP;
+            int badgeX = x + UIScaleManager.getScaledStringWidth(font, Objects.requireNonNull(safeLabel, "safeLabel")) + badgeGap;
             int badgeY = y + (height - badge.getHeight()) / 2;
             badge.render(graphics, badgeX, badgeY, mouseX, mouseY);
         }
 
         // Toggle on the right - centered vertically within TOGGLE_HEIGHT
-        int toggleX = x + width - TOGGLE_WIDTH;
-        int trackY = y + (TOGGLE_HEIGHT - TRACK_HEIGHT) / 2;  // Center track vertically
-        this.toggleBounds = new ResponsiveLayout.Rect(toggleX, y, TOGGLE_WIDTH, TOGGLE_HEIGHT);
+        int toggleX = x + width - toggleWidth;
+        int trackY = y + (height - trackHeight) / 2;  // Center track vertically
+        this.toggleBounds = new ResponsiveLayout.Rect(toggleX, y, toggleWidth, height);
 
         // Track background (using TRACK_HEIGHT per spec Section 4.3)
         int trackColor;
@@ -216,18 +225,18 @@ public class EditorToggle {
         } else {
             trackColor = DesignTokens.Background.INPUT();
         }
-        safeGraphics.fill(toggleX, trackY, toggleX + TOGGLE_WIDTH, trackY + TRACK_HEIGHT, applyAlpha(trackColor));
+        safeGraphics.fill(toggleX, trackY, toggleX + toggleWidth, trackY + trackHeight, applyAlpha(trackColor));
 
         // Border
         int borderColor = focused ? DesignTokens.Border.ACCENT() :
                          (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
-        AxiomRenderer.drawBorder(graphics, toggleX, trackY, TOGGLE_WIDTH, TRACK_HEIGHT, applyAlpha(borderColor));
+        AxiomRenderer.drawBorder(graphics, toggleX, trackY, toggleWidth, trackHeight, applyAlpha(borderColor));
 
         // Handle (using HANDLE_SIZE per spec Section 4.3)
         int handleX = value ?
-            toggleX + TOGGLE_WIDTH - HANDLE_SIZE - HANDLE_MARGIN :
-            toggleX + HANDLE_MARGIN;
-        int handleY = trackY + (TRACK_HEIGHT - HANDLE_SIZE) / 2;
+            toggleX + toggleWidth - handleSize - handleMargin :
+            toggleX + handleMargin;
+        int handleY = trackY + (trackHeight - handleSize) / 2;
 
         int handleColor;
         if (!enabled) {
@@ -237,15 +246,16 @@ public class EditorToggle {
         } else {
             handleColor = DesignTokens.Slider.THUMB;
         }
-        safeGraphics.fill(handleX, handleY, handleX + HANDLE_SIZE, handleY + HANDLE_SIZE, applyAlpha(handleColor));
+        safeGraphics.fill(handleX, handleY, handleX + handleSize, handleY + handleSize, applyAlpha(handleColor));
 
         // State indicator text
         String stateText = value ? "ON" : "OFF";
         int stateColor = enabled ?
             (value ? DesignTokens.Accent.GREEN() : DesignTokens.Text.MUTED()) :
             DesignTokens.Text.DISABLED();
-        int stateX = toggleX - UIScaleManager.getScaledStringWidth(font, stateText) - STATE_TEXT_GAP;
-        UIScaleManager.drawScaledString(safeGraphics, font, stateText, stateX, y + TEXT_OFFSET_Y, applyAlpha(stateColor), false);
+        int stateX = toggleX - UIScaleManager.getScaledStringWidth(font, stateText) - stateTextGap;
+        UIScaleManager.drawScaledString(safeGraphics, font, stateText, stateX, y + (height - lineHeight) / 2,
+            applyAlpha(stateColor), false);
 
         return height;
     }

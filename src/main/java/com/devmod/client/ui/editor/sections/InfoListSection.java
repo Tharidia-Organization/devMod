@@ -12,6 +12,7 @@ import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class InfoListSection implements EditorSection.CustomSection {
     private static final int LINE_HEIGHT = 12;
@@ -38,22 +39,29 @@ public final class InfoListSection implements EditorSection.CustomSection {
 
     @Override
     public int getHeight() {
-        return EditorDimensions.SECTION_HEADER_HEIGHT + lines.size() * LINE_HEIGHT + SECTION_BOTTOM_PADDING;
+        int headerHeight = ScaledCoord.scaleDim(EditorDimensions.SECTION_HEADER_HEIGHT);
+        int lineHeight = ScaledCoord.scaleDim(LINE_HEIGHT);
+        int bottomPad = ScaledCoord.scaleDim(SECTION_BOTTOM_PADDING);
+        return headerHeight + lines.size() * lineHeight + bottomPad;
     }
 
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
         int y = bounds.y();
-        graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + EditorDimensions.SECTION_HEADER_HEIGHT,
+        int headerHeight = ScaledCoord.scaleDim(EditorDimensions.SECTION_HEADER_HEIGHT);
+        int textInset = ScaledCoord.scaleDim(TEXT_INSET_X);
+        int lineHeight = Math.max(ScaledCoord.scaleDim(LINE_HEIGHT), UIScaleManager.getScaledLineHeight(font, 10));
+        int headerTextY = y + (headerHeight - UIScaleManager.getScaledLineHeight(font, 10)) / 2;
+        graphics.fill(bounds.x(), y, bounds.x() + bounds.width(), y + headerHeight,
             DesignTokens.Background.HEADER());
-        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(title, "title"), bounds.x() + TEXT_INSET_X,
-            y + HEADER_TEXT_OFFSET_Y, DesignTokens.Text.TITLE(), false);
-        y += EditorDimensions.SECTION_HEADER_HEIGHT;
+        UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(title, "title"), bounds.x() + textInset,
+            headerTextY, DesignTokens.Text.TITLE(), false);
+        y += headerHeight;
         for (String line : lines) {
-            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(line, "line"), bounds.x() + TEXT_INSET_X,
+            UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(line, "line"), bounds.x() + textInset,
                 y, DesignTokens.Text.SECONDARY(), false);
-            y += LINE_HEIGHT;
+            y += lineHeight;
         }
     }
 }

@@ -17,18 +17,16 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
-import com.devmod.DevMod;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.overlay.OverlayTheme;
 
-@EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
-
+/**
+ * Entity density tracking overlay.
+ * Registration is handled by ClientModEvents - do not add @EventBusSubscriber.
+ */
 public class EntityDensityOverlay {
 
     private static final ResourceLocation LAYER_ID =
@@ -66,7 +64,6 @@ public class EntityDensityOverlay {
     private static int cachedPlayerCount = 0;
     private static int cachedOtherCount = 0;
 
-    @SubscribeEvent
     public static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
             Objects.requireNonNull(VanillaGuiLayers.HOTBAR),

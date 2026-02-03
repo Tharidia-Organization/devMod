@@ -170,9 +170,10 @@ public abstract class AbstractEditorModule implements EditorModule {
 
             // Render section header label if it's a HeaderSection
             if (section instanceof EditorSection.HeaderSection headerSection) {
-                UIScaleManager.drawScaledString(graphics, Objects.requireNonNull(font, "font cannot be null"), headerSection.getLabel(),
+                int lineHeight = UIScaleManager.getScaledLineHeight(Objects.requireNonNull(font, "font cannot be null"), 10);
+                UIScaleManager.drawScaledString(graphics, font, headerSection.getLabel(),
                     contentBounds.x() + DesignTokens.Spacing.SM,
-                    y + (section.getHeight() - 8) / 2,
+                    y + Math.max(0, (section.getHeight() - lineHeight) / 2),
                     DesignTokens.Text.TITLE(), false);
             }
 
@@ -243,6 +244,16 @@ public abstract class AbstractEditorModule implements EditorModule {
     public boolean charTyped(char chr, int modifiers) {
         for (EditorSection section : getSections()) {
             if (section.charTyped(chr, modifiers)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean hasFocusedInput() {
+        for (EditorSection section : getSections()) {
+            if (section.hasFocusedInput()) {
                 return true;
             }
         }

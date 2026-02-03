@@ -99,7 +99,7 @@ public final class SaveTemplateDialog extends BaseOverlay {
                                  int x, int y, int width, int height,
                                  int mouseX, int mouseY) {
         padding = ScaledCoord.scaleDim(DesignTokens.Spacing.XL);
-        int labelHeight = font.lineHeight;
+        int labelHeight = UIScaleManager.getScaledLineHeight(font, 10);
 
         // Title
         Typography.drawText(graphics, font,

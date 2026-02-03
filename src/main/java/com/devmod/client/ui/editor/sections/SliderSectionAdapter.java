@@ -39,6 +39,7 @@ public final class SliderSectionAdapter implements EditorSection.SliderSection {
     @Override public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) { return slider.mouseDragged(mouseX, mouseY, button, dragX, dragY); }
     @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) { return slider.keyPressed(keyCode, scanCode, modifiers); }
     @Override public boolean charTyped(char chr, int modifiers) { return slider.charTyped(chr, modifiers); }
+    @Override public boolean hasFocusedInput() { return slider.hasInputFocused(); }
 
     @Override public float getValue() { return slider.getValue(); }
     @Override public void setValue(float value) { slider.setValue(value); }

@@ -17,10 +17,6 @@ public final class RadialAction {
     public enum UIFeedback {
         /** No UI feedback (silent) */
         NONE,
-        /** Show toast notification */
-        TOAST,
-        /** Show dialog/popup */
-        DIALOG,
         /** Use server/chat feedback */
         CHAT
     }

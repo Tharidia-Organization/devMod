@@ -611,6 +611,9 @@ tasks.withType(JavaCompile).configureEach {
         // NullAway - the main null-safety checker
         check("NullAway", net.ltgt.gradle.errorprone.CheckSeverity.WARN)
 
+        // Disable StringConcatToTextBlock - crashes on certain code patterns (Error Prone bug)
+        disable("StringConcatToTextBlock")
+
         // All Error Prone checks enabled; fix warnings instead of suppressing.
     }
 }

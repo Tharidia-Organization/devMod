@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.endurance.QuestType;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 public record NamedInvitePayload(
     String targetPlayerName,
@@ -66,7 +67,8 @@ public record NamedInvitePayload(
     @Override
     public int estimatedSize() {
         // VarInt length prefix + UTF-8 bytes for name, plus VarInt for quest type
-        int nameBytes = targetPlayerName != null ? targetPlayerName.length() : 0;
-        return 1 + nameBytes + 1; // varint(len) + name bytes + varint(questType)
+        int size = PayloadSizeUtil.estimatedUtfSize(targetPlayerName);
+        size += PayloadSizeUtil.varIntSize(questTypeOrdinal);
+        return size;
     }
 }

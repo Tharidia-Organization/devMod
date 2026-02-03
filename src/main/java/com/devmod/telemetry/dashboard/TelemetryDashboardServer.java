@@ -82,7 +82,8 @@ public class TelemetryDashboardServer {
             TelemetryAnalyticsHandlers handlers = new TelemetryAnalyticsHandlers(this, gson);
             initializeArenaDashboard();
 
-            HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+            // Use explicit IPv4 loopback to ensure 127.0.0.1 works (getLoopbackAddress() returns IPv6 on some systems)
+            HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), port), 0);
             server = httpServer;
             HttpServer activeServer = Objects.requireNonNull(server, "server");
             activeServer.setExecutor(Executors.newFixedThreadPool(4));

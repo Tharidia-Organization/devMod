@@ -407,6 +407,7 @@ public class QuestDeathScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         if (button == 0 && System.currentTimeMillis() - openTime > FADE_IN_DURATION + 300) {
             if (respawnButton != null && respawnButton.mouseClicked(mouseX, mouseY, button)) {
                 return true;
@@ -420,6 +421,7 @@ public class QuestDeathScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         boolean handled = false;
         if (System.currentTimeMillis() - openTime > FADE_IN_DURATION + 300) {
             if (respawnButton != null) handled |= respawnButton.mouseReleased(mouseX, mouseY, button);

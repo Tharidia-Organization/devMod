@@ -92,6 +92,7 @@ public class QuestExitConfirmScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         if (exitDialog != null && exitDialog.mouseClicked(mouseX, mouseY, width, height)) {
             return true;
         }
@@ -100,6 +101,7 @@ public class QuestExitConfirmScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        UIScaleManager.update();
         if (exitDialog != null && exitDialog.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
             return true;
         }

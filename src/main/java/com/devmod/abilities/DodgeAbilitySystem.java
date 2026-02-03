@@ -49,21 +49,6 @@ public class DodgeAbilitySystem {
     }
 
     /**
-     * Check if dodge is available (off cooldown and has stamina).
-     */
-    public boolean canDodge(UUID playerId) {
-        DodgeData data = getDodgeData(playerId);
-        return data.cooldownTicks <= 0 && StaminaSystem.INSTANCE.hasStamina(playerId, data.staminaCost);
-    }
-
-    /**
-     * Get remaining cooldown in ticks.
-     */
-    public int getCooldownTicks(UUID playerId) {
-        return getDodgeData(playerId).cooldownTicks;
-    }
-
-    /**
      * Get remaining cooldown as percentage (0.0 = ready, 1.0 = just used).
      */
     public float getCooldownPercent(UUID playerId) {
@@ -72,17 +57,10 @@ public class DodgeAbilitySystem {
     }
 
     /**
-     * Check if dodge is available.
+     * Check if dodge is available (off cooldown).
      */
     public boolean isDodgeAvailable(UUID playerId) {
-        return getCooldownTicks(playerId) <= 0;
-    }
-
-    /**
-     * Check if player currently has invincibility frames.
-     */
-    public boolean hasIFrames(UUID playerId) {
-        return getDodgeData(playerId).iframesTicks > 0;
+        return getDodgeData(playerId).cooldownTicks <= 0;
     }
 
     /**
@@ -229,66 +207,10 @@ public class DodgeAbilitySystem {
     }
 
     /**
-     * Check if player is currently dodging.
-     */
-    public boolean isDodging(UUID playerId) {
-        return getDodgeData(playerId).isDodging;
-    }
-
-    /**
-     * Set cooldown multiplier (from perks).
-     */
-    public void setCooldownMultiplier(UUID playerId, float multiplier) {
-        DodgeData data = getDodgeData(playerId);
-        data.maxCooldownTicks = (int) (DEFAULT_COOLDOWN_TICKS * multiplier);
-    }
-
-    /**
-     * Set i-frames duration multiplier (from perks).
-     */
-    public void setIFramesMultiplier(UUID playerId, float multiplier) {
-        DodgeData data = getDodgeData(playerId);
-        data.maxIframesTicks = (int) (DEFAULT_IFRAMES_TICKS * multiplier);
-    }
-
-    /**
-     * Set stamina cost multiplier (from perks).
-     */
-    public void setStaminaCostMultiplier(UUID playerId, float multiplier) {
-        DodgeData data = getDodgeData(playerId);
-        data.staminaCost = DEFAULT_STAMINA_COST * multiplier;
-    }
-
-    /**
-     * Reset all modifiers to default.
-     */
-    public void resetModifiers(UUID playerId) {
-        DodgeData data = getDodgeData(playerId);
-        data.maxCooldownTicks = DEFAULT_COOLDOWN_TICKS;
-        data.maxIframesTicks = DEFAULT_IFRAMES_TICKS;
-        data.dodgeSpeed = DEFAULT_DODGE_SPEED;
-        data.staminaCost = DEFAULT_STAMINA_COST;
-    }
-
-    /**
      * Clean up player data on disconnect.
      */
     public void cleanupPlayer(UUID playerId) {
         playerDodge.remove(playerId);
-    }
-
-    /**
-     * Get total dodge count for a player.
-     */
-    public int getDodgeCount(UUID playerId) {
-        return getDodgeData(playerId).dodgeCount;
-    }
-
-    /**
-     * Get perfect dodge count for a player.
-     */
-    public int getPerfectDodgeCount(UUID playerId) {
-        return getDodgeData(playerId).perfectDodgeCount;
     }
 
     /**

@@ -45,21 +45,6 @@ public class DashAbilitySystem {
     }
 
     /**
-     * Check if dash is available (off cooldown and has stamina).
-     */
-    public boolean canDash(UUID playerId) {
-        DashData data = getDashData(playerId);
-        return data.cooldownTicks <= 0 && StaminaSystem.INSTANCE.hasStamina(playerId, data.staminaCost);
-    }
-
-    /**
-     * Get remaining cooldown in ticks.
-     */
-    public int getCooldownTicks(UUID playerId) {
-        return getDashData(playerId).cooldownTicks;
-    }
-
-    /**
      * Get remaining cooldown as percentage (0.0 = ready, 1.0 = just used).
      */
     public float getCooldownPercent(UUID playerId) {
@@ -68,10 +53,10 @@ public class DashAbilitySystem {
     }
 
     /**
-     * Check if dash is available.
+     * Check if dash is available (off cooldown).
      */
     public boolean isDashAvailable(UUID playerId) {
-        return getCooldownTicks(playerId) <= 0;
+        return getDashData(playerId).cooldownTicks <= 0;
     }
 
     /**
@@ -175,58 +160,10 @@ public class DashAbilitySystem {
     }
 
     /**
-     * Check if player is currently dashing.
-     */
-    public boolean isDashing(UUID playerId) {
-        return getDashData(playerId).isDashing;
-    }
-
-    /**
-     * Set cooldown multiplier (from perks).
-     */
-    public void setCooldownMultiplier(UUID playerId, float multiplier) {
-        DashData data = getDashData(playerId);
-        data.maxCooldownTicks = (int) (DEFAULT_COOLDOWN_TICKS * multiplier);
-    }
-
-    /**
-     * Set dash distance multiplier (from perks).
-     */
-    public void setDashSpeedMultiplier(UUID playerId, float multiplier) {
-        DashData data = getDashData(playerId);
-        data.dashSpeed = DEFAULT_DASH_SPEED * multiplier;
-    }
-
-    /**
-     * Set stamina cost multiplier (from perks).
-     */
-    public void setStaminaCostMultiplier(UUID playerId, float multiplier) {
-        DashData data = getDashData(playerId);
-        data.staminaCost = DEFAULT_STAMINA_COST * multiplier;
-    }
-
-    /**
-     * Reset all modifiers to default.
-     */
-    public void resetModifiers(UUID playerId) {
-        DashData data = getDashData(playerId);
-        data.maxCooldownTicks = DEFAULT_COOLDOWN_TICKS;
-        data.dashSpeed = DEFAULT_DASH_SPEED;
-        data.staminaCost = DEFAULT_STAMINA_COST;
-    }
-
-    /**
      * Clean up player data on disconnect.
      */
     public void cleanupPlayer(UUID playerId) {
         playerDash.remove(playerId);
-    }
-
-    /**
-     * Get total dash count for a player.
-     */
-    public int getDashCount(UUID playerId) {
-        return getDashData(playerId).dashCount;
     }
 
     /**

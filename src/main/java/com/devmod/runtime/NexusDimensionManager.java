@@ -679,6 +679,36 @@ public class NexusDimensionManager {
         return true;
     }
 
+    public boolean teleportPlayerToHub(net.minecraft.server.level.ServerPlayer player) {
+        if (player == null) {
+            return false;
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return false;
+        }
+        if (!server.isSameThread()) {
+            server.execute(() -> teleportPlayerToHub(player));
+            return false;
+        }
+
+        if (!player.level().dimension().equals(NEXUS_DIMENSION)) {
+            NexusReturnSavedData.get(server).recordReturn(player);
+        }
+
+        ServerLevel level = server.getLevel(nn(NEXUS_DIMENSION, "NEXUS_DIMENSION"));
+        if (level == null) {
+            ensureNexusDimension(server);
+            level = server.getLevel(nn(NEXUS_DIMENSION, "NEXUS_DIMENSION"));
+        }
+        if (level == null) {
+            return false;
+        }
+
+        teleportPlayerTo(level, player, nn(getHubOrigin(), "getHubOrigin()"));
+        return true;
+    }
+
     public boolean teleportPlayerToReturn(net.minecraft.server.level.ServerPlayer player) {
         if (player == null) {
             return false;
@@ -728,6 +758,9 @@ public class NexusDimensionManager {
 
     @Nonnull
     private BlockPos resolveZoneSpawn(@Nonnull ZoneDefinition zone) {
+        if ("spawn".equals(zone.zoneId())) {
+            return nn(getHubOrigin(), "getHubOrigin()");
+        }
         BlockPos spawn = zone.getAbsoluteSpawn(nn(getHubOrigin(), "getHubOrigin()"));
         return spawn != null ? spawn : zone.bounds().floorCenter();
     }

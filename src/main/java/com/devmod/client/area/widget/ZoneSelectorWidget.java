@@ -76,7 +76,8 @@ public class ZoneSelectorWidget extends AbstractWidget {
         this.searchBox.setTextColor(AreaBuilderGuiConstants.COLOR_TEXT_PRIMARY);
         this.searchBox.setTextColorUneditable(AreaBuilderGuiConstants.COLOR_TEXT_DISABLED);
         this.searchBox.setResponder(this::onSearchChanged);
-        updateLayout(Objects.requireNonNull(Minecraft.getInstance().font).lineHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(
+            Objects.requireNonNull(Minecraft.getInstance().font), 10));
     }
 
     /**
@@ -143,7 +144,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
     @Override
     protected void renderWidget(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font);
-        updateLayout(font.lineHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(font, 10));
         int itemHeight = s(ITEM_HEIGHT);
         int itemInset = s(1);
         int itemTextYOffset = s(6);
@@ -283,8 +284,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int fontHeight = Minecraft.getInstance().font.lineHeight;
-        updateLayout(fontHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(Minecraft.getInstance().font, 10));
         if (searchBox.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -300,8 +300,7 @@ public class ZoneSelectorWidget extends AbstractWidget {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        int fontHeight = Minecraft.getInstance().font.lineHeight;
-        updateLayout(fontHeight);
+        updateLayout(UIScaleManager.getScaledLineHeight(Minecraft.getInstance().font, 10));
         if (mouseX >= getX() && mouseX < getX() + getWidth()
             && mouseY >= listY && mouseY < listY + listHeight) {
             int maxScroll = Math.max(0, filteredZones.size() - visibleItems);

@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 public record AbilityActionPayload(@Nullable AbilityType ability, int direction) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
@@ -32,7 +33,7 @@ public record AbilityActionPayload(@Nullable AbilityType ability, int direction)
     }
 
     private static void write(RegistryFriendlyByteBuf buf, AbilityActionPayload payload) {
-        buf.writeVarInt(payload.ability != null ? payload.ability.ordinal() : 0);
+        buf.writeVarInt(payload.ability != null ? payload.ability.ordinal() : -1);
         buf.writeVarInt(payload.direction);
     }
 
@@ -53,7 +54,8 @@ public record AbilityActionPayload(@Nullable AbilityType ability, int direction)
      * @param dir Direction to dodge (BACK, LEFT, RIGHT, FORWARD)
      */
     public static AbilityActionPayload dodge(DodgeAbilitySystem.DodgeDirection dir) {
-        return new AbilityActionPayload(AbilityType.DODGE, dir != null ? dir.ordinal() : 0);
+        int dirOrdinal = dir != null ? dir.ordinal() : DodgeAbilitySystem.DodgeDirection.BACK.ordinal();
+        return new AbilityActionPayload(AbilityType.DODGE, dirOrdinal);
     }
 
     /**
@@ -77,7 +79,8 @@ public record AbilityActionPayload(@Nullable AbilityType ability, int direction)
 
     @Override
     public int estimatedSize() {
-        // Two VarInts: ability ordinal + direction
-        return 2;
+        // Two VarInts: ability ordinal + direction (size depends on value)
+        int abilityOrdinal = ability != null ? ability.ordinal() : -1;
+        return PayloadSizeUtil.varIntSize(abilityOrdinal) + PayloadSizeUtil.varIntSize(direction);
     }
 }

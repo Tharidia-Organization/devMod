@@ -1332,6 +1332,7 @@ public class DebriefScreen extends BaseDevModScreen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizAmount, double vertAmount) {
+        UIScaleManager.update();
         // Fix #9: Handle timeline pagination via scroll
         if (activeTab == Tab.TIMELINE) {
             List<CombatEvent> events = collector.getEvents();

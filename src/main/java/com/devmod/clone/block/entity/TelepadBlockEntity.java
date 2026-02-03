@@ -28,6 +28,8 @@ import net.minecraft.world.phys.Vec3;
 
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.block.TelepadBlock;
+import com.devmod.clone.network.TelepadConfigPayload;
+import com.devmod.network.NetworkConstants;
 import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalData;
 import com.devmod.portal.PortalRegistry;
@@ -68,11 +70,23 @@ public class TelepadBlockEntity extends BlockEntity {
     }
 
     public void setTelepadName(String name) {
-        this.telepadName = name != null ? name : "";
+        String sanitized = sanitizeTelepadName(name);
+        if (sanitized.equals(this.telepadName)) {
+            return;
+        }
+        this.telepadName = sanitized;
         setChanged();
         if (level != null && !level.isClientSide) {
             updateRegistry();
             syncToClient();
+        }
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide) {
+            updateRegistry();
         }
     }
 
@@ -402,7 +416,7 @@ public class TelepadBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(@Nonnull CompoundTag tag, @Nonnull HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        telepadName = tag.contains("TelepadName") ? tag.getString("TelepadName") : "";
+        telepadName = sanitizeTelepadName(tag.contains("TelepadName") ? tag.getString("TelepadName") : "");
         portalId = tag.hasUUID("PortalId") ? tag.getUUID("PortalId") : UUID.randomUUID();
         if (tag.contains(TAG_CHARGE_PROGRESS)) {
             chargeProgressPrev = chargeProgress;
@@ -426,5 +440,10 @@ public class TelepadBlockEntity extends BlockEntity {
     @Nullable
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    private static String sanitizeTelepadName(@Nullable String name) {
+        String trimmed = name == null ? "" : name.trim();
+        return NetworkConstants.truncate(trimmed, TelepadConfigPayload.MAX_TELEPAD_NAME_LENGTH);
     }
 }

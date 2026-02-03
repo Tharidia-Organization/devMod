@@ -577,7 +577,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
     private void calculateMaxScroll() {
         // Use scaled values for correct scroll calculation (with same minimums as render)
-        int scaledCardHeight = Math.max(60, UIScaleManager.scale(QUEST_CARD_HEIGHT));
+        int scaledCardHeight = computeQuestCardHeight();
         int scaledCardMargin = Math.max(4, UIScaleManager.scale(QUEST_CARD_MARGIN));
         int scaledHeader = UIScaleManager.scale(HEADER_HEIGHT);
         int contentHeight = filteredQuests.size() * (scaledCardHeight + scaledCardMargin);
@@ -592,19 +592,31 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
     private int scaledQuestCardHeight;
     private int scaledQuestCardMargin;
 
+    private int computeQuestCardHeight() {
+        var safeFont = font;
+        int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
+        int topPad = UIScaleManager.scaleMin(8, 6);
+        int bottomPad = UIScaleManager.scaleMin(8, 6);
+        int rowGap = UIScaleManager.scaleMin(4, 3);
+        int minHeight = topPad + bottomPad + (lineHeight * 4) + (rowGap * 3);
+        return Math.max(minHeight, UIScaleManager.scale(QUEST_CARD_HEIGHT));
+    }
+
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         // Update scaling
         UIScaleManager.update();
-        int minSidebar = UIScaleManager.snap(190);
-        int maxSidebar = UIScaleManager.snap(280);
-        int minRight = UIScaleManager.snap(300);
-        int maxRight = UIScaleManager.snap(440);
+        int minSidebar = Math.min(UIScaleManager.scale(160), (int) (width * 0.28f));
+        int maxSidebar = Math.min(UIScaleManager.scale(240), (int) (width * 0.34f));
+        int minRight = Math.min(UIScaleManager.scale(240), (int) (width * 0.34f));
+        int maxRight = Math.min(UIScaleManager.scale(360), (int) (width * 0.44f));
         int targetSidebar = UIScaleManager.snap((int) (width * 0.24f));
-        int targetRight = UIScaleManager.snap((int) (width * 0.34f));
+        int targetRight = UIScaleManager.snap((int) (width * 0.32f));
+        if (maxSidebar < minSidebar) maxSidebar = minSidebar;
+        if (maxRight < minRight) maxRight = minRight;
         scaledSidebarWidth = clampInt(targetSidebar, minSidebar, maxSidebar);
         scaledRightPanelWidth = clampInt(targetRight, minRight, maxRight);
-        int minCenter = UIScaleManager.snap(340);
+        int minCenter = Math.max(UIScaleManager.scale(260), (int) (width * 0.36f));
         int remaining = width - scaledSidebarWidth - scaledRightPanelWidth;
         if (remaining < minCenter) {
             int deficit = minCenter - remaining;
@@ -615,8 +627,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             scaledSidebarWidth -= reduceSidebar;
         }
         scaledHeaderHeight = UIScaleManager.scale(HEADER_HEIGHT);
-        // Card needs minimum height to fit 4 rows of text (9px line height * 4 + padding = ~60px min)
-        scaledQuestCardHeight = Math.max(60, UIScaleManager.scale(QUEST_CARD_HEIGHT));
+        scaledQuestCardHeight = computeQuestCardHeight();
         scaledQuestCardMargin = Math.max(4, UIScaleManager.scale(QUEST_CARD_MARGIN));
 
         // Keep search box aligned with current sidebar width and screen height
@@ -1042,10 +1053,12 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
         int contentX = x + indicatorWidth + UIScaleManager.scale(8);
         int lineHeight = UIScaleManager.getScaledLineHeight(safeFont, 10);
-        int topPad = UIScaleManager.scale(6);
-        int bottomPad = UIScaleManager.scale(6);
+        int topPad = UIScaleManager.scaleMin(8, 6);
+        int bottomPad = UIScaleManager.scaleMin(8, 6);
         int available = Math.max(0, scaledQuestCardHeight - topPad - bottomPad - (lineHeight * 4));
-        int rowGap = Math.max(0, Math.min(UIScaleManager.scale(4), available / 3));
+        int minGap = UIScaleManager.scaleMin(4, 3);
+        int maxGap = UIScaleManager.scale(8);
+        int rowGap = Math.max(minGap, Math.min(maxGap, available / 3));
         int row1Y = y + topPad;
         int row2Y = row1Y + lineHeight + rowGap;
         int row3Y = row2Y + lineHeight + rowGap;
@@ -1201,7 +1214,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
             y += line + gapSm;
             drawScaledText(graphics, safeFont, I18n.translate("devmod.endurance.quest.details.no_selection_line2").getString(),
                 contentX, y, COLOR_TEXT_DIM);
-            y += line + gapMd + 8;
+            y += line + gapMd + UIScaleManager.scale(12);
         }
 
         // === SECTION 2: QUEST SETTINGS ===
@@ -1322,13 +1335,13 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
         // Kit navigation area (buttons rendered separately)
         kitControlY = y;
-        y += line + gapMd + UIScaleManager.scale(6);
+        y += UIScaleManager.scale(28) + gapMd;
 
         // Kit preview items (responsive rows)
         if (!previewItems.isEmpty()) {
             int itemCount = Math.min(previewItems.size(), 8);
             int itemSize = UIScaleManager.scale(16);
-            int itemGap = UIScaleManager.scale(4);
+            int itemGap = UIScaleManager.scale(6);
             int itemStep = itemSize + itemGap;
             int itemsPerRow = Math.max(1, Math.min(4, (contentW + itemGap) / itemStep));
             int itemX = contentX;
@@ -1347,7 +1360,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
                     itemX += itemStep;
                 }
             }
-            y += row == 0 ? itemStep + UIScaleManager.scale(2) : UIScaleManager.scale(4);
+            y += row == 0 ? itemStep + UIScaleManager.scale(4) : UIScaleManager.scale(6);
         } else {
             drawScaledText(graphics, safeFont, I18n.translate("devmod.endurance.quest.kit.uses_inventory").getString(),
                 contentX, y, COLOR_TEXT_DIM);
@@ -1406,7 +1419,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // === CONFIGURE MOB BUTTON (in mob details section, only when quest selected) ===
         var configMobBtn = configureMobButton;
         if (selectedQuest != null && configMobBtn != null) {
-            int mobConfigBtnW = UIScaleManager.scale(100);
+            var safeFont = Objects.requireNonNull(font);
+            String mobLabel = I18n.translate("devmod.endurance.quest.button.configure_mob").getString();
+            int mobConfigBtnW = UIScaleManager.getScaledStringWidth(safeFont, mobLabel) + UIScaleManager.scale(16);
             int mobConfigBtnH = UIScaleManager.scale(18);
             configMobBtn.setEnabled(!kitSyncInFlight);
             configMobBtn.render(graphics, controlX, configureMobButtonY, mobConfigBtnW, mobConfigBtnH, mouseX, mouseY);
@@ -1426,7 +1441,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         }
 
         // === ENDLESS TOGGLE ===
-        int toggleW = UIScaleManager.scale(100);
+        var safeFontToggle = Objects.requireNonNull(font);
+        String endlessLabel = I18n.translate("devmod.endurance.quest.button.endless").getString();
+        int toggleW = UIScaleManager.getScaledStringWidth(safeFontToggle, endlessLabel) + UIScaleManager.scale(20);
         int toggleH = UIScaleManager.scale(20);
         var endlessBtn = endlessToggleButton;
         if (endlessBtn != null) {
@@ -1443,7 +1460,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // === PRACTICE MODE TOGGLE (only if Dummmmmmy available) ===
         var practiceBtn = practiceToggleButton;
         if (DummmmmmyCompat.isAvailable() && practiceBtn != null) {
-            int practiceW = UIScaleManager.scale(120);
+            var safeFont2 = Objects.requireNonNull(font);
+            String practiceLabel = I18n.translate("devmod.endurance.quest.button.practice").getString();
+            int practiceW = UIScaleManager.getScaledStringWidth(safeFont2, practiceLabel) + UIScaleManager.scale(20);
             int practiceH = UIScaleManager.scale(18);
             practiceBtn
                 .toggled(practiceMode)
@@ -1458,7 +1477,9 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // === KIT SELECTION BUTTONS ===
         int kitBtnW = UIScaleManager.scale(28);
         int kitBtnH = UIScaleManager.scale(22);
-        int editBtnW = UIScaleManager.scale(40);
+        var safeFont3 = Objects.requireNonNull(font);
+        String editLabel = I18n.ui("edit").getString();
+        int editBtnW = UIScaleManager.getScaledStringWidth(safeFont3, editLabel) + UIScaleManager.scale(16);
         boolean kitControlsEnabled = !kitSyncInFlight;
         int kitClusterW = kitBtnW + editBtnW + UIScaleManager.scale(4);
         int kitRightX = controlX + Math.max(0, controlW - kitClusterW);
@@ -1538,6 +1559,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
     @Override
     protected boolean handleMouseClick(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         int my = (int) mouseY;
 
         if (showIntroOverlay) {
@@ -1617,6 +1639,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         boolean handled = false;
 
         if (showIntroOverlay) {
@@ -1710,6 +1733,7 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
 
     @Override
     protected boolean handleMouseScroll(double mouseX, double mouseY, double scrollX, double scrollY) {
+        UIScaleManager.update();
         if (showIntroOverlay) {
             return true;
         }

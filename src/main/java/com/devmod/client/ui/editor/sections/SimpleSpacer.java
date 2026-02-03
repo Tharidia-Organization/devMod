@@ -1,6 +1,7 @@
 package com.devmod.client.ui.editor.sections;
 
 import com.devmod.client.ui.editor.EditorSection;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class SimpleSpacer implements EditorSection.SpacerSection {
     private final String id;
@@ -15,5 +16,5 @@ public final class SimpleSpacer implements EditorSection.SpacerSection {
     public String getId() { return id; }
 
     @Override
-    public int getHeight() { return height; }
+    public int getHeight() { return ScaledCoord.scaleDim(height); }
 }

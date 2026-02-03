@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.devmod.DevMod;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 import com.devmod.zone.data.ZoneBounds;
 
 /**
@@ -101,9 +102,17 @@ public record ZoneSyncPayload(
 
     @Override
     public int estimatedSize() {
-        // Base: varint (5) + long (8)
-        // Per zone: UUID (16) + zoneId (34) + displayName (66) + bounds (24) + color (4) + priority (5) + teleport (1)
-        return 13 + zones.size() * 150;
+        int size = PayloadSizeUtil.varIntSize(zones.size()) + 8;
+        for (ZoneSummary summary : zones) {
+            size += 16; // UUID
+            size += PayloadSizeUtil.estimatedUtfSize(summary.zoneId());
+            size += PayloadSizeUtil.estimatedUtfSize(summary.displayName());
+            size += 24; // ZoneBounds (6 ints)
+            size += 4; // color
+            size += PayloadSizeUtil.varIntSize(summary.priority());
+            size += 1; // hasTeleport
+        }
+        return size;
     }
 
     /**

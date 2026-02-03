@@ -15,6 +15,7 @@ import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class ModuleSummarySection implements EditorSection.CustomSection {
 
@@ -49,7 +50,10 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
 
     @Override
     public int getHeight() {
-        return HEADER_HEIGHT + stats.size() * LINE_HEIGHT + PADDING;
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int lineHeight = ScaledCoord.scaleDim(LINE_HEIGHT);
+        int padding = ScaledCoord.scaleDim(PADDING);
+        return headerHeight + stats.size() * lineHeight + padding;
     }
 
     @Override
@@ -59,48 +63,57 @@ public final class ModuleSummarySection implements EditorSection.CustomSection {
         int x = bounds.x();
         int y = bounds.y();
         int w = bounds.width();
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int lineHeight = Math.max(ScaledCoord.scaleDim(LINE_HEIGHT), UIScaleManager.getScaledLineHeight(font, 10));
+        int padding = ScaledCoord.scaleDim(PADDING);
+        int badgeWidth = ScaledCoord.scaleDim(BADGE_WIDTH);
+        int badgeHeight = ScaledCoord.scaleDim(BADGE_HEIGHT);
 
         // Header background
-        graphics.fill(x, y, x + w, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
+        graphics.fill(x, y, x + w, y + headerHeight, DesignTokens.Background.HEADER());
 
         // Accent bar
-        graphics.fill(x, y, x + 3, y + HEADER_HEIGHT, accentColor);
+        graphics.fill(x, y, x + ScaledCoord.scaleDim(3), y + headerHeight, accentColor);
 
         // Title
         String safeTitle = Objects.requireNonNull(title, "title");
-        UIScaleManager.drawScaledString(graphics, font, safeTitle, x + PADDING, y + 6, DesignTokens.Text.TITLE(), false);
+        UIScaleManager.drawScaledString(graphics, font, safeTitle, x + padding,
+            y + (headerHeight - UIScaleManager.getScaledLineHeight(font, 10)) / 2, DesignTokens.Text.TITLE(), false);
 
         // Stats
-        int statY = y + HEADER_HEIGHT;
+        int statY = y + headerHeight;
         for (StatEntry stat : stats) {
             // Label
             String label = Objects.requireNonNull(stat.label, "label");
-            UIScaleManager.drawScaledString(graphics, font, label, x + PADDING, statY + 3, DesignTokens.Text.SECONDARY(), false);
+            UIScaleManager.drawScaledString(graphics, font, label, x + padding,
+                statY + (lineHeight - UIScaleManager.getScaledLineHeight(font, 10)) / 2, DesignTokens.Text.SECONDARY(), false);
 
             // Value (right-aligned)
             String valueStr = stat.format != null ? String.format(stat.format, stat.value) : String.valueOf(stat.value);
             Objects.requireNonNull(valueStr, "valueStr");
             int valueWidth = UIScaleManager.getScaledStringWidth(font, valueStr);
-            int valueX = x + w - PADDING - valueWidth;
+            int valueX = x + w - padding - valueWidth;
 
             // Source badge if present - use local capture for null safety
             String source = stat.source;
             if (SHOW_SOURCE_BADGE && source != null) {
-                valueX -= BADGE_WIDTH + 4;
-                int badgeX = x + w - PADDING - BADGE_WIDTH;
-                int badgeY = statY + 2;
+                valueX -= badgeWidth + ScaledCoord.scaleDim(4);
+                int badgeX = x + w - padding - badgeWidth;
+                int badgeY = statY + (lineHeight - badgeHeight) / 2;
                 int badgeColor = getBadgeColor(source);
-                graphics.fill(badgeX, badgeY, badgeX + BADGE_WIDTH, badgeY + BADGE_HEIGHT, badgeColor);
+                graphics.fill(badgeX, badgeY, badgeX + badgeWidth, badgeY + badgeHeight, badgeColor);
                 String badgeText = source.substring(0, Math.min(3, source.length())).toUpperCase(Locale.ROOT);
                 Objects.requireNonNull(badgeText, "badgeText");
-                int badgeTextX = badgeX + (BADGE_WIDTH - UIScaleManager.getScaledStringWidth(font, badgeText)) / 2;
-                UIScaleManager.drawScaledString(graphics, font, badgeText, badgeTextX, badgeY + 2, DesignTokens.Text.WHITE, false);
+                int badgeTextX = badgeX + (badgeWidth - UIScaleManager.getScaledStringWidth(font, badgeText)) / 2;
+                UIScaleManager.drawScaledString(graphics, font, badgeText, badgeTextX,
+                    badgeY + (badgeHeight - UIScaleManager.getScaledLineHeight(font, 10)) / 2, DesignTokens.Text.WHITE, false);
             }
 
             // Value with color
-            UIScaleManager.drawScaledString(graphics, font, valueStr, valueX, statY + 3, stat.color, false);
+            UIScaleManager.drawScaledString(graphics, font, valueStr, valueX,
+                statY + (lineHeight - UIScaleManager.getScaledLineHeight(font, 10)) / 2, stat.color, false);
 
-            statY += LINE_HEIGHT;
+            statY += lineHeight;
         }
     }
 

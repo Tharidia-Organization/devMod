@@ -24,6 +24,17 @@ public class EditorLayout {
     private static final int HOTBAR_RESERVE = 24;
     private static final int MIN_CONTENT_HEIGHT = 32;
 
+    // Responsive layout constants
+    /** Minimum panel width to show left column (scaled base value) */
+    private static final int MIN_WIDTH_FOR_LEFT_COLUMN = 400;
+    /** Minimum content width before hiding left column */
+    private static final int MIN_CONTENT_WIDTH = 200;
+
+    /** Whether left column is visible in current layout */
+    private boolean leftColumnVisible = true;
+    /** Whether layout is in compact mode (small screen) */
+    private boolean compactMode = false;
+
     private final Map<String, List<SectionBounds>> columnSections = new HashMap<>();
 
     /**
@@ -49,7 +60,9 @@ public class EditorLayout {
         int hotbarReserve = ScaledCoord.scaleDim(HOTBAR_RESERVE, scale); // leave space for vanilla hotbar
         int headerHeight = ScaledCoord.scaleDim(EditorConstants.HEADER_HEIGHT, scale);
         int footerHeight = ScaledCoord.scaleDim(EditorConstants.FOOTER_HEIGHT, scale);
-        int leftWidth = ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH, scale);
+        int baseLeftWidth = ScaledCoord.scaleDim(EditorConstants.LEFT_COLUMN_WIDTH, scale);
+        int minContentWidth = ScaledCoord.scaleDim(MIN_CONTENT_WIDTH, scale);
+        int minWidthForLeftColumn = ScaledCoord.scaleDim(MIN_WIDTH_FOR_LEFT_COLUMN, scale);
 
         int panelX = fit.panelX();
         int panelY = fit.panelY();
@@ -58,19 +71,42 @@ public class EditorLayout {
         int minHeight = headerHeight + footerHeight + ScaledCoord.scaleDim(MIN_CONTENT_HEIGHT, scale);
         panelHeight = Math.max(panelHeight - hotbarReserve, minHeight);
 
+        // Responsive left column visibility:
+        // Hide left column if panel is too narrow to fit both left column and minimum content
+        int availableForContent = panelWidth - baseLeftWidth;
+        leftColumnVisible = panelWidth >= minWidthForLeftColumn && availableForContent >= minContentWidth;
+        compactMode = !leftColumnVisible || panelWidth < minWidthForLeftColumn;
+
+        int leftWidth = leftColumnVisible ? baseLeftWidth : 0;
+        int contentX = panelX + leftWidth;
+        int contentWidth = panelWidth - leftWidth;
+
         panelBounds = new Bounds(panelX, panelY, panelWidth, panelHeight);
         headerBounds = new Bounds(panelX, panelY, panelWidth, headerHeight);
         footerBounds = new Bounds(panelX, panelY + panelHeight - footerHeight, panelWidth, footerHeight);
-        leftColumnBounds = new Bounds(panelX, panelY + headerHeight, leftWidth,
-            panelHeight - headerHeight - footerHeight);
-        contentBounds = new Bounds(panelX + leftWidth, panelY + headerHeight,
-            panelWidth - leftWidth, panelHeight - headerHeight - footerHeight);
-        
+
+        if (leftColumnVisible) {
+            leftColumnBounds = new Bounds(panelX, panelY + headerHeight, leftWidth,
+                panelHeight - headerHeight - footerHeight);
+        } else {
+            leftColumnBounds = Bounds.EMPTY;
+        }
+
+        contentBounds = new Bounds(contentX, panelY + headerHeight,
+            contentWidth, panelHeight - headerHeight - footerHeight);
+
         validateBounds(panelBounds, "panelBounds");
         validateBounds(headerBounds, "headerBounds");
         validateBounds(footerBounds, "footerBounds");
-        validateBounds(leftColumnBounds, "leftColumnBounds");
+        if (leftColumnVisible) {
+            validateBounds(leftColumnBounds, "leftColumnBounds");
+        }
         validateBounds(contentBounds, "contentBounds");
+
+        if (compactMode) {
+            LOGGER.debug("[EditorLayout] Compact mode enabled - panel width: {}, left column visible: {}",
+                panelWidth, leftColumnVisible);
+        }
     }
 
     /**
@@ -106,6 +142,12 @@ public class EditorLayout {
     public Bounds getFooterBounds() { return footerBounds; }
     public Bounds getLeftColumnBounds() { return leftColumnBounds; }
     public Bounds getContentBounds() { return contentBounds; }
+
+    /** Returns true if the left column is visible in the current layout. */
+    public boolean isLeftColumnVisible() { return leftColumnVisible; }
+
+    /** Returns true if the layout is in compact mode (small screen). */
+    public boolean isCompactMode() { return compactMode; }
 
     /**
      * Gets the pre-calculated bounds for a specific section within a column.

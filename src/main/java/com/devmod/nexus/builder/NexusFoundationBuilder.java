@@ -41,6 +41,11 @@ public final class NexusFoundationBuilder {
     // Block placement flags: NOTIFY_CLIENTS | NO_NEIGHBOR_DROPS | PREVENT_REBUILD_RENDER
     private static final int PLACEMENT_FLAGS = 2 | 16 | 64;
 
+    // Legacy NexusHubCenterBuilder endpoint platform cleanup (old staggered build)
+    private static final int LEGACY_ENDPOINT_DISTANCE = 86; // RING3_RADIUS(50) + CORRIDOR_LENGTH(30) + 6
+    private static final int LEGACY_ENDPOINT_CLEAR_RADIUS = 6;
+    private static final int LEGACY_ENDPOINT_CLEAR_HEIGHT = 8;
+
     // ========================================================================
     // Block Palette
     // ========================================================================
@@ -141,6 +146,9 @@ public final class NexusFoundationBuilder {
 
         long startTime = System.currentTimeMillis();
         LOGGER.info("[Nexus] Building foundation at {} (size: {}x{})", origin, hubSize, hubSize);
+
+        // Cleanup legacy endpoint platforms from old staggered hub builds.
+        clearLegacyEndpointPlatforms(level, origin);
 
         // Step 1: Bedrock base
         buildBedrockLayer(level, origin);
@@ -450,12 +458,13 @@ public final class NexusFoundationBuilder {
 
         List<NexusBuildStep> steps = new java.util.ArrayList<>();
 
-        // Use hub center radius for bedrock sizing
-        int hubCenterRadius = NexusHubCenterBuilder.getTotalRadius();
-        int minChunkX = (origin.getX() - hubCenterRadius) >> 4;
-        int maxChunkX = (origin.getX() + hubCenterRadius) >> 4;
-        int minChunkZ = (origin.getZ() - hubCenterRadius) >> 4;
-        int maxChunkZ = (origin.getZ() + hubCenterRadius) >> 4;
+        steps.add(new NexusBuildStep("cleanup", () -> clearLegacyEndpointPlatforms(level, origin)));
+
+        int hubHalf = hubSize / 2;
+        int minChunkX = (origin.getX() - hubHalf) >> 4;
+        int maxChunkX = (origin.getX() + hubHalf) >> 4;
+        int minChunkZ = (origin.getZ() - hubHalf) >> 4;
+        int maxChunkZ = (origin.getZ() + hubHalf) >> 4;
 
         // Phase 1: Bedrock micro-steps (circular area under hub center)
         int bedrockSteps = 0;
@@ -465,47 +474,70 @@ public final class NexusFoundationBuilder {
                 final int cz = chunkZ;
                 steps.add(new NexusBuildStep(
                     "bedrock",
-                    () -> buildBedrockChunkCircular(level, origin, cx, cz, hubCenterRadius)
+                    () -> buildBedrockChunkSquare(level, origin, cx, cz, hubHalf)
                 ));
                 bedrockSteps++;
             }
         }
         LOGGER.info("[Nexus] Added {} bedrock steps", bedrockSteps);
 
-        // Phase 2: Hub center structure (detailed concentric rings + corridors)
-        NexusHubCenterBuilder hubBuilder = new NexusHubCenterBuilder(floorY);
-        List<NexusBuildStep> hubSteps = hubBuilder.buildSteps(level, origin);
-        LOGGER.info("[Nexus] Hub center builder returned {} steps", hubSteps.size());
-        for (NexusBuildStep step : hubSteps) {
-            LOGGER.debug("[Nexus] Hub step: {}", step.name());
-        }
-        steps.addAll(hubSteps);
+        steps.add(new NexusBuildStep("floor", () -> buildFloorLayer(level, origin)));
+        steps.add(new NexusBuildStep("center", () -> buildCenterPlatform(level, origin)));
+        steps.add(new NexusBuildStep("corridors", () -> buildCorridors(level, origin)));
+        steps.add(new NexusBuildStep("borders", () -> buildBorderMarkers(level, origin)));
 
-        LOGGER.info("[Nexus] Created {} total micro-steps for foundation build (bedrock={}, hub={})",
-            steps.size(), bedrockSteps, hubSteps.size());
+        LOGGER.info("[Nexus] Created {} total micro-steps for foundation build (bedrock={})",
+            steps.size(), bedrockSteps);
         return steps;
     }
 
     /**
-     * Build bedrock for a single chunk column (circular area).
+     * Build bedrock for a single chunk column (square area).
      */
-    private void buildBedrockChunkCircular(@Nonnull ServerLevel level, @Nonnull BlockPos origin,
-                                            int chunkX, int chunkZ, int radius) {
+    private void buildBedrockChunkSquare(@Nonnull ServerLevel level, @Nonnull BlockPos origin,
+                                          int chunkX, int chunkZ, int hubHalf) {
         int startX = chunkX << 4;
         int startZ = chunkZ << 4;
         int endX = startX + CHUNK_SIZE - 1;
         int endZ = startZ + CHUNK_SIZE - 1;
 
+        int minX = origin.getX() - hubHalf;
+        int maxX = origin.getX() + hubHalf;
+        int minZ = origin.getZ() - hubHalf;
+        int maxZ = origin.getZ() + hubHalf;
+
         for (int y = 0; y < bedrockLayers; y++) {
             for (int x = startX; x <= endX; x++) {
                 for (int z = startZ; z <= endZ; z++) {
-                    // Only build bedrock within the circular radius
-                    double dist = Math.sqrt(
-                        (x - origin.getX()) * (x - origin.getX()) +
-                        (z - origin.getZ()) * (z - origin.getZ())
-                    );
-                    if (dist <= radius) {
+                    if (x >= minX && x <= maxX && z >= minZ && z <= maxZ) {
                         setBlock(level, x, y, z, bedrock);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Clear legacy endpoint platforms from old NexusHubCenterBuilder layouts.
+     * These were small floating platforms placed beyond the main hub.
+     */
+    private void clearLegacyEndpointPlatforms(@Nonnull ServerLevel level, @Nonnull BlockPos origin) {
+        double[] angles = {0, 45, 90, 135, 180, 225, 270, 315};
+        int yMin = floorY;
+        int yMax = floorY + LEGACY_ENDPOINT_CLEAR_HEIGHT;
+        int radius = LEGACY_ENDPOINT_CLEAR_RADIUS;
+
+        for (double angleDeg : angles) {
+            double angleRad = Math.toRadians(angleDeg - 90);
+            int cx = origin.getX() + (int) Math.round(Math.cos(angleRad) * LEGACY_ENDPOINT_DISTANCE);
+            int cz = origin.getZ() + (int) Math.round(Math.sin(angleRad) * LEGACY_ENDPOINT_DISTANCE);
+
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    int ax = cx + x;
+                    int az = cz + z;
+                    for (int y = yMin; y <= yMax; y++) {
+                        setBlock(level, ax, y, az, air);
                     }
                 }
             }

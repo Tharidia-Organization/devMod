@@ -2,7 +2,7 @@
   "parent": "minecraft:block/cube_all",
   "render_type": "minecraft:translucent",
   "textures": {
-    "all": "devmod:block/neurocell_glass",
-    "particle": "devmod:block/neurocell_glass"
+    "all": "devmod:block/neurocell_mannequin_glass",
+    "particle": "devmod:block/neurocell_mannequin_glass"
   }
 }

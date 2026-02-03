@@ -17,6 +17,7 @@ import com.devmod.client.ui.editor.core.EditorSounds;
 import com.devmod.client.ui.editor.core.EditorSpacing;
 import com.devmod.client.ui.editor.core.FocusRing;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public class EditorSlider {
 
@@ -257,6 +258,19 @@ public class EditorSlider {
      */
     public int render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
         var font = Objects.requireNonNull(Minecraft.getInstance().font, "font cannot be null");
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int height = Math.max(ScaledCoord.scaleDim(HEIGHT), lineHeight + ScaledCoord.scaleDim(EditorSpacing.XS));
+        int trackHeight = ScaledCoord.scaleDim(TRACK_HEIGHT);
+        int thumbSize = ScaledCoord.scaleDim(THUMB_SIZE);
+        int labelWidthBase = ScaledCoord.scaleDim(LABEL_WIDTH);
+        int inputWidth = ScaledCoord.scaleDim(INPUT_WIDTH);
+        int valueTextReserved = ScaledCoord.scaleDim(VALUE_TEXT_RESERVED_WIDTH);
+        int gapXs = ScaledCoord.scaleDim(EditorSpacing.XS);
+        int gapS = ScaledCoord.scaleDim(EditorSpacing.S);
+        int focusInset = ScaledCoord.scaleDim(FOCUS_RING_INSET);
+        int focusExtra = ScaledCoord.scaleDim(FOCUS_RING_EXTRA_WIDTH);
+        int markerHalfWidth = Math.max(1, ScaledCoord.scaleDim(DEFAULT_MARKER_HALF_WIDTH));
+        int markerHeight = Math.max(1, ScaledCoord.scaleDim(DEFAULT_MARKER_HEIGHT));
 
         // Update bounds
         int totalHeight = calculateHeight();
@@ -264,7 +278,7 @@ public class EditorSlider {
 
         // Calculate track position using EditorSpacing (per spec Section 4.2)
         String safeLabel = label == null ? "" : label;
-        int gap = EditorSpacing.XS;
+        int gap = gapXs;
         SourceBadge badge = SHOW_SOURCE_BADGE ? sourceBadge : null;
         int badgeWidth = badge != null ? badge.getWidth() : 0;
         int infoWidth = infoButton != null ? InfoButton.getSize() : 0;
@@ -272,7 +286,7 @@ public class EditorSlider {
         int badgeInfoWidth = badgeWidth + infoWidth + badgeInfoGap;
         // Use fixed LABEL_WIDTH for consistent column alignment across all sliders.
         // Truncate label text to keep badges/info within the label column.
-        int labelWidth = showLabel ? Math.max(LABEL_WIDTH, badgeInfoWidth) : 0;
+        int labelWidth = showLabel ? Math.max(labelWidthBase, badgeInfoWidth) : 0;
         int labelGap = (badgeInfoWidth > 0 && !safeLabel.isEmpty()) ? gap : 0;
         int availableLabelWidth = Math.max(0, labelWidth - badgeInfoWidth - labelGap);
         String displayLabel = safeLabel;
@@ -287,22 +301,22 @@ public class EditorSlider {
             }
         }
 
-        int trackX = x + labelWidth + EditorSpacing.S;
-        int reservedRight = showInput ? INPUT_WIDTH + EditorSpacing.S : VALUE_TEXT_RESERVED_WIDTH;
-        int trackWidth = width - labelWidth - reservedRight - EditorSpacing.S * 2;
-        int trackY = y + (HEIGHT - TRACK_HEIGHT) / 2;
+        int trackX = x + labelWidth + gapS;
+        int reservedRight = showInput ? inputWidth + gapS : valueTextReserved;
+        int trackWidth = width - labelWidth - reservedRight - gapS * 2;
+        int trackY = y + (height - trackHeight) / 2;
 
         // Update hover state based on track area
         this.hovered = enabled && mouseX >= trackX && mouseX < trackX + trackWidth
-                    && mouseY >= y && mouseY < y + HEIGHT;
+                    && mouseY >= y && mouseY < y + height;
 
-        this.trackBounds = new ResponsiveLayout.Rect(trackX, trackY, trackWidth, TRACK_HEIGHT);
+        this.trackBounds = new ResponsiveLayout.Rect(trackX, trackY, trackWidth, trackHeight);
 
         // Label on the left
         if (showLabel) {
             int labelColor = enabled ? DesignTokens.Text.PRIMARY() : DesignTokens.Text.MUTED();
             if (!displayLabel.isEmpty()) {
-                UIScaleManager.drawScaledString(graphics, font, displayLabel, x, y + TEXT_OFFSET_Y, labelColor, false);
+                UIScaleManager.drawScaledString(graphics, font, displayLabel, x, y + (height - lineHeight) / 2, labelColor, false);
             }
 
             // Track position after label for badges/buttons
@@ -330,33 +344,33 @@ public class EditorSlider {
 
         // Track background
         int trackBg = enabled ? DesignTokens.Slider.TRACK : DesignTokens.Slider.TRACK_DISABLED;
-        graphics.fill(trackX, trackY, trackX + trackWidth, trackY + TRACK_HEIGHT, trackBg);
+        graphics.fill(trackX, trackY, trackX + trackWidth, trackY + trackHeight, trackBg);
 
         // Filled portion
         float ratio = (value - min) / (max - min);
         float clampedRatio = Mth.clamp(ratio, 0f, 1f);
         int filledWidth = (int) (trackWidth * clampedRatio);
         int fillColor = enabled ? trackColor : DesignTokens.withAlpha(trackColor, 0x80);
-        graphics.fill(trackX, trackY, trackX + filledWidth, trackY + TRACK_HEIGHT, fillColor);
+        graphics.fill(trackX, trackY, trackX + filledWidth, trackY + trackHeight, fillColor);
 
         // Track border
         int borderColor = focused ? DesignTokens.Border.ACCENT() :
                          (hovered ? DesignTokens.Border.HOVER() : DesignTokens.Border.DEFAULT());
-        AxiomRenderer.drawBorder(graphics, trackX, trackY, trackWidth, TRACK_HEIGHT, borderColor);
+        AxiomRenderer.drawBorder(graphics, trackX, trackY, trackWidth, trackHeight, borderColor);
 
         // Thumb
-        int thumbX = trackX + filledWidth - THUMB_SIZE / 2;
-        int thumbY = y + (HEIGHT - THUMB_SIZE) / 2;
+        int thumbX = trackX + filledWidth - thumbSize / 2;
+        int thumbY = y + (height - thumbSize) / 2;
 
         // Clamp thumb position
-        thumbX = Mth.clamp(thumbX, trackX, trackX + trackWidth - THUMB_SIZE);
+        thumbX = Mth.clamp(thumbX, trackX, trackX + trackWidth - thumbSize);
 
         int thumbColor = dragging ? trackColor :
                         (hovered ? DesignTokens.Background.ACTIVE() : DesignTokens.Background.HOVER());
         if (!enabled) thumbColor = DesignTokens.Slider.THUMB_DISABLED;
 
-        graphics.fill(thumbX, thumbY, thumbX + THUMB_SIZE, thumbY + THUMB_SIZE, thumbColor);
-        AxiomRenderer.drawBorder(graphics, thumbX, thumbY, THUMB_SIZE, THUMB_SIZE,
+        graphics.fill(thumbX, thumbY, thumbX + thumbSize, thumbY + thumbSize, thumbColor);
+        AxiomRenderer.drawBorder(graphics, thumbX, thumbY, thumbSize, thumbSize,
                                 hovered || dragging ? trackColor : DesignTokens.Border.DEFAULT());
 
         // Value text on the right
@@ -364,37 +378,39 @@ public class EditorSlider {
             if (!inputField.isFocused()) {
                 inputField.setNumericValue(value);
             }
-            int inputX = trackX + trackWidth + EditorSpacing.S;
-            int inputY = y + (HEIGHT - DesignTokens.Size.INPUT_HEIGHT) / 2;
-            inputField.render(graphics, inputX, inputY, INPUT_WIDTH, mouseX, mouseY);
+            int inputX = trackX + trackWidth + gapS;
+            int inputY = y + (height - ScaledCoord.scaleDim(DesignTokens.Size.INPUT_HEIGHT)) / 2;
+            inputField.render(graphics, inputX, inputY, inputWidth, mouseX, mouseY);
         } else if (showValue) {
             String safeFormat = format != null ? format : "%.2f";
             String safeSuffix = suffix != null ? suffix : "";
             String valueText = String.format(safeFormat, value) + safeSuffix;
-            int valueX = trackX + trackWidth + EditorSpacing.S;
+            int valueX = trackX + trackWidth + gapS;
             int valueColor = enabled ? DesignTokens.Text.VALUE() : DesignTokens.Text.MUTED();
-            UIScaleManager.drawScaledString(graphics, font, valueText, valueX, y + TEXT_OFFSET_Y, valueColor, false);
+            UIScaleManager.drawScaledString(graphics, font, valueText, valueX, y + (height - lineHeight) / 2, valueColor, false);
         }
 
         // Focus ring (per spec Section 4.2)
         if (focused) {
-            FocusRing.render(graphics, trackX - FOCUS_RING_INSET, y, trackWidth + FOCUS_RING_EXTRA_WIDTH, HEIGHT);
+            FocusRing.render(graphics, trackX - focusInset, y, trackWidth + focusExtra, height);
         }
 
         // Default value marker (small tick)
         if (enabled && defaultValue != min && defaultValue != max) {
             float defaultRatio = (defaultValue - min) / (max - min);
             int markerX = trackX + (int) (trackWidth * defaultRatio);
-            int markerY = trackY + TRACK_HEIGHT - DEFAULT_MARKER_HEIGHT;
-            graphics.fill(markerX - DEFAULT_MARKER_HALF_WIDTH, markerY,
-                markerX + DEFAULT_MARKER_HALF_WIDTH, trackY + TRACK_HEIGHT, DesignTokens.Text.MUTED());
+            int markerY = trackY + trackHeight - markerHeight;
+            graphics.fill(markerX - markerHalfWidth, markerY,
+                markerX + markerHalfWidth, trackY + trackHeight, DesignTokens.Text.MUTED());
         }
 
         return totalHeight;
     }
 
     public int calculateHeight() {
-        return HEIGHT + EditorSpacing.XS;  // Use EditorSpacing for consistency
+        int lineHeight = UIScaleManager.getScaledLineHeight(Objects.requireNonNull(Minecraft.getInstance().font), 10);
+        int baseHeight = Math.max(ScaledCoord.scaleDim(HEIGHT), lineHeight + ScaledCoord.scaleDim(EditorSpacing.XS));
+        return baseHeight + ScaledCoord.scaleDim(EditorSpacing.XS);
     }
 
     /**
@@ -626,6 +642,14 @@ public class EditorSlider {
 
     public boolean isFocused() {
         return focused;
+    }
+
+    /**
+     * Check if the slider's input field (if any) is currently focused.
+     * Used to give text input priority over keybinds in the editor.
+     */
+    public boolean hasInputFocused() {
+        return showInput && inputField != null && inputField.isFocused();
     }
 
     public void setFocused(boolean focused) {

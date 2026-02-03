@@ -148,8 +148,11 @@ public record UpdateArmorPayload(
 
     @Override
     public int estimatedSize() {
-        // 3 bools + 1 VarInt + 11 floats + string (max 256 chars)
-        // = 3 + 5 + 44 + itemName length = ~52 + itemName
-        return 52 + (itemName != null ? itemName.length() : 0);
+        int size = 0;
+        size += 3; // isGlobal, thornsEnabled, shieldReflect
+        size += PayloadSizeUtil.varIntSize(slot);
+        size += 11 * 4; // floats
+        size += PayloadSizeUtil.estimatedUtfSize(itemName);
+        return size;
     }
 }

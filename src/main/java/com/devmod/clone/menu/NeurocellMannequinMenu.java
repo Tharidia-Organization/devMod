@@ -103,16 +103,16 @@ public class NeurocellMannequinMenu extends AbstractContainerMenu {
         // OFFHAND slot - position 152, 44
         this.addSlot(new EquipmentSlot(Objects.requireNonNull(container), 5, 152, 44));
 
-        // Player inventory (3 rows) - starts at y=84
+        // Player inventory (3 rows) - starts at y=112 (extra spacing below skin controls)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(Objects.requireNonNull(playerInv), col + row * 9 + 9, 8 + col * 18, 84 + row * 18));
+                this.addSlot(new Slot(Objects.requireNonNull(playerInv), col + row * 9 + 9, 8 + col * 18, 112 + row * 18));
             }
         }
 
-        // Hotbar - starts at y=142
+        // Hotbar - starts at y=170
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(Objects.requireNonNull(playerInv), col, 8 + col * 18, 142));
+            this.addSlot(new Slot(Objects.requireNonNull(playerInv), col, 8 + col * 18, 170));
         }
     }
 

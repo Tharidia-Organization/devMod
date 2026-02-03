@@ -10,6 +10,7 @@ import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.EditorSection;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 
 public final class SimpleHeaderSection implements EditorSection.HeaderSection {
     private static final int DEFAULT_HEIGHT = 20;
@@ -44,14 +45,14 @@ public final class SimpleHeaderSection implements EditorSection.HeaderSection {
     public String getLabel() { return label; }
 
     @Override
-    public int getHeight() { return height; }
+    public int getHeight() { return ScaledCoord.scaleDim(height); }
 
     @Override
     public void render(GuiGraphics graphics, ResponsiveLayout.Rect bounds, int mouseX, int mouseY) {
         Font font = Objects.requireNonNull(Minecraft.getInstance().font, "font");
-        int textY = bounds.y() + textOffsetY;
+        int textY = bounds.y() + Math.max(0, ScaledCoord.scaleDim(textOffsetY));
         UIScaleManager.drawScaledString(graphics, font, Objects.requireNonNull(label, "label"),
-            bounds.x() + textInsetX, textY, DesignTokens.Text.TITLE(), false);
+            bounds.x() + ScaledCoord.scaleDim(textInsetX), textY, DesignTokens.Text.TITLE(), false);
     }
 
     @Override

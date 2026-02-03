@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.item.ItemStack;
 
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.core.UIScaleManager;
@@ -100,6 +101,7 @@ public class EditorButton {
     private Style style = Style.NORMAL;
     private Size size = Size.MEDIUM;
     @Nullable private String icon = null;
+    @Nullable private ItemStack itemIcon = null;
     @Nullable private String tooltip = null;
     @Nullable private String disabledTooltip = null; // UX-08: Tooltip shown when button is disabled
     @Nullable private String hotkeyHint = null;
@@ -149,6 +151,15 @@ public class EditorButton {
      */
     public EditorButton icon(String icon) {
         this.icon = icon;
+        return this;
+    }
+
+    /**
+     * Minecraft item icon to display on the left of the label.
+     * Takes precedence over text icon if both are set.
+     */
+    public EditorButton itemIcon(ItemStack itemIcon) {
+        this.itemIcon = itemIcon;
         return this;
     }
 
@@ -276,15 +287,25 @@ public class EditorButton {
             UIScaleManager.drawScaledString(graphics, font, hotkeyHint, hintX, contentY, DesignTokens.Text.MUTED(), false);
         }
 
-        // Left icon
-        int iconWidth = icon != null ? UIScaleManager.getScaledStringWidth(font, icon) : 0;
-        int iconX = x + padding;
-        if (icon != null) {
+        // Left icon (Minecraft item icon takes precedence over text icon)
+        int labelStartX = x + padding;
+        int itemIconSize = 16; // Standard Minecraft item size
+
+        if (itemIcon != null && !itemIcon.isEmpty()) {
+            // Render Minecraft item icon
+            ItemStack safeIcon = itemIcon; // Local variable for null-safety
+            int itemY = y + (height - itemIconSize) / 2 + textOffsetY;
+            graphics.renderItem(safeIcon, x + padding, itemY);
+            labelStartX = x + padding + itemIconSize + DesignTokens.Spacing.SM;
+        } else if (icon != null) {
+            // Render text icon
+            int iconWidth = UIScaleManager.getScaledStringWidth(font, icon);
+            int iconX = x + padding;
             UIScaleManager.drawScaledString(graphics, font, icon, iconX, contentY, textColor, false);
+            labelStartX = iconX + iconWidth + DesignTokens.Spacing.SM;
         }
 
         // Label, con ellissi se serve
-        int labelStartX = icon != null ? iconX + iconWidth + DesignTokens.Spacing.SM : x + padding;
         int labelAreaRight = hotkeyHint != null ? hintX - DesignTokens.Spacing.SM : x + width - padding;
         int labelAreaWidth = Math.max(0, labelAreaRight - labelStartX);
         String labelText = Objects.requireNonNull(fitToWidth(label, labelAreaWidth, font), "labelText");
@@ -522,6 +543,11 @@ public class EditorButton {
 
         public Builder icon(String icon) {
             button.icon(icon);
+            return this;
+        }
+
+        public Builder itemIcon(ItemStack itemIcon) {
+            button.itemIcon(itemIcon);
             return this;
         }
 

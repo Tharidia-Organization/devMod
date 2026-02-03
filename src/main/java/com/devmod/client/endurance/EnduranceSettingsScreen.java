@@ -832,6 +832,7 @@ public class EnduranceSettingsScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         if (backButton != null) {
             backButton.mouseReleased(mouseX, mouseY, button);
         }

@@ -20,6 +20,7 @@ import com.devmod.area.builder.AreaShapeGenerator;
 import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaShape;
 import com.devmod.network.PayloadValidation;
+import com.devmod.network.PayloadSizeUtil;
 
 /**
  * Server -> Client payload containing preview data for area visualization.
@@ -135,9 +136,24 @@ public record AreaPreviewPayload(
 
     @Override
     public int estimatedSize() {
-        // BlockPos (8) + 3 VarInts (15) + shape string (34) + block count VarInt (5)
-        // + each block (8 + 1 = 9 bytes)
-        return 8 + 15 + 34 + 5 + (outlineBlocks.size() * 9);
+        int blockCount = outlineBlocks != null ? Math.min(outlineBlocks.size(), MAX_PREVIEW_BLOCKS) : 0;
+        int size = 8; // BlockPos
+        size += PayloadSizeUtil.varIntSize(width);
+        size += PayloadSizeUtil.varIntSize(length);
+        size += PayloadSizeUtil.varIntSize(height);
+        size += PayloadSizeUtil.estimatedUtfSize(shape);
+        size += PayloadSizeUtil.varIntSize(blockCount);
+        for (int i = 0; i < blockCount; i++) {
+            PreviewBlock block = outlineBlocks.get(i);
+            int typeOrdinal = block != null && block.type() != null ? block.type().ordinal() : 0;
+            size += 8; // BlockPos
+            size += PayloadSizeUtil.varIntSize(typeOrdinal);
+        }
+        size += 1; // useBiome
+        size += PayloadSizeUtil.estimatedUtfSize(biomeId);
+        size += PayloadSizeUtil.estimatedUtfSize(terrainStyle);
+        size += 8; // biomeSeed
+        return size;
     }
 
     /**

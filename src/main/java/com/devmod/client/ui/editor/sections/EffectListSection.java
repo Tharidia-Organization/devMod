@@ -20,6 +20,7 @@ import com.devmod.client.ui.editor.components.EditorTextField;
 import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.client.ui.editor.core.EditorDimensions;
 import com.devmod.client.ui.editor.core.ResponsiveLayout;
+import com.devmod.client.ui.editor.core.ScaledCoord;
 import com.devmod.stats.FoodStats;
 
 /**
@@ -156,8 +157,14 @@ public final class EffectListSection implements EditorSection.CustomSection {
 
     @Override
     public int getHeight() {
-        int contentHeight = entries.isEmpty() ? EMPTY_STATE_HEIGHT : entries.size() * ENTRY_HEIGHT;
-        return HEADER_HEIGHT + contentHeight + ADD_BUTTON_HEIGHT + BOTTOM_PADDING;
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int entryHeight = ScaledCoord.scaleDim(ENTRY_HEIGHT);
+        int addHeight = ScaledCoord.scaleDim(ADD_BUTTON_HEIGHT);
+        int bottomPad = ScaledCoord.scaleDim(BOTTOM_PADDING);
+        int contentHeight = entries.isEmpty()
+            ? ScaledCoord.scaleDim(EMPTY_STATE_HEIGHT)
+            : entries.size() * entryHeight;
+        return headerHeight + contentHeight + addHeight + bottomPad;
     }
 
     @Override
@@ -167,27 +174,33 @@ public final class EffectListSection implements EditorSection.CustomSection {
         int y = bounds.y();
         int x = bounds.x();
         int width = bounds.width();
+        int headerHeight = ScaledCoord.scaleDim(HEADER_HEIGHT);
+        int textInset = ScaledCoord.scaleDim(TEXT_INSET_X);
+        int entryHeight = ScaledCoord.scaleDim(ENTRY_HEIGHT);
+        int addHeight = ScaledCoord.scaleDim(ADD_BUTTON_HEIGHT);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
 
         // Header
-        graphics.fill(x, y, x + width, y + HEADER_HEIGHT, DesignTokens.Background.HEADER());
-        UIScaleManager.drawScaledString(graphics, font, title, x + TEXT_INSET_X, y + (HEADER_HEIGHT - 8) / 2,
+        graphics.fill(x, y, x + width, y + headerHeight, DesignTokens.Background.HEADER());
+        UIScaleManager.drawScaledString(graphics, font, title, x + textInset,
+            y + (headerHeight - lineHeight) / 2,
             DesignTokens.Text.TITLE(), false);
 
         // Effect count
         String countText = "(" + entries.size() + " effects)";
         int countWidth = UIScaleManager.getScaledStringWidth(font, countText);
-        UIScaleManager.drawScaledString(graphics, font, countText, x + width - countWidth - TEXT_INSET_X,
-            y + (HEADER_HEIGHT - 8) / 2, DesignTokens.Text.MUTED(), false);
+        UIScaleManager.drawScaledString(graphics, font, countText, x + width - countWidth - textInset,
+            y + (headerHeight - lineHeight) / 2, DesignTokens.Text.MUTED(), false);
 
-        y += HEADER_HEIGHT;
+        y += headerHeight;
 
-        int contentX = x + TEXT_INSET_X;
-        int contentWidth = width - TEXT_INSET_X * 2;
+        int contentX = x + textInset;
+        int contentWidth = width - textInset * 2;
 
         if (entries.isEmpty()) {
             UIScaleManager.drawScaledString(graphics, font, "No effects. Click '+ Add Effect' to add one.",
-                contentX, y + 6, DesignTokens.Text.MUTED(), false);
-            y += EMPTY_STATE_HEIGHT;
+                contentX, y + ScaledCoord.scaleDim(6), DesignTokens.Text.MUTED(), false);
+            y += ScaledCoord.scaleDim(EMPTY_STATE_HEIGHT);
         } else {
             for (EffectEntry entry : entries) {
                 y = renderEffectEntry(graphics, font, entry, contentX, y, contentWidth, mouseX, mouseY);
@@ -195,35 +208,45 @@ public final class EffectListSection implements EditorSection.CustomSection {
         }
 
         // Add button
-        addButton.render(graphics, contentX, y + 4, 100, ADD_BUTTON_HEIGHT - 8, mouseX, mouseY);
+        addButton.render(graphics, contentX, y + ScaledCoord.scaleDim(4),
+            ScaledCoord.scaleDim(100), addHeight - ScaledCoord.scaleDim(8), mouseX, mouseY);
     }
 
     private int renderEffectEntry(@Nonnull GuiGraphics graphics, @Nonnull Font font, EffectEntry entry,
                                    int x, int y, int width, int mouseX, int mouseY) {
+        int entryHeight = ScaledCoord.scaleDim(ENTRY_HEIGHT);
+        int entryPad = ScaledCoord.scaleDim(4);
+        int labelInset = ScaledCoord.scaleDim(4);
+        int removeW = ScaledCoord.scaleDim(18);
+        int removeH = ScaledCoord.scaleDim(16);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
         // Entry background
-        graphics.fill(x, y, x + width, y + ENTRY_HEIGHT - 4, DesignTokens.Panel.ELEVATED);
+        graphics.fill(x, y, x + width, y + entryHeight - entryPad, DesignTokens.Panel.ELEVATED);
 
         // Effect index label + remove button
         String label = "#" + (entry.index + 1);
-        UIScaleManager.drawScaledString(graphics, font, label, x + 4, y + 6, DesignTokens.Text.MUTED(), false);
-        entry.removeButton.render(graphics, x + width - 22, y + 2, 18, 16, mouseX, mouseY);
+        UIScaleManager.drawScaledString(graphics, font, label, x + labelInset,
+            y + (lineHeight > 0 ? (entryPad + 2) : 6), DesignTokens.Text.MUTED(), false);
+        entry.removeButton.render(graphics, x + width - removeW - ScaledCoord.scaleDim(4),
+            y + ScaledCoord.scaleDim(2), removeW, removeH, mouseX, mouseY);
 
-        int fieldY = y + 4;
+        int fieldY = y + entryPad;
 
         // Effect ID field
-        entry.effectIdField.render(graphics, x + 20, fieldY, width - 48, mouseX, mouseY);
-        fieldY += 20;
+        entry.effectIdField.render(graphics, x + ScaledCoord.scaleDim(20), fieldY,
+            width - ScaledCoord.scaleDim(48), mouseX, mouseY);
+        fieldY += ScaledCoord.scaleDim(20);
 
         // Duration and Amplifier
-        int halfWidth = (width - 12) / 2;
-        entry.durationSlider.render(graphics, x + 4, fieldY, halfWidth, mouseX, mouseY);
-        entry.amplifierSlider.render(graphics, x + halfWidth + 8, fieldY, halfWidth, mouseX, mouseY);
-        fieldY += 22;
+        int halfWidth = (width - ScaledCoord.scaleDim(12)) / 2;
+        entry.durationSlider.render(graphics, x + entryPad, fieldY, halfWidth, mouseX, mouseY);
+        entry.amplifierSlider.render(graphics, x + halfWidth + ScaledCoord.scaleDim(8), fieldY, halfWidth, mouseX, mouseY);
+        fieldY += ScaledCoord.scaleDim(22);
 
         // Probability
-        entry.probabilitySlider.render(graphics, x + 4, fieldY, width - 8, mouseX, mouseY);
+        entry.probabilitySlider.render(graphics, x + entryPad, fieldY, width - entryPad * 2, mouseX, mouseY);
 
-        return y + ENTRY_HEIGHT;
+        return y + entryHeight;
     }
 
     @Override
@@ -275,6 +298,17 @@ public final class EffectListSection implements EditorSection.CustomSection {
     public boolean charTyped(char codePoint, int modifiers) {
         for (EffectEntry entry : entries) {
             if (entry.effectIdField.charTyped(codePoint, modifiers)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean hasFocusedInput() {
+        for (EffectEntry entry : entries) {
+            if (entry.effectIdField.isFocused()) return true;
+            if (entry.durationSlider.hasInputFocused()) return true;
+            if (entry.amplifierSlider.hasInputFocused()) return true;
+            if (entry.probabilitySlider.hasInputFocused()) return true;
         }
         return false;
     }

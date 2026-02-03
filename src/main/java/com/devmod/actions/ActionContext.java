@@ -92,42 +92,6 @@ public final class ActionContext {
         return builder.build();
     }
 
-    public ActionContext withConfirmed(boolean confirmed) {
-        Builder builder = new Builder(origin);
-        builder.player = player;
-        builder.serverPlayer = serverPlayer;
-        builder.source = source;
-        builder.commandInvoker = commandInvoker;
-        builder.commandContext = commandContext;
-        builder.commandPrompt = commandPrompt;
-        builder.payload = payload;
-        builder.clientSide = clientSide;
-        builder.confirmed = confirmed;
-        builder.screenOpen = screenOpen;
-        builder.shiftDown = shiftDown;
-        builder.ctrlDown = ctrlDown;
-        builder.altDown = altDown;
-        return builder.build();
-    }
-
-    public ActionContext withPayload(@Nullable Object payload) {
-        Builder builder = new Builder(origin);
-        builder.player = player;
-        builder.serverPlayer = serverPlayer;
-        builder.source = source;
-        builder.commandInvoker = commandInvoker;
-        builder.commandContext = commandContext;
-        builder.commandPrompt = commandPrompt;
-        builder.payload = payload;
-        builder.clientSide = clientSide;
-        builder.confirmed = confirmed;
-        builder.screenOpen = screenOpen;
-        builder.shiftDown = shiftDown;
-        builder.ctrlDown = ctrlDown;
-        builder.altDown = altDown;
-        return builder.build();
-    }
-
     @Nullable
     public Player getPlayer() {
         return player;
@@ -187,6 +151,34 @@ public final class ActionContext {
 
     public boolean isAltDown() {
         return altDown;
+    }
+
+    /**
+     * Creates a new ActionContext with the confirmed flag set.
+     * Used by UI code to indicate user confirmation for destructive actions.
+     *
+     * @param confirmed Whether the action has been confirmed
+     * @return A new ActionContext with the specified confirmed value
+     */
+    public ActionContext withConfirmed(boolean confirmed) {
+        if (this.confirmed == confirmed) {
+            return this;
+        }
+        return builder(this.origin)
+            .player(this.player)
+            .serverPlayer(this.serverPlayer)
+            .source(this.source)
+            .commandInvoker(this.commandInvoker)
+            .commandContext(this.commandContext)
+            .commandPrompt(this.commandPrompt)
+            .payload(this.payload)
+            .clientSide(this.clientSide)
+            .confirmed(confirmed)
+            .screenOpen(this.screenOpen)
+            .shiftDown(this.shiftDown)
+            .ctrlDown(this.ctrlDown)
+            .altDown(this.altDown)
+            .build();
     }
 
     @Nullable

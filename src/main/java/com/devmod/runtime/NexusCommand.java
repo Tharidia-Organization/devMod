@@ -408,6 +408,19 @@ public final class NexusCommand {
             source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cPlayer required"), "message"));
             return 0;
         }
+
+        String normalized = zoneId == null ? "" : zoneId.trim().toLowerCase(Locale.ROOT);
+        if (normalized.equals("hub") || normalized.equals("spawn")) {
+            boolean ok = NexusDimensionManager.INSTANCE.teleportPlayerToHub(player);
+            if (!ok) {
+                source.sendFailure(Objects.requireNonNull(Component.literal("\u00A7cFailed to teleport to hub"), "message"));
+                return 0;
+            }
+            source.sendSuccess(() -> Objects.requireNonNull(
+                Component.literal("\u00A7aTeleported to \u00A7fNexus Hub")), true);
+            return 1;
+        }
+
         NexusHubManager.INSTANCE.initialize(Objects.requireNonNull(source.getServer()));
         Optional<ZoneDefinition> zoneOpt = ZoneResolver.INSTANCE.resolveByNameOrAlias(
             Objects.requireNonNull(source.getServer()), Objects.requireNonNull(zoneId));

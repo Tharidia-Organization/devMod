@@ -1286,6 +1286,7 @@ public class MobPoolEditorScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
 
         ConfirmDialog dialog = confirmDialog;
@@ -1481,6 +1482,7 @@ public class MobPoolEditorScreen extends Screen {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         // Release buttons
         if (backButton != null) backButton.mouseReleased(mouseX, mouseY, button);
         if (applyGlobalButton != null) applyGlobalButton.mouseReleased(mouseX, mouseY, button);
@@ -1510,6 +1512,7 @@ public class MobPoolEditorScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        UIScaleManager.update();
         // Global sliders
         if (activeGlobalSlider >= 0) {
             int sliderWidth = (width - PADDING * 5) / 4;
@@ -1566,6 +1569,7 @@ public class MobPoolEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        UIScaleManager.update();
         ConfirmDialog dialog = confirmDialog;
         if (dialog != null && dialog.isVisible() && dialog.mouseScrolled(mouseX, mouseY, scrollY, width, height)) {
             return true;

@@ -38,8 +38,8 @@ public class StaminaHudOverlay {
     private static final int COLOR_STAMINA_EXHAUSTED = OverlayTheme.Stamina.EXHAUSTED;
     private static final int COLOR_STAMINA_REGEN = OverlayTheme.Stamina.REGEN;
 
-    // Visibility control (disabled by default - enable via radial menu)
-    private static boolean enabled = false;
+    // Visibility control (enabled by default for ability system)
+    private static boolean enabled = true;
     private static long lastNotFullTime = 0;
     private static final long HIDE_DELAY_MS = 3000; // Hide bar 3 seconds after full
 

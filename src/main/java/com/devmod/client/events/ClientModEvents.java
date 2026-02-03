@@ -76,6 +76,8 @@ public class ClientModEvents {
         event.registerAboveAll(Objects.requireNonNull(CONTRACT_HUD_ID), Objects.requireNonNull(com.devmod.client.overlay.ContractHudOverlay.INSTANCE));
         event.registerAboveAll(Objects.requireNonNull(TRANSPORT_HUD_ID), Objects.requireNonNull(TransportClientPayloadHooks.getOverlay()));
         com.devmod.client.overlay.CombatFlowHudOverlay.registerGuiLayers(event);
+        com.devmod.client.overlay.EconomyOverlay.registerGuiLayers(event);
+        com.devmod.client.overlay.EntityDensityOverlay.registerGuiLayers(event);
         com.devmod.client.nexus.NexusBuildProgressOverlay.register(event);
 
         // Register profile listener for notifications (once)

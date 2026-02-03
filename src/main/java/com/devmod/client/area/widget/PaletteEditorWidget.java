@@ -85,10 +85,19 @@ public class PaletteEditorWidget extends AbstractWidget {
             int iconY = cellY + s(8);
             graphics.renderItem(icon, iconX, iconY);
 
-            // Draw preset name
+            // Draw preset name with truncation for overflow
             String name = Objects.requireNonNull(Objects.requireNonNull(
                 Component.translatable("area.preset." + preset)).getString());
+            int maxTextWidth = cellSize - s(4); // Leave 2px padding on each side
             int textWidth = UIScaleManager.getScaledStringWidth(font, name);
+            if (textWidth > maxTextWidth && name.length() > 3) {
+                while (textWidth > maxTextWidth && name.length() > 3) {
+                    name = name.substring(0, name.length() - 1);
+                    textWidth = UIScaleManager.getScaledStringWidth(font, name + "...");
+                }
+                name = name + "...";
+                textWidth = UIScaleManager.getScaledStringWidth(font, name);
+            }
             int textX = cellX + (cellSize - textWidth) / 2;
             int textY = cellY + cellSize - s(20);
             UIScaleManager.drawScaledString(graphics, font, name, textX, textY,
@@ -136,12 +145,14 @@ public class PaletteEditorWidget extends AbstractWidget {
     }
 
     private int getStartY(net.minecraft.client.gui.Font font) {
-        return getY() + font.lineHeight + s(6);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        return getY() + lineHeight + s(6);
     }
 
     private int getCellSize(net.minecraft.client.gui.Font font, int columns, int spacing) {
         int rows = (PRESETS.length + columns - 1) / columns;
-        int reserved = font.lineHeight + s(20);
+        int lineHeight = UIScaleManager.getScaledLineHeight(font, 10);
+        int reserved = lineHeight + s(20);
         int availableHeight = Math.max(0, getHeight() - reserved);
         int size = (availableHeight - (rows - 1) * spacing) / rows;
         size = Math.min(size, AreaBuilderGuiConstants.scaledGridCellSize());

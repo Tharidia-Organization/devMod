@@ -23,6 +23,7 @@ public class FooterComponent {
     private static final int HEIGHT = DesignTokens.Size.FOOTER_HEIGHT;  // 60px
     private static final int ACTIONS_HEIGHT = 28;
     private static final int APPLY_WIDTH = 112;
+    private static final int APPLY_WIDTH_COMPACT = 80;
     private static final int APPLY_HEIGHT = 36;
     private static final int ACTION_ARROW_WIDTH = 14;
     private static final int ACTION_GAP_BASE = 6;
@@ -34,6 +35,10 @@ public class FooterComponent {
     private static final int SCROLL_TOLERANCE = 1;
     private static final float ACTION_SCALE_MIN = 0.55f;
     private static final float APPLY_BORDER_LIGHTEN = 0.3f;
+
+    // Compact mode thresholds
+    private static final int COMPACT_THRESHOLD = 380;
+    private static final int ULTRA_COMPACT_THRESHOLD = 300;
 
     // ═══════════════════════════════════════════════════════════════
     // STATE
@@ -162,7 +167,12 @@ public class FooterComponent {
 
         int footerHeight = ScaledCoord.scaleDim(HEIGHT);
         int actionsHeight = ScaledCoord.scaleDim(ACTIONS_HEIGHT);
-        int applyWidth = ScaledCoord.scaleDim(APPLY_WIDTH);
+
+        // Determine compact mode based on available width
+        boolean compactMode = width < ScaledCoord.scaleDim(COMPACT_THRESHOLD);
+        boolean ultraCompactMode = width < ScaledCoord.scaleDim(ULTRA_COMPACT_THRESHOLD);
+
+        int applyWidth = ScaledCoord.scaleDim(compactMode ? APPLY_WIDTH_COMPACT : APPLY_WIDTH);
         int applyHeight = ScaledCoord.scaleDim(APPLY_HEIGHT);
         int arrowWidth = ScaledCoord.scaleDim(ACTION_ARROW_WIDTH);
         int arrowPad = arrowWidth + ScaledCoord.scaleDim(DesignTokens.Spacing.SM);
@@ -182,15 +192,24 @@ public class FooterComponent {
         undoBounds = ResponsiveLayout.Rect.EMPTY;
         redoBounds = ResponsiveLayout.Rect.EMPTY;
 
-        // Action buttons row (History, Export, Import, Templates, Recipe, Reset, Cancel)
+        // Action buttons row - in compact mode, show fewer buttons with abbreviated labels
         int padding = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
-        int applyMargin = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
+        int applyMargin = ScaledCoord.scaleDim(compactMode ? DesignTokens.Spacing.SM : DesignTokens.Spacing.LG);
         int startX = x + padding; // initial left padding
         int gapBase = ScaledCoord.scaleDim(ACTION_GAP_BASE);
         int btnY = contentY;
         int minWidth = ScaledCoord.scaleDim(ACTION_MIN_WIDTH);
 
-        String[] labels = new String[] { "History", "Export", "Import", "Templates", "Recipe", "Reset", "Cancel" };
+        // In ultra compact mode, only show essential buttons (Reset, Cancel)
+        // In compact mode, hide less important buttons (History, Export, Import, Templates)
+        String[] labels;
+        if (ultraCompactMode) {
+            labels = new String[] { "Reset", "Cancel" };
+        } else if (compactMode) {
+            labels = new String[] { "Export", "Import", "Reset", "Cancel" };
+        } else {
+            labels = new String[] { "History", "Export", "Import", "Templates", "Recipe", "Reset", "Cancel" };
+        }
         int[] widths = new int[labels.length];
         float btnFontScale = Typography.buttonScale();
         int innerPad = ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
@@ -269,33 +288,35 @@ public class FooterComponent {
                 actionsViewport.x() + actionsViewport.width(), actionsViewport.y() + actionsViewport.height());
         }
 
+        // Clear all bounds first (buttons not rendered will have empty bounds)
+        historyBounds = ResponsiveLayout.Rect.EMPTY;
+        exportBounds = ResponsiveLayout.Rect.EMPTY;
+        importBounds = ResponsiveLayout.Rect.EMPTY;
+        templatesBounds = ResponsiveLayout.Rect.EMPTY;
+        recipeBounds = ResponsiveLayout.Rect.EMPTY;
+        resetBounds = ResponsiveLayout.Rect.EMPTY;
+        cancelBounds = ResponsiveLayout.Rect.EMPTY;
+
+        // Render buttons dynamically based on labels array (varies by compact mode)
         int cursorX = renderStartX;
-        boolean historyHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[0], actionsHeight).contains(mouseX, mouseY);
-        historyBounds = renderActionButton(graphics, font, cursorX, btnY, widths[0], actionsHeight, "History", historyHovered);
+        for (int i = 0; i < labels.length; i++) {
+            String label = labels[i];
+            boolean hovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[i], actionsHeight).contains(mouseX, mouseY);
+            ResponsiveLayout.Rect btnBounds = renderActionButton(graphics, font, cursorX, btnY, widths[i], actionsHeight, label, hovered);
 
-        cursorX = historyBounds.right() + gap;
-        boolean exportHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[1], actionsHeight).contains(mouseX, mouseY);
-        exportBounds = renderActionButton(graphics, font, cursorX, btnY, widths[1], actionsHeight, "Export", exportHovered);
+            // Store bounds by label name
+            switch (label) {
+                case "History" -> historyBounds = btnBounds;
+                case "Export" -> exportBounds = btnBounds;
+                case "Import" -> importBounds = btnBounds;
+                case "Templates" -> templatesBounds = btnBounds;
+                case "Recipe" -> recipeBounds = btnBounds;
+                case "Reset" -> resetBounds = btnBounds;
+                case "Cancel" -> cancelBounds = btnBounds;
+            }
 
-        cursorX = exportBounds.right() + gap;
-        boolean importHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[2], actionsHeight).contains(mouseX, mouseY);
-        importBounds = renderActionButton(graphics, font, cursorX, btnY, widths[2], actionsHeight, "Import", importHovered);
-
-        cursorX = importBounds.right() + gap;
-        boolean templatesHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[3], actionsHeight).contains(mouseX, mouseY);
-        templatesBounds = renderActionButton(graphics, font, cursorX, btnY, widths[3], actionsHeight, "Templates", templatesHovered);
-
-        cursorX = templatesBounds.right() + gap;
-        boolean recipeHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[4], actionsHeight).contains(mouseX, mouseY);
-        recipeBounds = renderActionButton(graphics, font, cursorX, btnY, widths[4], actionsHeight, "Recipe", recipeHovered);
-
-        cursorX = recipeBounds.right() + gap;
-        boolean resetHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[5], actionsHeight).contains(mouseX, mouseY);
-        resetBounds = renderActionButton(graphics, font, cursorX, btnY, widths[5], actionsHeight, "Reset", resetHovered);
-
-        cursorX = resetBounds.right() + gap;
-        boolean cancelHovered = new ResponsiveLayout.Rect(cursorX, btnY, widths[6], actionsHeight).contains(mouseX, mouseY);
-        cancelBounds = renderActionButton(graphics, font, cursorX, btnY, widths[6], actionsHeight, "Cancel", cancelHovered);
+            cursorX = btnBounds.right() + gap;
+        }
 
         if (actionsOverflow && !actionsViewport.isEmpty()) {
             graphics.disableScissor();
@@ -353,6 +374,9 @@ public class FooterComponent {
         float fontScale = Typography.buttonScale();
         boolean enabled = canApply && isDirty;
 
+        // Detect if we're in compact mode (smaller button)
+        boolean isCompact = width < ScaledCoord.scaleDim(APPLY_WIDTH);
+
         // Background - green tint for primary action
         int bgColor = !enabled ? DesignTokens.Button.DISABLED() :
                      (applyHovered ? DesignTokens.Button.PRIMARY_HOVER : DesignTokens.Button.PRIMARY);
@@ -365,16 +389,19 @@ public class FooterComponent {
         }
         AxiomRenderer.drawBorder(graphics, x, y, width, height, borderColor);
 
-        // Text
+        // Text - use compact labels when button is small
         String label;
         if (applyLabelOverride != null) {
-            label = applyLabelOverride;
+            // Truncate override label in compact mode
+            label = isCompact && applyLabelOverride.length() > 8
+                ? applyLabelOverride.substring(0, 8) + "..."
+                : applyLabelOverride;
         } else if (!canApply) {
-            label = "Preview Only";
+            label = isCompact ? "Preview" : "Preview Only";
         } else if (!isDirty) {
-            label = "No Changes";
+            label = isCompact ? "No Chg" : "No Changes";
         } else if (pendingCount > 0) {
-            label = "✓ Apply (" + pendingCount + ")";
+            label = isCompact ? "✓ (" + pendingCount + ")" : "✓ Apply (" + pendingCount + ")";
         } else {
             label = "✓ Apply";
         }
@@ -385,8 +412,8 @@ public class FooterComponent {
         int textY = y + (height - textHeightScaled) / 2;
         Typography.drawText(graphics, font, label, textX, textY, textColor, fontScale);
 
-        // Dirty indicator dot
-        if (isDirty) {
+        // Dirty indicator dot (skip in very compact mode to avoid clutter)
+        if (isDirty && !isCompact) {
             int dotSize = ScaledCoord.scaleDim(DIRTY_DOT_SIZE);
             int dotX = x + width - ScaledCoord.scaleDim(DesignTokens.Spacing.LG);
             int dotY = y + ScaledCoord.scaleDim(DIRTY_DOT_Y_OFFSET);

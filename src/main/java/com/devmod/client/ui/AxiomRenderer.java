@@ -139,6 +139,55 @@ public final class AxiomRenderer {
     }
 
     /**
+     * Draw an enhanced section header with accent underline.
+     * Used in card-based layouts for visual hierarchy.
+     *
+     * @param graphics Graphics context
+     * @param font Font to use
+     * @param x Left position
+     * @param y Top position
+     * @param width Available width for underline
+     * @param text Header text
+     */
+    public static void drawEnhancedSectionHeader(GuiGraphics graphics, @Nonnull Font font,
+                                                  int x, int y, int width, @Nonnull String text) {
+        // Draw header text
+        UIScaleManager.drawScaledString(graphics, font, text, x, y, DesignTokens.Text.TITLE, false);
+
+        // Draw accent underline
+        int textWidth = UIScaleManager.getScaledStringWidth(font, text);
+        int lineY = y + UIScaleManager.getScaledLineHeight() + 2;
+        int accentColor = DesignTokens.Accent.PRIMARY;
+
+        // Accent line (2px thick, extends slightly past text)
+        int lineWidth = Math.min(textWidth + 8, width);
+        graphics.fill(x, lineY, x + lineWidth, lineY + 2, accentColor);
+    }
+
+    /**
+     * Draw a section header with left accent border (alternative style).
+     *
+     * @param graphics Graphics context
+     * @param font Font to use
+     * @param x Left position
+     * @param y Top position
+     * @param text Header text
+     */
+    public static void drawSectionHeaderWithBorder(GuiGraphics graphics, @Nonnull Font font,
+                                                    int x, int y, @Nonnull String text) {
+        int accentColor = DesignTokens.Accent.PRIMARY;
+        int borderWidth = 3;
+        int padding = 6;
+
+        // Left accent border
+        graphics.fill(x, y, x + borderWidth, y + UIScaleManager.getScaledLineHeight() + 4, accentColor);
+
+        // Header text
+        UIScaleManager.drawScaledString(graphics, font, text, x + borderWidth + padding, y + 2,
+                                        DesignTokens.Text.TITLE, false);
+    }
+
+    /**
      * Draw a muted/hint text
      */
     public static void drawHint(GuiGraphics graphics, @Nonnull Font font, int x, int y, @Nonnull String text) {

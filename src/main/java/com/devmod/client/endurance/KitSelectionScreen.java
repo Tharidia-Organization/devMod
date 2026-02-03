@@ -1453,6 +1453,7 @@ public class KitSelectionScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        UIScaleManager.update();
         // Handle popups first
         if (showNameDialog) {
             return handleNameDialogClick((int) mouseX, (int) mouseY, button);
@@ -1775,6 +1776,7 @@ public class KitSelectionScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        UIScaleManager.update();
         if (showEnchantPopup) {
             enchantScrollOffset = Math.max(0, enchantScrollOffset - (int) (scrollY * 20));
             return true;
