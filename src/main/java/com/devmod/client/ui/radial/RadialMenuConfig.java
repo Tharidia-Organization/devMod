@@ -2,6 +2,7 @@ package com.devmod.client.ui.radial;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -262,7 +263,7 @@ public class RadialMenuConfig {
         try {
             Path configPath = getConfigPath();
             if (Files.exists(configPath)) {
-                try (Reader reader = Files.newBufferedReader(configPath)) {
+                try (Reader reader = Files.newBufferedReader(configPath, StandardCharsets.UTF_8)) {
                     RadialMenuConfig loaded = GSON.fromJson(reader, RadialMenuConfig.class);
                     if (loaded != null) {
                         copyFrom(loaded);
@@ -281,7 +282,7 @@ public class RadialMenuConfig {
         try {
             Path configPath = getConfigPath();
             Files.createDirectories(configPath.getParent());
-            try (Writer writer = Files.newBufferedWriter(configPath)) {
+            try (Writer writer = Files.newBufferedWriter(configPath, StandardCharsets.UTF_8)) {
                 GSON.toJson(this, writer);
             }
         } catch (Exception e) {
@@ -301,10 +302,11 @@ public class RadialMenuConfig {
         this.showTooltips = other.showTooltips;
         this.closeOnToggle = other.closeOnToggle;
         this.showKeyHints = other.showKeyHints;
-        this.menuProfile = other.menuProfile != null ? other.menuProfile : MenuProfile.ALL;
+        this.menuProfile = other.menuProfile != null ? other.menuProfile : MenuProfile.FOCUSED;
         this.safeMode = other.safeMode;
         this.useUsageOrdering = other.useUsageOrdering;
-        this.theme = other.theme;
+        // Null-safe theme: use existing or create new default
+        this.theme = other.theme != null ? other.theme : new ColorTheme();
         this.innerRadius = other.innerRadius;
         this.outerRadius = other.outerRadius;
         this.itemRadius = other.itemRadius;
@@ -315,7 +317,10 @@ public class RadialMenuConfig {
         this.hoverOutSpeed = other.hoverOutSpeed;
         this.morphAnimationSpeed = other.morphAnimationSpeed;
         this.searchBoxAnimationSpeed = other.searchBoxAnimationSpeed;
-        this.iconMode = other.iconMode == IconMode.EMOJI ? IconMode.ITEMSTACK : other.iconMode;
+        // Null-safe iconMode: default to ITEMSTACK, also convert legacy EMOJI to ITEMSTACK
+        this.iconMode = other.iconMode != null
+            ? (other.iconMode == IconMode.EMOJI ? IconMode.ITEMSTACK : other.iconMode)
+            : IconMode.ITEMSTACK;
         this.input = other.input != null ? other.input : new InputBindings();
         this.favoriteActionIds = other.favoriteActionIds != null ? new ArrayList<>(other.favoriteActionIds)
             : new ArrayList<>();

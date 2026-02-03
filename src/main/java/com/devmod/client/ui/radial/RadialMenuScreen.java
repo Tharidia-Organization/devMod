@@ -1513,6 +1513,16 @@ public final class RadialMenuScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         if (keyCode == config.input.keyReleaseSelect && config.releaseToSelect && !searchMode) {
+            // Debounce: ignore release if menu just opened (prevents accidental activation)
+            long elapsed = System.currentTimeMillis() - openTime;
+            if (elapsed < RadialMenuConstants.RELEASE_DEBOUNCE_MS) {
+                return true; // Consume event but don't activate
+            }
+            // Also require a valid selection to prevent activating "nothing"
+            if (selectedCategoryIndex == RadialMenuConstants.NO_SELECTION
+                && selectedItemIndex == RadialMenuConstants.NO_SELECTION) {
+                return true; // No selection yet, consume but don't activate
+            }
             activateSelection(lastMouseX, lastMouseY);
             return true;
         }

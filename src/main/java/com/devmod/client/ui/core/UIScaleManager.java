@@ -1,5 +1,8 @@
 package com.devmod.client.ui.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -41,6 +44,8 @@ import net.neoforged.api.distmarker.OnlyIn;
  */
 @OnlyIn(Dist.CLIENT)
 public final class UIScaleManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UIScaleManager.class);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // CONSTANTS
@@ -670,5 +675,56 @@ public final class UIScaleManager {
      */
     public static float getTextScale() {
         return 1.0f + (effectiveScale - 1.0f) * (7f / 10f);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DEBUG LOGGING
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Logs current GUI scale information for debugging hover/click offset issues.
+     * Call this when mouse interactions seem "off" (e.g., on Windows with certain DPI settings).
+     *
+     * @param mouseX Current mouse X coordinate
+     * @param mouseY Current mouse Y coordinate
+     * @param centerX Expected center X (e.g., for radial menu)
+     * @param centerY Expected center Y (e.g., for radial menu)
+     */
+    public static void debugLogScaleInfo(double mouseX, double mouseY, int centerX, int centerY) {
+        LOGGER.debug("[UIScale Debug] mouseX={}, mouseY={}, centerX={}, centerY={}",
+            String.format("%.1f", mouseX), String.format("%.1f", mouseY), centerX, centerY);
+        LOGGER.debug("[UIScale Debug] screenWidth={}, screenHeight={}, scaledWidth={}, scaledHeight={}",
+            screenWidth, screenHeight, scaledWidth, scaledHeight);
+        LOGGER.debug("[UIScale Debug] guiScale={}, autoScale={}, effectiveScale={}",
+            String.format("%.2f", guiScale), String.format("%.2f", autoScale), String.format("%.2f", effectiveScale));
+
+        // Check for potential mismatch
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getWindow() != null) {
+            double windowGuiScale = mc.getWindow().getGuiScale();
+            int windowGuiScaledWidth = mc.getWindow().getGuiScaledWidth();
+            int windowGuiScaledHeight = mc.getWindow().getGuiScaledHeight();
+            if (windowGuiScaledWidth != scaledWidth || windowGuiScaledHeight != scaledHeight) {
+                LOGGER.warn("[UIScale Debug] MISMATCH DETECTED! Window reports {}x{} but UIScaleManager has {}x{}",
+                    windowGuiScaledWidth, windowGuiScaledHeight, scaledWidth, scaledHeight);
+            }
+            if (Math.abs(windowGuiScale - guiScale) > 0.01) {
+                LOGGER.warn("[UIScale Debug] GUI SCALE MISMATCH! Window={}, UIScaleManager={}",
+                    String.format("%.2f", windowGuiScale), String.format("%.2f", guiScale));
+            }
+        }
+    }
+
+    /**
+     * One-shot debug log (logs only once per session to avoid spam).
+     * Useful for initial diagnostics.
+     */
+    private static boolean debugLoggedOnce = false;
+
+    public static void debugLogOnce(double mouseX, double mouseY, int centerX, int centerY) {
+        if (!debugLoggedOnce) {
+            debugLoggedOnce = true;
+            debugLogScaleInfo(mouseX, mouseY, centerX, centerY);
+        }
     }
 }

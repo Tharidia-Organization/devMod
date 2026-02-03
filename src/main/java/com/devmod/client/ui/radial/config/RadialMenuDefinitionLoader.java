@@ -1,6 +1,7 @@
 package com.devmod.client.ui.radial.config;
 
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ public final class RadialMenuDefinitionLoader {
             return loadEmbeddedDefaults(mobEditorItemSupplier);
         }
 
-        try (Reader reader = Files.newBufferedReader(configFile)) {
+        try (Reader reader = Files.newBufferedReader(configFile, StandardCharsets.UTF_8)) {
             RootConfig config = GSON.fromJson(reader, RootConfig.class);
 
             // Validate

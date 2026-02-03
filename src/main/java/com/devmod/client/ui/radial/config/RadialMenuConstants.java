@@ -483,6 +483,9 @@ public final class RadialMenuConstants {
     /** Value indicating no selection */
     public static final int NO_SELECTION = -1;
 
+    /** Debounce time in ms for releaseToSelect to prevent accidental activation on menu open */
+    public static final long RELEASE_DEBOUNCE_MS = 200L;
+
     // ================================================================
     // COLOR BLENDING
     // ================================================================
