@@ -76,6 +76,8 @@ public final class RadialTooltipRenderer {
         float fontScale = resolveFontScale();
         int padding = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_PADDING);
         int border = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_BORDER_THICKNESS);
+        int radius = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_CORNER_RADIUS);
+        int shadowOffset = RadialMenuScaler.scaleConstant(RadialMenuConstants.TOOLTIP_SHADOW_OFFSET);
         int maxWidth = Math.max(80, context.screenWidth - (padding + border) * 2 - 8);
         int maxWidthFont = toFontWidth(maxWidth, fontScale);
         List<String> lines = wrapTooltipLines(font, tooltip, maxWidthFont);
@@ -100,15 +102,29 @@ public final class RadialTooltipRenderer {
         }
         tooltipY = Math.max(padding + border, Math.min(tooltipY, maxY));
 
+        int borderX1 = tooltipX - padding - border;
+        int borderY1 = tooltipY - padding - border;
+        int borderX2 = tooltipX + tooltipWidth + padding + border;
+        int borderY2 = tooltipY + textHeight + padding + border;
+
+        // Soft shadow
+        if (shadowOffset > 0) {
+            int shadowColor = RadialGeometry.applyAlpha(0xFF000000, RadialMenuConstants.TOOLTIP_SHADOW_ALPHA);
+            RadialGeometry.renderRoundedRect(graphics,
+                borderX1 + shadowOffset, borderY1 + shadowOffset,
+                borderX2 + shadowOffset, borderY2 + shadowOffset,
+                radius + border, shadowColor);
+        }
+
         // Border
-        graphics.fill(tooltipX - padding - border, tooltipY - padding - border,
-            tooltipX + tooltipWidth + padding + border, tooltipY + textHeight + padding + border,
-            context.theme.border);
+        RadialGeometry.renderRoundedRect(graphics, borderX1, borderY1, borderX2, borderY2,
+            radius + border, context.theme.border);
 
         // Background
-        graphics.fill(tooltipX - padding, tooltipY - padding,
+        RadialGeometry.renderRoundedRect(graphics,
+            tooltipX - padding, tooltipY - padding,
             tooltipX + tooltipWidth + padding, tooltipY + textHeight + padding,
-            RadialMenuConstants.TOOLTIP_BG_COLOR);
+            radius, RadialMenuConstants.TOOLTIP_BG_COLOR);
 
         // Text with shadow for better contrast
         int lineY = tooltipY;

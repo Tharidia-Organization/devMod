@@ -123,6 +123,44 @@ public final class RadialGeometry {
         };
     }
 
+    /**
+     * Renders a filled rounded rectangle using simple circle corners.
+     *
+     * @param graphics the GUI graphics context
+     * @param x1 left
+     * @param y1 top
+     * @param x2 right
+     * @param y2 bottom
+     * @param radius corner radius
+     * @param color fill color (ARGB)
+     */
+    public static void renderRoundedRect(GuiGraphics graphics,
+                                         int x1, int y1, int x2, int y2,
+                                         int radius, int color) {
+        if (radius <= 0) {
+            graphics.fill(x1, y1, x2, y2, color);
+            return;
+        }
+        int width = Math.max(0, x2 - x1);
+        int height = Math.max(0, y2 - y1);
+        int r = Math.min(radius, Math.min(width / 2, height / 2));
+        if (r <= 0) {
+            graphics.fill(x1, y1, x2, y2, color);
+            return;
+        }
+
+        // Center and edge rectangles
+        graphics.fill(x1 + r, y1, x2 - r, y2, color);
+        graphics.fill(x1, y1 + r, x1 + r, y2 - r, color);
+        graphics.fill(x2 - r, y1 + r, x2, y2 - r, color);
+
+        // Corner circles
+        renderCircle(graphics, x1 + r, y1 + r, r, color);
+        renderCircle(graphics, x2 - r, y1 + r, r, color);
+        renderCircle(graphics, x1 + r, y2 - r, r, color);
+        renderCircle(graphics, x2 - r, y2 - r, r, color);
+    }
+
     // ================================================================
     // CIRCLE RENDERING
     // ================================================================

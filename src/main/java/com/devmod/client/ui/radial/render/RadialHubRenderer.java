@@ -9,6 +9,8 @@ import javax.annotation.Nullable;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import com.devmod.client.panels.context.ContextDetector;
 import com.devmod.client.panels.context.ContextMode;
@@ -19,6 +21,15 @@ import com.devmod.client.ui.radial.model.MacroCategory;
 import com.devmod.util.I18n;
 
 public final class RadialHubRenderer {
+
+    private static final java.util.Map<MacroCategory, ItemStack> MACRO_ICON_ITEMS = java.util.Map.of(
+        MacroCategory.ANALYZE, new ItemStack(Items.SPYGLASS),
+        MacroCategory.TELEMETRY, new ItemStack(Items.REDSTONE),
+        MacroCategory.COMBAT, new ItemStack(Items.DIAMOND_SWORD),
+        MacroCategory.ARENA, new ItemStack(Items.SHIELD),
+        MacroCategory.PLAY, new ItemStack(Items.MAP),
+        MacroCategory.TOOLS, new ItemStack(Items.ANVIL)
+    );
 
     private RadialHubRenderer() {
         // Utility class - no instantiation
@@ -287,6 +298,20 @@ public final class RadialHubRenderer {
         int iconX = (int) (cx + Math.cos(midAngle) * iconRadius);
         int iconY = (int) (cy + Math.sin(midAngle) * iconRadius);
 
+        ItemStack iconStack = resolveMacroIconStack(macro);
+        if (iconStack != null && isAvailable) {
+            float iconScale = RadialMenuConstants.MACRO_ICON_ITEM_SCALE;
+            if (isSelected) {
+                iconScale = RadialMenuConstants.MACRO_ICON_ITEM_SCALE_SELECTED;
+            } else if (isHovered) {
+                iconScale = RadialMenuConstants.MACRO_ICON_ITEM_SCALE_HOVER;
+            }
+            renderItemIcon(graphics, iconStack, iconX,
+                iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.MACRO_ICON_ITEM_OFFSET_Y),
+                iconScale);
+            return;
+        }
+
         int iconColor = isSelected
             ? RadialMenuConstants.COLOR_TEXT_PRIMARY
             : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
@@ -302,6 +327,26 @@ public final class RadialHubRenderer {
         float fontScale = resolveFontScale();
         drawCenteredStringScaled(graphics, safeFont, Objects.requireNonNull(iconText, "iconText"), iconX,
             iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y), iconColor, fontScale);
+    }
+
+    @Nullable
+    private static ItemStack resolveMacroIconStack(@Nullable MacroCategory macro) {
+        if (macro == null) {
+            return null;
+        }
+        return MACRO_ICON_ITEMS.get(macro);
+    }
+
+    private static void renderItemIcon(GuiGraphics graphics, ItemStack iconStack, int centerX, int centerY, float scale) {
+        if (iconStack == null || iconStack.isEmpty()) {
+            return;
+        }
+        float half = 8f * scale;
+        graphics.pose().pushPose();
+        graphics.pose().translate(centerX - half, centerY - half, 0);
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.renderItem(iconStack, 0, 0);
+        graphics.pose().popPose();
     }
 
     private static boolean isMacroAvailable(HubState state, int index) {
@@ -336,6 +381,7 @@ public final class RadialHubRenderer {
 
         // Icon
         String centerIcon = null;
+        ItemStack centerIconStack = null;
         int centerIconColor = RadialMenuConstants.COLOR_TEXT_PRIMARY;
 
         if (state.searchMode) {
@@ -349,11 +395,18 @@ public final class RadialHubRenderer {
             centerIcon = "X";
             centerIconColor = RadialMenuConstants.COLOR_CLOSE_BORDER_HOVER;
         } else {
-            centerIcon = Objects.requireNonNullElse(state.selectedMacro.getIcon(), "");
-            centerIconColor = state.selectedMacro.getColor();
+            centerIconStack = resolveMacroIconStack(state.selectedMacro);
+            if (centerIconStack == null || centerIconStack.isEmpty()) {
+                centerIcon = Objects.requireNonNullElse(state.selectedMacro.getIcon(), "");
+                centerIconColor = state.selectedMacro.getColor();
+            }
         }
 
-        if (centerIcon != null) {
+        if (centerIconStack != null && !centerIconStack.isEmpty()) {
+            renderItemIcon(graphics, centerIconStack, state.centerX,
+                state.centerY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CENTER_ICON_ITEM_OFFSET_Y),
+                RadialMenuConstants.CENTER_ICON_ITEM_SCALE);
+        } else if (centerIcon != null) {
             float fontScale = resolveFontScale();
             drawCenteredStringScaled(graphics, safeFont, centerIcon, state.centerX,
                 state.centerY + RadialMenuScaler.scaleConstant(RadialMenuConstants.CENTER_ICON_TEXT_OFFSET_Y), centerIconColor, fontScale);

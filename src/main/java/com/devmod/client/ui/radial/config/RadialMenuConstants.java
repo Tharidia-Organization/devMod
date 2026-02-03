@@ -99,6 +99,24 @@ public final class RadialMenuConstants {
     /** Center icon text vertical offset (pixels) */
     public static final int CENTER_ICON_TEXT_OFFSET_Y = -3;
 
+    /** Macro icon item scale (base) */
+    public static final float MACRO_ICON_ITEM_SCALE = 1.1f;
+
+    /** Macro icon item scale when hovered */
+    public static final float MACRO_ICON_ITEM_SCALE_HOVER = 1.2f;
+
+    /** Macro icon item scale when selected */
+    public static final float MACRO_ICON_ITEM_SCALE_SELECTED = 1.3f;
+
+    /** Center icon item scale */
+    public static final float CENTER_ICON_ITEM_SCALE = 1.55f;
+
+    /** Macro icon item vertical offset (pixels) */
+    public static final int MACRO_ICON_ITEM_OFFSET_Y = -1;
+
+    /** Center icon item vertical offset (pixels) */
+    public static final int CENTER_ICON_ITEM_OFFSET_Y = -1;
+
     // ================================================================
     // CONTEXT BADGE (Hub)
     // ================================================================
@@ -603,7 +621,7 @@ public final class RadialMenuConstants {
     public static final int TOOLTIP_BG_COLOR = RadialMenuThemeDefaults.Overlay.TOOLTIP_BG;
 
     /** Tooltip padding around text */
-    public static final int TOOLTIP_PADDING = 6;
+    public static final int TOOLTIP_PADDING = 8;
 
     /** Tooltip text height assumption (pixels) */
     public static final int TOOLTIP_TEXT_HEIGHT = 10;
@@ -612,7 +630,16 @@ public final class RadialMenuConstants {
     public static final int TOOLTIP_OFFSET_Y = 70;
 
     /** Tooltip border thickness (pixels) */
-    public static final int TOOLTIP_BORDER_THICKNESS = 1;
+    public static final int TOOLTIP_BORDER_THICKNESS = 2;
+
+    /** Tooltip corner radius (pixels) */
+    public static final int TOOLTIP_CORNER_RADIUS = 8;
+
+    /** Tooltip shadow offset (pixels) */
+    public static final int TOOLTIP_SHADOW_OFFSET = 3;
+
+    /** Tooltip shadow alpha (0-255) */
+    public static final int TOOLTIP_SHADOW_ALPHA = 96;
 
     /** Search overlay max alpha */
     public static final int SEARCH_OVERLAY_ALPHA = 0x80;
