@@ -36,34 +36,52 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_RADIAL_OPEN
     );
 
-    // Curated radial menu: hub/screen entry points + key Combat actions.
+    // Curated radial menu: mirrors docs/radial/RADIAL_MENU_MAP_2026-01-31.md.
     private static final Set<String> CURATED_ACTIONS = Set.of(
-        // Hub/screen entry points
-        ActionIds.UI_SETTINGS_OPEN,
-        ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
-        ActionIds.UI_TESTING_HUB_OPEN,
-        ActionIds.UI_QA_TESTING_OPEN,
-        ActionIds.UI_EDITOR_HUB_OPEN,
-        ActionIds.UI_NOTIFICATION_CENTER_OPEN,
-        ActionIds.UI_PLAY_HUB_OPEN,
-        ActionIds.UI_ARENA_HUB_OPEN,
-        ActionIds.UI_NEXUS_HUB_OPEN,
-        ActionIds.UI_VOXELLAB_OPEN,
-        // Debug - Context
+        // ANALYZE - Debug/Overlays
+        ActionIds.DEBUG_OVERLAY_TOGGLE,
+        ActionIds.DEBUG_BODY_PARTS_TOGGLE,
+        ActionIds.DEBUG_OVERLAYS_ENABLE_ALL,
+        ActionIds.DEBUG_OVERLAYS_DISABLE_ALL,
+        // ANALYZE - Debug/AI
+        ActionIds.DEBUG_PATHFINDING_TOGGLE,
+        ActionIds.DEBUG_LOS_TOGGLE,
+        ActionIds.DEBUG_AGGRO_RANGE_TOGGLE,
+        // ANALYZE - Debug/Light
+        ActionIds.DEBUG_LIGHT_OVERLAY_TOGGLE,
+        // ANALYZE - Debug/Native
+        ActionIds.DEBUG_NATIVE_ENTITY_PATHING_TOGGLE,
+        ActionIds.DEBUG_NATIVE_ENTITY_GOALS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_ENTITY_BRAINS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_POI_TOGGLE,
+        ActionIds.DEBUG_NATIVE_RAIDS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_BEES_TOGGLE,
+        ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE,
+        ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE,
+        // ANALYZE - Debug/Context
         ActionIds.DEBUG_COMBAT_RESET,
         ActionIds.DEBUG_CONTEXT_STATUS,
-        // Combat - Diagnostics
+        // ANALYZE - Spatial
+        ActionIds.DEBUG_ROOM_BOUNDS_TOGGLE,
+        ActionIds.DEBUG_ROOM_BOUNDS_GAPS_TOGGLE,
+        ActionIds.DEBUG_VERTICAL_LEVELS_TOGGLE,
+        ActionIds.DEBUG_SAFE_SPOTS_TOGGLE,
+        ActionIds.DEBUG_SPAWNABILITY_TOGGLE,
+        // ANALYZE - Performance
+        ActionIds.DEBUG_FPS_TRACKER_TOGGLE,
+        ActionIds.DEBUG_PROFILER_TOGGLE,
+        ActionIds.DEBUG_ENTITY_DENSITY_TOGGLE,
+        ActionIds.DEBUG_CHUNK_PERF_TOGGLE,
+        ActionIds.DEBUG_ATTRIBUTE_MONITOR_TOGGLE,
+        // COMBAT - Diagnostics
         ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
         ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,
         ActionIds.DEBUG_ECONOMY_TOGGLE,
         ActionIds.DEBUG_ECONOMY_VIEW_CYCLE,
         ActionIds.DEBUG_ECONOMY_SORT_CYCLE,
-        ActionIds.DEBUG_IMPACT_DISMISS,
-        // Combat - Heatmaps
+        // COMBAT - Heatmaps
         ActionIds.DEBUG_HEATMAP_TOGGLE,
         ActionIds.DEBUG_HEATMAP_CYCLE,
-        ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
-        ActionIds.DEBUG_HEATMAP_CLEAR_ALL,
         ActionIds.DEBUG_HEATMAP_DEATH_TOGGLE,
         ActionIds.DEBUG_HEATMAP_MOVEMENT_TOGGLE,
         ActionIds.DEBUG_HEATMAP_CAMPING_TOGGLE,
@@ -72,19 +90,35 @@ public final class RadialMenuActionLayout {
         ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
         ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
         ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE,
-        // Combat - Abilities
-        ActionIds.ABILITY_DASH,
-        ActionIds.ABILITY_DODGE,
-        ActionIds.UI_STAMINA_EDITOR_OPEN,
-        // Combat - Impact HUD
+        ActionIds.DEBUG_HEATMAP_CLEAR_CURRENT,
+        ActionIds.DEBUG_HEATMAP_CLEAR_ALL,
+        // PLAY - HUD
         ActionIds.HUD_IMPACT_TOGGLE,
-        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
-        ActionIds.HUD_IMPACT_3D_TOGGLE,
-        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
-        ActionIds.HUD_IMPACT_SHOW_RECAP,
-        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
         ActionIds.HUD_IMPACT_PRESET_DETAILED,
-        ActionIds.HUD_IMPACT_PRESET_TRAINING
+        ActionIds.HUD_IMPACT_PRESET_MINIMAL,
+        ActionIds.HUD_IMPACT_PRESET_TRAINING,
+        ActionIds.HUD_IMPACT_DISPLAY_MODE_CYCLE,
+        ActionIds.HUD_IMPACT_3D_TOGGLE,
+        ActionIds.HUD_IMPACT_CONTROLLER_TOGGLE,
+        ActionIds.HUD_IMPACT_SHOW_RECAP,
+        ActionIds.HUD_ENDURANCE_TOGGLE,
+        ActionIds.HUD_QUEST_TOGGLE,
+        ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE,
+        ActionIds.HUD_PARTY_TOGGLE,
+        ActionIds.ARENA_HUD_TOGGLE,
+        ActionIds.HUD_QUICK_HELP_TOGGLE,
+        // PLAY - Entry points
+        ActionIds.UI_ENDURANCE_SCREEN_OPEN,
+        ActionIds.UI_PARTY_OPEN,
+        // TELEMETRY
+        ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+        // TOOLS
+        ActionIds.UI_EDITOR_HUB_OPEN,
+        ActionIds.UI_TESTING_HUB_OPEN,
+        ActionIds.UI_VOXELLAB_OPEN,
+        ActionIds.UI_SETTINGS_OPEN,
+        ActionIds.UI_KEYBINDS_OPEN,
+        ActionIds.UI_RADIAL_SETTINGS_OPEN
     );
 
     private static final Map<String, String> ACTION_MENU_OVERRIDES = Map.ofEntries(
@@ -116,11 +150,11 @@ public final class RadialMenuActionLayout {
 
     private static final Map<MacroCategory, List<String>> CATEGORY_ORDER = Map.of(
         MacroCategory.ANALYZE, List.of("Debug", "Spatial", "Performance"),
-        MacroCategory.TELEMETRY, List.of("Telemetry", "Dashboard"),
+        MacroCategory.TELEMETRY, List.of("Dashboard", "Server Ops", "Exports", "Data Dumps", "Analysis", "Dungeon"),
         MacroCategory.COMBAT, List.of("Diagnostics", "Heatmaps"),
         MacroCategory.ARENA, List.of("Arena", "Ops", "Templates", "Force", "Autosmoke", "HUD", "Bounds"),
         MacroCategory.PLAY, List.of("Play", "HUD", "Endurance", "Party"),
-        MacroCategory.TOOLS, List.of("Editors", "Settings", "Testing", "Comms", "Nexus", "Labs")
+        MacroCategory.TOOLS, List.of("Editors", "Labs", "Settings", "Testing", "Comms", "Nexus")
     );
 
     private RadialMenuActionLayout() {}
@@ -178,9 +212,16 @@ public final class RadialMenuActionLayout {
             insertTarget.addItem(item);
         }
 
+        applyDefaultOrdering(result);
+        return result;
+    }
+
+    public static void applyDefaultOrdering(Map<MacroCategory, List<RadialCategory>> result) {
+        if (result == null || result.isEmpty()) {
+            return;
+        }
         sortCategories(result);
         reorderByUsage(result);
-        return result;
     }
 
     private static Map<MacroCategory, List<RadialCategory>> initMap() {
@@ -211,6 +252,7 @@ public final class RadialMenuActionLayout {
         reorderHudCategory(result);
         reorderAnalyzeCategories(result);
         reorderCombatCategories(result);
+        reorderTelemetryCategories(result);
         reorderToolsCategories(result);
     }
 
@@ -278,7 +320,8 @@ public final class RadialMenuActionLayout {
                 "sub:Overlays",
                 "sub:AI",
                 "sub:Light",
-                "sub:Native"
+                "sub:Native",
+                "sub:Context"
             ));
 
             reorderSubcategoryByAction(debug, "Overlays", List.of(
@@ -304,6 +347,10 @@ public final class RadialMenuActionLayout {
                 ActionIds.DEBUG_NATIVE_BEES_TOGGLE,
                 ActionIds.DEBUG_NATIVE_GAME_EVENTS_TOGGLE,
                 ActionIds.DEBUG_NATIVE_STRUCTURES_TOGGLE
+            ));
+            reorderSubcategoryByAction(debug, "Context", List.of(
+                ActionIds.DEBUG_COMBAT_RESET,
+                ActionIds.DEBUG_CONTEXT_STATUS
             ));
         }
 
@@ -360,6 +407,84 @@ public final class RadialMenuActionLayout {
                 ActionIds.DEBUG_HEATMAP_KITING_TOGGLE,
                 ActionIds.DEBUG_HEATMAP_LIGHT_SPAWNABLE_TOGGLE,
                 ActionIds.DEBUG_HEATMAP_LIGHT_DARK_TOGGLE
+            ));
+        }
+    }
+
+    private static void reorderTelemetryCategories(Map<MacroCategory, List<RadialCategory>> result) {
+        RadialCategory dashboard = findCategory(result, MacroCategory.TELEMETRY, "Dashboard");
+        if (dashboard != null) {
+            reorderCategoryItems(dashboard, List.of(
+                ActionIds.UI_TELEMETRY_DASHBOARD_OPEN,
+                ActionIds.TELEMETRY_DASHBOARD_SERVER_OPEN,
+                ActionIds.TELEMETRY_DASHBOARD_SERVER_START,
+                ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP,
+                ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS
+            ));
+        }
+
+        RadialCategory serverOps = findCategory(result, MacroCategory.TELEMETRY, "Server Ops");
+        if (serverOps != null) {
+            reorderCategoryItems(serverOps, List.of(
+                ActionIds.TELEMETRY_RELOAD
+            ));
+        }
+
+        RadialCategory exports = findCategory(result, MacroCategory.TELEMETRY, "Exports");
+        if (exports != null) {
+            reorderCategoryItems(exports, List.of(
+                ActionIds.TELEMETRY_EXPORT_HEATMAPS,
+                "sub:Heatmaps",
+                ActionIds.TELEMETRY_EXPORT_PNG,
+                ActionIds.TELEMETRY_EXPORT_CSV,
+                ActionIds.TELEMETRY_EXPORT_JSON,
+                ActionIds.TELEMETRY_EXPORT_ALL,
+                ActionIds.TELEMETRY_EXPORT_DAMAGE_STATS
+            ));
+            reorderSubcategoryByAction(exports, "Heatmaps", List.of(
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_DEATH,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_MOVEMENT,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_CAMPING,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_STUCK,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_AGGRO_DROP,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_KITING,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_CHOKE_POINTS,
+                ActionIds.TELEMETRY_EXPORT_HEATMAP_PARKOUR_FALLS
+            ));
+        }
+
+        RadialCategory dataDumps = findCategory(result, MacroCategory.TELEMETRY, "Data Dumps");
+        if (dataDumps != null) {
+            reorderCategoryItems(dataDumps, List.of(
+                ActionIds.TELEMETRY_DUMP_WEAPONS,
+                ActionIds.TELEMETRY_DUMP_ROOMS,
+                ActionIds.TELEMETRY_DUMP_FIGHTS,
+                ActionIds.TELEMETRY_DUMP_MINIONS,
+                ActionIds.TELEMETRY_DUNGEONS_DUMP
+            ));
+        }
+
+        RadialCategory analysis = findCategory(result, MacroCategory.TELEMETRY, "Analysis");
+        if (analysis != null) {
+            reorderCategoryItems(analysis, List.of(
+                ActionIds.TELEMETRY_SCAN_LIGHT_ALL,
+                ActionIds.TELEMETRY_SCAN_LIGHT_ROOM,
+                ActionIds.TELEMETRY_SPAWNABILITY,
+                ActionIds.TELEMETRY_DESIRELINES_DUMP,
+                ActionIds.TELEMETRY_DESIRELINES_ANALYZE,
+                ActionIds.TELEMETRY_BACKTRACKING_DUMP,
+                ActionIds.TELEMETRY_BACKTRACKING_CONFUSING,
+                ActionIds.TELEMETRY_DUNGEONS_STATS
+            ));
+        }
+
+        RadialCategory dungeon = findCategory(result, MacroCategory.TELEMETRY, "Dungeon");
+        if (dungeon != null) {
+            reorderCategoryItems(dungeon, List.of(
+                ActionIds.DUNGEON_HELP,
+                ActionIds.DUNGEON_START,
+                ActionIds.DUNGEON_END,
+                ActionIds.DUNGEON_STATUS
             ));
         }
     }

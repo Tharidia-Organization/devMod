@@ -549,6 +549,30 @@ public final class RadialAnimator {
     }
 
     /**
+     * Starts a success flash animation for a favorite.
+     *
+     * @param index favorite index
+     */
+    public void startFavoriteSuccessFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.FAVORITE;
+        flashType = FlashType.SUCCESS;
+    }
+
+    /**
+     * Starts a failed flash animation for a favorite.
+     *
+     * @param index favorite index
+     */
+    public void startFavoriteFailedFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.FAVORITE;
+        flashType = FlashType.FAILED;
+    }
+
+    /**
      * Starts a success flash animation for an item.
      *
      * @param index item index

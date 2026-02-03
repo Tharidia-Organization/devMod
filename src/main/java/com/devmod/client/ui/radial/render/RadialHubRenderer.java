@@ -39,6 +39,7 @@ public final class RadialHubRenderer {
         public final MacroCategory selectedMacro;
         public final @Nullable MacroCategory hoveredMacro;
         public final float[] segmentAnimations;
+        public final @Nullable boolean[] macroAvailability;
         public final float categoryHoverAnim;
         public final boolean searchMode;
         public final boolean inSubcategory;
@@ -56,6 +57,7 @@ public final class RadialHubRenderer {
                         MacroCategory selectedMacro,
                         @Nullable MacroCategory hoveredMacro,
                         float[] segmentAnimations,
+                        @Nullable boolean[] macroAvailability,
                         float categoryHoverAnim,
                         boolean searchMode,
                         boolean inSubcategory,
@@ -69,6 +71,7 @@ public final class RadialHubRenderer {
             this.selectedMacro = Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
             this.hoveredMacro = hoveredMacro;
             this.segmentAnimations = Objects.requireNonNull(segmentAnimations, "segmentAnimations cannot be null");
+            this.macroAvailability = macroAvailability;
             this.categoryHoverAnim = categoryHoverAnim;
             this.searchMode = searchMode;
             this.inSubcategory = inSubcategory;
@@ -84,6 +87,7 @@ public final class RadialHubRenderer {
         public MacroCategory selectedMacro() { return selectedMacro; }
         public @Nullable MacroCategory hoveredMacro() { return hoveredMacro; }
         public float[] segmentAnimations() { return segmentAnimations; }
+        public @Nullable boolean[] macroAvailability() { return macroAvailability; }
         public float categoryHoverAnim() { return categoryHoverAnim; }
         public boolean searchMode() { return searchMode; }
         public boolean inSubcategory() { return inSubcategory; }
@@ -206,8 +210,9 @@ public final class RadialHubRenderer {
 
         for (int i = 0; i < macros.length; i++) {
             MacroCategory macro = macros[i];
+            boolean isAvailable = isMacroAvailable(state, i);
             boolean isSelected = macro == state.selectedMacro;
-            boolean isHovered = macro == state.hoveredMacro;
+            boolean isHovered = macro == state.hoveredMacro && isAvailable;
 
             double segStart = startOffset + i * segmentAngle;
             double segEnd = segStart + segmentAngle;
@@ -219,6 +224,10 @@ public final class RadialHubRenderer {
                 : RadialMenuConstants.COLOR_BG_DARK;
             if (isHovered && !isSelected) {
                 baseColor = RadialGeometry.blendColors(baseColor, macro.getColor(), RadialMenuConstants.MACRO_HOVER_BLEND);
+            }
+            if (!isAvailable) {
+                baseColor = RadialGeometry.blendColors(baseColor, RadialMenuConstants.COLOR_BG_DARK,
+                    RadialMenuConstants.MACRO_DISABLED_BLEND);
             }
 
             // Render segment arc
@@ -235,6 +244,10 @@ public final class RadialHubRenderer {
             int borderWidth = isSelected
                 ? RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_SELECTED)
                 : RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_DEFAULT);
+            if (!isAvailable) {
+                borderColor = RadialGeometry.blendColors(borderColor, RadialMenuConstants.COLOR_BORDER,
+                    RadialMenuConstants.MACRO_DISABLED_BLEND);
+            }
             RadialGeometry.renderArcOutline(graphics, state.centerX, state.centerY,
                 outerR, segStart, segEnd, borderColor, borderWidth);
 
@@ -244,7 +257,7 @@ public final class RadialHubRenderer {
 
             // Render macro icon
             renderMacroIcon(graphics, font, state.centerX, state.centerY,
-                innerR, outerR, segStart, segmentAngle, macro, isSelected, isHovered);
+                innerR, outerR, segStart, segmentAngle, macro, isSelected, isHovered, isAvailable);
         }
     }
 
@@ -266,7 +279,8 @@ public final class RadialHubRenderer {
     private static void renderMacroIcon(GuiGraphics graphics, Font font,
                                          int cx, int cy, int innerR, int outerR,
                                          double segStart, double segmentAngle,
-                                         MacroCategory macro, boolean isSelected, boolean isHovered) {
+                                         MacroCategory macro, boolean isSelected, boolean isHovered,
+                                         boolean isAvailable) {
         Font safeFont = Objects.requireNonNull(font, "font");
         double midAngle = segStart + segmentAngle / 2;
         int iconRadius = (innerR + outerR) / 2;
@@ -276,6 +290,10 @@ public final class RadialHubRenderer {
         int iconColor = isSelected
             ? RadialMenuConstants.COLOR_TEXT_PRIMARY
             : (isHovered ? macro.getColor() : RadialMenuConstants.COLOR_INACTIVE);
+        if (!isAvailable) {
+            iconColor = RadialGeometry.blendColors(iconColor, RadialMenuConstants.COLOR_INACTIVE,
+                RadialMenuConstants.MACRO_DISABLED_BLEND);
+        }
         String iconText = Objects.requireNonNullElse(macro.getIcon(), "");
         if (iconText.isBlank()) {
             String name = Objects.requireNonNull(macro.getName(), "macro name");
@@ -284,6 +302,14 @@ public final class RadialHubRenderer {
         float fontScale = resolveFontScale();
         drawCenteredStringScaled(graphics, safeFont, Objects.requireNonNull(iconText, "iconText"), iconX,
             iconY + RadialMenuScaler.scaleConstant(RadialMenuConstants.MACRO_ICON_TEXT_OFFSET_Y), iconColor, fontScale);
+    }
+
+    private static boolean isMacroAvailable(HubState state, int index) {
+        boolean[] availability = state.macroAvailability;
+        if (availability == null || index < 0 || index >= availability.length) {
+            return true;
+        }
+        return availability[index];
     }
 
     /**

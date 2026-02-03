@@ -17,7 +17,9 @@ public final class RadialBlockedHelpResolver {
     }
 
     public static final class BlockedHelp {
+        @Nonnull
         private final String key;
+        @Nonnull
         private final Object[] args;
 
         public BlockedHelp(@Nonnull String key, @Nonnull Object[] args) {

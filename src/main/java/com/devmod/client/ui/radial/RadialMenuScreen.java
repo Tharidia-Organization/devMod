@@ -98,6 +98,7 @@ public final class RadialMenuScreen extends Screen {
     private final Map<MacroCategory, List<RadialCategory>> macroCategoryMap = new EnumMap<>(MacroCategory.class);
     @Nullable
     private MacroCategory transitionFromMacro = null; // Previous macro during transition for cross-fade effect
+    private final boolean[] macroAvailability = new boolean[MacroCategory.count()];
 
     // === Configuration ===
     private final RadialMenuConfig config = RadialMenuConfig.INSTANCE;
@@ -879,7 +880,10 @@ public final class RadialMenuScreen extends Screen {
         if (angle < 0) angle += RadialMenuConstants.TWO_PI;
 
         // Check favorites ring (between macro hub and inner radius)
-        if (!favorites.isEmpty() && distance >= macroHubRadius && distance < innerRadius) {
+        if (RadialMenuScaler.hasFavoritesRing()
+            && !favorites.isEmpty()
+            && distance >= macroHubRadius
+            && distance < innerRadius) {
             int numFavorites = favorites.size();
             double favSegmentAngle = RadialMenuConstants.TWO_PI / numFavorites;
             double favStartOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
@@ -906,6 +910,10 @@ public final class RadialMenuScreen extends Screen {
             if (selectedFavoriteIndex != prevSelectedFavorite && selectedFavoriteIndex >= 0) {
                 playHoverSound(RadialMenuConstants.SOUND_PITCH_HOVER, RadialMenuConstants.SOUND_VOLUME_HOVER);
             }
+            return;
+        }
+
+        if (!RadialMenuScaler.hasFavoritesRing() && distance < innerRadius) {
             return;
         }
 
@@ -1005,6 +1013,13 @@ public final class RadialMenuScreen extends Screen {
 
     private boolean macroHasVisibleCategories(@Nullable MacroCategory macro) {
         return !getVisibleCategoriesForMacro(macro).isEmpty();
+    }
+
+    private void updateMacroAvailability() {
+        MacroCategory[] macros = MacroCategory.values();
+        for (int i = 0; i < macros.length; i++) {
+            macroAvailability[i] = macroHasVisibleCategories(macros[i]);
+        }
     }
 
     private int getVisibleItemCount(RadialCategory category) {
@@ -1216,7 +1231,7 @@ public final class RadialMenuScreen extends Screen {
     // ================================================================
 
     private void renderFavoritesRing(GuiGraphics graphics) {
-        if (favorites.isEmpty()) return;
+        if (favorites.isEmpty() || !RadialMenuScaler.hasFavoritesRing()) return;
 
         @Nonnull Font safeFont = requireFont();
         int numFavorites = favorites.size();
@@ -1268,10 +1283,18 @@ public final class RadialMenuScreen extends Screen {
                     RadialMenuConstants.COLOR_BLOCKED_BORDER);
             }
 
-            // Flash overlay for blocked feedback
+            // Flash overlay for blocked/success/failed feedback
             float flashAlpha = animator.getFlashAlpha(i, com.devmod.client.ui.radial.animation.RadialAnimator.TargetType.FAVORITE);
             if (flashAlpha > 0f) {
-                int flashColor = RadialGeometry.applyAlpha(RadialMenuConstants.COLOR_BLOCKED_TINT, (int) (flashAlpha * 128));
+                com.devmod.client.ui.radial.animation.RadialAnimator.FlashType flashType =
+                    animator.getFlashType(i, com.devmod.client.ui.radial.animation.RadialAnimator.TargetType.FAVORITE);
+                int flashColor = switch (flashType) {
+                    case SUCCESS -> RadialMenuConstants.COLOR_FLASH_SUCCESS;
+                    case FAILED -> RadialMenuConstants.COLOR_FLASH_FAILED;
+                    case BLOCKED -> RadialMenuConstants.COLOR_FLASH_BLOCKED;
+                    case NONE -> RadialMenuConstants.COLOR_FLASH_BLOCKED;
+                };
+                flashColor = RadialGeometry.applyAlpha(flashColor, (int) (flashAlpha * 128));
                 RadialGeometry.renderCircle(graphics, favX, favY, size - 2, flashColor);
             }
 
@@ -1376,13 +1399,25 @@ public final class RadialMenuScreen extends Screen {
             hoveredMacro != null ? hoveredMacro.getIndex() : RadialMenuConstants.NO_SELECTION,
             config.enableAnimations && !config.isReducedMotionEnabled());
 
+        updateMacroAvailability();
+
         // Build hub state and render
         boolean inSubcategory = currentCategory != null && currentCategory.hasParent();
         RadialHubRenderer.HubState hubState = new RadialHubRenderer.HubState(
-            centerX, centerY, centerButtonRadius, macroHubRadius,
-            selectedMacro, hoveredMacro, animator.getMacroSegmentAnimations(),
-            animator.getCenterHoverAnimation(), searchMode, inSubcategory,
-            lastContextMode, contextPulseStartMs, config.isReducedMotionEnabled()
+            centerX,
+            centerY,
+            centerButtonRadius,
+            macroHubRadius,
+            selectedMacro,
+            hoveredMacro,
+            animator.getMacroSegmentAnimations(),
+            macroAvailability,
+            animator.getCenterHoverAnimation(),
+            searchMode,
+            inSubcategory,
+            lastContextMode,
+            contextPulseStartMs,
+            config.isReducedMotionEnabled()
         );
 
         @Nonnull Font safeFont = requireFont();
@@ -1852,8 +1887,10 @@ public final class RadialMenuScreen extends Screen {
                 .withStyle(net.minecraft.ChatFormatting.RED);
         }
         if (ActionResult.ERROR_UNTRUSTED_ACTION.equals(errorCode)) {
-            String message = Objects.requireNonNullElse(result.message(),
-                I18n.translate("devmod.action.unavailable").getString());
+            @Nonnull String message = Objects.requireNonNull(
+                Objects.requireNonNullElse(result.message(),
+                    I18n.translate("devmod.action.unavailable").getString()),
+                "message");
             return Component.literal(message).withStyle(net.minecraft.ChatFormatting.RED);
         }
         if (action != null) {
@@ -1869,6 +1906,50 @@ public final class RadialMenuScreen extends Screen {
         String errorCode = result.errorCode();
         return ActionResult.ERROR_UNKNOWN_ACTION.equals(errorCode)
             || ActionResult.ERROR_UNTRUSTED_ACTION.equals(errorCode);
+    }
+
+    private boolean handleActionResult(@Nonnull ActionResult result,
+                                       @Nonnull RadialMenuItem item,
+                                       @Nullable com.devmod.actions.RadialAction action,
+                                       @Nonnull ActionSource source) {
+        if (result.isSuccess()) {
+            return true;
+        }
+        if (result.isBlocked()) {
+            Component reason = resolveBlockReasonComponentForResult(item, action, result);
+            boolean showMessage = shouldShowBlockedMessage(result);
+            showBlockedFeedback(item, reason, showMessage);
+            return false;
+        }
+        if (result.isFailed()) {
+            triggerActionFlash(source, com.devmod.client.ui.radial.animation.RadialAnimator.FlashType.FAILED);
+            return false;
+        }
+        return false;
+    }
+
+    private void triggerActionFlash(@Nonnull ActionSource source,
+                                    @Nonnull com.devmod.client.ui.radial.animation.RadialAnimator.FlashType flashType) {
+        if (!config.enableAnimations || config.isReducedMotionEnabled()) {
+            return;
+        }
+        if (source == ActionSource.FAVORITE && selectedFavoriteIndex >= 0) {
+            switch (flashType) {
+                case SUCCESS -> animator.startFavoriteSuccessFlash(selectedFavoriteIndex);
+                case FAILED -> animator.startFavoriteFailedFlash(selectedFavoriteIndex);
+                case BLOCKED -> animator.startFavoriteBlockedFlash(selectedFavoriteIndex);
+                case NONE -> {}
+            }
+            return;
+        }
+        if (selectedItemIndex >= 0) {
+            switch (flashType) {
+                case SUCCESS -> animator.startItemSuccessFlash(selectedItemIndex);
+                case FAILED -> animator.startItemFailedFlash(selectedItemIndex);
+                case BLOCKED -> animator.startItemBlockedFlash(selectedItemIndex);
+                case NONE -> {}
+            }
+        }
     }
 
     @Override
@@ -2198,12 +2279,7 @@ public final class RadialMenuScreen extends Screen {
                     return;
                 }
                 ActionResult result = ActionRegistry.invokeWithResult(actionId, ClientActionContexts.forRadial());
-                if (!result.isSuccess()) {
-                    if (result.isBlocked()) {
-                        Component reason = resolveBlockReasonComponentForResult(item, action, result);
-                        boolean showMessage = shouldShowBlockedMessage(result);
-                        showBlockedFeedback(item, reason, showMessage);
-                    }
+                if (!handleActionResult(result, item, action, source)) {
                     return;
                 }
             } else {
@@ -2228,6 +2304,8 @@ public final class RadialMenuScreen extends Screen {
                         I18n.translate(statusKey).getString()),
                     true);
             }
+
+            triggerActionFlash(source, com.devmod.client.ui.radial.animation.RadialAnimator.FlashType.SUCCESS);
 
             if (config.enableSounds) {
                 float pitch = item.isToggle()

@@ -1,6 +1,9 @@
 package com.devmod.client.ui.radial.input;
 
 import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,11 +47,12 @@ class RadialSearchHandlerDirectTest {
     }
 
     private static class TestAction extends RadialAction {
+        @Nonnull
         private final String name;
         private final String description;
 
         private TestAction(String name, String description) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name, "name");
             this.description = description;
         }
 

@@ -583,6 +583,9 @@ public final class RadialMenuConstants {
     /** Blend factor for hovered macro background */
     public static final float MACRO_HOVER_BLEND = 0.25f;
 
+    /** Blend factor for disabled macro background/icon */
+    public static final float MACRO_DISABLED_BLEND = 0.6f;
+
     /** Blend factor for selected category background */
     public static final float CATEGORY_SELECTED_BLEND = 0.25f;
 

@@ -109,6 +109,7 @@ public final class RadialMenuScaler {
     private static int macroHubRadius = REF_CENTER_RADIUS + RadialMenuConstants.MACRO_HUB_OFFSET;
     private static int itemSize = RadialMenuConstants.ITEM_BASE_SIZE;
     private static float scaleFactor = 1.0f;
+    private static boolean favoritesEnabled = true;
 
     private RadialMenuScaler() {}
 
@@ -153,8 +154,11 @@ public final class RadialMenuScaler {
         int favoritePadding = scaleConstant(4);
         int minFav = macroHubRadius + favoriteBubble + favoritePadding;
         int maxFav = innerRadius - favoriteBubble - favoritePadding;
-        if (maxFav >= minFav) {
+        favoritesEnabled = maxFav >= minFav;
+        if (favoritesEnabled) {
             favoritesRadius = Math.max(minFav, Math.min(favoritesRadius, maxFav));
+        } else {
+            favoritesRadius = Math.max(0, Math.min(minFav, maxFav));
         }
     }
 
@@ -199,6 +203,7 @@ public final class RadialMenuScaler {
                 itemRadius = Math.max(itemMin, Math.min(itemRadius, itemMax));
 
                 centerButtonRadius = Math.min(centerButtonRadius, Math.max(8, innerRadius - UIScaleManager.snap(6)));
+                centerButtonRadius = Math.max(MIN_CENTER_RADIUS, centerButtonRadius);
 
                 favoritesRadius = Math.max(centerButtonRadius + 8,
                     innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
@@ -210,8 +215,11 @@ public final class RadialMenuScaler {
                 int favoritePadding = scaleConstant(4);
                 int minFav = macroHubRadius + favoriteBubble + favoritePadding;
                 int maxFav = innerRadius - favoriteBubble - favoritePadding;
-                if (maxFav >= minFav) {
+                favoritesEnabled = maxFav >= minFav;
+                if (favoritesEnabled) {
                     favoritesRadius = Math.max(minFav, Math.min(favoritesRadius, maxFav));
+                } else {
+                    favoritesRadius = Math.max(0, Math.min(minFav, maxFav));
                 }
             }
         }
@@ -250,6 +258,9 @@ public final class RadialMenuScaler {
      * Scales a constant value based on current menu scale.
      */
     public static int scaleConstant(int baseValue) {
+        if (baseValue < 0) {
+            return -UIScaleManager.snap((int) (-baseValue * scaleFactor));
+        }
         return UIScaleManager.snap((int) (baseValue * scaleFactor));
     }
 
@@ -342,6 +353,7 @@ public final class RadialMenuScaler {
     public static int getItemRadius() { return itemRadius; }
     public static int getCenterButtonRadius() { return centerButtonRadius; }
     public static int getFavoritesRadius() { return favoritesRadius; }
+    public static boolean hasFavoritesRing() { return favoritesEnabled; }
     public static int getMacroHubRadius() { return macroHubRadius; }
     public static int getItemSize() { return itemSize; }
     public static float getScaleFactor() { return scaleFactor; }

@@ -1,7 +1,10 @@
 package com.devmod.client.ui.radial;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nonnull;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,7 +48,7 @@ class RadialCategoryDirectTest {
     @DisplayName("Toggle actions switch state when executed")
     void toggleActionSwitchesState() {
         AtomicBoolean state = new AtomicBoolean(false);
-        RadialMenuItem item = RadialMenuItem.toggle("Toggle", "*", state::get, state::set, "toggle test");
+        RadialMenuItem item = RadialMenuItem.toggle("Toggle", "*", state::get, v -> state.set(v), "toggle test");
 
         assertTrue(item.isToggle());
         item.execute();
@@ -53,13 +56,14 @@ class RadialCategoryDirectTest {
     }
 
     private static class TestAction extends RadialAction {
+        @Nonnull
         private final String name;
         private final String description;
         private final boolean visible;
         private final boolean executable;
 
         private TestAction(String name, String description, boolean visible, boolean executable) {
-            this.name = name;
+            this.name = Objects.requireNonNull(name, "name");
             this.description = description;
             this.visible = visible;
             this.executable = executable;

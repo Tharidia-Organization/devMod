@@ -262,7 +262,8 @@ public class RadialActionDetailScreen extends Screen {
         if (description != null && !description.isBlank()) {
             description.lines().forEach(rawLine -> {
                 String safeLine = Objects.requireNonNull(rawLine, "description line");
-                Component lineComponent = Component.literal(safeLine);
+                @Nonnull Component lineComponent = Objects.requireNonNull(
+                    Component.literal(safeLine), "lineComponent");
                 for (FormattedCharSequence seq : safeFont.split(lineComponent, maxWidth)) {
                     lines.add(new DetailLine(seq, DesignTokens.Text.PRIMARY()));
                 }
@@ -270,28 +271,29 @@ public class RadialActionDetailScreen extends Screen {
         }
 
         List<Component> meta = new ArrayList<>();
-        if (registryAction != null) {
-            ActionCategory category = registryAction.getCategory();
+        @Nullable com.devmod.actions.RadialAction action = this.registryAction;
+        if (action != null) {
+            ActionCategory category = action.getCategory();
             if (category != null) {
                 meta.add(I18n.translate("devmod.radial.details.category", category.getLabel().getString()));
             }
-            String commandHint = registryAction.getCommandHint();
+            String commandHint = action.getCommandHint();
             if (commandHint != null && !commandHint.isBlank()) {
                 meta.add(I18n.translate("devmod.radial.details.command", "/" + commandHint));
             }
-            int permissionLevel = registryAction.getPermissionLevel();
+            int permissionLevel = action.getPermissionLevel();
             if (permissionLevel >= 0) {
                 meta.add(I18n.translate("devmod.radial.details.permission", permissionLevel));
             }
-            if (registryAction.requiresConfirm()) {
+            if (action.requiresConfirm()) {
                 meta.add(I18n.translate("devmod.radial.details.confirm"));
             }
             if (showAdvanced) {
-                ActionType actionType = registryAction.getActionType();
+                ActionType actionType = action.getActionType();
                 if (actionType != null) {
                     meta.add(I18n.translate("devmod.radial.details.type", formatActionType(actionType)));
                 }
-                String menuPath = registryAction.getMenuPath();
+                String menuPath = action.getMenuPath();
                 if (menuPath != null && !menuPath.isBlank()) {
                     meta.add(I18n.translate("devmod.radial.details.path", menuPath));
                 }
@@ -312,7 +314,8 @@ public class RadialActionDetailScreen extends Screen {
                 lines.add(new DetailLine(FormattedCharSequence.EMPTY, DesignTokens.Text.MUTED()));
             }
             for (Component metaLine : meta) {
-                for (FormattedCharSequence seq : safeFont.split(metaLine, maxWidth)) {
+                @Nonnull Component safeMetaLine = Objects.requireNonNull(metaLine, "metaLine");
+                for (FormattedCharSequence seq : safeFont.split(safeMetaLine, maxWidth)) {
                     lines.add(new DetailLine(seq, DesignTokens.Text.MUTED()));
                 }
             }

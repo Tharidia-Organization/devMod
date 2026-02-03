@@ -1,0 +1,300 @@
+{
+  "schemaVersion": 1,
+  "macroCategories": [
+    {
+      "id": "ANALYZE",
+      "categories": [
+        {
+          "id": "debug",
+          "name": "Debug",
+          "colorToken": "ANALYZE_DEBUG",
+          "icon": "D",
+          "items": [],
+          "subcategories": [
+            {
+              "id": "overlays",
+              "name": "Overlays",
+              "colorToken": "ANALYZE_DEBUG",
+              "icon": "O",
+              "items": [
+                { "actionId": "devmod.debug.overlay.toggle" },
+                { "actionId": "devmod.debug.body_parts.toggle" },
+                { "actionId": "devmod.debug.overlays.enable_all" },
+                { "actionId": "devmod.debug.overlays.disable_all" }
+              ]
+            },
+            {
+              "id": "ai",
+              "name": "AI",
+              "colorToken": "ANALYZE_DEBUG",
+              "icon": "A",
+              "items": [
+                { "actionId": "devmod.debug.pathfinding.toggle" },
+                { "actionId": "devmod.debug.los.toggle" },
+                { "actionId": "devmod.debug.aggro_range.toggle" }
+              ]
+            },
+            {
+              "id": "light",
+              "name": "Light",
+              "colorToken": "ANALYZE_DEBUG",
+              "icon": "L",
+              "items": [
+                { "actionId": "devmod.debug.light_overlay.toggle" }
+              ]
+            },
+            {
+              "id": "native",
+              "name": "Native",
+              "colorToken": "ANALYZE_DEBUG",
+              "icon": "N",
+              "items": [
+                { "actionId": "devmod.debug.native.entity_pathing.toggle" },
+                { "actionId": "devmod.debug.native.entity_goals.toggle" },
+                { "actionId": "devmod.debug.native.entity_brains.toggle" },
+                { "actionId": "devmod.debug.native.poi.toggle" },
+                { "actionId": "devmod.debug.native.raids.toggle" },
+                { "actionId": "devmod.debug.native.bees.toggle" },
+                { "actionId": "devmod.debug.native.game_events.toggle" },
+                { "actionId": "devmod.debug.native.structures.toggle" }
+              ]
+            },
+            {
+              "id": "context",
+              "name": "Context",
+              "colorToken": "ANALYZE_DEBUG",
+              "icon": "C",
+              "items": [
+                { "actionId": "devmod.debug.combat.reset" },
+                { "actionId": "devmod.debug.context.status" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spatial",
+          "name": "Spatial",
+          "colorToken": "ANALYZE_SPATIAL",
+          "icon": "S",
+          "items": [
+            { "actionId": "devmod.debug.room_bounds.toggle" },
+            { "actionId": "devmod.debug.room_bounds.gaps.toggle" },
+            { "actionId": "devmod.debug.vertical_levels.toggle" },
+            { "actionId": "devmod.debug.safe_spots.toggle" },
+            { "actionId": "devmod.debug.spawnability.toggle" }
+          ]
+        },
+        {
+          "id": "performance",
+          "name": "Performance",
+          "colorToken": "ANALYZE_PERFORMANCE",
+          "icon": "P",
+          "items": [
+            { "actionId": "devmod.debug.fps_tracker.toggle" },
+            { "actionId": "devmod.debug.profiler.toggle" },
+            { "actionId": "devmod.debug.entity_density.toggle" },
+            { "actionId": "devmod.debug.chunk_perf.toggle" },
+            { "actionId": "devmod.debug.attribute_monitor.toggle" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TELEMETRY",
+      "categories": [
+        {
+          "id": "dashboard",
+          "name": "Dashboard",
+          "colorToken": "TELEMETRY_DASHBOARD",
+          "icon": "D",
+          "items": [
+            { "actionId": "devmod.ui.telemetry_dashboard.open" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "COMBAT",
+      "categories": [
+        {
+          "id": "diagnostics",
+          "name": "Diagnostics",
+          "colorToken": "COMBAT_DEBUG",
+          "icon": "D",
+          "items": [
+            { "actionId": "devmod.debug.boss_phase.toggle" },
+            { "actionId": "devmod.debug.skill_efficacy.toggle" },
+            { "actionId": "devmod.debug.economy.toggle" },
+            { "actionId": "devmod.debug.economy.view_cycle" },
+            { "actionId": "devmod.debug.economy.sort_cycle" }
+          ]
+        },
+        {
+          "id": "heatmaps",
+          "name": "Heatmaps",
+          "colorToken": "COMBAT_ACTIONS",
+          "icon": "H",
+          "items": [
+            { "actionId": "devmod.debug.heatmap.toggle" },
+            { "actionId": "devmod.debug.heatmap.cycle" },
+            { "actionId": "devmod.debug.heatmap.clear_current" },
+            { "actionId": "devmod.debug.heatmap.clear_all" }
+          ],
+          "subcategories": [
+            {
+              "id": "types",
+              "name": "Types",
+              "colorToken": "COMBAT_ACTIONS",
+              "icon": "T",
+              "items": [
+                { "actionId": "devmod.debug.heatmap.death.toggle" },
+                { "actionId": "devmod.debug.heatmap.movement.toggle" },
+                { "actionId": "devmod.debug.heatmap.camping.toggle" },
+                { "actionId": "devmod.debug.heatmap.stuck.toggle" },
+                { "actionId": "devmod.debug.heatmap.aggro_drop.toggle" },
+                { "actionId": "devmod.debug.heatmap.kiting.toggle" },
+                { "actionId": "devmod.debug.heatmap.light_spawnable.toggle" },
+                { "actionId": "devmod.debug.heatmap.light_dark.toggle" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ARENA",
+      "categories": []
+    },
+    {
+      "id": "PLAY",
+      "categories": [
+        {
+          "id": "hud",
+          "name": "HUD",
+          "colorToken": "PLAY_COMMS",
+          "icon": "H",
+          "items": [],
+          "subcategories": [
+            {
+              "id": "impact_hud",
+              "name": "Impact HUD",
+              "colorToken": "PLAY_COMMS",
+              "icon": "I",
+              "items": [
+                { "actionId": "devmod.hud.impact.toggle" },
+                { "actionId": "devmod.hud.impact.display_mode.cycle" },
+                { "actionId": "devmod.hud.impact_3d.toggle" },
+                { "actionId": "devmod.hud.impact.controller.toggle" },
+                { "actionId": "devmod.hud.impact.show_recap" }
+              ],
+              "subcategories": [
+                {
+                  "id": "presets",
+                  "name": "Presets",
+                  "colorToken": "PLAY_COMMS",
+                  "icon": "P",
+                  "items": [
+                    { "actionId": "devmod.hud.impact.preset.detailed" },
+                    { "actionId": "devmod.hud.impact.preset.minimal" },
+                    { "actionId": "devmod.hud.impact.preset.training" }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "endurance_hud",
+              "name": "Endurance HUD",
+              "colorToken": "PLAY_COMMS",
+              "icon": "E",
+              "items": [
+                { "actionId": "devmod.endurance.hud.toggle" },
+                { "actionId": "devmod.hud.quest.toggle" },
+                { "actionId": "devmod.endurance.hud.details_toggle" }
+              ]
+            },
+            {
+              "id": "party_hud",
+              "name": "Party HUD",
+              "colorToken": "PLAY_COMMS",
+              "icon": "P",
+              "items": [
+                { "actionId": "devmod.hud.party.toggle" }
+              ]
+            },
+            {
+              "id": "arena_hud",
+              "name": "Arena HUD",
+              "colorToken": "PLAY_COMMS",
+              "icon": "A",
+              "items": [
+                { "actionId": "devmod.arena.hud.toggle" }
+              ]
+            },
+            {
+              "id": "help",
+              "name": "Help",
+              "colorToken": "PLAY_COMMS",
+              "icon": "H",
+              "items": [
+                { "actionId": "devmod.hud.quick_help.toggle" }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "endurance",
+          "name": "Endurance",
+          "colorToken": "PLAY_SEASON",
+          "icon": "E",
+          "items": [
+            { "actionId": "devmod.ui.endurance_screen.open" }
+          ]
+        },
+        {
+          "id": "party",
+          "name": "Party",
+          "colorToken": "PLAY_PARTY",
+          "icon": "P",
+          "items": [
+            { "actionId": "devmod.ui.party.open" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TOOLS",
+      "categories": [
+        {
+          "id": "editors",
+          "name": "Editors",
+          "colorToken": "TOOLS_EDITOR",
+          "icon": "E",
+          "items": [
+            { "actionId": "devmod.ui.editor_hub.open" }
+          ]
+        },
+        {
+          "id": "labs",
+          "name": "Labs",
+          "colorToken": "TOOLS_TESTING",
+          "icon": "L",
+          "items": [
+            { "actionId": "devmod.ui.testing_hub.open" },
+            { "actionId": "devmod.ui.voxellab.open" }
+          ]
+        },
+        {
+          "id": "settings",
+          "name": "Settings",
+          "colorToken": "TOOLS_SETTINGS",
+          "icon": "S",
+          "items": [
+            { "actionId": "devmod.ui.settings.open" },
+            { "actionId": "devmod.ui.keybinds.open" },
+            { "actionId": "devmod.ui.radial_settings.open" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -88,6 +88,7 @@ public final class RadialMenuDefinitionLoader {
 
             // Build categories from config
             Map<MacroCategory, List<RadialCategory>> result = buildFromConfig(config, mobEditorItemSupplier);
+            RadialMenuActionLayout.applyDefaultOrdering(result);
             LOGGER.info("[RadialMenuLoader] Loaded {} macro categories from config", result.size());
 
             return result;
