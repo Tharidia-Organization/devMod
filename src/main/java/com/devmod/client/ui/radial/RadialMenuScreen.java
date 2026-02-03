@@ -1635,7 +1635,7 @@ public final class RadialMenuScreen extends Screen {
         }
         if (selectedFavoriteIndex >= 0 && selectedFavoriteIndex < favorites.size()) {
             FavoriteItem fav = favorites.get(selectedFavoriteIndex);
-            executeItem(fav.item, ActionSource.FAVORITE, null, null);
+            executeItem(Objects.requireNonNull(fav.item, "fav.item"), ActionSource.FAVORITE, null, null);
             return true;
         }
 
@@ -1967,7 +1967,7 @@ public final class RadialMenuScreen extends Screen {
             }
             if (keyCode == config.input.keySearchConfirm && selectedSearchResult >= 0) {
                 RadialSearchHandler.SearchResult result = searchResults.get(selectedSearchResult);
-                executeItem(result.getItem(), ActionSource.SEARCH, result.getCategory(), searchQuery.toString());
+                executeItem(Objects.requireNonNull(result.getItem(), "result.item"), ActionSource.SEARCH, result.getCategory(), searchQuery.toString());
                 searchMode = false;
                 return true;
             }
@@ -2049,7 +2049,7 @@ public final class RadialMenuScreen extends Screen {
                     showMessage(Minecraft.getInstance(), I18n.translate("devmod.radial.message.no_items_mode"));
                     return true;
                 }
-                executeItem(pinned.item, ActionSource.PINNED, null, null);
+                executeItem(Objects.requireNonNull(pinned.item, "pinned.item"), ActionSource.PINNED, null, null);
                 return true;
             }
         }
@@ -2129,7 +2129,7 @@ public final class RadialMenuScreen extends Screen {
                         toggleFavorite(item, cat);
                     }
                 } else {
-                    executeItem(visibleItems.get(itemNum), ActionSource.NORMAL, cat, null);
+                    executeItem(Objects.requireNonNull(visibleItems.get(itemNum), "visibleItem"), ActionSource.NORMAL, cat, null);
                 }
                 return true;
             }
@@ -2204,7 +2204,7 @@ public final class RadialMenuScreen extends Screen {
             if (editMode) {
                 removeFavorite(selectedFavoriteIndex);
             } else {
-                executeItem(fav.item, ActionSource.FAVORITE, null, null);
+                executeItem(Objects.requireNonNull(fav.item, "fav.item"), ActionSource.FAVORITE, null, null);
             }
             return;
         }
@@ -2258,7 +2258,7 @@ public final class RadialMenuScreen extends Screen {
         SEARCH
     }
 
-    private void executeItem(RadialMenuItem item, ActionSource source,
+    private void executeItem(@Nonnull RadialMenuItem item, @Nonnull ActionSource source,
                              @Nullable RadialCategory contextCategory,
                              @Nullable String searchQuerySnapshot) {
         try {
@@ -2278,7 +2278,8 @@ public final class RadialMenuScreen extends Screen {
                     openItemDetails(item, riskLevel);
                     return;
                 }
-                ActionResult result = ActionRegistry.invokeWithResult(actionId, ClientActionContexts.forRadial());
+                ActionResult result = Objects.requireNonNull(
+                    ActionRegistry.invokeWithResult(actionId, ClientActionContexts.forRadial()), "result");
                 if (!handleActionResult(result, item, action, source)) {
                     return;
                 }
