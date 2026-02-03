@@ -114,7 +114,11 @@ import com.devmod.shared.SharedColorTokens;
 import com.devmod.telemetry.TelemetryService;
 import com.devmod.util.I18n;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public final class DevModClientActions {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DevModClientActions.class);
     private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
 
     private static final HeatmapType[] HEATMAP_CYCLE = {
@@ -234,6 +238,25 @@ public final class DevModClientActions {
             .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
                 "radial_settings",
                 () -> new UnifiedSettingsScreen(null, SettingsCategory.RADIAL)))
+            .build());
+
+        ActionRegistry.register(RadialAction.builder(ActionIds.UI_RADIAL_RESTORE_DEFAULTS)
+            .labelKey("devmod.radial.item.restore_defaults")
+            .descriptionKey("devmod.radial.item.restore_defaults.desc")
+            .category(ActionCategory.CONFIG)
+            .menuPath("Root/Config/Radial Menu")
+            .icon(Items.SUNFLOWER)
+            .precondition(ActionPreconditions.always())
+            .handler(context -> {
+                com.devmod.client.ui.radial.RadialMenuConfig.INSTANCE.resetToDefaults();
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null) {
+                    mc.player.displayClientMessage(
+                        java.util.Objects.requireNonNull(
+                            Component.translatable("devmod.radial.message.defaults_restored"),
+                            "message"), false);
+                }
+            })
             .build());
 
         ActionRegistry.register(RadialAction.builder(ActionIds.UI_KEYBINDS_OPEN)
@@ -1812,6 +1835,37 @@ public final class DevModClientActions {
                 PartyHudOverlay.toggle();
                 String status = PartyHudOverlay.isEnabled() ? "\u00A7aON" : "\u00A7cOFF";
                 context.sendSuccess(I18n.translate("devmod.render.party_hud_status", status), true);
+            })
+            .build());
+
+        // Combat context reset - useful when context gets stuck in COMBAT mode
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_COMBAT_RESET)
+            .labelKey("devmod.action.combat_reset")
+            .descriptionKey("devmod.action.combat_reset.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Context/Reset Combat")
+            .icon(Items.CLOCK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                ContextDetector.INSTANCE.reset();
+                context.sendSuccess(I18n.translate("devmod.context.reset_success"), true);
+                LOGGER.info("[ContextDetector] Manual reset performed - mode now: {}",
+                    ContextDetector.INSTANCE.getCurrentMode());
+            })
+            .build());
+
+        // Context status - shows current combat/context state for debugging
+        ActionRegistry.register(RadialAction.builder(ActionIds.DEBUG_CONTEXT_STATUS)
+            .labelKey("devmod.action.context_status")
+            .descriptionKey("devmod.action.context_status.desc")
+            .category(ActionCategory.DEBUG)
+            .menuPath("Root/Debug/Context/Status")
+            .icon(Items.BOOK)
+            .precondition(ActionPreconditions.clientOnly())
+            .handler(context -> {
+                String debugInfo = Objects.requireNonNull(ContextDetector.INSTANCE.getDebugInfo());
+                context.sendSuccess(Component.literal(debugInfo), false);
+                LOGGER.info("[ContextDetector] Status: {}", debugInfo);
             })
             .build());
     }

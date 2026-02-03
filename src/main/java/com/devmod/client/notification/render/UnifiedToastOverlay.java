@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -261,7 +263,7 @@ public class UnifiedToastOverlay {
         return Math.max(minWidth, width);
     }
 
-    private static void renderToast(GuiGraphics graphics, Font font, ToastEntry entry,
+    private static void renderToast(GuiGraphics graphics, @Nonnull Font font, ToastEntry entry,
                                      int x, int y, int width, int height, int lineHeight,
                                      float opacity, boolean hovered, long now) {
         Notification notification = entry.notification;
@@ -465,11 +467,12 @@ public class UnifiedToastOverlay {
     // ============================================================================
 
 
+    @Nonnull
     private static String resolveTitleText(Notification notification) {
         String titleKey = notification.titleKey();
         if (titleKey != null && !titleKey.isBlank()) {
             Object[] args = notification.params().values().toArray(new Object[0]);
-            return Component.translatable(titleKey, java.util.Objects.requireNonNull(args)).getString();
+            return Objects.requireNonNull(Component.translatable(titleKey, java.util.Objects.requireNonNull(args)).getString());
         }
 
         var params = notification.params();
@@ -500,11 +503,12 @@ public class UnifiedToastOverlay {
         };
     }
 
+    @Nonnull
     private static String resolveMessageText(Notification notification) {
         String messageKey = notification.messageKey();
         if (messageKey != null && !messageKey.isBlank()) {
             Object[] args = notification.params().values().toArray(new Object[0]);
-            return Component.translatable(messageKey, java.util.Objects.requireNonNull(args)).getString();
+            return Objects.requireNonNull(Component.translatable(messageKey, java.util.Objects.requireNonNull(args)).getString());
         }
 
         var params = notification.params();
@@ -519,7 +523,7 @@ public class UnifiedToastOverlay {
                 parts.add(formatParamKey(key) + ": " + entry.getValue());
             }
             if (!parts.isEmpty()) {
-                return String.join(" | ", parts);
+                return Objects.requireNonNull(String.join(" | ", parts));
             }
         }
         return "Click to view details";
@@ -541,24 +545,25 @@ public class UnifiedToastOverlay {
         FINISHED
     }
 
-    private static String truncateToWidth(Font font, String text, int width) {
+    private static String truncateToWidth(Font font, @Nonnull String text, int width) {
         if (width <= 0) {
             return "";
         }
         if (UIScaleManager.getScaledStringWidth(font, text) <= width) {
             return text;
         }
-        String trimmed = font.plainSubstrByWidth(text, Math.max(0, width - 10));
+        String result = font.plainSubstrByWidth(text, Math.max(0, width - 10));
+        String trimmed = result != null ? result : "";
         return trimmed + "...";
     }
 
     private static class ToastEntry {
         final Notification notification;
         final int accentColor;
-        final String icon;
-        final String baseTitle;
-        final String baseMessage;
-        final String categoryLabel;
+        @Nonnull final String icon;
+        @Nonnull final String baseTitle;
+        @Nonnull final String baseMessage;
+        @Nonnull final String categoryLabel;
         int cachedContentWidth = -1;
         String cachedTitle = "";
         String cachedMessage = "";
@@ -579,7 +584,7 @@ public class UnifiedToastOverlay {
                 notification.category().name().substring(1).toLowerCase(Locale.ROOT);
         }
 
-        void ensureLayout(Font font, int contentWidth) {
+        void ensureLayout(@Nonnull Font font, int contentWidth) {
             if (contentWidth == cachedContentWidth) {
                 return;
             }

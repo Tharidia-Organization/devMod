@@ -3664,6 +3664,15 @@ public final class DesignTokens {
             private Item() {}
         }
 
+        public static final class Blocked {
+            /** Muted warning/brown color for blocked item icons */
+            public static final int ICON = 0xFF996633;
+            /** Dark brown/orange background for blocked favorites */
+            public static final int FAVORITE_BG = 0xFF553300;
+
+            private Blocked() {}
+        }
+
         public static final class Overlay {
             public static final int BACKGROUND_RGB = Bg.LEVEL_1 & Mask.RGB;
             public static final int TOOLTIP_BG = withAlpha(Surface.LEVEL_0, 0xF0);

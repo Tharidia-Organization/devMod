@@ -811,7 +811,7 @@ public class UnifiedSettingsScreen extends Screen {
 
     private void navigateCategory(int direction) {
         SettingsCategory[] categories = SettingsCategory.values();
-        int currentIndex = currentCategory.ordinal();
+        int currentIndex = currentCategory.getIndex();
         int newIndex = currentIndex;
 
         // Find next valid category

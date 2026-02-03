@@ -1,5 +1,6 @@
 package com.devmod.client.ui.radial.model;
 
+import java.util.List;
 import java.util.Objects;
 
 import com.devmod.client.ui.editor.core.DesignTokens;
@@ -46,6 +47,8 @@ public enum MacroCategory {
     private final String description;
     private final String icon;
 
+    private static final List<MacroCategory> ORDER = List.of(values());
+
     MacroCategory(String name, String icon, int color, String description) {
         this.name = Objects.requireNonNull(name, "MacroCategory name cannot be null");
         this.icon = Objects.requireNonNull(icon, "MacroCategory icon cannot be null");
@@ -91,12 +94,11 @@ public enum MacroCategory {
      * @throws IndexOutOfBoundsException if index is out of range
      */
     public static MacroCategory fromIndex(int index) {
-        MacroCategory[] values = values();
-        if (index < 0 || index >= values.length) {
+        if (index < 0 || index >= ORDER.size()) {
             throw new IndexOutOfBoundsException(
-                "MacroCategory index " + index + " out of range [0, " + (values.length - 1) + "]");
+                "MacroCategory index " + index + " out of range [0, " + (ORDER.size() - 1) + "]");
         }
-        return values[index];
+        return ORDER.get(index);
     }
 
     /**
@@ -104,7 +106,14 @@ public enum MacroCategory {
      * @return 6
      */
     public static int count() {
-        return values().length;
+        return ORDER.size();
+    }
+
+    /**
+     * Returns the stable index for this macro-category.
+     */
+    public int getIndex() {
+        return ORDER.indexOf(this);
     }
 
     /**
@@ -114,7 +123,7 @@ public enum MacroCategory {
      */
     public boolean isAdjacentTo(MacroCategory other) {
         if (other == null) return false;
-        int diff = Math.abs(this.ordinal() - other.ordinal());
+        int diff = Math.abs(this.getIndex() - other.getIndex());
         return diff == 1 || diff == count() - 1;
     }
 }

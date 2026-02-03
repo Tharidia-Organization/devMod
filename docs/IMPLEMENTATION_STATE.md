@@ -1,6 +1,6 @@
 # Implementation State (Agent Reference)
 
-> Ultimo aggiornamento: 2026-01-31
+> Ultimo aggiornamento: 2026-02-03
 > Scopo: snapshot completo dello stato implementativo per reference e versionamento
 
 ## Meta
@@ -15,6 +15,17 @@
 | Minecraft | 1.21.1 |
 | NeoForge | 21.1.216 |
 | Parchment | 2024.11.17 |
+
+## Update log (2026-02-03)
+
+### Radial menu UX/robustness
+- Release-to-select: debounce 200ms, richiede selezione esplicita; se bloccato mostra feedback e non chiude.
+- Blocked feedback: action bar + reason; tooltip con reason + help contestuale; countdown combat.
+- Hit target minimi: 44px per item e preferiti.
+- Windows DPI: sync UI scale on open per evitare hover offset.
+- Visual state BLOCKED: tint warning su item e preferiti + micro‑shake/flash se animazioni attive.
+- Telemetria: `action_blocked` include `reasonKey` e `helpKey` (log dev).
+- Debug actions: aggiunti `Reset Combat State` e `Context Status` nel radial (Analyze > Debug > Context).
 
 ## Build plugins
 

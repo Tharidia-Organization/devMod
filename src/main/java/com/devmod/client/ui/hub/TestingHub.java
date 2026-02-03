@@ -1,5 +1,6 @@
 package com.devmod.client.ui.hub;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -75,6 +76,7 @@ public class TestingHub extends Screen {
 
     // === FOCUS ===
     private enum PanelFocus { CATEGORIES, DETAILS, TOOLS }
+    private static final List<PanelFocus> FOCUS_ORDER = List.of(PanelFocus.values());
     private PanelFocus currentFocus = PanelFocus.CATEGORIES;
 
     // === CACHED DIMENSIONS ===
@@ -691,10 +693,12 @@ public class TestingHub extends Screen {
     // === UTILITY ===
 
     private void cycleFocus(int direction) {
-        PanelFocus[] values = PanelFocus.values();
-        int current = currentFocus.ordinal();
-        int next = (current + direction + values.length) % values.length;
-        currentFocus = values[next];
+        int current = FOCUS_ORDER.indexOf(currentFocus);
+        if (current < 0) {
+            current = 0;
+        }
+        int next = (current + direction + FOCUS_ORDER.size()) % FOCUS_ORDER.size();
+        currentFocus = FOCUS_ORDER.get(next);
     }
 
     private int calculateHubWidth() {

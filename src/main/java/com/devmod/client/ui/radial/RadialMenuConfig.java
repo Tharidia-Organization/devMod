@@ -9,8 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -18,24 +22,33 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.common.base.Splitter;
 
 import net.minecraft.client.Minecraft;
 
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuThemeDefaults;
 
+import javax.annotation.Nullable;
+
 public class RadialMenuConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RadialMenuConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE = "config/devmod/radial_menu.json";
     private static final InputBindings DEFAULT_INPUT = new InputBindings();
+    private static final Splitter WHITESPACE_SPLITTER =
+        Splitter.on(Objects.requireNonNull(Pattern.compile("\\s+"))).omitEmptyStrings();
 
     public static final RadialMenuConfig INSTANCE = new RadialMenuConfig();
+
+    // === TRANSIENT STATE (not persisted) ===
+    private transient boolean configResetDueToError = false;
 
     // === BEHAVIOR OPTIONS ===
     public boolean releaseToSelect = false;         // Release key to activate selection
     public boolean rightClickToEdit = true;         // Right-click opens details
     public boolean enableAnimations = true;         // Enable smooth animations
+    public boolean reducedMotion = false;           // Reduce/disable motion effects
     public boolean enableSounds = true;             // Enable feedback sounds
     public boolean showTooltips = true;             // Show item descriptions
     public boolean closeOnToggle = false;           // Close menu after toggling item
@@ -222,6 +235,8 @@ public class RadialMenuConfig {
         private final int active, activeGlow, border;
         private final int textPrimary, textSecondary;
 
+        private static final java.util.List<ThemePreset> ORDER = java.util.List.of(values());
+
         ThemePreset(String name, RadialMenuThemeDefaults.ThemePresetValues values) {
             this.name = name;
             this.bgDark = values.bgDark();
@@ -246,6 +261,14 @@ public class RadialMenuConfig {
         public int getTextPrimary() { return textPrimary; }
         public int getTextSecondary() { return textSecondary; }
 
+        public static ThemePreset next(ThemePreset current) {
+            int index = ORDER.indexOf(current);
+            if (index < 0) {
+                return DEFAULT;
+            }
+            return ORDER.get((index + 1) % ORDER.size());
+        }
+
         public static ThemePreset fromName(String name) {
             for (ThemePreset preset : values()) {
                 if (preset.getName().equalsIgnoreCase(name)) {
@@ -260,6 +283,7 @@ public class RadialMenuConfig {
      * Load configuration from file
      */
     public void load() {
+        configResetDueToError = false;
         try {
             Path configPath = getConfigPath();
             if (Files.exists(configPath)) {
@@ -271,8 +295,29 @@ public class RadialMenuConfig {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("[RadialMenuConfig] Failed to load config: {}", e.getMessage());
+            LOGGER.warn("[RadialMenuConfig] Failed to load config, using defaults: {}", e.getMessage());
+            configResetDueToError = true;
         }
+    }
+
+    /**
+     * Check if config was reset due to a load error.
+     * This flag is cleared after being read.
+     */
+    public boolean wasResetDueToError() {
+        boolean result = configResetDueToError;
+        configResetDueToError = false;
+        return result;
+    }
+
+    /**
+     * Reset all settings to their default values.
+     */
+    public void resetToDefaults() {
+        RadialMenuConfig defaults = new RadialMenuConfig();
+        copyFrom(defaults);
+        save();
+        LOGGER.info("[RadialMenuConfig] Config reset to defaults");
     }
 
     /**
@@ -298,6 +343,7 @@ public class RadialMenuConfig {
         this.releaseToSelect = other.releaseToSelect;
         this.rightClickToEdit = other.rightClickToEdit;
         this.enableAnimations = other.enableAnimations;
+        this.reducedMotion = other.reducedMotion;
         this.enableSounds = other.enableSounds;
         this.showTooltips = other.showTooltips;
         this.closeOnToggle = other.closeOnToggle;
@@ -332,6 +378,104 @@ public class RadialMenuConfig {
             : new HashMap<>();
         sanitizeInputBindings();
         save(); // persist sanitized binds so the JSON stays consistent
+    }
+
+    /**
+     * Returns true if reduced motion should be enabled (user setting or system preference).
+     */
+    public boolean isReducedMotionEnabled() {
+        return reducedMotion || systemPrefersReducedMotion();
+    }
+
+    @Nullable
+    private static volatile Boolean systemReducedMotion;
+
+    /**
+     * Best-effort system preference check for reduced motion.
+     * Falls back to false if the OS preference is unavailable.
+     */
+    public static boolean systemPrefersReducedMotion() {
+        Boolean cached = systemReducedMotion;
+        if (cached != null) {
+            return cached;
+        }
+        boolean detected = detectSystemReducedMotion();
+        systemReducedMotion = detected;
+        return detected;
+    }
+
+    private static boolean detectSystemReducedMotion() {
+        String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        try {
+            if (os.contains("mac")) {
+                return detectMacReducedMotion();
+            }
+            if (os.contains("win")) {
+                return detectWindowsReducedMotion();
+            }
+            if (os.contains("nix") || os.contains("nux") || os.contains("linux")) {
+                return detectLinuxReducedMotion();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[RadialMenuConfig] Reduced motion detection failed: {}", e.getMessage());
+        }
+        return false;
+    }
+
+    private static boolean detectMacReducedMotion() {
+        String output = runCommand("defaults", "read", "-g", "AppleReduceMotion");
+        if (output.isBlank()) {
+            output = runCommand("defaults", "read", "com.apple.universalaccess", "reduceMotion");
+        }
+        return parseBooleanValue(output);
+    }
+
+    private static boolean detectWindowsReducedMotion() {
+        String output = runCommand("reg", "query", "HKCU\\Control Panel\\Desktop", "/v", "MinAnimate");
+        if (output.isBlank()) {
+            return false;
+        }
+        String normalized = output.toLowerCase(Locale.ROOT);
+        int idx = normalized.indexOf("minanimate");
+        if (idx < 0) {
+            return false;
+        }
+        List<String> parts = WHITESPACE_SPLITTER.splitToList(Objects.requireNonNull(output.substring(idx).trim()));
+        if (parts.size() < 3) {
+            return false;
+        }
+        String value = parts.get(parts.size() - 1);
+        return value.equalsIgnoreCase("0") || value.equalsIgnoreCase("0x0");
+    }
+
+    private static boolean detectLinuxReducedMotion() {
+        String output = runCommand("gsettings", "get", "org.gnome.desktop.interface", "enable-animations");
+        if (output.isBlank()) {
+            return false;
+        }
+        return !parseBooleanValue(output);
+    }
+
+    private static boolean parseBooleanValue(String raw) {
+        String value = raw.trim().toLowerCase(Locale.ROOT);
+        return value.equals("1") || value.equals("true") || value.equals("yes") || value.equals("on");
+    }
+
+    private static String runCommand(String... command) {
+        try {
+            Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+            if (!process.waitFor(500, TimeUnit.MILLISECONDS)) {
+                process.destroy();
+                return "";
+            }
+            try (java.io.InputStream input = process.getInputStream()) {
+                byte[] output = input.readAllBytes();
+                return new String(output, StandardCharsets.UTF_8).trim();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("[RadialMenuConfig] Reduced motion command failed: {}", e.getMessage());
+            return "";
+        }
     }
 
     private void sanitizeInputBindings() {
@@ -570,10 +714,8 @@ public class RadialMenuConfig {
      * Cycle to the next theme preset
      */
     public void cycleTheme() {
-        ThemePreset[] presets = ThemePreset.values();
         ThemePreset current = ThemePreset.fromName(theme.presetName);
-        int nextIndex = (current.ordinal() + 1) % presets.length;
-        theme.applyPreset(presets[nextIndex]);
+        theme.applyPreset(ThemePreset.next(current));
         save();
     }
 

@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Splitter;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -18,6 +19,7 @@ import com.devmod.client.ui.radial.RadialActionSafety;
 import com.devmod.client.ui.radial.RadialCategory;
 import com.devmod.client.ui.radial.RadialMenuConfig;
 import com.devmod.client.ui.radial.RadialMenuItem;
+import com.devmod.client.ui.radial.RadialBlockedHelpResolver;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuScaler;
 import com.devmod.client.ui.radial.model.MacroCategory;
@@ -108,10 +110,10 @@ public final class RadialTooltipRenderer {
             tooltipX + tooltipWidth + padding, tooltipY + textHeight + padding,
             RadialMenuConstants.TOOLTIP_BG_COLOR);
 
-        // Text
+        // Text with shadow for better contrast
         int lineY = tooltipY;
         for (String line : lines) {
-            drawStringScaled(graphics, font, line, tooltipX, lineY, context.theme.textPrimary, false, fontScale);
+            drawStringScaled(graphics, font, nonNull(line), tooltipX, lineY, context.theme.textPrimary, true, fontScale);
             lineY += lineHeight;
         }
     }
@@ -235,11 +237,17 @@ public final class RadialTooltipRenderer {
                 tooltip += "\n" + meta;
             }
             if (!selectedItem.canExecute()) {
-                String reason = resolveUnavailableReason(selectedItem);
+                Component reasonComponent = resolveUnavailableReasonComponent(selectedItem);
+                String reason = reasonComponent == null ? null : reasonComponent.getString();
                 if (reason == null || reason.isBlank()) {
                     tooltip += "\n" + I18n.translate("devmod.radial.tooltip.unavailable").getString();
                 } else {
                     tooltip += "\n\u00A7c" + reason;
+                }
+                RadialBlockedHelpResolver.BlockedHelp help =
+                    RadialBlockedHelpResolver.resolve(reasonComponent, reason);
+                if (help != null) {
+                    tooltip += "\n\u00A78" + I18n.translate(help.key(), help.args()).getString();
                 }
             }
             if (editMode) {
@@ -553,14 +561,14 @@ public final class RadialTooltipRenderer {
         int textOffsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.SEARCH_BOX_TEXT_OFFSET_Y);
         int textMaxWidth = Math.max(0, boxWidth - textOffsetX * 2);
         int textMaxWidthFont = toFontWidth(textMaxWidth, fontScale);
-        String searchPrefix = I18n.translate("devmod.radial.search.prefix").getString();
+        String searchPrefix = nonNull(I18n.translate("devmod.radial.search.prefix").getString());
         String displayPrefix = truncateToWidth(font, searchPrefix, textMaxWidthFont);
         int prefixWidth = font.width(displayPrefix);
         int maxQueryWidth = Math.max(0, textMaxWidthFont - prefixWidth);
-        String placeholder = I18n.translate("devmod.radial.search.placeholder").getString();
+        String placeholder = nonNull(I18n.translate("devmod.radial.search.placeholder").getString());
         String displayText = searchQuery.isEmpty()
             ? truncateToWidth(font, placeholder, maxQueryWidth)
-            : truncateToWidth(font, searchQuery, maxQueryWidth);
+            : truncateToWidth(font, nonNull(searchQuery), maxQueryWidth);
         String displayQuery = searchQuery.isEmpty() ? "" : displayText;
         drawStringScaled(graphics, font, displayPrefix + displayText,
             boxX + textOffsetX,
@@ -594,6 +602,26 @@ public final class RadialTooltipRenderer {
         int iconOffset = RadialMenuScaler.scaleConstant(4);
         int iconTextGap = RadialMenuScaler.scaleConstant(18);
 
+        // Show "No results" message when query is not empty but no results found
+        if (!searchQuery.isEmpty() && searchResults.isEmpty()) {
+            graphics.fill(boxX, resultY, boxX + boxWidth, resultY + resultHeight, RadialMenuConstants.SEARCH_RESULT_BG);
+            String noResultsMsg = nonNull(I18n.translate("devmod.radial.search.no_results").getString());
+            int noResultsTextWidth = Math.max(0, boxWidth - resultTextOffsetX * 2);
+            int noResultsMaxFont = toFontWidth(noResultsTextWidth, fontScale);
+            String displayNoResults = truncateToWidth(font, noResultsMsg, noResultsMaxFont);
+            int noResultsColor = config.theme.textSecondary;
+            drawStringScaled(graphics, font, displayNoResults, boxX + resultTextOffsetX, resultY + resultTextOffsetY,
+                noResultsColor, false, fontScale);
+            // Show suggestion hint
+            int hintY = resultY + resultGap;
+            String hintMsg = nonNull(I18n.translate("devmod.radial.search.hint").getString());
+            String displayHint = truncateToWidth(font, hintMsg, noResultsMaxFont);
+            int hintColor = (config.theme.textSecondary & DesignTokens.Mask.RGB) | (0x80 << 24);
+            drawStringScaled(graphics, font, displayHint, boxX + resultTextOffsetX, hintY + resultTextOffsetY,
+                hintColor, false, fontScale);
+            return;
+        }
+
         int availableHeight = config.screenHeight - margin - resultY;
         int maxResults = Math.max(0, (availableHeight + (resultGap - resultHeight)) / Math.max(1, resultGap));
         int resultsToRender = Math.min(searchResults.size(), maxResults);
@@ -626,7 +654,7 @@ public final class RadialTooltipRenderer {
             drawStringScaled(graphics, font, displayLine, textX, resultY + resultTextOffsetY, textColor, false, fontScale);
 
             if (result.isToggle && result.isActive) {
-                String statusText = I18n.translate("devmod.radial.status.on").getString();
+                String statusText = nonNull(I18n.translate("devmod.radial.status.on").getString());
                 int statusWidth = scaledWidth(font, statusText, fontScale);
                 int statusX = boxX + boxWidth - resultStatusOffsetX;
                 int minGap = RadialMenuScaler.scaleConstant(6);
@@ -641,7 +669,7 @@ public final class RadialTooltipRenderer {
     }
 
     @Nullable
-    private static String resolveUnavailableReason(RadialMenuItem item) {
+    private static Component resolveUnavailableReasonComponent(RadialMenuItem item) {
         String actionId = item.getAction().getRegistryId();
         if (actionId == null) {
             return null;
@@ -650,7 +678,7 @@ public final class RadialTooltipRenderer {
         if (action == null) {
             return null;
         }
-        return action.getPrecondition().failureMessage(ClientActionContexts.forRadial()).getString();
+        return action.getPrecondition().failureMessage(ClientActionContexts.forRadial());
     }
 
     @Nullable
@@ -718,7 +746,7 @@ public final class RadialTooltipRenderer {
         List<String> tail = new java.util.ArrayList<>();
         int usedWidth = 0;
         for (int i = segments.size() - 1; i >= 0; i--) {
-            String seg = segments.get(i);
+            String seg = nonNull(segments.get(i));
             int segWidth = font.width(seg);
             int addWidth = segWidth + (tail.isEmpty() ? 0 : sepWidth);
             if (usedWidth + addWidth <= maxWidth) {
@@ -730,7 +758,7 @@ public final class RadialTooltipRenderer {
         }
 
         if (tail.isEmpty()) {
-            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+            return truncateFormattedSegment(font, nonNull(segments.get(segments.size() - 1)), maxWidth);
         }
         if (tail.size() == segments.size()) {
             return joinWithSeparator(tail);
@@ -740,24 +768,25 @@ public final class RadialTooltipRenderer {
         int ellipsisWidth = font.width(ellipsis);
         int available = maxWidth - ellipsisWidth - sepWidth;
         if (available <= 0) {
-            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+            return truncateFormattedSegment(font, nonNull(segments.get(segments.size() - 1)), maxWidth);
         }
 
         while (!tail.isEmpty() && font.width(joinWithSeparator(tail)) > available) {
             tail.remove(0);
         }
         if (tail.isEmpty()) {
-            return truncateFormattedSegment(font, segments.get(segments.size() - 1), maxWidth);
+            return truncateFormattedSegment(font, nonNull(segments.get(segments.size() - 1)), maxWidth);
         }
 
         String tailString = joinWithSeparator(tail);
         if (font.width(tailString) > available) {
-            tailString = truncateFormattedSegment(font, tail.get(tail.size() - 1), available);
+            tailString = truncateFormattedSegment(font, nonNull(tail.get(tail.size() - 1)), available);
         }
 
         return ellipsis + " > " + tailString;
     }
 
+    @Nonnull
     private static String joinWithSeparator(List<String> segments) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < segments.size(); i++) {
@@ -766,10 +795,12 @@ public final class RadialTooltipRenderer {
             }
             builder.append(segments.get(i));
         }
-        return builder.toString();
+        String result = builder.toString();
+        return result != null ? result : "";
     }
 
-    private static String truncateFormattedSegment(Font font, String segment, int maxWidth) {
+    @Nonnull
+    private static String truncateFormattedSegment(Font font, @Nonnull String segment, int maxWidth) {
         if (font.width(segment) <= maxWidth) {
             return segment;
         }
@@ -779,12 +810,14 @@ public final class RadialTooltipRenderer {
             prefix.append(segment, idx, idx + 2);
             idx += 2;
         }
-        String plain = segment.substring(idx);
-        String truncated = truncateToWidth(font, plain, Math.max(0, maxWidth - font.width(prefix.toString())));
-        return prefix + truncated;
+        String plain = nonNull(segment.substring(idx));
+        String prefixStr = nonNull(prefix.toString());
+        String truncated = truncateToWidth(font, plain, Math.max(0, maxWidth - font.width(prefixStr)));
+        return prefixStr + truncated;
     }
 
-    private static String truncateToWidth(Font font, String text, int maxWidth) {
+    @Nonnull
+    private static String truncateToWidth(Font font, @Nonnull String text, int maxWidth) {
         if (maxWidth <= 0 || text.isEmpty()) {
             return "";
         }
@@ -808,7 +841,7 @@ public final class RadialTooltipRenderer {
                 i++;
                 continue;
             }
-            int charWidth = font.width(String.valueOf(c));
+            int charWidth = font.width(nonNull(String.valueOf(c)));
             if (width + charWidth > targetWidth) {
                 break;
             }
@@ -830,7 +863,7 @@ public final class RadialTooltipRenderer {
         return Math.max(0, Math.round(width / scale));
     }
 
-    private static int scaledWidth(Font font, String text, float scale) {
+    private static int scaledWidth(@Nonnull Font font, @Nonnull String text, float scale) {
         return Math.round(font.width(text) * scale);
     }
 
@@ -838,7 +871,7 @@ public final class RadialTooltipRenderer {
         return Math.max(1, Math.round(font.lineHeight * scale));
     }
 
-    private static void drawStringScaled(GuiGraphics graphics, Font font, String text,
+    private static void drawStringScaled(GuiGraphics graphics, @Nonnull Font font, @Nonnull String text,
                                           int x, int y, int color, boolean shadow, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
             UIScaleManager.drawScaledString(graphics, font, text, x, y, color, shadow);
@@ -851,7 +884,7 @@ public final class RadialTooltipRenderer {
         graphics.pose().popPose();
     }
 
-    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+    private static void drawCenteredStringScaled(GuiGraphics graphics, @Nonnull Font font, @Nonnull String text,
                                                   int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
             UIScaleManager.drawScaledCenteredString(graphics, font, text, x, y, color);
@@ -868,5 +901,11 @@ public final class RadialTooltipRenderer {
         if (value < min) return min;
         if (value > max) return max;
         return value;
+    }
+
+    /** Ensures a String is non-null, returning empty string if null. */
+    @Nonnull
+    private static String nonNull(String value) {
+        return value != null ? value : "";
     }
 }

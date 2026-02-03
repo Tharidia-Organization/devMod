@@ -49,6 +49,9 @@ public final class RadialMenuActionLayout {
         ActionIds.UI_ARENA_HUB_OPEN,
         ActionIds.UI_NEXUS_HUB_OPEN,
         ActionIds.UI_VOXELLAB_OPEN,
+        // Debug - Context
+        ActionIds.DEBUG_COMBAT_RESET,
+        ActionIds.DEBUG_CONTEXT_STATUS,
         // Combat - Diagnostics
         ActionIds.DEBUG_BOSS_PHASE_TOGGLE,
         ActionIds.DEBUG_SKILL_EFFICACY_TOGGLE,

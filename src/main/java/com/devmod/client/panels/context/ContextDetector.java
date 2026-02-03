@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,6 +22,8 @@ import com.devmod.client.testing.TestingSession;
  * tick() is called from RenderEvents every client tick.
  */
 public class ContextDetector {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContextDetector.class);
 
     public static final ContextDetector INSTANCE = new ContextDetector();
 
@@ -108,7 +114,8 @@ public class ContextDetector {
         // Log per debug
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            com.devmod.DevMod.LOGGER.debug("Context changed: {} -> {}", oldMode, mode);
+            LOGGER.debug("[ContextDetector] Mode changed: {} -> {} (combat timeout: {}ms ago)",
+                oldMode, mode, getTimeSinceLastCombat());
         }
     }
 
@@ -118,7 +125,10 @@ public class ContextDetector {
      * Chiamato quando il player infligge o riceve danno.
      */
     public void onCombatEvent() {
+        long previousTime = lastCombatEventTime;
         lastCombatEventTime = System.currentTimeMillis();
+        LOGGER.trace("[ContextDetector] Combat event recorded (previous was {}ms ago)",
+            previousTime > 0 ? (lastCombatEventTime - previousTime) : "never");
     }
 
     /**
@@ -229,6 +239,16 @@ public class ContextDetector {
     }
 
     /**
+     * Returns remaining combat timeout in ms, or 0 if not in combat.
+     * Useful for UI countdown displays.
+     */
+    public long getRemainingCombatTime() {
+        long elapsed = System.currentTimeMillis() - lastCombatEventTime;
+        long remaining = COMBAT_TIMEOUT_MS - elapsed;
+        return Math.max(0, remaining);
+    }
+
+    /**
      * Tempo trascorso dall'acquisizione del target (ms).
      */
     public long getTimeSinceTargetAcquired() {
@@ -252,25 +272,28 @@ public class ContextDetector {
     /**
      * Debug info.
      */
+    @Nonnull
     public String getDebugInfo() {
         ContextMode forced = forcedMode;
         LivingEntity target = currentTarget;
-        return String.format("Context: %s%s | Combat: %dms ago | Target: %s",
+        return Objects.requireNonNull(String.format("Context: %s%s | Combat: %dms ago | Target: %s",
             currentMode.getDisplayName(),
             forced != null ? " (forced)" : "",
             getTimeSinceLastCombat(),
             target != null ? target.getName().getString() : "none"
-        );
+        ));
     }
 
     /**
      * Reset completo dello stato.
      */
     public void reset() {
+        ContextMode oldMode = currentMode;
         currentMode = ContextMode.EXPLORE;
         forcedMode = null;
         lastCombatEventTime = 0;
         currentTarget = null;
         targetAcquiredTime = 0;
+        LOGGER.info("[ContextDetector] Reset performed: {} -> EXPLORE", oldMode);
     }
 }

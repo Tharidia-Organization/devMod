@@ -1,13 +1,17 @@
 package com.devmod.client.ui.radial.render;
 
+import java.util.Locale;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
 
+import com.devmod.client.panels.context.ContextDetector;
+import com.devmod.client.panels.context.ContextMode;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.radial.config.RadialMenuConstants;
 import com.devmod.client.ui.radial.config.RadialMenuScaler;
@@ -26,34 +30,66 @@ public final class RadialHubRenderer {
 
     /**
      * Immutable state container for hub rendering.
-     *
-     * @param centerX           center X coordinate
-     * @param centerY           center Y coordinate
-     * @param centerButtonRadius radius of the close button area
-     * @param macroHubRadius    outer radius of the macro hub
-     * @param selectedMacro     currently selected macro-category
-     * @param hoveredMacro      macro-category being hovered (or null)
-     * @param segmentAnimations animation progress for each segment (0-1)
-     * @param categoryHoverAnim animation progress for center hover (0-1)
-     * @param searchMode        whether search mode is active
-     * @param inSubcategory     whether currently in a subcategory
      */
-    public record HubState(
-        int centerX,
-        int centerY,
-        int centerButtonRadius,
-        int macroHubRadius,
-        MacroCategory selectedMacro,
-        @Nullable MacroCategory hoveredMacro,
-        float[] segmentAnimations,
-        float categoryHoverAnim,
-        boolean searchMode,
-        boolean inSubcategory
-    ) {
-        public HubState {
-            Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
-            Objects.requireNonNull(segmentAnimations, "segmentAnimations cannot be null");
+    public static final class HubState {
+        public final int centerX;
+        public final int centerY;
+        public final int centerButtonRadius;
+        public final int macroHubRadius;
+        public final MacroCategory selectedMacro;
+        public final @Nullable MacroCategory hoveredMacro;
+        public final float[] segmentAnimations;
+        public final float categoryHoverAnim;
+        public final boolean searchMode;
+        public final boolean inSubcategory;
+        public final ContextMode contextMode;
+        public final long contextPulseStartMs;
+        public final boolean reducedMotion;
+
+        /**
+         * Creates a hub state instance.
+         */
+        public HubState(int centerX,
+                        int centerY,
+                        int centerButtonRadius,
+                        int macroHubRadius,
+                        MacroCategory selectedMacro,
+                        @Nullable MacroCategory hoveredMacro,
+                        float[] segmentAnimations,
+                        float categoryHoverAnim,
+                        boolean searchMode,
+                        boolean inSubcategory,
+                        ContextMode contextMode,
+                        long contextPulseStartMs,
+                        boolean reducedMotion) {
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.centerButtonRadius = centerButtonRadius;
+            this.macroHubRadius = macroHubRadius;
+            this.selectedMacro = Objects.requireNonNull(selectedMacro, "selectedMacro cannot be null");
+            this.hoveredMacro = hoveredMacro;
+            this.segmentAnimations = Objects.requireNonNull(segmentAnimations, "segmentAnimations cannot be null");
+            this.categoryHoverAnim = categoryHoverAnim;
+            this.searchMode = searchMode;
+            this.inSubcategory = inSubcategory;
+            this.contextMode = Objects.requireNonNull(contextMode, "contextMode cannot be null");
+            this.contextPulseStartMs = contextPulseStartMs;
+            this.reducedMotion = reducedMotion;
         }
+
+        public int centerX() { return centerX; }
+        public int centerY() { return centerY; }
+        public int centerButtonRadius() { return centerButtonRadius; }
+        public int macroHubRadius() { return macroHubRadius; }
+        public MacroCategory selectedMacro() { return selectedMacro; }
+        public @Nullable MacroCategory hoveredMacro() { return hoveredMacro; }
+        public float[] segmentAnimations() { return segmentAnimations; }
+        public float categoryHoverAnim() { return categoryHoverAnim; }
+        public boolean searchMode() { return searchMode; }
+        public boolean inSubcategory() { return inSubcategory; }
+        public ContextMode contextMode() { return contextMode; }
+        public long contextPulseStartMs() { return contextPulseStartMs; }
+        public boolean reducedMotion() { return reducedMotion; }
     }
 
     /**
@@ -109,7 +145,7 @@ public final class RadialHubRenderer {
         if (adjustedAngle < 0) adjustedAngle += RadialMenuConstants.TWO_PI;
 
         int macroIndex = (int) (adjustedAngle / RadialMenuConstants.MACRO_SEGMENT_ANGLE) % RadialMenuConstants.MACRO_COUNT;
-        return new HoverResult(MacroCategory.values()[macroIndex], false);
+        return new HoverResult(MacroCategory.fromIndex(macroIndex), false);
     }
 
     /**
@@ -153,6 +189,7 @@ public final class RadialHubRenderer {
 
         renderMacroSegments(graphics, font, state);
         renderCenterButton(graphics, font, state);
+        renderContextBadge(graphics, font, state);
         renderOuterRing(graphics, state);
     }
 
@@ -311,6 +348,79 @@ public final class RadialHubRenderer {
     }
 
     // ================================================================
+    // CONTEXT BADGE
+    // ================================================================
+
+    private static void renderContextBadge(GuiGraphics graphics, @Nonnull Font font, HubState state) {
+        ContextMode mode = state.contextMode;
+        String label = resolveContextLabel(mode);
+
+        if (mode == ContextMode.COMBAT && ContextDetector.INSTANCE.isCurrentlyCombat()) {
+            long remainingMs = ContextDetector.INSTANCE.getRemainingCombatTime();
+            if (remainingMs > 0) {
+                int remainingSec = (int) Math.ceil(remainingMs / 1000.0);
+                label = label + " " + remainingSec + "s";
+            }
+        }
+
+        float fontScale = resolveFontScale();
+        int textWidth = scaledWidth(font, label, fontScale);
+        int textHeight = Math.round(font.lineHeight * fontScale);
+
+        int paddingX = RadialMenuScaler.scaleConstant(RadialMenuConstants.CONTEXT_BADGE_PADDING_X);
+        int paddingY = RadialMenuScaler.scaleConstant(RadialMenuConstants.CONTEXT_BADGE_PADDING_Y);
+
+        int badgeWidth = textWidth + paddingX * 2;
+        int badgeHeight = textHeight + paddingY * 2;
+
+        int closeBtnRadius = (int) (state.centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO);
+        int offsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.CONTEXT_BADGE_OFFSET_Y);
+        int badgeCenterY = state.centerY - closeBtnRadius - offsetY - (badgeHeight / 2);
+
+        float pulseScale = 1f;
+        if (!state.reducedMotion && state.contextPulseStartMs > 0) {
+            long elapsed = System.currentTimeMillis() - state.contextPulseStartMs;
+            long duration = RadialMenuConstants.CONTEXT_BADGE_PULSE_DURATION_MS;
+            if (elapsed < duration) {
+                float t = Math.min(1f, elapsed / (float) duration);
+                pulseScale = 1f + (1f - t) * RadialMenuConstants.CONTEXT_BADGE_PULSE_SCALE;
+            }
+        }
+
+        int badgeWidthPulse = Math.round(badgeWidth * pulseScale);
+        int badgeHeightPulse = Math.round(badgeHeight * pulseScale);
+        int badgeX = state.centerX - badgeWidthPulse / 2;
+        int badgeY = badgeCenterY - badgeHeightPulse / 2;
+
+        int badgeColor = resolveContextColor(mode);
+        int radius = Math.max(1, badgeHeightPulse / 2);
+
+        // Draw pill background
+        RadialGeometry.renderCircle(graphics, badgeX + radius, badgeCenterY, radius, badgeColor);
+        RadialGeometry.renderCircle(graphics, badgeX + badgeWidthPulse - radius, badgeCenterY, radius, badgeColor);
+        graphics.fill(badgeX + radius, badgeY, badgeX + badgeWidthPulse - radius, badgeY + badgeHeightPulse, badgeColor);
+
+        // Text
+        drawCenteredStringScaled(graphics, font, label, state.centerX, badgeCenterY,
+            RadialMenuConstants.CONTEXT_BADGE_TEXT, fontScale);
+    }
+
+    private static int resolveContextColor(ContextMode mode) {
+        return switch (mode) {
+            case COMBAT -> RadialMenuConstants.CONTEXT_BADGE_COMBAT;
+            case EXPLORE -> RadialMenuConstants.CONTEXT_BADGE_EXPLORE;
+            case TEST -> RadialMenuConstants.CONTEXT_BADGE_TEST;
+            default -> RadialMenuConstants.CONTEXT_BADGE_DEFAULT;
+        };
+    }
+
+    @Nonnull
+    private static String resolveContextLabel(ContextMode mode) {
+        String key = "devmod.context.mode." + mode.name().toLowerCase(Locale.ROOT);
+        return Objects.requireNonNull(I18n.translate(key).getString());
+    }
+
+    // ================================================================
     // TOOLTIP HELPERS
     // ================================================================
 
@@ -347,7 +457,14 @@ public final class RadialHubRenderer {
         return scale > 0f ? scale : 1f;
     }
 
-    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+    private static int scaledWidth(@Nonnull Font font, @Nonnull String text, float scale) {
+        if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
+            return font.width(text);
+        }
+        return Math.round(font.width(text) * scale);
+    }
+
+    private static void drawCenteredStringScaled(GuiGraphics graphics, @Nonnull Font font, @Nonnull String text,
                                                   int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
             UIScaleManager.drawScaledCenteredString(graphics, font, text, x, y, color);

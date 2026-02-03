@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -179,6 +180,38 @@ public final class UiTelemetry {
         }
 
         LOGGER.debug("[UiTelemetry] Action: {}.{}.{}", category, screen, action);
+        if (isDevBuild() && context != null && !context.isEmpty()) {
+            Object reasonKey = context.get("reasonKey");
+            Object helpKey = context.get("helpKey");
+            if (reasonKey != null || helpKey != null) {
+                LOGGER.debug("[UiTelemetry] Action context: actionId={}, reasonKey={}, helpKey={}",
+                    context.get("actionId"), reasonKey, helpKey);
+            }
+        }
+    }
+
+    private static boolean isDevBuild() {
+        return !FMLEnvironment.production;
+    }
+
+    /**
+     * Record an action error event with a summarized stacktrace.
+     */
+    public static void actionError(@Nonnull String category, @Nonnull String screen,
+                                   @Nonnull String actionId, @Nonnull Throwable error) {
+        Objects.requireNonNull(category, "category");
+        Objects.requireNonNull(screen, "screen");
+        Objects.requireNonNull(actionId, "actionId");
+        Objects.requireNonNull(error, "error");
+
+        Map<String, Object> context = new HashMap<>();
+        context.put("actionId", actionId);
+        context.put("error", error.getClass().getSimpleName());
+        if (error.getMessage() != null && !error.getMessage().isBlank()) {
+            context.put("message", error.getMessage());
+        }
+        context.put("stacktrace", summarizeStacktrace(error));
+        action(category, screen, "action_error", context);
     }
 
     /**
@@ -214,5 +247,29 @@ public final class UiTelemetry {
      */
     public static void reset() {
         openTimestamps.clear();
+    }
+
+    private static String summarizeStacktrace(Throwable error) {
+        Throwable root = error;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        StackTraceElement[] stack = root.getStackTrace();
+        StringBuilder summary = new StringBuilder();
+        summary.append(root.getClass().getSimpleName());
+        if (root.getMessage() != null && !root.getMessage().isBlank()) {
+            summary.append(": ").append(root.getMessage());
+        }
+        int limit = Math.min(3, stack.length);
+        for (int i = 0; i < limit; i++) {
+            StackTraceElement element = stack[i];
+            summary.append(" @")
+                .append(element.getClassName())
+                .append(".")
+                .append(element.getMethodName())
+                .append(":")
+                .append(element.getLineNumber());
+        }
+        return summary.toString();
     }
 }

@@ -132,12 +132,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int HISTORY_PANEL_CLEAR_OFFSET_X = 8;
     private static final int HISTORY_PANEL_CLEAR_OFFSET_Y = 2;
     private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_X = 12;
-    private static final int HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y = 3;
     private static final int HISTORY_PANEL_ROLLBACK_WIDTH = 80;
     private static final int HISTORY_PANEL_ROLLBACK_HEIGHT = 14;
     private static final int HISTORY_PANEL_ROLLBACK_OFFSET_X = 76;
     private static final int HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X = 8;
-    private static final int HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y = 3;
     private static final String FAVORITES_TITLE_TEXT = "Favorites";
     private static final String FAVORITES_LABEL_PREFIX = "★ ";
     private static final String FAVORITES_LABEL_FALLBACK = "Preset";
@@ -173,13 +171,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private static final int FAVORITES_ROW_HIT_INSET = 4;
     private static final int FAVORITES_ROW_HOVER_INSET = 2;
     private static final int FAVORITES_ROW_TEXT_OFFSET_X = 8;
-    private static final int FAVORITES_ROW_TEXT_OFFSET_Y = 5;
     private static final int FAVORITES_PIN_BUTTON_OFFSET_X = 8;
     private static final int FAVORITES_PIN_BUTTON_OFFSET_Y = 18;
     private static final int FAVORITES_PIN_BUTTON_WIDTH = 80;
     private static final int FAVORITES_PIN_BUTTON_HEIGHT = 14;
     private static final int FAVORITES_PIN_TEXT_OFFSET_X = 12;
-    private static final int FAVORITES_PIN_TEXT_OFFSET_Y = 3;
     private static final int DEV_PANEL_FALLBACK_WIDTH = 150;
     private static final int DEV_PANEL_FALLBACK_HEIGHT = 200;
     private static final int DEV_PANEL_FALLBACK_MARGIN_TOP = 10;
@@ -1061,13 +1057,11 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int favoritesRowHitInset = s(FAVORITES_ROW_HIT_INSET);
         int favoritesRowHoverInset = s(FAVORITES_ROW_HOVER_INSET);
         int favoritesRowTextOffsetX = s(FAVORITES_ROW_TEXT_OFFSET_X);
-        int favoritesRowTextOffsetY = s(FAVORITES_ROW_TEXT_OFFSET_Y);
         int favoritesPinButtonOffsetX = s(FAVORITES_PIN_BUTTON_OFFSET_X);
         int favoritesPinButtonOffsetY = s(FAVORITES_PIN_BUTTON_OFFSET_Y);
         int favoritesPinButtonWidth = s(FAVORITES_PIN_BUTTON_WIDTH);
         int favoritesPinButtonHeight = s(FAVORITES_PIN_BUTTON_HEIGHT);
         int favoritesPinTextOffsetX = s(FAVORITES_PIN_TEXT_OFFSET_X);
-        int favoritesPinTextOffsetY = s(FAVORITES_PIN_TEXT_OFFSET_Y);
         int devPanelTextOffsetX = s(DEV_PANEL_TEXT_OFFSET_X);
         int devPanelTextOffsetY = s(DEV_PANEL_TEXT_OFFSET_Y);
 
@@ -1202,12 +1196,10 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
         int clearOffsetX = s(HISTORY_PANEL_CLEAR_OFFSET_X);
         int clearOffsetY = s(HISTORY_PANEL_CLEAR_OFFSET_Y);
         int clearTextOffsetX = s(HISTORY_PANEL_CLEAR_TEXT_OFFSET_X);
-        int clearTextOffsetY = s(HISTORY_PANEL_CLEAR_TEXT_OFFSET_Y);
         int rollbackWidth = s(HISTORY_PANEL_ROLLBACK_WIDTH);
         int rollbackHeight = s(HISTORY_PANEL_ROLLBACK_HEIGHT);
         int rollbackOffsetX = s(HISTORY_PANEL_ROLLBACK_OFFSET_X);
         int rollbackTextOffsetX = s(HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_X);
-        int rollbackTextOffsetY = s(HISTORY_PANEL_ROLLBACK_TEXT_OFFSET_Y);
 
         graphics.fill(x, y, x + panelWidth, y + panelHeight, DesignTokens.Background.PANEL_SOLID());
         AxiomRenderer.drawBorder(graphics, x, y, panelWidth, panelHeight, DesignTokens.Stroke.DEFAULT);

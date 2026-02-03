@@ -1,5 +1,7 @@
 package com.devmod.client.panels.context;
 
+import javax.annotation.Nonnull;
+
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum ContextMode {
@@ -28,13 +30,14 @@ public enum ContextMode {
      */
     CUSTOM("Custom", DesignTokens.Text.MUTED, false, false, false);
 
+    @Nonnull
     private final String displayName;
     private final int color;
     private final boolean autoEntityInfo;
     private final boolean showToolStatus;
     private final boolean showProgressPanel;
 
-    ContextMode(String displayName, int color, boolean autoEntityInfo,
+    ContextMode(@Nonnull String displayName, int color, boolean autoEntityInfo,
                 boolean showToolStatus, boolean showProgressPanel) {
         this.displayName = displayName;
         this.color = color;
@@ -46,6 +49,7 @@ public enum ContextMode {
     /**
      * Name displayed in UI.
      */
+    @Nonnull
     public String getDisplayName() {
         return displayName;
     }

@@ -50,6 +50,49 @@ public final class RadialAnimator {
     private float morphProgress = 1f;
 
     // ================================================================
+    // FEEDBACK ANIMATION STATE (shake, flash)
+    // ================================================================
+
+    /** Which type of element is being animated */
+    public enum TargetType { NONE, ITEM, FAVORITE, CATEGORY }
+
+    /** Type of flash effect */
+    public enum FlashType { NONE, BLOCKED, SUCCESS, FAILED }
+
+    /** Shake progress (1 = start, decays to 0) */
+    private float shakeProgress = 0f;
+
+    /** Shake target index (-1 for none) */
+    private int shakeTargetIndex = -1;
+
+    /** Shake target type */
+    private TargetType shakeTargetType = TargetType.NONE;
+
+    /** Flash progress (1 = start, decays to 0) */
+    private float flashProgress = 0f;
+
+    /** Flash target index (-1 for none) */
+    private int flashTargetIndex = -1;
+
+    /** Flash target type */
+    private TargetType flashTargetType = TargetType.NONE;
+
+    /** Current flash type */
+    private FlashType flashType = FlashType.NONE;
+
+    /** Shake decay speed (how fast shake fades) */
+    private static final float SHAKE_DECAY = 0.25f;
+
+    /** Flash decay speed (how fast flash fades) */
+    private static final float FLASH_DECAY = 0.08f;
+
+    /** Shake amplitude in pixels */
+    private static final float SHAKE_AMPLITUDE = 3f;
+
+    /** Shake frequency (oscillations during decay) */
+    private static final float SHAKE_FREQUENCY = 25f;
+
+    // ================================================================
     // CONFIGURATION
     // ================================================================
 
@@ -144,6 +187,8 @@ public final class RadialAnimator {
             openAnimation = closing ? 0f : 1f;
             macroTransitionProgress = 1f;
             morphProgress = 1f;
+            pulsePhase = 0f;
+            wavePhase = 0f;
             return;
         }
 
@@ -169,6 +214,25 @@ public final class RadialAnimator {
         wavePhase += delta * RadialMenuConstants.WAVE_PHASE_SPEED;
         if (pulsePhase > RadialMenuConstants.TWO_PI) pulsePhase -= (float) RadialMenuConstants.TWO_PI;
         if (wavePhase > RadialMenuConstants.TWO_PI) wavePhase -= (float) RadialMenuConstants.TWO_PI;
+
+        // Shake animation decay
+        if (shakeProgress > 0f) {
+            shakeProgress = Math.max(0f, shakeProgress - SHAKE_DECAY);
+            if (shakeProgress <= 0f) {
+                shakeTargetIndex = -1;
+                shakeTargetType = TargetType.NONE;
+            }
+        }
+
+        // Flash animation decay
+        if (flashProgress > 0f) {
+            flashProgress = Math.max(0f, flashProgress - FLASH_DECAY);
+            if (flashProgress <= 0f) {
+                flashTargetIndex = -1;
+                flashTargetType = TargetType.NONE;
+                flashType = FlashType.NONE;
+            }
+        }
     }
 
     /**
@@ -177,11 +241,15 @@ public final class RadialAnimator {
      * @param selectedIndex currently selected category index (-1 for none)
      * @param categoryCount total number of categories
      */
-    public void updateCategoryAnimations(int selectedIndex, int categoryCount) {
+    public void updateCategoryAnimations(int selectedIndex, int categoryCount, boolean animate) {
         for (int i = 0; i < Math.min(categoryCount, categoryAnimations.length); i++) {
             float target = (i == selectedIndex) ? 1f : 0f;
-            categoryAnimations[i] = Mth.lerp(RadialMenuConstants.CATEGORY_ANIM_LERP,
-                categoryAnimations[i], target);
+            if (animate) {
+                categoryAnimations[i] = Mth.lerp(RadialMenuConstants.CATEGORY_ANIM_LERP,
+                    categoryAnimations[i], target);
+            } else {
+                categoryAnimations[i] = target;
+            }
         }
     }
 
@@ -191,11 +259,15 @@ public final class RadialAnimator {
      * @param selectedIndex currently selected item index (-1 for none)
      * @param itemCount     total number of items
      */
-    public void updateItemAnimations(int selectedIndex, int itemCount) {
+    public void updateItemAnimations(int selectedIndex, int itemCount, boolean animate) {
         for (int i = 0; i < Math.min(itemCount, itemAnimations.length); i++) {
             float target = (i == selectedIndex) ? 1f : 0f;
-            itemAnimations[i] = Mth.lerp(RadialMenuConstants.ITEM_ANIM_LERP,
-                itemAnimations[i], target);
+            if (animate) {
+                itemAnimations[i] = Mth.lerp(RadialMenuConstants.ITEM_ANIM_LERP,
+                    itemAnimations[i], target);
+            } else {
+                itemAnimations[i] = target;
+            }
         }
     }
 
@@ -205,11 +277,15 @@ public final class RadialAnimator {
      * @param selectedIndex currently selected favorite index (-1 for none)
      * @param favoriteCount total number of favorites
      */
-    public void updateFavoriteAnimations(int selectedIndex, int favoriteCount) {
+    public void updateFavoriteAnimations(int selectedIndex, int favoriteCount, boolean animate) {
         for (int i = 0; i < Math.min(favoriteCount, favoriteAnimations.length); i++) {
             float target = (i == selectedIndex) ? 1f : 0f;
-            favoriteAnimations[i] = Mth.lerp(RadialMenuConstants.ITEM_ANIM_LERP,
-                favoriteAnimations[i], target);
+            if (animate) {
+                favoriteAnimations[i] = Mth.lerp(RadialMenuConstants.ITEM_ANIM_LERP,
+                    favoriteAnimations[i], target);
+            } else {
+                favoriteAnimations[i] = target;
+            }
         }
     }
 
@@ -219,10 +295,15 @@ public final class RadialAnimator {
      * @param selectedIndex currently selected macro index
      * @param hoveredIndex  currently hovered macro index (-1 for none)
      */
-    public void updateMacroSegmentAnimations(int selectedIndex, int hoveredIndex) {
+    public void updateMacroSegmentAnimations(int selectedIndex, int hoveredIndex, boolean animate) {
         for (int i = 0; i < macroSegmentAnimations.length; i++) {
             float target = (i == selectedIndex || i == hoveredIndex) ? 1f : 0f;
-            macroSegmentAnimations[i] = Mth.lerp(RadialMenuConstants.LERP_FACTOR, macroSegmentAnimations[i], target);
+            if (animate) {
+                macroSegmentAnimations[i] = Mth.lerp(RadialMenuConstants.LERP_FACTOR,
+                    macroSegmentAnimations[i], target);
+            } else {
+                macroSegmentAnimations[i] = target;
+            }
         }
     }
 
@@ -231,10 +312,14 @@ public final class RadialAnimator {
      *
      * @param hovered whether center is being hovered
      */
-    public void updateCenterHoverAnimation(boolean hovered) {
+    public void updateCenterHoverAnimation(boolean hovered, boolean animate) {
         float target = hovered ? 1f : 0f;
-        float speed = hovered ? config.hoverInSpeed : config.hoverOutSpeed;
-        centerHoverAnimation = Mth.lerp(speed, centerHoverAnimation, target);
+        if (animate) {
+            float speed = hovered ? config.hoverInSpeed : config.hoverOutSpeed;
+            centerHoverAnimation = Mth.lerp(speed, centerHoverAnimation, target);
+        } else {
+            centerHoverAnimation = target;
+        }
     }
 
     /**
@@ -242,9 +327,13 @@ public final class RadialAnimator {
      *
      * @param searchModeActive whether search mode is active
      */
-    public void updateSearchBoxAnimation(boolean searchModeActive) {
+    public void updateSearchBoxAnimation(boolean searchModeActive, boolean animate) {
         float target = searchModeActive ? 1f : 0f;
-        searchBoxAnimation = Mth.lerp(config.searchBoxSpeed, searchBoxAnimation, target);
+        if (animate) {
+            searchBoxAnimation = Mth.lerp(config.searchBoxSpeed, searchBoxAnimation, target);
+        } else {
+            searchBoxAnimation = target;
+        }
     }
 
     // ================================================================
@@ -290,6 +379,14 @@ public final class RadialAnimator {
         Arrays.fill(itemAnimations, 0f);
         Arrays.fill(favoriteAnimations, 0f);
         Arrays.fill(macroSegmentAnimations, 0f);
+        // Reset feedback animations
+        shakeProgress = 0f;
+        shakeTargetIndex = -1;
+        shakeTargetType = TargetType.NONE;
+        flashProgress = 0f;
+        flashTargetIndex = -1;
+        flashTargetType = TargetType.NONE;
+        flashType = FlashType.NONE;
     }
 
     // ================================================================
@@ -370,6 +467,139 @@ public final class RadialAnimator {
 
     public float getMacroSegmentAnimation(int index) {
         return index >= 0 && index < macroSegmentAnimations.length ? macroSegmentAnimations[index] : 0f;
+    }
+
+    // ================================================================
+    // SHAKE ANIMATION (micro-shake for blocked clicks)
+    // ================================================================
+
+    /**
+     * Starts a micro-shake animation for an item.
+     *
+     * @param index item index
+     */
+    public void startItemShake(int index) {
+        shakeProgress = 1f;
+        shakeTargetIndex = index;
+        shakeTargetType = TargetType.ITEM;
+    }
+
+    /**
+     * Starts a micro-shake animation for a favorite.
+     *
+     * @param index favorite index
+     */
+    public void startFavoriteShake(int index) {
+        shakeProgress = 1f;
+        shakeTargetIndex = index;
+        shakeTargetType = TargetType.FAVORITE;
+    }
+
+    /**
+     * Calculates shake offset for an item.
+     * Returns 0 if not shaking or if reduced motion is enabled.
+     *
+     * @param index item index
+     * @param targetType the type to check against
+     * @return horizontal shake offset in pixels
+     */
+    public float getShakeOffset(int index, TargetType targetType) {
+        if (shakeProgress <= 0f || shakeTargetType != targetType || shakeTargetIndex != index) {
+            return 0f;
+        }
+        // Damped oscillation: sin wave with decaying amplitude
+        float amplitude = SHAKE_AMPLITUDE * shakeProgress;
+        float phase = (1f - shakeProgress) * SHAKE_FREQUENCY;
+        return amplitude * (float) Math.sin(phase);
+    }
+
+    /**
+     * Checks if an item is currently shaking.
+     */
+    public boolean isShaking(int index, TargetType targetType) {
+        return shakeProgress > 0f && shakeTargetType == targetType && shakeTargetIndex == index;
+    }
+
+    // ================================================================
+    // FLASH ANIMATION (blocked/success/failed feedback)
+    // ================================================================
+
+    /**
+     * Starts a blocked flash animation for an item.
+     *
+     * @param index item index
+     */
+    public void startItemBlockedFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.ITEM;
+        flashType = FlashType.BLOCKED;
+    }
+
+    /**
+     * Starts a blocked flash animation for a favorite.
+     *
+     * @param index favorite index
+     */
+    public void startFavoriteBlockedFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.FAVORITE;
+        flashType = FlashType.BLOCKED;
+    }
+
+    /**
+     * Starts a success flash animation for an item.
+     *
+     * @param index item index
+     */
+    public void startItemSuccessFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.ITEM;
+        flashType = FlashType.SUCCESS;
+    }
+
+    /**
+     * Starts a failed flash animation for an item.
+     *
+     * @param index item index
+     */
+    public void startItemFailedFlash(int index) {
+        flashProgress = 1f;
+        flashTargetIndex = index;
+        flashTargetType = TargetType.ITEM;
+        flashType = FlashType.FAILED;
+    }
+
+    /**
+     * Gets the flash alpha for an element (0-1).
+     * Returns 0 if not flashing.
+     *
+     * @param index element index
+     * @param targetType the type to check against
+     * @return flash alpha (0-1)
+     */
+    public float getFlashAlpha(int index, TargetType targetType) {
+        if (flashProgress <= 0f || flashTargetType != targetType || flashTargetIndex != index) {
+            return 0f;
+        }
+        // Ease out for smooth fade
+        return Easing.easeOutQuad(flashProgress);
+    }
+
+    /**
+     * Gets the current flash type for an element.
+     *
+     * @param index element index
+     * @param targetType the type to check against
+     * @return flash type, or NONE if not flashing
+     */
+    public FlashType getFlashType(int index, TargetType targetType) {
+        if (flashProgress <= 0f || flashTargetType != targetType || flashTargetIndex != index) {
+            return FlashType.NONE;
+        }
+        return flashType;
     }
 
     // ================================================================

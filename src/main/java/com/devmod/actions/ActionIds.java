@@ -7,6 +7,7 @@ public final class ActionIds {
     public static final String UI_RADIAL_OPEN = "devmod.ui.radial.open";
     public static final String UI_SETTINGS_OPEN = "devmod.ui.settings.open";
     public static final String UI_RADIAL_SETTINGS_OPEN = "devmod.ui.radial_settings.open";
+    public static final String UI_RADIAL_RESTORE_DEFAULTS = "devmod.ui.radial.restore_defaults";
     public static final String UI_ITEM_EDITOR_OPEN_AUTO = "devmod.ui.item_editor.open_auto";
     public static final String UI_ITEM_EDITOR_OPEN_WEAPON = "devmod.ui.item_editor.open_weapon";
     public static final String UI_ITEM_EDITOR_OPEN_ARMOR = "devmod.ui.item_editor.open_armor";
@@ -109,6 +110,8 @@ public final class ActionIds {
     public static final String DEBUG_COMMAND_LIST = "devmod.debug.command.list";
     public static final String DEBUG_COMMAND_OFF = "devmod.debug.command.off";
     public static final String DEBUG_COMMAND_TOGGLE = "devmod.debug.command.toggle";
+    public static final String DEBUG_COMBAT_RESET = "devmod.debug.combat.reset";
+    public static final String DEBUG_CONTEXT_STATUS = "devmod.debug.context.status";
 
     public static final String HUD_QUICK_HELP_TOGGLE = "devmod.hud.quick_help.toggle";
     public static final String HUD_IMPACT_TOGGLE = "devmod.hud.impact.toggle";

@@ -1,5 +1,7 @@
 package com.devmod.client.ui.core;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -495,7 +497,7 @@ public final class UIScaleManager {
      * @param color Text color (ARGB)
      * @param shadow Whether to draw with shadow
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
                                         String text, int x, int y, int color, boolean shadow) {
         graphics.drawString(font, text, x, y, color, shadow);
     }
@@ -510,7 +512,7 @@ public final class UIScaleManager {
      * @param y Y coordinate
      * @param color Text color (ARGB)
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
                                         String text, int x, int y, int color) {
         graphics.drawString(font, text, x, y, color, false);
     }
@@ -525,8 +527,8 @@ public final class UIScaleManager {
      * @param y Y coordinate
      * @param color Text color (ARGB)
      */
-    public static void drawScaledCenteredString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                                String text, int centerX, int y, int color) {
+    public static void drawScaledCenteredString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                                @Nonnull String text, int centerX, int y, int color) {
         graphics.drawCenteredString(font, text, centerX, y, color);
     }
 
@@ -537,7 +539,7 @@ public final class UIScaleManager {
      * @param text The text to measure
      * @return The width in pixels
      */
-    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, String text) {
+    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, @Nonnull String text) {
         return font.width(text);
     }
 
@@ -552,8 +554,8 @@ public final class UIScaleManager {
      * @param color Text color (ARGB)
      * @param shadow Whether to draw with shadow
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                        net.minecraft.network.chat.Component text, int x, int y, int color, boolean shadow) {
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                        @Nonnull net.minecraft.network.chat.Component text, int x, int y, int color, boolean shadow) {
         graphics.drawString(font, text, x, y, color, shadow);
     }
 
@@ -567,8 +569,8 @@ public final class UIScaleManager {
      * @param y Y coordinate
      * @param color Text color (ARGB)
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                        net.minecraft.network.chat.Component text, int x, int y, int color) {
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                        @Nonnull net.minecraft.network.chat.Component text, int x, int y, int color) {
         graphics.drawString(font, text, x, y, color, false);
     }
 
@@ -583,8 +585,8 @@ public final class UIScaleManager {
      * @param color Text color (ARGB)
      * @param shadow Whether to draw shadow
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                        net.minecraft.util.FormattedCharSequence text, int x, int y, int color, boolean shadow) {
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                        @Nonnull net.minecraft.util.FormattedCharSequence text, int x, int y, int color, boolean shadow) {
         graphics.drawString(font, text, x, y, color, shadow);
     }
 
@@ -598,8 +600,8 @@ public final class UIScaleManager {
      * @param y Y coordinate
      * @param color Text color (ARGB)
      */
-    public static void drawScaledString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                        net.minecraft.util.FormattedCharSequence text, int x, int y, int color) {
+    public static void drawScaledString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                        @Nonnull net.minecraft.util.FormattedCharSequence text, int x, int y, int color) {
         graphics.drawString(font, text, x, y, color, false);
     }
 
@@ -613,8 +615,8 @@ public final class UIScaleManager {
      * @param y Y coordinate
      * @param color Text color (ARGB)
      */
-    public static void drawScaledCenteredString(GuiGraphics graphics, net.minecraft.client.gui.Font font,
-                                                net.minecraft.network.chat.Component text, int centerX, int y, int color) {
+    public static void drawScaledCenteredString(GuiGraphics graphics, @Nonnull net.minecraft.client.gui.Font font,
+                                                @Nonnull net.minecraft.network.chat.Component text, int centerX, int y, int color) {
         graphics.drawCenteredString(font, text, centerX, y, color);
     }
 
@@ -625,7 +627,7 @@ public final class UIScaleManager {
      * @param text The Component to measure
      * @return The width in pixels
      */
-    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, net.minecraft.network.chat.Component text) {
+    public static int getScaledStringWidth(net.minecraft.client.gui.Font font, @Nonnull net.minecraft.network.chat.Component text) {
         return font.width(text);
     }
 
@@ -726,5 +728,38 @@ public final class UIScaleManager {
             debugLoggedOnce = true;
             debugLogScaleInfo(mouseX, mouseY, centerX, centerY);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SCALE SYNC
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Force recalculation from current window state.
+     * Call on screen open to ensure sync with current Window values.
+     */
+    public static void forceRecalculate() {
+        update();
+    }
+
+    /**
+     * Verify cached values match Window, log warning if mismatch.
+     * Does NOT auto-correct (caller decides whether to call forceRecalculate).
+     *
+     * @return true if in sync, false if mismatch detected
+     */
+    public static boolean verifySyncOrWarn() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getWindow() == null) return true;
+
+        int windowW = mc.getWindow().getGuiScaledWidth();
+        int windowH = mc.getWindow().getGuiScaledHeight();
+
+        if (windowW != scaledWidth || windowH != scaledHeight) {
+            LOGGER.warn("[UIScaleManager] Mismatch: Window={}x{}, cached={}x{}. Consider forceRecalculate().",
+                windowW, windowH, scaledWidth, scaledHeight);
+            return false;
+        }
+        return true;
     }
 }

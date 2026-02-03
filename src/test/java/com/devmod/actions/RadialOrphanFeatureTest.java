@@ -95,6 +95,11 @@ class RadialOrphanFeatureTest {
             ActionIds.UI_RADIAL_OPEN, ActionIds.UI_MAILBOX_OPEN, ActionIds.UI_TESTER_TASKS_OPEN,
             // Hub screens (accessible via other hubs, not needed in radial menu directly)
             ActionIds.UI_PLAY_HUB_OPEN,
+            // Config utility actions (accessible via settings screens)
+            ActionIds.UI_RADIAL_RESTORE_DEFAULTS,
+            // Debug commands (accessible via /devmod debug commands)
+            ActionIds.DEBUG_COMBAT_RESET,
+            ActionIds.DEBUG_CONTEXT_STATUS,
             // Admin commands (available via /mailbox and /news commands, not radial menu)
             ActionIds.MAILBOX_COMMAND_HELP, ActionIds.MAILBOX_COMMAND_STATS,
             ActionIds.MAILBOX_COMMAND_SEND, ActionIds.MAILBOX_COMMAND_BROADCAST,

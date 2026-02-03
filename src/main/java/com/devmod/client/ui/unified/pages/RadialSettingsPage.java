@@ -25,6 +25,7 @@ public class RadialSettingsPage implements SettingsPage {
     private boolean releaseToSelect;
     private boolean rightClickToEdit;
     private boolean enableAnimations;
+    private boolean reducedMotion;
     private boolean enableSounds;
     private boolean showTooltips;
     private boolean closeOnToggle;
@@ -38,6 +39,7 @@ public class RadialSettingsPage implements SettingsPage {
     private boolean originalReleaseToSelect;
     private boolean originalRightClickToEdit;
     private boolean originalEnableAnimations;
+    private boolean originalReducedMotion;
     private boolean originalEnableSounds;
     private boolean originalShowTooltips;
     private boolean originalCloseOnToggle;
@@ -71,6 +73,7 @@ public class RadialSettingsPage implements SettingsPage {
         releaseToSelect = config.releaseToSelect;
         rightClickToEdit = config.rightClickToEdit;
         enableAnimations = config.enableAnimations;
+        reducedMotion = config.reducedMotion;
         enableSounds = config.enableSounds;
         showTooltips = config.showTooltips;
         closeOnToggle = config.closeOnToggle;
@@ -84,6 +87,7 @@ public class RadialSettingsPage implements SettingsPage {
         originalReleaseToSelect = releaseToSelect;
         originalRightClickToEdit = rightClickToEdit;
         originalEnableAnimations = enableAnimations;
+        originalReducedMotion = reducedMotion;
         originalEnableSounds = enableSounds;
         originalShowTooltips = showTooltips;
         originalCloseOnToggle = closeOnToggle;
@@ -140,6 +144,10 @@ public class RadialSettingsPage implements SettingsPage {
 
             renderToggleRow(graphics, font, x, currentY, effectiveWidth,
                 "Animations", "Enable smooth animations", enableAnimations, mouseX, mouseY);
+            currentY += ROW_HEIGHT;
+
+            renderToggleRow(graphics, font, x, currentY, effectiveWidth,
+                "Reduced Motion", "Reduce or disable motion effects", reducedMotion, mouseX, mouseY);
             currentY += ROW_HEIGHT;
 
             renderToggleRow(graphics, font, x, currentY, effectiveWidth,
@@ -299,6 +307,14 @@ public class RadialSettingsPage implements SettingsPage {
         currentY += ROW_HEIGHT;
 
         if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
+            reducedMotion = !reducedMotion;
+            config.reducedMotion = reducedMotion;
+            config.save();
+            return true;
+        }
+        currentY += ROW_HEIGHT;
+
+        if (isMouseOver((int) mouseX, (int) mouseY, contentX, currentY, effectiveWidth, ROW_HEIGHT)) {
             enableSounds = !enableSounds;
             config.enableSounds = enableSounds;
             config.save();
@@ -408,6 +424,7 @@ public class RadialSettingsPage implements SettingsPage {
         return releaseToSelect != originalReleaseToSelect
             || rightClickToEdit != originalRightClickToEdit
             || enableAnimations != originalEnableAnimations
+            || reducedMotion != originalReducedMotion
             || enableSounds != originalEnableSounds
             || showTooltips != originalShowTooltips
             || closeOnToggle != originalCloseOnToggle
@@ -423,6 +440,7 @@ public class RadialSettingsPage implements SettingsPage {
         originalReleaseToSelect = releaseToSelect;
         originalRightClickToEdit = rightClickToEdit;
         originalEnableAnimations = enableAnimations;
+        originalReducedMotion = reducedMotion;
         originalEnableSounds = enableSounds;
         originalShowTooltips = showTooltips;
         originalCloseOnToggle = closeOnToggle;
@@ -439,6 +457,7 @@ public class RadialSettingsPage implements SettingsPage {
         releaseToSelect = true;
         rightClickToEdit = true;
         enableAnimations = true;
+        reducedMotion = false;
         enableSounds = true;
         showTooltips = true;
         closeOnToggle = false;
@@ -451,6 +470,7 @@ public class RadialSettingsPage implements SettingsPage {
         config.releaseToSelect = releaseToSelect;
         config.rightClickToEdit = rightClickToEdit;
         config.enableAnimations = enableAnimations;
+        config.reducedMotion = reducedMotion;
         config.enableSounds = enableSounds;
         config.showTooltips = showTooltips;
         config.closeOnToggle = closeOnToggle;
@@ -470,7 +490,7 @@ public class RadialSettingsPage implements SettingsPage {
         height += 8 + 16;
         // Feedback
         height += ROW_HEIGHT;
-        height += ROW_HEIGHT * 4;
+        height += ROW_HEIGHT * 5;
         height += 8 + 16;
         // Safety & Ordering
         height += ROW_HEIGHT;

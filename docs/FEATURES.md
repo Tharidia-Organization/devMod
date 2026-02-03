@@ -1,6 +1,6 @@
 # Feature DevMod
 
-> Ultimo aggiornamento: 2026-01-31
+> Ultimo aggiornamento: 2026-02-03
 
 ## Gameplay e Testing
 
@@ -10,7 +10,7 @@
 
 ## Tooling in-game
 
-- Menu radiale per accesso rapido agli strumenti.
+- Menu radiale per accesso rapido agli strumenti (feedback blocchi, countdown combat, hit-target 44px).
 - Editor per weapon/armor/recipe e preset.
 - Overlay di debug, profiling e HUD impatti.
 

@@ -1,5 +1,7 @@
 # Radial Menu Map (Curated)
 
+> Ultimo aggiornamento: 2026-02-03
+
 This map reflects the new curated radial layout driven by `RadialMenuActionLayout` allowlist
 and menu-path overrides. It is intentionally lean: overlays + top-level screens, while deep
 telemetry/ops live in the Telemetry Dashboard screen.
@@ -26,6 +28,9 @@ telemetry/ops live in the Telemetry Dashboard screen.
     - devmod.debug.native.bees.toggle
     - devmod.debug.native.game_events.toggle
     - devmod.debug.native.structures.toggle
+  - Context
+    - devmod.debug.combat.reset
+    - devmod.debug.context.status
 - Spatial
   - devmod.debug.room_bounds.toggle
   - devmod.debug.room_bounds.gaps.toggle
@@ -118,3 +123,11 @@ The radial now exposes only the Editor Hub entry. The hub contains:
 - Mob: config + equipment
 - Quest/Endurance: quest editor + endurance editor + stamina editor
 - World: room bounds editor
+
+## Radial UX Notes (2026-02-03)
+- Release-to-select: debounce 200ms, richiede selezione esplicita; se bloccato mostra feedback e resta aperto.
+- Blocked feedback: tooltip con reason + help contestuale; combat mostra countdown residuo.
+- Hit target minimi: 44px per item e preferiti (accessibilita).
+- Windows DPI: sync UI scale su apertura per evitare offset hover.
+- Stato BLOCKED: tint warning su item e preferiti + micro-shake/flash se animazioni attive.
+- Telemetria: `action_blocked` include `reasonKey` e `helpKey` (log dev).

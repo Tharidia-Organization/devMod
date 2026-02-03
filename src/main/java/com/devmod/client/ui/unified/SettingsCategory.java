@@ -1,5 +1,7 @@
 package com.devmod.client.ui.unified;
 
+import java.util.List;
+
 import com.devmod.client.ui.editor.core.DesignTokens;
 
 public enum SettingsCategory {
@@ -17,6 +19,8 @@ public enum SettingsCategory {
     private final String icon;
     private final int accentColor;
     private final String description;
+
+    private static final List<SettingsCategory> ORDER = List.of(values());
 
     SettingsCategory(String label, String icon, int accentColor, String description) {
         this.label = label;
@@ -51,5 +55,12 @@ public enum SettingsCategory {
             }
         }
         return GENERAL;
+    }
+
+    /**
+     * Returns the stable index for this category.
+     */
+    public int getIndex() {
+        return ORDER.indexOf(this);
     }
 }
