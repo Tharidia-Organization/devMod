@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.google.common.base.Splitter;
 
@@ -34,35 +35,54 @@ public final class RadialCategoryRenderer {
 
     /**
      * Configuration for rendering the category ring.
-     *
-     * @param centerX          center X coordinate
-     * @param centerY          center Y coordinate
-     * @param innerRadius      inner radius of the ring
-     * @param outerRadius      outer radius of the ring
-     * @param itemRadius       radius for icon placement
-     * @param selectedIndex    currently selected category index (-1 if none)
-     * @param categoryAnimations animation progress for each category
-     * @param theme            color theme to use
-     * @param iconMode         icon rendering mode (EMOJI, ITEMSTACK, AUTO)
-     * @param pulsePhase       current pulse animation phase
      */
-    public record RingConfig(
-        int centerX,
-        int centerY,
-        int innerRadius,
-        int outerRadius,
-        int itemRadius,
-        int selectedIndex,
-        float[] categoryAnimations,
-        RadialMenuConfig.ColorTheme theme,
-        RadialMenuConfig.IconMode iconMode,
-        float pulsePhase
-    ) {
-        public RingConfig {
-            Objects.requireNonNull(categoryAnimations, "categoryAnimations cannot be null");
-            Objects.requireNonNull(theme, "theme cannot be null");
-            Objects.requireNonNull(iconMode, "iconMode cannot be null");
+    public static final class RingConfig {
+        public final int centerX;
+        public final int centerY;
+        public final int innerRadius;
+        public final int outerRadius;
+        public final int itemRadius;
+        public final int selectedIndex;
+        public final float[] categoryAnimations;
+        public final RadialMenuConfig.ColorTheme theme;
+        public final RadialMenuConfig.IconMode iconMode;
+        public final float pulsePhase;
+
+        /**
+         * Creates a ring config instance.
+         */
+        public RingConfig(int centerX,
+                          int centerY,
+                          int innerRadius,
+                          int outerRadius,
+                          int itemRadius,
+                          int selectedIndex,
+                          float[] categoryAnimations,
+                          RadialMenuConfig.ColorTheme theme,
+                          RadialMenuConfig.IconMode iconMode,
+                          float pulsePhase) {
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.innerRadius = innerRadius;
+            this.outerRadius = outerRadius;
+            this.itemRadius = itemRadius;
+            this.selectedIndex = selectedIndex;
+            this.categoryAnimations = Objects.requireNonNull(categoryAnimations, "categoryAnimations cannot be null");
+            this.theme = Objects.requireNonNull(theme, "theme cannot be null");
+            this.iconMode = Objects.requireNonNull(iconMode, "iconMode cannot be null");
+            this.pulsePhase = pulsePhase;
         }
+
+        public int centerX() { return centerX; }
+        public int centerY() { return centerY; }
+        public int innerRadius() { return innerRadius; }
+        public int outerRadius() { return outerRadius; }
+        public int itemRadius() { return itemRadius; }
+        public int selectedIndex() { return selectedIndex; }
+        public float[] categoryAnimations() { return categoryAnimations; }
+        public RadialMenuConfig.ColorTheme theme() { return theme; }
+        public RadialMenuConfig.IconMode iconMode() { return iconMode; }
+        public float pulsePhase() { return pulsePhase; }
     }
 
     /**
@@ -248,33 +268,145 @@ public final class RadialCategoryRenderer {
             RadialMenuConstants.COLOR_DIVIDER);
     }
 
+    /**
+     * Renders a keyboard focus ring for the selected category.
+     */
+    public static void renderCategoryFocusRing(GuiGraphics graphics,
+                                                List<RadialCategory> categories,
+                                                RingConfig config,
+                                                int focusIndex,
+                                                float alpha) {
+        Objects.requireNonNull(graphics, "graphics cannot be null");
+        Objects.requireNonNull(categories, "categories cannot be null");
+        Objects.requireNonNull(config, "config cannot be null");
+
+        int numCategories = categories.size();
+        if (numCategories == 0 || focusIndex < 0 || focusIndex >= numCategories) {
+            return;
+        }
+
+        double segmentAngle = RadialMenuConstants.TWO_PI / numCategories;
+        double startOffset = RadialMenuConstants.CATEGORY_START_OFFSET;
+        double startAngle = startOffset + (focusIndex - 0.5) * segmentAngle;
+        double endAngle = startAngle + segmentAngle;
+
+        int alphaInt = (int) (alpha * 255);
+        RadialCategory cat = categories.get(focusIndex);
+
+        int borderWidth = RadialMenuScaler.scaleConstant(RadialMenuConstants.FOCUS_RING_BORDER_WIDTH);
+        int glowWidth = RadialMenuScaler.scaleConstant(RadialMenuConstants.FOCUS_RING_GLOW_WIDTH);
+        int glowRadius = config.outerRadius + Math.max(1, glowWidth / 2);
+
+        int borderColor = RadialGeometry.applyAlpha(cat.getColor(), alphaInt);
+        int glowAlpha = (alphaInt * RadialMenuConstants.FOCUS_RING_GLOW_ALPHA) / 255;
+        int glowColor = RadialGeometry.applyAlpha(cat.getColor(), glowAlpha);
+
+        // Glow (soft outer outline)
+        RadialGeometry.renderArcOutline(graphics, config.centerX, config.centerY,
+            glowRadius, startAngle, endAngle, glowColor, glowWidth);
+
+        // Thicker focus border
+        RadialGeometry.renderArcOutline(graphics, config.centerX, config.centerY,
+            config.outerRadius, startAngle, endAngle, borderColor, borderWidth);
+    }
+
     // ================================================================
     // CATEGORY ITEMS RENDERING
     // ================================================================
 
     /**
      * Configuration for rendering category items.
-     *
-     * @param centerX         center X coordinate
-     * @param centerY         center Y coordinate
-     * @param outerRadius     outer radius of the category ring
-     * @param selectedCategoryIndex selected category index
-     * @param selectedItemIndex selected item index (-1 if none)
-     * @param itemAnimations  animation progress for each item
-     * @param theme           color theme to use
      */
-    public record ItemsConfig(
-        int centerX,
-        int centerY,
-        int outerRadius,
-        int selectedCategoryIndex,
-        int selectedItemIndex,
-        float[] itemAnimations,
-        RadialMenuConfig.ColorTheme theme
-    ) {
-        public ItemsConfig {
-            Objects.requireNonNull(itemAnimations, "itemAnimations cannot be null");
-            Objects.requireNonNull(theme, "theme cannot be null");
+    public static final class ItemsConfig {
+        public final int centerX;
+        public final int centerY;
+        public final int outerRadius;
+        public final int selectedCategoryIndex;
+        public final int selectedItemIndex;
+        public final float[] itemAnimations;
+        public final RadialMenuConfig.ColorTheme theme;
+        /** Shake offset for each item (horizontal pixel offset, null if no shake) */
+        @Nullable public final float[] shakeOffsets;
+        /** Flash alpha for each item (0-1, null if no flash) */
+        @Nullable public final float[] flashAlphas;
+        /** Flash color for each item (ARGB, null if default) */
+        @Nullable public final int[] flashColors;
+        /** Default flash color (ARGB) */
+        public final int flashBlockedColor;
+
+        /**
+         * Creates an items config instance.
+         */
+        public ItemsConfig(int centerX,
+                           int centerY,
+                           int outerRadius,
+                           int selectedCategoryIndex,
+                           int selectedItemIndex,
+                           float[] itemAnimations,
+                           RadialMenuConfig.ColorTheme theme) {
+            this(centerX, centerY, outerRadius, selectedCategoryIndex, selectedItemIndex,
+                 itemAnimations, theme, null, null, null, RadialMenuConstants.COLOR_BLOCKED_TINT);
+        }
+
+        /**
+         * Creates an items config instance with shake and flash support.
+         */
+        public ItemsConfig(int centerX,
+                           int centerY,
+                           int outerRadius,
+                           int selectedCategoryIndex,
+                           int selectedItemIndex,
+                           float[] itemAnimations,
+                           RadialMenuConfig.ColorTheme theme,
+                           @Nullable float[] shakeOffsets,
+                           @Nullable float[] flashAlphas,
+                           @Nullable int[] flashColors,
+                           int flashBlockedColor) {
+            this.centerX = centerX;
+            this.centerY = centerY;
+            this.outerRadius = outerRadius;
+            this.selectedCategoryIndex = selectedCategoryIndex;
+            this.selectedItemIndex = selectedItemIndex;
+            this.itemAnimations = Objects.requireNonNull(itemAnimations, "itemAnimations cannot be null");
+            this.theme = Objects.requireNonNull(theme, "theme cannot be null");
+            this.shakeOffsets = shakeOffsets;
+            this.flashAlphas = flashAlphas;
+            this.flashColors = flashColors;
+            this.flashBlockedColor = flashBlockedColor;
+        }
+
+        public int centerX() { return centerX; }
+        public int centerY() { return centerY; }
+        public int outerRadius() { return outerRadius; }
+        public int selectedCategoryIndex() { return selectedCategoryIndex; }
+        public int selectedItemIndex() { return selectedItemIndex; }
+        public float[] itemAnimations() { return itemAnimations; }
+        public RadialMenuConfig.ColorTheme theme() { return theme; }
+
+        /** Gets shake offset for an item, or 0 if no shake. */
+        public float getShakeOffset(int index) {
+            float[] offsets = shakeOffsets;
+            return offsets != null && index >= 0 && index < offsets.length
+                ? offsets[index] : 0f;
+        }
+
+        /** Gets flash alpha for an item, or 0 if no flash. */
+        public float getFlashAlpha(int index) {
+            float[] alphas = flashAlphas;
+            return alphas != null && index >= 0 && index < alphas.length
+                ? alphas[index] : 0f;
+        }
+
+        /** Gets flash color for an item, falling back to default if unset. */
+        public int getFlashColor(int index) {
+            int[] colors = flashColors;
+            if (colors != null && index >= 0 && index < colors.length) {
+                int color = colors[index];
+                if (color != 0) {
+                    return color;
+                }
+            }
+            return flashBlockedColor;
         }
     }
 
@@ -341,6 +473,12 @@ public final class RadialCategoryRenderer {
         int itemY = (int) (config.centerY + Math.sin(itemAngle) *
             (baseRadius + hoverOffset * itemAnim));
 
+        // Apply micro-shake offset (horizontal only for subtle effect)
+        float shakeOffset = config.getShakeOffset(index);
+        if (shakeOffset != 0f) {
+            itemX += (int) shakeOffset;
+        }
+
         int hoverSizeBonus = RadialMenuScaler.scaleConstant(RadialMenuConstants.ITEM_HOVER_SIZE_BONUS);
         int itemRadiusSize = itemSize + (int) (hoverSizeBonus * itemAnim);
 
@@ -353,8 +491,9 @@ public final class RadialCategoryRenderer {
                 RadialMenuConstants.ITEM_ACTIVE_BLEND);
         }
         if (!canExecute) {
-            bgColor = RadialGeometry.blendColors(bgColor, RadialMenuConstants.COLOR_INACTIVE,
-                RadialMenuConstants.ITEM_DISABLED_BLEND);
+            // BLOCKED state: use warning tint instead of grey
+            bgColor = RadialGeometry.blendColors(bgColor, RadialMenuConstants.COLOR_BLOCKED_TINT,
+                RadialMenuConstants.BLOCKED_BG_BLEND);
         }
         RadialGeometry.renderCircle(graphics, itemX, itemY, itemRadiusSize, bgColor);
 
@@ -363,8 +502,9 @@ public final class RadialCategoryRenderer {
             ? config.theme.active
             : (itemSelected ? category.getColor() : RadialMenuConstants.COLOR_DIVIDER);
         if (!canExecute) {
-            borderColor = RadialGeometry.blendColors(borderColor, RadialMenuConstants.COLOR_INACTIVE,
-                RadialMenuConstants.ITEM_DISABLED_BLEND);
+            // BLOCKED state: use warning border
+            borderColor = RadialGeometry.blendColors(borderColor, RadialMenuConstants.COLOR_BLOCKED_BORDER,
+                RadialMenuConstants.BLOCKED_BORDER_BLEND);
         }
         int borderWidth = itemSelected
             ? RadialMenuScaler.scaleConstant(RadialMenuConstants.BORDER_WIDTH_SELECTED)
@@ -377,11 +517,19 @@ public final class RadialCategoryRenderer {
             int highlightColor = RadialGeometry.blendColors(category.getColor(), DesignTokens.Text.WHITE,
                 RadialMenuConstants.ITEM_HIGHLIGHT_BLEND);
             if (!canExecute) {
-                highlightColor = RadialGeometry.blendColors(highlightColor, RadialMenuConstants.COLOR_INACTIVE,
-                    RadialMenuConstants.ITEM_DISABLED_BLEND);
+                // BLOCKED state: use warning highlight
+                highlightColor = RadialGeometry.blendColors(highlightColor, RadialMenuConstants.COLOR_BLOCKED_BORDER,
+                    RadialMenuConstants.BLOCKED_BORDER_BLEND);
             }
             RadialGeometry.renderRing(graphics, itemX, itemY,
                 itemRadiusSize - borderWidth - 1, itemRadiusSize - borderWidth, highlightColor);
+        }
+
+        // Flash overlay for blocked/success/failed feedback
+        float flashAlpha = config.getFlashAlpha(index);
+        if (flashAlpha > 0f) {
+            int flashColor = RadialGeometry.applyAlpha(config.getFlashColor(index), (int) (flashAlpha * 128));
+            RadialGeometry.renderCircle(graphics, itemX, itemY, itemRadiusSize - borderWidth, flashColor);
         }
 
         // Icon
@@ -417,7 +565,8 @@ public final class RadialCategoryRenderer {
         } else {
             int iconColor = selected ? theme.textPrimary : theme.textSecondary;
             if (!canExecute) {
-                iconColor = RadialMenuConstants.COLOR_INACTIVE;
+                // BLOCKED state: use muted warning color for icon
+                iconColor = RadialMenuConstants.COLOR_BLOCKED_ICON;
             }
             @Nonnull String iconText = Objects.requireNonNull(Objects.requireNonNullElse(item.getIconEmoji(), ""), "iconText");
             float fontScale = resolveFontScale();
@@ -492,7 +641,8 @@ public final class RadialCategoryRenderer {
             ? theme.textPrimary
             : (isActive ? theme.active : theme.textSecondary);
         if (!canExecute) {
-            nameColor = RadialMenuConstants.COLOR_INACTIVE;
+            // BLOCKED state: use muted warning color for name
+            nameColor = RadialMenuConstants.COLOR_BLOCKED_ICON;
         }
         @Nonnull String line0 = Objects.requireNonNull(lines.get(0), "line0");
         int totalHeight = lineHeight * lines.size();
@@ -651,7 +801,7 @@ public final class RadialCategoryRenderer {
         return Math.max(0, Math.round(width / scale));
     }
 
-    private static void drawCenteredStringScaled(GuiGraphics graphics, Font font, String text,
+    private static void drawCenteredStringScaled(GuiGraphics graphics, @Nonnull Font font, @Nonnull String text,
                                                   int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
             UIScaleManager.drawScaledCenteredString(graphics, font, text, x, y, color);
@@ -668,11 +818,11 @@ public final class RadialCategoryRenderer {
         return Math.max(1, Math.round(font.lineHeight * scale));
     }
 
-    private static int scaledWidth(Font font, String text, float scale) {
+    private static int scaledWidth(@Nonnull Font font, @Nonnull String text, float scale) {
         return Math.round(font.width(text) * scale);
     }
 
-    private static void drawStringScaled(GuiGraphics graphics, Font font, String text,
+    private static void drawStringScaled(GuiGraphics graphics, @Nonnull Font font, @Nonnull String text,
                                           int x, int y, int color, float scale) {
         if (scale <= 0f || Math.abs(scale - 1f) < 0.001f) {
             UIScaleManager.drawScaledString(graphics, font, text, x, y, color, false);
@@ -703,14 +853,15 @@ public final class RadialCategoryRenderer {
             @Nonnull String status = isActive ? "ON" : "OFF";
             int statusColor = isActive ? theme.active : RadialMenuConstants.ITEM_STATUS_INACTIVE_COLOR;
             if (!canExecute) {
-                statusColor = RadialMenuConstants.COLOR_INACTIVE;
+                // BLOCKED state: use muted warning color
+                statusColor = RadialMenuConstants.COLOR_BLOCKED_ICON;
             }
             float fontScale = resolveFontScale();
             drawCenteredStringScaled(graphics, safeFont, status, x,
                 y + statusOffsetY, statusColor, fontScale);
         } else if (item.isSubcategoryLink()) {
             @Nonnull String indicator = ">";
-            int indicatorColor = canExecute ? theme.textSecondary : RadialMenuConstants.COLOR_INACTIVE;
+            int indicatorColor = canExecute ? theme.textSecondary : RadialMenuConstants.COLOR_BLOCKED_ICON;
             float fontScale = resolveFontScale();
             drawCenteredStringScaled(graphics, safeFont, indicator, x,
                 y + statusOffsetY, indicatorColor, fontScale);

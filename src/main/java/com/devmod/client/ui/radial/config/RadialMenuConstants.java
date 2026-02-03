@@ -100,6 +100,40 @@ public final class RadialMenuConstants {
     public static final int CENTER_ICON_TEXT_OFFSET_Y = -3;
 
     // ================================================================
+    // CONTEXT BADGE (Hub)
+    // ================================================================
+
+    /** Context badge horizontal padding (pixels) */
+    public static final int CONTEXT_BADGE_PADDING_X = 6;
+
+    /** Context badge vertical padding (pixels) */
+    public static final int CONTEXT_BADGE_PADDING_Y = 3;
+
+    /** Context badge offset above close button (pixels) */
+    public static final int CONTEXT_BADGE_OFFSET_Y = 6;
+
+    /** Context badge pulse duration (milliseconds) */
+    public static final long CONTEXT_BADGE_PULSE_DURATION_MS = 350;
+
+    /** Context badge pulse scale (e.g., 0.15 = +15%) */
+    public static final float CONTEXT_BADGE_PULSE_SCALE = 0.15f;
+
+    /** Context badge combat color */
+    public static final int CONTEXT_BADGE_COMBAT = DesignTokens.Semantic.ERROR;
+
+    /** Context badge explore color */
+    public static final int CONTEXT_BADGE_EXPLORE = DesignTokens.Semantic.SUCCESS;
+
+    /** Context badge test color */
+    public static final int CONTEXT_BADGE_TEST = DesignTokens.Semantic.WARNING;
+
+    /** Context badge default color */
+    public static final int CONTEXT_BADGE_DEFAULT = DesignTokens.Semantic.INFO;
+
+    /** Context badge text color */
+    public static final int CONTEXT_BADGE_TEXT = DesignTokens.Text.PRIMARY;
+
+    // ================================================================
     // CATEGORY RING LAYOUT
     // ================================================================
 
@@ -126,6 +160,25 @@ public final class RadialMenuConstants {
 
     /** Category glow max alpha (0-255) */
     public static final int CATEGORY_GLOW_ALPHA = 0x40;
+
+    // ================================================================
+    // KEYBOARD FOCUS RING
+    // ================================================================
+
+    /** Focus ring timeout after last keyboard input (milliseconds) */
+    public static final long FOCUS_RING_TIMEOUT_MS = 2000L;
+
+    /** Focus ring border width (pixels) */
+    public static final int FOCUS_RING_BORDER_WIDTH = 4;
+
+    /** Focus ring glow width (pixels) */
+    public static final int FOCUS_RING_GLOW_WIDTH = 8;
+
+    /** Focus ring glow alpha (0-255) */
+    public static final int FOCUS_RING_GLOW_ALPHA = 110;
+
+    /** Mouse move threshold to cancel keyboard focus (pixels) */
+    public static final int FOCUS_RING_MOUSE_MOVE_THRESHOLD = 2;
 
     // ================================================================
     // CATEGORY BADGE
@@ -448,6 +501,37 @@ public final class RadialMenuConstants {
     public static final int COLOR_INACTIVE = RadialMenuThemeDefaults.Core.INACTIVE;
 
     // ================================================================
+    // BLOCKED STATE (distinct from inactive/disabled)
+    // ================================================================
+
+    /** Blocked item tint color (warning orange) */
+    public static final int COLOR_BLOCKED_TINT = DesignTokens.Semantic.WARNING;
+
+    /** Blocked item border color (warning orange) */
+    public static final int COLOR_BLOCKED_BORDER = DesignTokens.Semantic.WARNING;
+
+    /** Blocked item icon tint color (muted warning) */
+    public static final int COLOR_BLOCKED_ICON = DesignTokens.RadialMenu.Blocked.ICON;
+
+    /** Blocked item background blend factor */
+    public static final float BLOCKED_BG_BLEND = 0.25f;
+
+    /** Blocked item border blend factor */
+    public static final float BLOCKED_BORDER_BLEND = 0.65f;
+
+    /** Blocked favorite background color */
+    public static final int FAVORITE_BG_BLOCKED = DesignTokens.RadialMenu.Blocked.FAVORITE_BG;
+
+    /** Flash overlay color for blocked feedback */
+    public static final int COLOR_FLASH_BLOCKED = COLOR_BLOCKED_TINT;
+
+    /** Flash overlay color for success feedback */
+    public static final int COLOR_FLASH_SUCCESS = DesignTokens.Semantic.SUCCESS;
+
+    /** Flash overlay color for failed feedback */
+    public static final int COLOR_FLASH_FAILED = DesignTokens.Semantic.ERROR;
+
+    // ================================================================
     // ANGLES (Radians)
     // ================================================================
 
@@ -485,6 +569,9 @@ public final class RadialMenuConstants {
 
     /** Debounce time in ms for releaseToSelect to prevent accidental activation on menu open */
     public static final long RELEASE_DEBOUNCE_MS = 200L;
+
+    /** Minimum hit target radius for accessibility (22px = 44px diameter per WCAG/Apple HIG) */
+    public static final int MIN_HIT_RADIUS = 22;
 
     // ================================================================
     // COLOR BLENDING
