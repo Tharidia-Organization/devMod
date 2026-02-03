@@ -68,23 +68,22 @@ repositories {
     }
 
     // Tharidia mods (Easy-Diet, etc.) - GitHub Packages or local maven
-    maven {
-        name = "Tharidia"
-        url = uri("https://maven.pkg.github.com/Tharidia-Organization/*")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
-            password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: ""
+    // Only add if credentials are available to avoid 401 errors
+    if ((System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "").length() > 0) {
+        maven {
+            name = "Tharidia"
+            url = uri("https://maven.pkg.github.com/Tharidia-Organization/*")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: project.findProperty("gpr.user") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: ""
+            }
         }
+    } else {
+        logger.warn("[DevMod] GitHub credentials not found - Tharidia repository skipped")
+        logger.warn("[DevMod] Set GITHUB_TOKEN env var or gpr.key property to enable optional dependencies")
     }
     // Fallback: local maven for Easy-Diet development
     mavenLocal()
-}
-
-// Check if GitHub credentials are available for optional dependencies
-def hasGitHubCredentials = (System.getenv("GITHUB_TOKEN") ?: project.findProperty("gpr.key") ?: "").length() > 0
-if (!hasGitHubCredentials) {
-    logger.warn("[DevMod] GitHub credentials not found - optional dependencies (Easy-Diet) will be skipped")
-    logger.warn("[DevMod] Set GITHUB_TOKEN env var or gpr.key property to enable all optional dependencies")
 }
 
 // NOTE: Easy-Diet integration now uses reflection (EasyDietApi.java)

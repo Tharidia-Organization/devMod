@@ -76,3 +76,6 @@ replay_pid*
 
 # Spotless local config
 /config/spotless/
+
+# Development temp folder (Effekseer builds, AAAParticles, etc.)
+/tmp/
