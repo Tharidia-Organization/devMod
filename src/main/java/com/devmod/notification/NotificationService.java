@@ -101,6 +101,7 @@ public class NotificationService {
             return;
         }
         LOGGER.info("[NotificationService] Shutting down...");
+        lastDeathNotificationTime.clear();
         initialized = false;
     }
 

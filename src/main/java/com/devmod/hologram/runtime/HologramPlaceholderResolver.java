@@ -17,7 +17,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.nexus.runtime.NexusHubManager;
@@ -51,6 +50,9 @@ public final class HologramPlaceholderResolver {
     private static final Map<String, CachedValue> cache = new ConcurrentHashMap<>();
 
     private static final int CACHE_TTL_MEDIUM = 100;  // 5 seconds
+
+    /** Search radius (in blocks) for the {player} placeholder */
+    private static final double PLAYER_SEARCH_RADIUS = 32.0;
 
     /**
      * Resolves all placeholders in a line of text.
@@ -113,14 +115,14 @@ public final class HologramPlaceholderResolver {
         }
 
         Vec3 center = Vec3.atCenterOf(pos);
-        AABB searchBox = new AABB(center.subtract(32, 32, 32), center.add(32, 32, 32));
+        double maxDistSq = PLAYER_SEARCH_RADIUS * PLAYER_SEARCH_RADIUS;
 
         Player nearest = null;
         double nearestDistSq = Double.MAX_VALUE;
 
         for (Player player : level.players()) {
             double distSq = player.distanceToSqr(center);
-            if (distSq < nearestDistSq && searchBox.contains(player.position())) {
+            if (distSq < nearestDistSq && distSq <= maxDistSq) {
                 nearest = player;
                 nearestDistSq = distSq;
             }

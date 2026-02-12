@@ -40,8 +40,8 @@ public class CombatTracker implements QuestLifecycleListener {
 
     public static final CombatTracker INSTANCE = new CombatTracker();
 
-    // Active tracking sessions per quest
-    private final Map<UUID, QuestCombatSession> activeSessions = new HashMap<>();
+    // Active tracking sessions per quest (concurrent for safe access from event handlers)
+    private final Map<UUID, QuestCombatSession> activeSessions = new java.util.concurrent.ConcurrentHashMap<>();
 
     private CombatTracker() {}
 

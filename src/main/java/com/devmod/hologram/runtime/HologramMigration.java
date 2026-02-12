@@ -210,8 +210,12 @@ public final class HologramMigration {
                 .fromPreset(preset, hubOrigin, nexusLevel.dimension().location())
                 .build(), "HologramDefinition");
 
-            registry.createHologram(Objects.requireNonNull(def, "def"));
-            HologramManager.INSTANCE.spawnHologram(nexusLevel, Objects.requireNonNull(def, "def"));
+            if (registry.createHologram(Objects.requireNonNull(def, "def")).isPresent()) {
+                HologramManager.INSTANCE.spawnHologram(nexusLevel, Objects.requireNonNull(def, "def"));
+            } else {
+                LOGGER.warn("[Hologram] Could not create preset hologram '{}': dimension limit reached",
+                    preset.getLabel());
+            }
 
             LOGGER.debug("[Hologram] Created preset hologram: {} at {}",
                 preset.getLabel(), def.position().toShortString());

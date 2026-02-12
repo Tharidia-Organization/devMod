@@ -105,13 +105,11 @@ public class NexusEventHandler {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            java.util.UUID playerId = player.getUUID();
+            UUID playerId = player.getUUID();
             BUILD_WARNINGS.remove(playerId);
             UI_INTERACTIONS.remove(playerId);
-            // Use new data-driven ZoneTracker
-            if (playerId != null) {
-                com.devmod.zone.runtime.ZoneTracker.INSTANCE.clear(playerId);
-            }
+            // Use new data-driven ZoneTracker (getUUID() is never null)
+            com.devmod.zone.runtime.ZoneTracker.INSTANCE.clear(playerId);
         }
     }
 

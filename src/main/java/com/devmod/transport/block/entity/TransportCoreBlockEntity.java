@@ -63,9 +63,9 @@ import com.devmod.transport.network.TransportConfigOpenPayload;
  */
 public class TransportCoreBlockEntity extends BlockEntity {
 
-    // === Constants (from TelepadBlockEntity pattern) ===
-    private static final int DEFAULT_CHARGE_TIME = 40;  // 2 seconds
-    private static final int DEFAULT_COOLDOWN_TIME = 60; // 3 seconds
+    // Timing defaults - delegate to TransportData canonical constants
+    private static final int DEFAULT_CHARGE_TIME = TransportData.DEFAULT_CHARGE_TIME;
+    private static final int DEFAULT_COOLDOWN_TIME = TransportData.DEFAULT_COOLDOWN_TIME;
 
     // === Identity ===
     private UUID nodeId;
@@ -206,7 +206,8 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
     @Nonnull
     public Set<TransportEnhancement> getActiveModules() {
-        return Objects.requireNonNull(EnumSet.copyOf(activeModules));
+        return activeModules.isEmpty()
+            ? EnumSet.noneOf(TransportEnhancement.class) : EnumSet.copyOf(activeModules);
     }
 
     public int getFrameSegmentCount() {
@@ -375,7 +376,7 @@ public class TransportCoreBlockEntity extends BlockEntity {
 
         // Apply creator
         if (creatorId != null) {
-            data = data.withCreatorId(creatorId);
+            data = data.withCreator(creatorId);
         }
 
         registry.register(Objects.requireNonNull(data));

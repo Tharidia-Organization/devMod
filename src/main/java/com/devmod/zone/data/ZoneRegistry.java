@@ -108,9 +108,11 @@ public class ZoneRegistry extends SavedData {
 
     /**
      * Registers a new zone and returns its UUID.
+     * Synchronized to prevent duplicate zone ID registration via concurrent calls
+     * (consistent with {@link #updateZone(UUID, ZoneDefinition)}).
      */
     @Nonnull
-    public UUID registerZone(@Nonnull ZoneDefinition zone) {
+    public synchronized UUID registerZone(@Nonnull ZoneDefinition zone) {
         Objects.requireNonNull(zone, "zone");
 
         // Check for duplicate zoneId
@@ -173,11 +175,13 @@ public class ZoneRegistry extends SavedData {
 
     /**
      * Unregisters a zone by UUID.
+     * Synchronized to ensure consistent removal across multiple indexes
+     * (consistent with {@link #registerZone(ZoneDefinition)} and {@link #updateZone(UUID, ZoneDefinition)}).
      *
      * @param id The zone UUID
      * @return True if removed, false if not found
      */
-    public boolean unregisterZone(@Nonnull UUID id) {
+    public synchronized boolean unregisterZone(@Nonnull UUID id) {
         Objects.requireNonNull(id, "id");
 
         ZoneDefinition removed = zones.remove(id);

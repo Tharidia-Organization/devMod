@@ -9,6 +9,9 @@ import com.devmod.endurance.EnduranceLogger.Phase;
 
 public class EnduranceQuest {
 
+    /** Points deducted when the player respawns after death. */
+    static final int DEATH_POINT_PENALTY = 100;
+
     private final UUID questId;
     private final ResourceLocation mobId;
     private final EnduranceQuestRegistry.MobQuestConfig mobConfig;
@@ -200,7 +203,7 @@ public class EnduranceQuest {
 
         int pointsBefore = pointsEarnedThisSession;
         // Apply death penalty - lose some points
-        pointsEarnedThisSession = Math.max(0, pointsEarnedThisSession - 100);
+        pointsEarnedThisSession = Math.max(0, pointsEarnedThisSession - DEATH_POINT_PENALTY);
 
         // Continue from current wave
         state = EnduranceQuestState.IN_PROGRESS;

@@ -163,14 +163,6 @@ public final class ClientPartyCache {
         localPlayerReady = ready;
     }
 
-    /**
-     * Set quest type (for optimistic UI).
-     */
-    public static void setQuestType(com.devmod.endurance.QuestType questType) {
-        // This is for optimistic UI updates
-        // The real update will come from PartySyncPayload
-    }
-
     // === Online Players List (for invite UI) ===
 
     private static volatile java.util.List<OnlinePlayersPayload.PlayerInfo> onlinePlayers = java.util.List.of();

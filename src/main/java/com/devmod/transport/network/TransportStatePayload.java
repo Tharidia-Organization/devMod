@@ -86,7 +86,9 @@ public record TransportStatePayload(
      */
     @Nonnull
     public TransportState getState() {
-        return Objects.requireNonNull(TransportState.values()[Math.min(stateIndex, TransportState.values().length - 1)]);
+        TransportState[] values = TransportState.values();
+        int clamped = Math.max(0, Math.min(stateIndex, values.length - 1));
+        return Objects.requireNonNull(values[clamped]);
     }
 
     /**

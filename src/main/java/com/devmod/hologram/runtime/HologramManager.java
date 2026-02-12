@@ -58,6 +58,19 @@ public final class HologramManager {
     private static final String NBT_SHADOW = "shadow";
     private static final String NBT_SEE_THROUGH = "see_through";
 
+    /** Default line width for TextDisplay (in pixels). Controls text wrapping. */
+    private static final int DEFAULT_LINE_WIDTH = 300;
+
+    /** View range multiplier for see-through holograms (multiplied by 64 blocks base). */
+    private static final float VIEW_RANGE_SEE_THROUGH = 1.0f;
+
+    /** View range multiplier for normal holograms (multiplied by 64 blocks base). */
+    private static final float VIEW_RANGE_NORMAL = 0.75f;
+
+    /**
+     * Tick counter for scheduling hologram content refreshes.
+     * Masked to positive range to avoid negative modulo results on overflow.
+     */
     private int tickCounter = 0;
 
     private HologramManager() {}
@@ -73,7 +86,8 @@ public final class HologramManager {
             return;
         }
 
-        tickCounter++;
+        // Bitmask keeps tickCounter non-negative, preventing negative modulo on int overflow
+        tickCounter = (tickCounter + 1) & Integer.MAX_VALUE;
 
         MinecraftServer server = Objects.requireNonNull(level.getServer(), "server");
 
@@ -266,11 +280,11 @@ public final class HologramManager {
         nbt.putString(NBT_BILLBOARD, Objects.requireNonNull(style.billboard().getNbtValue()));
 
         // View range (multiplier of 64 blocks)
-        float viewRangeMultiplier = style.seeThrough() ? 1.0f : 0.75f;
+        float viewRangeMultiplier = style.seeThrough() ? VIEW_RANGE_SEE_THROUGH : VIEW_RANGE_NORMAL;
         nbt.putFloat(NBT_VIEW_RANGE, viewRangeMultiplier);
 
         // Line width
-        nbt.putInt(NBT_LINE_WIDTH, 300);
+        nbt.putInt(NBT_LINE_WIDTH, DEFAULT_LINE_WIDTH);
 
         // Background color
         nbt.putInt(NBT_BACKGROUND, style.backgroundColor());

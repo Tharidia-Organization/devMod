@@ -42,7 +42,7 @@ public final class ContentFilter {
         // Add default prohibited patterns (can be customized via config)
         // These are just examples - actual list should be configurable
         prohibitedPatterns.add(Pattern.compile(
-            "(?i)(https?://|www\\.)[^\\s]+", Pattern.CASE_INSENSITIVE));  // URLs (optional)
+            "(https?://|www\\.)[^\\s]+", Pattern.CASE_INSENSITIVE));  // URLs (optional)
     }
 
     // ============================================================================

@@ -345,16 +345,7 @@ public final class CountdownManager {
      * Converts TransportColor to BossBarColor.
      */
     private BossEvent.BossBarColor toBossBarColor(TransportColor color) {
-        return switch (color) {
-            case WHITE -> BossEvent.BossBarColor.WHITE;
-            case PINK -> BossEvent.BossBarColor.PINK;
-            case RED -> BossEvent.BossBarColor.RED;
-            case YELLOW -> BossEvent.BossBarColor.YELLOW;
-            case GREEN, LIME -> BossEvent.BossBarColor.GREEN;
-            case BLUE, LIGHT_BLUE, CYAN -> BossEvent.BossBarColor.BLUE;
-            case PURPLE, MAGENTA -> BossEvent.BossBarColor.PURPLE;
-            default -> BossEvent.BossBarColor.WHITE;
-        };
+        return color.toBossBarColor();
     }
 
     /**

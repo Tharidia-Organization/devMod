@@ -174,9 +174,11 @@ public record ZoneBounds(
 
     /**
      * Gets the volume in blocks.
+     * Uses long arithmetic to prevent overflow for large zones
+     * (max zone size 1000^3 exceeds Integer.MAX_VALUE).
      */
-    public int volume() {
-        return width() * height() * length();
+    public long volume() {
+        return (long) width() * (long) height() * (long) length();
     }
 
     /**

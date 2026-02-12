@@ -65,17 +65,17 @@ public final class TransportExecutor {
 
     @Nonnull
     public ChargeManager getChargeManager() {
-        return Objects.requireNonNull(chargeManager);
+        return chargeManager;
     }
 
     @Nonnull
     public CooldownManager getCooldownManager() {
-        return Objects.requireNonNull(cooldownManager);
+        return cooldownManager;
     }
 
     @Nonnull
     public TransportEffectManager getEffectManager() {
-        return Objects.requireNonNull(effectManager);
+        return effectManager;
     }
 
     // ============================================================================
@@ -505,15 +505,7 @@ public final class TransportExecutor {
 
     @Nonnull
     private static String resolveNodeName(@Nonnull TransportData node) {
-        String displayName = node.displayName();
-        if (displayName != null && !displayName.isEmpty()) {
-            return displayName;
-        }
-        String networkName = node.networkName();
-        if (networkName != null && !networkName.isEmpty()) {
-            return networkName;
-        }
-        return node.nodeType().getSerializedName();
+        return node.resolveDisplayName();
     }
 
     private static int computeDistance(

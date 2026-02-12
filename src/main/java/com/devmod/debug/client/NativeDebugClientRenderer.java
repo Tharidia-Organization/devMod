@@ -607,9 +607,17 @@ public class NativeDebugClientRenderer {
         poseStack.popPose();
     }
 
+    // Cache for sculk sensor positions to avoid scanning ~57k blocks every frame
+    private static final List<BlockPos> cachedSculkPositions = new ArrayList<>();
+    private static BlockPos lastScanCenter = BlockPos.ZERO;
+    private static int gameEventScanCooldown = 0;
+    private static final int GAME_EVENT_SCAN_INTERVAL = 20; // Re-scan every 20 frames (~1 second)
+    private static final int GAME_EVENT_SCAN_RANGE = 24;
+
     /**
      * Render game events - shows sculk sensors and their detection range.
      * Game events are ephemeral, so we visualize sculk sensors instead.
+     * Uses a scan cache to avoid scanning ~57k blocks every frame.
      */
     private static void renderGameEvents(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                           Vec3 camPos, Minecraft mc) {
@@ -624,6 +632,31 @@ public class NativeDebugClientRenderer {
         var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
         if (serverLevel == null) return;
 
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+
+        // Re-scan only when cooldown expires or player moves significantly
+        gameEventScanCooldown--;
+        if (gameEventScanCooldown <= 0 || playerPos.distManhattan(lastScanCenter) > GAME_EVENT_SCAN_RANGE / 2) {
+            gameEventScanCooldown = GAME_EVENT_SCAN_INTERVAL;
+            lastScanCenter = playerPos;
+            cachedSculkPositions.clear();
+
+            int range = GAME_EVENT_SCAN_RANGE;
+            for (int dx = -range; dx <= range; dx++) {
+                for (int dy = -range / 2; dy <= range / 2; dy++) {
+                    for (int dz = -range; dz <= range; dz++) {
+                        BlockPos pos = playerPos.offset(dx, dy, dz);
+                        var blockState = serverLevel.getBlockState(pos);
+                        if (blockState.getBlock() instanceof net.minecraft.world.level.block.SculkSensorBlock) {
+                            cachedSculkPositions.add(pos.immutable());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (cachedSculkPositions.isEmpty()) return;
+
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
@@ -631,33 +664,19 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        for (BlockPos pos : cachedSculkPositions) {
+            // Draw box around the sculk sensor
+            drawBox(lineConsumer, matrix,
+                    pos.getX(), pos.getY(), pos.getZ(),
+                    pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1,
+                    0.0f, 0.8f, 0.8f, 1.0f); // Cyan for sculk sensors
 
-        // Search for sculk sensors nearby and draw their detection spheres
-        int range = 24;
-        for (int dx = -range; dx <= range; dx++) {
-            for (int dy = -range / 2; dy <= range / 2; dy++) {
-                for (int dz = -range; dz <= range; dz++) {
-                    BlockPos pos = Objects.requireNonNull(playerPos.offset(dx, dy, dz));
-                    var blockState = serverLevel.getBlockState(pos);
-
-                    // Check if it's a sculk sensor or calibrated sculk sensor
-                    if (blockState.getBlock() instanceof net.minecraft.world.level.block.SculkSensorBlock) {
-                        // Draw box around the sculk sensor
-                        drawBox(lineConsumer, matrix,
-                                pos.getX(), pos.getY(), pos.getZ(),
-                                pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1,
-                                0.0f, 0.8f, 0.8f, 1.0f); // Cyan for sculk sensors
-
-                        // Draw detection range sphere (simplified as a larger box)
-                        int sensorRange = 8;
-                        drawBox(lineConsumer, matrix,
-                                pos.getX() - sensorRange, pos.getY() - sensorRange, pos.getZ() - sensorRange,
-                                pos.getX() + 1 + sensorRange, pos.getY() + 1 + sensorRange, pos.getZ() + 1 + sensorRange,
-                                0.0f, 0.4f, 0.4f, 0.5f); // Darker cyan for range
-                    }
-                }
-            }
+            // Draw detection range sphere (simplified as a larger box)
+            int sensorRange = 8;
+            drawBox(lineConsumer, matrix,
+                    pos.getX() - sensorRange, pos.getY() - sensorRange, pos.getZ() - sensorRange,
+                    pos.getX() + 1 + sensorRange, pos.getY() + 1 + sensorRange, pos.getZ() + 1 + sensorRange,
+                    0.0f, 0.4f, 0.4f, 0.5f); // Darker cyan for range
         }
 
         poseStack.popPose();

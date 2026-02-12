@@ -799,11 +799,11 @@ public class RewardSystem {
         playerWallets.clear();
         purchaseLocks.clear();
 
-        // Delete wallet file
+        // Delete wallet file (must match filenames used by savePlayerWallets/loadPlayerWallets)
         if (dataDirectory != null) {
             try {
-                Path walletsFile = dataDirectory.resolve("player_wallets.json");
-                Path backupFile = dataDirectory.resolve("player_wallets.json.bak");
+                Path walletsFile = dataDirectory.resolve("wallets.json");
+                Path backupFile = dataDirectory.resolve("wallets.json.bak");
                 Files.deleteIfExists(walletsFile);
                 Files.deleteIfExists(backupFile);
                 LOGGER.info("[RewardSystem] All reward data reset successfully");

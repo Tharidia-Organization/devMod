@@ -190,40 +190,42 @@ public class PartyScreen extends Screen {
         return Objects.requireNonNull(this.font, "Font not initialized");
     }
 
-    private int s(int value) {
+    // Package-private layout helpers shared with PartyScreenRenderer to avoid duplication.
+
+    int s(int value) {
         float scale = Math.max(1f, UIScaleManager.getEffectiveScale());
         return UIScaleManager.snap((int) (value * scale));
     }
 
-    private int line() {
+    int line() {
         return getFont().lineHeight;
     }
 
-    private int lineGap() {
+    int lineGap() {
         return s(2);
     }
 
-    private int panelHeaderHeight() {
+    int panelHeaderHeight() {
         return Math.max(s(22), line() + s(6));
     }
 
-    private int memberRowHeight() {
+    int memberRowHeight() {
         return Math.max(s(32), line() * 2 + s(8));
     }
 
-    private int mobRowHeight() {
+    int mobRowHeight() {
         return Math.max(s(24), line() * 2 + s(6));
     }
 
-    private int inputHeight() {
+    int inputHeight() {
         return Math.max(s(20), line() + s(6));
     }
 
-    private int filterButtonHeight() {
+    int filterButtonHeight() {
         return Math.max(s(12), line() + s(2));
     }
 
-    private int tierButtonHeight() {
+    int tierButtonHeight() {
         return Math.max(s(14), line() + s(2));
     }
 
@@ -1432,7 +1434,6 @@ public class PartyScreen extends Screen {
         if (isInParty && partyState != PartyData.PartyState.IN_QUEST
             && isLeader && hoveredQuestTab >= 0 && hoveredQuestTab < QuestType.values().length) {
             questType = QuestType.values()[hoveredQuestTab];
-            ClientPartyCache.setQuestType(questType);
             PacketDistributor.sendToServer(Objects.requireNonNull(PartyActionPayload.setQuestType(questType)));
             UiSounds.click();
             updateButtonStates();

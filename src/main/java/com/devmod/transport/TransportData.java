@@ -133,6 +133,7 @@ public record TransportData(
     public static final int CHARGE_MAX = 200;            // 10 seconds max
     public static final int COUNTDOWN_DEFAULT = 200;     // 10 seconds for party
     public static final int ARRIVAL_TIMEOUT = 600;       // 30 seconds
+    public static final int BASE_RANGE = 100;             // Base teleport range in blocks
 
     // ============================================================================
     // INNER ENUMS
@@ -237,6 +238,21 @@ public record TransportData(
     }
 
     /**
+     * Resolves a human-readable name for this node.
+     * Returns displayName if set, then networkName, finally the node type name.
+     */
+    @Nonnull
+    public String resolveDisplayName() {
+        if (displayName != null && !displayName.isEmpty()) {
+            return displayName;
+        }
+        if (networkName != null && !networkName.isEmpty()) {
+            return networkName;
+        }
+        return nodeType.getSerializedName();
+    }
+
+    /**
      * Calculates effective range considering all range enhancements.
      */
     public int getEffectiveRange() {
@@ -244,7 +260,7 @@ public record TransportData(
             return Integer.MAX_VALUE;
         }
 
-        int range = 100; // Base range
+        int range = BASE_RANGE;
 
         for (TransportEnhancement enhancement : enhancements) {
             int bonus = enhancement.getRangeBonus();
@@ -304,7 +320,8 @@ public record TransportData(
     }
 
     public TransportData withEnhancement(TransportEnhancement enhancement) {
-        Set<TransportEnhancement> newEnhancements = EnumSet.copyOf(enhancements);
+        EnumSet<TransportEnhancement> newEnhancements = enhancements.isEmpty()
+            ? EnumSet.of(enhancement) : EnumSet.copyOf(enhancements);
         newEnhancements.add(enhancement);
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
@@ -314,7 +331,10 @@ public record TransportData(
     }
 
     public TransportData withoutEnhancement(TransportEnhancement enhancement) {
-        Set<TransportEnhancement> newEnhancements = EnumSet.copyOf(enhancements);
+        if (enhancements.isEmpty()) {
+            return this;
+        }
+        EnumSet<TransportEnhancement> newEnhancements = EnumSet.copyOf(enhancements);
         newEnhancements.remove(enhancement);
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
@@ -324,9 +344,12 @@ public record TransportData(
     }
 
     public TransportData withEnhancements(Set<TransportEnhancement> newEnhancements) {
+        Objects.requireNonNull(newEnhancements, "newEnhancements");
+        Set<TransportEnhancement> copy = newEnhancements.isEmpty()
+            ? EnumSet.noneOf(TransportEnhancement.class) : EnumSet.copyOf(newEnhancements);
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
-            fixedDestDim, fixedDestPos, waypointTargets, Objects.requireNonNull(EnumSet.copyOf(newEnhancements)),
+            fixedDestDim, fixedDestPos, waypointTargets, copy,
             createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
             chargeTime, cooldownTime, creatorId, displayName, description);
     }
@@ -364,7 +387,8 @@ public record TransportData(
     }
 
     public TransportData withTemporalData(long created, long expiration, @Nonnull TemporalPhase phase) {
-        Set<TransportEnhancement> newEnhancements = EnumSet.copyOf(enhancements);
+        EnumSet<TransportEnhancement> newEnhancements = enhancements.isEmpty()
+            ? EnumSet.of(TransportEnhancement.TEMPORAL) : EnumSet.copyOf(enhancements);
         newEnhancements.add(TransportEnhancement.TEMPORAL);
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
@@ -382,7 +406,8 @@ public record TransportData(
     }
 
     public TransportData withSnapshot(@Nonnull BoundingBox bounds, @Nonnull CompoundTag snapshot) {
-        Set<TransportEnhancement> newEnhancements = EnumSet.copyOf(enhancements);
+        EnumSet<TransportEnhancement> newEnhancements = enhancements.isEmpty()
+            ? EnumSet.of(TransportEnhancement.SNAPSHOT) : EnumSet.copyOf(enhancements);
         newEnhancements.add(TransportEnhancement.SNAPSHOT);
         return new TransportData(id, nodeType, mode, color, customModel, frameCount,
             dimension, position, axis, linkedNodeId, networkName, selectionMode,
@@ -431,12 +456,12 @@ public record TransportData(
             chargeTime, cooldown, creatorId, displayName, description);
     }
 
+    /**
+     * @deprecated Use {@link #withCreator(UUID)} instead. This is an identical duplicate.
+     */
+    @Deprecated
     public TransportData withCreatorId(@Nullable UUID creator) {
-        return new TransportData(id, nodeType, mode, color, customModel, frameCount,
-            dimension, position, axis, linkedNodeId, networkName, selectionMode,
-            fixedDestDim, fixedDestPos, waypointTargets, enhancements,
-            createdTick, expirationTick, currentPhase, snapshotBounds, snapshotNBT,
-            chargeTime, cooldownTime, creator, displayName, description);
+        return withCreator(creator);
     }
 
     // ============================================================================

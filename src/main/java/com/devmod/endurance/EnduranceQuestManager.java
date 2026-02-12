@@ -90,6 +90,9 @@ public class EnduranceQuestManager {
         return Objects.requireNonNull(value, name);
     }
 
+    /** Tokens awarded per wave on server shutdown (~50% of normal wave rewards). */
+    private static final int SHUTDOWN_PARTIAL_TOKENS_PER_WAVE = 15;
+
     // Active quests per player (player UUID -> active quest)
     private final Map<UUID, ActiveQuestSession> activeSessions = new ConcurrentHashMap<>();
     // Active party quests (party UUID -> party session)
@@ -287,7 +290,7 @@ public class EnduranceQuestManager {
 
                 // Award partial tokens based on waves completed (50% of normal rate)
                 int wavesCompleted = quest.getCurrentWave();
-                int partialTokens = wavesCompleted * 15; // ~50% of normal wave rewards
+                int partialTokens = wavesCompleted * SHUTDOWN_PARTIAL_TOKENS_PER_WAVE;
 
                 if (partialTokens > 0) {
                     RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(playerId);

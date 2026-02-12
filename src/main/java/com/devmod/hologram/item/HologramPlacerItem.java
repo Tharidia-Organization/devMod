@@ -135,7 +135,13 @@ public class HologramPlacerItem extends Item {
             .build();
 
         // Register hologram
-        registry.createHologram(def);
+        if (registry.createHologram(def).isEmpty()) {
+            player.displayClientMessage(
+                Component.translatable("message.devmod.hologram.error.dimension_limit"),
+                true
+            );
+            return;
+        }
 
         // Spawn TextDisplay entity
         HologramManager.INSTANCE.spawnHologram(level, def);

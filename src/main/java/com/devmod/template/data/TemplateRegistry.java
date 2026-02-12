@@ -70,8 +70,9 @@ public class TemplateRegistry extends SavedData {
                 template.templateId(), expectedRevision, existing.revision());
             return false;
         }
-        templates.put(id, template.withNewRevision());
-        templatesByStringId.put(template.templateId(), template.withNewRevision());
+        RoomTemplate revised = template.withNewRevision();
+        templates.put(id, revised);
+        templatesByStringId.put(template.templateId(), revised);
         setDirty();
         return true;
     }

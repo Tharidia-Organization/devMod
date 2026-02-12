@@ -111,16 +111,15 @@ public final class TemplateManagementHandler {
                 return;
             }
 
-            // SEC-03 fix: Rate limiting for template saves
+            // SEC-03 fix: Rate limiting for template saves (atomic check+update)
             UUID playerId = player.getUUID();
             long now = System.currentTimeMillis();
-            long remainingSeconds = CooldownManager.getTemplateSaveCooldownRemaining(playerId, now);
+            long remainingSeconds = CooldownManager.checkAndUpdateTemplateSaveCooldown(playerId, now);
             if (remainingSeconds > 0) {
                 player.displayClientMessage(
                     Objects.requireNonNull(Component.translatable("area.message.error_template_cooldown", remainingSeconds)), true);
                 return;
             }
-            CooldownManager.updateTemplateSaveCooldown(playerId, now);
 
             if (!payload.isValid()) {
                 player.displayClientMessage(

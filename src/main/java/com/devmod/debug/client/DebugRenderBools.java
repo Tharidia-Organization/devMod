@@ -22,6 +22,7 @@ public class DebugRenderBools {
     private static boolean solidFaces = false;
     private static boolean chunk = false;
     private static boolean breeze = false;
+    private static boolean spawnChunks = false;
 
     public static boolean isEntityPathing() {
         return entityPathing;
@@ -159,6 +160,14 @@ public class DebugRenderBools {
         breeze = value;
     }
 
+    public static boolean isSpawnChunks() {
+        return spawnChunks;
+    }
+
+    public static void setSpawnChunks(boolean value) {
+        spawnChunks = value;
+    }
+
     /**
      * Clear all debug render flags.
      */
@@ -180,5 +189,6 @@ public class DebugRenderBools {
         solidFaces = false;
         chunk = false;
         breeze = false;
+        spawnChunks = false;
     }
 }

@@ -132,7 +132,8 @@ public final class CooldownManager {
     // ============================================================================
 
     /**
-     * Checks if player is on template save cooldown.
+     * Checks if player is on template save cooldown (read-only query).
+     * For atomic check-and-update, prefer {@link #checkAndUpdateTemplateSaveCooldown(UUID, long)}.
      *
      * @param playerId Player UUID
      * @param now      Current time in milliseconds
@@ -147,6 +148,30 @@ public final class CooldownManager {
             }
         }
         return 0;
+    }
+
+    /**
+     * Checks and updates template save cooldown atomically.
+     * Uses ConcurrentHashMap.compute() to prevent TOCTOU race conditions,
+     * consistent with {@link #checkAndUpdatePlayerBuildCooldown(UUID, long)}.
+     *
+     * @param playerId Player UUID
+     * @param now      Current time in milliseconds
+     * @return Remaining cooldown in seconds, or 0 if cooldown passed and timestamp was updated
+     */
+    public static long checkAndUpdateTemplateSaveCooldown(UUID playerId, long now) {
+        long[] remainingSeconds = {0};
+        playerTemplateSaveCooldowns.compute(playerId, (k, lastSaveTime) -> {
+            if (lastSaveTime != null) {
+                long elapsed = now - lastSaveTime;
+                if (elapsed < TEMPLATE_SAVE_COOLDOWN_MS) {
+                    remainingSeconds[0] = (TEMPLATE_SAVE_COOLDOWN_MS - elapsed) / 1000;
+                    return lastSaveTime; // Keep old value, reject request
+                }
+            }
+            return now; // Update to current time
+        });
+        return remainingSeconds[0];
     }
 
     /**

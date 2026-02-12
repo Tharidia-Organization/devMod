@@ -10,6 +10,7 @@ import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
 
 import com.devmod.client.ui.core.UIScaleManager;
+import com.devmod.transport.TransportData;
 import com.devmod.transport.TransportState;
 import com.devmod.transport.network.TransportChargeUpdatePayload;
 import com.devmod.transport.network.TransportCountdownPayload;
@@ -92,7 +93,7 @@ public class TransportOverlay implements LayeredDraw.Layer {
         this.active = false;
         this.state = TransportState.IDLE;
         this.currentCharge = 0;
-        this.requiredCharge = 40;
+        this.requiredCharge = TransportData.DEFAULT_CHARGE_TIME;
         this.destinationName = "";
         this.distance = 0;
         this.ticksSinceLastUpdate = 0;

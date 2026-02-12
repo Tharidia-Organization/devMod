@@ -91,12 +91,12 @@ public final class DiagnosticLogger {
      * Useful for expensive diagnostic operations.
      */
     public static boolean isAnyDiagnosticActive() {
-        return DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_QUEST)
-            || DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_COMBAT)
-            || DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_TRANSPORT)
-            || DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_ARENA)
-            || DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_CLONE)
-            || DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.DIAG_NPC);
+        for (DebugFeature feature : DebugFeature.values()) {
+            if (feature.name().startsWith("DIAG_") && DebugManager.INSTANCE.anyPlayerHasFeature(feature)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

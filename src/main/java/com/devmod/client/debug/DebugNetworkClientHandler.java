@@ -45,7 +45,9 @@ public final class DebugNetworkClientHandler {
             case LIGHT -> DebugRenderBools.setLight(payload.enabled());
             case SOLID_FACES -> DebugRenderBools.setSolidFaces(payload.enabled());
             case CHUNK -> DebugRenderBools.setChunk(payload.enabled());
-            case SPAWN_CHUNKS -> {} // No specific renderer for this
+            case BREEZE -> DebugRenderBools.setBreeze(payload.enabled());
+            case SPAWN_CHUNKS -> DebugRenderBools.setSpawnChunks(payload.enabled());
+            default -> {} // DIAG_ features have no client-side renderers
         }
 
         LOGGER.debug("[Debug] Client synced {} = {}", feature.getDisplayName(), payload.enabled());

@@ -737,69 +737,11 @@ public class TransportRegistry extends SavedData {
         }
 
         int migrated = 0;
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.WHITE)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.ORANGE)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.MAGENTA)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIGHT_BLUE)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.YELLOW)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIME)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.PINK)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.GRAY)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.LIGHT_GRAY)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.CYAN)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.PURPLE)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BLUE)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BROWN)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.GREEN)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.RED)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
-        }
-        for (var portal : legacy.getByColor(com.devmod.portal.PortalColor.BLACK)) {
-            register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
-            migrated++;
+        for (com.devmod.portal.PortalColor color : com.devmod.portal.PortalColor.values()) {
+            for (var portal : legacy.getByColor(color)) {
+                register(TransportData.fromPortalData(Objects.requireNonNull(portal)));
+                migrated++;
+            }
         }
 
         migratedFromLegacy = true;

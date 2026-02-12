@@ -32,6 +32,9 @@ import com.devmod.util.I18n;
 public class EnduranceSessionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceSessionHandler.class);
 
+    /** Point cost displayed to the player for respawning after death. */
+    static final int RESPAWN_POINT_COST = 100;
+
     private final Map<UUID, EnduranceQuestManager.ActiveQuestSession> activeSessions;
     private final EnduranceQuestPersistence persistence;
 
@@ -196,7 +199,7 @@ public class EnduranceSessionHandler {
                 session.getQuest().isEndlessMode(),
                 session.getQuest().getPointsEarnedThisSession(),
                 session.getQuest().getDeathsThisSession(),
-                100 // Respawn cost
+                RESPAWN_POINT_COST
             );
 
             // Also send chat messages as fallback

@@ -74,47 +74,22 @@ public class PartyScreenRenderer {
         this.screen = screen;
     }
 
+    // Delegate layout helpers to PartyScreen to avoid duplication.
+
     @Nonnull
     private net.minecraft.client.gui.Font getFont() {
         return screen.getScreenFont();
     }
 
-    private int s(int value) {
-        float scale = Math.max(1f, UIScaleManager.getEffectiveScale());
-        return UIScaleManager.snap((int) (value * scale));
-    }
-
-    private int line() {
-        return getFont().lineHeight;
-    }
-
-    private int lineGap() {
-        return s(2);
-    }
-
-    private int panelHeaderHeight() {
-        return Math.max(s(22), line() + s(6));
-    }
-
-    private int memberRowHeight() {
-        return Math.max(s(32), line() * 2 + s(8));
-    }
-
-    private int mobRowHeight() {
-        return Math.max(s(24), line() * 2 + s(6));
-    }
-
-    private int inputHeight() {
-        return Math.max(s(20), line() + s(6));
-    }
-
-    private int filterButtonHeight() {
-        return Math.max(s(12), line() + s(2));
-    }
-
-    private int tierButtonHeight() {
-        return Math.max(s(14), line() + s(2));
-    }
+    private int s(int value) { return screen.s(value); }
+    private int line() { return screen.line(); }
+    private int lineGap() { return screen.lineGap(); }
+    private int panelHeaderHeight() { return screen.panelHeaderHeight(); }
+    private int memberRowHeight() { return screen.memberRowHeight(); }
+    private int mobRowHeight() { return screen.mobRowHeight(); }
+    private int inputHeight() { return screen.inputHeight(); }
+    private int filterButtonHeight() { return screen.filterButtonHeight(); }
+    private int tierButtonHeight() { return screen.tierButtonHeight(); }
 
     private int tabBarHeight() {
         return Math.max(s(28), line() * 2 + s(8));

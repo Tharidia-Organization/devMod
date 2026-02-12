@@ -751,6 +751,20 @@ public class Config {
         BUILDER.pop(); // nexus
 
         // ============================================
+        // TESTER MODALITY SETTINGS
+        // ============================================
+
+        BUILDER.push("testerModality");
+
+        TESTER_MODALITY = BUILDER
+                .comment("Enable tester modality (grants access to tester-only modules: endurance, NPC, transport, debug, clone, portal, hologram, etc.)",
+                        "When disabled, only production modules (combat, radial menu, abilities, core infra) are active.",
+                        "Server and client must match this setting - clients with mismatched values will be disconnected.")
+                .define("enabled", true);
+
+        BUILDER.pop();
+
+        // ============================================
         // CLONE PULVERIZER SETTINGS
         // ============================================
 
@@ -781,6 +795,12 @@ public class Config {
 
         BUILDER.pop();
     }
+
+    // ============================================
+    // TESTER MODALITY CONFIG VALUES
+    // ============================================
+
+    public static final ModConfigSpec.BooleanValue TESTER_MODALITY;
 
     // ============================================
     // CLONE PULVERIZER CONFIG VALUES

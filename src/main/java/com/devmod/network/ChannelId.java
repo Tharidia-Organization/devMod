@@ -260,6 +260,12 @@ public enum ChannelId {
     NEXUS_SLOT_LIST(241, Direction.SERVER_TO_CLIENT, "SlotListPayload"),
     NEXUS_HUB_STATUS(242, Direction.SERVER_TO_CLIENT, "HubStatusPayload"),
     NEXUS_BUILD_PROGRESS(243, Direction.SERVER_TO_CLIENT, "NexusBuildProgressPayload"),
+
+    // ============================================================================
+    // TESTER MODALITY CHANNELS (250-251)
+    // ============================================================================
+    TESTER_MODALITY_SYNC(250, Direction.SERVER_TO_CLIENT, "TesterModalitySyncPayload"),
+    TESTER_MODALITY_ACK(251, Direction.CLIENT_TO_SERVER, "TesterModalityAckPayload"),
     ;
 
     // ============================================================================

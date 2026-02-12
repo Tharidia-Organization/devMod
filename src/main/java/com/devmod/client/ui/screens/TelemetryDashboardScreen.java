@@ -941,24 +941,24 @@ public class TelemetryDashboardScreen extends Screen {
         // Keyboard navigation for stats tab
         if (currentTab == DashboardTab.STATS && cachedStats.size() > STATS_PAGE_SIZE) {
             // Arrow Up / Page Up
-            if (keyCode == 265 || keyCode == 266) { // GLFW_KEY_UP = 265, PAGE_UP = 266
-                int amount = keyCode == 266 ? 5 : 1; // Page Up scrolls 5 lines
+            if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_UP || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP) {
+                int amount = keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_UP ? 5 : 1;
                 scrollOffset = Math.max(0, scrollOffset - amount);
                 return true;
             }
             // Arrow Down / Page Down
-            if (keyCode == 264 || keyCode == 267) { // GLFW_KEY_DOWN = 264, PAGE_DOWN = 267
-                int amount = keyCode == 267 ? 5 : 1; // Page Down scrolls 5 lines
+            if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN) {
+                int amount = keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_PAGE_DOWN ? 5 : 1;
                 scrollOffset = Math.min(getMaxStatsScroll(), scrollOffset + amount);
                 return true;
             }
             // Home - go to start
-            if (keyCode == 268) { // GLFW_KEY_HOME
+            if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_HOME) {
                 scrollOffset = 0;
                 return true;
             }
             // End - go to end
-            if (keyCode == 269) { // GLFW_KEY_END
+            if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_END) {
                 scrollOffset = getMaxStatsScroll();
                 return true;
             }

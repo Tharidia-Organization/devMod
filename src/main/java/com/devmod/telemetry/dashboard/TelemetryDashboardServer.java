@@ -439,15 +439,15 @@ public class TelemetryDashboardServer {
             result.add(row);
         }
 
-        return gson.toJson(Map.of(
-            "category", category.name(),
-            "displayName", category.getDisplayName(),
-            "description", category.getDescription(),
-            "higherIsBetter", category.isHigherIsBetter(),
-            "scope", scope.isEmpty() ? "global" : scope,
-            "arenaId", arenaId,
-            "entries", result
-        ));
+        Map<String, Object> response = new java.util.LinkedHashMap<>();
+        response.put("category", category.name());
+        response.put("displayName", category.getDisplayName());
+        response.put("description", category.getDescription());
+        response.put("higherIsBetter", category.isHigherIsBetter());
+        response.put("scope", scope.isEmpty() ? "global" : scope);
+        response.put("arenaId", arenaId); // may be null
+        response.put("entries", result);
+        return gson.toJson(response);
     }
 
     private String handleLeaderboardCategories(HttpExchange exchange) {
@@ -511,8 +511,8 @@ public class TelemetryDashboardServer {
             "SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) as kills_with_loot, " +
             "ROUND(100.0 * SUM(CASE WHEN had_loot THEN 1 ELSE 0 END) / COUNT(*), 1) as loot_rate_pct, " +
             "MIN(ts) as first_kill, MAX(ts) as last_kill " +
-            "FROM economy_mob_kills GROUP BY mob_type ORDER BY total_kills DESC LIMIT " + limit;
-        return gson.toJson(executeQuery(sql));
+            "FROM economy_mob_kills GROUP BY mob_type ORDER BY total_kills DESC LIMIT ?";
+        return gson.toJson(executeQuery(sql, List.of(paramInt(limit))));
     }
 
     private String handleDungeonRuns(HttpExchange exchange) {

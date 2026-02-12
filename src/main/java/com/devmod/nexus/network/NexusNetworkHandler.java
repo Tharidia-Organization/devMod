@@ -88,32 +88,7 @@ public final class NexusNetworkHandler extends NetworkHandlerBase {
             if (player.getServer() == null) {
                 return;
             }
-
-            ZoneSlotRegistry registry = ZoneSlotRegistry.get(Objects.requireNonNull(player.getServer()));
-            AreaRegistry areaRegistry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            List<SlotListPayload.SlotSummary> summaries = new ArrayList<>();
-            for (ZoneSlot slot : registry.getAllSlots()) {
-                String linkedAreaName = null;
-                if (slot.linkedAreaId() != null) {
-                    linkedAreaName = areaRegistry.getArea(Objects.requireNonNull(slot.linkedAreaId()))
-                        .map(AreaDefinition::name)
-                        .orElse("Unknown");
-                }
-
-                summaries.add(new SlotListPayload.SlotSummary(
-                    Objects.requireNonNull(slot.slotId()),
-                    Objects.requireNonNull(slot.displayName()),
-                    Objects.requireNonNull(slot.type()),
-                    Objects.requireNonNull(slot.portalColor()),
-                    slot.hasLinkedArea(),
-                    slot.linkedAreaId(),
-                    linkedAreaName
-                ));
-            }
-
-            PacketDistributor.sendToPlayer(player, new SlotListPayload(summaries));
-            LOGGER.debug("[Nexus] Sent slot list ({} slots) to {}", summaries.size(), player.getName().getString());
+            sendSlotList(player);
         });
     }
 

@@ -8,6 +8,7 @@ import com.google.common.base.Splitter;
 import com.mojang.serialization.Codec;
 
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.BossEvent;
 
 import com.devmod.portal.PortalColor;
 
@@ -206,6 +207,24 @@ public enum TransportColor implements StringRepresentable {
             }
         }
         return Objects.requireNonNull(DEFAULT);
+    }
+
+    /**
+     * Converts this transport color to the corresponding BossBar color.
+     * Centralizes the mapping previously duplicated in CountdownManager and RiftGateManager.
+     */
+    @Nonnull
+    public BossEvent.BossBarColor toBossBarColor() {
+        return switch (this) {
+            case WHITE -> BossEvent.BossBarColor.WHITE;
+            case PINK -> BossEvent.BossBarColor.PINK;
+            case RED -> BossEvent.BossBarColor.RED;
+            case YELLOW -> BossEvent.BossBarColor.YELLOW;
+            case GREEN, LIME -> BossEvent.BossBarColor.GREEN;
+            case BLUE, LIGHT_BLUE, CYAN -> BossEvent.BossBarColor.BLUE;
+            case PURPLE, MAGENTA -> BossEvent.BossBarColor.PURPLE;
+            default -> BossEvent.BossBarColor.WHITE;
+        };
     }
 
     /**

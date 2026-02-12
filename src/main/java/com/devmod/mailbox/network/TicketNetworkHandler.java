@@ -95,11 +95,20 @@ public final class TicketNetworkHandler extends NetworkHandlerBase {
             return;
         }
 
-        observeFuture(TicketManager.INSTANCE.getPlayerTickets(player.getUUID()).thenAccept(tickets -> {
-            List<TicketSyncPayload.TicketData> data = tickets.stream()
-                .map(TicketNetworkHandler::toTicketData)
+        observeFuture(TicketManager.INSTANCE.getPlayerTickets(player.getUUID()).thenCompose(tickets -> {
+            // Fetch comment counts for each ticket in parallel
+            List<java.util.concurrent.CompletableFuture<TicketSyncPayload.TicketData>> futures = tickets.stream()
+                .map(ticket -> TicketManager.INSTANCE.getComments(ticket.id(), false)
+                    .thenApply(comments -> toTicketData(ticket, comments.size()))
+                    .exceptionally(ex -> toTicketData(ticket, 0)))
                 .toList();
-            PacketDistributor.sendToPlayer(Objects.requireNonNull(player), new TicketSyncPayload(data));
+            return java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0]))
+                .thenAccept(v -> {
+                    List<TicketSyncPayload.TicketData> data = futures.stream()
+                        .map(java.util.concurrent.CompletableFuture::join)
+                        .toList();
+                    PacketDistributor.sendToPlayer(Objects.requireNonNull(player), new TicketSyncPayload(data));
+                });
         }), "ticket sync");
     }
 
@@ -165,7 +174,7 @@ public final class TicketNetworkHandler extends NetworkHandlerBase {
         return false;
     }
 
-    private static TicketSyncPayload.TicketData toTicketData(Ticket ticket) {
+    private static TicketSyncPayload.TicketData toTicketData(Ticket ticket, int commentCount) {
         return new TicketSyncPayload.TicketData(
             ticket.id(),
             ticket.category(),
@@ -175,7 +184,7 @@ public final class TicketNetworkHandler extends NetworkHandlerBase {
             ticket.description(),
             ticket.createdAt(),
             ticket.updatedAt(),
-            0
+            commentCount
         );
     }
 }

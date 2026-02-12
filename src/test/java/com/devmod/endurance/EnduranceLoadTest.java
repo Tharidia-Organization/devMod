@@ -789,7 +789,7 @@ public class EnduranceLoadTest {
                 executor.execute(() -> {
                     try {
                         long start = System.nanoTime();
-                        objective.tick(null);
+                        objective.tick((net.minecraft.world.entity.player.Player) null);
                         long latency = System.nanoTime() - start;
                         metrics.recordSuccess(latency);
                     } catch (Exception e) {

@@ -25,6 +25,9 @@ import com.devmod.transport.block.entity.TransportCoreBlockEntity;
 public final class TransportNetworkHandler extends NetworkHandlerBase {
     public static final TransportNetworkHandler INSTANCE = new TransportNetworkHandler();
 
+    /** Maximum distance squared a player can be from a transport node to interact (8 blocks). */
+    private static final double MAX_INTERACT_DISTANCE_SQ = 64.0;
+
     private TransportNetworkHandler() {}
 
     /**
@@ -246,7 +249,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
             nodePos.getY() + 0.5,
             nodePos.getZ() + 0.5
         );
-        if (distanceSq > 64) { // 8 blocks max
+        if (distanceSq > MAX_INTERACT_DISTANCE_SQ) {
             LOGGER.warn("Player {} tried to save config too far from block at {}",
                 player.getName().getString(), nodePos);
             return;
@@ -301,7 +304,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
             sourcePos.getY() + 0.5,
             sourcePos.getZ() + 0.5
         );
-        if (distanceSq > 64) { // 8 blocks max
+        if (distanceSq > MAX_INTERACT_DISTANCE_SQ) {
             LOGGER.warn("Player {} tried to select waypoint too far from source at {}",
                 player.getName().getString(), sourcePos);
             return;
@@ -497,15 +500,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
     }
 
     private static String resolveNodeName(@Nonnull com.devmod.transport.TransportData node) {
-        String displayName = node.displayName();
-        if (displayName != null && !displayName.isEmpty()) {
-            return displayName;
-        }
-        String networkName = node.networkName();
-        if (networkName != null && !networkName.isEmpty()) {
-            return networkName;
-        }
-        return node.nodeType().getSerializedName();
+        return node.resolveDisplayName();
     }
 
     private static long distanceSq(

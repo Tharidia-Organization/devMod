@@ -82,10 +82,10 @@ public class HologramRegistry extends SavedData {
      * Creates and registers a new hologram.
      *
      * @param def The hologram definition
-     * @return The hologram's UUID
+     * @return The hologram's UUID if created, or empty if the dimension limit was reached
      */
     @Nonnull
-    public UUID createHologram(@Nonnull HologramDefinition def) {
+    public Optional<UUID> createHologram(@Nonnull HologramDefinition def) {
         Objects.requireNonNull(def, "def");
 
         // Check dimension limit
@@ -94,7 +94,7 @@ public class HologramRegistry extends SavedData {
         if (dimHolograms.size() >= DEFAULT_MAX_PER_DIMENSION) {
             DevMod.LOGGER.warn("Cannot create hologram: dimension {} has reached limit of {}",
                 dim, DEFAULT_MAX_PER_DIMENSION);
-            return def.id(); // Return ID anyway, caller should check getHologram
+            return Optional.empty();
         }
 
         holograms.put(def.id(), def);
@@ -102,7 +102,7 @@ public class HologramRegistry extends SavedData {
         setDirty();
 
         DevMod.LOGGER.debug("[Hologram] Created: {} at {} ({})", def.label(), def.position().toShortString(), def.id());
-        return def.id();
+        return Optional.of(def.id());
     }
 
     /**
