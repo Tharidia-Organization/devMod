@@ -127,7 +127,7 @@ public class ElixirumCompat implements CompatModule {
             LOGGER.debug("[Compat:elixirum] Ars Elixirum classes not found: {}", e.getMessage());
         } catch (NoSuchMethodException e) {
             available = false;
-            LOGGER.warn("[Compat:elixirum] Ars Elixirum API changed - method not found: {}", e.getMessage());
+            LOGGER.debug("[Compat:elixirum] Ars Elixirum API changed - method not found: {}", e.getMessage());
         } catch (Exception e) {
             available = false;
             LOGGER.warn("[Compat:elixirum] Error initializing: {}", e.getMessage());

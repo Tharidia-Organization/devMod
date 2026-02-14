@@ -145,6 +145,7 @@ public enum ChannelId {
     NOTIFICATION_PREFS_UPDATE(122, Direction.CLIENT_TO_SERVER, "NotificationPreferencesUpdatePayload"),
     SEASON_PASS_SYNC(123, Direction.SERVER_TO_CLIENT, "SeasonPassPayload"),
     REQUEST_SEASON_PASS(124, Direction.CLIENT_TO_SERVER, "RequestSeasonPassPayload"),
+    CLAIM_SEASON_REWARD(125, Direction.CLIENT_TO_SERVER, "ClaimSeasonRewardPayload"),
 
     // ============================================================================
     // COMPAT MODULE CHANNELS (130-139)

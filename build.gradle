@@ -789,7 +789,18 @@ def designTokenColorAllowlist = [
     'src/main/java/com/devmod/client/npc/graph/GraphConnection.java',
     'src/main/java/com/devmod/client/npc/graph/GraphMinimap.java',
     'src/main/java/com/devmod/client/npc/graph/GraphNode.java',
-    'src/main/java/com/devmod/client/npc/graph/NodeEditPanel.java'
+    'src/main/java/com/devmod/client/npc/graph/NodeEditPanel.java',
+    // Data-definition files with domain-specific color constants
+    'src/main/java/com/devmod/party/lfg/LFGActivity.java',
+    'src/main/java/com/devmod/client/ui/screens/LeaderboardScreen.java',
+    'src/main/java/com/devmod/client/ui/screens/ArenaResultsScreen.java',
+    'src/main/java/com/devmod/client/tooltip/StatsTooltipHandler.java',
+    // Accessibility system - colorblind color tables and LUT definitions
+    'src/main/java/com/devmod/client/accessibility/ColorblindHelper.java',
+    'src/main/java/com/devmod/client/accessibility/ColorblindMode.java',
+    'src/main/java/com/devmod/client/accessibility/LookupTable.java',
+    // Transport overlay - HUD rendering constants
+    'src/main/java/com/devmod/client/transport/TransportCoreOverlay.java'
 ]
 
 tasks.register('checkDesignTokensColors') {

@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.config.TesterModality;
 import com.devmod.endurance.EnduranceQuestManager;
 import com.devmod.endurance.WaveManager;
 import com.devmod.mailbox.MailboxManager;
@@ -15,8 +16,13 @@ import com.devmod.telemetry.TelemetryService;
 
 /**
  * P2 Architecture: Central service access point.
- * Provides type-safe access to core services while maintaining
- * backward compatibility with existing singleton patterns.
+ * Provides type-safe access to core services via {@link ServiceRegistry}.
+ *
+ * <p>All accessors delegate to the registry. If a service was not registered
+ * (e.g. {@link #endurance()} when {@link TesterModality} is disabled), the
+ * accessor returns {@code null} rather than silently falling back to a
+ * singleton. This makes the registry meaningful for testing and ensures
+ * callers handle missing services explicitly.</p>
  *
  * <p>Benefits over direct INSTANCE access:
  * <ul>
@@ -59,7 +65,9 @@ public final class Services {
         ServiceRegistry.register(NotificationService.class, () -> NotificationService.INSTANCE);
         ServiceRegistry.register(MailboxManager.class, () -> MailboxManager.INSTANCE);
         ServiceRegistry.register(InstanceManager.class, () -> InstanceManager.INSTANCE);
-        ServiceRegistry.register(EnduranceQuestManager.class, () -> EnduranceQuestManager.INSTANCE);
+        if (TesterModality.isEnabled()) {
+            ServiceRegistry.register(EnduranceQuestManager.class, () -> EnduranceQuestManager.INSTANCE);
+        }
 
         initialized = true;
         LOGGER.info("Initialized {} core services in registry", ServiceRegistry.size());
@@ -76,65 +84,89 @@ public final class Services {
 
     /**
      * Get the party management service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static PartyManager party() {
-        return getOrFallback(PartyManager.class, PartyManager.INSTANCE);
+        return getRequired(PartyManager.class);
     }
 
     /**
      * Get the wave management service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static WaveManager waves() {
-        return getOrFallback(WaveManager.class, WaveManager.INSTANCE);
+        return getRequired(WaveManager.class);
     }
 
     /**
      * Get the telemetry service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static TelemetryService telemetry() {
-        return getOrFallback(TelemetryService.class, TelemetryService.INSTANCE);
+        return getRequired(TelemetryService.class);
     }
 
     /**
      * Get the notification service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static NotificationService notifications() {
-        return getOrFallback(NotificationService.class, NotificationService.INSTANCE);
+        return getRequired(NotificationService.class);
     }
 
     /**
      * Get the mailbox management service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static MailboxManager mailbox() {
-        return getOrFallback(MailboxManager.class, MailboxManager.INSTANCE);
+        return getRequired(MailboxManager.class);
     }
 
     /**
      * Get the instance management service.
+     *
+     * @throws IllegalStateException if services have not been initialized
      */
     public static InstanceManager instances() {
-        return getOrFallback(InstanceManager.class, InstanceManager.INSTANCE);
+        return getRequired(InstanceManager.class);
     }
 
     /**
      * Get the endurance quest management service.
+     * Returns {@code null} when {@link TesterModality} is disabled,
+     * since the endurance module is not registered in that case.
+     *
+     * @return the endurance service, or null if not registered
      */
+    @Nullable
     public static EnduranceQuestManager endurance() {
-        return getOrFallback(EnduranceQuestManager.class, EnduranceQuestManager.INSTANCE);
+        if (!initialized) {
+            LOGGER.warn("Services.endurance() called before initialization");
+            return null;
+        }
+        return ServiceRegistry.getOrNull(EnduranceQuestManager.class);
     }
 
     // === Helper Methods ===
 
     /**
-     * Get service from registry, falling back to singleton if not registered.
-     * This allows graceful operation even if initialize() wasn't called.
+     * Get a required service from the registry.
+     * Throws if services are not initialized or the service is not registered.
+     *
+     * @throws IllegalStateException if not initialized or service not found
      */
-    private static <T> T getOrFallback(Class<T> serviceClass, T fallback) {
+    private static <T> T getRequired(Class<T> serviceClass) {
         if (!initialized) {
-            return fallback;
+            throw new IllegalStateException(
+                "Services not initialized. Call Services.initialize() during mod setup. "
+                + "Requested: " + serviceClass.getName());
         }
-        @Nullable T service = ServiceRegistry.getOrNull(serviceClass);
-        return service != null ? service : fallback;
+        return ServiceRegistry.get(serviceClass);
     }
 
     /**

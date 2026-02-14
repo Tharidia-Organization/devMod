@@ -38,15 +38,18 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 
 import com.devmod.arena.policy.ArenaPolicy.ExecutionOverrides;
+import com.devmod.combat.bridge.CombatEnduranceBridge;
 import com.devmod.config.GameMechanicsConfig;
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceQuestManager;
-import com.devmod.endurance.EnduranceTags;
-import com.devmod.endurance.MomentumTracker;
-import com.devmod.endurance.lifecycle.QuestContext;
-import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
-import com.devmod.endurance.lifecycle.QuestLifecycleListener;
-public class ExecutionSystem implements QuestLifecycleListener {
+
+/**
+ * Execution (finisher) system for low-HP mobs in quests.
+ * <p>
+ * All endurance-module interactions go through {@link CombatEnduranceBridge}
+ * so that the combat package has no compile-time dependency on endurance classes.
+ * Quest lifecycle cleanup is handled by the bridge implementation registering
+ * an {@code ExecutionCleanupListener} on the QuestEventBus.
+ */
+public class ExecutionSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionSystem.class);
 
     public static final ExecutionSystem INSTANCE = new ExecutionSystem();
@@ -274,8 +277,8 @@ public class ExecutionSystem implements QuestLifecycleListener {
             return false;
         }
 
-        // Check if in quest
-        return EnduranceQuestManager.INSTANCE.getActiveSession(player).isPresent();
+        // Check if in quest (via bridge - no direct endurance import)
+        return CombatEnduranceBridge.get().hasActiveQuestSession(player);
     }
 
     /**
@@ -295,17 +298,16 @@ public class ExecutionSystem implements QuestLifecycleListener {
     }
 
     /**
-     * Check if mob is from player's active quest.
+     * Check if mob is from player's active quest (via bridge).
      */
     private boolean isQuestMob(Mob mob, ServerPlayer player) {
+        CombatEnduranceBridge bridge = CombatEnduranceBridge.get();
         CompoundTag data = mob.getPersistentData();
-        if (!data.contains(EnduranceTags.QUEST_ID)) return false;
+        UUID mobQuestId = bridge.getQuestIdFromMobData(data);
+        if (mobQuestId == null) return false;
 
-        return EnduranceQuestManager.INSTANCE.getActiveSession(player)
-            .map(session -> {
-                UUID mobQuestId = data.getUUID(EnduranceTags.QUEST_ID);
-                return mobQuestId.equals(session.getQuest().getQuestId());
-            })
+        return bridge.getActiveQuestId(player)
+            .map(mobQuestId::equals)
             .orElse(false);
     }
 
@@ -430,18 +432,11 @@ public class ExecutionSystem implements QuestLifecycleListener {
         // Apply HP regen
         player.heal(hpRegen);
 
-        // Apply style reward via combo session if active
-        if (com.devmod.endurance.combat.ComboSystemFacade.isInitialized()) {
-            com.devmod.endurance.combat.ComboSystemFacade.get()
-                .getSession(playerId)
-                .ifPresent(session -> session.registerAction(ComboSystem.ActionType.EXECUTION, 0));
-        }
-
-        // Track execution for hidden perk discoveries
-        com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE.recordExecution(player);
-
-        // Apply momentum boost
-        MomentumTracker.INSTANCE.onPlayerKill(playerId);
+        // Apply style reward, perk tracking, and momentum via bridge
+        CombatEnduranceBridge bridge = CombatEnduranceBridge.get();
+        bridge.registerComboAction(playerId, "EXECUTION", 0);
+        bridge.recordExecution(player);
+        bridge.onPlayerKill(playerId);
 
         // Kill target with boosted drops
         if (target != null && target.isAlive()) {
@@ -636,27 +631,6 @@ public class ExecutionSystem implements QuestLifecycleListener {
             throw new IllegalStateException(label + " is null");
         }
         return value;
-    }
-
-    // ========== QuestLifecycleListener Implementation ==========
-
-    @Override
-    public void onQuestEnded(QuestEnded event) {
-        QuestContext ctx = event.context();
-        UUID playerId = ctx.playerId();
-
-        onPlayerLeave(playerId);
-        LOGGER.debug("[ExecutionSystem] Cleaned up state for player {} via event bus", playerId);
-    }
-
-    @Override
-    public int getPriority() {
-        return 50; // Low priority - cleanup after combat systems
-    }
-
-    @Override
-    public String getListenerName() {
-        return "ExecutionSystem";
     }
 
     private ExecutionSystem() {}

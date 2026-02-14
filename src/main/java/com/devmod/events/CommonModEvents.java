@@ -152,13 +152,21 @@ public class CommonModEvents {
             eventBus.register(com.devmod.endurance.perk.PerkSynergyWeb.INSTANCE);
             eventBus.register(com.devmod.endurance.nutrition.NutritionBridgeSystem.INSTANCE);
             eventBus.register(com.devmod.endurance.ComebackSystem.INSTANCE);
-            eventBus.register(com.devmod.combat.ExecutionSystem.INSTANCE);
+            eventBus.register(com.devmod.endurance.combat.ExecutionCleanupListener.INSTANCE);
             // Post-processing (negative priority)
             eventBus.register(com.devmod.endurance.lifecycle.PartyStatsCoordinator.INSTANCE);
             LOGGER.info("[DevMod] QuestEventBus initialized with {} listeners: {}",
                 eventBus.getListenerCount(), eventBus.getListenerNames());
         } catch (Exception e) {
             LOGGER.error("[DevMod] Failed to initialize QuestEventBus listeners", e);
+        }
+
+        // Register CombatEnduranceBridge real implementation
+        try {
+            com.devmod.endurance.combat.CombatEnduranceBridgeImpl.register();
+            LOGGER.info("[DevMod] CombatEnduranceBridge registered successfully");
+        } catch (Exception e) {
+            LOGGER.error("[DevMod] Failed to register CombatEnduranceBridge", e);
         }
 
         // Load global mob configuration for Endurance mode

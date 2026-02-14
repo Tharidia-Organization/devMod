@@ -109,7 +109,7 @@ public final class RadialTooltipRenderer {
 
         // Soft shadow
         if (shadowOffset > 0) {
-            int shadowColor = RadialGeometry.applyAlpha(0xFF000000, RadialMenuConstants.TOOLTIP_SHADOW_ALPHA);
+            int shadowColor = RadialGeometry.applyAlpha(DesignTokens.Palette.SHADOW, RadialMenuConstants.TOOLTIP_SHADOW_ALPHA);
             RadialGeometry.renderRoundedRect(graphics,
                 borderX1 + shadowOffset, borderY1 + shadowOffset,
                 borderX2 + shadowOffset, borderY2 + shadowOffset,

@@ -42,7 +42,7 @@ public class GeckoLibModuleCompat extends BaseCompatModule {
         // Attempt class detection via collision compat, but don't hard-fail on early classpath timing.
         boolean detected = GeckoLibCompat.isGeckoLibPresent();
         if (!detected) {
-            warn("GeckoLib classes not detected yet; continuing with limited compatibility");
+            debug("GeckoLib classes not detected yet; continuing with limited compatibility");
         }
 
         // Load additional API classes (best-effort)

@@ -220,6 +220,13 @@ public class GameMechanicsConfig {
     public static final ModConfigSpec.DoubleValue PERK_DAMAGE_BONUS_LEGENDARY;
 
     // ============================================
+    // ABILITY SYSTEM
+    // ============================================
+
+    public static final ModConfigSpec.IntValue ABILITY_MAX_CHARGES;
+    public static final ModConfigSpec.IntValue ABILITY_RECHARGE_TICKS;
+
+    // ============================================
     // CHALLENGE SYSTEM (Daily/Weekly)
     // ============================================
 
@@ -971,6 +978,21 @@ public class GameMechanicsConfig {
         CHALLENGE_WEEKLY_XP_REWARD = BUILDER
                 .comment("Season XP for weekly challenge completion")
                 .defineInRange("weeklyXpReward", 2000, 0, 20000);
+
+        BUILDER.pop();
+
+        // ============================================
+        // ABILITY SYSTEM
+        // ============================================
+        BUILDER.push("ability");
+
+        ABILITY_MAX_CHARGES = BUILDER
+                .comment("Maximum ability charges (shared between dash/dodge)")
+                .defineInRange("maxCharges", 2, 1, 10);
+
+        ABILITY_RECHARGE_TICKS = BUILDER
+                .comment("Ticks to recharge one ability charge (60 = 3 seconds)")
+                .defineInRange("rechargeTicks", 60, 10, 600);
 
         BUILDER.pop();
     }

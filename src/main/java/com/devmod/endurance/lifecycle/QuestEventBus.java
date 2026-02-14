@@ -80,7 +80,7 @@ public final class QuestEventBus {
         Objects.requireNonNull(listener, "listener cannot be null");
 
         if (listeners.contains(listener)) {
-            LOGGER.warn("[QuestEventBus] Listener {} already registered, skipping",
+            LOGGER.debug("[QuestEventBus] Listener {} already registered, skipping",
                 listener.getListenerName());
             return;
         }

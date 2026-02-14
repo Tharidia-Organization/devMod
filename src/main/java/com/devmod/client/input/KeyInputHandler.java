@@ -342,6 +342,42 @@ public class KeyInputHandler {
     );
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // GAMEPLAY SCREENS (Quest Journal, Character Sheet, Leaderboard, LFG)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    public static final KeyMapping OPEN_QUEST_JOURNAL_KEY = new KeyMapping(
+            "key.devmod.quest_journal",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_J,
+            "key.categories.devmod"
+    );
+
+    public static final KeyMapping OPEN_CHARACTER_SHEET_KEY = new KeyMapping(
+            "key.devmod.character_sheet",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_C,
+            "key.categories.devmod"
+    );
+
+    public static final KeyMapping OPEN_LEADERBOARD_KEY = new KeyMapping(
+            "key.devmod.leaderboard",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.devmod"
+    );
+
+    public static final KeyMapping OPEN_LFG_KEY = new KeyMapping(
+            "key.devmod.lfg",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.devmod"
+    );
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // ECONOMY & MISC
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -444,6 +480,10 @@ public class KeyInputHandler {
         event.register(Objects.requireNonNull(OPEN_NOTIFICATION_CENTER_KEY));
         event.register(Objects.requireNonNull(OPEN_MAILBOX_KEY));
         event.register(Objects.requireNonNull(OPEN_TESTER_TASKS_KEY));
+        event.register(Objects.requireNonNull(OPEN_QUEST_JOURNAL_KEY));
+        event.register(Objects.requireNonNull(OPEN_CHARACTER_SHEET_KEY));
+        event.register(Objects.requireNonNull(OPEN_LEADERBOARD_KEY));
+        event.register(Objects.requireNonNull(OPEN_LFG_KEY));
         event.register(Objects.requireNonNull(TOGGLE_HELP_KEY));
         event.register(Objects.requireNonNull(OPEN_RADIAL_MENU_KEY));
         event.register(Objects.requireNonNull(INSPECT_MOB_KEY));

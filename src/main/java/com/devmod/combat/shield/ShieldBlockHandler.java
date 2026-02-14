@@ -16,11 +16,8 @@ import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.combat.ShieldDeflector;
+import com.devmod.combat.bridge.CombatEnduranceBridge;
 import com.devmod.config.handler.impl.ArmorConfigHandler;
-import com.devmod.endurance.ComboSystem;
-import com.devmod.endurance.EnduranceEventCombat;
-import com.devmod.endurance.EnduranceEventHandler;
-import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.ShieldImpactPayload;
 import com.devmod.network.ShieldShatterPayload;
@@ -174,16 +171,8 @@ public final class ShieldBlockHandler {
             return;
         }
 
-        IComboSession comboSession = EnduranceEventHandler.getComboSession(serverPlayer.getUUID());
-        if (comboSession != null) {
-            // Use registerAction with PARRY type (registerParry is a convenience method)
-            IComboSession.ActionResult actionResult = comboSession.registerAction(ComboSystem.ActionType.PARRY, 0);
-            EnduranceEventCombat.syncCombatFlowToClient(
-                serverPlayer,
-                ComboSystem.ActionType.PARRY.getDisplayName(),
-                actionResult.styleEarned()
-            );
-        }
+        // Register parry with combo system via bridge (no direct endurance imports)
+        CombatEnduranceBridge.get().onParry(serverPlayer);
 
         playParrySound(serverPlayer, parryTier);
 

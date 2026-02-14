@@ -241,5 +241,6 @@ public class DodgeAbilitySystem {
         public DodgeDirection lastDodgeDirection = null;
         public int dodgeCount = 0;
         public int perfectDodgeCount = 0;
+        public int counterAttackWindowTicks = 0;
     }
 }

@@ -1,5 +1,7 @@
 package com.devmod.endurance;
 
+import com.devmod.endurance.api.IActionType;
+import com.devmod.endurance.api.IStyleRank;
 import com.devmod.endurance.config.EnduranceConfigManager;
 
 /**
@@ -17,8 +19,9 @@ public final class ComboSystem {
 
     /**
      * Style rank thresholds - DMC-inspired ranking system.
+     * Implements {@link IStyleRank} so external modules can depend on the interface.
      */
-    public enum StyleRank {
+    public enum StyleRank implements IStyleRank {
         D("Dull", 0, EnduranceColors.StyleRank.D, 1.0f),
         C("Crazy", 500, EnduranceColors.StyleRank.C, 1.2f),
         B("Brutal", 1500, EnduranceColors.StyleRank.B, 1.5f),
@@ -103,8 +106,9 @@ public final class ComboSystem {
 
     /**
      * Types of combat actions that contribute to style.
+     * Implements {@link IActionType} so external modules can depend on the interface.
      */
-    public enum ActionType {
+    public enum ActionType implements IActionType {
         // Basic attacks
         LIGHT_ATTACK("Light Attack", 10, 50),
         HEAVY_ATTACK("Heavy Attack", 25, 100),

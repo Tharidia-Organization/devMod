@@ -57,6 +57,11 @@ public final class ActionIds {
     public static final String UI_ONBOARDING_START = "devmod.ui.onboarding.start";
     public static final String UI_ONBOARDING_SKIP = "devmod.ui.onboarding.skip";
     public static final String UI_SEASON_PASS_OPEN = "devmod.ui.season_pass.open";
+    public static final String UI_ARENA_RESULTS_OPEN = "devmod.ui.arena_results.open";
+    public static final String UI_CHARACTER_SHEET_OPEN = "devmod.ui.character_sheet.open";
+    public static final String UI_LEADERBOARD_OPEN = "devmod.ui.leaderboard.open";
+    public static final String UI_QUEST_JOURNAL_OPEN = "devmod.ui.quest_journal.open";
+    public static final String UI_LFG_OPEN = "devmod.ui.lfg.open";
 
     // Debug / HUD toggles
     public static final String DEBUG_OVERLAY_TOGGLE = "devmod.debug.overlay.toggle";
