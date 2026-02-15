@@ -56,7 +56,15 @@ import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.runtime.biome.ZoneBiomeSource;
 import com.devmod.runtime.generator.ArenaChunkGenerator;
 import com.devmod.runtime.generator.ArenaFlatChunkGenerator;
+import com.devmod.hologram.data.HologramDefinition;
+import com.devmod.hologram.data.HologramOptions;
+import com.devmod.hologram.data.HologramPosition;
+import com.devmod.hologram.data.HologramRegistry;
+import com.devmod.hologram.data.HologramStyle;
+import com.devmod.hologram.data.HologramType;
+import com.devmod.hologram.runtime.HologramManager;
 import com.devmod.zone.data.ZoneDefinition;
+import com.devmod.zone.data.ZoneRegistry;
 import com.devmod.zone.runtime.ZoneResolver;
 
 public class NexusDimensionManager {
@@ -514,7 +522,10 @@ public class NexusDimensionManager {
         NexusPortalManager.INSTANCE.initialize(level, nn(hubOrigin, "hubOrigin"));
 
         // Initialize Hologram Builder system (no auto-spawn - user places from chest)
-        com.devmod.hologram.runtime.HologramManager.INSTANCE.initializeLevel(level);
+        HologramManager.INSTANCE.initializeLevel(level);
+
+        // Spawn zone label holograms above each telepad
+        spawnZoneHolograms(level, nn(hubOrigin, "hubOrigin"));
 
         // Place starter chest with hologram items near spawn
         placeStarterChest(level, hubOrigin);
@@ -528,6 +539,54 @@ public class NexusDimensionManager {
         // Initialize Nexus 2.0 hub manager and slot system
         NexusHubManager.INSTANCE.initialize(level.getServer());
         NexusHubManager.INSTANCE.applySlotTemplates(level);
+    }
+
+    /**
+     * Spawn hologram labels above each zone telepad.
+     * Gold text with the zone display name, positioned 3 blocks above the telepad.
+     */
+    private void spawnZoneHolograms(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin) {
+        try {
+            ZoneRegistry zoneRegistry = ZoneRegistry.get(level.getServer());
+            HologramRegistry holoRegistry = HologramRegistry.get(level.getServer());
+            ResourceLocation dimension = level.dimension().location();
+
+            HologramStyle labelStyle = new HologramStyle.Builder()
+                .textColor(com.devmod.client.ui.editor.core.DesignTokens.Nexus.ZONE_LABEL_TEXT)
+                .backgroundColor(com.devmod.client.ui.editor.core.DesignTokens.Nexus.ZONE_LABEL_BG)
+                .scale(1.2f)
+                .shadow(true)
+                .seeThrough(false)
+                .build();
+
+            int count = 0;
+            for (ZoneDefinition zone : zoneRegistry.getTeleportableZones()) {
+                BlockPos portalOffset = zone.portalOffset();
+                if (portalOffset == null) {
+                    continue;
+                }
+
+                BlockPos labelPos = hubOrigin.offset(portalOffset).above(3);
+
+                HologramDefinition def = HologramDefinition.builder()
+                    .label("zone_label_" + zone.zoneId())
+                    .type(HologramType.STATIC)
+                    .lines(java.util.List.of(zone.displayName()))
+                    .style(labelStyle)
+                    .position(HologramPosition.atBlock(labelPos, dimension))
+                    .options(new HologramOptions(true, true, 0, 0, zone.zoneId()))
+                    .build();
+
+                if (holoRegistry.createHologram(def).isPresent()) {
+                    HologramManager.INSTANCE.spawnHologram(level, def);
+                    count++;
+                }
+            }
+
+            LOGGER.info("[Nexus] Spawned {} zone label holograms", count);
+        } catch (Exception e) {
+            LOGGER.warn("[Nexus] Failed to spawn zone holograms: {}", e.getMessage());
+        }
     }
 
     /**

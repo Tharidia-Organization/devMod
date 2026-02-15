@@ -2,6 +2,7 @@ package com.devmod.compat;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -73,8 +74,8 @@ public abstract class BaseCompatModule implements CompatModule {
     /** Cached class references */
     protected final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
 
-    /** Cached method references */
-    protected final Map<String, Method> methodCache = new ConcurrentHashMap<>();
+    /** Cached method references (Optional to cache negative lookups — ConcurrentHashMap ignores null) */
+    protected final Map<String, Optional<Method>> methodCache = new ConcurrentHashMap<>();
 
     /** Generic object cache for misc data */
     protected final Map<String, Object> objectCache = new ConcurrentHashMap<>();
@@ -335,7 +336,10 @@ public abstract class BaseCompatModule implements CompatModule {
         if (clazz == null) return null;
 
         String key = clazz.getName() + "#" + methodName;
-        return methodCache.computeIfAbsent(key, k -> Compat.getMethod(clazz, methodName, parameterTypes));
+        // Wrap in Optional so null results (method not found) are cached properly —
+        // ConcurrentHashMap.computeIfAbsent silently ignores null returns (JDK-8161372).
+        return methodCache.computeIfAbsent(key,
+            k -> Optional.ofNullable(Compat.getMethod(clazz, methodName, parameterTypes))).orElse(null);
     }
 
     /**
@@ -351,7 +355,8 @@ public abstract class BaseCompatModule implements CompatModule {
         if (clazz == null) return null;
 
         String key = clazz.getName() + "#" + methodName + "#declared";
-        return methodCache.computeIfAbsent(key, k -> Compat.getDeclaredMethod(clazz, methodName, parameterTypes));
+        return methodCache.computeIfAbsent(key,
+            k -> Optional.ofNullable(Compat.getDeclaredMethod(clazz, methodName, parameterTypes))).orElse(null);
     }
 
     /**
@@ -363,7 +368,7 @@ public abstract class BaseCompatModule implements CompatModule {
      */
     @Nullable
     protected Method cacheMethod(String key, Supplier<Method> supplier) {
-        return methodCache.computeIfAbsent(key, k -> supplier.get());
+        return methodCache.computeIfAbsent(key, k -> Optional.ofNullable(supplier.get())).orElse(null);
     }
 
     /**

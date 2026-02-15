@@ -69,79 +69,52 @@ public final class CommandDomainRegistrar implements DomainRegistrar {
             "devmod.action.command.nexus_return", "devmod.action.command.nexus_return.desc",
             "minecraft:compass", "Root/Nexus/Access/Return", "devmod nexus return", false));
 
-        // --- Nexus: Zones (perm 0) ---
+        // --- Nexus: Testing Lab Zones (perm 0) ---
         specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_HUB, ActionCategory.TOOLS, 0,
             "devmod.action.command.nexus_tp_hub", "devmod.action.command.nexus_tp_hub.desc",
-            "minecraft:beacon", "Root/Nexus/Zones/Core/Spawn", "devmod nexus tp spawn", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_TUTORIAL, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_tutorial", "devmod.action.command.nexus_tp_tutorial.desc",
-            "minecraft:book", "Root/Nexus/Zones/Core/Tutorial", "devmod nexus tp tutorial", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_GATE_PROGRESSION, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_gate_progression", "devmod.action.command.nexus_tp_gate_progression.desc",
-            "minecraft:end_portal_frame", "Root/Nexus/Zones/Core/Gate Progression", "devmod nexus tp gate_progression", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_CLASSES, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_classes", "devmod.action.command.nexus_tp_classes.desc",
-            "minecraft:enchanting_table", "Root/Nexus/Zones/Core/Classes System", "devmod nexus tp classes", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_OVERVIEW, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_overview", "devmod.action.command.nexus_tp_overview.desc",
-            "minecraft:spyglass", "Root/Nexus/Zones/Labs/Overview Deck", "devmod nexus tp overview", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_COMBAT, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_combat", "devmod.action.command.nexus_tp_combat.desc",
-            "minecraft:iron_sword", "Root/Nexus/Zones/Labs/Combat", "devmod nexus tp combat", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ARENA, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_arena", "devmod.action.command.nexus_tp_arena.desc",
-            "minecraft:shield", "Root/Nexus/Zones/Labs/Arena", "devmod nexus tp arena", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_UI, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_ui", "devmod.action.command.nexus_tp_ui.desc",
-            "minecraft:comparator", "Root/Nexus/Zones/Labs/UI Lab", "devmod nexus tp ui", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_TELEMETRY, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_telemetry", "devmod.action.command.nexus_tp_telemetry.desc",
-            "minecraft:redstone_lamp", "Root/Nexus/Zones/Labs/Telemetry Lab", "devmod nexus tp telemetry", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_SHOWCASE, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_showcase", "devmod.action.command.nexus_tp_showcase.desc",
-            "minecraft:item_frame", "Root/Nexus/Zones/Labs/Showcase", "devmod nexus tp showcase", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_INTEGRATION, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_integration", "devmod.action.command.nexus_tp_integration.desc",
-            "minecraft:anvil", "Root/Nexus/Zones/Labs/Integration Bay", "devmod nexus tp integration", false));
+            "minecraft:beacon", "Root/Nexus/Zones/Hub Center", "devmod nexus tp spawn", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_COMBAT_LAB, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_combat_lab", "devmod.action.command.nexus_tp_combat_lab.desc",
+            "minecraft:iron_sword", "Root/Nexus/Zones/Combat/Combat Lab", "devmod nexus tp combat_lab", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ABILITIES_LAB, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_abilities_lab", "devmod.action.command.nexus_tp_abilities_lab.desc",
+            "minecraft:feather", "Root/Nexus/Zones/Combat/Abilities Lab", "devmod nexus tp abilities_lab", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_BOSS_ARENA, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_boss_arena", "devmod.action.command.nexus_tp_boss_arena.desc",
+            "minecraft:wither_skeleton_skull", "Root/Nexus/Zones/Combat/Boss Arena", "devmod nexus tp boss_arena", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_COLLISION_LAB, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_collision_lab", "devmod.action.command.nexus_tp_collision_lab.desc",
+            "minecraft:glass", "Root/Nexus/Zones/Combat/Collision Lab", "devmod nexus tp collision_lab", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_PORTAL_LAB, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_portal_lab", "devmod.action.command.nexus_tp_portal_lab.desc",
+            "minecraft:ender_pearl", "Root/Nexus/Zones/Systems/Portal Lab", "devmod nexus tp portal_lab", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_NPC_LAB, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_npc_lab", "devmod.action.command.nexus_tp_npc_lab.desc",
+            "minecraft:villager_spawn_egg", "Root/Nexus/Zones/Systems/NPC Lab", "devmod nexus tp npc_lab", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_QUEST_TESTING, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_quest_testing", "devmod.action.command.nexus_tp_quest_testing.desc",
+            "minecraft:writable_book", "Root/Nexus/Zones/Systems/Quest Testing", "devmod nexus tp quest_testing", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ARENA_BUILDER, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_arena_builder", "devmod.action.command.nexus_tp_arena_builder.desc",
+            "minecraft:structure_block", "Root/Nexus/Zones/Systems/Arena Builder", "devmod nexus tp arena_builder", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_VFX_STUDIO, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_vfx_studio", "devmod.action.command.nexus_tp_vfx_studio.desc",
+            "minecraft:firework_star", "Root/Nexus/Zones/Tools/VFX Studio", "devmod nexus tp vfx_studio", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ITEM_WORKSHOP, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_item_workshop", "devmod.action.command.nexus_tp_item_workshop.desc",
+            "minecraft:anvil", "Root/Nexus/Zones/Tools/Item Workshop", "devmod nexus tp item_workshop", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_CONFIG_ROOM, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_config_room", "devmod.action.command.nexus_tp_config_room.desc",
+            "minecraft:comparator", "Root/Nexus/Zones/Tools/Config Room", "devmod nexus tp config_room", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_HUD_TESTING, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_hud_testing", "devmod.action.command.nexus_tp_hud_testing.desc",
+            "minecraft:painting", "Root/Nexus/Zones/Tools/HUD Testing", "devmod nexus tp hud_testing", false));
         specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_SANDBOX, ActionCategory.TOOLS, 0,
             "devmod.action.command.nexus_tp_sandbox", "devmod.action.command.nexus_tp_sandbox.desc",
-            "minecraft:sand", "Root/Nexus/Zones/Labs/Sandbox", "devmod nexus tp sandbox", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_MECHANICS, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_mechanics", "devmod.action.command.nexus_tp_mechanics.desc",
-            "minecraft:redstone_block", "Root/Nexus/Zones/Labs/Mechanics", "devmod nexus tp mechanics", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_BUILDING_WEST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_building_west", "devmod.action.command.nexus_tp_building_west.desc",
-            "minecraft:oak_planks", "Root/Nexus/Zones/Ring 1/Building West", "devmod nexus tp building_west", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_BUILDING_EAST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_building_east", "devmod.action.command.nexus_tp_building_east.desc",
-            "minecraft:stone_bricks", "Root/Nexus/Zones/Ring 2/Building East", "devmod nexus tp building_east", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHEAST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_quest_northeast", "devmod.action.command.nexus_tp_quest_northeast.desc",
-            "minecraft:writable_book", "Root/Nexus/Zones/Ring 1/Quest Hub NE", "devmod nexus tp quest_northeast", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHWEST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_quest_northwest", "devmod.action.command.nexus_tp_quest_northwest.desc",
-            "minecraft:book", "Root/Nexus/Zones/Ring 1/Quest Hub NW", "devmod nexus tp quest_northwest", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_EAST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_war_hub_east", "devmod.action.command.nexus_tp_war_hub_east.desc",
-            "minecraft:iron_sword", "Root/Nexus/Zones/Ring 1/War Hub East", "devmod nexus tp war_hub_east", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_WEST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_war_hub_west", "devmod.action.command.nexus_tp_war_hub_west.desc",
-            "minecraft:shield", "Root/Nexus/Zones/Ring 1/War Hub West", "devmod nexus tp war_hub_west", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_EAST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_economia_east", "devmod.action.command.nexus_tp_economia_east.desc",
-            "minecraft:emerald", "Root/Nexus/Zones/Ring 2/Economia East", "devmod nexus tp economia_east", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_WEST, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_economia_west", "devmod.action.command.nexus_tp_economia_west.desc",
-            "minecraft:gold_ingot", "Root/Nexus/Zones/Ring 2/Economia West", "devmod nexus tp economia_west", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_TOWN_MANAGEMENT, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_town_management", "devmod.action.command.nexus_tp_town_management.desc",
-            "minecraft:bell", "Root/Nexus/Zones/Ring 2/Town & Politics", "devmod nexus tp town_management", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_EVENTI, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_eventi", "devmod.action.command.nexus_tp_eventi.desc",
-            "minecraft:firework_rocket", "Root/Nexus/Zones/Ring 2/Eventi", "devmod nexus tp eventi", false));
-        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_DM_MOD, ActionCategory.TOOLS, 0,
-            "devmod.action.command.nexus_tp_dm_mod", "devmod.action.command.nexus_tp_dm_mod.desc",
-            "minecraft:command_block", "Root/Nexus/Zones/Ring 2/DM Mod", "devmod nexus tp dm_mod", false));
+            "minecraft:sand", "Root/Nexus/Zones/Misc/Sandbox", "devmod nexus tp sandbox", false));
+        specs.add(cmd(ActionIds.COMMAND_NEXUS_TP_ADMIN_TOOLS, ActionCategory.TOOLS, 0,
+            "devmod.action.command.nexus_tp_admin_tools", "devmod.action.command.nexus_tp_admin_tools.desc",
+            "minecraft:command_block", "Root/Nexus/Zones/Misc/Admin Tools", "devmod nexus tp admin_tools", false));
 
         // --- Nexus Admin (perm 2-4) ---
         specs.add(cmd(ActionIds.COMMAND_NEXUS_STATUS, ActionCategory.ADMIN, 2,
@@ -185,30 +158,22 @@ public final class CommandDomainRegistrar implements DomainRegistrar {
         registry.register(ActionIds.COMMAND_NEXUS_ZONES, ctx -> ctx.executeCommand("devmod nexus zones"));
         registry.register(ActionIds.COMMAND_NEXUS_ENTER, ctx -> ctx.executeCommand("devmod nexus enter"));
         registry.register(ActionIds.COMMAND_NEXUS_RETURN, ctx -> ctx.executeCommand("devmod nexus return"));
+        // --- Nexus Testing Lab Zone Teleports ---
         registry.register(ActionIds.COMMAND_NEXUS_TP_HUB, ctx -> ctx.executeCommand("devmod nexus tp spawn"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_TUTORIAL, ctx -> ctx.executeCommand("devmod nexus tp tutorial"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_GATE_PROGRESSION, ctx -> ctx.executeCommand("devmod nexus tp gate_progression"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_CLASSES, ctx -> ctx.executeCommand("devmod nexus tp classes"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_OVERVIEW, ctx -> ctx.executeCommand("devmod nexus tp overview"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_COMBAT, ctx -> ctx.executeCommand("devmod nexus tp combat"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ARENA, ctx -> ctx.executeCommand("devmod nexus tp arena"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_UI, ctx -> ctx.executeCommand("devmod nexus tp ui"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_TELEMETRY, ctx -> ctx.executeCommand("devmod nexus tp telemetry"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_SHOWCASE, ctx -> ctx.executeCommand("devmod nexus tp showcase"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_INTEGRATION, ctx -> ctx.executeCommand("devmod nexus tp integration"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_COMBAT_LAB, ctx -> ctx.executeCommand("devmod nexus tp combat_lab"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_ABILITIES_LAB, ctx -> ctx.executeCommand("devmod nexus tp abilities_lab"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_BOSS_ARENA, ctx -> ctx.executeCommand("devmod nexus tp boss_arena"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_COLLISION_LAB, ctx -> ctx.executeCommand("devmod nexus tp collision_lab"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_PORTAL_LAB, ctx -> ctx.executeCommand("devmod nexus tp portal_lab"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_NPC_LAB, ctx -> ctx.executeCommand("devmod nexus tp npc_lab"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_QUEST_TESTING, ctx -> ctx.executeCommand("devmod nexus tp quest_testing"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_ARENA_BUILDER, ctx -> ctx.executeCommand("devmod nexus tp arena_builder"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_VFX_STUDIO, ctx -> ctx.executeCommand("devmod nexus tp vfx_studio"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_ITEM_WORKSHOP, ctx -> ctx.executeCommand("devmod nexus tp item_workshop"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_CONFIG_ROOM, ctx -> ctx.executeCommand("devmod nexus tp config_room"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_HUD_TESTING, ctx -> ctx.executeCommand("devmod nexus tp hud_testing"));
         registry.register(ActionIds.COMMAND_NEXUS_TP_SANDBOX, ctx -> ctx.executeCommand("devmod nexus tp sandbox"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_MECHANICS, ctx -> ctx.executeCommand("devmod nexus tp mechanics"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_BUILDING_WEST, ctx -> ctx.executeCommand("devmod nexus tp building_west"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_BUILDING_EAST, ctx -> ctx.executeCommand("devmod nexus tp building_east"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHEAST, ctx -> ctx.executeCommand("devmod nexus tp quest_northeast"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHWEST, ctx -> ctx.executeCommand("devmod nexus tp quest_northwest"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_EAST, ctx -> ctx.executeCommand("devmod nexus tp war_hub_east"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_WEST, ctx -> ctx.executeCommand("devmod nexus tp war_hub_west"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_EAST, ctx -> ctx.executeCommand("devmod nexus tp economia_east"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_WEST, ctx -> ctx.executeCommand("devmod nexus tp economia_west"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_TOWN_MANAGEMENT, ctx -> ctx.executeCommand("devmod nexus tp town_management"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_EVENTI, ctx -> ctx.executeCommand("devmod nexus tp eventi"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_DM_MOD, ctx -> ctx.executeCommand("devmod nexus tp dm_mod"));
+        registry.register(ActionIds.COMMAND_NEXUS_TP_ADMIN_TOOLS, ctx -> ctx.executeCommand("devmod nexus tp admin_tools"));
         registry.register(ActionIds.COMMAND_NEXUS_STATUS, ctx -> ctx.executeCommand("devmod nexus status"));
         registry.register(ActionIds.COMMAND_NEXUS_REBUILD, ctx -> ctx.executeCommand("devmod nexus rebuild"));
         registry.register(ActionIds.COMMAND_NEXUS_LOCK, ctx -> ctx.executeCommand("devmod nexus lock"));

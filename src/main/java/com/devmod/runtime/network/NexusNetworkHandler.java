@@ -41,32 +41,6 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
     private static final int LOG_MAX_LINES = 120;
     private static final int LOG_MAX_LINE_LENGTH = 240;
 
-    // Cached reflection for client handlers (avoids Class.forName on every packet)
-    private static final java.lang.reflect.Method OPEN_DIALOG_METHOD;
-    private static final java.lang.reflect.Method OPEN_UI_METHOD;
-    private static final java.lang.reflect.Method APPLY_SNAPSHOT_METHOD;
-
-    static {
-        java.lang.reflect.Method dialogMethod = null;
-        java.lang.reflect.Method uiMethod = null;
-        java.lang.reflect.Method snapshotMethod = null;
-
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            try {
-                Class<?> handlerClass = Class.forName("com.devmod.client.nexus.NexusDialogClientHandler");
-                dialogMethod = handlerClass.getMethod("openDialog", NexusDialogPayload.class);
-                uiMethod = handlerClass.getMethod("openUi", NexusUiPayload.class);
-                snapshotMethod = handlerClass.getMethod("applyLogSnapshot", NexusLogSnapshotPayload.class);
-            } catch (ClassNotFoundException | NoSuchMethodException e) {
-                // Expected on dedicated servers - client handler not available
-            }
-        }
-
-        OPEN_DIALOG_METHOD = dialogMethod;
-        OPEN_UI_METHOD = uiMethod;
-        APPLY_SNAPSHOT_METHOD = snapshotMethod;
-    }
-
     public static final NexusNetworkHandler INSTANCE = new NexusNetworkHandler();
 
     private NexusNetworkHandler() {}
@@ -132,22 +106,11 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
 
         ignoreFuture(ctx.enqueueWork(() -> {
             try {
-                openDialogScreen(payload);
+                NexusClientBridge.get().openDialog(payload);
             } catch (Exception e) {
                 LOGGER.error("[NexusNetwork] Failed to open dialog screen", e);
             }
         }));
-    }
-
-    private static void openDialogScreen(NexusDialogPayload payload) {
-        if (OPEN_DIALOG_METHOD == null) {
-            return; // Client handler not available (dedicated server)
-        }
-        try {
-            OPEN_DIALOG_METHOD.invoke(null, payload);
-        } catch (Exception e) {
-            LOGGER.debug("[NexusNetwork] Client dialog handler unavailable: {}", e.getMessage());
-        }
     }
 
     private static void handleUiClient(NexusUiPayload payload, IPayloadContext ctx) {
@@ -157,35 +120,21 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
 
         ignoreFuture(ctx.enqueueWork(() -> {
             try {
-                openNexusUi(payload);
+                NexusClientBridge.get().openUi(payload);
             } catch (Exception e) {
                 LOGGER.error("[NexusNetwork] Failed to open Nexus UI", e);
             }
         }));
     }
 
-    private static void openNexusUi(NexusUiPayload payload) {
-        if (OPEN_UI_METHOD == null) {
-            return; // Client handler not available (dedicated server)
-        }
-        try {
-            OPEN_UI_METHOD.invoke(null, payload);
-        } catch (Exception e) {
-            LOGGER.debug("[NexusNetwork] Client UI handler unavailable: {}", e.getMessage());
-        }
-    }
-
     private static void handleLogSnapshotClient(NexusLogSnapshotPayload payload, IPayloadContext ctx) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        if (APPLY_SNAPSHOT_METHOD == null) {
-            return; // Client handler not available (dedicated server)
-        }
 
         ignoreFuture(ctx.enqueueWork(() -> {
             try {
-                APPLY_SNAPSHOT_METHOD.invoke(null, payload);
+                NexusClientBridge.get().applyLogSnapshot(payload);
             } catch (Exception e) {
                 LOGGER.debug("[NexusNetwork] Client log snapshot handler unavailable: {}", e.getMessage());
             }

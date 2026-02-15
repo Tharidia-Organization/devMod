@@ -50,8 +50,8 @@ class DomainRegistryBootstrapTest {
         @DisplayName("Total action count across all 9 domains")
         void totalActionCount() {
             // Batch 1: Gameplay(7) + Arena(19) + Testing(26) + Telemetry(27) + Admin(22) = 101
-            // Batch 2: UI(65) + Debug(62) + Config(58) + Commands(42) = 227
-            // Total = 328
+            // Batch 2: UI(65) + Debug(62) + Config(58) + Commands(33) = 218
+            // Total = 319
             int total = domainRegistry.actionCount();
             assertTrue(total >= 300,
                 "Should have at least 300 actions across all 9 domains. Found: " + total);
@@ -70,7 +70,7 @@ class DomainRegistryBootstrapTest {
                 "ui", 65,
                 "debug", 62,
                 "config", 58,
-                "commands", 42
+                "commands", 33
             );
 
             for (DomainRegistrar registrar : batch2) {

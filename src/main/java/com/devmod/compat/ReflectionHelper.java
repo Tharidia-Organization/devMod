@@ -6,10 +6,10 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -57,6 +57,8 @@ public final class ReflectionHelper {
     private static final Map<String, Method> METHOD_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Field> FIELD_CACHE = new ConcurrentHashMap<>();
     private static final Map<String, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<>();
+    /** Tracks keys known to have no result, so failed lookups aren't retried every time. */
+    private static final Set<String> NEGATIVE_CACHE = ConcurrentHashMap.newKeySet();
 
     private ReflectionHelper() {}
 
@@ -76,16 +78,21 @@ public final class ReflectionHelper {
     public static MethodHandle findMethodHandle(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         String key = makeMethodKey(clazz, methodName, parameterTypes);
 
-        return METHOD_HANDLE_CACHE.computeIfAbsent(key, k -> {
-            try {
-                Method method = clazz.getMethod(methodName, parameterTypes);
-                return LOOKUP.unreflect(method);
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                LOGGER.debug("[ReflectionHelper] No MethodHandle for {}.{}: {}",
-                    clazz.getSimpleName(), methodName, e.getMessage());
-                return null;
-            }
-        });
+        MethodHandle cached = METHOD_HANDLE_CACHE.get(key);
+        if (cached != null) return cached;
+        if (NEGATIVE_CACHE.contains(key)) return null;
+
+        try {
+            Method method = clazz.getMethod(methodName, parameterTypes);
+            MethodHandle handle = LOOKUP.unreflect(method);
+            METHOD_HANDLE_CACHE.putIfAbsent(key, handle);
+            return handle;
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            LOGGER.debug("[ReflectionHelper] No MethodHandle for {}.{}: {}",
+                clazz.getSimpleName(), methodName, e.getMessage());
+            NEGATIVE_CACHE.add(key);
+            return null;
+        }
     }
 
     /**
@@ -95,17 +102,22 @@ public final class ReflectionHelper {
     public static MethodHandle findDeclaredMethodHandle(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         String key = makeMethodKey(clazz, methodName, parameterTypes) + "#declared";
 
-        return METHOD_HANDLE_CACHE.computeIfAbsent(key, k -> {
-            try {
-                Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
-                method.setAccessible(true);
-                return LOOKUP.unreflect(method);
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                LOGGER.debug("[ReflectionHelper] No declared MethodHandle for {}.{}: {}",
-                    clazz.getSimpleName(), methodName, e.getMessage());
-                return null;
-            }
-        });
+        MethodHandle cached = METHOD_HANDLE_CACHE.get(key);
+        if (cached != null) return cached;
+        if (NEGATIVE_CACHE.contains(key)) return null;
+
+        try {
+            Method method = clazz.getDeclaredMethod(methodName, parameterTypes);
+            method.setAccessible(true);
+            MethodHandle handle = LOOKUP.unreflect(method);
+            METHOD_HANDLE_CACHE.putIfAbsent(key, handle);
+            return handle;
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            LOGGER.debug("[ReflectionHelper] No declared MethodHandle for {}.{}: {}",
+                clazz.getSimpleName(), methodName, e.getMessage());
+            NEGATIVE_CACHE.add(key);
+            return null;
+        }
     }
 
     /**
@@ -116,16 +128,21 @@ public final class ReflectionHelper {
                                                        Class<?> returnType, Class<?>... parameterTypes) {
         String key = makeMethodKey(clazz, methodName, parameterTypes) + "#static";
 
-        return METHOD_HANDLE_CACHE.computeIfAbsent(key, k -> {
-            try {
-                MethodType type = MethodType.methodType(returnType, parameterTypes);
-                return LOOKUP.findStatic(clazz, methodName, type);
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                LOGGER.debug("[ReflectionHelper] No static MethodHandle for {}.{}: {}",
-                    clazz.getSimpleName(), methodName, e.getMessage());
-                return null;
-            }
-        });
+        MethodHandle cached = METHOD_HANDLE_CACHE.get(key);
+        if (cached != null) return cached;
+        if (NEGATIVE_CACHE.contains(key)) return null;
+
+        try {
+            MethodType type = MethodType.methodType(returnType, parameterTypes);
+            MethodHandle handle = LOOKUP.findStatic(clazz, methodName, type);
+            METHOD_HANDLE_CACHE.putIfAbsent(key, handle);
+            return handle;
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            LOGGER.debug("[ReflectionHelper] No static MethodHandle for {}.{}: {}",
+                clazz.getSimpleName(), methodName, e.getMessage());
+            NEGATIVE_CACHE.add(key);
+            return null;
+        }
     }
 
     /**
@@ -172,28 +189,45 @@ public final class ReflectionHelper {
     public static Method findMethodInHierarchy(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         String key = makeMethodKey(clazz, methodName, parameterTypes) + "#hierarchy";
 
-        return METHOD_CACHE.computeIfAbsent(key, k -> {
-            Class<?> current = clazz;
+        Method cached = METHOD_CACHE.get(key);
+        if (cached != null) return cached;
+        if (NEGATIVE_CACHE.contains(key)) return null;
 
-            while (current != null && current != Object.class) {
-                // Check current class
-                try {
-                    return current.getDeclaredMethod(methodName, parameterTypes);
-                } catch (NoSuchMethodException ignored) {
-                    // Continue searching
-                }
+        Method result = searchHierarchy(clazz, methodName, parameterTypes);
+        if (result != null) {
+            METHOD_CACHE.putIfAbsent(key, result);
+            return result;
+        }
 
-                // Check interfaces
-                for (Class<?> iface : current.getInterfaces()) {
-                    Method m = findMethodInHierarchy(iface, methodName, parameterTypes);
-                    if (m != null) return m;
-                }
+        NEGATIVE_CACHE.add(key);
+        return null;
+    }
 
-                current = current.getSuperclass();
+    /**
+     * Recursively searches the class hierarchy (superclasses and interfaces) for a method.
+     * Separated from findMethodInHierarchy to avoid recursive ConcurrentHashMap.computeIfAbsent
+     * deadlock (JDK-8161372).
+     */
+    @Nullable
+    private static Method searchHierarchy(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+        Class<?> current = clazz;
+
+        while (current != null && current != Object.class) {
+            try {
+                return current.getDeclaredMethod(methodName, parameterTypes);
+            } catch (NoSuchMethodException ignored) {
+                // Continue searching
             }
 
-            return null;
-        });
+            for (Class<?> iface : current.getInterfaces()) {
+                Method m = searchHierarchy(iface, methodName, parameterTypes);
+                if (m != null) return m;
+            }
+
+            current = current.getSuperclass();
+        }
+
+        return null;
     }
 
     /**
@@ -238,23 +272,25 @@ public final class ReflectionHelper {
     public static Field findFieldInHierarchy(Class<?> clazz, String fieldName) {
         String key = clazz.getName() + "#" + fieldName + "#hierarchy";
 
-        return FIELD_CACHE.computeIfAbsent(key, k -> {
-            Class<?> current = clazz;
+        Field cached = FIELD_CACHE.get(key);
+        if (cached != null) return cached;
+        if (NEGATIVE_CACHE.contains(key)) return null;
 
-            while (current != null && current != Object.class) {
-                try {
-                    Field field = current.getDeclaredField(fieldName);
-                    field.setAccessible(true);
-                    return field;
-                } catch (NoSuchFieldException ignored) {
-                    // Continue searching
-                }
-
-                current = current.getSuperclass();
+        Class<?> current = clazz;
+        while (current != null && current != Object.class) {
+            try {
+                Field field = current.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                FIELD_CACHE.putIfAbsent(key, field);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                // Continue searching
             }
+            current = current.getSuperclass();
+        }
 
-            return null;
-        });
+        NEGATIVE_CACHE.add(key);
+        return null;
     }
 
     /**
@@ -319,17 +355,11 @@ public final class ReflectionHelper {
         if (field == null) return false;
 
         try {
-            // Handle final fields
-            if (Modifier.isFinal(field.getModifiers())) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-                modifiersField.setAccessible(true);
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            }
-
             field.set(instance, value);
             return true;
         } catch (Exception e) {
-            LOGGER.debug("[ReflectionHelper] Cannot set field {}: {}", fieldName, e.getMessage());
+            LOGGER.warn("[ReflectionHelper] Cannot set field {} (final fields are not modifiable on Java 12+): {}",
+                fieldName, e.getMessage());
             return false;
         }
     }
@@ -522,6 +552,7 @@ public final class ReflectionHelper {
         METHOD_CACHE.clear();
         FIELD_CACHE.clear();
         CONSTRUCTOR_CACHE.clear();
+        NEGATIVE_CACHE.clear();
         LOGGER.debug("[ReflectionHelper] Caches cleared");
     }
 

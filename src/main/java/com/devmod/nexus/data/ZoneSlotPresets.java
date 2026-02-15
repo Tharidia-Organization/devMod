@@ -11,29 +11,27 @@ import com.devmod.portal.PortalColor;
 import com.devmod.zone.data.ZoneBounds;
 
 /**
- * Default zone slot definitions for the Nexus hub.
- * Based on the 100-chunk (1600x1600) blueprint design.
+ * Default zone slot definitions for the Nexus testing lab.
+ * Each zone maps to a DevMod module that testers need to verify.
  *
  * <p>Layout overview:
  * <pre>
- * Blueprint Scale: 100 chunks = 1600x1600 blocks
- *
  *                      NORTH
  *            +---------+-------+---------+
- *            | QUEST   | TUTOR | QUEST   |
- *            | NW      | IAL   | NE      |
+ *            | VFX     | COMBAT| NPC     |
+ *            | STUDIO  | LAB   | LAB     |
  *            +---------+-------+---------+
- *            | BUILD   |       | BUILD   |
- *            | W       |       | E       |
+ *            | PORTAL  |       | ABILIT  |
+ *            | LAB     |       | IES LAB |
  *     WEST   +---------+ SPAWN +---------+  EAST
- *            | ECON    |       | ECON    |
- *            | W       |       | E       |
+ *            | ARENA   |       | COLLIS  |
+ *            | BUILDER |       | ION LAB |
  *            +---------+-------+---------+
- *            | WAR     | CLASS | WAR     |
- *            | W       | ES    | E       |
+ *            | HUD     | BOSS  | ITEM    |
+ *            | TEST    | ARENA | WORKSHOP|
  *            +---------+-------+---------+
- *            | TOWN    | DM    | EVENTI  |
- *            | MGMT    | MOD   |         |
+ *            | QUEST   | ADMIN | SANDBOX |
+ *            | TESTING | TOOLS |         |
  *            +---------+-------+---------+
  *                      SOUTH
  * </pre>
@@ -196,23 +194,23 @@ public final class ZoneSlotPresets {
         slots.add(createSpawnSlot(layout));
 
         // === INNER RING (Ring 1) - 8 cardinal/diagonal directions ===
-        slots.add(createTutorialSlot(layout));      // North
-        slots.add(createGateProgressionSlot(layout)); // East
-        slots.add(createClassesSlot(layout));       // South
-        slots.add(createBuildingSlotWest(layout));  // West
+        slots.add(createCombatLabSlot(layout));       // North
+        slots.add(createAbilitiesLabSlot(layout));    // East
+        slots.add(createBossArenaSlot(layout));       // South
+        slots.add(createPortalLabSlot(layout));       // West
 
-        slots.add(createQuestSlotNE(layout));       // North-East
-        slots.add(createQuestSlotNW(layout));       // North-West
-        slots.add(createWarHubSlotSE(layout));      // South-East
-        slots.add(createWarHubSlotSW(layout));      // South-West
+        slots.add(createNpcLabSlot(layout));          // North-East
+        slots.add(createVfxStudioSlot(layout));       // North-West
+        slots.add(createCollisionLabSlot(layout));    // South-East
+        slots.add(createArenaBuilderSlot(layout));    // South-West
 
         // === OUTER RING (Ring 2) ===
-        slots.add(createBuildingSlotEast(layout));  // East outer
-        slots.add(createEconomiaSlotEast(layout));  // East-South
-        slots.add(createEconomiaSlotWest(layout));  // West-South
-        slots.add(createTownManagementSlot(layout)); // South-West outer
-        slots.add(createEventiSlot(layout));        // South-East outer
-        slots.add(createDmModSlot(layout));         // South outer
+        slots.add(createItemWorkshopSlot(layout));    // East outer
+        slots.add(createConfigRoomSlot(layout));      // East-South (uses economia_east position)
+        slots.add(createHudTestingSlot(layout));      // West-South (uses economia_west position)
+        slots.add(createQuestTestingSlot(layout));    // South-West outer
+        slots.add(createSandboxSlot(layout));         // South-East outer
+        slots.add(createAdminToolsSlot(layout));      // South outer
 
         return slots;
     }
@@ -223,6 +221,7 @@ public final class ZoneSlotPresets {
 
     /**
      * SPAWN - Center platform (FIXED, non-modifiable)
+     * Hub center with telepad network and info holograms.
      */
     private static ZoneSlot createSpawnSlot(Layout layout) {
         ZoneBounds bounds = ZoneBounds.fromCenterAndSize(
@@ -231,181 +230,183 @@ public final class ZoneSlotPresets {
         );
         return ZoneSlot.createFull(
             "spawn",
-            "Spawn",
+            "Hub Center",
             bounds,
             SlotType.FIXED,
-            new BlockPos(layout.centerHalf(), 1, layout.centerHalf()), // Portal at center
+            new BlockPos(layout.centerHalf(), 1, layout.centerHalf()),
             PortalColor.WHITE,
-            null, // No template - always built by foundation
-            100   // Highest priority
+            null,
+            100
         );
     }
 
     /**
-     * TUTORIAL - North of center (RESTRICTED)
-     * Movement, combat, stamina tutorial area.
+     * COMBAT_LAB - North of center (EDITABLE)
+     * Combat system testing: training dummies, weapons, combo, style ranks.
      */
-    private static ZoneSlot createTutorialSlot(Layout layout) {
+    private static ZoneSlot createCombatLabSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsNorth(layout, 1));
         return ZoneSlot.createFull(
-            "tutorial",
-            "Tutorial",
-            bounds,
-            SlotType.RESTRICTED,
-            new BlockPos(layout.zoneSize() / 2, 1, layout.zoneSize() - 16), // Portal facing center
-            PortalColor.LIGHT_BLUE,
-            "tutorial_movement",
-            50
-        );
-    }
-
-    /**
-     * GATE_PROGRESSION - East of center (RESTRICTED)
-     * Chapter portals, world boss gates.
-     */
-    private static ZoneSlot createGateProgressionSlot(Layout layout) {
-        ZoneBounds bounds = Objects.requireNonNull(createBoundsEast(layout, 1));
-        return ZoneSlot.createFull(
-            "gate_progression",
-            "Gate Progression",
-            bounds,
-            SlotType.RESTRICTED,
-            new BlockPos(16, 1, layout.zoneSize() / 2), // Portal facing center
-            PortalColor.PURPLE,
-            "gate_progression_standard",
-            50
-        );
-    }
-
-    /**
-     * CLASSES_SYSTEM - South of center (EDITABLE)
-     * Class masters, crafting, minigames.
-     */
-    private static ZoneSlot createClassesSlot(Layout layout) {
-        ZoneBounds bounds = Objects.requireNonNull(createBoundsSouth(layout, 1));
-        return ZoneSlot.createFull(
-            "classes",
-            "Classes System",
+            "combat_lab",
+            "Combat Lab",
             bounds,
             SlotType.EDITABLE,
-            new BlockPos(layout.zoneSize() / 2, 1, 16), // Portal facing center
+            new BlockPos(layout.zoneSize() / 2, 1, layout.zoneSize() - 16),
+            PortalColor.RED,
+            null,
+            50
+        );
+    }
+
+    /**
+     * ABILITIES_LAB - East of center (EDITABLE)
+     * Stamina, dash, dodge, movement testing.
+     */
+    private static ZoneSlot createAbilitiesLabSlot(Layout layout) {
+        ZoneBounds bounds = Objects.requireNonNull(createBoundsEast(layout, 1));
+        return ZoneSlot.createFull(
+            "abilities_lab",
+            "Abilities Lab",
+            bounds,
+            SlotType.EDITABLE,
+            new BlockPos(16, 1, layout.zoneSize() / 2),
             PortalColor.CYAN,
-            "class_master_hall",
+            null,
+            50
+        );
+    }
+
+    /**
+     * BOSS_ARENA - South of center (EDITABLE)
+     * Endurance quest, wave system, boss phases testing.
+     */
+    private static ZoneSlot createBossArenaSlot(Layout layout) {
+        ZoneBounds bounds = Objects.requireNonNull(createBoundsSouth(layout, 1));
+        return ZoneSlot.createFull(
+            "boss_arena",
+            "Boss Arena",
+            bounds,
+            SlotType.EDITABLE,
+            new BlockPos(layout.zoneSize() / 2, 1, 16),
+            PortalColor.PURPLE,
+            null,
             40
         );
     }
 
     /**
-     * BUILDING West - West of center (EDITABLE)
-     * Claim system, building area.
+     * PORTAL_LAB - West of center (EDITABLE)
+     * Portal system, telepad network, transport nodes testing.
      */
-    private static ZoneSlot createBuildingSlotWest(Layout layout) {
+    private static ZoneSlot createPortalLabSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsWest(layout, 1));
         return ZoneSlot.createFull(
-            "building_west",
-            "Building Zone West",
+            "portal_lab",
+            "Portal Lab",
             bounds,
             SlotType.EDITABLE,
-            new BlockPos(layout.zoneSize() - 16, 1, layout.zoneSize() / 2), // Portal facing center
-            PortalColor.GREEN,
-            "building_claim",
+            new BlockPos(layout.zoneSize() - 16, 1, layout.zoneSize() / 2),
+            PortalColor.LIGHT_BLUE,
+            null,
             30
         );
     }
 
     /**
-     * BUILDING East - East outer ring (EDITABLE)
+     * NPC_LAB - North-East (EDITABLE)
+     * NPC spawning, dialog trees, clone system testing.
      */
-    private static ZoneSlot createBuildingSlotEast(Layout layout) {
-        ZoneBounds bounds = Objects.requireNonNull(createBoundsEast(layout, 2));
-        return ZoneSlot.createFull(
-            "building_east",
-            "Building Zone East",
-            bounds,
-            SlotType.EDITABLE,
-            new BlockPos(16, 1, layout.zoneSize() / 2),
-            PortalColor.GREEN,
-            "building_claim",
-            30
-        );
-    }
-
-    /**
-     * QUEST Hub North-East (EDITABLE)
-     */
-    private static ZoneSlot createQuestSlotNE(Layout layout) {
+    private static ZoneSlot createNpcLabSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsNorthEast(layout));
         return ZoneSlot.createFull(
-            "quest_northeast",
-            "Quest Hub NE",
+            "npc_lab",
+            "NPC Lab",
             bounds,
             SlotType.EDITABLE,
-            new BlockPos(16, 1, layout.zoneSize() - 16), // Portal facing center
-            PortalColor.YELLOW,
-            "quest_hub_standard",
+            new BlockPos(16, 1, layout.zoneSize() - 16),
+            PortalColor.GREEN,
+            null,
             35
         );
     }
 
     /**
-     * QUEST Hub North-West (EDITABLE)
+     * VFX_STUDIO - North-West (EDITABLE)
+     * Effekseer effects, impact VFX, particles testing.
      */
-    private static ZoneSlot createQuestSlotNW(Layout layout) {
+    private static ZoneSlot createVfxStudioSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsNorthWest(layout));
         return ZoneSlot.createFull(
-            "quest_northwest",
-            "Quest Hub NW",
+            "vfx_studio",
+            "VFX Studio",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(layout.zoneSize() - 16, 1, layout.zoneSize() - 16),
-            PortalColor.YELLOW,
-            "quest_hub_standard",
+            PortalColor.MAGENTA,
+            null,
             35
         );
     }
 
     /**
-     * WAR_HUB South-East (EDITABLE)
-     * Arena, siege content.
+     * COLLISION_LAB - South-East (EDITABLE)
+     * Hitbox visualization, OBB debug, body parts testing.
      */
-    private static ZoneSlot createWarHubSlotSE(Layout layout) {
+    private static ZoneSlot createCollisionLabSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsSouthEast(layout));
         return ZoneSlot.createFull(
-            "war_hub_east",
-            "War Hub East",
+            "collision_lab",
+            "Collision Lab",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(16, 1, 16),
-            PortalColor.RED,
-            "war_hub_standard",
+            PortalColor.ORANGE,
+            null,
             35
         );
     }
 
     /**
-     * WAR_HUB South-West (EDITABLE)
+     * ARENA_BUILDER - South-West (EDITABLE)
+     * Area building, templates, snapshots, zone management testing.
      */
-    private static ZoneSlot createWarHubSlotSW(Layout layout) {
+    private static ZoneSlot createArenaBuilderSlot(Layout layout) {
         ZoneBounds bounds = Objects.requireNonNull(createBoundsSouthWest(layout));
         return ZoneSlot.createFull(
-            "war_hub_west",
-            "War Hub West",
+            "arena_builder",
+            "Arena Builder",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(layout.zoneSize() - 16, 1, 16),
-            PortalColor.RED,
-            "war_hub_standard",
+            PortalColor.YELLOW,
+            null,
             35
         );
     }
 
     /**
-     * ECONOMIA East (EDITABLE)
-     * Shop, bank, auction.
-     * Positioned east of war_hub_east with a corridor gap.
+     * ITEM_WORKSHOP - East outer ring (EDITABLE)
+     * Item editor, equipment, armor, crafting testing.
      */
-    private static ZoneSlot createEconomiaSlotEast(Layout layout) {
-        // X starts after war_hub_east (center + corridor + zone), plus corridor gap
+    private static ZoneSlot createItemWorkshopSlot(Layout layout) {
+        ZoneBounds bounds = Objects.requireNonNull(createBoundsEast(layout, 2));
+        return ZoneSlot.createFull(
+            "item_workshop",
+            "Item Workshop",
+            bounds,
+            SlotType.EDITABLE,
+            new BlockPos(16, 1, layout.zoneSize() / 2),
+            PortalColor.BROWN,
+            null,
+            30
+        );
+    }
+
+    /**
+     * CONFIG_ROOM - East-South outer (EDITABLE)
+     * Config hot-reload, gamedesign presets testing.
+     */
+    private static ZoneSlot createConfigRoomSlot(Layout layout) {
         int xOffset = layout.centerHalf() + layout.corridorWidth() + layout.zoneSize() + layout.corridorWidth();
         int zOffset = layout.centerHalf() + layout.corridorWidth();
         ZoneBounds bounds = new ZoneBounds(
@@ -414,23 +415,22 @@ public final class ZoneSlotPresets {
             zOffset, zOffset + layout.zoneSize()
         );
         return ZoneSlot.createFull(
-            "economia_east",
-            "Economia East",
+            "config_room",
+            "Config Room",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(16, 1, layout.zoneSize() / 2),
-            PortalColor.ORANGE,
-            "economy_shop_standard",
+            PortalColor.GRAY,
+            null,
             30
         );
     }
 
     /**
-     * ECONOMIA West (EDITABLE)
-     * Positioned west of war_hub_west with a corridor gap.
+     * HUD_TESTING - West-South outer (EDITABLE)
+     * HUD overlays, radial menu, debug overlays testing.
      */
-    private static ZoneSlot createEconomiaSlotWest(Layout layout) {
-        // X ends before war_hub_west (center + corridor + zone), plus corridor gap
+    private static ZoneSlot createHudTestingSlot(Layout layout) {
         int xOffset = -(layout.centerHalf() + layout.corridorWidth() + layout.zoneSize()
             + layout.corridorWidth() + layout.zoneSize());
         int zOffset = layout.centerHalf() + layout.corridorWidth();
@@ -440,21 +440,22 @@ public final class ZoneSlotPresets {
             zOffset, zOffset + layout.zoneSize()
         );
         return ZoneSlot.createFull(
-            "economia_west",
-            "Economia West",
+            "hud_testing",
+            "HUD Testing",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(layout.zoneSize() - 16, 1, 16),
-            PortalColor.ORANGE,
-            "economy_shop_standard",
+            PortalColor.LIGHT_BLUE,
+            null,
             30
         );
     }
 
     /**
-     * TOWN_TEST / GESTIONALE / POLITICA - South-West outer (EDITABLE)
+     * QUEST_TESTING - South-West outer (EDITABLE)
+     * Quest system, leaderboards, challenges testing.
      */
-    private static ZoneSlot createTownManagementSlot(Layout layout) {
+    private static ZoneSlot createQuestTestingSlot(Layout layout) {
         int xOffset = -(layout.centerHalf() + layout.corridorWidth() + layout.outerZoneSize());
         int zOffset = layout.centerHalf() + layout.corridorWidth() + layout.zoneSize() + layout.corridorWidth();
         ZoneBounds bounds = new ZoneBounds(
@@ -463,22 +464,22 @@ public final class ZoneSlotPresets {
             zOffset, zOffset + layout.outerZoneSize()
         );
         return ZoneSlot.createFull(
-            "town_management",
-            "Town & Politics",
+            "quest_testing",
+            "Quest Testing",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(layout.outerZoneSize() - 16, 1, 16),
-            PortalColor.BROWN,
-            "town_politica_factions",
+            PortalColor.YELLOW,
+            null,
             20
         );
     }
 
     /**
-     * EVENTI_PERIODICI - South-East outer (EDITABLE)
-     * Tournaments, events.
+     * SANDBOX - South-East outer (EDITABLE)
+     * Free creative area for any testing.
      */
-    private static ZoneSlot createEventiSlot(Layout layout) {
+    private static ZoneSlot createSandboxSlot(Layout layout) {
         int xOffset = layout.centerHalf() + layout.corridorWidth() + layout.zoneSize();
         int zOffset = layout.centerHalf() + layout.corridorWidth() + layout.zoneSize() + layout.corridorWidth();
         ZoneBounds bounds = new ZoneBounds(
@@ -487,37 +488,36 @@ public final class ZoneSlotPresets {
             zOffset, zOffset + layout.outerZoneSize()
         );
         return ZoneSlot.createFull(
-            "eventi",
-            "Eventi Periodici",
+            "sandbox",
+            "Sandbox",
             bounds,
             SlotType.EDITABLE,
             new BlockPos(16, 1, 16),
-            PortalColor.MAGENTA,
-            "eventi_torneo_arena",
+            PortalColor.WHITE,
+            null,
             20
         );
     }
 
     /**
-     * DM_MOD - South outer center (RESTRICTED)
-     * Admin commands, HUD testing.
-     * Uses CENTER_HALF for X width to avoid overlapping with town_management.
+     * ADMIN_TOOLS - South outer center (EDITABLE)
+     * Admin commands, telemetry, dashboard, mailbox testing.
      */
-    private static ZoneSlot createDmModSlot(Layout layout) {
+    private static ZoneSlot createAdminToolsSlot(Layout layout) {
         int zOffset = layout.centerHalf() + layout.corridorWidth() + layout.zoneSize() + layout.corridorWidth();
         ZoneBounds bounds = new ZoneBounds(
-            -layout.centerHalf(), layout.centerHalf(),  // Narrower X to avoid overlap with town_management
+            -layout.centerHalf(), layout.centerHalf(),
             layout.floorY(), layout.floorY() + layout.zoneHeight(),
             zOffset, zOffset + layout.outerZoneSize()
         );
         return ZoneSlot.createFull(
-            "dm_mod",
-            "DM Mod Testing",
+            "admin_tools",
+            "Admin Tools",
             bounds,
-            SlotType.RESTRICTED,
-            new BlockPos(layout.centerHalf(), 1, 16),  // Updated portal position
+            SlotType.EDITABLE,
+            new BlockPos(layout.centerHalf(), 1, 16),
             PortalColor.GRAY,
-            "dm_mod_control_room",
+            null,
             25
         );
     }

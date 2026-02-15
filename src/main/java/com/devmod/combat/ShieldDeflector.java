@@ -336,8 +336,8 @@ public class ShieldDeflector {
 
     // ========== Client-safe helpers ==========
 
-    private static Method recordImpactMethod;
-    private static boolean recordImpactMethodInitialized = false;
+    private static volatile Method recordImpactMethod;
+    private static volatile boolean recordImpactMethodInitialized = false;
 
     /**
      * Records shield impact for visual feedback (client-only, server-safe).
@@ -348,17 +348,32 @@ public class ShieldDeflector {
             return; // No-op on server
         }
 
-        try {
-            if (!recordImpactMethodInitialized) {
-                recordImpactMethodInitialized = true;
-                Class<?> rendererClass = Class.forName("com.devmod.client.rendering.shield.EnergyShieldRenderer");
-                recordImpactMethod = rendererClass.getMethod("recordImpact", Vec3.class, float.class);
+        Method method = getCachedRecordImpactMethod();
+        if (method != null) {
+            try {
+                method.invoke(null, impactPoint, damage);
+            } catch (Exception e) {
+                LOGGER.debug("Could not record shield impact VFX: {}", e.getMessage());
             }
-            if (recordImpactMethod != null) {
-                recordImpactMethod.invoke(null, impactPoint, damage);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Could not record shield impact VFX: {}", e.getMessage());
         }
+    }
+
+    @javax.annotation.Nullable
+    private static Method getCachedRecordImpactMethod() {
+        if (!recordImpactMethodInitialized) {
+            synchronized (ShieldDeflector.class) {
+                if (!recordImpactMethodInitialized) {
+                    try {
+                        Class<?> rendererClass = Class.forName("com.devmod.client.rendering.shield.EnergyShieldRenderer");
+                        recordImpactMethod = rendererClass.getMethod("recordImpact", Vec3.class, float.class);
+                    } catch (Exception e) {
+                        LOGGER.debug("Could not cache recordImpact method: {}", e.getMessage());
+                    } finally {
+                        recordImpactMethodInitialized = true;
+                    }
+                }
+            }
+        }
+        return recordImpactMethod;
     }
 }

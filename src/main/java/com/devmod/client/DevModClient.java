@@ -14,12 +14,18 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 import com.devmod.DevMod;
 import com.devmod.actions.client.DevModClientActions;
+import com.devmod.client.combat.ClientCombatVisuals;
+import com.devmod.client.debug.ClientDebugBridgeImpl;
 import com.devmod.client.input.KeyInputHandler;
 import com.devmod.client.network.ClientNetworkPayloadHooks;
+import com.devmod.client.nexus.ClientNexusBridgeImpl;
 import com.devmod.client.overlay.ImpactHudController;
 import com.devmod.client.ui.unified.persistence.SettingsManager;
+import com.devmod.combat.bridge.CombatVisualsBridge;
+import com.devmod.debug.DebugClientBridge;
 import com.devmod.integration.ModIntegrationManager;
 import com.devmod.network.NetworkHandler;
+import com.devmod.runtime.network.NexusClientBridge;
 
 @Mod(value = DevMod.MODID, dist = Dist.CLIENT)
 // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
@@ -28,8 +34,11 @@ public class DevModClient {
     public DevModClient(IEventBus modEventBus, ModContainer container) {
         DevMod.LOGGER.debug("[DevMod] DevModClient constructor called");
 
-        // Initialize client UI bridge (allows common code to request UI operations)
+        // Initialize client bridges (allows common code to call client-only classes without reflection)
         ClientUiBridgeImpl.init();
+        CombatVisualsBridge.setInstance(new ClientCombatVisuals());
+        DebugClientBridge.setInstance(new ClientDebugBridgeImpl());
+        NexusClientBridge.setInstance(new ClientNexusBridgeImpl());
         NetworkHandler.setClientPayloadHooks(new ClientNetworkPayloadHooks());
 
         // Allows NeoForge to create a config screen for this mod's configs.

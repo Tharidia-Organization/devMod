@@ -292,10 +292,10 @@ class CrossDomainValidationTest {
         }
 
         @Test
-        @DisplayName("Total action count equals 328 (baseline)")
-        void totalActionCountEquals328() {
-            assertEquals(328, allSpecs.size(),
-                "Total action count should be 328 across all 9 domains");
+        @DisplayName("Total action count equals 319 (baseline)")
+        void totalActionCountEquals319() {
+            assertEquals(319, allSpecs.size(),
+                "Total action count should be 319 across all 9 domains");
         }
 
         @Test
@@ -310,7 +310,7 @@ class CrossDomainValidationTest {
                 "ui", 65,
                 "debug", 62,
                 "config", 58,
-                "commands", 42
+                "commands", 33
             );
 
             for (DomainRegistrar registrar : ALL_REGISTRARS) {

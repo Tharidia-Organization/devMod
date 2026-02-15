@@ -84,19 +84,19 @@ public class CuriosCompat extends BaseCompatModule {
         if (getCuriosInventoryMethod == null) {
             throw new NoSuchMethodException("getCuriosInventory(LivingEntity) not found");
         }
-        methodCache.put(KEY_GET_CURIOS_INVENTORY, getCuriosInventoryMethod);
+        methodCache.put(KEY_GET_CURIOS_INVENTORY, Optional.of(getCuriosInventoryMethod));
 
         // Cache optional methods on ICuriosItemHandler
         Method getStacksHandlerMethod = getMethod(curiosItemHandlerClass, "getStacksHandler", String.class);
         if (getStacksHandlerMethod != null) {
-            methodCache.put(KEY_GET_STACKS_HANDLER, getStacksHandlerMethod);
+            methodCache.put(KEY_GET_STACKS_HANDLER, Optional.of(getStacksHandlerMethod));
         } else {
             debug("getStacksHandler method not found, trying alternatives");
         }
 
         Method getCuriosMethod = getMethod(curiosItemHandlerClass, "getCurios");
         if (getCuriosMethod != null) {
-            methodCache.put(KEY_GET_CURIOS, getCuriosMethod);
+            methodCache.put(KEY_GET_CURIOS, Optional.of(getCuriosMethod));
         } else {
             debug("getCurios method not found");
         }
@@ -104,12 +104,12 @@ public class CuriosCompat extends BaseCompatModule {
         // Cache slot handler methods
         Method getStacksMethod = getMethod(slotStacksHandlerClass, "getStacks");
         if (getStacksMethod != null) {
-            methodCache.put(KEY_GET_STACKS, getStacksMethod);
+            methodCache.put(KEY_GET_STACKS, Optional.of(getStacksMethod));
         }
 
         Method getSlotsMethod = getMethod(slotStacksHandlerClass, "getSlots");
         if (getSlotsMethod != null) {
-            methodCache.put(KEY_GET_SLOTS, getSlotsMethod);
+            methodCache.put(KEY_GET_SLOTS, Optional.of(getSlotsMethod));
         }
 
         // Load IDynamicStackHandler for efficient stack access
@@ -119,10 +119,10 @@ public class CuriosCompat extends BaseCompatModule {
             Method getDynamicSlotsMethod = getMethod(dynamicStackHandlerClass, "getSlots");
 
             if (getStackInSlotMethod != null) {
-                methodCache.put(KEY_GET_STACK_IN_SLOT, getStackInSlotMethod);
+                methodCache.put(KEY_GET_STACK_IN_SLOT, Optional.of(getStackInSlotMethod));
             }
             if (getDynamicSlotsMethod != null) {
-                methodCache.put(KEY_GET_DYNAMIC_SLOTS, getDynamicSlotsMethod);
+                methodCache.put(KEY_GET_DYNAMIC_SLOTS, Optional.of(getDynamicSlotsMethod));
             }
             debug("IDynamicStackHandler methods cached");
         } else {
@@ -165,7 +165,7 @@ public class CuriosCompat extends BaseCompatModule {
             return Optional.empty();
         }
 
-        Method method = instance.methodCache.get(KEY_GET_CURIOS_INVENTORY);
+        Method method = instance.methodCache.getOrDefault(KEY_GET_CURIOS_INVENTORY, Optional.empty()).orElse(null);
         if (method == null) {
             return Optional.empty();
         }
@@ -195,7 +195,7 @@ public class CuriosCompat extends BaseCompatModule {
             return Optional.empty();
         }
 
-        Method method = instance.methodCache.get(KEY_GET_STACKS_HANDLER);
+        Method method = instance.methodCache.getOrDefault(KEY_GET_STACKS_HANDLER, Optional.empty()).orElse(null);
         if (method == null) {
             return Optional.empty();
         }
@@ -225,7 +225,7 @@ public class CuriosCompat extends BaseCompatModule {
             return null;
         }
 
-        Method method = instance.methodCache.get(KEY_GET_CURIOS);
+        Method method = instance.methodCache.getOrDefault(KEY_GET_CURIOS, Optional.empty()).orElse(null);
         if (method == null) {
             return null;
         }
@@ -255,7 +255,7 @@ public class CuriosCompat extends BaseCompatModule {
         }
 
         try {
-            Method getStacksMethod = instance.methodCache.get(KEY_GET_STACKS);
+            Method getStacksMethod = instance.methodCache.getOrDefault(KEY_GET_STACKS, Optional.empty()).orElse(null);
             if (getStacksMethod == null) {
                 return stacks;
             }
@@ -267,8 +267,8 @@ public class CuriosCompat extends BaseCompatModule {
 
             // Get slot count - prefer IDynamicStackHandler.getSlots() if cached
             int slots = 0;
-            Method getDynamicSlotsMethod = instance.methodCache.get(KEY_GET_DYNAMIC_SLOTS);
-            Method getSlotsMethod = instance.methodCache.get(KEY_GET_SLOTS);
+            Method getDynamicSlotsMethod = instance.methodCache.getOrDefault(KEY_GET_DYNAMIC_SLOTS, Optional.empty()).orElse(null);
+            Method getSlotsMethod = instance.methodCache.getOrDefault(KEY_GET_SLOTS, Optional.empty()).orElse(null);
 
             if (getDynamicSlotsMethod != null) {
                 Object slotsObj = getDynamicSlotsMethod.invoke(stackHandler);
@@ -280,7 +280,7 @@ public class CuriosCompat extends BaseCompatModule {
             }
 
             // Get stacks using cached method or fallback to runtime reflection
-            Method stackMethod = instance.methodCache.get(KEY_GET_STACK_IN_SLOT);
+            Method stackMethod = instance.methodCache.getOrDefault(KEY_GET_STACK_IN_SLOT, Optional.empty()).orElse(null);
             if (stackMethod == null) {
                 // Fallback: get method from runtime class (less efficient)
                 stackMethod = stackHandler.getClass().getMethod("getStackInSlot", int.class);

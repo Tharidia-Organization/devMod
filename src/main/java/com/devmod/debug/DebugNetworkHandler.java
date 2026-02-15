@@ -120,75 +120,27 @@ public class DebugNetworkHandler {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        observeFuture(context.enqueueWork(() -> invokeClientDebugSync(payload)), "debug sync");
-    }
-
-    private static void invokeClientDebugSync(DebugSyncPayload payload) {
-        try {
-            Class<?> handlerClass = Class.forName("com.devmod.client.debug.DebugNetworkClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("handleDebugSync", DebugSyncPayload.class);
-            method.invoke(null, payload);
-        } catch (ClassNotFoundException e) {
-            LOGGER.trace("[Debug] Client debug sync handler missing: {}", e.getMessage());
-        } catch (Exception e) {
-            LOGGER.debug("[Debug] Client debug sync unavailable: {}", e.getMessage());
-        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleDebugSync(payload)), "debug sync");
     }
 
     private static void handleEntityPathing(EntityPathingPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        observeFuture(context.enqueueWork(() -> invokeClientEntityPathing(payload)), "entity pathing");
-    }
-
-    private static void invokeClientEntityPathing(EntityPathingPayload payload) {
-        try {
-            Class<?> handlerClass = Class.forName("com.devmod.client.debug.DebugNetworkClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("handleEntityPathing", EntityPathingPayload.class);
-            method.invoke(null, payload);
-        } catch (ClassNotFoundException e) {
-            LOGGER.trace("[Debug] Client entity pathing handler missing: {}", e.getMessage());
-        } catch (Exception e) {
-            LOGGER.debug("[Debug] Client entity pathing unavailable: {}", e.getMessage());
-        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleEntityPathing(payload)), "entity pathing");
     }
 
     private static void handleEntityScanData(EntityScanDataPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        observeFuture(context.enqueueWork(() -> invokeClientEntityScanData(payload)), "entity scan data");
-    }
-
-    private static void invokeClientEntityScanData(EntityScanDataPayload payload) {
-        try {
-            Class<?> handlerClass = Class.forName("com.devmod.debug.client.EntityScannerClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("handleScanData", EntityScanDataPayload.class, IPayloadContext.class);
-            method.invoke(null, payload, null);
-        } catch (ClassNotFoundException e) {
-            LOGGER.trace("[Debug] Client entity scan handler missing: {}", e.getMessage());
-        } catch (Exception e) {
-            LOGGER.debug("[Debug] Client entity scan data unavailable: {}", e.getMessage());
-        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleScanData(payload)), "entity scan data");
     }
 
     private static void handleEntityScannerOpen(EntityScanDataPayload.OpenScreenPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
-        observeFuture(context.enqueueWork(() -> invokeClientEntityScannerOpen(payload)), "entity scanner open");
-    }
-
-    private static void invokeClientEntityScannerOpen(EntityScanDataPayload.OpenScreenPayload payload) {
-        try {
-            Class<?> handlerClass = Class.forName("com.devmod.debug.client.EntityScannerClientHandler");
-            java.lang.reflect.Method method = handlerClass.getMethod("handleOpenScreen", EntityScanDataPayload.OpenScreenPayload.class, IPayloadContext.class);
-            method.invoke(null, payload, null);
-        } catch (ClassNotFoundException e) {
-            LOGGER.trace("[Debug] Client entity scanner open handler missing: {}", e.getMessage());
-        } catch (Exception e) {
-            LOGGER.debug("[Debug] Client entity scanner open unavailable: {}", e.getMessage());
-        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleOpenScreen(payload)), "entity scanner open");
     }
 }

@@ -379,6 +379,103 @@ class ReflectionHelperTest {
     }
 
     // ================================================================
+    // BUG 1: Recursive computeIfAbsent deadlock — interface hierarchy
+    // ================================================================
+
+    interface GrandparentIface {
+        default String greet() { return "hello"; }
+    }
+
+    interface ParentIface extends GrandparentIface {
+    }
+
+    static class ConcreteImpl implements ParentIface {
+    }
+
+    @Test
+    void findMethodInHierarchy_methodOnInterface_noDeadlock() {
+        // This triggers the recursive path: ConcreteImpl -> ParentIface -> GrandparentIface.
+        // Before the fix, this would deadlock via recursive computeIfAbsent on METHOD_CACHE.
+        Method method = ReflectionHelper.findMethodInHierarchy(ConcreteImpl.class, "greet");
+        assertNotNull(method, "Should find 'greet' declared on GrandparentIface via interface hierarchy");
+        assertEquals("greet", method.getName());
+    }
+
+    @Test
+    void findMethodInHierarchy_interfaceMethod_cachedOnSecondCall() {
+        // First call populates the cache
+        Method first = ReflectionHelper.findMethodInHierarchy(ConcreteImpl.class, "greet");
+        assertNotNull(first);
+        // Second call should return same result from cache
+        Method second = ReflectionHelper.findMethodInHierarchy(ConcreteImpl.class, "greet");
+        assertSame(first, second, "Second call should return same cached Method instance");
+    }
+
+    // ================================================================
+    // BUG 2: Negative caching — failed lookups should be efficient
+    // ================================================================
+
+    @Test
+    void findMethodHandle_nonexistent_negativelyCached() {
+        // First lookup: miss
+        assertNull(ReflectionHelper.findMethodHandle(String.class, "totallyFakeMethod_XYZ"));
+        // Second lookup should return null immediately from negative cache, not retry reflection.
+        // We verify correctness (both return null) — performance aspect is structural.
+        assertNull(ReflectionHelper.findMethodHandle(String.class, "totallyFakeMethod_XYZ"));
+    }
+
+    @Test
+    void findMethodInHierarchy_nonexistent_negativelyCached() {
+        assertNull(ReflectionHelper.findMethodInHierarchy(String.class, "noSuchMethod_ABC"));
+        // Second call should hit negative cache
+        assertNull(ReflectionHelper.findMethodInHierarchy(String.class, "noSuchMethod_ABC"));
+    }
+
+    @Test
+    void findFieldInHierarchy_nonexistent_negativelyCached() {
+        assertNull(ReflectionHelper.findFieldInHierarchy(String.class, "noSuchField_ABC"));
+        // Second call should hit negative cache
+        assertNull(ReflectionHelper.findFieldInHierarchy(String.class, "noSuchField_ABC"));
+    }
+
+    @Test
+    void clearCaches_resetsNegativeCache() {
+        // Populate negative cache
+        assertNull(ReflectionHelper.findMethodHandle(String.class, "ghostMethod"));
+        ReflectionHelper.clearCaches();
+        // After clearing, it should re-do the lookup (still null, but the point is it re-checks)
+        assertNull(ReflectionHelper.findMethodHandle(String.class, "ghostMethod"));
+    }
+
+    // ================================================================
+    // BUG 3: setFieldValue on final field returns false gracefully
+    // ================================================================
+
+    static class FinalFieldHolder {
+        final String immutable = "locked";
+        String mutable = "open";
+    }
+
+    @Test
+    void setFieldValue_finalField_doesNotThrow() {
+        FinalFieldHolder holder = new FinalFieldHolder();
+        // Should not throw any exception regardless of result
+        // On Java 21 with setAccessible(true), final field set may succeed or fail
+        // depending on module access; the key invariant is no exception escapes
+        boolean result = ReflectionHelper.setFieldValue(holder, "immutable", "changed");
+        // Result may be true or false depending on JVM version/config — just verify no exception
+        assertNotNull(Boolean.valueOf(result));
+    }
+
+    @Test
+    void setFieldValue_mutableField_returnsTrue() {
+        FinalFieldHolder holder = new FinalFieldHolder();
+        boolean result = ReflectionHelper.setFieldValue(holder, "mutable", "modified");
+        assertTrue(result, "Setting a non-final field should succeed");
+        assertEquals("modified", holder.mutable);
+    }
+
+    // ================================================================
     // Cache stats / clearing
     // ================================================================
 

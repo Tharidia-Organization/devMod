@@ -1,6 +1,5 @@
 package com.devmod.combat.tracking;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -15,7 +14,7 @@ import net.minecraft.world.entity.monster.EnderMan;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.fml.loading.FMLEnvironment;
+import com.devmod.combat.bridge.CombatVisualsBridge;
 
 public final class EvasionHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(EvasionHandler.class);
@@ -144,30 +143,11 @@ public final class EvasionHandler {
 
     // ========== Client-safe VFX helpers ==========
 
-    private static Method spawnMeleeEvasionMethod;
-    private static boolean vfxMethodInitialized = false;
-
     /**
-     * Spawns evasion VFX panel (client-only, server-safe).
-     * Uses reflection to avoid loading client classes on dedicated server.
+     * Spawns evasion VFX panel via the CombatVisualsBridge.
+     * On dedicated server the bridge is a no-op; on client the real impl renders the panel.
      */
     private static void spawnMeleeEvasionPanelClientSafe(Player player, LivingEntity target, Vec3 position, Vec3 lookDir) {
-        if (!FMLEnvironment.dist.isClient()) {
-            return; // No-op on server
-        }
-
-        try {
-            if (!vfxMethodInitialized) {
-                vfxMethodInitialized = true;
-                Class<?> proxyClass = Class.forName("com.devmod.client.ClientVFXProxy");
-                spawnMeleeEvasionMethod = proxyClass.getMethod("spawnMeleeEvasionPanel",
-                    Player.class, LivingEntity.class, Vec3.class, Vec3.class);
-            }
-            if (spawnMeleeEvasionMethod != null) {
-                spawnMeleeEvasionMethod.invoke(null, player, target, position, lookDir);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Could not spawn evasion VFX: {}", e.getMessage());
-        }
+        CombatVisualsBridge.get().spawnMeleeEvasionPanel(player, target, position, lookDir);
     }
 }

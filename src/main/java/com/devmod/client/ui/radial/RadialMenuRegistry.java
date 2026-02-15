@@ -759,48 +759,39 @@ public final class RadialMenuRegistry {
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_RETURN)
         );
 
-        RadialCategory nexusCore = nexus.addSubcategory("nexus_core", "Core", DesignTokens.Radial.TOOLS_COMMANDS,
-            stack(Items.END_PORTAL_FRAME));
-        nexusCore.addItems(
+        RadialCategory nexusCombat = nexus.addSubcategory("nexus_combat", "Combat", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.IRON_SWORD));
+        nexusCombat.addItems(
             RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_HUB),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TUTORIAL),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_GATE_PROGRESSION),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_CLASSES)
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COMBAT_LAB),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ABILITIES_LAB),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_BOSS_ARENA),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COLLISION_LAB)
         );
 
-        RadialCategory nexusLabs = nexus.addSubcategory("nexus_labs", "Labs", DesignTokens.Radial.TOOLS_COMMANDS,
+        RadialCategory nexusSystems = nexus.addSubcategory("nexus_systems", "Systems", DesignTokens.Radial.TOOLS_COMMANDS,
             stack(Items.REDSTONE_LAMP));
-        nexusLabs.addItems(
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_OVERVIEW),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_COMBAT),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ARENA),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_UI),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TELEMETRY),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SHOWCASE),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_INTEGRATION),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SANDBOX),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_MECHANICS)
+        nexusSystems.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_PORTAL_LAB),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_NPC_LAB),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_QUEST_TESTING),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ARENA_BUILDER)
         );
 
-        RadialCategory nexusRing1 = nexus.addSubcategory("nexus_ring1", "Ring 1", DesignTokens.Radial.TOOLS_COMMANDS,
-            stack(Items.COMPASS));
-        nexusRing1.addItems(
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_BUILDING_WEST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHEAST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_QUEST_NORTHWEST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_EAST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_WAR_HUB_WEST)
+        RadialCategory nexusTools = nexus.addSubcategory("nexus_tools", "Tools", DesignTokens.Radial.TOOLS_COMMANDS,
+            stack(Items.COMPARATOR));
+        nexusTools.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_VFX_STUDIO),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ITEM_WORKSHOP),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_CONFIG_ROOM),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_HUD_TESTING)
         );
 
-        RadialCategory nexusRing2 = nexus.addSubcategory("nexus_ring2", "Ring 2", DesignTokens.Radial.TOOLS_COMMANDS,
+        RadialCategory nexusMisc = nexus.addSubcategory("nexus_misc", "Misc", DesignTokens.Radial.TOOLS_COMMANDS,
             stack(Items.MAP));
-        nexusRing2.addItems(
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_BUILDING_EAST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_EAST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ECONOMIA_WEST),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_TOWN_MANAGEMENT),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_EVENTI),
-            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_DM_MOD)
+        nexusMisc.addItems(
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_SANDBOX),
+            RadialMenuItem.registry(ActionIds.COMMAND_NEXUS_TP_ADMIN_TOOLS)
         );
 
         RadialCategory nexusAdmin = nexus.addSubcategory("nexus_admin", "Admin", DesignTokens.Radial.TOOLS_COMMANDS,

@@ -155,21 +155,21 @@ class NexusHubManagerTest {
         }
 
         @Test
-        @DisplayName("Tutorial slot exists after initialization")
-        void tutorialSlotExists() {
+        @DisplayName("Combat Lab slot exists after initialization")
+        void combatLabSlotExists() {
             ZoneSlotRegistry registry = new ZoneSlotRegistry();
             registry.initializeDefaultSlots();
 
-            assertTrue(registry.getSlot("tutorial").isPresent(), "tutorial slot should exist");
+            assertTrue(registry.getSlot("combat_lab").isPresent(), "combat_lab slot should exist");
         }
 
         @Test
-        @DisplayName("Classes slot exists after initialization")
-        void classesSlotExists() {
+        @DisplayName("Boss Arena slot exists after initialization")
+        void bossArenaSlotExists() {
             ZoneSlotRegistry registry = new ZoneSlotRegistry();
             registry.initializeDefaultSlots();
 
-            assertTrue(registry.getSlot("classes").isPresent(), "classes slot should exist");
+            assertTrue(registry.getSlot("boss_arena").isPresent(), "boss_arena slot should exist");
         }
 
         @Test
@@ -183,10 +183,10 @@ class NexusHubManagerTest {
 
             // Verify key slots from different categories
             String[] expectedSlots = {
-                "spawn", "tutorial", "gate_progression", "classes", "building_west",
-                "quest_northeast", "quest_northwest", "war_hub_east", "war_hub_west",
-                "building_east", "economia_east", "economia_west",
-                "town_management", "eventi", "dm_mod"
+                "spawn", "combat_lab", "abilities_lab", "boss_arena", "portal_lab",
+                "npc_lab", "vfx_studio", "collision_lab", "arena_builder",
+                "item_workshop", "config_room", "hud_testing",
+                "quest_testing", "sandbox", "admin_tools"
             };
 
             for (String slotId : expectedSlots) {

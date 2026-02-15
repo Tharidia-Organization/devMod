@@ -202,30 +202,19 @@ public final class NexusHubManager {
     private void registerSlotAliases(@Nonnull ZoneRegistry zones) {
         registerAliasIfPresent(zones, "hub", "spawn");
         registerAliasIfPresent(zones, "home", "spawn");
-        registerAliasIfPresent(zones, "overview", "spawn");
 
-        if (zones.resolveAlias("combat") == null) {
-            if (zones.getZoneById("tutorial").isPresent()) {
-                zones.registerAlias("combat", "tutorial");
-            }
-        }
-
-        if (zones.resolveAlias("arena") == null) {
-            if (zones.getZoneById("war_hub_east").isPresent()) {
-                zones.registerAlias("arena", "war_hub_east");
-            } else if (zones.getZoneById("war_hub_west").isPresent()) {
-                zones.registerAlias("arena", "war_hub_west");
-            }
-        }
-
-        registerAliasIfPresent(zones, "ui", "dm_mod");
-        registerAliasIfPresent(zones, "telemetry", "dm_mod");
-
-        // Fallback aliases for lab zones when only slot-based zones exist.
-        registerAliasFallbackIfMissingZone(zones, "showcase", "spawn");
-        registerAliasFallbackIfMissingZone(zones, "integration", "spawn");
-        registerAliasFallbackIfMissingZone(zones, "sandbox", "spawn");
-        registerAliasFallbackIfMissingZone(zones, "mechanics", "spawn");
+        // Convenience aliases for new testing lab zones
+        registerAliasIfPresent(zones, "combat", "combat_lab");
+        registerAliasIfPresent(zones, "arena", "boss_arena");
+        registerAliasIfPresent(zones, "ui", "hud_testing");
+        registerAliasIfPresent(zones, "telemetry", "admin_tools");
+        registerAliasIfPresent(zones, "vfx", "vfx_studio");
+        registerAliasIfPresent(zones, "npc", "npc_lab");
+        registerAliasIfPresent(zones, "items", "item_workshop");
+        registerAliasIfPresent(zones, "config", "config_room");
+        registerAliasIfPresent(zones, "portals", "portal_lab");
+        registerAliasIfPresent(zones, "hitbox", "collision_lab");
+        registerAliasIfPresent(zones, "quests", "quest_testing");
     }
 
     private void registerAliasIfPresent(@Nonnull ZoneRegistry zones, @Nonnull String alias, @Nonnull String target) {

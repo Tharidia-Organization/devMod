@@ -22,8 +22,9 @@ import com.devmod.stats.RangedWeaponStats;
 public final class RangedProjectileHooks {
 
     private RangedProjectileHooks() {}
-    private static Method SET_PIERCE;
-    private static boolean pierceReflectionErrorLogged = false;
+    private static volatile Method SET_PIERCE;
+    private static volatile boolean pierceLookupAttempted = false;
+    private static volatile boolean pierceReflectionErrorLogged = false;
 
     @SubscribeEvent
     public static void onProjectileSpawn(EntityJoinLevelEvent event) {
@@ -150,18 +151,40 @@ public final class RangedProjectileHooks {
 
     private static void applyPierce(AbstractArrow arrow, byte pierceLevel) {
         if (pierceLevel <= 0) return;
+        Method method = getCachedSetPierceMethod();
+        if (method == null) return;
         try {
-            if (SET_PIERCE == null) {
-                SET_PIERCE = AbstractArrow.class.getDeclaredMethod("setPierceLevel", byte.class);
-                SET_PIERCE.setAccessible(true);
-            }
-            SET_PIERCE.invoke(arrow, pierceLevel);
+            method.invoke(arrow, pierceLevel);
         } catch (Exception e) {
             if (!pierceReflectionErrorLogged) {
                 pierceReflectionErrorLogged = true;
                 DevMod.LOGGER.debug("[RangedProjectileHooks] Failed to apply pierce via reflection", e);
             }
         }
+    }
+
+    /**
+     * Lazily initializes and caches the setPierceLevel method.
+     * Thread-safe via double-checked locking with volatile.
+     */
+    @javax.annotation.Nullable
+    private static Method getCachedSetPierceMethod() {
+        if (!pierceLookupAttempted) {
+            synchronized (RangedProjectileHooks.class) {
+                if (!pierceLookupAttempted) {
+                    try {
+                        Method m = AbstractArrow.class.getDeclaredMethod("setPierceLevel", byte.class);
+                        m.setAccessible(true);
+                        SET_PIERCE = m;
+                    } catch (NoSuchMethodException e) {
+                        DevMod.LOGGER.warn("[RangedProjectileHooks] Failed to cache setPierceLevel method: {}", e.getMessage());
+                    } finally {
+                        pierceLookupAttempted = true;
+                    }
+                }
+            }
+        }
+        return SET_PIERCE;
     }
 
     private static void spawnExtraProjectiles(AbstractArrow baseArrow, LivingEntity shooter, int extraCount, float spread, byte pierceLevel, float critChance, float critDamage, boolean infinity) {

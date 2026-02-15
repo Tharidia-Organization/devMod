@@ -26,6 +26,7 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 
 import com.devmod.DevMod;
 import com.devmod.collision.integration.OBBHitHelper;
+import com.devmod.combat.bridge.CombatVisualsBridge;
 import com.devmod.combat.filter.AmmoFilter;
 import com.devmod.combat.shield.ShieldBlockHandler;
 import com.devmod.combat.tracking.EvasionHandler;
@@ -349,69 +350,22 @@ public class DamageHandler {
         return "\u00A77Environmental Damage";
     }
 
-    // ========== Client-safe helpers ==========
+    // ========== Ranged overrides via CombatVisualsBridge ==========
 
-    // Uses reflection to avoid client-only classloading on dedicated servers.
     private static final class RangedOverridesResolver {
-        private static volatile boolean initialized;
-        private static boolean available;
-        private static java.lang.reflect.Method getStatsMethod;
-        private static java.lang.reflect.Field baseDamageField;
-        private static java.lang.reflect.Field projectileSpeedField;
-        private static java.lang.reflect.Field critChanceField;
-        private static java.lang.reflect.Field critDamageField;
-
-        private static void init() {
-            if (initialized) {
-                return;
-            }
-            synchronized (RangedOverridesResolver.class) {
-                if (initialized) {
-                    return;
-                }
-                try {
-                    Class<?> moduleClass = Class.forName("com.devmod.client.ui.editor.RangedWeaponModule");
-                    Class<?> statsClass = Class.forName("com.devmod.client.ui.editor.RangedWeaponModule$RangedStats");
-                    getStatsMethod = moduleClass.getMethod("getStats", ItemStack.class);
-                    baseDamageField = statsClass.getField("baseDamage");
-                    projectileSpeedField = statsClass.getField("projectileSpeed");
-                    critChanceField = statsClass.getField("critChance");
-                    critDamageField = statsClass.getField("critDamage");
-                    available = true;
-                } catch (ReflectiveOperationException | RuntimeException e) {
-                    available = false;
-                } finally {
-                    initialized = true;
-                }
-            }
-        }
-
         private static RangedOverrides resolve(ItemStack weapon) {
-            init();
-            if (!available) {
-                return RangedOverrides.defaults();
-            }
-            try {
-                Object stats = getStatsMethod.invoke(null, weapon);
-                return RangedOverrides.fromStats(
-                    stats,
-                    baseDamageField,
-                    projectileSpeedField,
-                    critChanceField,
-                    critDamageField
-                );
-            } catch (ReflectiveOperationException | RuntimeException e) {
-                return RangedOverrides.defaults();
-            }
+            CombatVisualsBridge.RangedStatsSnapshot snapshot =
+                    CombatVisualsBridge.get().resolveRangedStats(weapon);
+            return new RangedOverrides(
+                snapshot.baseDamage(),
+                snapshot.projectileSpeed(),
+                snapshot.critChance(),
+                snapshot.critDamage()
+            );
         }
     }
 
     private static final class RangedOverrides {
-        private static final float DEFAULT_BASE_DAMAGE = 0.0f;
-        private static final float DEFAULT_PROJECTILE_SPEED = 1.0f;
-        private static final float DEFAULT_CRIT_CHANCE = 0.0f;
-        private static final float DEFAULT_CRIT_DAMAGE = 1.5f;
-
         private final float baseDamage;
         private final float projectileSpeed;
         private final float critChance;
@@ -431,100 +385,34 @@ public class DamageHandler {
         private float getCritDamage() {
             return critDamage;
         }
-
-        private static RangedOverrides defaults() {
-            return new RangedOverrides(
-                DEFAULT_BASE_DAMAGE,
-                DEFAULT_PROJECTILE_SPEED,
-                DEFAULT_CRIT_CHANCE,
-                DEFAULT_CRIT_DAMAGE
-            );
-        }
-
-        private static RangedOverrides fromStats(Object stats,
-                java.lang.reflect.Field baseDamageField,
-                java.lang.reflect.Field projectileSpeedField,
-                java.lang.reflect.Field critChanceField,
-                java.lang.reflect.Field critDamageField) {
-            if (stats == null) {
-                return defaults();
-            }
-            return new RangedOverrides(
-                readFloat(stats, baseDamageField, DEFAULT_BASE_DAMAGE),
-                readFloat(stats, projectileSpeedField, DEFAULT_PROJECTILE_SPEED),
-                readFloat(stats, critChanceField, DEFAULT_CRIT_CHANCE),
-                readFloat(stats, critDamageField, DEFAULT_CRIT_DAMAGE)
-            );
-        }
-
-        private static float readFloat(Object stats, java.lang.reflect.Field field, float defaultValue) {
-            if (field == null) {
-                return defaultValue;
-            }
-            try {
-                return field.getFloat(stats);
-            } catch (Exception e) {
-                return defaultValue;
-            }
-        }
     }
 
-    // ========== Client-safe HUD helpers ==========
+    // ========== Client-safe HUD helpers via CombatVisualsBridge ==========
 
     /**
-     * Triggers impact HUD on client side using reflection to avoid class loading on server.
+     * Triggers impact HUD on client side via the CombatVisualsBridge.
+     * On dedicated server the bridge is a no-op; on client the real impl renders the HUD.
      */
     private static void triggerImpactHudClientSafe(LivingEntity attacker, LivingEntity victim,
             HitHelper.BodyPart part, float multiplier, DamageBreakdown breakdown,
             String attackSource, boolean isRanged, Vec3 hitPoint, Vec3 slashDirection, float damage) {
-        try {
-            Class<?> hudServiceClass = Class.forName("com.devmod.client.overlay.ImpactHudService");
-
-            // Create and store impact data
-            java.lang.reflect.Method createMethod = hudServiceClass.getMethod("createAndStoreImpactData",
-                LivingEntity.class, LivingEntity.class, HitHelper.BodyPart.class, float.class,
-                DamageBreakdown.class, String.class, boolean.class, Vec3.class, Vec3.class);
-            Object impactData = createMethod.invoke(null, attacker, victim, part, multiplier,
+        CombatVisualsBridge bridge = CombatVisualsBridge.get();
+        Object impactData = bridge.createAndStoreImpactData(attacker, victim, part, multiplier,
                 breakdown, attackSource, isRanged, hitPoint, slashDirection);
-
-            // Trigger VFX
-            java.lang.reflect.Method vfxMethod = hudServiceClass.getMethod("triggerImpactVfx",
-                Class.forName("com.devmod.client.overlay.ImpactData"), Vec3.class, Vec3.class, LivingEntity.class);
-            vfxMethod.invoke(null, impactData, hitPoint, slashDirection, victim);
-
-            // Trigger damage shake
-            java.lang.reflect.Method shakeMethod = hudServiceClass.getMethod("triggerDamageShakeIfApplicable",
-                LivingEntity.class, HitHelper.BodyPart.class, float.class, float.class, Vec3.class);
-            shakeMethod.invoke(null, victim, part, multiplier, damage, hitPoint);
-        } catch (Exception e) {
-            LOGGER.debug("Could not trigger impact HUD: {}", e.getMessage());
-        }
+        bridge.triggerImpactVfx(impactData, hitPoint, slashDirection, victim);
+        bridge.triggerDamageShakeIfApplicable(victim, part, multiplier, damage, hitPoint);
     }
 
     /**
-     * Triggers environmental impact HUD on client side using reflection.
+     * Triggers environmental impact HUD on client side via the CombatVisualsBridge.
      */
     private static void triggerEnvironmentalImpactClientSafe(LivingEntity victim,
             DamageBreakdown breakdown, String damageSourceName, Vec3 hitPoint) {
-        try {
-            Class<?> hudServiceClass = Class.forName("com.devmod.client.overlay.ImpactHudService");
-            Class<?> impactDataClass = Class.forName("com.devmod.client.overlay.ImpactData");
-
-            // Create and store impact data (UUID variant)
-            java.lang.reflect.Method createMethod = hudServiceClass.getMethod("createAndStoreImpactData",
-                java.util.UUID.class, LivingEntity.class, HitHelper.BodyPart.class, float.class,
-                DamageBreakdown.class, String.class, boolean.class, Vec3.class, Vec3.class);
-            Object impactData = createMethod.invoke(null, victim.getUUID(), victim,
+        CombatVisualsBridge bridge = CombatVisualsBridge.get();
+        Object impactData = bridge.createAndStoreImpactData(victim.getUUID(), victim,
                 HitHelper.BodyPart.BODY, 1.0f, breakdown, damageSourceName, false, hitPoint, new Vec3(0, -1, 0));
-
-            // Trigger VFX if hit point available
-            if (hitPoint != null) {
-                java.lang.reflect.Method vfxMethod = hudServiceClass.getMethod("triggerImpactVfx",
-                    impactDataClass, Vec3.class, Vec3.class, LivingEntity.class);
-                vfxMethod.invoke(null, impactData, hitPoint, new Vec3(0, 1, 0), victim);
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Could not trigger environmental impact HUD: {}", e.getMessage());
+        if (hitPoint != null) {
+            bridge.triggerImpactVfx(impactData, hitPoint, new Vec3(0, 1, 0), victim);
         }
     }
 

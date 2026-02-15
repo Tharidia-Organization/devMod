@@ -239,8 +239,8 @@ public class NexusEventHandler {
         Optional<com.devmod.zone.data.ZoneDefinition> zoneOpt =
             com.devmod.zone.runtime.ZoneResolver.INSTANCE.resolve(Objects.requireNonNull(player.serverLevel()), pos);
         String zoneId = zoneOpt.map(com.devmod.zone.data.ZoneDefinition::zoneId).orElse("");
-        boolean uiZone = "ui".equals(zoneId) || "dm_mod".equals(zoneId);
-        boolean telemetryZone = "telemetry".equals(zoneId) || "dm_mod".equals(zoneId);
+        boolean uiZone = "hud_testing".equals(zoneId) || "admin_tools".equals(zoneId);
+        boolean telemetryZone = "admin_tools".equals(zoneId);
 
         if (uiZone && isUiScreenBlock(state)) {
             if (!consumeUiCooldown(player)) {

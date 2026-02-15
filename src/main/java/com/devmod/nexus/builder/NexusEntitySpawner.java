@@ -12,7 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.nexus.data.ZoneSlot;
@@ -42,9 +49,11 @@ public final class NexusEntitySpawner {
     private static final Map<String, BlockPos> LEGACY_SPAWN_OFFSETS = loadLegacySpawnOffsets();
 
     private static final String[] DEFAULT_DUMMY_IDS = {
+        "nexus_dummy_far_west",
         "nexus_dummy_west",
         "nexus_dummy_center",
-        "nexus_dummy_east"
+        "nexus_dummy_east",
+        "nexus_dummy_far_east"
     };
 
     private NexusEntitySpawner() {}
@@ -66,9 +75,11 @@ public final class NexusEntitySpawner {
         }
 
         spawnCombatDummies(level, origin);
+        placeItemWorkshopChests(level, origin);
+        placeCollisionLabDummies(level, origin);
 
-        // NOTE: NexusAvatarManager.spawn() removed - hub now starts empty.
-        // Use NeurocellNpc item to spawn NPCs with the new NPC system.
+        // Decorate all zones with themed furniture, equipment, and interactive blocks
+        NexusZoneDecorator.INSTANCE.decorateAllZones(level);
 
         LOGGER.debug("[Nexus] Post-build entities spawned at {}", origin);
     }
@@ -117,9 +128,9 @@ public final class NexusEntitySpawner {
         }
 
         ZoneSlotRegistry slotRegistry = ZoneSlotRegistry.get(server);
-        Optional<ZoneSlot> tutorialSlot = slotRegistry.getSlot("tutorial");
-        if (tutorialSlot.isPresent()) {
-            ZoneSlot slot = tutorialSlot.get();
+        Optional<ZoneSlot> combatSlot = slotRegistry.getSlot("combat_lab");
+        if (combatSlot.isPresent()) {
+            ZoneSlot slot = combatSlot.get();
             if (!slot.permissions().canSpawnMobs()) {
                 LOGGER.debug("[Nexus] Slot '{}' disallows mob spawning; skipping dummies", slot.slotId());
                 return List.of();
@@ -131,7 +142,7 @@ public final class NexusEntitySpawner {
             return defaultDummyPositions(slot.bounds().floorCenter());
         }
 
-        Optional<ZoneDefinition> combatZone = ZoneResolver.INSTANCE.resolveByNameOrAlias(server, "combat");
+        Optional<ZoneDefinition> combatZone = ZoneResolver.INSTANCE.resolveByNameOrAlias(server, "combat_lab");
         if (combatZone.isPresent()) {
             ZoneDefinition zone = combatZone.get();
             BlockPos spawn = zone.getAbsoluteSpawn(origin);
@@ -141,7 +152,7 @@ public final class NexusEntitySpawner {
             return defaultDummyPositions(spawn);
         }
 
-        BlockPos center = origin.offset(legacySpawnOffset("combat"));
+        BlockPos center = origin.offset(legacySpawnOffset("combat_lab"));
         return defaultDummyPositions(center);
     }
 
@@ -151,10 +162,83 @@ public final class NexusEntitySpawner {
         int centerX = center.getX();
         int dummyZ = center.getZ() - 8;
         return List.of(
+            new BlockPos(centerX - 8, floorY + 1, dummyZ),
             new BlockPos(centerX - 4, floorY + 1, dummyZ),
             new BlockPos(centerX, floorY + 1, dummyZ),
-            new BlockPos(centerX + 4, floorY + 1, dummyZ)
+            new BlockPos(centerX + 4, floorY + 1, dummyZ),
+            new BlockPos(centerX + 8, floorY + 1, dummyZ)
         );
+    }
+
+    /**
+     * Place equipment chests in the item_workshop zone.
+     */
+    private void placeItemWorkshopChests(@Nonnull ServerLevel level, @Nonnull BlockPos origin) {
+        var server = level.getServer();
+        if (server == null) return;
+
+        Optional<ZoneSlot> slot = ZoneSlotRegistry.get(server).getSlot("item_workshop");
+        if (slot.isEmpty()) return;
+
+        BlockPos center = slot.get().bounds().floorCenter();
+        BlockState chestState = Blocks.CHEST.defaultBlockState()
+            .setValue(ChestBlock.FACING, Direction.SOUTH);
+
+        // Weapons chest
+        BlockPos weaponPos = center.offset(-3, 1, -3);
+        level.setBlock(weaponPos, chestState, 3);
+        if (level.getBlockEntity(weaponPos) instanceof ChestBlockEntity chest) {
+            chest.setItem(0, new ItemStack(Items.IRON_SWORD));
+            chest.setItem(1, new ItemStack(Items.DIAMOND_SWORD));
+            chest.setItem(2, new ItemStack(Items.BOW));
+            chest.setItem(3, new ItemStack(Items.CROSSBOW));
+            chest.setItem(4, new ItemStack(Items.TRIDENT));
+        }
+
+        // Armor chest
+        BlockPos armorPos = center.offset(3, 1, -3);
+        level.setBlock(armorPos, chestState, 3);
+        if (level.getBlockEntity(armorPos) instanceof ChestBlockEntity chest) {
+            chest.setItem(0, new ItemStack(Items.IRON_HELMET));
+            chest.setItem(1, new ItemStack(Items.IRON_CHESTPLATE));
+            chest.setItem(2, new ItemStack(Items.IRON_LEGGINGS));
+            chest.setItem(3, new ItemStack(Items.IRON_BOOTS));
+            chest.setItem(4, new ItemStack(Items.SHIELD));
+            chest.setItem(9, new ItemStack(Items.DIAMOND_HELMET));
+            chest.setItem(10, new ItemStack(Items.DIAMOND_CHESTPLATE));
+            chest.setItem(11, new ItemStack(Items.DIAMOND_LEGGINGS));
+            chest.setItem(12, new ItemStack(Items.DIAMOND_BOOTS));
+        }
+
+        LOGGER.debug("[Nexus] Placed item_workshop chests at {}", center);
+    }
+
+    /**
+     * Spawn training dummies in the collision_lab zone for hitbox testing.
+     */
+    private void placeCollisionLabDummies(@Nonnull ServerLevel level, @Nonnull BlockPos origin) {
+        var server = level.getServer();
+        if (server == null) return;
+
+        Optional<ZoneSlot> slot = ZoneSlotRegistry.get(server).getSlot("collision_lab");
+        if (slot.isEmpty()) return;
+
+        BlockPos center = slot.get().bounds().floorCenter();
+        int y = center.getY() + 1;
+
+        // Spread dummies for hitbox visualization testing
+        String[] ids = {"collision_dummy_1", "collision_dummy_2", "collision_dummy_3"};
+        BlockPos[] positions = {
+            new BlockPos(center.getX() - 6, y, center.getZ()),
+            new BlockPos(center.getX(), y, center.getZ()),
+            new BlockPos(center.getX() + 6, y, center.getZ())
+        };
+
+        for (int i = 0; i < ids.length; i++) {
+            spawnDummy(level, positions[i], ids[i]);
+        }
+
+        LOGGER.debug("[Nexus] Placed collision_lab dummies at {}", center);
     }
 
     /**

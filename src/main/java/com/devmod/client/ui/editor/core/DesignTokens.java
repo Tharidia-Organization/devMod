@@ -3903,6 +3903,10 @@ public final class DesignTokens {
         public static final int ANNOUNCEMENT_TITLE = 0xFFFF88FF;
         /** Hologram background (semi-transparent black) */
         public static final int HOLOGRAM_BG = 0xAA000000;
+        /** Zone label text color (gold, no alpha for TextDisplay) */
+        public static final int ZONE_LABEL_TEXT = 0xFFAA00;
+        /** Zone label background (semi-transparent dark) */
+        public static final int ZONE_LABEL_BG = 0x60000000;
         /** Hologram fallback block color (gray) - used when map color is unavailable */
         public static final int HOLOGRAM_FALLBACK_BLOCK = 0x707070;
 

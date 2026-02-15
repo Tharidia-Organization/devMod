@@ -70,14 +70,14 @@ public class DamageTracker {
 
     // ========== Client-safe helpers ==========
 
-    private static Method impactDataGetMethod;
-    private static Method impactDataGetTargetMethod;
-    private static Method impactDataSetActualDamageMethod;
-    private static Method impactDataSetBreakdownMethod;
-    private static Method impactDpsRecordMethod;
-    private static java.lang.reflect.Field attackerUUIDField;
-    private static boolean clientMethodsInitialized = false;
-    private static boolean clientUpdateErrorLogged = false;
+    private static volatile Method impactDataGetMethod;
+    private static volatile Method impactDataGetTargetMethod;
+    private static volatile Method impactDataSetActualDamageMethod;
+    private static volatile Method impactDataSetBreakdownMethod;
+    private static volatile Method impactDpsRecordMethod;
+    private static volatile java.lang.reflect.Field attackerUUIDField;
+    private static volatile boolean clientMethodsInitialized = false;
+    private static volatile boolean clientUpdateErrorLogged = false;
 
     /**
      * Updates ImpactData on client side using reflection to avoid class loading on server.
@@ -85,9 +85,7 @@ public class DamageTracker {
     private static void updateImpactDataClientSafe(int entityId, float healthBefore, float healthAfter,
             float actualDamage, float armorReduction, float otherReduction, float blockedDamage) {
         try {
-            if (!clientMethodsInitialized) {
-                initClientMethods();
-            }
+            ensureClientMethodsInitialized();
 
             if (impactDataGetMethod == null) return;
 
@@ -115,20 +113,30 @@ public class DamageTracker {
         }
     }
 
-    private static void initClientMethods() {
-        clientMethodsInitialized = true;
-        try {
-            Class<?> impactDataClass = Class.forName("com.devmod.client.overlay.ImpactData");
-            impactDataGetMethod = impactDataClass.getMethod("get");
-            impactDataGetTargetMethod = impactDataClass.getMethod("getTarget");
-            impactDataSetActualDamageMethod = impactDataClass.getMethod("setActualDamage", float.class, float.class, float.class);
-            impactDataSetBreakdownMethod = impactDataClass.getMethod("setDamageReductionBreakdown", float.class, float.class, float.class, float.class, float.class);
-            attackerUUIDField = impactDataClass.getField("attackerUUID");
+    /**
+     * Thread-safe initialization via double-checked locking with volatile.
+     */
+    private static void ensureClientMethodsInitialized() {
+        if (!clientMethodsInitialized) {
+            synchronized (DamageTracker.class) {
+                if (!clientMethodsInitialized) {
+                    try {
+                        Class<?> impactDataClass = Class.forName("com.devmod.client.overlay.ImpactData");
+                        impactDataGetMethod = impactDataClass.getMethod("get");
+                        impactDataGetTargetMethod = impactDataClass.getMethod("getTarget");
+                        impactDataSetActualDamageMethod = impactDataClass.getMethod("setActualDamage", float.class, float.class, float.class);
+                        impactDataSetBreakdownMethod = impactDataClass.getMethod("setDamageReductionBreakdown", float.class, float.class, float.class, float.class, float.class);
+                        attackerUUIDField = impactDataClass.getField("attackerUUID");
 
-            Class<?> dpsTrackerClass = Class.forName("com.devmod.client.overlay.ImpactDpsTracker");
-            impactDpsRecordMethod = dpsTrackerClass.getMethod("recordDamage", UUID.class, float.class);
-        } catch (Exception e) {
-            DevMod.LOGGER.debug("[DamageTracker] ImpactData client hooks unavailable", e);
+                        Class<?> dpsTrackerClass = Class.forName("com.devmod.client.overlay.ImpactDpsTracker");
+                        impactDpsRecordMethod = dpsTrackerClass.getMethod("recordDamage", UUID.class, float.class);
+                    } catch (Exception e) {
+                        DevMod.LOGGER.debug("[DamageTracker] ImpactData client hooks unavailable", e);
+                    } finally {
+                        clientMethodsInitialized = true;
+                    }
+                }
+            }
         }
     }
 }

@@ -20,34 +20,36 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import com.devmod.clone.CloneBlocks;
+import com.devmod.clone.block.entity.TelepadBlockEntity;
 import com.devmod.config.Config;
+import com.devmod.nexus.NexusDecorBlocks;
 import com.devmod.nexus.runtime.NexusHubManager;
-import com.devmod.portal.PortalBlocks;
 import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalData;
 import com.devmod.portal.PortalRegistry;
-import com.devmod.portal.block.CustomPortalBlock;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
 
 /**
- * Manages zone portals in the Nexus hub using the Portal module.
- * Each zone has a real CustomPortalBlock that teleports players when entered.
+ * Manages zone telepads in the Nexus testing lab.
+ * Each zone has a Clone Telepad block with shader-based vortex rendering.
  *
- * <p>This replaces the old ArmorStand-based system that was invisible and unusable.
+ * <p>Telepads are placed on a decorative platform and configured with a
+ * network name matching the zone ID for inter-zone navigation.
  *
- * <p>Portals are built from data-driven zone definitions provided by {@link com.devmod.zone.data.ZoneRegistry}.
+ * <p>Zones are defined by {@link com.devmod.zone.data.ZoneRegistry}.
  */
 public final class NexusPortalManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusPortalManager.class);
 
     public static final NexusPortalManager INSTANCE = new NexusPortalManager();
 
-    // Portal dimensions (interior size)
-    private static final int PORTAL_WIDTH = 2;  // 2 blocks wide
-    private static final int PORTAL_HEIGHT = 3; // 3 blocks tall
+    /** Platform size around each telepad (NxN decorative blocks). */
+    private static final int PLATFORM_RADIUS = 2;
 
     // Track created portal UUIDs for cleanup (data-driven: zoneId -> UUID)
     private final Map<String, UUID> portalIds = new ConcurrentHashMap<>();
@@ -82,63 +84,38 @@ public final class NexusPortalManager {
     }
 
     /**
-     * Create a zone portal using data-driven ZoneDefinition.
+     * Create a zone telepad using data-driven ZoneDefinition.
+     * Places a Clone Telepad on a decorative platform.
      */
     private void createZonePortalDataDriven(@Nonnull ServerLevel level, @Nonnull BlockPos hubOrigin,
                                             @Nonnull com.devmod.zone.data.ZoneDefinition zone) {
         BlockPos portalOffset = zone.portalOffset();
         if (portalOffset == null) {
-            // No portal defined for this zone
             return;
         }
 
-        BlockPos portalCenter = hubOrigin.offset(portalOffset);
-        PortalColor color = zone.portalColor();
-        if (color == null) {
-            color = PortalColor.BLUE;
-        }
+        BlockPos telepadPos = hubOrigin.offset(portalOffset);
 
-        // Build portal frame
-        buildPortalFrame(level, Objects.requireNonNull(portalCenter));
+        // Build decorative platform under telepad
+        buildTelepadPlatform(level, Objects.requireNonNull(telepadPos));
 
-        // Get destination (zone spawn point)
-        BlockPos destination = zone.getAbsoluteSpawn(hubOrigin);
-        if (destination == null) {
-            destination = zone.bounds().floorCenter();
-        }
-        ResourceLocation nexusDim = NexusDimensionManager.NEXUS_DIMENSION.location();
+        // Place the telepad block
+        placeTelepad(level, telepadPos, zone.zoneId());
 
-        // Create portal data with fixed destination
-        PortalData portalData = PortalData.createWithFixedDestination(
-            color,
-            Objects.requireNonNull(nexusDim),
-            Objects.requireNonNull(portalCenter),
-            Objects.requireNonNull(nexusDim),  // Same dimension (Nexus)
-            Objects.requireNonNull(destination)
-        );
-
-        // Register portal in registry
-        PortalRegistry registry = PortalRegistry.get(level);
-        registry.register(Objects.requireNonNull(portalData));
-        portalIds.put(zone.zoneId(), portalData.id());
-
-        // Fill interior with portal blocks
-        fillPortalInterior(level, Objects.requireNonNull(portalCenter), color);
-
-        LOGGER.debug("[NexusPortals] Created {} portal at {} -> destination {}",
-            zone.zoneId(), portalCenter, destination);
+        LOGGER.debug("[NexusPortals] Created {} telepad at {}",
+            zone.zoneId(), telepadPos);
     }
 
     /**
-     * Create a portal for a Nexus zone slot.
+     * Create a telepad for a Nexus zone slot.
      * Used by NexusHubManager when linking areas to slots.
      *
      * @param level the Nexus dimension
-     * @param portalPosition the portal position (absolute world coordinates)
-     * @param color the portal color
-     * @param destination the teleport destination
-     * @param slotId the slot ID for tracking
-     * @return the portal UUID, or null if creation failed
+     * @param portalPosition the telepad position (absolute world coordinates)
+     * @param color the portal color (unused for telepads, kept for API compat)
+     * @param destination the teleport destination (unused, telepad uses network)
+     * @param slotId the slot ID for tracking and telepad network name
+     * @return a generated UUID for tracking, or null if creation failed
      */
     @Nullable
     public UUID createSlotPortal(
@@ -155,48 +132,27 @@ public final class NexusPortalManager {
         Objects.requireNonNull(slotId);
 
         if (!Config.NEXUS_PORTALS_ENABLED.get()) {
-            LOGGER.debug("[NexusPortals] Portals disabled, skipping slot portal creation");
+            LOGGER.debug("[NexusPortals] Portals disabled, skipping telepad creation");
             return null;
         }
 
         UUID existingId = portalIds.get(slotId);
         if (existingId != null) {
-            LOGGER.debug("[NexusPortals] Slot portal '{}' already exists", slotId);
+            LOGGER.debug("[NexusPortals] Slot telepad '{}' already exists", slotId);
             return existingId;
         }
 
-        PortalRegistry registry = PortalRegistry.get(level);
-        Optional<PortalData> existingPortal = registry.getByPosition(portalPosition);
-        if (existingPortal.isPresent()) {
-            UUID portalId = existingPortal.get().id();
-            portalIds.put(slotId, portalId);
-            LOGGER.debug("[NexusPortals] Slot portal '{}' already registered at {}", slotId, portalPosition);
-            return portalId;
-        }
+        // Build decorative platform and place telepad
+        buildTelepadPlatform(level, portalPosition);
+        placeTelepad(level, portalPosition, slotId);
 
-        // Build portal frame
-        buildPortalFrame(level, portalPosition);
+        // Track with generated UUID
+        UUID telepadId = UUID.randomUUID();
+        portalIds.put(slotId, telepadId);
 
-        // Create portal data with fixed destination
-        ResourceLocation nexusDim = NexusDimensionManager.NEXUS_DIMENSION.location();
-        PortalData portalData = PortalData.createWithFixedDestination(
-            color,
-            Objects.requireNonNull(nexusDim),
-            portalPosition,
-            nexusDim,
-            destination
-        );
-
-        // Register portal
-        registry.register(Objects.requireNonNull(portalData));
-        portalIds.put(slotId, portalData.id());
-
-        // Fill interior with portal blocks
-        fillPortalInterior(level, portalPosition, color);
-
-        LOGGER.debug("[NexusPortals] Created slot portal '{}' at {} -> {}",
-            slotId, portalPosition, destination);
-        return portalData.id();
+        LOGGER.debug("[NexusPortals] Created slot telepad '{}' at {}",
+            slotId, portalPosition);
+        return telepadId;
     }
 
     /**
@@ -222,63 +178,42 @@ public final class NexusPortalManager {
     }
 
     /**
-     * Build the portal frame structure.
-     * Creates a simple obsidian frame around the portal interior.
+     * Build a decorative platform under a telepad position.
+     * Uses NexusDecorBlocks for a sci-fi aesthetic.
      */
-    private void buildPortalFrame(@Nonnull ServerLevel level, @Nonnull BlockPos center) {
-        BlockState frameBlock = Objects.requireNonNull(
-            Objects.requireNonNull(Blocks.OBSIDIAN, "Blocks.OBSIDIAN").defaultBlockState(),
-            "frameBlock"
-        );
+    private void buildTelepadPlatform(@Nonnull ServerLevel level, @Nonnull BlockPos center) {
+        BlockState platformBlock = NexusDecorBlocks.NEXUS_CIRCUIT.get().defaultBlockState();
+        BlockState accentBlock = NexusDecorBlocks.NEXUS_AZURE.get().defaultBlockState();
 
-        // Frame corners (relative to center bottom-left of interior)
-        // Portal faces Z axis (players approach from north/south)
-        // Interior is PORTAL_WIDTH x PORTAL_HEIGHT starting at center
-
-        // Bottom frame (below interior)
-        for (int x = -1; x <= PORTAL_WIDTH; x++) {
-            BlockPos framePos = Objects.requireNonNull(center.offset(x, -1, 0), "framePos");
-            level.setBlock(framePos, frameBlock, 3);
-        }
-
-        // Top frame (above interior)
-        for (int x = -1; x <= PORTAL_WIDTH; x++) {
-            BlockPos framePos = Objects.requireNonNull(center.offset(x, PORTAL_HEIGHT, 0), "framePos");
-            level.setBlock(framePos, frameBlock, 3);
-        }
-
-        // Left pillar
-        for (int y = -1; y <= PORTAL_HEIGHT; y++) {
-            BlockPos framePos = Objects.requireNonNull(center.offset(-1, y, 0), "framePos");
-            level.setBlock(framePos, frameBlock, 3);
-        }
-
-        // Right pillar
-        for (int y = -1; y <= PORTAL_HEIGHT; y++) {
-            BlockPos framePos = Objects.requireNonNull(center.offset(PORTAL_WIDTH, y, 0), "framePos");
-            level.setBlock(framePos, frameBlock, 3);
+        // Build platform at Y-1 (under the telepad)
+        for (int dx = -PLATFORM_RADIUS; dx <= PLATFORM_RADIUS; dx++) {
+            for (int dz = -PLATFORM_RADIUS; dz <= PLATFORM_RADIUS; dz++) {
+                BlockPos platformPos = center.offset(dx, -1, dz);
+                // Diamond pattern: accent on edges, circuit in center
+                boolean isEdge = Math.abs(dx) + Math.abs(dz) == PLATFORM_RADIUS;
+                level.setBlock(platformPos, isEdge ? accentBlock : platformBlock, 3);
+            }
         }
     }
 
     /**
-     * Fill the portal interior with CustomPortalBlock.
+     * Place a Clone Telepad block and configure its network name.
+     *
+     * @param level the level to place in
+     * @param pos the position to place the telepad
+     * @param zoneId the zone ID used as telepad network name
      */
-    private void fillPortalInterior(@Nonnull ServerLevel level, @Nonnull BlockPos center,
-                                     @Nonnull PortalColor color) {
-        BlockState portalState = Objects.requireNonNull(
-            Objects.requireNonNull(PortalBlocks.CUSTOM_PORTAL.get(), "PortalBlocks.CUSTOM_PORTAL").defaultBlockState()
-                .setValue(Objects.requireNonNull(CustomPortalBlock.AXIS), Direction.Axis.Z)
-                .setValue(Objects.requireNonNull(CustomPortalBlock.COLOR), color)
-                .setValue(Objects.requireNonNull(CustomPortalBlock.LINKED), true),
-            "portalState"
-        );
+    private void placeTelepad(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull String zoneId) {
+        BlockState telepadState = CloneBlocks.TELEPAD.get().defaultBlockState()
+            .setValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING, Direction.NORTH);
+        level.setBlock(pos, telepadState, 3);
 
-        // Fill interior
-        for (int x = 0; x < PORTAL_WIDTH; x++) {
-            for (int y = 0; y < PORTAL_HEIGHT; y++) {
-                BlockPos portalPos = Objects.requireNonNull(center.offset(x, y, 0), "portalPos");
-                level.setBlock(portalPos, portalState, 3);
-            }
+        // Configure the telepad network name
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof TelepadBlockEntity telepad) {
+            telepad.setTelepadName("nexus_" + zoneId);
+        } else {
+            LOGGER.warn("[NexusPortals] Failed to get TelepadBlockEntity at {}", pos);
         }
     }
 
@@ -373,16 +308,10 @@ public final class NexusPortalManager {
     }
 
     /**
-     * Check if a position is within portal bounds.
+     * Check if a position is within telepad bounds (1x1x1 block).
      */
     private boolean isWithinPortalBounds(@Nonnull BlockPos portalBase, @Nonnull BlockPos check) {
-        int dx = check.getX() - portalBase.getX();
-        int dy = check.getY() - portalBase.getY();
-        int dz = check.getZ() - portalBase.getZ();
-
-        return dx >= 0 && dx < PORTAL_WIDTH
-            && dy >= 0 && dy < PORTAL_HEIGHT
-            && dz == 0;
+        return portalBase.equals(check);
     }
 
     /**
