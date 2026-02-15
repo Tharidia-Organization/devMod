@@ -490,11 +490,11 @@ public class EnduranceEventHandler {
 
         // === SIGNATURE WEAPONS - Track exceptional wave performance ===
         if (signatureEnabled && "SSS".equals(styleRank)) {
-            com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordSSSWave(player);
+            com.devmod.combat.bridge.CombatEnduranceBridge.get().recordSoulSSSWave(player);
             LOGGER.debug("[EnduranceQuest] Recorded SSS wave for signature weapon tracking");
         }
         if (signatureEnabled && waveDamageTaken == 0 && waveKills > 0) {
-            com.devmod.combat.signature.SoulImprintManager.INSTANCE.recordNoHitWave(player);
+            com.devmod.combat.bridge.CombatEnduranceBridge.get().recordSoulNoHitWave(player);
             LOGGER.debug("[EnduranceQuest] Recorded no-hit wave for signature weapon tracking");
         }
 

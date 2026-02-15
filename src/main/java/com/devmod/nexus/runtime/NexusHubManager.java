@@ -765,12 +765,13 @@ public final class NexusHubManager {
         double y = floorY + 2.5;
 
         // Spawn floating particles around center pillar
+        var random = nexusLevel.getRandom();
         for (int i = 0; i < 3; i++) {
-            double angle = Math.random() * Math.PI * 2;
-            double radius = 2 + Math.random() * 6;
+            double angle = random.nextDouble() * Math.PI * 2;
+            double radius = 2 + random.nextDouble() * 6;
             double px = centerX + Math.cos(angle) * radius;
             double pz = centerZ + Math.sin(angle) * radius;
-            double py = y + Math.random() * 3;
+            double py = y + random.nextDouble() * 3;
 
             // End rod particles for magical glow effect
             nexusLevel.sendParticles(

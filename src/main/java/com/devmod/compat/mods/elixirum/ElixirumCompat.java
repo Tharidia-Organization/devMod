@@ -48,8 +48,8 @@ public class ElixirumCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElixirumCompat.class);
     public static final String MOD_ID = "elixirum";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
 
     // Cached reflection references (using REAL class names from decompilation)
     @Nullable private static Class<?> serverAlchemyClass;
@@ -58,13 +58,9 @@ public class ElixirumCompat implements CompatModule {
     @Nullable private static Method getIngredientsMethod;
     @Nullable private static Method syncIngredientsMethod;
 
-    // Executor for delayed sync
-    private static final ScheduledExecutorService SYNC_EXECUTOR =
-        Executors.newScheduledThreadPool(2, r -> {
-            Thread t = new Thread(r, "DevMod-ElixirumSync");
-            t.setDaemon(true);
-            return t;
-        });
+    // Executor for delayed sync (lazy-initialized in initCommon when mod is present)
+    @Nullable
+    private static ScheduledExecutorService syncExecutor;
 
     // Sync intervals in milliseconds (multi-attempt strategy)
     private static final long[] SYNC_DELAYS_MS = { 500, 2000, 5000 };
@@ -115,6 +111,13 @@ public class ElixirumCompat implements CompatModule {
             syncIngredientsMethod = ingredientsClass.getMethod("syncWithPlayer", ServerPlayer.class);
             LOGGER.debug("[Compat:elixirum] Found ingredients syncWithPlayer method");
 
+            // Create executor only when mod is confirmed present
+            syncExecutor = Executors.newScheduledThreadPool(2, r -> {
+                Thread t = new Thread(r, "DevMod-ElixirumSync");
+                t.setDaemon(true);
+                return t;
+            });
+
             // Register event handlers
             NeoForge.EVENT_BUS.register(new ElixirumEventHandler());
 
@@ -136,7 +139,10 @@ public class ElixirumCompat implements CompatModule {
 
     @Override
     public void shutdown() {
-        SYNC_EXECUTOR.shutdownNow();
+        ScheduledExecutorService executor = syncExecutor;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
         pendingSyncs.clear();
     }
 
@@ -242,6 +248,9 @@ public class ElixirumCompat implements CompatModule {
             if (!available) return;
             if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
+            ScheduledExecutorService executor = syncExecutor;
+            if (executor == null) return;
+
             var server = player.getServer();
             if (server == null) return;
 
@@ -256,7 +265,7 @@ public class ElixirumCompat implements CompatModule {
                 final int attemptNumber = i + 1;
                 final long delay = SYNC_DELAYS_MS[i];
 
-                java.util.concurrent.ScheduledFuture<?> future = SYNC_EXECUTOR.schedule(() -> {
+                java.util.concurrent.ScheduledFuture<?> future = executor.schedule(() -> {
                     server.execute(() -> {
                         // Check if still needed
                         if (!pendingSyncs.containsKey(playerId)) {

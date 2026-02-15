@@ -130,9 +130,10 @@ class EnduranceSmokeTests {
 
     private static void resetArenaTelemetry(EnduranceQuestManager manager) {
         try {
-            Field telemetryField = EnduranceQuestManager.class.getDeclaredField("arenaTelemetry");
-            telemetryField.setAccessible(true);
-            telemetryField.set(manager, null);
+            Field arenaSetupField = EnduranceQuestManager.class.getDeclaredField("arenaSetup");
+            arenaSetupField.setAccessible(true);
+            ArenaSetupManager arenaSetup = (ArenaSetupManager) arenaSetupField.get(manager);
+            arenaSetup.setArenaTelemetry(null);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

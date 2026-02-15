@@ -2,7 +2,6 @@ package com.devmod.compat.mods.dummmmmmy;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
@@ -42,9 +42,9 @@ public class DummmmmmyCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(DummmmmmyCompat.class);
     public static final String MOD_ID = "dummmmmmy";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
-    private static boolean apiAvailable = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean apiAvailable = false;
 
     // Cached reflection references
     private static Class<?> dummyEntityClass;
@@ -53,8 +53,8 @@ public class DummmmmmyCompat implements CompatModule {
     private static Method getDpsMethod;
 
     // Track spawned dummies for Arena and debug commands
-    private static final Map<UUID, DummyRecord> trackedDummies = new HashMap<>();
-    private static final Map<String, Set<UUID>> dummiesById = new HashMap<>();
+    private static final Map<UUID, DummyRecord> trackedDummies = new ConcurrentHashMap<>();
+    private static final Map<String, Set<UUID>> dummiesById = new ConcurrentHashMap<>();
     private static final String DEVMOD_TAG = "devmod_arena_dummy";
     private static final String DEVMOD_TAG_PREFIX = DEVMOD_TAG + "_";
     private static final ResourceLocation DUMMY_ENTITY_ID =

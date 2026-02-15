@@ -18,8 +18,8 @@ public class ClothConfigCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClothConfigCompat.class);
     public static final String MOD_ID = "cloth_config";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
 
     // Cached reflection references
     private static Class<?> configBuilderClass;

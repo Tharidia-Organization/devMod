@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -147,6 +148,102 @@ public interface CombatEnduranceBridge {
      * on the QuestEventBus; this method is provided for programmatic use.</p>
      */
     default void onQuestEnded(UUID playerId) {}
+
+    // -------- Execution state queries (ExecutionSystem) --------
+
+    /**
+     * Returns {@code true} if the player is currently performing an execution.
+     */
+    default boolean isExecuting(ServerPlayer player) {
+        return false;
+    }
+
+    /**
+     * Interrupts an execution in progress and returns whether one was interrupted.
+     */
+    default boolean interruptExecution(ServerPlayer player) {
+        return false;
+    }
+
+    /**
+     * Returns the vulnerability damage multiplier for a player whose execution
+     * was recently interrupted.  Returns {@code 1.0f} when no vulnerability applies.
+     */
+    default float getVulnerabilityMultiplier(ServerPlayer player) {
+        return 1.0f;
+    }
+
+    /**
+     * Ticks the execution system (called once per server tick).
+     */
+    default void tickExecutionSystem() {}
+
+    /**
+     * Ticks execution state for a single player (per-player per-tick).
+     */
+    default void tickExecutionPlayer(ServerPlayer player) {}
+
+    /**
+     * Cleans up execution state when a player leaves.
+     */
+    default void onPlayerLeave(UUID playerId) {}
+
+    // -------- Signature weapon tracking (SoulImprintManager) --------
+
+    /**
+     * Records damage dealt by the player for signature weapon imprint tracking.
+     */
+    default void recordSoulDamage(ServerPlayer player, float damage) {}
+
+    /**
+     * Records a headshot for signature weapon imprint tracking.
+     */
+    default void recordSoulHeadshot(ServerPlayer player) {}
+
+    /**
+     * Records a critical hit for signature weapon imprint tracking.
+     */
+    default void recordSoulCriticalHit(ServerPlayer player) {}
+
+    /**
+     * Records a kill for signature weapon imprint tracking.
+     */
+    default void recordSoulKill(ServerPlayer player, LivingEntity target, boolean isBoss) {}
+
+    /**
+     * Records an execute kill for signature weapon imprint tracking.
+     */
+    default void recordSoulExecuteKill(ServerPlayer player) {}
+
+    /**
+     * Records an SSS-rank wave completion for signature weapon tracking.
+     */
+    default void recordSoulSSSWave(ServerPlayer player) {}
+
+    /**
+     * Records a no-hit wave completion for signature weapon tracking.
+     */
+    default void recordSoulNoHitWave(ServerPlayer player) {}
+
+    // -------- Body part detection (HitHelper) --------
+
+    /**
+     * Raycasts from attacker to target and returns the body part name hit.
+     *
+     * @return the body part name (e.g. "HEAD", "BODY", "ARMS", "LEGS")
+     */
+    default String rayTraceBodyPart(LivingEntity attacker, LivingEntity target) {
+        return "BODY";
+    }
+
+    /**
+     * Determines the body part hit based on the Y coordinate of impact.
+     *
+     * @return the body part name (e.g. "HEAD", "BODY", "ARMS", "LEGS")
+     */
+    default String getBodyPartFromHitY(LivingEntity target, double hitY) {
+        return "BODY";
+    }
 
     // -------- no-op implementation --------
 

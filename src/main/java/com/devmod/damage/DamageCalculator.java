@@ -3,6 +3,7 @@ package com.devmod.damage;
 import java.util.Objects;
 
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -290,16 +291,17 @@ public final class DamageCalculator {
      * @param speedMultiplier Projectile speed multiplier (1.0 = no change)
      * @param critChance Chance to crit (0.0-1.0)
      * @param critDamage Crit damage multiplier
+     * @param random RandomSource for crit roll (use level.getRandom() or entity.getRandom())
      * @return Modified damage
      */
-    public static float applyRangedModifiers(CalculationResult result, float speedMultiplier, float critChance, float critDamage) {
+    public static float applyRangedModifiers(CalculationResult result, float speedMultiplier, float critChance, float critDamage, RandomSource random) {
         float damage = result.finalDamage;
 
         if (speedMultiplier > 0) {
             damage *= speedMultiplier;
         }
 
-        if (critChance > 0 && Math.random() < critChance) {
+        if (critChance > 0 && random.nextFloat() < critChance) {
             damage *= critDamage;
         }
 

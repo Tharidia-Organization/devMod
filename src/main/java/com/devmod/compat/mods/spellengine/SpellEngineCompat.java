@@ -21,8 +21,8 @@ public class SpellEngineCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpellEngineCompat.class);
     public static final String MOD_ID = "spell_engine";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
 
     // Cached reflection references
     private static Class<?> spellContainerClass;

@@ -21,9 +21,9 @@ public class EmotecraftCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmotecraftCompat.class);
     public static final String MOD_ID = "emotecraft";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
-    private static boolean apiAvailable = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean apiAvailable = false;
 
     // Cached reflection references
     private static Class<?> emotePlayImplClass;

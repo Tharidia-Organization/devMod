@@ -146,15 +146,16 @@ public class BioscannerItem extends Item {
             );
 
             // Scanning particles around target
+            var random = serverLevel.getRandom();
             for (int i = 0; i < 20; i++) {
-                double angle = Math.random() * Math.PI * 2.0;
-                double radius = 0.5 + Math.random() * 0.3;
+                double angle = random.nextDouble() * Math.PI * 2.0;
+                double radius = 0.5 + random.nextDouble() * 0.3;
                 double offsetX = Math.cos(angle) * radius;
                 double offsetZ = Math.sin(angle) * radius;
                 serverLevel.sendParticles(
                     Objects.requireNonNull(ParticleTypes.END_ROD),
                     target.getX() + offsetX,
-                    target.getY() + Math.random() * target.getBbHeight(),
+                    target.getY() + random.nextDouble() * target.getBbHeight(),
                     target.getZ() + offsetZ,
                     1, 0, 0, 0, 0.02
                 );

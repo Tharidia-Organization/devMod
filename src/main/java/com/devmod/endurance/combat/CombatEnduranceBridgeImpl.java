@@ -11,11 +11,15 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MaceItem;
 
+import com.devmod.combat.ExecutionSystem;
+import com.devmod.combat.HitHelper;
 import com.devmod.combat.bridge.CombatEnduranceBridge;
+import com.devmod.combat.signature.SoulImprintManager;
 import com.devmod.endurance.ComboSystem;
 import com.devmod.endurance.EnduranceEventCombat;
 import com.devmod.endurance.EnduranceEventHandler;
@@ -177,6 +181,87 @@ public final class CombatEnduranceBridgeImpl implements CombatEnduranceBridge {
 
     @Override
     public void onQuestEnded(UUID playerId) {
-        com.devmod.combat.ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
+        ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
+    }
+
+    // -------- Execution state --------
+
+    @Override
+    public boolean isExecuting(ServerPlayer player) {
+        return ExecutionSystem.INSTANCE.isExecuting(player);
+    }
+
+    @Override
+    public boolean interruptExecution(ServerPlayer player) {
+        return ExecutionSystem.INSTANCE.interruptExecution(player) != null;
+    }
+
+    @Override
+    public float getVulnerabilityMultiplier(ServerPlayer player) {
+        return ExecutionSystem.getVulnerabilityMultiplier(player);
+    }
+
+    @Override
+    public void tickExecutionSystem() {
+        ExecutionSystem.INSTANCE.tick();
+    }
+
+    @Override
+    public void tickExecutionPlayer(ServerPlayer player) {
+        ExecutionSystem.INSTANCE.tickPlayer(player);
+    }
+
+    @Override
+    public void onPlayerLeave(UUID playerId) {
+        ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
+    }
+
+    // -------- Signature weapon tracking --------
+
+    @Override
+    public void recordSoulDamage(ServerPlayer player, float damage) {
+        SoulImprintManager.INSTANCE.recordDamage(player, damage);
+    }
+
+    @Override
+    public void recordSoulHeadshot(ServerPlayer player) {
+        SoulImprintManager.INSTANCE.recordHeadshot(player);
+    }
+
+    @Override
+    public void recordSoulCriticalHit(ServerPlayer player) {
+        SoulImprintManager.INSTANCE.recordCriticalHit(player);
+    }
+
+    @Override
+    public void recordSoulKill(ServerPlayer player, LivingEntity target, boolean isBoss) {
+        SoulImprintManager.INSTANCE.recordKill(player, target, isBoss);
+    }
+
+    @Override
+    public void recordSoulExecuteKill(ServerPlayer player) {
+        SoulImprintManager.INSTANCE.recordExecuteKill(player);
+    }
+
+    @Override
+    public void recordSoulSSSWave(ServerPlayer player) {
+        SoulImprintManager.INSTANCE.recordSSSWave(player);
+    }
+
+    @Override
+    public void recordSoulNoHitWave(ServerPlayer player) {
+        SoulImprintManager.INSTANCE.recordNoHitWave(player);
+    }
+
+    // -------- Body part detection --------
+
+    @Override
+    public String rayTraceBodyPart(LivingEntity attacker, LivingEntity target) {
+        return HitHelper.rayTraceBodyPartAABB(attacker, target).name();
+    }
+
+    @Override
+    public String getBodyPartFromHitY(LivingEntity target, double hitY) {
+        return HitHelper.getBodyPart(target, hitY).name();
     }
 }

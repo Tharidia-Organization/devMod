@@ -27,8 +27,8 @@ public class ApothicAttributesCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(ApothicAttributesCompat.class);
     public static final String MOD_ID = "apothic_attributes";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
 
     // Cached attribute holders
     private static final Map<String, Optional<Holder<Attribute>>> attributeCache = new HashMap<>();

@@ -18,9 +18,9 @@ public class TerraBlenderCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(TerraBlenderCompat.class);
     public static final String MOD_ID = "terrablender";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
-    private static boolean apiAvailable = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean apiAvailable = false;
 
     // Cached reflection references
     private static Class<?> regionsClass;

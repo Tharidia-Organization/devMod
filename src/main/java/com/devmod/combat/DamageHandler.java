@@ -138,7 +138,7 @@ public class DamageHandler {
             // Apply ranged modifiers (speed scaling, crit)
             if (isRanged) {
                 newDamage = DamageCalculator.applyRangedModifiers(
-                    calcResult, rangedSpeedOverride, rangedCritChance, rangedCritDamage);
+                    calcResult, rangedSpeedOverride, rangedCritChance, rangedCritDamage, victim.getRandom());
             }
 
             // Store body part, armor pen bonus, AND armor reduction in context for telemetry

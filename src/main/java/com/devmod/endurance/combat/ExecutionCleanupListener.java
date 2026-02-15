@@ -5,15 +5,15 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.devmod.combat.ExecutionSystem;
+import com.devmod.combat.bridge.CombatEnduranceBridge;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
 import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 
 /**
- * Listener that cleans up {@link ExecutionSystem} state when a quest ends.
+ * Listener that cleans up execution state when a quest ends.
  * <p>
- * This replaces the previous direct {@code QuestLifecycleListener} implementation
- * on ExecutionSystem, keeping the combat module free of endurance-lifecycle imports.
+ * Delegates to {@link CombatEnduranceBridge} so that the endurance module
+ * has no direct compile-time dependency on {@code ExecutionSystem}.
  */
 public final class ExecutionCleanupListener implements QuestLifecycleListener {
 
@@ -26,7 +26,7 @@ public final class ExecutionCleanupListener implements QuestLifecycleListener {
     @Override
     public void onQuestEnded(QuestEnded event) {
         UUID playerId = event.context().playerId();
-        ExecutionSystem.INSTANCE.onPlayerLeave(playerId);
+        CombatEnduranceBridge.get().onPlayerLeave(playerId);
         LOGGER.debug("[ExecutionCleanupListener] Cleaned up ExecutionSystem state for player {} via event bus", playerId);
     }
 

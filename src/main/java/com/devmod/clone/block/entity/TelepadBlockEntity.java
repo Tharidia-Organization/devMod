@@ -332,13 +332,14 @@ public class TelepadBlockEntity extends BlockEntity {
         double y = player.getY();
         double z = player.getZ();
 
+        var random = serverLevel.getRandom();
         for (int i = 0; i < 3; i++) {
-            double angle = Math.random() * Math.PI * 2.0;
-            double radius = 0.5 + Math.random() * 0.5;
+            double angle = random.nextDouble() * Math.PI * 2.0;
+            double radius = 0.5 + random.nextDouble() * 0.5;
             double offsetX = Math.cos(angle) * radius;
             double offsetZ = Math.sin(angle) * radius;
             serverLevel.sendParticles(ParticleTypes.PORTAL,
-                x + offsetX, y + Math.random(), z + offsetZ,
+                x + offsetX, y + random.nextDouble(), z + offsetZ,
                 1, 0, 0, 0, 0.05);
         }
     }

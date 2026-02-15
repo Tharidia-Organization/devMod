@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.Nonnull;
 
@@ -236,8 +237,8 @@ public class ResonanceHudOverlay implements LayeredDraw.Layer {
     private void updateShake() {
         if (shakeIntensity > 0.1f) {
             // Random shake offset
-            shakeOffsetX = (float) (Math.random() * 2 - 1) * shakeIntensity;
-            shakeOffsetY = (float) (Math.random() * 2 - 1) * shakeIntensity;
+            shakeOffsetX = (float) (ThreadLocalRandom.current().nextDouble() * 2 - 1) * shakeIntensity;
+            shakeOffsetY = (float) (ThreadLocalRandom.current().nextDouble() * 2 - 1) * shakeIntensity;
 
             // Decay shake
             shakeIntensity *= 0.9f;

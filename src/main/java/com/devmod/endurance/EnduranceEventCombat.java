@@ -22,7 +22,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.arena.api.ArenaHandle;
-import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.combat.bridge.CombatEnduranceBridge;
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.compat.mods.easydiet.EasyDietCompat;
 import com.devmod.config.gamedesign.GameDesignConfigManager;
@@ -89,11 +89,11 @@ public class EnduranceEventCombat {
 
                 if (signatureEnabled) {
                     // Record damage for signature weapon imprint
-                    SoulImprintManager.INSTANCE.recordDamage(player, damage);
+                    CombatEnduranceBridge.get().recordSoulDamage(player, damage);
 
                     // Check for headshot
                     if ("HEAD".equals(bodyPart)) {
-                        SoulImprintManager.INSTANCE.recordHeadshot(player);
+                        CombatEnduranceBridge.get().recordSoulHeadshot(player);
                     }
                 }
 
@@ -184,8 +184,8 @@ public class EnduranceEventCombat {
                 UUID playerId = player.getUUID();
 
                 // Check if player is currently executing - interrupt it
-                if (com.devmod.combat.ExecutionSystem.INSTANCE.isExecuting(player)) {
-                    com.devmod.combat.ExecutionSystem.INSTANCE.interruptExecution(player);
+                if (CombatEnduranceBridge.get().isExecuting(player)) {
+                    CombatEnduranceBridge.get().interruptExecution(player);
                 }
 
                 // Note: damage reduction from perks should be applied in LivingDamageEvent.Pre
@@ -225,7 +225,7 @@ public class EnduranceEventCombat {
             float damage = originalDamage;
 
             // Apply execution vulnerability if interrupted recently
-            float vulnerabilityMult = com.devmod.combat.ExecutionSystem.getVulnerabilityMultiplier(player);
+            float vulnerabilityMult = CombatEnduranceBridge.get().getVulnerabilityMultiplier(player);
             if (vulnerabilityMult > 1.0f) {
                 damage *= vulnerabilityMult;
                 LOGGER.debug("[Combat] Execution vulnerability: {} -> {} ({}x)",
@@ -268,7 +268,7 @@ public class EnduranceEventCombat {
             EnduranceQuestManager.ActiveQuestSession session =
                 EnduranceQuestManager.INSTANCE.getActiveSession(player).orElse(null);
             if (isSignatureWeaponsEnabled(session)) {
-                SoulImprintManager.INSTANCE.recordCriticalHit(player);
+                CombatEnduranceBridge.get().recordSoulCriticalHit(player);
             }
 
             lastCriticalHits.put(playerId, new CriticalHitMarker(target.getId(), System.currentTimeMillis()));
@@ -361,12 +361,12 @@ public class EnduranceEventCombat {
             }
             if (signatureEnabled) {
                 // Record kill for signature weapon imprint
-                SoulImprintManager.INSTANCE.recordKill(player, entity, isBoss);
+                CombatEnduranceBridge.get().recordSoulKill(player, entity, isBoss);
 
                 // Check for execute kill (target was below 10% health)
                 float targetHealthPercent = entity.getHealth() / entity.getMaxHealth();
                 if (targetHealthPercent <= 0.10f) {
-                    SoulImprintManager.INSTANCE.recordExecuteKill(player);
+                    CombatEnduranceBridge.get().recordSoulExecuteKill(player);
                 }
             }
 
@@ -570,10 +570,8 @@ public class EnduranceEventCombat {
         // Try to get attacker from damage source
         Entity attacker = source.getEntity();
         if (attacker instanceof LivingEntity livingAttacker) {
-            // Use HitHelper's raycast-based body part detection
-            com.devmod.combat.HitHelper.BodyPart bodyPart =
-                com.devmod.combat.HitHelper.rayTraceBodyPartAABB(livingAttacker, target);
-            return bodyPart.name();
+            // Use bridge's raycast-based body part detection
+            return CombatEnduranceBridge.get().rayTraceBodyPart(livingAttacker, target);
         }
 
         // Fallback: try to use direct hit position if available
@@ -581,9 +579,7 @@ public class EnduranceEventCombat {
         if (directCause != null) {
             // For projectiles, use their Y position relative to target
             double hitY = directCause.getY();
-            com.devmod.combat.HitHelper.BodyPart bodyPart =
-                com.devmod.combat.HitHelper.getBodyPart(target, hitY);
-            return bodyPart.name();
+            return CombatEnduranceBridge.get().getBodyPartFromHitY(target, hitY);
         }
 
         return "BODY"; // Default fallback

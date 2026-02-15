@@ -1,12 +1,12 @@
 package com.devmod.compat.mods.easynpc;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -30,16 +30,16 @@ public class EasyNpcCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(EasyNpcCompat.class);
     public static final String MOD_ID = "easy_npc";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
-    private static boolean apiAvailable = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean apiAvailable = false;
 
     // Cached reflection references
     @Nullable
     private static Class<?> easyNpcEntityClass;
 
     // Track spawned NPCs for cleanup
-    private static final Map<String, UUID> spawnedNpcs = new HashMap<>();
+    private static final Map<String, UUID> spawnedNpcs = new ConcurrentHashMap<>();
     private static final String DEVMOD_TAG = "devmod_arena";
     private static final ResourceLocation HUMANOID_NPC_ID =
         ResourceLocation.fromNamespaceAndPath(MOD_ID, "humanoid");

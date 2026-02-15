@@ -3,9 +3,9 @@ package com.devmod.compat.mods.journeymap;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
@@ -23,9 +23,9 @@ public class JourneyMapCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(JourneyMapCompat.class);
     public static final String MOD_ID = "journeymap";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
-    private static boolean apiAvailable = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean apiAvailable = false;
 
     // Cached reflection references
     private static Class<?> clientApiClass;
@@ -41,7 +41,7 @@ public class JourneyMapCompat implements CompatModule {
     private static Constructor<?> waypointConstructor;
 
     // Track created waypoints for cleanup
-    private static final Map<String, Object> createdWaypoints = new HashMap<>();
+    private static final Map<String, Object> createdWaypoints = new ConcurrentHashMap<>();
     private static final String DEVMOD_PREFIX = "devmod_";
 
     @Override
@@ -293,7 +293,7 @@ public class JourneyMapCompat implements CompatModule {
             return;
         }
 
-        for (Map.Entry<String, Object> entry : new HashMap<>(createdWaypoints).entrySet()) {
+        for (Map.Entry<String, Object> entry : new ConcurrentHashMap<>(createdWaypoints).entrySet()) {
             try {
                 removeWaypointMethod.invoke(clientApiInstance, entry.getValue());
             } catch (Exception e) {

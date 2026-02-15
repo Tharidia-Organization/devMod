@@ -26,13 +26,13 @@ public class RpgSeriesCompat implements CompatModule {
     public static final String RUNES_MOD_ID = "runes";
     public static final String ROGUES_MOD_ID = "rogues";
 
-    private static boolean archersAvailable = false;
-    private static boolean paladinsAvailable = false;
-    private static boolean wizardsAvailable = false;
-    private static boolean runesAvailable = false;
-    private static boolean roguesAvailable = false;
-    private static boolean initialized = false;
-    private static boolean anyAvailable = false;
+    private static volatile boolean archersAvailable = false;
+    private static volatile boolean paladinsAvailable = false;
+    private static volatile boolean wizardsAvailable = false;
+    private static volatile boolean runesAvailable = false;
+    private static volatile boolean roguesAvailable = false;
+    private static volatile boolean initialized = false;
+    private static volatile boolean anyAvailable = false;
 
     // Cached reflection references
     private static Class<?> spellCasterItemClass;

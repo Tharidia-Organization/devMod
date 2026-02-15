@@ -15,8 +15,8 @@ public class FerriteCoreCompat implements CompatModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(FerriteCoreCompat.class);
     public static final String MOD_ID = "ferritecore";
 
-    private static boolean available = false;
-    private static boolean initialized = false;
+    private static volatile boolean available = false;
+    private static volatile boolean initialized = false;
 
     @Override
     public String modId() {

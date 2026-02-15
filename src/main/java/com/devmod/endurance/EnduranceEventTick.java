@@ -68,7 +68,7 @@ public class EnduranceEventTick {
         MomentumTracker.INSTANCE.tick();
 
         // Tick execution system
-        com.devmod.combat.ExecutionSystem.INSTANCE.tick();
+        com.devmod.combat.bridge.CombatEnduranceBridge.get().tickExecutionSystem();
 
         // Tick live analytics hooks (throttled internally to 1/sec)
         LiveAnalyticsHookManager.INSTANCE.tick();
@@ -119,7 +119,7 @@ public class EnduranceEventTick {
                             NutritionBridgeSystem.INSTANCE.tick(player);
                         }
 
-                        com.devmod.combat.ExecutionSystem.INSTANCE.tickPlayer(player);
+                        com.devmod.combat.bridge.CombatEnduranceBridge.get().tickExecutionPlayer(player);
 
                         UUID questId = session.getQuest().getQuestId();
                         com.devmod.endurance.bargain.DevilsBargainManager.INSTANCE.tickPlayer(player, questId);
