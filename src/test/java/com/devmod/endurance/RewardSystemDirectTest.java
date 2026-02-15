@@ -76,11 +76,18 @@ class RewardSystemDirectTest {
         quest.start(UUID.randomUUID());
         quest.completeWave();
 
-        Method method = RewardSystem.class.getDeclaredMethod(
-            "checkAchievements", ServerPlayer.class, EnduranceQuest.class, IComboSession.class);
+        java.lang.reflect.Field amField = RewardSystem.class.getDeclaredField("achievementManager");
+        amField.setAccessible(true);
+        Object achievementManager = amField.get(system);
+
+        RewardSystem.PlayerWallet wallet = system.getWallet(playerId);
+
+        Method method = achievementManager.getClass().getDeclaredMethod(
+            "checkAchievements", ServerPlayer.class, EnduranceQuest.class, IComboSession.class,
+            RewardSystem.PlayerWallet.class);
         method.setAccessible(true);
 
-        Object result = method.invoke(system, player, quest, null);
+        Object result = method.invoke(achievementManager, player, quest, null, wallet);
         assertTrue(result instanceof List<?>);
         List<?> unlocked = (List<?>) result;
 
@@ -94,11 +101,15 @@ class RewardSystemDirectTest {
     @DisplayName("Loot tables provide entries for each tier")
     void lootTablesProvideEntries() throws Exception {
         RewardSystem system = RewardSystem.INSTANCE;
-        Method method = RewardSystem.class.getDeclaredMethod("rollLootEntry", RewardSystem.LootTier.class);
+        java.lang.reflect.Field lgField = RewardSystem.class.getDeclaredField("lootGenerator");
+        lgField.setAccessible(true);
+        Object lootGenerator = lgField.get(system);
+
+        Method method = lootGenerator.getClass().getDeclaredMethod("rollLootEntry", RewardSystem.LootTier.class);
         method.setAccessible(true);
 
         for (RewardSystem.LootTier tier : RewardSystem.LootTier.values()) {
-            Object entry = method.invoke(system, tier);
+            Object entry = method.invoke(lootGenerator, tier);
             assertNotNull(entry, "Expected loot entry for tier " + tier);
         }
     }

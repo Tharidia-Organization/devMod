@@ -3,22 +3,15 @@ package com.devmod.mailbox;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -26,30 +19,20 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 
 import net.neoforged.fml.loading.FMLPaths;
 
-import com.devmod.endurance.RewardSystem;
 import com.devmod.mailbox.analytics.MailboxAnalyticsEngine;
 import com.devmod.mailbox.api.ApiServerLauncher;
-import com.devmod.mailbox.attachment.AttachmentTransactionLog;
-import com.devmod.mailbox.attachment.AttachmentValidator;
 import com.devmod.mailbox.attachment.CurrencyAttachment;
 import com.devmod.mailbox.attachment.ItemAttachment;
-import com.devmod.mailbox.attachment.MailAttachment;
 import com.devmod.mailbox.broadcast.BroadcastQueueWorker;
 import com.devmod.mailbox.delivery.MailboxDeliveryJob;
 import com.devmod.mailbox.delivery.MailboxDeliveryRuntime;
 import com.devmod.mailbox.digest.DigestManager;
-import com.devmod.mailbox.moderation.AdminAuditLog;
 import com.devmod.mailbox.moderation.ContentFilter;
-import com.devmod.mailbox.moderation.PlayerReputation;
 import com.devmod.mailbox.news.NewsManager;
 import com.devmod.mailbox.news.NewsPurgeJob;
 import com.devmod.mailbox.persistence.DuckDbMailboxRepository;
@@ -61,24 +44,34 @@ import com.devmod.mailbox.webhook.WebhookManager;
 /*
  * Central manager for the mailbox system.
  *
- * Handles sending, receiving, and managing messages between players and from the system.
- * Thread-safe singleton with async operations.
+ * Delegates to extracted helpers:
+ *  - MailboxRateLimiter      – per-player send rate tracking
+ *  - MailboxMessageSender    – content filtering, send ops, delivery pipeline
+ *  - MailboxAttachmentHandler – attachment validation, claiming, reservations
  */
 public class MailboxManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MailboxManager.class);
 
-    // ============================================================================
+    // ========================================================================
     // SINGLETON
-    // ============================================================================
+    // ========================================================================
 
     public static final MailboxManager INSTANCE = new MailboxManager();
 
     private MailboxManager() {}
 
-    // ============================================================================
+    // ========================================================================
+    // DELEGATES
+    // ========================================================================
+
+    private final MailboxRateLimiter rateLimiter = new MailboxRateLimiter();
+    private final MailboxAttachmentHandler attachmentHandler = new MailboxAttachmentHandler();
+    private final MailboxMessageSender sender = new MailboxMessageSender(rateLimiter, attachmentHandler);
+
+    // ========================================================================
     // STATE
-    // ============================================================================
+    // ========================================================================
 
     private volatile boolean initialized = false;
     @Nullable
@@ -90,38 +83,13 @@ public class MailboxManager {
     @Nullable
     private ScheduledFuture<?> rateLimitResetTask;
 
-    /* Rate limiting: tracks last send time per player */
-    private final Map<UUID, Long> lastSendTime = new ConcurrentHashMap<>();
-
-    /* Rate limiting: tracks sends per minute per player */
-    private final Map<UUID, Integer> sendsThisMinute = new ConcurrentHashMap<>();
-
-    /* Rate limiting: tracks sends per day per player */
-    private final Map<UUID, Integer> sendsToday = new ConcurrentHashMap<>();
-
-    /* Rate limiting: tracks sends per day per sender->recipient */
-    private final Map<SenderRecipientKey, Integer> sendsPerRecipientToday = new ConcurrentHashMap<>();
-
-    private volatile long lastDailyResetEpochDay = currentEpochDay();
-
-    /* In-flight claim operations per message */
-    private final Map<UUID, CompletableFuture<ClaimOutcome>> claimInFlight = new ConcurrentHashMap<>();
-
-    /* In-flight send operations per sender to guard attachment deductions */
-    private final Map<UUID, Object> attachmentSendLocks = new ConcurrentHashMap<>();
-
-    /* Callback for notifying clients of new messages */
     @Nullable
     private NewMessageCallback newMessageCallback;
 
-    // ============================================================================
+    // ========================================================================
     // INITIALIZATION
-    // ============================================================================
+    // ========================================================================
 
-    /*
-     * Initialize the mailbox system.
-     * Call this when the server starts.
-     */
     public CompletableFuture<Void> initialize() {
         if (initialized) {
             return CompletableFuture.completedFuture(null);
@@ -142,32 +110,17 @@ public class MailboxManager {
             NewsManager.getInstance().initialize(repo);
             com.devmod.mailbox.task.TestTaskManager.INSTANCE.initialize(repo);
 
-            // Initialize and start the news purge job
             NewsPurgeJob.getInstance().initialize(repo);
             NewsPurgeJob.getInstance().start();
 
-            // Start broadcast queue worker
             BroadcastQueueWorker.INSTANCE.start();
-
-            // Start analytics engine
             MailboxAnalyticsEngine.INSTANCE.start();
-
-            // Start message scheduler
             MessageScheduler.INSTANCE.start();
-
-            // Start digest manager
             DigestManager.INSTANCE.start();
-
-            // Start webhook manager
             WebhookManager.INSTANCE.start();
-
-            // Start delivery runtime
             MailboxDeliveryRuntime.INSTANCE.start();
-
-            // Start ticket manager
             TicketManager.INSTANCE.initialize().join();
 
-            // Start scheduled tasks
             ScheduledExecutorService sched = Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "MailboxScheduler");
                 t.setDaemon(true);
@@ -175,19 +128,16 @@ public class MailboxManager {
             });
             scheduler = sched;
 
-            // Purge expired messages every hour
             purgeExpiredTask = sched.scheduleAtFixedRate(
                 this::purgeExpiredMessages,
                 1, 60, TimeUnit.MINUTES
             );
 
-            // Reset rate limits every minute
             rateLimitResetTask = sched.scheduleAtFixedRate(
-                () -> sendsThisMinute.clear(),
+                rateLimiter::resetMinuteBuckets,
                 1, 1, TimeUnit.MINUTES
             );
 
-            // P1: Clean up spam detector tracking data every 5 minutes
             @SuppressWarnings("unused")
             var spamCleanupTask = sched.scheduleAtFixedRate(
                 () -> com.devmod.mailbox.moderation.SpamDetector.INSTANCE.cleanup(),
@@ -207,10 +157,6 @@ public class MailboxManager {
         });
     }
 
-    /*
-     * Shutdown the mailbox system.
-     * Call this when the server stops.
-     */
     public CompletableFuture<Void> shutdown() {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -244,7 +190,7 @@ public class MailboxManager {
         WebhookManager.INSTANCE.stop();
         MailboxDeliveryRuntime.INSTANCE.stop();
         TicketManager.INSTANCE.shutdown().join();
-        claimInFlight.clear();
+        attachmentHandler.clearInFlight();
         ApiServerLauncher.stop();
 
         return repo.shutdown().thenRun(() -> {
@@ -305,164 +251,10 @@ public class MailboxManager {
         }
     }
 
-    // ============================================================================
-    // MESSAGE OPERATIONS
-    // ============================================================================
+    // ========================================================================
+    // MESSAGE OPERATIONS (delegate to MailboxMessageSender)
+    // ========================================================================
 
-    private record FilterDecision(
-        boolean allowed,
-        String subject,
-        @Nullable String body,
-        @Nullable String reason,
-        boolean flagged
-    ) {}
-
-    private record AttachmentValidation(boolean isAllowed, @Nullable String error) {
-        static AttachmentValidation success() {
-            return new AttachmentValidation(true, null);
-        }
-
-        static AttachmentValidation blocked(String error) {
-            return new AttachmentValidation(false, error);
-        }
-    }
-
-    private record DeliveryOutcome(MailboxMessage message, boolean delivered) {}
-
-    private FilterDecision applyContentFilter(String subject, @Nullable String body) {
-        ContentFilter filter = ContentFilter.INSTANCE;
-        if (!filter.isEnabled()) {
-            return new FilterDecision(true, subject, body, null, false);
-        }
-
-        ContentFilter.FilterResult result = filter.checkMessage(subject, body);
-        if (result.isAllowed()) {
-            return new FilterDecision(true, subject, body, null, false);
-        }
-
-        String reason = result.reason() != null ? result.reason() : "Message blocked by filter";
-        ContentFilter.FilterAction action = filter.getAction();
-
-        return switch (action) {
-            case BLOCK -> new FilterDecision(false, subject, body, reason, false);
-            case CENSOR -> {
-                String censoredSubject = filter.censor(subject);
-                @Nullable String censoredBody = body != null ? filter.censor(body) : null;
-                yield new FilterDecision(true, censoredSubject, censoredBody, reason, false);
-            }
-            case FLAG -> new FilterDecision(true, subject, body, reason, true);
-        };
-    }
-
-    private AttachmentValidation validateAttachmentData(@Nullable String attachmentData) {
-        if (attachmentData == null || attachmentData.isBlank()) {
-            return AttachmentValidation.success();
-        }
-
-        // P1: Use AttachmentValidator for payload-level validation (size, count limits)
-        AttachmentValidator.ValidationResult validatorResult =
-            AttachmentValidator.INSTANCE.validatePayload(attachmentData);
-        if (!validatorResult.isValid()) {
-            String message = validatorResult.message() != null
-                ? validatorResult.message()
-                : "Invalid attachment data";
-            return AttachmentValidation.blocked(message);
-        }
-
-        MailboxConfig config = MailboxConfig.INSTANCE;
-        List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
-        if (parsed.isEmpty()) {
-            return AttachmentValidation.blocked("Invalid attachment data");
-        }
-
-        List<MailAttachment> flat = MailAttachment.flattenAttachments(parsed);
-        if (flat.size() > config.getMaxAttachmentsPerMessage()) {
-            return AttachmentValidation.blocked("Too many attachments");
-        }
-
-        for (MailAttachment attachment : flat) {
-            if (attachment == null) {
-                return AttachmentValidation.blocked("Invalid attachment data");
-            }
-            if (attachment instanceof ItemAttachment itemAttachment) {
-                if (!config.isItemAttachmentsEnabled()) {
-                    return AttachmentValidation.blocked("Item attachments are disabled");
-                }
-                String error = itemAttachment.validate();
-                if (error != null) {
-                    return AttachmentValidation.blocked(error);
-                }
-            } else if (attachment instanceof CurrencyAttachment currencyAttachment) {
-                if (!config.isCurrencyAttachmentsEnabled()) {
-                    return AttachmentValidation.blocked("Currency attachments are disabled");
-                }
-                String error = currencyAttachment.validate();
-                if (error != null) {
-                    return AttachmentValidation.blocked(error);
-                }
-            } else {
-                return AttachmentValidation.blocked("Unsupported attachment type");
-            }
-        }
-
-        return AttachmentValidation.success();
-    }
-
-    @Nullable
-    private static String canonicalizeAttachmentData(@Nullable String attachmentData) {
-        if (attachmentData == null || attachmentData.isBlank()) {
-            return null;
-        }
-        List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
-        if (parsed.isEmpty()) {
-            return null;
-        }
-        return MailAttachment.toJsonPayload(parsed);
-    }
-
-    @Nullable
-    private static String buildAttachmentDataFromReservation(AttachmentReservation reservation) {
-        if (reservation == null || !reservation.success()) {
-            return null;
-        }
-        List<MailAttachment> attachments = new ArrayList<>();
-
-        if (!reservation.items().isEmpty()) {
-            List<Map.Entry<ResourceLocation, Integer>> entries = new ArrayList<>(reservation.items().entrySet());
-            entries.sort(java.util.Comparator.comparing(e -> e.getKey().toString()));
-            for (Map.Entry<ResourceLocation, Integer> entry : entries) {
-                if (entry.getKey() != null && entry.getValue() != null && entry.getValue() > 0) {
-                    attachments.add(new ItemAttachment(entry.getKey(), entry.getValue(), null));
-                }
-            }
-        }
-
-        if (!reservation.currencies().isEmpty()) {
-            List<Map.Entry<RewardSystem.Currency, Integer>> entries =
-                new ArrayList<>(reservation.currencies().entrySet());
-            entries.sort(java.util.Comparator.comparing(e -> e.getKey().name()));
-            for (Map.Entry<RewardSystem.Currency, Integer> entry : entries) {
-                String currencyType = CurrencyAttachment.toCurrencyType(entry.getKey());
-                Integer amount = entry.getValue();
-                if (currencyType != null && amount != null && amount > 0) {
-                    attachments.add(new CurrencyAttachment(currencyType, amount));
-                }
-            }
-        }
-
-        return MailAttachment.toJsonPayload(attachments);
-    }
-
-    /**
-     * Send a message from one player to another.
-     *
-     * @param sender the sending player
-     * @param recipientUuid the recipient's UUID
-     * @param subject the message subject
-     * @param body the message body
-     * @param attachmentData optional attachment data (JSON)
-     * @return future completing with the result
-     */
     public CompletableFuture<SendResult> sendPlayerMessage(
             ServerPlayer sender,
             UUID recipientUuid,
@@ -470,228 +262,12 @@ public class MailboxManager {
             @Nullable String body,
             @Nullable String attachmentData
     ) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.completedFuture(SendResult.error("Mailbox system not initialized"));
-        }
-
-        MailboxConfig config = MailboxConfig.INSTANCE;
-
-        // Check if player-to-player messaging is enabled
-        if (!config.isPlayerToPlayerEnabled()) {
-            return CompletableFuture.completedFuture(SendResult.error("Player messaging is disabled"));
-        }
-
-        UUID senderUuid = sender.getUUID();
-
-        if (config.isMaintenanceMode() && !MailboxPermissions.INSTANCE.isAdmin(senderUuid, sender)) {
-            return CompletableFuture.completedFuture(SendResult.error("Mailbox is in maintenance mode"));
-        }
-
-        // Check permissions
-        if (!MailboxPermissions.INSTANCE.hasPermission(sender, MailboxPermissions.Permission.SEND_MESSAGES)) {
-            return CompletableFuture.completedFuture(SendResult.error("You don't have permission to send messages"));
-        }
-
-        // Check if sender is blocked
-        if (MailboxPermissions.INSTANCE.isSenderBlocked(senderUuid)) {
-            return CompletableFuture.completedFuture(SendResult.error("You are blocked from sending messages"));
-        }
-
-        // Check if recipient can receive
-        if (MailboxPermissions.INSTANCE.isReceiverBlocked(recipientUuid)) {
-            return CompletableFuture.completedFuture(SendResult.error("Recipient cannot receive messages"));
-        }
-
-        // Check rate limiting
-        String rateLimitError = checkRateLimit(senderUuid, recipientUuid);
-        if (rateLimitError != null) {
-            return CompletableFuture.completedFuture(SendResult.error(rateLimitError));
-        }
-
-        // Check minimum level requirement (fallback to vanilla XP level)
-        if (config.getMinLevelToSend() > 0 && sender.experienceLevel < config.getMinLevelToSend()) {
-            return CompletableFuture.completedFuture(SendResult.error("You do not meet the minimum level to send messages"));
-        }
-
-        // Validate subject
-        if (subject == null || subject.isBlank()) {
-            return CompletableFuture.completedFuture(SendResult.error("Subject cannot be empty"));
-        }
-        if (subject.length() > config.getMaxSubjectLength()) {
-            subject = subject.substring(0, config.getMaxSubjectLength());
-        }
-
-        // Validate body
-        if (body != null && body.length() > config.getMaxBodyLength()) {
-            body = body.substring(0, config.getMaxBodyLength());
-        }
-
-        FilterDecision filterDecision = applyContentFilter(subject, body);
-        if (!filterDecision.allowed()) {
-            // P1: Record filter block in reputation system
-            PlayerReputation.INSTANCE.recordFilterBlocked(senderUuid);
-            String reason = filterDecision.reason() != null
-                ? filterDecision.reason()
-                : "Message blocked by filter";
-            return CompletableFuture.completedFuture(SendResult.error(reason));
-        }
-
-        // P1: Spam detection scoring
-        var spamScore = com.devmod.mailbox.moderation.SpamDetector.INSTANCE.score(
-            senderUuid, recipientUuid, subject, body);
-        if (spamScore.isSpam(com.devmod.mailbox.moderation.SpamDetector.INSTANCE.getSpamThreshold())) {
-            LOGGER.warn("[Mailbox] Spam blocked: sender={}, score={}, signals={}",
-                sender.getName().getString(), spamScore.totalScore(), spamScore.getSignalSummary());
-            // P1: Record spam block in reputation system
-            PlayerReputation.INSTANCE.recordSpamBlocked(senderUuid);
-            return CompletableFuture.completedFuture(SendResult.error("Message blocked: suspected spam"));
-        }
-        // Flag suspicious messages for moderation (but still allow)
-        boolean flaggedForModeration = spamScore.isSuspicious(
-            com.devmod.mailbox.moderation.SpamDetector.INSTANCE.getSuspiciousThreshold());
-        if (flaggedForModeration) {
-            LOGGER.info("[Mailbox] Flagged for moderation: sender={}, score={}, signals={}",
-                sender.getName().getString(), spamScore.totalScore(), spamScore.getSignalSummary());
-        }
-
-        List<MailAttachment> flatAttachments = List.of();
-        // Validate attachments against config
-        if (attachmentData != null && !attachmentData.isBlank()) {
-            if (!MailboxPermissions.INSTANCE.hasPermission(sender, MailboxPermissions.Permission.SEND_ATTACHMENTS)) {
-                return CompletableFuture.completedFuture(SendResult.error("You don't have permission to send attachments"));
-            }
-            List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
-            if (parsed.isEmpty()) {
-                return CompletableFuture.completedFuture(SendResult.error("Invalid attachment data"));
-            }
-
-            List<MailAttachment> flat = MailAttachment.flattenAttachments(parsed);
-            if (flat.size() > config.getMaxAttachmentsPerMessage()) {
-                return CompletableFuture.completedFuture(SendResult.error("Too many attachments"));
-            }
-
-            for (MailAttachment attachment : flat) {
-                if (attachment == null || !attachment.canClaim(sender)) {
-                    return CompletableFuture.completedFuture(SendResult.error("Invalid attachment data"));
-                }
-                if (attachment instanceof ItemAttachment && !config.isItemAttachmentsEnabled()) {
-                    return CompletableFuture.completedFuture(SendResult.error("Item attachments are disabled"));
-                }
-                if (attachment instanceof CurrencyAttachment && !config.isCurrencyAttachmentsEnabled()) {
-                    return CompletableFuture.completedFuture(SendResult.error("Currency attachments are disabled"));
-                }
-            }
-            flatAttachments = flat;
-        }
-
-        // Check recipient inbox capacity
-        String finalSubject = filterDecision.subject();
-        String finalBody = filterDecision.body();
-        List<MailAttachment> attachmentsForReserve = flatAttachments;
-
-        return repo.getMessageCount(recipientUuid).thenCompose(count -> {
-            if (count >= config.getMaxMessagesPerPlayer()) {
-                return CompletableFuture.completedFuture(SendResult.error("Recipient's inbox is full"));
-            }
-
-            CompletableFuture<AttachmentReservation> reservationFuture = attachmentsForReserve.isEmpty()
-                ? CompletableFuture.completedFuture(AttachmentReservation.empty())
-                : reserveAttachmentsForSend(sender, attachmentsForReserve);
-
-            return reservationFuture.thenCompose(reservation -> {
-                if (!reservation.success()) {
-                    String reason = reservation.error() != null ? reservation.error() : "Failed to reserve attachments";
-                    return CompletableFuture.completedFuture(SendResult.error(reason));
-                }
-
-                String sealedAttachmentData = buildAttachmentDataFromReservation(reservation);
-                Instant now = Instant.now();
-                Instant expiresAt = now.plus(config.getDefaultMessageTtl());
-                UUID messageId = UUID.randomUUID();
-
-                MailboxDeliveryJob job = MailboxDeliveryJob.builder()
-                    .messageId(messageId)
-                    .sender(senderUuid, sender.getName().getString())
-                    .recipient(recipientUuid)
-                    .subject(finalSubject)
-                    .body(finalBody)
-                    .messageType(MessageType.PLAYER)
-                    .createdAt(now)
-                    .availableAt(now)
-                    .expiresAt(expiresAt)
-                    .attachment(sealedAttachmentData)
-                    .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
-                    .build();
-
-                MailboxMessage message = MailboxMessage.builder()
-                    .id(messageId)
-                    .sender(senderUuid, sender.getName().getString())
-                    .recipient(recipientUuid)
-                    .subject(finalSubject)
-                    .body(finalBody)
-                    .messageType(MessageType.PLAYER)
-                    .createdAt(now)
-                    .expiresAt(expiresAt)
-                    .attachment(sealedAttachmentData)
-                    .build();
-
-                return queueAndDeliverMessage(job, message).thenApply(outcome -> {
-                    updateRateLimit(senderUuid, recipientUuid);
-                    if (outcome.delivered()) {
-                        LOGGER.debug("[Mailbox] Player {} sent message to {}", senderUuid, recipientUuid);
-                    } else {
-                        LOGGER.info("[Mailbox] Queued message {} for delivery to {}", messageId, recipientUuid);
-                    }
-
-                    // P1: Record successful message in reputation system
-                    PlayerReputation.INSTANCE.recordSuccessfulMessage(senderUuid);
-
-                    if (filterDecision.flagged()) {
-                        logFlaggedMessage(
-                            senderUuid,
-                            sender.getName().getString(),
-                            recipientUuid,
-                            messageId,
-                            MessageType.PLAYER,
-                            filterDecision.reason(),
-                            finalSubject
-                        );
-                    }
-
-                    // Dispatch webhook
-                    WebhookManager.INSTANCE.dispatchMessageSent(
-                        messageId,
-                        senderUuid,
-                        sender.getName().getString(),
-                        recipientUuid,
-                        finalSubject,
-                        sealedAttachmentData != null && !sealedAttachmentData.isBlank()
-                    );
-
-                    return SendResult.success(messageId);
-                }).exceptionally(e -> {
-                    LOGGER.error("[Mailbox] Failed to queue message", e);
-                    refundReservation(sender, reservation);
-                    return SendResult.error("Failed to queue message");
-                });
-            });
-        }).exceptionally(e -> {
-            LOGGER.error("[Mailbox] Failed to send message", e);
-            return SendResult.error("Failed to send message");
-        });
+        return this.sender.sendPlayerMessage(
+            sender, recipientUuid, subject, body, attachmentData,
+            repository, initialized, newMessageCallback
+        );
     }
 
-    /**
-     * Send a system message to a player.
-     *
-     * @param recipientUuid the recipient's UUID
-     * @param subject the message subject
-     * @param body the message body
-     * @param attachmentData optional attachment data (JSON)
-     * @param expiresIn optional expiration duration
-     * @return future completing with the message ID
-     */
     public CompletableFuture<UUID> sendSystemMessage(
             UUID recipientUuid,
             String subject,
@@ -699,107 +275,12 @@ public class MailboxManager {
             @Nullable String attachmentData,
             @Nullable Duration expiresIn
     ) {
-        return sendSystemMessage(recipientUuid, subject, body, attachmentData, expiresIn, true, true);
+        return sender.sendSystemMessage(
+            recipientUuid, subject, body, attachmentData, expiresIn,
+            repository, initialized, newMessageCallback
+        );
     }
 
-    private CompletableFuture<UUID> sendSystemMessage(
-            UUID recipientUuid,
-            String subject,
-            @Nullable String body,
-            @Nullable String attachmentData,
-            @Nullable Duration expiresIn,
-            boolean applyFilter,
-            boolean validateAttachments
-    ) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
-        }
-
-        FilterDecision filterDecision = applyFilter
-            ? applyContentFilter(subject, body)
-            : new FilterDecision(true, subject, body, null, false);
-        if (!filterDecision.allowed()) {
-            String reason = filterDecision.reason() != null
-                ? filterDecision.reason()
-                : "Message blocked by filter";
-            return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-        }
-
-        if (validateAttachments) {
-            AttachmentValidation validation = validateAttachmentData(attachmentData);
-            if (!validation.isAllowed()) {
-                String reason = validation.error() != null ? validation.error() : "Invalid attachment data";
-                return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-            }
-        }
-
-        String sealedAttachmentData = canonicalizeAttachmentData(attachmentData);
-        Instant now = Instant.now();
-        Instant expiresAt = expiresIn != null
-            ? now.plus(expiresIn)
-            : now.plus(MailboxConfig.INSTANCE.getDefaultMessageTtl());
-
-        UUID messageId = UUID.randomUUID();
-
-        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
-            .messageId(messageId)
-            .sender(null, "System")
-            .recipient(recipientUuid)
-            .subject(filterDecision.subject())
-            .body(filterDecision.body())
-            .messageType(MessageType.SYSTEM)
-            .createdAt(now)
-            .availableAt(now)
-            .expiresAt(expiresAt)
-            .attachment(sealedAttachmentData)
-            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
-            .build();
-
-        MailboxMessage message = MailboxMessage.builder()
-            .id(messageId)
-            .sender(null, "System")
-            .recipient(recipientUuid)
-            .subject(filterDecision.subject())
-            .body(filterDecision.body())
-            .messageType(MessageType.SYSTEM)
-            .createdAt(now)
-            .expiresAt(expiresAt)
-            .attachment(sealedAttachmentData)
-            .build();
-
-        return queueAndDeliverMessage(job, message).thenApply(outcome -> {
-            if (outcome.delivered()) {
-                LOGGER.debug("[Mailbox] System message sent to {}: {}", recipientUuid, message.subject());
-            } else {
-                LOGGER.info("[Mailbox] Queued system message {} for {}", messageId, recipientUuid);
-            }
-
-            if (filterDecision.flagged()) {
-                logFlaggedMessage(
-                    null,
-                    "System",
-                    recipientUuid,
-                    messageId,
-                    MessageType.SYSTEM,
-                    filterDecision.reason(),
-                    filterDecision.subject()
-                );
-            }
-            return messageId;
-        });
-    }
-
-    /**
-     * Send an admin message to a player.
-     *
-     * @param adminName the admin's name
-     * @param recipientUuid the recipient's UUID
-     * @param subject the message subject
-     * @param body the message body
-     * @param attachmentData optional attachment data (JSON)
-     * @return future completing with the message ID
-     */
     public CompletableFuture<UUID> sendAdminMessage(
             String adminName,
             UUID recipientUuid,
@@ -807,7 +288,10 @@ public class MailboxManager {
             @Nullable String body,
             @Nullable String attachmentData
     ) {
-        return sendAdminMessage(adminName, recipientUuid, subject, body, attachmentData, null, true, true);
+        return sender.sendAdminMessage(
+            adminName, recipientUuid, subject, body, attachmentData,
+            repository, initialized, newMessageCallback
+        );
     }
 
     public CompletableFuture<UUID> sendAdminMessage(
@@ -818,136 +302,12 @@ public class MailboxManager {
             @Nullable String attachmentData,
             @Nullable Instant expiresAt
     ) {
-        return sendAdminMessage(adminName, recipientUuid, subject, body, attachmentData, expiresAt, true, true);
+        return sender.sendAdminMessage(
+            adminName, recipientUuid, subject, body, attachmentData, expiresAt,
+            repository, initialized, newMessageCallback
+        );
     }
 
-    private CompletableFuture<UUID> sendAdminMessage(
-            String adminName,
-            UUID recipientUuid,
-            String subject,
-            @Nullable String body,
-            @Nullable String attachmentData,
-            @Nullable Instant expiresAt,
-            boolean applyFilter,
-            boolean validateAttachments
-    ) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
-        }
-
-        FilterDecision filterDecision = applyFilter
-            ? applyContentFilter(subject, body)
-            : new FilterDecision(true, subject, body, null, false);
-        if (!filterDecision.allowed()) {
-            String reason = filterDecision.reason() != null
-                ? filterDecision.reason()
-                : "Message blocked by filter";
-            return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-        }
-
-        if (validateAttachments) {
-            AttachmentValidation validation = validateAttachmentData(attachmentData);
-            if (!validation.isAllowed()) {
-                String reason = validation.error() != null ? validation.error() : "Invalid attachment data";
-                return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-            }
-        }
-
-        String sealedAttachmentData = canonicalizeAttachmentData(attachmentData);
-        Instant now = Instant.now();
-        Instant resolvedExpiresAt;
-        if (expiresAt != null) {
-            resolvedExpiresAt = expiresAt.isBefore(now) ? now : expiresAt;
-        } else {
-            resolvedExpiresAt = now.plus(MailboxConfig.INSTANCE.getDefaultMessageTtl());
-        }
-
-        UUID messageId = UUID.randomUUID();
-
-        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
-            .messageId(messageId)
-            .sender(null, adminName)
-            .recipient(recipientUuid)
-            .subject(filterDecision.subject())
-            .body(filterDecision.body())
-            .messageType(MessageType.ADMIN)
-            .createdAt(now)
-            .availableAt(now)
-            .expiresAt(resolvedExpiresAt)
-            .attachment(sealedAttachmentData)
-            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
-            .build();
-
-        MailboxMessage message = MailboxMessage.builder()
-            .id(messageId)
-            .sender(null, adminName)
-            .recipient(recipientUuid)
-            .subject(filterDecision.subject())
-            .body(filterDecision.body())
-            .messageType(MessageType.ADMIN)
-            .createdAt(now)
-            .expiresAt(resolvedExpiresAt)
-            .attachment(sealedAttachmentData)
-            .build();
-
-        return queueAndDeliverMessage(job, message).thenApply(outcome -> {
-            if (outcome.delivered()) {
-                LOGGER.debug("[Mailbox] Admin message from {} sent to {}: {}", adminName, recipientUuid, message.subject());
-            } else {
-                LOGGER.info("[Mailbox] Queued admin message {} for {}", messageId, recipientUuid);
-            }
-
-            if (filterDecision.flagged()) {
-                logFlaggedMessage(
-                    null,
-                    adminName,
-                    recipientUuid,
-                    messageId,
-                    MessageType.ADMIN,
-                    filterDecision.reason(),
-                    filterDecision.subject()
-                );
-            }
-            return messageId;
-        });
-    }
-
-    private CompletableFuture<UUID> sendTypedMessage(
-            String senderName,
-            UUID recipientUuid,
-            String subject,
-            @Nullable String body,
-            @Nullable String attachmentData,
-            MessageType type,
-            @Nullable Instant expiresAt,
-            boolean applyFilter,
-            boolean validateAttachments
-    ) {
-        if (type == MessageType.SYSTEM) {
-            Duration expiresIn = null;
-            if (expiresAt != null) {
-                Instant now = Instant.now();
-                expiresIn = Duration.between(now, expiresAt);
-                if (expiresIn.isNegative()) {
-                    expiresIn = Duration.ZERO;
-                }
-            }
-            return sendSystemMessage(recipientUuid, subject, body, attachmentData, expiresIn, applyFilter, validateAttachments);
-        }
-        return sendAdminMessage(senderName, recipientUuid, subject, body, attachmentData, expiresAt, applyFilter, validateAttachments);
-    }
-
-    /**
-     * Send a broadcast message to a list of players.
-     *
-     * @param adminName the admin's name
-     * @param playerUuids list of all player UUIDs
-     * @param subject the message subject
-     * @param body the message body
-     * @param attachmentData optional attachment data (JSON)
-     * @return future completing with the number of messages sent
-     */
     public CompletableFuture<Integer> sendBroadcast(
             String adminName,
             List<UUID> playerUuids,
@@ -958,9 +318,6 @@ public class MailboxManager {
         return sendBroadcast(adminName, playerUuids, subject, body, attachmentData, MessageType.ADMIN);
     }
 
-    /**
-     * Send a broadcast message to a list of players with a specific message type.
-     */
     public CompletableFuture<Integer> sendBroadcast(
             String senderName,
             List<UUID> playerUuids,
@@ -981,367 +338,43 @@ public class MailboxManager {
             MessageType type,
             @Nullable Instant expiresAt
     ) {
-        if (!initialized || repository == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
-        }
-
-        if (playerUuids.isEmpty()) {
-            return CompletableFuture.completedFuture(0);
-        }
-
-        FilterDecision filterDecision = applyContentFilter(subject, body);
-        if (!filterDecision.allowed()) {
-            String reason = filterDecision.reason() != null
-                ? filterDecision.reason()
-                : "Message blocked by filter";
-            return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-        }
-
-        AttachmentValidation attachmentValidation = validateAttachmentData(attachmentData);
-        if (!attachmentValidation.isAllowed()) {
-            String reason = attachmentValidation.error() != null
-                ? attachmentValidation.error()
-                : "Invalid attachment data";
-            return CompletableFuture.failedFuture(new IllegalArgumentException(reason));
-        }
-
-        MessageType normalizedType =
-            (type == MessageType.ADMIN || type == MessageType.SYSTEM) ? type : MessageType.ADMIN;
-        if (normalizedType != type) {
-            LOGGER.warn("[Mailbox] Unsupported broadcast type {}, defaulting to ADMIN", type);
-        }
-
-        MailboxConfig config = MailboxConfig.INSTANCE;
-        int batchSize = Math.max(1, config.getBroadcastBatchSize());
-        int delayMs = Math.max(0, config.getBroadcastBatchDelayMs());
-
-        LOGGER.info(
-            "[Mailbox] Sending broadcast to {} players: {} (batch size {}, delay {} ms)",
-            playerUuids.size(),
-            filterDecision.subject(),
-            batchSize,
-            delayMs
-        );
-
-        if (filterDecision.flagged()) {
-            AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
-                .action(AdminAuditLog.Action.MESSAGE_FLAG)
-                .actorUuid(null)
-                .actorName(senderName)
-                .targetType("broadcast")
-                .details("Recipients=" + playerUuids.size()
-                    + "; Type=" + normalizedType
-                    + "; Reason=" + filterDecision.reason()
-                    + "; Subject=" + truncate(filterDecision.subject(), 80))
-                .build())
-                .exceptionally(error -> {
-                    LOGGER.warn("[Mailbox] Failed to log flagged broadcast {}", filterDecision.subject(), error);
-                    return null;
-                });
-        }
-
-        List<List<UUID>> batches = new ArrayList<>();
-        for (int i = 0; i < playerUuids.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, playerUuids.size());
-            batches.add(playerUuids.subList(i, end));
-        }
-
-        CompletableFuture<Integer> chain = CompletableFuture.completedFuture(0);
-        final int totalBatches = batches.size();
-        for (int i = 0; i < totalBatches; i++) {
-            final List<UUID> batch = batches.get(i);
-            final int batchIndex = i + 1;
-            final boolean delayAfter = delayMs > 0 && batchIndex < totalBatches;
-
-            chain = chain.thenCompose(sentSoFar ->
-                sendBroadcastBatch(
-                    senderName,
-                    batch,
-                    filterDecision.subject(),
-                    filterDecision.body(),
-                    attachmentData,
-                    normalizedType,
-                    expiresAt
-                )
-                    .thenCompose(sentInBatch -> {
-                        int totalSent = sentSoFar + sentInBatch;
-                        if (delayAfter) {
-                            return delayBroadcast(delayMs).thenApply(v -> totalSent);
-                        }
-                        return CompletableFuture.completedFuture(totalSent);
-                    })
-                    .whenComplete((sent, error) -> {
-                        if (error == null) {
-                            LOGGER.debug("[Mailbox] Broadcast batch {}/{} sent", batchIndex, totalBatches);
-                        }
-                    })
-            );
-        }
-
-        String finalSenderName = senderName;
-        String finalSubject = filterDecision.subject();
-        return chain.whenComplete((sent, error) -> {
-            if (error == null) {
-                LOGGER.info("[Mailbox] Broadcast complete: {} messages sent", sent);
-
-                // Dispatch webhook
-                if (sent != null && sent > 0) {
-                    WebhookManager.INSTANCE.dispatchBroadcastSent(
-                        finalSubject,
-                        sent,
-                        finalSenderName
-                    );
-                }
-            } else {
-                LOGGER.error("[Mailbox] Broadcast failed", error);
-            }
-        });
-    }
-
-    private CompletableFuture<Integer> sendBroadcastBatch(
-            String senderName,
-            List<UUID> playerUuids,
-            String subject,
-            @Nullable String body,
-            @Nullable String attachmentData,
-            MessageType type,
-            @Nullable Instant expiresAt
-    ) {
-        List<CompletableFuture<Integer>> futures = playerUuids.stream()
-            .map(uuid -> sendTypedMessage(senderName, uuid, subject, body, attachmentData, type, expiresAt, false, false)
-                .handle((id, error) -> {
-                    if (error != null) {
-                        LOGGER.error("[Mailbox] Broadcast failed for {}", uuid, error);
-                        return 0;
-                    }
-                    return 1;
-                }))
-            .toList();
-
-        CompletableFuture<?>[] futureArray = futures.toArray(new CompletableFuture<?>[0]);
-        return CompletableFuture.allOf(futureArray)
-            .thenApply(v -> futures.stream().mapToInt(CompletableFuture::join).sum());
-    }
-
-    private static CompletableFuture<Void> delayBroadcast(int delayMs) {
-        if (delayMs <= 0) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return CompletableFuture.runAsync(
-            () -> {},
-            CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS)
+        return sender.sendBroadcast(
+            senderName, playerUuids, subject, body, attachmentData, type, expiresAt,
+            repository, initialized, newMessageCallback
         );
     }
 
-    private CompletableFuture<DeliveryOutcome> queueAndDeliverMessage(
-            MailboxDeliveryJob job,
-            MailboxMessage message
-    ) {
+    public CompletableFuture<Void> sendMessage(MailboxMessage message) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
         }
+        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
+            .messageId(message.id())
+            .sender(message.senderUuid(), message.senderName())
+            .recipient(message.recipientUuid())
+            .subject(message.subject())
+            .body(message.body())
+            .messageType(message.messageType())
+            .createdAt(message.createdAt())
+            .availableAt(message.createdAt())
+            .expiresAt(message.expiresAt())
+            .attachment(message.attachmentData())
+            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
+            .build();
 
-        return repo.saveDeliveryJob(job).thenCompose(savedJob -> {
-            if (!MailboxConfig.INSTANCE.isDeliveryImmediateDispatchEnabled()) {
-                return CompletableFuture.completedFuture(new DeliveryOutcome(message, false));
-            }
-
-            Instant attemptAt = Instant.now();
-            return deliverDeliveryJob(savedJob)
-                .thenCompose(deliveredMessage -> {
-                    MailboxDeliveryJob delivered = savedJob.toBuilder()
-                        .status(MailboxDeliveryJob.DeliveryStatus.DELIVERED)
-                        .attemptCount(savedJob.attemptCount() + 1)
-                        .lastAttemptAt(attemptAt)
-                        .deliveredAt(attemptAt)
-                        .lastFailureAt(null)
-                        .lastFailureReason(null)
-                        .build();
-                    return repo.updateDeliveryJob(delivered)
-                        .handle((updated, updateError) -> {
-                            if (updateError != null || !Boolean.TRUE.equals(updated)) {
-                                LOGGER.warn(
-                                    "[Mailbox] Failed to update delivery job {} after delivery",
-                                    savedJob.id(),
-                                    updateError
-                                );
-                            }
-                            return new DeliveryOutcome(deliveredMessage, true);
-                        });
-                })
-                .exceptionallyCompose(error -> {
-                    Throwable cause = unwrapCompletionError(error);
-                    String reason = buildFailureReason(cause);
-                    return handleImmediateDeliveryFailure(savedJob, attemptAt, reason)
-                        .thenApply(updatedJob -> new DeliveryOutcome(message, false));
-                });
-        });
-    }
-
-    public static String buildFailureReason(Throwable error) {
-        String reason = error.getMessage();
-        if (reason == null || reason.isBlank()) {
-            reason = error.getClass().getSimpleName();
-        }
-        String truncated = truncate(reason, 200);
-        return truncated.isBlank() ? error.getClass().getSimpleName() : truncated;
-    }
-
-    public static int computeRetryDelaySeconds(int failureCount) {
-        MailboxConfig config = MailboxConfig.INSTANCE;
-        int baseDelay = Math.max(1, config.getDeliveryRetryDelaySeconds());
-        int maxDelay = Math.max(baseDelay, config.getDeliveryRetryMaxDelaySeconds());
-        double multiplier = Math.max(1.0, config.getDeliveryRetryBackoffMultiplier());
-        int attemptIndex = Math.max(1, failureCount);
-
-        double delay = baseDelay * Math.pow(multiplier, attemptIndex - 1);
-        delay = Math.min(delay, maxDelay);
-
-        double jitterRatio = Math.max(0.0, Math.min(0.5, config.getDeliveryRetryJitterRatio()));
-        if (jitterRatio > 0.0) {
-            double jitter = ThreadLocalRandom.current().nextDouble(-jitterRatio, jitterRatio);
-            delay = delay * (1.0 + jitter);
-        }
-
-        int rounded = (int) Math.round(delay);
-        if (rounded < 1) {
-            rounded = 1;
-        }
-        if (rounded > maxDelay) {
-            rounded = maxDelay;
-        }
-        return rounded;
-    }
-
-    private static Throwable unwrapCompletionError(Throwable error) {
-        if (error instanceof CompletionException completion && completion.getCause() != null) {
-            return completion.getCause();
-        }
-        return error;
-    }
-
-    private CompletableFuture<MailboxDeliveryJob> handleImmediateDeliveryFailure(
-            MailboxDeliveryJob job,
-            Instant attemptAt,
-            String reason
-    ) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.completedFuture(job);
-        }
-
-        if (job.expiresAt() != null && attemptAt.isAfter(job.expiresAt())) {
-            String expiryReason = "Message expired before delivery";
-            MailboxDeliveryJob cancelled = job.toBuilder()
-                .status(MailboxDeliveryJob.DeliveryStatus.CANCELLED)
-                .attemptCount(job.attemptCount() + 1)
-                .failureCount(job.failureCount() + 1)
-                .lastAttemptAt(attemptAt)
-                .lastFailureAt(attemptAt)
-                .lastFailureReason(expiryReason)
-                .build();
-
-            return repo.updateDeliveryJob(cancelled)
-                .handle((updated, updateError) -> {
-                    if (updateError != null || !Boolean.TRUE.equals(updated)) {
-                        LOGGER.warn(
-                            "[Mailbox] Failed to update delivery job {} after expiry",
-                            job.id(),
-                            updateError
-                        );
-                    }
-                    return cancelled;
-                })
-                .thenCompose(updatedJob -> {
-                    if (MailboxConfig.INSTANCE.isDeliveryRecallEnabled()) {
-                        return sendDeliveryRecall(updatedJob, expiryReason)
-                            .thenApply(messageId -> updatedJob);
-                    }
-                    return CompletableFuture.completedFuture(updatedJob);
-                });
-        }
-
-        int nextFailureCount = job.failureCount() + 1;
-        int maxAttempts = MailboxConfig.INSTANCE.getDeliveryMaxAttempts();
-        boolean isFinalFailure = nextFailureCount >= maxAttempts;
-
-        MailboxDeliveryJob.Builder builder = job.toBuilder()
-            .attemptCount(job.attemptCount() + 1)
-            .failureCount(nextFailureCount)
-            .lastAttemptAt(attemptAt)
-            .lastFailureAt(attemptAt)
-            .lastFailureReason(reason);
-
-        if (isFinalFailure) {
-            builder.status(MailboxDeliveryJob.DeliveryStatus.FAILED);
-        } else {
-            Instant nextAttemptAt = attemptAt.plusSeconds(computeRetryDelaySeconds(nextFailureCount));
-            builder.status(MailboxDeliveryJob.DeliveryStatus.PENDING)
-                .availableAt(nextAttemptAt);
-        }
-
-        MailboxDeliveryJob updated = builder.build();
-        return repo.updateDeliveryJob(updated)
-            .handle((persisted, updateError) -> {
-                if (updateError != null || !Boolean.TRUE.equals(persisted)) {
-                    LOGGER.warn(
-                        "[Mailbox] Failed to update delivery job {} after failure",
-                        job.id(),
-                        updateError
-                    );
+        return sender.queueAndDeliverMessage(job, message, repo, initialized, newMessageCallback)
+            .thenAccept(outcome -> {
+                if (!outcome.delivered()) {
+                    LOGGER.info("[Mailbox] Queued message {} for {}", message.id(), message.recipientUuid());
                 }
-                return updated;
-            })
-            .thenCompose(updatedJob -> {
-                if (isFinalFailure && MailboxConfig.INSTANCE.isDeliveryRecallEnabled()) {
-                    return sendDeliveryRecall(updatedJob, reason)
-                        .thenApply(messageId -> updatedJob);
-                }
-                return CompletableFuture.completedFuture(updatedJob);
             });
     }
 
-    private void logFlaggedMessage(
-            @Nullable UUID actorUuid,
-            String actorName,
-            UUID recipientUuid,
-            UUID messageId,
-            MessageType type,
-            @Nullable String reason,
-            String subject
-    ) {
-        String details = "Recipient=" + recipientUuid
-            + "; Type=" + type
-            + "; Reason=" + (reason != null ? reason : "Flagged by content filter")
-            + "; Subject=" + truncate(subject, 80);
+    // ========================================================================
+    // READ / QUERY OPERATIONS
+    // ========================================================================
 
-        AdminAuditLog.INSTANCE.log(AdminAuditLog.AuditEntry.builder()
-            .action(AdminAuditLog.Action.MESSAGE_FLAG)
-            .actorUuid(actorUuid)
-            .actorName(actorName)
-            .targetType("message")
-            .targetId(messageId.toString())
-            .details(details)
-            .build()).exceptionally(error -> {
-                LOGGER.warn("[Mailbox] Failed to log flagged message {}", messageId, error);
-                return null;
-            });
-    }
-
-    private static String truncate(String value, int maxLen) {
-        if (value == null) {
-            return "";
-        }
-        return value.length() <= maxLen ? value : value.substring(0, Math.max(0, maxLen - 3)) + "...";
-    }
-
-    /**
-     * Get all messages for a player.
-     *
-     * @param playerUuid the player's UUID
-     * @return future completing with the list of messages
-     */
     public CompletableFuture<List<MailboxMessage>> getMessages(UUID playerUuid) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1350,12 +383,6 @@ public class MailboxManager {
         return repo.getMessagesForPlayer(playerUuid, false);
     }
 
-    /**
-     * Get a specific message.
-     *
-     * @param messageId the message UUID
-     * @return future completing with the message if found
-     */
     public CompletableFuture<Optional<MailboxMessage>> getMessage(UUID messageId) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1364,12 +391,6 @@ public class MailboxManager {
         return repo.getMessage(messageId);
     }
 
-    /**
-     * Get unread message count for a player.
-     *
-     * @param playerUuid the player's UUID
-     * @return future completing with the count
-     */
     public CompletableFuture<Integer> getUnreadCount(UUID playerUuid) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1398,68 +419,17 @@ public class MailboxManager {
     }
 
     public CompletableFuture<MailboxMessage> deliverDeliveryJob(MailboxDeliveryJob job) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
-        }
-
-        MailboxMessage message = MailboxMessage.builder()
-            .id(job.messageId())
-            .sender(job.senderUuid(), job.senderName())
-            .recipient(job.recipientUuid())
-            .subject(job.subject())
-            .body(job.body())
-            .messageType(job.messageType())
-            .createdAt(job.createdAt())
-            .expiresAt(job.expiresAt())
-            .attachment(job.attachmentData())
-            .build();
-
-        return repo.saveMessage(message)
-            .thenApply(saved -> {
-                notifyNewMessage(saved.recipientUuid(), saved);
-                return saved;
-            })
-            .exceptionallyCompose(error -> {
-                Throwable cause = unwrapCompletionError(error);
-                return repo.getMessage(job.messageId())
-                    .thenCompose(existing -> existing
-                        .<CompletableFuture<MailboxMessage>>map(CompletableFuture::completedFuture)
-                        .orElseGet(() -> CompletableFuture.failedFuture(cause)));
-            });
+        return sender.deliverDeliveryJob(job, repository, initialized, newMessageCallback);
     }
 
     public CompletableFuture<UUID> sendDeliveryRecall(MailboxDeliveryJob job, String reason) {
-        UUID senderUuid = job.senderUuid();
-        if (senderUuid == null) {
-            return CompletableFuture.completedFuture(job.messageId());
-        }
-
-        String subject = "Delivery failed: " + truncate(job.subject(), 64);
-        String body = "Your message could not be delivered.\n"
-            + "Recipient: " + job.recipientUuid() + "\n"
-            + "Reason: " + reason;
-
-        return sendSystemMessage(
-            senderUuid,
-            subject,
-            body,
-            job.attachmentData(),
-            null,
-            false,
-            false
-        ).exceptionally(error -> {
-            LOGGER.warn("[Mailbox] Failed to send delivery recall for {}", job.id(), error);
-            return job.messageId();
-        });
+        return sender.sendDeliveryRecall(job, reason, repository, initialized, newMessageCallback);
     }
 
-    /**
-     * Mark a message as read.
-     *
-     * @param messageId the message UUID
-     * @return future completing with success status
-     */
+    // ========================================================================
+    // MESSAGE ACTIONS
+    // ========================================================================
+
     public CompletableFuture<Boolean> markAsRead(UUID messageId) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1468,12 +438,6 @@ public class MailboxManager {
         return repo.markAsRead(messageId, Instant.now());
     }
 
-    /**
-     * Mark a message's attachment as claimed.
-     *
-     * @param messageId the message UUID
-     * @return future completing with success status
-     */
     public CompletableFuture<Boolean> claimAttachment(UUID messageId) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1482,199 +446,10 @@ public class MailboxManager {
         return repo.markAttachmentClaimed(messageId);
     }
 
-    /*
-     * Claim attachments for a message with an in-flight guard to prevent duplicates.
-     */
     public CompletableFuture<ClaimOutcome> claimAttachments(ServerPlayer player, MailboxMessage message) {
-        if (!message.recipientUuid().equals(player.getUUID()) || message.deleted()) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Access denied"));
-        }
-        if (!message.canClaimAttachment()) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("No attachment to claim"));
-        }
-        if (MailboxConfig.INSTANCE.isMaintenanceMode()
-                && !MailboxPermissions.INSTANCE.isAdmin(player.getUUID(), player)) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Mailbox is in maintenance mode"));
-        }
-
-        UUID messageId = message.id();
-        return claimInFlight.computeIfAbsent(messageId, id ->
-            doClaimAttachments(player, message)
-                .whenComplete((result, error) -> claimInFlight.remove(id))
-        );
+        return attachmentHandler.claimAttachments(player, message, repository, initialized);
     }
 
-    private CompletableFuture<ClaimOutcome> doClaimAttachments(ServerPlayer player, MailboxMessage message) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Mailbox system not initialized"));
-        }
-        String attachmentData = message.attachmentData();
-        if (attachmentData == null || attachmentData.isBlank()) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Attachment data missing"));
-        }
-
-        List<MailAttachment> parsed = MailAttachment.parseAttachments(attachmentData);
-        List<MailAttachment> attachments = MailAttachment.flattenAttachments(parsed);
-        if (attachments.isEmpty()) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Invalid attachment data"));
-        }
-
-        boolean canClaimAll = attachments.stream().allMatch(a -> a != null && a.canClaim(player));
-        if (!canClaimAll) {
-            return CompletableFuture.completedFuture(ClaimOutcome.failure("Cannot claim attachments"));
-        }
-
-        return repo.startAttachmentClaim(message.id()).thenCompose(started -> {
-            if (!started) {
-                return CompletableFuture.completedFuture(
-                    ClaimOutcome.failure("Attachment already claimed or in progress")
-                );
-            }
-
-            ClaimAttempt attempt = claimAttachmentsNow(player, message.id(), attachments);
-            if (!attempt.finalizeClaim()) {
-                return repo.clearAttachmentClaim(message.id())
-                    .exceptionally(e -> {
-                        LOGGER.error("[Mailbox] Failed to clear attachment claim lock {}", message.id(), e);
-                        return false;
-                    })
-                    .thenApply(ignored -> attempt.outcome());
-            }
-
-            return repo.markAttachmentClaimed(message.id()).thenApply(success -> {
-                if (success) {
-                    if (attempt.outcome().success()) {
-                        // P1: Record successful attachment in reputation system
-                        PlayerReputation.INSTANCE.recordSuccessfulAttachment(player.getUUID());
-
-                        String attachmentType = determineAttachmentType(attachments);
-                        WebhookManager.INSTANCE.dispatchAttachmentClaimed(
-                            message.id(),
-                            player.getUUID(),
-                            attachmentType
-                        );
-                        return attempt.outcome();
-                    }
-                    AttachmentTransactionLog.INSTANCE.logSuspiciousActivity(
-                        player.getUUID(),
-                        player.getName().getString(),
-                        "Partial attachment claim finalized",
-                        "messageId=" + message.id()
-                    );
-                    return ClaimOutcome.failure("Claim partially completed. Contact support.");
-                }
-                LOGGER.error("[Mailbox] Failed to finalize attachment claim {}", message.id());
-                return ClaimOutcome.failure("Claim completed but could not be finalized");
-            });
-        });
-    }
-
-    private static ClaimAttempt claimAttachmentsNow(ServerPlayer player, UUID messageId, List<MailAttachment> attachments) {
-        List<String> receipts = new ArrayList<>();
-        String playerName = player.getName().getString();
-        UUID playerUuid = player.getUUID();
-
-        List<MailAttachment> ordered = new ArrayList<>(attachments.size());
-        for (MailAttachment attachment : attachments) {
-            if (attachment instanceof CurrencyAttachment) {
-                ordered.add(attachment);
-            }
-        }
-        for (MailAttachment attachment : attachments) {
-            if (!(attachment instanceof CurrencyAttachment)) {
-                ordered.add(attachment);
-            }
-        }
-
-        Map<RewardSystem.Currency, Integer> currencyAwards = new HashMap<>();
-        boolean grantedNonCurrency = false;
-
-        for (MailAttachment attachment : ordered) {
-            MailAttachment.ClaimResult result = attachment.claim(player);
-
-            // Log the transaction
-            if (attachment instanceof ItemAttachment itemAtt) {
-                AttachmentTransactionLog.INSTANCE.logItemClaim(
-                    messageId, playerUuid, playerName,
-                    itemAtt.itemId().toString(), itemAtt.count(), itemAtt.nbtData(),
-                    result.success(), result.success() ? null : result.message()
-                );
-            } else if (attachment instanceof CurrencyAttachment currAtt) {
-                AttachmentTransactionLog.INSTANCE.logCurrencyClaim(
-                    messageId, playerUuid, playerName,
-                    currAtt.currencyType(), currAtt.amount(),
-                    result.success(), result.success() ? null : result.message()
-                );
-            }
-
-            if (!result.success()) {
-                String messageText = result.message() != null
-                    ? result.message()
-                    : "Failed to claim attachment";
-                boolean rollbackFailed = !rollbackCurrencies(player, currencyAwards);
-                boolean finalizeClaim = grantedNonCurrency || rollbackFailed;
-                return new ClaimAttempt(ClaimOutcome.failure(messageText), finalizeClaim);
-            }
-            if (attachment instanceof CurrencyAttachment currAtt) {
-                RewardSystem.Currency currency = CurrencyAttachment.toRewardCurrency(currAtt.currencyType());
-                if (currency != null) {
-                    currencyAwards.merge(currency, currAtt.amount(), (a, b) -> a + b);
-                }
-            } else {
-                grantedNonCurrency = true;
-            }
-            String resultMsg = result.message();
-            if (resultMsg != null && !resultMsg.isBlank()) {
-                receipts.add(resultMsg);
-            }
-        }
-
-        String summary = receipts.isEmpty()
-            ? "Attachment claimed!"
-            : String.join(", ", receipts);
-        return new ClaimAttempt(ClaimOutcome.success(summary), true);
-    }
-
-    private static String determineAttachmentType(List<MailAttachment> attachments) {
-        if (attachments == null || attachments.isEmpty()) {
-            return "unknown";
-        }
-        boolean hasItems = attachments.stream().anyMatch(a -> a instanceof ItemAttachment);
-        boolean hasCurrency = attachments.stream().anyMatch(a -> a instanceof CurrencyAttachment);
-        if (hasItems && hasCurrency) {
-            return "mixed";
-        } else if (hasItems) {
-            return "items";
-        } else if (hasCurrency) {
-            return "currency";
-        }
-        return "unknown";
-    }
-
-    private static boolean rollbackCurrencies(ServerPlayer player, Map<RewardSystem.Currency, Integer> awards) {
-        if (awards.isEmpty()) {
-            return true;
-        }
-        try {
-            RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(player.getUUID());
-            for (Map.Entry<RewardSystem.Currency, Integer> entry : awards.entrySet()) {
-                wallet.removeCurrency(entry.getKey(), entry.getValue());
-            }
-            RewardSystem.INSTANCE.savePlayerWallet(wallet);
-            return true;
-        } catch (Exception e) {
-            LOGGER.error("[Mailbox] Failed to rollback currencies for {}", player.getName().getString(), e);
-            return false;
-        }
-    }
-
-    /**
-     * Delete a message.
-     *
-     * @param messageId the message UUID
-     * @return future completing with success status
-     */
     public CompletableFuture<Boolean> deleteMessage(UUID messageId) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1688,49 +463,10 @@ public class MailboxManager {
         return repo.softDeleteMessage(messageId, retainUntil);
     }
 
-    // ============================================================================
-    // API SUPPORT METHODS
-    // ============================================================================
+    // ========================================================================
+    // API / BROADCAST SUPPORT
+    // ========================================================================
 
-    /**
-     * Send a message using a pre-built message object.
-     *
-     * @param message the message to send
-     * @return future completing when saved
-     */
-    public CompletableFuture<Void> sendMessage(MailboxMessage message) {
-        MailboxRepository repo = repository;
-        if (!initialized || repo == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
-        }
-        MailboxDeliveryJob job = MailboxDeliveryJob.builder()
-            .messageId(message.id())
-            .sender(message.senderUuid(), message.senderName())
-            .recipient(message.recipientUuid())
-            .subject(message.subject())
-            .body(message.body())
-            .messageType(message.messageType())
-            .createdAt(message.createdAt())
-            .availableAt(message.createdAt())
-            .expiresAt(message.expiresAt())
-            .attachment(message.attachmentData())
-            .status(MailboxDeliveryJob.DeliveryStatus.PENDING)
-            .build();
-
-        return queueAndDeliverMessage(job, message).thenAccept(outcome -> {
-            if (!outcome.delivered()) {
-                LOGGER.info("[Mailbox] Queued message {} for {}", message.id(), message.recipientUuid());
-            }
-        });
-    }
-
-    /**
-     * Get all messages across all users (admin only).
-     *
-     * @param limit maximum number to return
-     * @param offset starting offset
-     * @return future completing with message list
-     */
     public CompletableFuture<List<MailboxMessage>> getAllMessages(int limit, int offset) {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1739,15 +475,6 @@ public class MailboxManager {
         return repo.getAllMessages(limit, offset);
     }
 
-    /**
-     * Broadcast a message to all known players (online + offline).
-     *
-     * @param senderName the sender name
-     * @param subject the message subject
-     * @param body the message body
-     * @param type the message type
-     * @return future completing with count of recipients
-     */
     public CompletableFuture<Integer> broadcast(
             String senderName,
             String subject,
@@ -1774,11 +501,6 @@ public class MailboxManager {
             });
     }
 
-    /**
-     * Get all known user UUIDs that have received messages.
-     *
-     * @return future completing with list of UUIDs
-     */
     public CompletableFuture<List<UUID>> getKnownUsers() {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1787,9 +509,6 @@ public class MailboxManager {
         return repo.getKnownUsers();
     }
 
-    /**
-     * Get all recipients for a broadcast (known users + online players).
-     */
     public CompletableFuture<List<UUID>> getBroadcastRecipients() {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1823,11 +542,6 @@ public class MailboxManager {
             });
     }
 
-    /**
-     * Get total message count across all users.
-     *
-     * @return future completing with count
-     */
     public CompletableFuture<Integer> getTotalMessageCount() {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1836,11 +550,6 @@ public class MailboxManager {
         return repo.getTotalMessageCount();
     }
 
-    /**
-     * Get total unread message count across all users.
-     *
-     * @return future completing with count
-     */
     public CompletableFuture<Integer> getTotalUnreadCount() {
         MailboxRepository repo = repository;
         if (!initialized || repo == null) {
@@ -1849,103 +558,29 @@ public class MailboxManager {
         return repo.getTotalUnreadCount();
     }
 
-    // ============================================================================
-    // CALLBACKS
-    // ============================================================================
+    // ========================================================================
+    // STATIC UTILITY (used by MailboxDeliveryRuntime)
+    // ========================================================================
 
-    /*
-     * Set the callback for new message notifications.
-     */
+    public static String buildFailureReason(Throwable error) {
+        return MailboxMessageSender.buildFailureReason(error);
+    }
+
+    public static int computeRetryDelaySeconds(int failureCount) {
+        return MailboxMessageSender.computeRetryDelaySeconds(failureCount);
+    }
+
+    // ========================================================================
+    // CALLBACKS
+    // ========================================================================
+
     public void setNewMessageCallback(@Nullable NewMessageCallback callback) {
         this.newMessageCallback = callback;
     }
 
-    private void notifyNewMessage(UUID recipientUuid, MailboxMessage message) {
-        NewMessageCallback callback = this.newMessageCallback;
-        if (callback != null) {
-            try {
-                callback.onNewMessage(recipientUuid, message);
-            } catch (Exception e) {
-                LOGGER.error("[Mailbox] Error in new message callback", e);
-            }
-        }
-    }
-
-    // ============================================================================
-    // RATE LIMITING
-    // ============================================================================
-
-    @Nullable
-    private String checkRateLimit(UUID playerUuid, UUID recipientUuid) {
-        MailboxConfig config = MailboxConfig.INSTANCE;
-        refreshDailyBuckets();
-
-        // Check cooldown
-        Long lastSend = lastSendTime.get(playerUuid);
-        if (lastSend != null) {
-            long elapsed = System.currentTimeMillis() - lastSend;
-            if (elapsed < config.getSendCooldownSeconds() * 1000L) {
-                return "Please wait before sending another message.";
-            }
-        }
-
-        // Check messages per minute
-        Integer sends = sendsThisMinute.get(playerUuid);
-        if (sends != null && sends >= config.getMaxMessagesPerMinute()) {
-            return "Too many messages sent. Please wait.";
-        }
-
-        int maxPerDay = config.getMaxMessagesPerDay();
-        if (maxPerDay > 0) {
-            Integer daily = sendsToday.get(playerUuid);
-            if (daily != null && daily >= maxPerDay) {
-                return "Daily message limit reached.";
-            }
-        }
-
-        int maxPerRecipient = config.getMaxMessagesPerRecipientPerDay();
-        if (maxPerRecipient > 0) {
-            SenderRecipientKey key = new SenderRecipientKey(playerUuid, recipientUuid);
-            Integer perRecipient = sendsPerRecipientToday.get(key);
-            if (perRecipient != null && perRecipient >= maxPerRecipient) {
-                return "Daily recipient limit reached.";
-            }
-        }
-
-        return null;
-    }
-
-    private void updateRateLimit(UUID playerUuid, UUID recipientUuid) {
-        lastSendTime.put(playerUuid, System.currentTimeMillis());
-        sendsThisMinute.merge(playerUuid, 1, (a, b) -> a + b);
-
-        refreshDailyBuckets();
-        MailboxConfig config = MailboxConfig.INSTANCE;
-        if (config.getMaxMessagesPerDay() > 0) {
-            sendsToday.merge(playerUuid, 1, (a, b) -> a + b);
-        }
-        if (config.getMaxMessagesPerRecipientPerDay() > 0) {
-            SenderRecipientKey key = new SenderRecipientKey(playerUuid, recipientUuid);
-            sendsPerRecipientToday.merge(key, 1, (a, b) -> a + b);
-        }
-    }
-
-    private void refreshDailyBuckets() {
-        long today = currentEpochDay();
-        if (today != lastDailyResetEpochDay) {
-            lastDailyResetEpochDay = today;
-            sendsToday.clear();
-            sendsPerRecipientToday.clear();
-        }
-    }
-
-    private static long currentEpochDay() {
-        return LocalDate.now(ZoneOffset.UTC).toEpochDay();
-    }
-
-    // ============================================================================
+    // ========================================================================
     // SCHEDULED TASKS
-    // ============================================================================
+    // ========================================================================
 
     private void purgeExpiredMessages() {
         MailboxRepository repo = repository;
@@ -1960,180 +595,10 @@ public class MailboxManager {
             });
     }
 
-    // ============================================================================
-    // ATTACHMENT RESERVATION (P2P SEND)
-    // ============================================================================
-
-    private CompletableFuture<AttachmentReservation> reserveAttachmentsForSend(
-            ServerPlayer sender,
-            List<MailAttachment> attachments
-    ) {
-        net.minecraft.server.MinecraftServer server = sender.server;
-        CompletableFuture<AttachmentReservation> future = new CompletableFuture<>();
-        Runnable task = () -> future.complete(reserveAttachmentsNow(sender, attachments));
-        server.execute(task);
-        return future;
-    }
-
-    private AttachmentReservation reserveAttachmentsNow(ServerPlayer sender, List<MailAttachment> attachments) {
-        if (attachments == null || attachments.isEmpty()) {
-            return AttachmentReservation.empty();
-        }
-
-        UUID senderUuid = sender.getUUID();
-        Object lock = attachmentSendLocks.computeIfAbsent(senderUuid, id -> new Object());
-
-        synchronized (lock) {
-            Map<ResourceLocation, Integer> itemCounts = new HashMap<>();
-            Map<RewardSystem.Currency, Integer> currencyCounts = new HashMap<>();
-
-            for (MailAttachment attachment : attachments) {
-                if (attachment instanceof ItemAttachment itemAtt) {
-                    String nbtData = itemAtt.nbtData();
-                    if (nbtData != null && !nbtData.isBlank()) {
-                        return AttachmentReservation.failure("Item attachments with NBT are not supported");
-                    }
-                    itemCounts.merge(itemAtt.itemId(), itemAtt.count(), (a, b) -> a + b);
-                } else if (attachment instanceof CurrencyAttachment currencyAtt) {
-                    RewardSystem.Currency currency = CurrencyAttachment.toRewardCurrency(currencyAtt.currencyType());
-                    if (currency == null) {
-                        return AttachmentReservation.failure("Currency type not supported: " + currencyAtt.currencyType());
-                    }
-                    currencyCounts.merge(currency, currencyAtt.amount(), (a, b) -> a + b);
-                } else {
-                    return AttachmentReservation.failure("Unsupported attachment type");
-                }
-            }
-
-            Inventory inventory = sender.getInventory();
-            for (Map.Entry<ResourceLocation, Integer> entry : itemCounts.entrySet()) {
-                Item item = BuiltInRegistries.ITEM.get(entry.getKey());
-                if (item == null || item == net.minecraft.world.item.Items.AIR) {
-                    return AttachmentReservation.failure("Invalid item: " + entry.getKey());
-                }
-                int available = countItem(inventory, item);
-                if (available < entry.getValue()) {
-                    return AttachmentReservation.failure("Insufficient items for " + entry.getKey());
-                }
-            }
-
-            RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(senderUuid);
-            for (Map.Entry<RewardSystem.Currency, Integer> entry : currencyCounts.entrySet()) {
-                int available = wallet.getCurrency(entry.getKey());
-                if (available < entry.getValue()) {
-                    return AttachmentReservation.failure("Insufficient " + entry.getKey().getDisplayName());
-                }
-            }
-
-            Map<ResourceLocation, Integer> removedItems = new HashMap<>();
-            for (Map.Entry<ResourceLocation, Integer> entry : itemCounts.entrySet()) {
-                Item item = BuiltInRegistries.ITEM.get(entry.getKey());
-                int removed = removeItems(inventory, item, entry.getValue());
-                if (removed < entry.getValue()) {
-                    restoreItems(sender, removedItems);
-                    return AttachmentReservation.failure("Failed to reserve item: " + entry.getKey());
-                }
-                removedItems.merge(entry.getKey(), removed, (a, b) -> a + b);
-            }
-            inventory.setChanged();
-
-            for (Map.Entry<RewardSystem.Currency, Integer> entry : currencyCounts.entrySet()) {
-                wallet.removeCurrency(entry.getKey(), entry.getValue());
-            }
-            RewardSystem.INSTANCE.savePlayerWallet(wallet);
-
-            return new AttachmentReservation(true, null, Map.copyOf(itemCounts), Map.copyOf(currencyCounts));
-        }
-    }
-
-    private static int countItem(Inventory inventory, Item item) {
-        int count = 0;
-        int size = inventory.getContainerSize();
-        for (int i = 0; i < size; i++) {
-            ItemStack stack = inventory.getItem(i);
-            if (!stack.isEmpty() && stack.getItem() == item) {
-                count += stack.getCount();
-            }
-        }
-        return count;
-    }
-
-    private static int removeItems(Inventory inventory, Item item, int count) {
-        int remaining = count;
-        int size = inventory.getContainerSize();
-        for (int i = 0; i < size && remaining > 0; i++) {
-            ItemStack stack = inventory.getItem(i);
-            if (stack.isEmpty() || stack.getItem() != item) {
-                continue;
-            }
-            int remove = Math.min(remaining, stack.getCount());
-            stack.shrink(remove);
-            if (stack.isEmpty()) {
-                inventory.setItem(i, Objects.requireNonNull(ItemStack.EMPTY));
-            }
-            remaining -= remove;
-        }
-        return count - remaining;
-    }
-
-    private void restoreItems(ServerPlayer sender, Map<ResourceLocation, Integer> removedItems) {
-        if (removedItems.isEmpty()) {
-            return;
-        }
-        Inventory inventory = sender.getInventory();
-        for (Map.Entry<ResourceLocation, Integer> entry : removedItems.entrySet()) {
-            Item item = BuiltInRegistries.ITEM.get(entry.getKey());
-            if (item == null || item == net.minecraft.world.item.Items.AIR) {
-                continue;
-            }
-            ItemStack stack = new ItemStack(item, entry.getValue());
-            if (!inventory.add(stack)) {
-                sender.drop(stack, false);
-            }
-        }
-        inventory.setChanged();
-    }
-
-    private void refundReservation(ServerPlayer sender, AttachmentReservation reservation) {
-        if (!reservation.success()) {
-            return;
-        }
-        if (reservation.items().isEmpty() && reservation.currencies().isEmpty()) {
-            return;
-        }
-        net.minecraft.server.MinecraftServer server = sender.server;
-        Runnable task = () -> {
-            Inventory inventory = sender.getInventory();
-            for (Map.Entry<ResourceLocation, Integer> entry : reservation.items().entrySet()) {
-                Item item = BuiltInRegistries.ITEM.get(entry.getKey());
-                if (item == null || item == net.minecraft.world.item.Items.AIR) {
-                    continue;
-                }
-                ItemStack stack = new ItemStack(item, entry.getValue());
-                if (!inventory.add(stack)) {
-                    sender.drop(stack, false);
-                }
-            }
-            inventory.setChanged();
-
-            if (!reservation.currencies().isEmpty()) {
-                RewardSystem.PlayerWallet wallet = RewardSystem.INSTANCE.getWallet(sender.getUUID());
-                for (Map.Entry<RewardSystem.Currency, Integer> entry : reservation.currencies().entrySet()) {
-                    wallet.addCurrency(entry.getKey(), entry.getValue());
-                }
-                RewardSystem.INSTANCE.savePlayerWallet(wallet);
-            }
-        };
-        server.execute(task);
-    }
-
-    // ============================================================================
+    // ========================================================================
     // HELPER TYPES
-    // ============================================================================
+    // ========================================================================
 
-    /*
-     * Result of a send operation.
-     */
     public record SendResult(boolean success, @Nullable UUID messageId, @Nullable String error) {
         public static SendResult success(UUID messageId) {
             return new SendResult(true, messageId, null);
@@ -2144,9 +609,6 @@ public class MailboxManager {
         }
     }
 
-    /*
-     * Result of a claim operation.
-     */
     public record ClaimOutcome(boolean success, String message) {
         public static ClaimOutcome success(String message) {
             return new ClaimOutcome(true, message);
@@ -2157,28 +619,6 @@ public class MailboxManager {
         }
     }
 
-    private record ClaimAttempt(ClaimOutcome outcome, boolean finalizeClaim) {}
-
-    private record AttachmentReservation(
-        boolean success,
-        @Nullable String error,
-        Map<ResourceLocation, Integer> items,
-        Map<RewardSystem.Currency, Integer> currencies
-    ) {
-        static AttachmentReservation empty() {
-            return new AttachmentReservation(true, null, Map.of(), Map.of());
-        }
-
-        static AttachmentReservation failure(String error) {
-            return new AttachmentReservation(false, error, Map.of(), Map.of());
-        }
-    }
-
-    private record SenderRecipientKey(UUID sender, UUID recipient) {}
-
-    /*
-     * Callback interface for new message notifications.
-     */
     @FunctionalInterface
     public interface NewMessageCallback {
         void onNewMessage(UUID recipientUuid, MailboxMessage message);

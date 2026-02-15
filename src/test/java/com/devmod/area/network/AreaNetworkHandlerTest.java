@@ -69,7 +69,7 @@ class AreaNetworkHandlerTest {
         when(level.getMaxBuildHeight()).thenReturn(256);
         when(player.getName()).thenReturn(Component.literal("TestPlayer"));
 
-        Method method = AreaNetworkHandler.class.getDeclaredMethod(
+        Method method = AreaDefinitionValidator.class.getDeclaredMethod(
             "sanitizeDefinition", AreaDefinition.class, AreaDefinition.class, ServerPlayer.class, boolean.class);
         method.setAccessible(true);
 

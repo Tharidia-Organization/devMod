@@ -8,12 +8,8 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +28,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -51,7 +46,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.endurance.combat.api.IComboSession;
 import com.devmod.notification.NotificationService;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
-import com.devmod.util.I18n;
+
 public class RewardSystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RewardSystem.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -61,22 +56,6 @@ public class RewardSystem {
     // Player currency and progression
     private final Map<UUID, PlayerWallet> playerWallets = new ConcurrentHashMap<>();
 
-    // DOUBLE-SPENDING FIX: Per-player locks to prevent concurrent purchases
-    private final Map<UUID, Object> purchaseLocks = new ConcurrentHashMap<>();
-
-    private Object getPurchaseLock(UUID playerId) {
-        return purchaseLocks.computeIfAbsent(playerId, id -> new Object());
-    }
-
-    // Loot tables
-    private final Map<LootTier, List<LootEntry>> lootTables = new EnumMap<>(LootTier.class);
-
-    // Shop items
-    private final List<ShopItem> shopItems = new ArrayList<>();
-
-    // Achievements
-    private final Map<String, Achievement> achievements = new LinkedHashMap<>();
-
     // Data persistence
     private Path dataDirectory;
     private final Random random = new Random();
@@ -84,17 +63,22 @@ public class RewardSystem {
     private static final double MAX_TEMPLATE_DIFFICULTY_MULTIPLIER = 1.5;
     private static final double MAX_TOTAL_REWARD_MULTIPLIER = 5.0;
 
+    // Delegates
+    private final RewardLootGenerator lootGenerator;
+    private final RewardShopManager shopManager;
+    private final RewardAchievementManager achievementManager;
+
     // ========== Currency System ==========
 
     /**
      * Currency types in the system.
      */
     public enum Currency {
-        TOKENS("Endurance Tokens", EnduranceColors.Currency.TOKENS, "tokens"),      // Main currency from quests
-        COINS("Coins", EnduranceColors.Currency.COINS, "coins"),                    // General-purpose currency
-        PRESTIGE("Prestige Points", EnduranceColors.Currency.PRESTIGE, "prestige"), // Earned from completing hard content
-        GEMS("Gems", EnduranceColors.Currency.GEMS, "gems"),                         // Premium currency
-        BLOOD_GEMS("Blood Gems", EnduranceColors.Currency.BLOOD_GEMS, "blood_gems"); // Rare currency from bosses
+        TOKENS("Endurance Tokens", EnduranceColors.Currency.TOKENS, "tokens"),
+        COINS("Coins", EnduranceColors.Currency.COINS, "coins"),
+        PRESTIGE("Prestige Points", EnduranceColors.Currency.PRESTIGE, "prestige"),
+        GEMS("Gems", EnduranceColors.Currency.GEMS, "gems"),
+        BLOOD_GEMS("Blood Gems", EnduranceColors.Currency.BLOOD_GEMS, "blood_gems");
 
         private final String displayName;
         private final int color;
@@ -120,7 +104,7 @@ public class RewardSystem {
         RARE(EnduranceColors.LootTier.RARE, 10.0f, "Rare"),
         EPIC(EnduranceColors.LootTier.EPIC, 4.0f, "Epic"),
         LEGENDARY(EnduranceColors.LootTier.LEGENDARY, 1.0f, "Legendary"),
-        MYTHIC(EnduranceColors.LootTier.MYTHIC, 0.0f, "Mythic"); // Never drops randomly, only from achievements
+        MYTHIC(EnduranceColors.LootTier.MYTHIC, 0.0f, "Mythic");
 
         private final int color;
         private final float dropWeight;
@@ -140,9 +124,9 @@ public class RewardSystem {
     // ========== Initialization ==========
 
     private RewardSystem() {
-        initializeLootTables();
-        initializeShopItems();
-        initializeAchievements();
+        lootGenerator = new RewardLootGenerator(random);
+        shopManager = new RewardShopManager();
+        achievementManager = new RewardAchievementManager();
     }
 
     public void initialize(Path configDir) {
@@ -151,7 +135,7 @@ public class RewardSystem {
             Files.createDirectories(dataDirectory);
             loadPlayerWallets();
             LOGGER.info("[RewardSystem] Initialized with {} shop items, {} achievements",
-                shopItems.size(), achievements.size());
+                shopManager.getShopItems().size(), achievementManager.getAllAchievements().size());
         } catch (IOException e) {
             LOGGER.error("[RewardSystem] Failed to create data directory", e);
         }
@@ -314,11 +298,11 @@ public class RewardSystem {
             );
         }
 
-        // Generate loot drops
-        rewards.lootDrops = generateLootDrops(player, quest, comboSession);
+        // Generate loot drops (delegated)
+        rewards.lootDrops = lootGenerator.generateLootDrops(player, quest, comboSession);
 
-        // Check achievements
-        rewards.achievementsUnlocked = checkAchievements(player, quest, comboSession);
+        // Check achievements (delegated)
+        rewards.achievementsUnlocked = achievementManager.checkAchievements(player, quest, comboSession, wallet);
 
         // Save progress
         savePlayerWallets();
@@ -332,361 +316,20 @@ public class RewardSystem {
         return rewards;
     }
 
-    // ========== Loot Generation ==========
-
-    /**
-     * Generate loot drops based on performance.
-     */
-    private List<ItemStack> generateLootDrops(ServerPlayer player, EnduranceQuest quest,
-                                               IComboSession comboSession) {
-        List<ItemStack> drops = new ArrayList<>();
-        RegistryAccess registryAccess = player.level().registryAccess();
-
-        // Number of drops based on waves cleared
-        int dropCount = Math.min(quest.getCurrentWave(), 10);
-
-        // Quality boost from combo performance
-        float qualityBoost = 0;
-        if (comboSession != null) {
-            qualityBoost = comboSession.getHighestRank().ordinal() * 0.05f;
-        }
-
-        for (int i = 0; i < dropCount; i++) {
-            LootTier tier = rollLootTier(qualityBoost);
-            LootEntry entry = rollLootEntry(tier);
-            if (entry != null) {
-                ItemStack stack = entry.createStack(random, registryAccess);
-                drops.add(stack);
-
-                // Telemetry: record loot drop
-                String itemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(stack.getItem()))).toString();
-                EnduranceTelemetryService.INSTANCE.recordLootDrop(
-                    player.getUUID(), quest.getQuestId(), itemId, stack.getCount(), tier
-                );
-            }
-        }
-
-        // Bonus drop for completing all waves
-        if (quest.getState() == EnduranceQuestState.COMPLETED) {
-            // Guaranteed rare+ drop
-            LootTier bonusTier = random.nextFloat() < 0.1f ? LootTier.LEGENDARY :
-                                 random.nextFloat() < 0.3f ? LootTier.EPIC : LootTier.RARE;
-            LootEntry bonusEntry = rollLootEntry(bonusTier);
-            if (bonusEntry != null) {
-                ItemStack bonusStack = bonusEntry.createStack(random, registryAccess);
-                drops.add(bonusStack);
-
-                // Telemetry: record bonus loot drop
-                String bonusItemId = Objects.requireNonNull(BuiltInRegistries.ITEM.getKey(Objects.requireNonNull(bonusStack.getItem()))).toString();
-                EnduranceTelemetryService.INSTANCE.recordLootDrop(
-                    player.getUUID(), quest.getQuestId(), bonusItemId, bonusStack.getCount(), bonusTier
-                );
-            }
-        }
-
-        return drops;
-    }
-
-    private LootTier rollLootTier(float qualityBoost) {
-        float roll = random.nextFloat() * 100 - qualityBoost * 20;
-
-        float cumulative = 0;
-        for (LootTier tier : LootTier.values()) {
-            if (tier.dropWeight <= 0) continue;
-            cumulative += tier.dropWeight;
-            if (roll < cumulative) {
-                return tier;
-            }
-        }
-        return LootTier.COMMON;
-    }
-
-    private LootEntry rollLootEntry(LootTier tier) {
-        List<LootEntry> entries = lootTables.get(tier);
-        if (entries == null || entries.isEmpty()) return null;
-        return entries.get(random.nextInt(entries.size()));
-    }
-
-    // ========== Loot Tables ==========
-
-    private void initializeLootTables() {
-        // Common loot
-        lootTables.put(LootTier.COMMON, Arrays.asList(
-            new LootEntry(Items.IRON_INGOT, 3, 8),
-            new LootEntry(Items.GOLD_INGOT, 2, 5),
-            new LootEntry(Items.COAL, 8, 16),
-            new LootEntry(Items.LEATHER, 4, 8),
-            new LootEntry(Items.EXPERIENCE_BOTTLE, 2, 4),
-            new LootEntry(Items.ARROW, 16, 32),
-            new LootEntry(Items.BREAD, 4, 8)
-        ));
-
-        // Uncommon loot
-        lootTables.put(LootTier.UNCOMMON, Arrays.asList(
-            new LootEntry(Items.DIAMOND, 1, 3),
-            new LootEntry(Items.EMERALD, 2, 5),
-            new LootEntry(Items.GOLDEN_APPLE, 1, 2),
-            new LootEntry(Items.ENDER_PEARL, 2, 4),
-            new LootEntry(Items.BLAZE_ROD, 2, 4),
-            new LootEntry(Items.IRON_SWORD, 1, 1),
-            new LootEntry(Items.IRON_CHESTPLATE, 1, 1)
-        ));
-
-        // Rare loot
-        lootTables.put(LootTier.RARE, Arrays.asList(
-            new LootEntry(Items.DIAMOND, 3, 6),
-            new LootEntry(Items.NETHERITE_SCRAP, 1, 2),
-            new LootEntry(Items.ENCHANTED_GOLDEN_APPLE, 1, 1),
-            new LootEntry(Items.DIAMOND_SWORD, 1, 1),
-            new LootEntry(Items.DIAMOND_CHESTPLATE, 1, 1),
-            new LootEntry(Items.ELYTRA, 1, 1),
-            new LootEntry(Items.TOTEM_OF_UNDYING, 1, 1)
-        ));
-
-        // Epic loot
-        lootTables.put(LootTier.EPIC, Arrays.asList(
-            new LootEntry(Items.NETHERITE_INGOT, 1, 2),
-            new LootEntry(Items.NETHERITE_SWORD, 1, 1),
-            new LootEntry(Items.NETHERITE_CHESTPLATE, 1, 1),
-            new LootEntry(Items.NETHER_STAR, 1, 1),
-            new LootEntry(Items.DRAGON_EGG, 1, 1),
-            new LootEntry(Items.BEACON, 1, 1)
-        ));
-
-        // Legendary loot
-        lootTables.put(LootTier.LEGENDARY, Arrays.asList(
-            new LootEntry(Items.NETHERITE_INGOT, 3, 5),
-            new LootEntry(Items.NETHER_STAR, 2, 3),
-            new LootEntry(Items.ENCHANTED_GOLDEN_APPLE, 3, 5),
-            // These will have special enchantments applied
-            new LootEntry(Items.NETHERITE_SWORD, 1, 1, true),
-            new LootEntry(Items.NETHERITE_CHESTPLATE, 1, 1, true)
-        ));
-
-        // Mythic loot (achievement-only)
-        lootTables.put(LootTier.MYTHIC, Arrays.asList(
-            new LootEntry(Items.TOTEM_OF_UNDYING, 1, 2),
-            new LootEntry(Items.ELYTRA, 1, 1),
-            new LootEntry(Items.DRAGON_BREATH, 8, 16),
-            new LootEntry(Items.HEART_OF_THE_SEA, 2, 4),
-            new LootEntry(Items.NETHER_STAR, 5, 8)
-        ));
-    }
-
-    // ========== Shop System ==========
-
-    private void initializeShopItems() {
-        // Permanent stat upgrades
-        shopItems.add(new ShopItem("health_boost",
-            "Vitality Enhancement", "Permanently increase max health by 2",
-            Currency.TOKENS, 500, 5, ShopCategory.STATS));
-
-        shopItems.add(new ShopItem("damage_boost",
-            "Strength Enhancement", "Permanently increase attack damage by 5%",
-            Currency.TOKENS, 750, 3, ShopCategory.STATS));
-
-        shopItems.add(new ShopItem("speed_boost",
-            "Agility Enhancement", "Permanently increase movement speed by 5%",
-            Currency.TOKENS, 600, 3, ShopCategory.STATS));
-
-        // Starting perks
-        shopItems.add(new ShopItem("start_with_shield",
-            "Guardian's Gift", "Start quests with a free shield perk",
-            Currency.PRESTIGE, 5, 1, ShopCategory.PERKS));
-
-        shopItems.add(new ShopItem("start_with_lifesteal",
-            "Vampire's Kiss", "Start quests with minor lifesteal",
-            Currency.BLOOD_GEMS, 20, 1, ShopCategory.PERKS));
-
-        shopItems.add(new ShopItem("extra_perk_slot",
-            "Expanded Mind", "Gain an additional perk slot",
-            Currency.PRESTIGE, 10, 2, ShopCategory.PERKS));
-
-        // Quality of life
-        shopItems.add(new ShopItem("respawn_tokens",
-            "Phoenix Feathers", "Get 3 free respawns per quest",
-            Currency.TOKENS, 1000, 3, ShopCategory.UTILITY));
-
-        shopItems.add(new ShopItem("loot_luck",
-            "Fortune's Favor", "Increase rare loot chance by 10%",
-            Currency.TOKENS, 800, 5, ShopCategory.UTILITY));
-
-        shopItems.add(new ShopItem("token_multiplier",
-            "Golden Touch", "Earn 10% more tokens from quests",
-            Currency.PRESTIGE, 8, 5, ShopCategory.UTILITY));
-
-        // Cosmetics (placeholder)
-        shopItems.add(new ShopItem("title_endurance_master",
-            "Title: Endurance Master", "Unlock the 'Endurance Master' title",
-            Currency.PRESTIGE, 25, 1, ShopCategory.COSMETICS));
-
-        shopItems.add(new ShopItem("aura_flame",
-            "Flame Aura", "Display a flame particle effect",
-            Currency.BLOOD_GEMS, 50, 1, ShopCategory.COSMETICS));
-    }
+    // ========== Shop System (delegated) ==========
 
     /**
      * Attempt to purchase a shop item.
-     * DOUBLE-SPENDING FIX: Synchronized per-player to prevent race conditions from lag/rapid clicks.
      */
     public PurchaseResult purchaseItem(ServerPlayer player, String itemId) {
-        UUID playerId = player.getUUID();
-
-        // DOUBLE-SPENDING FIX: Synchronize on per-player lock to prevent concurrent purchases
-        synchronized (getPurchaseLock(playerId)) {
-            PlayerWallet wallet = getWallet(playerId);
-            ShopItem item = shopItems.stream()
-                .filter(i -> i.id.equals(itemId))
-                .findFirst()
-                .orElse(null);
-
-            if (item == null) {
-                return new PurchaseResult(false, "Item not found");
-            }
-
-            int currentOwned = wallet.getPurchaseCount(itemId);
-            if (currentOwned >= item.maxPurchases) {
-                return new PurchaseResult(false, "Already at maximum purchases");
-            }
-
-            int currentCurrency = wallet.getCurrency(item.currency);
-            if (currentCurrency < item.price) {
-                return new PurchaseResult(false, "Insufficient " + item.currency.displayName);
-            }
-
-            // Make purchase (now atomic within the lock)
-            wallet.removeCurrency(item.currency, item.price);
-            wallet.recordPurchase(itemId);
-            savePlayerWallets();
-
-            // Telemetry: record shop purchase
-            EnduranceTelemetryService.INSTANCE.recordShopPurchase(
-                playerId, itemId, item.currency, item.price, wallet.getPurchaseCount(itemId)
-            );
-
-            // Apply immediate effects
-            applyPurchaseEffects(player, item);
-
-            player.sendSystemMessage(Objects.requireNonNull(I18n.translate("devmod.reward.purchased", item.displayName)
-                .withStyle(style -> style.withColor(EnduranceColors.LootTier.UNCOMMON))));
-
-            return new PurchaseResult(true, I18n.translate("devmod.reward.purchase_successful").getString());
-        }
-    }
-
-    private void applyPurchaseEffects(ServerPlayer player, ShopItem item) {
-        // Permanent stat upgrades would be applied here
-        // For now, they're tracked in wallet and applied during quest start
-        if (player != null && item != null) {
-            LOGGER.debug("[RewardSystem] Purchase effects applied for {} ({})",
-                player.getName().getString(), item.id);
-        }
-    }
-
-    // ========== Achievements ==========
-
-    private void initializeAchievements() {
-        // Quest completion achievements
-        achievements.put("first_blood", new Achievement("first_blood",
-            "First Blood", "Complete your first Endurance Quest",
-            Currency.TOKENS, 100, LootTier.UNCOMMON));
-
-        achievements.put("wave_10", new Achievement("wave_10",
-            "Warmed Up", "Complete 10 waves in a single quest",
-            Currency.TOKENS, 250, LootTier.RARE));
-
-        achievements.put("wave_20", new Achievement("wave_20",
-            "Getting Serious", "Complete 20 waves in a single quest",
-            Currency.PRESTIGE, 5, LootTier.EPIC));
-
-        achievements.put("wave_50", new Achievement("wave_50",
-            "Unstoppable", "Complete 50 waves in endless mode",
-            Currency.PRESTIGE, 20, LootTier.LEGENDARY));
-
-        // Combat achievements
-        achievements.put("style_sss", new Achievement("style_sss",
-            "Smokin' Sexy Style!", "Reach SSS rank in combat",
-            Currency.TOKENS, 500, LootTier.EPIC));
-
-        achievements.put("no_hit_10", new Achievement("no_hit_10",
-            "Untouchable", "Complete 10 waves without taking damage",
-            Currency.PRESTIGE, 10, LootTier.LEGENDARY));
-
-        achievements.put("kill_100_wave", new Achievement("kill_100_wave",
-            "Massacre", "Kill 100 mobs in a single wave",
-            Currency.BLOOD_GEMS, 25, LootTier.RARE));
-
-        // Boss achievements
-        achievements.put("boss_slayer", new Achievement("boss_slayer",
-            "Boss Slayer", "Defeat 10 boss waves",
-            Currency.BLOOD_GEMS, 30, LootTier.EPIC));
-
-        achievements.put("speed_boss", new Achievement("speed_boss",
-            "Speed Demon", "Defeat a boss in under 60 seconds",
-            Currency.PRESTIGE, 8, LootTier.EPIC));
-
-        // Mutator achievements
-        achievements.put("chaos_master", new Achievement("chaos_master",
-            "Chaos Master", "Complete a quest with 5+ mutators active",
-            Currency.PRESTIGE, 15, LootTier.LEGENDARY));
-
-        achievements.put("cursed_run", new Achievement("cursed_run",
-            "Cursed Warrior", "Complete a quest with only negative mutators",
-            Currency.BLOOD_GEMS, 50, LootTier.LEGENDARY));
-    }
-
-    /**
-     * Check and unlock any earned achievements.
-     */
-    private List<Achievement> checkAchievements(ServerPlayer player, EnduranceQuest quest,
-                                                 IComboSession comboSession) {
-        List<Achievement> unlocked = new ArrayList<>();
         PlayerWallet wallet = getWallet(player.getUUID());
-
-        // Check each achievement
-        for (Achievement achievement : achievements.values()) {
-            if (wallet.hasAchievement(achievement.id)) continue;
-
-            boolean earned = switch (achievement.id) {
-                case "first_blood" -> quest.getState() == EnduranceQuestState.COMPLETED;
-                case "wave_10" -> quest.getCurrentWave() >= 10;
-                case "wave_20" -> quest.getCurrentWave() >= 20;
-                case "wave_50" -> quest.isEndlessMode() && quest.getCurrentWave() >= 50;
-                case "style_sss" -> comboSession != null &&
-                    comboSession.getHighestRank() == ComboSystem.StyleRank.SSS;
-                case "no_hit_10" -> quest.getDamageTakenThisSession() < 1.0f &&
-                    quest.getCurrentWave() >= 10;
-                case "boss_slayer" -> quest.getBossWavesCompleted() >= 10;
-                default -> false;
-            };
-
-            if (earned) {
-                wallet.unlockAchievement(achievement.id);
-                wallet.addCurrency(achievement.rewardCurrency, achievement.rewardAmount);
-                unlocked.add(achievement);
-
-                // Telemetry: record achievement unlocked
-                EnduranceTelemetryService.INSTANCE.recordAchievementUnlocked(
-                    player.getUUID(), quest.getQuestId(), achievement.id, achievement.displayName,
-                    achievement.rewardCurrency, achievement.rewardAmount
-                );
-
-                // Unified achievement notification
-                NotificationService.INSTANCE.notifyAchievementUnlock(player.getUUID(), achievement);
-
-                LOGGER.info("[RewardSystem] Player {} unlocked achievement: {}",
-                    player.getName().getString(), achievement.id);
-            }
-        }
-
-        return unlocked;
+        return shopManager.purchaseItem(player, itemId, wallet, this::savePlayerWallets);
     }
 
     // ========== Player Data ==========
 
     @Nonnull
     public PlayerWallet getWallet(UUID playerId) {
-        // computeIfAbsent guaranteed non-null here since PlayerWallet constructor never returns null
         PlayerWallet wallet = Objects.requireNonNull(playerWallets.computeIfAbsent(playerId, id -> new PlayerWallet(id)));
         wallet.ensureCurrencyKeys();
         return wallet;
@@ -702,7 +345,6 @@ public class RewardSystem {
         Path walletFile = dataDirectory.resolve("wallets.json");
         Path backupFile = dataDirectory.resolve("wallets.json.bak");
 
-        // Try main file first, then backup
         Path fileToLoad = Files.exists(walletFile) ? walletFile :
                           (Files.exists(backupFile) ? backupFile : null);
 
@@ -741,29 +383,24 @@ public class RewardSystem {
         Path backupFile = dataDirectory.resolve("wallets.json.bak");
 
         try {
-            // Ensure directory exists
             Files.createDirectories(dataDirectory);
 
-            // Write to temp file first (atomic write pattern)
             try (java.io.BufferedWriter writer = Files.newBufferedWriter(tempFile, java.nio.charset.StandardCharsets.UTF_8)) {
                 Map<String, PlayerWallet> toSave = new HashMap<>();
                 playerWallets.forEach((uuid, wallet) -> toSave.put(uuid.toString(), wallet));
                 GSON.toJson(toSave, writer);
-                writer.flush(); // CRITICAL: Force flush before close
+                writer.flush();
             }
 
-            // Create backup of existing file
             if (Files.exists(walletFile)) {
                 Files.copy(walletFile, backupFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
 
-            // Atomic move temp to final
             Files.move(tempFile, walletFile,
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING,
                     java.nio.file.StandardCopyOption.ATOMIC_MOVE);
 
         } catch (java.nio.file.AtomicMoveNotSupportedException e) {
-            // Fallback for filesystems that don't support atomic move
             try {
                 Files.move(tempFile, walletFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception ex) {
@@ -774,32 +411,20 @@ public class RewardSystem {
         }
     }
 
-    /**
-     * Save all reward system data. Called on server shutdown.
-     */
     public void saveAll() {
         savePlayerWallets();
         LOGGER.info("[RewardSystem] Saved all data ({} wallets)", playerWallets.size());
     }
 
-    /**
-     * Save a specific player's wallet (triggers full save).
-     */
     public void savePlayerWallet(PlayerWallet wallet) {
         savePlayerWallets();
     }
 
-    /**
-     * Reset all reward system data. Called during full player reset.
-     */
     public void resetAll() {
         LOGGER.info("[RewardSystem] Resetting all reward data...");
-
-        // Clear in-memory data
         playerWallets.clear();
-        purchaseLocks.clear();
+        shopManager.clearPurchaseLocks();
 
-        // Delete wallet file (must match filenames used by savePlayerWallets/loadPlayerWallets)
         if (dataDirectory != null) {
             try {
                 Path walletsFile = dataDirectory.resolve("wallets.json");
@@ -822,7 +447,6 @@ public class RewardSystem {
         NotificationService.INSTANCE.notifyQuestRewards(player.getUUID(), rewards, completed, questName);
 
         if (!rewards.lootDrops.isEmpty()) {
-            // Drop items near player
             var level = Objects.requireNonNull(player.level());
             for (ItemStack stack : rewards.lootDrops) {
                 ItemEntity itemEntity = new ItemEntity(
@@ -834,9 +458,6 @@ public class RewardSystem {
         }
     }
 
-    /**
-     * Notify player of a milestone unlock with special fanfare.
-     */
     private void notifyMilestoneUnlock(ServerPlayer player, PrestigeMilestone milestone) {
         NotificationService.INSTANCE.notifyPrestigeMilestone(player.getUUID(), milestone);
 
@@ -847,32 +468,86 @@ public class RewardSystem {
     // ========== Query Methods ==========
 
     public List<ShopItem> getShopItems() {
-        return Collections.unmodifiableList(shopItems);
+        return shopManager.getShopItems();
     }
 
     public List<ShopItem> getShopItemsByCategory(ShopCategory category) {
-        return shopItems.stream()
-            .filter(item -> item.category == category)
-            .toList();
+        return shopManager.getShopItemsByCategory(category);
     }
 
     public Collection<Achievement> getAllAchievements() {
-        return Collections.unmodifiableCollection(achievements.values());
+        return achievementManager.getAllAchievements();
     }
 
     public List<Achievement> getUnlockedAchievements(UUID playerId) {
-        PlayerWallet wallet = getWallet(playerId);
-        return achievements.values().stream()
-            .filter(a -> wallet.hasAchievement(a.id))
-            .toList();
+        return achievementManager.getUnlockedAchievements(getWallet(playerId));
+    }
+
+    // ========== Wave Reward Calculation ==========
+
+    /**
+     * Rewards earned from a single wave completion.
+     */
+    public record WaveReward(
+        int tokensEarned,
+        int baseTokens,
+        float styleMultiplier,
+        float mutatorMultiplier,
+        float directiveMultiplier,
+        int bonusPoints
+    ) {}
+
+    public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
+                                           IComboSession comboSession,
+                                           MutatorSystem.MutatorSession mutatorSession) {
+        return calculateWaveReward(waveNumber, quest, comboSession, mutatorSession, 1.0f);
+    }
+
+    public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
+                                          IComboSession comboSession,
+                                          MutatorSystem.MutatorSession mutatorSession,
+                                          float directiveMultiplier) {
+        int baseTokens = 10 + (waveNumber * 5);
+
+        float styleMultiplier = 1.0f;
+        if (comboSession != null) {
+            ComboSystem.StyleRank currentRank = comboSession.getCurrentRank();
+            styleMultiplier = switch (currentRank) {
+                case SSS -> 2.5f;
+                case SS -> 2.0f;
+                case S -> 1.75f;
+                case A -> 1.5f;
+                case B -> 1.25f;
+                case C -> 1.1f;
+                default -> 1.0f;
+            };
+        }
+
+        float mutatorMultiplier = 1.0f;
+        if (mutatorSession != null) {
+            mutatorMultiplier = mutatorSession.getRewardMultiplier();
+        }
+
+        int bonusPoints = 0;
+        if (waveNumber % 5 == 0) {
+            bonusPoints = waveNumber * 2;
+        }
+        if (waveNumber % 10 == 0) {
+            bonusPoints += 50;
+        }
+
+        float safeDirectiveMultiplier = directiveMultiplier > 0f ? directiveMultiplier : 1.0f;
+        int totalTokens = (int) (baseTokens * styleMultiplier * mutatorMultiplier * safeDirectiveMultiplier)
+            + bonusPoints;
+
+        return new WaveReward(totalTokens, baseTokens, styleMultiplier, mutatorMultiplier,
+            safeDirectiveMultiplier, bonusPoints);
     }
 
     // ========== Inner Classes ==========
 
     /**
      * Player's currency and progression data.
-     * Thread-safe: Uses ConcurrentHashMap for all shared collections to prevent
-     * race conditions during concurrent currency operations.
      */
     public static class PlayerWallet {
         private final UUID playerId;
@@ -883,23 +558,15 @@ public class RewardSystem {
         private int completionStreak = 0;
         private long lastCompletionDay = -1;
 
-        // Track lifetime prestige for milestone system
         private int totalPrestigeEarned = 0;
         private final Set<String> unlockedMilestones = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-        // Ascension (New Game+) system
         private int ascensionLevel = 0;
         private String ascensionTitle = null;
         private final Set<String> unlockedAscensionPerks = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-        // Lock for compound operations on prestige and streak counters
-        // Note: transient because Gson deserialization bypasses field initializers for final fields
-        // Volatile is required for safe double-checked locking in getProgressionLock()
         private transient volatile Object progressionLock;
 
-        /**
-         * Get the progression lock, lazily initializing if null (happens after Gson deserialization).
-         */
         private Object getProgressionLock() {
             if (progressionLock == null) {
                 synchronized (this) {
@@ -913,13 +580,12 @@ public class RewardSystem {
 
         public PlayerWallet(UUID playerId) {
             this.playerId = playerId;
-            // Initialize currencies
             for (Currency c : Currency.values()) {
                 currencies.put(c.key, 0);
             }
         }
 
-        private void ensureCurrencyKeys() {
+        void ensureCurrencyKeys() {
             for (Currency c : Currency.values()) {
                 currencies.putIfAbsent(c.key, 0);
             }
@@ -929,19 +595,9 @@ public class RewardSystem {
             return currencies.getOrDefault(currency.key, 0);
         }
 
-        /**
-         * Add currency. For prestige, also tracks lifetime total.
-         * @return List of newly unlocked milestone IDs (empty if none)
-         */
-        /**
-         * Add currency. For prestige, also tracks lifetime total.
-         * Thread-safe: Uses synchronized block for atomic prestige tracking.
-         * @return List of newly unlocked milestone IDs (empty if none)
-         */
         public java.util.List<String> addCurrency(Currency currency, int amount) {
             currencies.merge(currency.key, amount, (a, b) -> a + b);
 
-            // Track lifetime prestige for milestone system
             if (currency == Currency.PRESTIGE && amount > 0) {
                 int newTotal;
                 int previousTotal;
@@ -951,7 +607,6 @@ public class RewardSystem {
                     newTotal = totalPrestigeEarned;
                 }
 
-                // Check for newly unlocked milestones
                 java.util.List<PrestigeMilestone> newMilestones =
                     PrestigeMilestone.getNewlyUnlockedMilestones(previousTotal, newTotal);
 
@@ -998,9 +653,6 @@ public class RewardSystem {
             templateCompletions.merge(templateId, 1, (a, b) -> a + b);
         }
 
-        /**
-         * Thread-safe: Uses synchronized block for atomic streak update.
-         */
         public int updateCompletionStreak() {
             long today = LocalDate.now(ZoneId.systemDefault()).toEpochDay();
             synchronized (getProgressionLock()) {
@@ -1029,7 +681,6 @@ public class RewardSystem {
         public Set<String> getAchievements() { return achievements; }
         public Map<String, Integer> getTemplateCompletions() { return templateCompletions; }
 
-        // Prestige milestone accessors
         public int getTotalPrestigeEarned() {
             synchronized (getProgressionLock()) {
                 return totalPrestigeEarned;
@@ -1038,25 +689,18 @@ public class RewardSystem {
         public Set<String> getUnlockedMilestones() { return unlockedMilestones; }
         public boolean hasMilestone(String milestoneId) { return unlockedMilestones.contains(milestoneId); }
 
-        /**
-         * Get extra perk slots from prestige milestones.
-         */
         public int getExtraPerkSlots() {
             synchronized (getProgressionLock()) {
                 return PrestigeMilestone.getExtraPerkSlots(totalPrestigeEarned);
             }
         }
 
-        /**
-         * Get token multiplier from prestige milestones.
-         */
         public float getTokenMultiplier() {
             synchronized (getProgressionLock()) {
                 return PrestigeMilestone.getTokenMultiplier(totalPrestigeEarned);
             }
         }
 
-        // Ascension (New Game+) accessors
         public int getAscensionLevel() {
             synchronized (getProgressionLock()) {
                 return ascensionLevel;
@@ -1123,11 +767,9 @@ public class RewardSystem {
             var enchantRegistry = registryAccess.registryOrThrow(Objects.requireNonNull(Registries.ENCHANTMENT));
             ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(Objects.requireNonNull(ItemEnchantments.EMPTY));
 
-            // Determine enchantments based on item type
             if (stack.getItem() == Items.NETHERITE_SWORD) {
-                // Legendary sword enchantments
-                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:sharpness", 4 + random.nextInt(2)); // 4-5
-                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:looting", 2 + random.nextInt(2)); // 2-3
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:sharpness", 4 + random.nextInt(2));
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:looting", 2 + random.nextInt(2));
                 addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:unbreaking", 3);
                 if (random.nextFloat() < 0.3f) {
                     addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:fire_aspect", 2);
@@ -1136,11 +778,10 @@ public class RewardSystem {
                     addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:sweeping_edge", 3);
                 }
             } else if (stack.getItem() == Items.NETHERITE_CHESTPLATE) {
-                // Legendary armor enchantments
-                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:protection", 3 + random.nextInt(2)); // 3-4
+                addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:protection", 3 + random.nextInt(2));
                 addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:unbreaking", 3);
                 if (random.nextFloat() < 0.4f) {
-                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:thorns", 2 + random.nextInt(2)); // 2-3
+                    addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:thorns", 2 + random.nextInt(2));
                 }
                 if (random.nextFloat() < 0.3f) {
                     addEnchantmentIfPresent(mutable, enchantRegistry, "minecraft:mending", 1);
@@ -1253,80 +894,6 @@ public class RewardSystem {
     public record PurchaseResult(boolean success, String message) {}
 
     /**
-     * Rewards earned from a single wave completion.
-     */
-    public record WaveReward(
-        int tokensEarned,
-        int baseTokens,
-        float styleMultiplier,
-        float mutatorMultiplier,
-        float directiveMultiplier,
-        int bonusPoints
-    ) {}
-
-    /**
-     * Calculate rewards for completing a single wave.
-     *
-     * @param waveNumber The wave just completed
-     * @param quest The quest instance
-     * @param comboSession Optional combo session for style bonuses
-     * @param mutatorSession Optional mutator session for difficulty bonuses
-     * @return WaveReward with calculated token amounts
-     */
-    public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
-                                           IComboSession comboSession,
-                                           MutatorSystem.MutatorSession mutatorSession) {
-        return calculateWaveReward(waveNumber, quest, comboSession, mutatorSession, 1.0f);
-    }
-
-    public WaveReward calculateWaveReward(int waveNumber, EnduranceQuest quest,
-                                          IComboSession comboSession,
-                                          MutatorSystem.MutatorSession mutatorSession,
-                                          float directiveMultiplier) {
-        // Base tokens per wave (scales with wave number)
-        int baseTokens = 10 + (waveNumber * 5);
-
-        // Style multiplier from combo performance
-        float styleMultiplier = 1.0f;
-        if (comboSession != null) {
-            ComboSystem.StyleRank currentRank = comboSession.getCurrentRank();
-            styleMultiplier = switch (currentRank) {
-                case SSS -> 2.5f;
-                case SS -> 2.0f;
-                case S -> 1.75f;
-                case A -> 1.5f;
-                case B -> 1.25f;
-                case C -> 1.1f;
-                default -> 1.0f;
-            };
-        }
-
-        // Mutator multiplier for harder settings
-        float mutatorMultiplier = 1.0f;
-        if (mutatorSession != null) {
-            mutatorMultiplier = mutatorSession.getRewardMultiplier();
-        }
-
-        // Bonus for milestone waves (every 5th wave)
-        int bonusPoints = 0;
-        if (waveNumber % 5 == 0) {
-            bonusPoints = waveNumber * 2;
-        }
-
-        // Boss wave bonus (every 10th wave typically)
-        if (waveNumber % 10 == 0) {
-            bonusPoints += 50;
-        }
-
-        float safeDirectiveMultiplier = directiveMultiplier > 0f ? directiveMultiplier : 1.0f;
-        int totalTokens = (int) (baseTokens * styleMultiplier * mutatorMultiplier * safeDirectiveMultiplier)
-            + bonusPoints;
-
-        return new WaveReward(totalTokens, baseTokens, styleMultiplier, mutatorMultiplier,
-            safeDirectiveMultiplier, bonusPoints);
-    }
-
-    /**
      * Rewards earned from a quest.
      */
     public static class QuestRewards {
@@ -1343,5 +910,4 @@ public class RewardSystem {
         public List<ItemStack> lootDrops = new ArrayList<>();
         public List<Achievement> achievementsUnlocked = new ArrayList<>();
     }
-
 }

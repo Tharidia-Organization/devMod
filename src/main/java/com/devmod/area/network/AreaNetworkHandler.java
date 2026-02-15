@@ -1,67 +1,44 @@
 package com.devmod.area.network;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import com.devmod.DevMod;
-import com.devmod.area.aesthetic.AreaBuilderMessages;
-import com.devmod.area.aesthetic.AreaBuilderNaming;
-import com.devmod.area.builder.AreaBuildTaskManager;
-import com.devmod.area.builder.AreaShapeGenerator;
-import com.devmod.area.data.AreaAuditLog;
 import com.devmod.area.data.AreaDefinition;
-import com.devmod.area.data.AreaDimensions;
-import com.devmod.area.data.AreaPalette;
 import com.devmod.area.data.AreaRegistry;
-import com.devmod.area.data.AreaShape;
-import com.devmod.area.data.BiomeGenerationConfig;
-import com.devmod.area.snapshot.AreaSnapshotManager;
 import com.devmod.network.ChannelId;
 import com.devmod.network.PayloadValidation;
 import com.devmod.network.handlers.NetworkHandlerBase;
-import com.devmod.zone.data.ZoneDefinition;
-import com.devmod.zone.data.ZoneRegistry;
+
 /**
  * Network handler for Area Builder system payloads.
- * Handles registration and processing of all area-related network messages.
+ * Facade that delegates to specialized handlers:
+ * <ul>
+ *   <li>{@link AreaClientPayloadHandler} - client-side payload handling</li>
+ *   <li>{@link AreaServerPayloadHandler} - server-side payload handling</li>
+ *   <li>{@link AreaDefinitionValidator} - definition validation/sanitization</li>
+ *   <li>{@link TemplateManagementHandler} - template operations</li>
+ *   <li>{@link SnapshotManagementHandler} - snapshot operations</li>
+ * </ul>
  */
 public final class AreaNetworkHandler extends NetworkHandlerBase {
     public static final AreaNetworkHandler INSTANCE = new AreaNetworkHandler();
 
-    private static final int MAX_CUSTOM_SHAPE_POSITIONS = 65_536;
-    private static final int MAX_PALETTE_MATERIALS = 128;
-    /** H-06 fix: Maximum NBT size for custom shapes (64KB) */
-    private static final int MAX_CUSTOM_SHAPE_NBT_SIZE = 65_536;
+    private AreaNetworkHandler() {}
 
-    // SEC-01 fix: PATH shape limits to prevent DoS
-    /** Minimum corridor width for PATH shapes */
-    private static final int MIN_PATH_WIDTH = 2;
-    /** Maximum corridor width for PATH shapes */
-    private static final int MAX_PATH_WIDTH = 32;
-    /** Maximum number of waypoints for PATH shapes */
-    private static final int MAX_PATH_WAYPOINTS = 100;
-    /** SEC-07 fix: Maximum distance from center for any waypoint coordinate */
-    private static final int MAX_PATH_WAYPOINT_DISTANCE = 500;
-    /** SEC-07 fix: Maximum distance between consecutive waypoints */
-    private static final int MAX_PATH_SEGMENT_LENGTH = 200;
+    // ========================================================================
+    // Cooldown Delegates
+    // ========================================================================
 
     /**
      * Clears all cooldowns for a player (called on disconnect).
@@ -92,107 +69,8 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
     }
 
     // ========================================================================
-    // Cached MethodHandles for client-side reflection (avoid per-call lookup)
+    // Payload Registration
     // ========================================================================
-
-    private static final String CLIENT_HOOKS_CLASS = "com.devmod.client.area.AreaClientHooks";
-
-    @Nullable private static volatile MethodHandle openBuilderScreenMethod;
-    @Nullable private static volatile MethodHandle openEditorCentralScreenMethod;
-    @Nullable private static volatile MethodHandle showAreaPreviewMethod;
-    @Nullable private static volatile MethodHandle handleZoneListMethod;
-    @Nullable private static volatile MethodHandle handleSaveAreaResultMethod;
-    @Nullable private static volatile MethodHandle handleBuildStatusMethod;
-
-    @Nullable
-    private static MethodHandle getOpenBuilderScreenMethod() {
-        if (openBuilderScreenMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (openBuilderScreenMethod == null) {
-                    openBuilderScreenMethod = lookupMethod("openBuilderScreen", OpenAreaBuilderPayload.class);
-                }
-            }
-        }
-        return openBuilderScreenMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getOpenEditorCentralScreenMethod() {
-        if (openEditorCentralScreenMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (openEditorCentralScreenMethod == null) {
-                    openEditorCentralScreenMethod = lookupMethod("openEditorCentralScreen", OpenEditorCentralPayload.class);
-                }
-            }
-        }
-        return openEditorCentralScreenMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getShowAreaPreviewMethod() {
-        if (showAreaPreviewMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (showAreaPreviewMethod == null) {
-                    showAreaPreviewMethod = lookupMethod("showAreaPreview", AreaPreviewPayload.class);
-                }
-            }
-        }
-        return showAreaPreviewMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getHandleZoneListMethod() {
-        if (handleZoneListMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleZoneListMethod == null) {
-                    handleZoneListMethod = lookupMethod("handleZoneList", ZoneListPayload.class);
-                }
-            }
-        }
-        return handleZoneListMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getHandleSaveAreaResultMethod() {
-        if (handleSaveAreaResultMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleSaveAreaResultMethod == null) {
-                    handleSaveAreaResultMethod = lookupMethod("handleSaveAreaResult", SaveAreaResultPayload.class);
-                }
-            }
-        }
-        return handleSaveAreaResultMethod;
-    }
-
-    @Nullable
-    private static MethodHandle getHandleBuildStatusMethod() {
-        if (handleBuildStatusMethod == null) {
-            synchronized (AreaNetworkHandler.class) {
-                if (handleBuildStatusMethod == null) {
-                    handleBuildStatusMethod = lookupMethod("handleBuildStatus", BuildStatusPayload.class);
-                }
-            }
-        }
-        return handleBuildStatusMethod;
-    }
-
-    @Nullable
-    private static MethodHandle lookupMethod(String methodName, Class<?> paramType) {
-        try {
-            Class<?> hooksClass = Class.forName(CLIENT_HOOKS_CLASS);
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            return lookup.findStatic(hooksClass, methodName, MethodType.methodType(void.class, paramType));
-        } catch (ClassNotFoundException e) {
-            // Expected on dedicated server - client classes not available
-            DevMod.LOGGER.debug("[Area] Client hooks class not available (dedicated server)");
-            return null;
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            DevMod.LOGGER.error("[Area] Failed to lookup client method: {}", methodName, e);
-            return null;
-        }
-    }
-
-    private AreaNetworkHandler() {}
 
     /**
      * Registers all Area Builder payload handlers.
@@ -203,63 +81,63 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_BUILDER_OPEN.asString()).playToClient(
             nn(OpenAreaBuilderPayload.TYPE),
             nn(OpenAreaBuilderPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleOpenBuilderClient, PayloadValidation.PayloadLimits.LARGE)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleOpenBuilderClient, PayloadValidation.PayloadLimits.LARGE)
         );
 
         // Server -> Client: Open editor central screen
         event.registrar(ChannelId.AREA_EDITOR_CENTRAL_OPEN.asString()).playToClient(
             nn(OpenEditorCentralPayload.TYPE),
             nn(OpenEditorCentralPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleOpenEditorCentralClient, PayloadValidation.PayloadLimits.MEDIUM)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleOpenEditorCentralClient, PayloadValidation.PayloadLimits.MEDIUM)
         );
 
         // Client -> Server: Save area configuration
         event.registrar(ChannelId.AREA_SAVE.asString()).playToServer(
             nn(SaveAreaPayload.TYPE),
             nn(SaveAreaPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleSaveAreaServer, PayloadValidation.PayloadLimits.LARGE)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleSaveAreaServer, PayloadValidation.PayloadLimits.LARGE)
         );
 
         // Server -> Client: Save area result (authoritative ID/revision)
         event.registrar(ChannelId.AREA_SAVE_RESULT.asString()).playToClient(
             nn(SaveAreaResultPayload.TYPE),
             nn(SaveAreaResultPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleSaveAreaResultClient, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleSaveAreaResultClient, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Build area
         event.registrar(ChannelId.AREA_BUILD.asString()).playToServer(
             nn(BuildAreaPayload.TYPE),
             nn(BuildAreaPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleBuildAreaServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleBuildAreaServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Request open area builder
         event.registrar(ChannelId.AREA_BUILDER_REQUEST.asString()).playToServer(
             nn(RequestOpenAreaBuilderPayload.TYPE),
             nn(RequestOpenAreaBuilderPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleOpenBuilderRequestServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleOpenBuilderRequestServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Area preview
         event.registrar(ChannelId.AREA_PREVIEW.asString()).playToClient(
             nn(AreaPreviewPayload.TYPE),
             nn(AreaPreviewPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleAreaPreviewClient, PayloadValidation.PayloadLimits.LARGE)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleAreaPreviewClient, PayloadValidation.PayloadLimits.LARGE)
         );
 
         // Client -> Server: Request zone list
         event.registrar(ChannelId.AREA_ZONE_LIST_REQUEST.asString()).playToServer(
             nn(RequestZoneListPayload.TYPE),
             nn(RequestZoneListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleRequestZoneListServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleRequestZoneListServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Zone list response
         event.registrar(ChannelId.AREA_ZONE_LIST.asString()).playToClient(
             nn(ZoneListPayload.TYPE),
             nn(ZoneListPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleZoneListClient, PayloadValidation.PayloadLimits.MEDIUM)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleZoneListClient, PayloadValidation.PayloadLimits.MEDIUM)
         );
 
         // Client -> Server: Request template list
@@ -301,7 +179,7 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_CLONE.asString()).playToServer(
             nn(CloneAreaPayload.TYPE),
             nn(CloneAreaPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleCloneAreaServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleCloneAreaServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Delete template
@@ -315,14 +193,14 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_DELETE.asString()).playToServer(
             nn(DeleteAreaPayload.TYPE),
             nn(DeleteAreaPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleDeleteAreaServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleDeleteAreaServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Promote area to main hub
         event.registrar(ChannelId.AREA_PROMOTE_MAIN_HUB.asString()).playToServer(
             nn(PromoteMainHubPayload.TYPE),
             nn(PromoteMainHubPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handlePromoteMainHubServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handlePromoteMainHubServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Capture snapshot
@@ -364,29 +242,33 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(PauseBuildPayload.TYPE),
             nn(PauseBuildPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handlePauseBuildServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handlePauseBuildServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Client -> Server: Resume build
         event.registrar(ChannelId.AREA_BUILDER_CONTROL.asString()).playToServer(
             nn(ResumeBuildPayload.TYPE),
             nn(ResumeBuildPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleResumeBuildServer, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaServerPayloadHandler::handleResumeBuildServer, PayloadValidation.PayloadLimits.SMALL)
         );
 
         // Server -> Client: Build status update
         event.registrar(ChannelId.AREA_BUILDER_FEEDBACK.asString()).playToClient(
             nn(BuildStatusPayload.TYPE),
             nn(BuildStatusPayload.STREAM_CODEC),
-            PayloadValidation.validated(AreaNetworkHandler::handleBuildStatusClient, PayloadValidation.PayloadLimits.SMALL)
+            PayloadValidation.validated(AreaClientPayloadHandler::handleBuildStatusClient, PayloadValidation.PayloadLimits.SMALL)
         );
 
         DevMod.LOGGER.debug("Registered Area Builder network handlers");
     }
 
+    // ========================================================================
+    // Shared Utilities (used by extracted handler classes)
+    // ========================================================================
+
     /**
      * Enqueue work on the main thread with error handling.
-     * Made public for use by extracted handler classes.
+     * Used by extracted handler classes.
      */
     public static void enqueueWork(IPayloadContext ctx, Runnable work) {
         ctx.enqueueWork(Objects.requireNonNull(work))
@@ -398,1224 +280,12 @@ public final class AreaNetworkHandler extends NetworkHandlerBase {
 
     /**
      * Send packet to player.
-     * Made public for use by extracted handler classes.
+     * Used by extracted handler classes.
      */
     public static <T extends net.minecraft.network.protocol.common.custom.CustomPacketPayload> void sendPacket(
             ServerPlayer player, T payload) {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
             Objects.requireNonNull(player), Objects.requireNonNull(payload));
-    }
-
-    @Nullable
-    private static AreaDefinition sanitizeDefinition(@Nonnull AreaDefinition input,
-                                                     @Nullable AreaDefinition existing,
-                                                     @Nonnull ServerPlayer player,
-                                                     boolean isNewArea) {
-        Objects.requireNonNull(input, "input");
-        Objects.requireNonNull(player, "player");
-
-        String trimmedName = input.name() != null ? input.name().trim() : "";
-        Component nameError = AreaBuilderNaming.validateDisplayName(trimmedName);
-        if (nameError != null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(Component.translatable("area.builder.error.invalid_name", nameError)), true);
-            return null;
-        }
-
-        AreaDimensions dims = input.dimensions();
-        if (dims == null ||
-            dims.width() < AreaDimensions.MIN_SIZE || dims.width() > AreaDimensions.MAX_SIZE ||
-            dims.length() < AreaDimensions.MIN_SIZE || dims.length() > AreaDimensions.MAX_SIZE ||
-            dims.height() < AreaDimensions.MIN_HEIGHT || dims.height() > AreaDimensions.MAX_HEIGHT) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_dimensions")), true);
-            return null;
-        }
-
-        if (input.palette() == null ||
-            input.palette().materials() == null ||
-            input.palette().materials().size() > MAX_PALETTE_MATERIALS ||
-            // M-14 fix: Require minimum palette entries to prevent empty palette errors during build
-            input.palette().materials().size() < AreaPalette.MIN_REQUIRED_MATERIALS) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_palette")), true);
-            return null;
-        }
-        if (input.options() == null || input.centerPosition() == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-            return null;
-        }
-
-        // CRIT-02 fix: Validate shape and generationType before using them
-        if (input.shape() == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-            return null;
-        }
-        if (input.generationType() == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-            return null;
-        }
-        // CRIT-02 fix: Validate wallStyle within options
-        if (input.options().wallStyle() == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-            return null;
-        }
-
-        ResourceLocation dimensionId = input.dimensionId();
-        if (dimensionId == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_dimension")), true);
-            return null;
-        }
-
-        var server = player.getServer();
-        if (server == null) {
-            return null;
-        }
-
-        net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> levelKey =
-            net.minecraft.resources.ResourceKey.create(
-                Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), dimensionId);
-        ServerLevel targetLevel = server.getLevel(Objects.requireNonNull(levelKey));
-        if (targetLevel == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_dimension")), true);
-            return null;
-        }
-
-        if (isNewArea && !player.level().dimension().location().equals(dimensionId)) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_dimension")), true);
-            return null;
-        }
-        if (!isNewArea && existing != null && !existing.dimensionId().equals(dimensionId)) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_dimension")), true);
-            return null;
-        }
-
-        int minY = targetLevel.getMinBuildHeight();
-        int maxY = targetLevel.getMaxBuildHeight();
-        int topY = dims.floorY() + dims.height();
-        if (dims.floorY() < minY || topY >= maxY) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_BOUNDS)), true);
-            return null;
-        }
-
-        if (input.generationType() == com.devmod.area.data.AreaGenerationType.BIOME && input.biomeConfig() == null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-            return null;
-        }
-
-        AreaShape shape = input.shape();
-        if (shape == AreaShape.CUSTOM_NBT) {
-            // H-06 fix: Validate NBT size to prevent oversized payloads
-            var customNbt = input.customShapeNbt();
-            if (customNbt != null) {
-                int nbtSize = customNbt.sizeInBytes();
-                if (nbtSize > MAX_CUSTOM_SHAPE_NBT_SIZE) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_custom_shape_too_large")), true);
-                    DevMod.LOGGER.warn("Player {} submitted custom shape with NBT size {} (max: {})",
-                        player.getName().getString(), nbtSize, MAX_CUSTOM_SHAPE_NBT_SIZE);
-                    return null;
-                }
-            }
-            int count = AreaShapeGenerator.generateCustomFloor(
-                Objects.requireNonNull(input.centerPosition()),
-                Objects.requireNonNull(dims),
-                customNbt
-            ).size();
-            if (count <= 0 || count > MAX_CUSTOM_SHAPE_POSITIONS) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_custom_shape")), true);
-                return null;
-            }
-
-            // HIGH-02 fix: Validate that custom positions are within declared dimensions
-            if (!AreaShapeGenerator.validateCustomNbtBounds(
-                    Objects.requireNonNull(input.centerPosition()), dims, customNbt)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_custom_shape_out_of_bounds")), true);
-                DevMod.LOGGER.warn("Player {} submitted custom shape with positions outside declared bounds",
-                    player.getName().getString());
-                return null;
-            }
-        } else if (shape == AreaShape.PATH) {
-            // SEC-01 fix: Validate PATH shape to prevent DoS via large pathWidth or waypoint count
-            var pathNbt = input.customShapeNbt();
-            if (pathNbt == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_min_waypoints")), true);
-                DevMod.LOGGER.warn("Player {} submitted PATH shape without waypoint data",
-                    player.getName().getString());
-                return null;
-            }
-
-            // Validate pathWidth bounds
-            if (pathNbt.contains(AreaShapeGenerator.NBT_PATH_WIDTH)) {
-                int pathWidth = pathNbt.getInt(AreaShapeGenerator.NBT_PATH_WIDTH);
-                if (pathWidth < MIN_PATH_WIDTH || pathWidth > MAX_PATH_WIDTH) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_path_width")), true);
-                    DevMod.LOGGER.warn("Player {} submitted PATH shape with invalid width: {} (allowed: {}-{})",
-                        player.getName().getString(), pathWidth, MIN_PATH_WIDTH, MAX_PATH_WIDTH);
-                    return null;
-                }
-            }
-
-            // Validate waypoint count
-            java.util.List<BlockPos> waypoints = AreaShapeGenerator.parsePathWaypoints(
-                Objects.requireNonNull(input.centerPosition()), pathNbt);
-            if (waypoints.size() < 2) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_min_waypoints")), true);
-                return null;
-            }
-            if (waypoints.size() > MAX_PATH_WAYPOINTS) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_too_many_waypoints")), true);
-                DevMod.LOGGER.warn("Player {} submitted PATH shape with {} waypoints (max: {})",
-                    player.getName().getString(), waypoints.size(), MAX_PATH_WAYPOINTS);
-                return null;
-            }
-
-            // SEC-07 fix: Validate waypoint coordinates and segment lengths BEFORE generateFloor
-            BlockPos center = Objects.requireNonNull(input.centerPosition());
-            for (int i = 0; i < waypoints.size(); i++) {
-                BlockPos wp = waypoints.get(i);
-                // Check distance from center
-                int distX = Math.abs(wp.getX() - center.getX());
-                int distZ = Math.abs(wp.getZ() - center.getZ());
-                if (distX > MAX_PATH_WAYPOINT_DISTANCE || distZ > MAX_PATH_WAYPOINT_DISTANCE) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_waypoint_too_far")), true);
-                    DevMod.LOGGER.warn("Player {} submitted PATH with waypoint {} at distance ({}, {}) from center (max: {})",
-                        player.getName().getString(), i, distX, distZ, MAX_PATH_WAYPOINT_DISTANCE);
-                    return null;
-                }
-                // Check segment length to next waypoint
-                if (i < waypoints.size() - 1) {
-                    BlockPos next = waypoints.get(i + 1);
-                    int segX = Math.abs(next.getX() - wp.getX());
-                    int segZ = Math.abs(next.getZ() - wp.getZ());
-                    int segLength = Math.max(segX, segZ); // Manhattan-ish for corridor
-                    if (segLength > MAX_PATH_SEGMENT_LENGTH) {
-                        player.displayClientMessage(
-                            Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_segment_too_long")), true);
-                        DevMod.LOGGER.warn("Player {} submitted PATH with segment {}->{} length {} (max: {})",
-                            player.getName().getString(), i, i + 1, segLength, MAX_PATH_SEGMENT_LENGTH);
-                        return null;
-                    }
-                }
-            }
-
-            // Validate that generated floor size is reasonable
-            int floorSize = AreaShapeGenerator.generateFloor(
-                shape, Objects.requireNonNull(input.centerPosition()), dims, pathNbt).size();
-            if (floorSize <= 0 || floorSize > MAX_CUSTOM_SHAPE_POSITIONS) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_path_too_large")), true);
-                DevMod.LOGGER.warn("Player {} submitted PATH shape generating {} positions (max: {})",
-                    player.getName().getString(), floorSize, MAX_CUSTOM_SHAPE_POSITIONS);
-                return null;
-            }
-        }
-
-        // HIGH-06 fix: Validate zone ID format before checking existence
-        String linkedZoneId = input.linkedZoneId();
-        if (linkedZoneId != null) {
-            if (linkedZoneId.isBlank()) {
-                linkedZoneId = null;
-            } else if (linkedZoneId.length() > 64) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_zone_id_too_long")), true);
-                return null;
-            }
-        }
-
-        long now = System.currentTimeMillis();
-        UUID finalId;
-        UUID creatorUUID;
-        long createdAt;
-        int revision;
-        if (isNewArea) {
-            finalId = UUID.randomUUID();
-            creatorUUID = player.getUUID();
-            createdAt = now;
-            revision = 0;
-        } else {
-            AreaDefinition ex = Objects.requireNonNull(existing);
-            finalId = ex.id();
-            creatorUUID = ex.creatorUUID();
-            createdAt = ex.createdAt();
-            revision = ex.revision() + 1;
-        }
-        var biomeConfig = input.generationType() == com.devmod.area.data.AreaGenerationType.BIOME
-            ? ensureStableSeed(input.biomeConfig()) : null;
-        // SEC-01 fix: Also preserve customShapeNbt for PATH shapes (contains waypoints)
-        var customShapeNbt = (shape == AreaShape.CUSTOM_NBT || shape == AreaShape.PATH)
-            ? input.customShapeNbt() : null;
-
-        return new AreaDefinition(
-            finalId,
-            trimmedName,
-            input.generationType(),
-            shape,
-            dims,
-            input.centerPosition(),
-            dimensionId,
-            input.palette(),
-            biomeConfig,
-            input.options(),
-            creatorUUID,
-            createdAt,
-            now,
-            revision,
-            input.isMainHub(),
-            linkedZoneId,
-            customShapeNbt
-        );
-    }
-
-    /**
-     * Ensures biome config has a stable seed for consistent terrain generation.
-     * If seed is 0, generates one from current nanoTime at creation time.
-     * This prevents multi-tick builds from using different seeds per call.
-     */
-    @Nullable
-    private static BiomeGenerationConfig ensureStableSeed(@Nullable BiomeGenerationConfig config) {
-        if (config == null) {
-            return null;
-        }
-        if (config.seed() != 0L) {
-            return config;
-        }
-        // Generate stable seed from current time at creation
-        return config.withSeed(System.nanoTime());
-    }
-
-    /**
-     * M-05 fix: Validates that an editor position is within valid world bounds.
-     * Prevents invalid BlockPos from being registered which could cause issues.
-     *
-     * @param pos   The position to validate
-     * @param level The level to check bounds against
-     * @return true if position is valid
-     */
-    private static boolean isValidEditorPosition(@Nonnull BlockPos pos, @Nonnull net.minecraft.world.level.Level level) {
-        Objects.requireNonNull(pos);
-        Objects.requireNonNull(level);
-
-        // Check horizontal bounds (Minecraft world coordinate limits)
-        int x = pos.getX();
-        int z = pos.getZ();
-        if (x < -30_000_000 || x >= 30_000_000 || z < -30_000_000 || z >= 30_000_000) {
-            DevMod.LOGGER.warn("[Area] Rejected invalid editor position: {} (out of world bounds)", pos);
-            return false;
-        }
-
-        // Check vertical bounds against level limits
-        int y = pos.getY();
-        if (y < level.getMinBuildHeight() || y >= level.getMaxBuildHeight()) {
-            DevMod.LOGGER.warn("[Area] Rejected invalid editor position: {} (Y out of bounds for level)", pos);
-            return false;
-        }
-
-        return true;
-    }
-
-    // ========================================================================
-    // Client Handlers (called on client thread)
-    // Uses cached MethodHandles for ~10x faster invocation than reflection
-    // ========================================================================
-
-    private static void handleOpenBuilderClient(OpenAreaBuilderPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getOpenBuilderScreenMethod();
-            if (method == null) return;
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to open Area Builder screen", e);
-            }
-        });
-    }
-
-    private static void handleOpenEditorCentralClient(OpenEditorCentralPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getOpenEditorCentralScreenMethod();
-            if (method == null) return;
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to open Editor Central screen", e);
-            }
-        });
-    }
-
-    private static void handleAreaPreviewClient(AreaPreviewPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getShowAreaPreviewMethod();
-            // H-03 fix: Log warning instead of silently failing
-            if (method == null) {
-                DevMod.LOGGER.warn("[Area] Cannot show preview: client hook not found (ensure AreaClientHooks is initialized)");
-                return;
-            }
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to show area preview", e);
-            }
-        });
-    }
-
-    private static void handleZoneListClient(ZoneListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getHandleZoneListMethod();
-            // H-03 fix: Log warning instead of silently failing
-            if (method == null) {
-                DevMod.LOGGER.warn("[Area] Cannot handle zone list: client hook not found");
-                return;
-            }
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to handle zone list", e);
-            }
-        });
-    }
-
-    private static void handleSaveAreaResultClient(SaveAreaResultPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            MethodHandle method = getHandleSaveAreaResultMethod();
-            // H-03 fix: Log warning instead of silently failing
-            if (method == null) {
-                DevMod.LOGGER.warn("[Area] Cannot handle save result: client hook not found");
-                return;
-            }
-            try {
-                method.invokeExact(payload);
-            } catch (Throwable e) {
-                DevMod.LOGGER.error("Failed to handle save area result", e);
-            }
-        });
-    }
-
-    private static void sendSaveFailure(@Nonnull ServerPlayer player, @Nullable UUID requestId,
-                                        @Nullable UUID areaId, boolean isNewArea) {
-        if (requestId == null) {
-            return;
-        }
-        UUID safeAreaId = areaId != null ? areaId : requestId;
-        sendPacket(player, new SaveAreaResultPayload(requestId, safeAreaId, -1, isNewArea, false));
-    }
-
-    // ========================================================================
-    // Server Handlers (called on server thread)
-    // ========================================================================
-
-    private static void handleSaveAreaServer(SaveAreaPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            AreaDefinition input = payload.definition();
-            UUID requestId = input != null ? input.id() : null;
-
-            // Validate permissions (OP level 2 required for creating/editing areas)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                DevMod.LOGGER.warn("Player {} tried to save area without permissions",
-                    player.getName().getString());
-                sendSaveFailure(player, requestId, payload.existingAreaId(), payload.isNewArea());
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // H-11 fix: Better null validation with user-friendly error message
-            if (input == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_definition")), true);
-                DevMod.LOGGER.warn("Player {} sent save area request with null definition",
-                    player.getName().getString());
-                sendSaveFailure(player, requestId, payload.existingAreaId(), payload.isNewArea());
-                return;
-            }
-
-            if (payload.isNewArea()) {
-                AreaDefinition definition = sanitizeDefinition(input, null, player, true);
-                if (definition == null) {
-                    sendSaveFailure(player, requestId, null, true);
-                    return;
-                }
-
-                // Validate linkedZoneId if specified
-                String linkedZoneId = definition.linkedZoneId();
-                if (linkedZoneId != null && !linkedZoneId.isEmpty()) {
-                    ZoneRegistry zoneRegistry = ZoneRegistry.get(Objects.requireNonNull(player.getServer()));
-                    if (!zoneRegistry.hasZoneId(linkedZoneId)) {
-                        player.displayClientMessage(
-                            Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_zone_not_found", linkedZoneId)), true);
-                        DevMod.LOGGER.warn("Player {} tried to link area {} to non-existent zone {}",
-                            player.getName().getString(), definition.name(), linkedZoneId);
-                        sendSaveFailure(player, requestId, null, true);
-                        return;
-                    }
-                }
-
-                // MED-11 fix: Check for duplicate area names (same creator only)
-                String areaName = definition.name();
-                UUID creatorId = player.getUUID();
-                boolean nameExists = registry.getAllAreas().stream()
-                    .anyMatch(a -> areaName.equalsIgnoreCase(a.name()) &&
-                                   creatorId.equals(a.creatorUUID()));
-                if (nameExists) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_name_exists", areaName)), true);
-                    DevMod.LOGGER.warn("Player {} tried to create area with duplicate name: {}",
-                        player.getName().getString(), areaName);
-                    sendSaveFailure(player, requestId, null, true);
-                    return;
-                }
-
-                // Check for overlap with existing areas
-                if (registry.wouldOverlap(definition)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_OVERLAP)), true);
-                    DevMod.LOGGER.warn("Player {} tried to create overlapping area {}",
-                        player.getName().getString(), definition.name());
-                    // H-05 fix: Log audit on failures, not just successes
-                    AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                        AreaAuditLog.ActionType.CREATE,
-                        Objects.requireNonNull(definition.id()),
-                        Objects.requireNonNull(definition.name()),
-                        player,
-                        "FAILED: overlap"
-                    );
-                    sendSaveFailure(player, requestId, null, true);
-                    return;
-                }
-
-                // Creating new area
-                UUID areaId = registry.createArea(definition);
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.area_created", definition.name())), true);
-                DevMod.LOGGER.info("Player {} created area: {} ({})",
-                    player.getName().getString(), definition.name(), areaId);
-
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.CREATE,
-                    areaId,
-                    Objects.requireNonNull(definition.name()),
-                    player,
-                    "size=" + definition.dimensions().width() + "x" + definition.dimensions().length() + "x" + definition.dimensions().height()
-                );
-
-                // HIGH-07 fix: Wrap editor registration in try-catch to prevent failures from affecting area creation
-                BlockPos editorPos = payload.editorPosition();
-                if (editorPos != null && isValidEditorPosition(editorPos, Objects.requireNonNull(player.level()))) {
-                    try {
-                        ResourceLocation editorDimension = Objects.requireNonNull(player.level().dimension().location());
-                        registry.registerEditor(editorDimension, editorPos, areaId);
-                        if (player.level().getBlockEntity(editorPos) instanceof com.devmod.area.block.entity.AreaEditorBlockEntity editorBE) {
-                            editorBE.setAreaId(areaId);
-                        }
-                    } catch (Exception e) {
-                        // Log but don't fail - area was created successfully
-                        DevMod.LOGGER.warn("[Area] Failed to link editor position for new area {}: {}",
-                            areaId, e.getMessage());
-                    }
-                }
-
-                // Use areaId as fallback if requestId is null (shouldn't happen in normal flow)
-                sendPacket(player, new SaveAreaResultPayload(requestId != null ? requestId : areaId, areaId, definition.revision(), true, true));
-            } else {
-                // Updating existing area
-                UUID existingId = payload.existingAreaId();
-                if (existingId == null) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_area_id")), true);
-                    sendSaveFailure(player, requestId, null, false);
-                    return;
-                }
-
-                // Validate area exists
-                Optional<AreaDefinition> existing = registry.getArea(existingId);
-                if (existing.isEmpty()) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                    DevMod.LOGGER.warn("Player {} tried to update non-existent area {}",
-                        player.getName().getString(), existingId);
-                    sendSaveFailure(player, requestId, existingId, false);
-                    return;
-                }
-
-                AreaDefinition existingDef = existing.get();
-                if (!Objects.requireNonNull(existingDef.id()).equals(requestId)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_area_id")), true);
-                    sendSaveFailure(player, requestId, existingId, false);
-                    return;
-                }
-
-                // Validate ownership (creator or admin)
-                UUID creatorUUID = existingDef.creatorUUID();
-                if (creatorUUID != null &&
-                    !creatorUUID.equals(player.getUUID()) &&
-                    !player.hasPermissions(4)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_ownership")), true);
-                    DevMod.LOGGER.warn("Player {} tried to update area {} without ownership",
-                        player.getName().getString(), existingId);
-                    sendSaveFailure(player, requestId, existingId, false);
-                    return;
-                }
-
-                AreaDefinition definition = sanitizeDefinition(input, existingDef, player, false);
-                if (definition == null) {
-                    sendSaveFailure(player, requestId, existingId, false);
-                    return;
-                }
-
-                // Validate linkedZoneId if specified
-                String linkedZoneId = definition.linkedZoneId();
-                if (linkedZoneId != null && !linkedZoneId.isEmpty()) {
-                    ZoneRegistry zoneRegistry = ZoneRegistry.get(Objects.requireNonNull(player.getServer()));
-                    if (!zoneRegistry.hasZoneId(linkedZoneId)) {
-                        player.displayClientMessage(
-                            Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_zone_not_found", linkedZoneId)), true);
-                        DevMod.LOGGER.warn("Player {} tried to link area {} to non-existent zone {}",
-                            player.getName().getString(), definition.name(), linkedZoneId);
-                        sendSaveFailure(player, requestId, existingId, false);
-                        return;
-                    }
-                }
-
-                // Check for overlap with existing areas
-                if (registry.wouldOverlap(definition)) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_OVERLAP)), true);
-                    DevMod.LOGGER.warn("Player {} tried to update overlapping area {}",
-                        player.getName().getString(), definition.name());
-                    // H-05 fix: Log audit on failures
-                    AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                        AreaAuditLog.ActionType.UPDATE,
-                        existingId,
-                        Objects.requireNonNull(definition.name()),
-                        player,
-                        "FAILED: overlap"
-                    );
-                    sendSaveFailure(player, requestId, existingId, false);
-                    return;
-                }
-
-                boolean updated = registry.updateArea(existingId, Objects.requireNonNull(definition), payload.expectedRevision());
-                if (updated) {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.area_updated", definition.name())), true);
-                    DevMod.LOGGER.info("Player {} updated area: {} ({})",
-                        player.getName().getString(), definition.name(), existingId);
-
-                    // Audit log
-                    AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                        AreaAuditLog.ActionType.UPDATE,
-                        existingId,
-                        Objects.requireNonNull(definition.name()),
-                        player,
-                        "revision=" + definition.revision()
-                    );
-
-                    // HIGH-07 fix: Wrap editor registration in try-catch
-                    BlockPos editorPos = payload.editorPosition();
-                    if (editorPos != null) {
-                        try {
-                            ResourceLocation editorDimension = Objects.requireNonNull(player.level().dimension().location());
-                            registry.registerEditor(editorDimension, editorPos, existingId);
-                            if (player.level().getBlockEntity(editorPos) instanceof com.devmod.area.block.entity.AreaEditorBlockEntity editorBE) {
-                                editorBE.setAreaId(existingId);
-                            }
-                        } catch (Exception e) {
-                            DevMod.LOGGER.warn("[Area] Failed to link editor position for updated area {}: {}",
-                                existingId, e.getMessage());
-                        }
-                    }
-                    // Use existingId as fallback if requestId is null (shouldn't happen in normal flow)
-                    sendPacket(player, new SaveAreaResultPayload(requestId != null ? requestId : existingId, existingId, definition.revision(), false, true));
-                } else {
-                    player.displayClientMessage(
-                        Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_revision_mismatch")), true);
-                    DevMod.LOGGER.warn("Failed to update area {} - revision mismatch", existingId);
-                    sendSaveFailure(player, requestId, existingId, false);
-                }
-            }
-        });
-    }
-
-    private static void handleBuildAreaServer(BuildAreaPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                DevMod.LOGGER.warn("Player {} tried to build area without permissions",
-                    player.getName().getString());
-                return;
-            }
-
-            // HIGH-05 fix: Use atomic compute for cooldowns to prevent TOCTOU race
-            UUID playerId = player.getUUID();
-            long now = System.currentTimeMillis();
-
-            // Check player cooldown
-            long playerCooldownRemaining = CooldownManager.checkAndUpdatePlayerBuildCooldown(playerId, now);
-            if (playerCooldownRemaining > 0) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.error_build_cooldown", playerCooldownRemaining)), true);
-                return;
-            }
-
-            // Check area cooldown
-            UUID areaId = Objects.requireNonNull(payload.areaId());
-            long areaCooldownRemaining = CooldownManager.checkAndUpdateAreaBuildCooldown(areaId, now);
-            if (areaCooldownRemaining > 0) {
-                // Rollback player cooldown since area cooldown failed
-                CooldownManager.rollbackPlayerBuildCooldown(playerId, now);
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.error_area_cooldown", areaCooldownRemaining)), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            Optional<AreaDefinition> areaOpt = registry.getArea(areaId);
-
-            if (areaOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                DevMod.LOGGER.warn("Player {} tried to build non-existent area {}",
-                    player.getName().getString(), payload.areaId());
-                return;
-            }
-
-            AreaDefinition definition = areaOpt.get();
-            ServerLevel level = player.serverLevel();
-
-            // Validate we're in the correct dimension
-            if (!definition.dimensionId().equals(level.dimension().location())) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_wrong_dimension")), true);
-                DevMod.LOGGER.warn("Player {} tried to build area {} in wrong dimension",
-                    player.getName().getString(), payload.areaId());
-                return;
-            }
-
-            // Check if already building this area
-            if (AreaBuildTaskManager.INSTANCE.isBuildingArea(payload.areaId())) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_build_in_progress")), true);
-                DevMod.LOGGER.warn("Player {} tried to build area {} which is already building",
-                    player.getName().getString(), payload.areaId());
-                return;
-            }
-
-            // SEC-08 fix: Check if snapshot restore is in progress for this area
-            if (AreaSnapshotManager.INSTANCE.isRestoringArea(Objects.requireNonNull(payload.areaId()))) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_restore_in_progress")), true);
-                DevMod.LOGGER.warn("Player {} tried to build area {} while restore is in progress",
-                    player.getName().getString(), payload.areaId());
-                return;
-            }
-
-            // Use AreaBuildTaskManager - handles both immediate and multi-tick builds
-            AreaBuildTaskManager.BuildStartResult result = AreaBuildTaskManager.INSTANCE.startBuild(
-                level, definition, player, payload.clearFirst(), payload.useMultiTick());
-
-            // LOW-02 fix: Send build status update to client UI based on result
-            switch (result) {
-                case STARTED_IMMEDIATE -> {
-                    // Immediate builds complete synchronously, send COMPLETED
-                    sendPacket(player, BuildStatusPayload.completed(areaId));
-                }
-                case STARTED_MULTI_TICK -> {
-                    // Multi-tick build started, send STARTED status
-                    sendPacket(player, BuildStatusPayload.started(areaId));
-                }
-                case QUEUED -> {
-                    // Build queued, send QUEUED status with position
-                    int position = AreaBuildTaskManager.INSTANCE.getQueuePosition(areaId) + 1;
-                    sendPacket(player, BuildStatusPayload.queued(areaId, position));
-                }
-                case ALREADY_BUILDING, QUEUE_FULL -> {
-                    // Error cases - send FAILED status
-                    sendPacket(player, BuildStatusPayload.failed(areaId));
-                }
-            }
-
-            // Cooldowns already updated atomically in the compute() calls above (HIGH-05 fix)
-
-            // Only show success message and log audit for actual starts
-            if (result == AreaBuildTaskManager.BuildStartResult.STARTED_IMMEDIATE ||
-                result == AreaBuildTaskManager.BuildStartResult.STARTED_MULTI_TICK) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.build_started", definition.name())), true);
-                DevMod.LOGGER.info("Player {} initiated build for area {}",
-                    player.getName().getString(), definition.name());
-
-                // Audit log
-                AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                    AreaAuditLog.ActionType.BUILD_START,
-                    areaId,
-                    Objects.requireNonNull(definition.name()),
-                    player,
-                    payload.clearFirst() ? "clearFirst=true" : null
-                );
-            }
-        });
-    }
-
-    private static void handleOpenBuilderRequestServer(RequestOpenAreaBuilderPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.editor_central.error.permission")), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-            UUID requestedId = payload.areaId();
-
-            if (requestedId == null) {
-                openBuilderScreen(player, null, null, false);
-                return;
-            }
-
-            Optional<AreaDefinition> areaOpt = registry.getArea(requestedId);
-            if (areaOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.editor_central.error.not_found")), true);
-                return;
-            }
-
-            AreaDefinition area = areaOpt.get();
-            UUID areaCreatorUUID = area.creatorUUID();
-            if (areaCreatorUUID != null &&
-                !areaCreatorUUID.equals(player.getUUID()) &&
-                !player.hasPermissions(4)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.editor_central.error.permission")), true);
-                return;
-            }
-
-            openBuilderScreen(player, area, null, area.isMainHub());
-        });
-    }
-
-    private static void handleRequestZoneListServer(RequestZoneListPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            ZoneRegistry zoneRegistry = ZoneRegistry.get(Objects.requireNonNull(player.getServer()));
-            List<ZoneListPayload.ZoneSummary> summaries = new ArrayList<>();
-
-            for (ZoneDefinition zone : zoneRegistry.getAllZones()) {
-                int areaCount = zoneRegistry.getAreasForZone(zone.zoneId()).size();
-                summaries.add(new ZoneListPayload.ZoneSummary(
-                    Objects.requireNonNull(zone.zoneId()),
-                    Objects.requireNonNull(zone.displayName()),
-                    areaCount
-                ));
-            }
-
-            sendPacket(player, new ZoneListPayload(summaries));
-            DevMod.LOGGER.debug("[Area] Sent zone list to {} ({} zones)",
-                player.getName().getString(), summaries.size());
-        });
-    }
-
-    private static void handleCloneAreaServer(CloneAreaPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            // Validate payload
-            if (!payload.isValid()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_invalid_clone")), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Extract validated values (isValid() ensures these are non-null)
-            UUID sourceAreaId = Objects.requireNonNull(payload.sourceAreaId(), "sourceAreaId validated by isValid()");
-            String newName = Objects.requireNonNull(payload.newName(), "newName validated by isValid()");
-            BlockPos newCenter = Objects.requireNonNull(payload.newCenter(), "newCenter validated by isValid()");
-
-            // Get source area
-            Optional<AreaDefinition> sourceOpt = registry.getArea(sourceAreaId);
-            if (sourceOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaDefinition source = sourceOpt.get();
-
-            // Create cloned definition with new ID, name, and center
-            long now = System.currentTimeMillis();
-            AreaDefinition clonedRaw = new AreaDefinition(
-                UUID.randomUUID(),
-                newName,
-                source.generationType(),
-                source.shape(),
-                source.dimensions(),
-                newCenter,
-                source.dimensionId(),
-                source.palette(),
-                source.biomeConfig(),
-                source.options(),
-                player.getUUID(),
-                now,
-                now,
-                0, // Initial revision
-                false, // Clones are not main hub by default
-                payload.keepLinkedZone() ? source.linkedZoneId() : null,
-                source.customShapeNbt()
-            );
-
-            // LOW-01 fix: Sanitize cloned definition like any new area
-            // This validates CUSTOM_NBT bounds and other constraints
-            AreaDefinition cloned = sanitizeDefinition(clonedRaw, null, player, true);
-            if (cloned == null) {
-                // sanitizeDefinition already sent error message to player
-                return;
-            }
-
-            // Check for overlap
-            if (registry.wouldOverlap(cloned)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_OVERLAP)), true);
-                return;
-            }
-
-            // Save cloned area
-            UUID newId = registry.createArea(cloned);
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.area_cloned", source.name(), newName)), true);
-            DevMod.LOGGER.info("Player {} cloned area {} -> {} ({})",
-                player.getName().getString(), source.name(), newName, newId);
-
-            // Audit log
-            AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                AreaAuditLog.ActionType.CLONE,
-                newId,
-                newName,
-                player,
-                "clonedFrom=" + sourceAreaId
-            );
-        });
-    }
-
-    private static void handleDeleteAreaServer(DeleteAreaPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID areaId = payload.areaId();
-            if (areaId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Check if area exists
-            Optional<AreaDefinition> areaOpt = registry.getArea(areaId);
-            if (areaOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaDefinition area = areaOpt.get();
-
-            // CRIT-03 fix: Check ownership - only owner or OP4+ can delete others' areas
-            // This makes delete permissions consistent with update permissions
-            UUID playerId = player.getUUID();
-            if (!Objects.equals(area.creatorUUID(), playerId) && !player.hasPermissions(4)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_not_owner")), true);
-                DevMod.LOGGER.warn("Player {} tried to delete area {} owned by {} without OP4+",
-                    player.getName().getString(), areaId, area.creatorUUID());
-                return;
-            }
-
-            // Prevent deletion of main hub without explicit confirmation
-            UUID mainHubId = registry.getMainHubId();
-            if (areaId.equals(mainHubId)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_cannot_delete_main_hub")), true);
-                return;
-            }
-
-            String areaName = area.name();
-
-            // MED-DELETE fix: Cancel any active/pending/queued builds before deleting
-            boolean cancelledBuild = AreaBuildTaskManager.INSTANCE.cancelBuild(areaId);
-            boolean removedFromQueue = AreaBuildTaskManager.INSTANCE.removeFromQueue(areaId);
-            if (cancelledBuild || removedFromQueue) {
-                DevMod.LOGGER.info("[Area] Cancelled builds for deleted area: {} (active={}, queued={})",
-                    areaId, cancelledBuild, removedFromQueue);
-            }
-
-            registry.deleteArea(areaId);
-
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.area_deleted", areaName)), true);
-            DevMod.LOGGER.info("Player {} deleted area: {} ({})",
-                player.getName().getString(), areaName, areaId);
-
-            // Audit log
-            AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                AreaAuditLog.ActionType.DELETE,
-                areaId,
-                Objects.requireNonNull(areaName),
-                player,
-                null
-            );
-        });
-    }
-
-    private static void handlePromoteMainHubServer(PromoteMainHubPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID areaId = payload.areaId();
-            if (areaId == null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaRegistry registry = AreaRegistry.get(Objects.requireNonNull(player.getServer()));
-
-            // Check if area exists
-            Optional<AreaDefinition> areaOpt = registry.getArea(areaId);
-            if (areaOpt.isEmpty()) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_area_not_found")), true);
-                return;
-            }
-
-            AreaDefinition newMainHub = areaOpt.get();
-
-            // Check if already main hub
-            UUID currentMainHubId = registry.getMainHubId();
-            if (areaId.equals(currentMainHubId)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_already_main_hub")), true);
-                return;
-            }
-
-            // C-07 fix: Promote new area FIRST, then demote old one to ensure atomicity
-            // This prevents leaving no main hub if the demotion succeeds but promotion fails
-            AreaDefinition promoted = newMainHub.withMainHub(true);
-            boolean updated = registry.updateArea(areaId, promoted, newMainHub.revision());
-            if (!updated) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable("area.message.error_revision_mismatch")), true);
-                DevMod.LOGGER.warn("[Area] Failed to promote area {} to main hub: revision mismatch", areaId);
-                return;
-            }
-
-            // Now demote the old main hub (safe because new one is already promoted)
-            if (currentMainHubId != null) {
-                Optional<AreaDefinition> oldMainHubOpt = registry.getArea(currentMainHubId);
-                if (oldMainHubOpt.isPresent()) {
-                    AreaDefinition oldMainHub = oldMainHubOpt.get();
-                    AreaDefinition demoted = oldMainHub.withMainHub(false);
-                    // Demotion failure is not critical since we already have a new main hub
-                    if (!registry.updateArea(currentMainHubId, demoted, oldMainHub.revision())) {
-                        DevMod.LOGGER.warn("[Area] Failed to demote old main hub {} (non-critical)", currentMainHubId);
-                    } else {
-                        DevMod.LOGGER.debug("[Area] Demoted previous main hub: {} ({})",
-                            oldMainHub.name(), currentMainHubId);
-                    }
-                }
-            }
-
-            registry.setMainHub(areaId);
-
-            player.displayClientMessage(
-                Objects.requireNonNull(AreaBuilderMessages.successTranslatable("area.message.area_promoted", newMainHub.name())), true);
-            DevMod.LOGGER.info("Player {} promoted area to main hub: {} ({})",
-                player.getName().getString(), newMainHub.name(), areaId);
-
-            // Audit log
-            AreaAuditLog.get(Objects.requireNonNull(player.getServer())).log(
-                AreaAuditLog.ActionType.SET_MAIN_HUB,
-                areaId,
-                Objects.requireNonNull(newMainHub.name()),
-                player,
-                currentMainHubId != null ? "previousMainHub=" + currentMainHubId : null
-            );
-        });
-    }
-
-    // ========================================================================
-    // Build Pause/Resume Handlers
-    // ========================================================================
-
-    private static void handlePauseBuildServer(PauseBuildPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID areaId = payload.areaId();
-            var server = player.getServer();
-            if (server == null) return;
-
-            // Check if build is active for this area
-            if (!AreaBuildTaskManager.INSTANCE.isBuildingArea(areaId)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.no_active_build")), true);
-                return;
-            }
-
-            // Pause the build
-            boolean paused = AreaBuildTaskManager.INSTANCE.pauseBuild(Objects.requireNonNull(areaId), server);
-
-            if (paused) {
-                int progress = AreaBuildTaskManager.INSTANCE.getBuildProgress(areaId);
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.build_paused")), false);
-
-                // Notify client about status change
-                sendPacket(player, BuildStatusPayload.paused(areaId, progress));
-
-                // Audit log
-                AreaRegistry registry = AreaRegistry.get(server);
-                registry.getArea(Objects.requireNonNull(areaId)).ifPresent(area ->
-                    AreaAuditLog.get(server).log(
-                        AreaAuditLog.ActionType.BUILD_CANCEL,
-                        Objects.requireNonNull(areaId), Objects.requireNonNull(area.name()), player, "paused at " + progress + "%"
-                    )
-                );
-
-                DevMod.LOGGER.info("Player {} paused build for area {}", player.getName().getString(), areaId);
-            } else {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.pause_failed")), true);
-            }
-        });
-    }
-
-    private static void handleResumeBuildServer(ResumeBuildPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            ServerPlayer player = (ServerPlayer) ctx.player();
-            if (player == null) return;
-
-            // Validate permissions (OP level 2+ required)
-            if (!player.hasPermissions(2)) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(AreaBuilderMessages.errorTranslatable(AreaBuilderMessages.MSG_ERROR_PERMISSION)), true);
-                return;
-            }
-
-            UUID areaId = payload.areaId();
-            var server = player.getServer();
-            if (server == null) return;
-
-            // Resume the build
-            boolean resumed = AreaBuildTaskManager.INSTANCE.resumeBuild(server, Objects.requireNonNull(areaId), player);
-
-            if (resumed) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.build_resumed")), false);
-
-                // Notify client about status change
-                sendPacket(player, BuildStatusPayload.resumed(areaId, 0));
-
-                // Audit log
-                AreaRegistry registry = AreaRegistry.get(server);
-                registry.getArea(Objects.requireNonNull(areaId)).ifPresent(area ->
-                    AreaAuditLog.get(server).log(
-                        AreaAuditLog.ActionType.BUILD_START,
-                        Objects.requireNonNull(areaId), Objects.requireNonNull(area.name()), player, "resumed"
-                    )
-                );
-
-                DevMod.LOGGER.info("Player {} resumed build for area {}", player.getName().getString(), areaId);
-            } else {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.message.resume_failed")), true);
-            }
-        });
-    }
-
-    private static void handleBuildStatusClient(BuildStatusPayload payload, IPayloadContext ctx) {
-        enqueueWork(ctx, () -> {
-            // CRIT-07 fix: Invoke client hook via MethodHandle like other handlers
-            MethodHandle method = getHandleBuildStatusMethod();
-            if (method != null) {
-                try {
-                    method.invoke(payload);
-                } catch (Throwable e) {
-                    DevMod.LOGGER.error("[Area] Failed to invoke handleBuildStatus: {}", e.getMessage());
-                }
-            } else {
-                // Fallback logging for dedicated server
-                DevMod.LOGGER.debug("[Area] Build status update: area={}, status={}, progress={}%",
-                    payload.areaId(), payload.status().getSerializedName(), payload.progressPercent());
-            }
-        });
     }
 
     // ========================================================================
