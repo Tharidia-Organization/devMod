@@ -1,9 +1,9 @@
 package com.devmod.runtime;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,7 +50,7 @@ public final class NexusPortalManager {
     private static final int PORTAL_HEIGHT = 3; // 3 blocks tall
 
     // Track created portal UUIDs for cleanup (data-driven: zoneId -> UUID)
-    private final Map<String, UUID> portalIds = new HashMap<>();
+    private final Map<String, UUID> portalIds = new ConcurrentHashMap<>();
 
     private NexusPortalManager() {}
 

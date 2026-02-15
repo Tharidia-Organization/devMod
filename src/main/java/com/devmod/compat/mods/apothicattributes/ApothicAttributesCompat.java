@@ -1,6 +1,6 @@
 package com.devmod.compat.mods.apothicattributes;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,7 @@ public class ApothicAttributesCompat implements CompatModule {
     private static volatile boolean initialized = false;
 
     // Cached attribute holders
-    private static final Map<String, Optional<Holder<Attribute>>> attributeCache = new HashMap<>();
+    private static final Map<String, Optional<Holder<Attribute>>> attributeCache = new ConcurrentHashMap<>();
 
     // Known Apothic Attributes (ResourceLocation paths)
     // Namespace changed from "attributeslib" to "apothic_attributes" in 1.21

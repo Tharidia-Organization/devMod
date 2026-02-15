@@ -186,7 +186,7 @@ public final class NexusTransportBridge {
             }
         }
 
-        LOGGER.info("[NexusBridge] Initialized Nexus transport nodes");
+        LOGGER.debug("[NexusBridge] Initialized Nexus transport nodes");
     }
 
     /**

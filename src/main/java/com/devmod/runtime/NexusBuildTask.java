@@ -15,12 +15,16 @@ import org.slf4j.LoggerFactory;
 public final class NexusBuildTask {
     private static final Logger LOGGER = LoggerFactory.getLogger(NexusBuildTask.class);
 
+    /** Steps taking longer than this are logged at INFO even between milestones. */
+    private static final long SLOW_STEP_THRESHOLD_MS = 50;
+
     private final Iterator<NexusBuildStep> steps;
     private final int totalSteps;
     private final int stepInterval;
     private final long startNanos;
     private int cooldown;
     private int stepIndex;
+    private int nextMilestone;
     private boolean completed;
     @Nullable
     private String currentStepName;
@@ -33,6 +37,7 @@ public final class NexusBuildTask {
         this.startNanos = System.nanoTime();
         this.cooldown = 0;
         this.stepIndex = 0;
+        this.nextMilestone = Math.max(1, totalSteps / 4);
         this.completed = false;
         this.currentStepName = null;
     }
@@ -60,8 +65,17 @@ public final class NexusBuildTask {
         }
         long stepDurationMs = (System.nanoTime() - stepStart) / 1_000_000L;
         stepIndex++;
-        LOGGER.info("[Nexus] Build step {} '{}' completed in {} ms",
+        LOGGER.debug("[Nexus] Build step {} '{}' completed in {} ms",
             stepIndex, step.name(), stepDurationMs);
+        if (stepDurationMs >= SLOW_STEP_THRESHOLD_MS) {
+            LOGGER.info("[Nexus] Slow build step {} '{}' took {} ms",
+                stepIndex, step.name(), stepDurationMs);
+        } else if (stepIndex >= nextMilestone) {
+            int pct = (int) ((stepIndex * 100L) / totalSteps);
+            LOGGER.info("[Nexus] Build progress: {}/{} steps ({}%)",
+                stepIndex, totalSteps, pct);
+            nextMilestone += Math.max(1, totalSteps / 4);
+        }
 
         cooldown = stepInterval;
         if (!steps.hasNext()) {
@@ -101,6 +115,6 @@ public final class NexusBuildTask {
         completed = true;
         currentStepName = null;
         long totalMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        LOGGER.info("[Nexus] Build completed in {} ms", totalMs);
+        LOGGER.info("[Nexus] Build completed: {} steps in {} ms", stepIndex, totalMs);
     }
 }

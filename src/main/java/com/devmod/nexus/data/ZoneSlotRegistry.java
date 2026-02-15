@@ -168,6 +168,17 @@ public class ZoneSlotRegistry extends SavedData {
             return false;
         }
 
+        // Validate no overlapping bounds with other slots (exclude self)
+        if (!slot.bounds().equals(existing.bounds())) {
+            for (ZoneSlot other : slots.values()) {
+                if (!other.slotId().equals(slot.slotId()) && slot.overlaps(Objects.requireNonNull(other))) {
+                    LOGGER.warn("[Nexus] Update failed: slot {} would overlap with {}",
+                        slot.slotId(), other.slotId());
+                    return false;
+                }
+            }
+        }
+
         // Update reverse indices
         // Remove old mappings
         if (existing.linkedAreaId() != null) {

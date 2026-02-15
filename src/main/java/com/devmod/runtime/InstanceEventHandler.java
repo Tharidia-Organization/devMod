@@ -78,7 +78,7 @@ public class InstanceEventHandler {
             int readyCount = InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.READY).size();
             int totalPlayers = InstanceRegistry.INSTANCE.getTotalPlayersInInstances();
             if (activeCount > 0 || readyCount > 0 || totalPlayers > 0) {
-                LOGGER.info("[InstanceDebug] Instance states: ACTIVE={}, READY={}, players_mapped={}",
+                LOGGER.debug("[InstanceDebug] Instance states: ACTIVE={}, READY={}, players_mapped={}",
                     activeCount, readyCount, totalPlayers);
             }
         }

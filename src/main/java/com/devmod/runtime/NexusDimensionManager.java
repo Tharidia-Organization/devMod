@@ -3,6 +3,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.Executor;
 
@@ -17,18 +18,22 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
@@ -132,9 +137,14 @@ public class NexusDimensionManager {
             // Send progress if step changed or build completed
             if (done) {
                 sendBuildProgress(level, nn(task, "buildTask"), true);
-                finalizeBuild(level, NexusHubSavedData.get(server), pendingBuildVersion);
-                buildTask = null;
-                lastSentBuildStep = -1;
+                try {
+                    finalizeBuild(level, NexusHubSavedData.get(server), pendingBuildVersion);
+                } catch (Exception e) {
+                    LOGGER.error("[Nexus] finalizeBuild failed - hub may need manual rebuild", e);
+                } finally {
+                    buildTask = null;
+                    lastSentBuildStep = -1;
+                }
             } else if (task.getCurrentStep() != lastSentBuildStep) {
                 sendBuildProgress(level, nn(task, "buildTask"), false);
                 lastSentBuildStep = task.getCurrentStep();
@@ -191,13 +201,32 @@ public class NexusDimensionManager {
     }
 
     private LevelStem createLevelStem(MinecraftServer server) {
-        ResourceKey<net.minecraft.world.level.dimension.DimensionType> overworldType =
-            nn(BuiltinDimensionTypes.OVERWORLD, "overworld dimension type");
-        var dimensionTypeRegistry = nn(
-            server.registryAccess().registryOrThrow(nn(Registries.DIMENSION_TYPE, "Registries.DIMENSION_TYPE")),
-            "dimension type registry"
+        // Custom DimensionType for the Nexus hub:
+        // - Fixed time at noon (6000L), natural=false so compasses spin and beds don't set spawn
+        // - No monster spawns, piglin-safe, no raids - this is a peaceful hub dimension
+        DimensionType nexusDimType = new DimensionType(
+            OptionalLong.of(6000L),     // fixedTime: perpetual noon
+            true,                        // hasSkyLight
+            false,                       // hasCeiling
+            false,                       // ultraWarm
+            false,                       // natural (compasses spin, beds don't set spawn)
+            1.0,                         // coordinateScale
+            false,                       // bedWorks
+            false,                       // respawnAnchorWorks
+            0,                           // minY
+            256,                         // height
+            256,                         // logicalHeight
+            BlockTags.INFINIBURN_OVERWORLD, // infiniburn
+            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus"), // effects -> "devmod:nexus"
+            0.15f,                       // ambientLight
+            new DimensionType.MonsterSettings(
+                true,                    // piglinSafe
+                false,                   // hasRaids
+                UniformInt.of(0, 0),     // monsterSpawnLightTest (no spawns)
+                0                        // monsterSpawnBlockLightLimit
+            )
         );
-        var dimensionType = nn(dimensionTypeRegistry.getHolderOrThrow(overworldType), "dimension type");
+        Holder<DimensionType> dimensionType = Holder.direct(nexusDimType);
 
         Holder<net.minecraft.world.level.biome.Biome> biomeHolder = nn(
             server.registryAccess().registryOrThrow(nn(Registries.BIOME, "Registries.BIOME")).getHolderOrThrow(nn(net.minecraft.world.level.biome.Biomes.THE_VOID, "Biomes.THE_VOID")),
@@ -743,13 +772,34 @@ public class NexusDimensionManager {
     }
 
     private void teleportPlayerTo(ServerLevel level, net.minecraft.server.level.ServerPlayer player, BlockPos spawn) {
+        // Calculate yaw to face the hub center (using configured HubOrigin, not hardcoded 0,0)
+        BlockPos hubCenter = getHubOrigin();
+        float yaw = (float) Math.toDegrees(Math.atan2(
+            hubCenter.getZ() - spawn.getZ(),
+            hubCenter.getX() - spawn.getX()
+        )) - 90.0f;
+
         player.teleportTo(nn(level, "level"),
             spawn.getX() + 0.5,
             spawn.getY() + 1.0,
             spawn.getZ() + 0.5,
-            player.getYRot(),
-            player.getXRot()
+            yaw,
+            0.0f  // level pitch
         );
+
+        // Post-teleport enhancements
+        player.invulnerableTime = 60; // 3 seconds of invulnerability
+
+        // Arrival particles
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL,
+            spawn.getX() + 0.5, spawn.getY() + 1.0, spawn.getZ() + 0.5,
+            15, 0.5, 0.5, 0.5, 0.02);
+        level.sendParticles(ParticleTypes.END_ROD,
+            spawn.getX() + 0.5, spawn.getY() + 1.5, spawn.getZ() + 0.5,
+            5, 0.2, 0.3, 0.2, 0.01);
+
+        // Arrival sound
+        player.playNotifySound(SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.AMBIENT, 0.5f, 1.2f);
     }
 
     private void ensureZonesInitialized(@Nonnull MinecraftServer server) {

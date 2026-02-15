@@ -212,8 +212,8 @@ public final class NexusFoundationBuilder {
         // Build floor with grid pattern
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                // Grid pattern: accent every 16 blocks
-                boolean isGridLine = (x % 16 == 0) || (z % 16 == 0);
+                // Grid pattern: accent every 16 blocks (relative to hub origin)
+                boolean isGridLine = ((x - origin.getX()) % 16 == 0) || ((z - origin.getZ()) % 16 == 0);
                 setBlock(level, x, floorY, z, isGridLine ? floorAccent : floor);
 
                 // Clear space above floor
@@ -327,8 +327,8 @@ public final class NexusFoundationBuilder {
                 boolean isEdge = (w == -halfWidth || w == halfWidth);
                 setBlock(level, x, floorY, z, isEdge ? corridorAccent : corridor);
 
-                // Lights every 16 blocks
-                if (dist % 16 == 0 && w == 0) {
+                // Lights every 16 blocks (relative to hub origin)
+                if ((dist - startDist) % 16 == 0 && w == 0) {
                     setBlock(level, x, floorY, z, centerLight);
                 }
             }
