@@ -37,6 +37,10 @@ class RadialOrphanCheckTest {
 
     private static String actionIdsSource;
     private static String devModClientActionsSource;
+    private static String clientUIActionsSource;
+    private static String clientDebugActionsSource;
+    private static String clientConfigActionsSource;
+    private static String clientGameplayActionsSource;
     private static String actionKeybindRegistrySource;
     private static String renderEventsSource;
     private static String arenaActionRegistrySource;
@@ -53,6 +57,14 @@ class RadialOrphanCheckTest {
         "src/main/java/com/devmod/actions/ActionIds.java");
     private static final Path DEVMOD_CLIENT_ACTIONS_PATH = Paths.get(
         "src/main/java/com/devmod/actions/client/DevModClientActions.java");
+    private static final Path CLIENT_UI_ACTIONS_PATH = Paths.get(
+        "src/main/java/com/devmod/actions/client/ClientUIActions.java");
+    private static final Path CLIENT_DEBUG_ACTIONS_PATH = Paths.get(
+        "src/main/java/com/devmod/actions/client/ClientDebugActions.java");
+    private static final Path CLIENT_CONFIG_ACTIONS_PATH = Paths.get(
+        "src/main/java/com/devmod/actions/client/ClientConfigActions.java");
+    private static final Path CLIENT_GAMEPLAY_ACTIONS_PATH = Paths.get(
+        "src/main/java/com/devmod/actions/client/ClientGameplayActions.java");
     private static final Path ACTION_KEYBIND_REGISTRY_PATH = Paths.get(
         "src/main/java/com/devmod/actions/client/ActionKeybindRegistry.java");
     private static final Path RENDER_EVENTS_PATH = Paths.get(
@@ -80,6 +92,10 @@ class RadialOrphanCheckTest {
     static void loadSourceCode() throws IOException {
         actionIdsSource = Files.readString(ACTION_IDS_PATH);
         devModClientActionsSource = Files.readString(DEVMOD_CLIENT_ACTIONS_PATH);
+        clientUIActionsSource = Files.readString(CLIENT_UI_ACTIONS_PATH);
+        clientDebugActionsSource = Files.readString(CLIENT_DEBUG_ACTIONS_PATH);
+        clientConfigActionsSource = Files.readString(CLIENT_CONFIG_ACTIONS_PATH);
+        clientGameplayActionsSource = Files.readString(CLIENT_GAMEPLAY_ACTIONS_PATH);
         actionKeybindRegistrySource = Files.readString(ACTION_KEYBIND_REGISTRY_PATH);
         renderEventsSource = Files.readString(RENDER_EVENTS_PATH);
         arenaActionRegistrySource = Files.readString(ARENA_ACTION_REGISTRY_PATH);
@@ -120,10 +136,19 @@ class RadialOrphanCheckTest {
         }
 
         @Test
-        @DisplayName("L0-03: DevModClientActions registers actions")
-        void devModClientActionsRegisters() {
-            assertTrue(devModClientActionsSource.contains("ActionRegistry.register("),
-                "DevModClientActions should register actions");
+        @DisplayName("L0-03: DevModClientActions delegates to domain registrars")
+        void devModClientActionsDelegates() {
+            // After refactoring, DevModClientActions is a facade that delegates
+            // to domain-specific registrar classes
+            assertTrue(devModClientActionsSource.contains("ClientUIActions.registerActions()"),
+                "DevModClientActions should delegate to ClientUIActions");
+            assertTrue(devModClientActionsSource.contains("ClientDebugActions.registerActions()"),
+                "DevModClientActions should delegate to ClientDebugActions");
+            // Actual registrations happen in domain files
+            String combinedDomainSources = clientUIActionsSource + clientDebugActionsSource
+                + clientConfigActionsSource + clientGameplayActionsSource;
+            assertTrue(combinedDomainSources.contains("ActionRegistry.register("),
+                "Domain registrar files should register actions");
         }
 
         @Test
@@ -231,10 +256,12 @@ class RadialOrphanCheckTest {
         @Test
         @DisplayName("L2-01: All keybinds map to ActionIds")
         void allKeybindsMappedToActionIds() {
-            // Count keybind registrations in DevModClientActions (where they are registered)
+            // After refactoring, keybind registrations are in domain-specific files
+            String allKeybindSources = clientUIActionsSource + clientDebugActionsSource
+                + clientConfigActionsSource + clientGameplayActionsSource;
             Pattern registerPattern = Pattern.compile(
                 "ActionKeybindRegistry\\.register\\(ActionIds\\.(\\w+),\\s*KeyInputHandler\\.(\\w+)");
-            Matcher matcher = registerPattern.matcher(devModClientActionsSource);
+            Matcher matcher = registerPattern.matcher(allKeybindSources);
 
             int count = 0;
             while (matcher.find()) {
@@ -242,7 +269,7 @@ class RadialOrphanCheckTest {
             }
 
             assertTrue(count >= 30,
-                "Should have at least 30 keybind mappings. Found: " + count);
+                "Should have at least 30 keybind mappings across domain files. Found: " + count);
         }
 
         @Test
@@ -363,10 +390,12 @@ class RadialOrphanCheckTest {
         @Test
         @DisplayName("L4-02: Debug actions are in DEBUG category")
         void debugActionsInDebugCategory() {
-            // Actions starting with DEBUG_ should use ActionCategory.DEBUG
+            // After refactoring, debug actions are in ClientDebugActions
+            String allSources = clientUIActionsSource + clientDebugActionsSource
+                + clientConfigActionsSource + clientGameplayActionsSource;
             Pattern pattern = Pattern.compile(
                 "ActionIds\\.DEBUG_[^,]+,[^}]+category\\(ActionCategory\\.(\\w+)\\)");
-            Matcher matcher = pattern.matcher(devModClientActionsSource);
+            Matcher matcher = pattern.matcher(allSources);
 
             List<String> wrongCategory = new ArrayList<>();
             while (matcher.find()) {
@@ -383,9 +412,12 @@ class RadialOrphanCheckTest {
         @Test
         @DisplayName("L4-03: UI actions are in UI category")
         void uiActionsInUiCategory() {
+            // After refactoring, UI actions are in ClientUIActions
+            String allSources = clientUIActionsSource + clientDebugActionsSource
+                + clientConfigActionsSource + clientGameplayActionsSource;
             Pattern pattern = Pattern.compile(
                 "ActionIds\\.UI_[^,]+,[^}]+category\\(ActionCategory\\.(\\w+)\\)");
-            Matcher matcher = pattern.matcher(devModClientActionsSource);
+            Matcher matcher = pattern.matcher(allSources);
 
             List<String> wrongCategory = new ArrayList<>();
             int total = 0;
@@ -398,7 +430,7 @@ class RadialOrphanCheckTest {
                 }
             }
 
-            assertTrue(total > 0, "Should have UI_ actions");
+            assertTrue(total > 0, "Should have UI_ actions in domain registrar files");
             assertTrue(wrongCategory.size() <= 5,
                 "Most UI_ actions should be in appropriate categories. Wrong: " + wrongCategory);
         }
@@ -465,6 +497,10 @@ class RadialOrphanCheckTest {
 
     private String combinedRegistrationSources() {
         return devModClientActionsSource
+            + clientUIActionsSource
+            + clientDebugActionsSource
+            + clientConfigActionsSource
+            + clientGameplayActionsSource
             + arenaActionRegistrySource
             + devModActionsSource
             + leaderboardCommandEventsSource

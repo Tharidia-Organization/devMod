@@ -376,7 +376,6 @@ public final class RadialMenuRegistry {
             .iconStack(stack(Items.FEATHER))
             .item(RadialMenuItem.registry(ActionIds.ABILITY_DASH))
             .item(RadialMenuItem.registry(ActionIds.ABILITY_DODGE))
-            .item(RadialMenuItem.registry(ActionIds.UI_STAMINA_EDITOR_OPEN))
             .build());
 
     }

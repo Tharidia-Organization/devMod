@@ -95,8 +95,7 @@ public class EditorHubScreen extends Screen {
         // Quest & Endurance section
         addSection("devmod.editor_hub.section.quests",
             actionButton("editor-quest", ActionIds.UI_QUEST_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.QUEST),
-            actionButton("editor-endurance", ActionIds.UI_ENDURANCE_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.ENDURANCE),
-            actionButton("editor-stamina", ActionIds.UI_STAMINA_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.STAMINA)
+            actionButton("editor-endurance", ActionIds.UI_ENDURANCE_EDITOR_OPEN, EditorButton.Style.NORMAL, EditorIcons.ENDURANCE)
         );
 
         // World Tools section

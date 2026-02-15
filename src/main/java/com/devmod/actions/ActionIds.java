@@ -48,7 +48,7 @@ public final class ActionIds {
     public static final String UI_ENDURANCE_SCREEN_OPEN = "devmod.ui.endurance_screen.open";
     public static final String UI_ENDURANCE_SHOP_OPEN = "devmod.ui.endurance_shop.open";
     public static final String UI_VOXELLAB_OPEN = "devmod.ui.voxellab.open";
-    public static final String UI_STAMINA_EDITOR_OPEN = "devmod.ui.stamina_editor.open";
+
     public static final String UI_QUEST_DEATH_OPEN = "devmod.ui.quest_death.open";
     public static final String UI_PERK_SELECTION_OPEN = "devmod.ui.perk_selection.open";
     public static final String UI_QUEST_COMPLETION_OPEN = "devmod.ui.quest_completion.open";

@@ -348,5 +348,5 @@ public final class BaselineActionInventory {
      * Known total count of action ID constants in ActionIds.java.
      * Update this when new actions are added.
      */
-    public static final int EXPECTED_ACTION_ID_COUNT = 329;
+    public static final int EXPECTED_ACTION_ID_COUNT = 328;
 }

@@ -2015,8 +2015,7 @@
   "devmod.action.endurance_editor.desc": "Open quest editor with endurance modal",
   "devmod.action.endurance_settings": "Endurance Settings",
   "devmod.action.endurance_settings.desc": "Configure endurance quest mechanics, combo systems, and difficulty",
-  "devmod.action.stamina_editor": "Stamina Editor",
-  "devmod.action.stamina_editor.desc": "Open the stamina system editor",
+
   "devmod.action.heatmap.toggle": "Toggle Heatmaps",
   "devmod.action.heatmap.toggle.desc": "Enable or disable all heatmap overlays",
   "devmod.action.heatmap.death.toggle": "Death Heatmap",
