@@ -5,7 +5,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.config.TesterModality;
 import com.devmod.endurance.CombatFlowSyncPayload;
 import com.devmod.network.ChannelId;
 import com.devmod.network.ImpactSyncPayload;
@@ -31,13 +30,11 @@ public final class CombatPacketHandler extends NetworkHandlerBase implements Pay
 
     @Override
     public void registerPayloads(RegisterPayloadHandlersEvent event) {
-        if (TesterModality.isEnabled()) {
-            event.registrar(ChannelId.COMBAT_FLOW_SYNC.asString()).playToClient(
-                nn(CombatFlowSyncPayload.TYPE),
-                nn(CombatFlowSyncPayload.STREAM_CODEC),
-                validated(CombatPacketHandler::handleCombatFlowSync, PayloadLimits.SMALL)
-            );
-        }
+        event.registrar(ChannelId.COMBAT_FLOW_SYNC.asString()).playToClient(
+            nn(CombatFlowSyncPayload.TYPE),
+            nn(CombatFlowSyncPayload.STREAM_CODEC),
+            validated(CombatPacketHandler::handleCombatFlowSync, PayloadLimits.SMALL)
+        );
         event.registrar(ChannelId.IMPACT_SYNC.asString()).playToClient(
             nn(ImpactSyncPayload.TYPE),
             nn(ImpactSyncPayload.STREAM_CODEC),

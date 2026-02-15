@@ -163,7 +163,12 @@ public class EpicFightCompat implements CompatModule {
         } catch (ClassNotFoundException e) {
             LOGGER.debug("[Compat:epicfight] Epic Fight classes not found: {}", e.getMessage());
         } catch (Exception e) {
-            LOGGER.warn("[Compat:epicfight] Error loading API: {}", e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("invalid dist") || msg.contains("DEDICATED_SERVER")) {
+                LOGGER.debug("[Compat:epicfight] Skipped client-only API on dedicated server");
+            } else {
+                LOGGER.warn("[Compat:epicfight] Error loading API: {}", msg);
+            }
         }
     }
 

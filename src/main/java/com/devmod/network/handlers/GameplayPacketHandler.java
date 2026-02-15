@@ -10,7 +10,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.config.TesterModality;
 import com.devmod.endurance.challenges.ChallengeSyncPayload;
 import com.devmod.endurance.contracts.ContractSyncPayload;
 import com.devmod.network.ChannelId;
@@ -38,40 +37,38 @@ public final class GameplayPacketHandler extends NetworkHandlerBase implements P
 
     @Override
     public void registerPayloads(RegisterPayloadHandlersEvent event) {
-        if (TesterModality.isEnabled()) {
-            // Contract sync
-            event.registrar(ChannelId.CONTRACT_SYNC.asString()).playToClient(
-                nn(ContractSyncPayload.TYPE),
-                nn(ContractSyncPayload.STREAM_CODEC),
-                validated(GameplayPacketHandler::handleContractSync, PayloadLimits.SMALL)
-            );
+        // Contract sync
+        event.registrar(ChannelId.CONTRACT_SYNC.asString()).playToClient(
+            nn(ContractSyncPayload.TYPE),
+            nn(ContractSyncPayload.STREAM_CODEC),
+            validated(GameplayPacketHandler::handleContractSync, PayloadLimits.SMALL)
+        );
 
-            // Challenge sync
-            event.registrar(ChannelId.CHALLENGE_SYNC.asString()).playToClient(
-                nn(ChallengeSyncPayload.TYPE),
-                nn(ChallengeSyncPayload.STREAM_CODEC),
-                validated(GameplayPacketHandler::handleChallengeSync, PayloadLimits.MEDIUM)
-            );
+        // Challenge sync
+        event.registrar(ChannelId.CHALLENGE_SYNC.asString()).playToClient(
+            nn(ChallengeSyncPayload.TYPE),
+            nn(ChallengeSyncPayload.STREAM_CODEC),
+            validated(GameplayPacketHandler::handleChallengeSync, PayloadLimits.MEDIUM)
+        );
 
-            // Season pass
-            event.registrar(ChannelId.SEASON_PASS_SYNC.asString()).playToClient(
-                nn(com.devmod.endurance.season.SeasonPassPayload.TYPE),
-                nn(com.devmod.endurance.season.SeasonPassPayload.STREAM_CODEC),
-                validated(GameplayPacketHandler::handleSeasonPassSync, PayloadLimits.MEDIUM)
-            );
-            event.registrar(ChannelId.REQUEST_SEASON_PASS.asString()).playToServer(
-                nn(com.devmod.endurance.season.RequestSeasonPassPayload.TYPE),
-                nn(com.devmod.endurance.season.RequestSeasonPassPayload.STREAM_CODEC),
-                validated(GameplayPacketHandler::handleRequestSeasonPass, PayloadLimits.SMALL)
-            );
+        // Season pass
+        event.registrar(ChannelId.SEASON_PASS_SYNC.asString()).playToClient(
+            nn(com.devmod.endurance.season.SeasonPassPayload.TYPE),
+            nn(com.devmod.endurance.season.SeasonPassPayload.STREAM_CODEC),
+            validated(GameplayPacketHandler::handleSeasonPassSync, PayloadLimits.MEDIUM)
+        );
+        event.registrar(ChannelId.REQUEST_SEASON_PASS.asString()).playToServer(
+            nn(com.devmod.endurance.season.RequestSeasonPassPayload.TYPE),
+            nn(com.devmod.endurance.season.RequestSeasonPassPayload.STREAM_CODEC),
+            validated(GameplayPacketHandler::handleRequestSeasonPass, PayloadLimits.SMALL)
+        );
 
-            // Claim season reward
-            event.registrar(ChannelId.CLAIM_SEASON_REWARD.asString()).playToServer(
-                nn(com.devmod.endurance.season.ClaimSeasonRewardPayload.TYPE),
-                nn(com.devmod.endurance.season.ClaimSeasonRewardPayload.STREAM_CODEC),
-                validated(GameplayPacketHandler::handleClaimSeasonReward, PayloadLimits.SMALL)
-            );
-        }
+        // Claim season reward
+        event.registrar(ChannelId.CLAIM_SEASON_REWARD.asString()).playToServer(
+            nn(com.devmod.endurance.season.ClaimSeasonRewardPayload.TYPE),
+            nn(com.devmod.endurance.season.ClaimSeasonRewardPayload.STREAM_CODEC),
+            validated(GameplayPacketHandler::handleClaimSeasonReward, PayloadLimits.SMALL)
+        );
     }
 
     // =================================================================================
@@ -110,7 +107,6 @@ public final class GameplayPacketHandler extends NetworkHandlerBase implements P
     // =================================================================================
     private static void handleRequestSeasonPass(
             com.devmod.endurance.season.RequestSeasonPassPayload payload, IPayloadContext context) {
-        if (TesterModality.isDisabled()) return;
         observeFuture(context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 NetworkHandler.sendSeasonPassSync(serverPlayer);
@@ -123,7 +119,6 @@ public final class GameplayPacketHandler extends NetworkHandlerBase implements P
     // =================================================================================
     private static void handleClaimSeasonReward(
             com.devmod.endurance.season.ClaimSeasonRewardPayload payload, IPayloadContext context) {
-        if (TesterModality.isDisabled()) return;
         observeFuture(context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer serverPlayer) {
                 var system = com.devmod.endurance.season.SeasonPassSystem.INSTANCE;

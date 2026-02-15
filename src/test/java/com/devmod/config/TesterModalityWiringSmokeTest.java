@@ -73,15 +73,17 @@ class TesterModalityWiringSmokeTest {
     }
 
     @Test
-    @DisplayName("Network registration gates tester-only channels and handlers")
-    void networkRegistrationGatesTesterChannels() {
-        // After refactoring, network registration moved from NetworkHandler to domain-specific handlers
-        assertTrue(systemPacketHandlerSource.contains("TesterModality.isEnabled()"),
-            "SystemPacketHandler should check TesterModality.isEnabled()");
-        assertTrue(combatPacketHandlerSource.contains("TesterModality.isEnabled()"),
-            "CombatPacketHandler should check TesterModality.isEnabled()");
-        assertTrue(gameplayPacketHandlerSource.contains("TesterModality.isEnabled()"),
-            "GameplayPacketHandler should check TesterModality.isEnabled()");
+    @DisplayName("Network registration delegates to domain-specific packet handlers")
+    void networkRegistrationDelegatesToDomainHandlers() {
+        // After refactoring, NetworkHandler delegates to domain-specific handlers.
+        // TesterModality gating is at the service level (ModLifecycleEvents), not channel registration.
+        // Verify the domain handlers exist and have registerPayloads methods.
+        assertTrue(systemPacketHandlerSource.contains("registerPayloads"),
+            "SystemPacketHandler should have registerPayloads method");
+        assertTrue(combatPacketHandlerSource.contains("registerPayloads"),
+            "CombatPacketHandler should have registerPayloads method");
+        assertTrue(gameplayPacketHandlerSource.contains("registerPayloads"),
+            "GameplayPacketHandler should have registerPayloads method");
     }
 
     @Test
@@ -118,11 +120,13 @@ class TesterModalityWiringSmokeTest {
     }
 
     @Test
-    @DisplayName("Tester mailbox access requires TesterModality enabled")
-    void testerMailboxAccessRequiresTesterModality() {
-        // SystemPacketHandler gates mailbox payload registration behind TesterModality
-        assertTrue(systemPacketHandlerSource.contains("if (TesterModality.isEnabled())"),
-            "SystemPacketHandler should gate mailbox payloads behind TesterModality");
+    @DisplayName("Tester mailbox access is registered in SystemPacketHandler")
+    void testerMailboxRegisteredInSystemPacketHandler() {
+        // Mailbox payloads are registered in SystemPacketHandler.
+        // TesterModality gating happens at the service level (ModLifecycleEvents),
+        // not at the channel registration level.
+        assertTrue(systemPacketHandlerSource.contains("MAILBOX"),
+            "SystemPacketHandler should register mailbox-related payloads");
     }
 
     @Test

@@ -7,7 +7,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import com.devmod.config.TesterModality;
 import com.devmod.mailbox.network.payload.MailboxActionPayload;
 import com.devmod.mailbox.network.payload.MailboxAccessPayload;
 import com.devmod.mailbox.network.payload.MailboxNotifyPayload;
@@ -62,17 +61,15 @@ public final class SystemPacketHandler extends NetworkHandlerBase implements Pay
             }, PayloadLimits.LARGE)
         );
 
-        // LVC telemetry sync (always enabled)
+        // LVC telemetry sync
         event.registrar(ChannelId.LVC_SYNC.asString()).playToClient(
             nn(LVCSyncPayload.TYPE),
             nn(LVCSyncPayload.STREAM_CODEC),
             validated(SystemPacketHandler::handleLvcSync, PayloadLimits.SMALL)
         );
 
-        if (TesterModality.isEnabled()) {
-            registerMailboxPayloads(event);
-            registerNotificationPayloads(event);
-        }
+        registerMailboxPayloads(event);
+        registerNotificationPayloads(event);
     }
 
     // =================================================================================
