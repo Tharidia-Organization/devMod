@@ -79,3 +79,14 @@ replay_pid*
 
 # Development temp folder (Effekseer builds, AAAParticles, etc.)
 /tmp/
+
+# Local-only working dirs and stray artifacts
+/.claude/
+/net/
+/output/
+/tmp_*.png
+/run_client*.log
+/run_server*.log
+/build_test_output.txt
+/test_textures/
+/backup_effekseer_*/
