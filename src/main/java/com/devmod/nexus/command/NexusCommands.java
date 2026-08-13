@@ -392,8 +392,8 @@ public final class NexusCommands {
         boolean built = NexusHubManager.INSTANCE.buildFoundation(nexusLevel, origin, force);
 
         if (built) {
-            // Initialize slots if not already done
-            NexusHubManager.INSTANCE.initialize(server);
+            // Foundation was just rebuilt, so force a zone re-sync rather than a no-op init
+            NexusHubManager.INSTANCE.resyncHub(server);
 
             source.sendSuccess(() -> Objects.requireNonNull(
                 Component.literal("Foundation build complete!").withStyle(ChatFormatting.GREEN)), true);

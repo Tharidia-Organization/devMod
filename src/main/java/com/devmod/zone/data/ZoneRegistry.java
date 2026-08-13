@@ -163,6 +163,7 @@ public class ZoneRegistry extends SavedData {
             }
             zoneIdToUuid.remove(existing.zoneId());
             zoneIdToUuid.put(zone.zoneId(), id);
+            remapZoneIdReferences(existing.zoneId(), zone.zoneId());
         }
 
         zones.put(id, zone);
@@ -171,6 +172,31 @@ public class ZoneRegistry extends SavedData {
 
         LOGGER.debug("[Zone] Updated zone: {} ({})", zone.zoneId(), id);
         return true;
+    }
+
+    /**
+     * Repoints the indexes that store the string zoneId after a rename.
+     *
+     * <p>{@code aliases} holds zoneIds as values and {@code zoneToAreas} holds them as keys;
+     * both are stored lowercased, so they are matched and rewritten in that form.
+     */
+    private void remapZoneIdReferences(@Nonnull String oldZoneId, @Nonnull String newZoneId) {
+        String oldNormalized = oldZoneId.toLowerCase(Locale.ROOT);
+        String newNormalized = newZoneId.toLowerCase(Locale.ROOT);
+        if (oldNormalized.equals(newNormalized)) {
+            return;
+        }
+
+        for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            if (oldNormalized.equals(entry.getValue())) {
+                entry.setValue(newNormalized);
+            }
+        }
+
+        Set<UUID> linkedAreas = zoneToAreas.remove(oldNormalized);
+        if (linkedAreas != null) {
+            zoneToAreas.put(newNormalized, linkedAreas);
+        }
     }
 
     /**

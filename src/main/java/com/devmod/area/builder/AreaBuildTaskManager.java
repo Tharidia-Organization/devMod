@@ -975,6 +975,59 @@ public final class AreaBuildTaskManager {
         buildQueue.removeIf(qb -> playerId.equals(qb.playerId()));
     }
 
+    /**
+     * Cancels every build bound to a level that is being unloaded.
+     *
+     * <p>ActiveBuild and AreaBuildTask hold a hard ServerLevel reference, so a build left
+     * running past the unload keeps calling setBlock() on a discarded level and pins it.
+     *
+     * @param level The level being unloaded
+     * @return Number of builds cancelled
+     */
+    public int cancelBuildsForLevel(@Nonnull ServerLevel level) {
+        Objects.requireNonNull(level);
+        ResourceLocation levelId = Objects.requireNonNull(level.dimension().location());
+        int cancelled = 0;
+
+        java.util.List<UUID> toRemove = new java.util.ArrayList<>();
+        for (Map.Entry<UUID, ActiveBuild> entry : activeBuildTasks.entrySet()) {
+            ActiveBuild build = entry.getValue();
+            if (build != null && levelId.equals(build.level.dimension().location())) {
+                toRemove.add(entry.getKey());
+            }
+        }
+        for (UUID areaId : toRemove) {
+            ActiveBuild removed = activeBuildTasks.remove(areaId);
+            if (removed != null) {
+                removed.task.close();
+                cancelled++;
+            }
+        }
+
+        java.util.List<UUID> pendingRemovals = new java.util.ArrayList<>();
+        for (Map.Entry<UUID, PendingBiomeBuild> entry : pendingBiomeBuilds.entrySet()) {
+            PendingBiomeBuild pending = entry.getValue();
+            if (pending != null && levelId.equals(pending.levelId())) {
+                pendingRemovals.add(entry.getKey());
+            }
+        }
+        for (UUID areaId : pendingRemovals) {
+            if (pendingBiomeBuilds.remove(areaId) != null) {
+                cancelled++;
+            }
+            CompletableFuture<?> pendingFuture = pendingBiomeFutures.remove(areaId);
+            if (pendingFuture != null) {
+                pendingFuture.cancel(true);
+            }
+        }
+
+        if (buildQueue.removeIf(qb -> levelId.equals(qb.levelId()))) {
+            cancelled++;
+        }
+
+        return cancelled;
+    }
+
     // ========================================================================
     // Pause/Resume Methods
     // ========================================================================
@@ -1097,8 +1150,14 @@ public final class AreaBuildTaskManager {
         boolean needsClear = false;
         if (state.clearFirst() && !"clear".equals(state.currentStepName())) {
             // The clear step was completed, subtract its blocks from skipBlocks
-            // since the resumed build won't include a clear step
-            int clearBlocks = AreaBlockMapGenerator.estimateClearBlocks(definition);
+            // since the resumed build won't include a clear step.
+            // blocksPlaced is exact, so the subtrahend must be too: estimateClearBlocks
+            // over-counts some shapes (HEXAGONAL by ~12%) and the excess is silently skipped
+            // out of the real build. Fall back to it only for states saved before the exact
+            // count was recorded.
+            int clearBlocks = state.clearStepBlocks() > 0
+                ? state.clearStepBlocks()
+                : AreaBlockMapGenerator.estimateClearBlocks(definition);
             skipBlocks = Math.max(0, skipBlocks - clearBlocks);
             DevMod.LOGGER.info("[Area] Resume: adjusting skipBlocks from {} to {} (excluding {} clear blocks)",
                 state.blocksPlaced(), skipBlocks, clearBlocks);

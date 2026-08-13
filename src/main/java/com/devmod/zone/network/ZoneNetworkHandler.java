@@ -11,7 +11,9 @@ import java.util.UUID;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -207,8 +209,19 @@ public final class ZoneNetworkHandler extends NetworkHandlerBase {
             ZoneDefinition definition = Objects.requireNonNull(payload.definition());
 
             if (payload.isNewZone()) {
-                // Creating new zone
-                UUID zoneUUID = registry.createZone(definition);
+                // Creating new zone. registerZone throws on a duplicate zoneId; uncaught inside
+                // the enqueueWork lambda that surfaces as a client disconnect, not an error.
+                UUID zoneUUID;
+                try {
+                    zoneUUID = registry.createZone(definition);
+                } catch (IllegalArgumentException e) {
+                    DevMod.LOGGER.warn("[Zone] Player {} tried to create duplicate zone '{}': {}",
+                        player.getName().getString(), definition.zoneId(), e.getMessage());
+                    player.displayClientMessage(
+                        Objects.requireNonNull(Component.literal("Zone ID already exists: " + definition.zoneId())
+                            .withStyle(ChatFormatting.RED)), true);
+                    return;
+                }
                 DevMod.LOGGER.info("[Zone] Player {} created zone: {} ({})",
                     player.getName().getString(), definition.zoneId(), zoneUUID);
 

@@ -224,9 +224,12 @@ public final class ZoneSlotPresets {
      * Hub center with telepad network and info holograms.
      */
     private static ZoneSlot createSpawnSlot(Layout layout) {
-        ZoneBounds bounds = ZoneBounds.fromCenterAndSize(
-            new BlockPos(0, layout.floorY(), 0),
-            layout.centerHalf(), layout.zoneHeight() / 2, layout.centerHalf()
+        // Y range must match every other slot ([floorY, floorY + zoneHeight]); centering the
+        // box on floorY put bounds.floorCenter() half a zone height below the hub floor.
+        ZoneBounds bounds = new ZoneBounds(
+            -layout.centerHalf(), layout.centerHalf(),
+            layout.floorY(), layout.floorY() + layout.zoneHeight(),
+            -layout.centerHalf(), layout.centerHalf()
         );
         return ZoneSlot.createFull(
             "spawn",

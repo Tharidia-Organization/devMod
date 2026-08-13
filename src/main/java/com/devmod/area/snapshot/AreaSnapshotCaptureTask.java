@@ -236,6 +236,14 @@ public class AreaSnapshotCaptureTask {
     }
 
     /**
+     * Gets the dimension this task is capturing from.
+     */
+    @Nonnull
+    public ResourceKey<Level> getDimension() {
+        return Objects.requireNonNull(level.dimension());
+    }
+
+    /**
      * Gets the area ID being captured.
      */
     @Nonnull

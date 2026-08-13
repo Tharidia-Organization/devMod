@@ -207,8 +207,15 @@ public final class NexusPerformanceManager {
             playerPositions.add(player.position());
         }
 
+        // Every entity still present in the level, used to evict tracking for entities that
+        // died, despawned or left the dimension - those never reappear in this scan, so
+        // without this culledEntities grows without bound.
+        Set<UUID> liveEntities = new HashSet<>();
+
         // Check each non-player entity
         for (Entity entity : level.getEntities().getAll()) {
+            liveEntities.add(entity.getUUID());
+
             if (entity instanceof ServerPlayer) {
                 continue; // Never cull players
             }
@@ -255,6 +262,8 @@ public final class NexusPerformanceManager {
                 culledEntities.remove(entityId);
             }
         }
+
+        culledEntities.retainAll(liveEntities);
 
         if (!entitiesToCull.isEmpty() || !entitiesToShow.isEmpty()) {
             LOGGER.debug("[NexusPerf] Culled {} entities, restored {}",
@@ -352,6 +361,27 @@ public final class NexusPerformanceManager {
         int totalZoneChunks = zoneChunks.values().stream().mapToInt(Set::size).sum();
 
         return new PerformanceStats(totalCulled, trackedPlayers, totalZoneChunks, initialized);
+    }
+
+    /**
+     * Clean up when shutting down, restoring any entity still culled.
+     *
+     * <p>cullEntity() sets NoGravity, which is persisted with the entity. Clearing the
+     * tracking set without restoring would leave that flag set on disk with nothing left
+     * to undo it, since the entity is no longer tracked on the next load.
+     *
+     * @param level the Nexus level, or null if it is already gone
+     */
+    public void cleanup(@Nullable ServerLevel level) {
+        if (level != null) {
+            for (UUID entityId : culledEntities) {
+                Entity entity = level.getEntity(nn(entityId, "entityId"));
+                if (entity != null) {
+                    uncullEntity(entity);
+                }
+            }
+        }
+        cleanup();
     }
 
     /**

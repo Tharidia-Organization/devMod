@@ -15,9 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelResource;
 
 import net.neoforged.bus.api.SubscribeEvent;
@@ -572,6 +574,48 @@ public final class AreaSnapshotManager {
             }
             return false;
         });
+    }
+
+    /**
+     * Cancels the capture and any restores targeting an area.
+     *
+     * <p>Called when the area is deleted: a capture allowed to finish afterwards writes an
+     * orphan .nbt file and registry entry that the cascade delete has already run past.
+     *
+     * @param areaId The area being deleted
+     * @return Number of tasks cancelled
+     */
+    public int cancelTasksForArea(@Nullable UUID areaId) {
+        if (areaId == null) {
+            return 0;
+        }
+        int cancelled = activeCaptures.remove(areaId) != null ? 1 : 0;
+        // activeRestores is keyed by snapshot id, so match on the tracked areaId instead.
+        int before = activeRestores.size();
+        activeRestores.entrySet().removeIf(entry -> areaId.equals(entry.getValue().areaId));
+        cancelled += before - activeRestores.size();
+        if (cancelled > 0) {
+            LOGGER.info("[Snapshot] Cancelled {} tasks for deleted area {}", cancelled, areaId);
+        }
+        return cancelled;
+    }
+
+    /**
+     * Cancels every task bound to a level that is being unloaded.
+     *
+     * <p>Both task types hold a hard ServerLevel reference, so a task left running past the
+     * unload keeps reading/writing a discarded level and pins it.
+     *
+     * @param level The level being unloaded
+     * @return Number of tasks cancelled
+     */
+    public int cancelTasksForLevel(@Nonnull ServerLevel level) {
+        Objects.requireNonNull(level);
+        ResourceKey<Level> dimension = level.dimension();
+        int before = activeCaptures.size() + activeRestores.size();
+        activeCaptures.entrySet().removeIf(entry -> dimension.equals(entry.getValue().task.getDimension()));
+        activeRestores.entrySet().removeIf(entry -> dimension.equals(entry.getValue().level.dimension()));
+        return before - activeCaptures.size() - activeRestores.size();
     }
 
     /**

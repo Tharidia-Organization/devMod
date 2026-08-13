@@ -68,6 +68,9 @@ public class AreaBuildTask implements Closeable {
     /** Cached total block count for O(1) progress calculation */
     private int totalBlockCount = 0;
 
+    /** Exact size of the clear step, if one was added (0 otherwise) */
+    private int clearStepBlockCount = 0;
+
     /** Count of failed block placements */
     private int failedBlockCount = 0;
 
@@ -221,6 +224,7 @@ public class AreaBuildTask implements Closeable {
 
         // Update total block count
         totalBlockCount += clearBlocks.size();
+        clearStepBlockCount = clearBlocks.size();
 
         LOGGER.info("[Area] Added clear step ({} blocks) to build task for '{}'",
             clearBlocks.size(), definition.name());
@@ -360,6 +364,16 @@ public class AreaBuildTask implements Closeable {
      */
     public int getTotalBlocksPlaced() {
         return totalBlocksPlaced;
+    }
+
+    /**
+     * Gets the exact number of blocks in this task's clear step, or 0 if it has none.
+     *
+     * <p>Recorded so resume can subtract the real count from the exact blocksPlaced tally
+     * instead of re-deriving an approximation from the shape estimator.
+     */
+    public int getClearStepBlockCount() {
+        return clearStepBlockCount;
     }
 
     /**

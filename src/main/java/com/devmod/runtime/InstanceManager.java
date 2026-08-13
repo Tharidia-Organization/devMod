@@ -62,8 +62,8 @@ public class InstanceManager {
         this.server = server;
 
         // Initialize subsystems
-        RecoverySystem.INSTANCE.initialize();
-        InstanceRegistry.INSTANCE.load();
+        RecoverySystem.INSTANCE.initialize(server);
+        InstanceRegistry.INSTANCE.load(server);
         DynamicDimensionManager.INSTANCE.initialize(server);
 
         // Perform startup recovery
@@ -86,11 +86,14 @@ public class InstanceManager {
         // Cancel all pending teleports
         pendingTeleports.clear();
 
-        // Save registry state
+        // Save registry state, then drop it so a subsequently loaded world does not
+        // inherit this world's instances and player mappings.
         InstanceRegistry.INSTANCE.save();
 
         // Shutdown dimension manager (destroys remaining instances)
         DynamicDimensionManager.INSTANCE.shutdown();
+
+        InstanceRegistry.INSTANCE.clear();
 
         this.server = null;
         this.initialized = false;

@@ -53,7 +53,8 @@ public record BuildTaskState(
     boolean forceMultiTick,
     long pausedAt,
     boolean isPaused,
-    long areaRevision
+    long areaRevision,
+    int clearStepBlocks
 ) {
     /** Maximum step name length for validation */
     public static final int MAX_STEP_NAME_LENGTH = 64;
@@ -72,13 +73,17 @@ public record BuildTaskState(
             Codec.LONG.fieldOf("pausedAt").forGetter(BuildTaskState::pausedAt),
             Codec.BOOL.fieldOf("isPaused").forGetter(BuildTaskState::isPaused),
             // H-02 fix: Store area revision for consistency check on resume
-            Codec.LONG.optionalFieldOf("areaRevision", 0L).forGetter(BuildTaskState::areaRevision)
+            Codec.LONG.optionalFieldOf("areaRevision", 0L).forGetter(BuildTaskState::areaRevision),
+            // Exact clear-step size; 0 means "not recorded" (states saved by older builds)
+            Codec.INT.optionalFieldOf("clearStepBlocks", 0).forGetter(BuildTaskState::clearStepBlocks)
         ).apply(instance, (areaId, dimensionId, playerIdOpt, blocksPlaced, totalBlocks,
-                           currentStepName, clearFirst, forceMultiTick, pausedAt, isPaused, areaRevision) ->
+                           currentStepName, clearFirst, forceMultiTick, pausedAt, isPaused, areaRevision,
+                           clearStepBlocks) ->
             new BuildTaskState(
                 areaId, dimensionId, playerIdOpt.orElse(null),
                 blocksPlaced, totalBlocks, currentStepName,
-                clearFirst, forceMultiTick, pausedAt, isPaused, areaRevision
+                clearFirst, forceMultiTick, pausedAt, isPaused, areaRevision,
+                clearStepBlocks
             )
         )
     );
@@ -100,6 +105,7 @@ public record BuildTaskState(
         if (blocksPlaced < 0) blocksPlaced = 0;
         if (totalBlocks < 0) totalBlocks = 0;
         if (blocksPlaced > totalBlocks) blocksPlaced = totalBlocks;
+        if (clearStepBlocks < 0) clearStepBlocks = 0;
     }
 
     /**
@@ -171,7 +177,8 @@ public record BuildTaskState(
             System.currentTimeMillis(),
             isPaused,
             // H-02 fix: Store area revision for consistency check on resume
-            task.getDefinition().revision()
+            task.getDefinition().revision(),
+            task.getClearStepBlockCount()
         );
     }
 

@@ -82,12 +82,13 @@ public final class NexusHubManager {
      */
     public void initialize(@Nonnull MinecraftServer server) {
         Objects.requireNonNull(server);
-        boolean firstInit = !hubInitialized;
-        if (firstInit) {
-            LOGGER.info("[Nexus] Initializing hub system...");
-        } else {
-            LOGGER.debug("[Nexus] Hub already initialized this session");
+        // Hot callers (block interactions, per-tick portal ticking, hologram refresh) call this
+        // unconditionally. Re-running the body rebuilds all zone definitions and re-marks two
+        // SavedData objects dirty every time, so it must run at most once per session.
+        if (hubInitialized) {
+            return;
         }
+        LOGGER.info("[Nexus] Initializing hub system...");
 
         // Get or create slot registry
         ZoneSlotRegistry slotRegistry = ZoneSlotRegistry.get(server);
@@ -102,9 +103,21 @@ public final class NexusHubManager {
         initializeTransportNodes(server);
 
         hubInitialized = true;
-        if (firstInit) {
-            LOGGER.info("[Nexus] Hub system initialized with {} slots", slotRegistry.getSlotCount());
-        }
+        LOGGER.info("[Nexus] Hub system initialized with {} slots", slotRegistry.getSlotCount());
+    }
+
+    /**
+     * Forces hub initialization to run again.
+     *
+     * <p>For callers that must re-sync zone definitions after the foundation was rebuilt,
+     * where the plain idempotent {@link #initialize(MinecraftServer)} would be a no-op.
+     *
+     * @param server the Minecraft server
+     */
+    public void resyncHub(@Nonnull MinecraftServer server) {
+        Objects.requireNonNull(server);
+        hubInitialized = false;
+        initialize(server);
     }
 
     private void ensureZoneRegistry(@Nonnull MinecraftServer server, @Nonnull ZoneSlotRegistry slotRegistry) {

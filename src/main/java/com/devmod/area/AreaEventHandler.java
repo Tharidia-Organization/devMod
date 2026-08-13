@@ -3,11 +3,14 @@ package com.devmod.area;
 import java.util.UUID;
 
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -15,6 +18,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import com.devmod.DevMod;
 import com.devmod.area.builder.AreaBuildTaskManager;
 import com.devmod.area.network.AreaNetworkHandler;
+import com.devmod.area.snapshot.AreaSnapshotManager;
 
 /**
  * Event handler for Area module lifecycle events.
@@ -91,10 +95,30 @@ public final class AreaEventHandler {
     }
 
     /**
-     * Save active build states before server shuts down.
-     * This preserves build progress for resumption on next startup.
+     * Drop build and snapshot tasks bound to a level that is going away.
+     *
+     * <p>Both hold a hard ServerLevel reference; without this they keep writing blocks into
+     * a discarded level (and leak it) after DynamicDimensionManager unloads a dimension.
      */
     @SubscribeEvent
+    public static void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            int cancelled = AreaBuildTaskManager.INSTANCE.cancelBuildsForLevel(level)
+                + AreaSnapshotManager.INSTANCE.cancelTasksForLevel(level);
+            if (cancelled > 0) {
+                DevMod.LOGGER.info("[Area] Cancelled {} tasks for unloading dimension {}",
+                    cancelled, level.dimension().location());
+            }
+        }
+    }
+
+    /**
+     * Save active build states before server shuts down.
+     *
+     * <p>Runs at HIGHEST priority: other same-phase listeners call AreaModule.cleanup(),
+     * which clears the active task map, and the save must happen before that.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
         // L-05 fix: Graceful null handling instead of throwing NPE
         MinecraftServer server = event.getServer();

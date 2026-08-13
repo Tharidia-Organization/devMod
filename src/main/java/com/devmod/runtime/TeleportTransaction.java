@@ -144,15 +144,18 @@ public class TeleportTransaction {
                 RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.IN_INSTANCE);
             }
 
-            // 7. Update instance state if needed
+            // 7. Add player to instance tracking. Must happen before the save below, and
+            // addPlayer() does not set the registry dirty flag itself, so mark it here or
+            // the persisted instance is missing this player after a restart.
+            instance.addPlayer(playerId);
+            InstanceRegistry.INSTANCE.markDirty();
+
+            // 8. Update instance state if needed
             if (instance.getState() == InstanceState.READY) {
                 instance.setState(InstanceState.ACTIVE);
-                InstanceRegistry.INSTANCE.save();
                 LOGGER.debug("[TeleportTx] Instance {} state -> ACTIVE", instanceId);
             }
-
-            // 8. Add player to instance tracking
-            instance.addPlayer(playerId);
+            InstanceRegistry.INSTANCE.save();
 
             LOGGER.info("[TeleportTx] Successfully teleported {} to instance {}",
                 player.getName().getString(), instanceId);
@@ -263,11 +266,14 @@ public class TeleportTransaction {
                 RecoverySystem.INSTANCE.updateSnapshotState(playerId, PlayerInstanceState.IN_INSTANCE);
             }
 
+            // Add before saving; addPlayer() does not mark the registry dirty on its own.
+            instance.addPlayer(playerId);
+            InstanceRegistry.INSTANCE.markDirty();
+
             if (instance.getState() == InstanceState.READY) {
                 instance.setState(InstanceState.ACTIVE);
-                InstanceRegistry.INSTANCE.save();
             }
-            instance.addPlayer(playerId);
+            InstanceRegistry.INSTANCE.save();
 
             LOGGER.info("[TeleportTx] Successfully teleported {} to instance {} @ {}",
                 player.getName().getString(), instanceId, spawnPos);

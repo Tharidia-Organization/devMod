@@ -28,6 +28,17 @@ public final class CooldownManager {
     /** Cooldown between template saves per player (5 seconds) */
     public static final long TEMPLATE_SAVE_COOLDOWN_MS = 5_000L;
 
+    /**
+     * Converts a positive remaining duration to whole seconds, rounding up.
+     *
+     * <p>Callers treat 0 as "cooldown passed", so a sub-second remainder must not truncate
+     * to 0 — that would leave the last 999ms of every window unrated while the stored
+     * timestamp is deliberately left unchanged.
+     */
+    private static long toRemainingSeconds(long remainingMs) {
+        return (remainingMs + 999L) / 1000L;
+    }
+
     // ============================================================================
     // COOLDOWN MAPS
     // ============================================================================
@@ -59,7 +70,7 @@ public final class CooldownManager {
             if (lastBuildTime != null) {
                 long elapsed = now - lastBuildTime;
                 if (elapsed < BUILD_COOLDOWN_MS) {
-                    remainingSeconds[0] = (BUILD_COOLDOWN_MS - elapsed) / 1000;
+                    remainingSeconds[0] = toRemainingSeconds(BUILD_COOLDOWN_MS - elapsed);
                     return lastBuildTime; // Keep old value, reject request
                 }
             }
@@ -107,7 +118,7 @@ public final class CooldownManager {
             if (lastAreaBuildTime != null) {
                 long elapsed = now - lastAreaBuildTime;
                 if (elapsed < BUILD_COOLDOWN_PER_AREA_MS) {
-                    remainingSeconds[0] = (BUILD_COOLDOWN_PER_AREA_MS - elapsed) / 1000;
+                    remainingSeconds[0] = toRemainingSeconds(BUILD_COOLDOWN_PER_AREA_MS - elapsed);
                     return lastAreaBuildTime; // Keep old value, reject request
                 }
             }
@@ -144,7 +155,7 @@ public final class CooldownManager {
         if (lastSaveTime != null) {
             long elapsed = now - lastSaveTime;
             if (elapsed < TEMPLATE_SAVE_COOLDOWN_MS) {
-                return (TEMPLATE_SAVE_COOLDOWN_MS - elapsed) / 1000;
+                return toRemainingSeconds(TEMPLATE_SAVE_COOLDOWN_MS - elapsed);
             }
         }
         return 0;
@@ -165,7 +176,7 @@ public final class CooldownManager {
             if (lastSaveTime != null) {
                 long elapsed = now - lastSaveTime;
                 if (elapsed < TEMPLATE_SAVE_COOLDOWN_MS) {
-                    remainingSeconds[0] = (TEMPLATE_SAVE_COOLDOWN_MS - elapsed) / 1000;
+                    remainingSeconds[0] = toRemainingSeconds(TEMPLATE_SAVE_COOLDOWN_MS - elapsed);
                     return lastSaveTime; // Keep old value, reject request
                 }
             }

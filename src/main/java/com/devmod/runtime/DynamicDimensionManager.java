@@ -71,6 +71,11 @@ public class DynamicDimensionManager {
     // Tracks forced chunks per dimension for cleanup (memory leak prevention)
     private final Map<ResourceKey<Level>, Set<ChunkPos>> forcedChunksPerDimension = new ConcurrentHashMap<>();
 
+    // Records the PLAYER ticket actually added per dimension so unload can remove that exact ticket
+    private final Map<ResourceKey<Level>, PlayerTicket> playerTicketsPerDimension = new ConcurrentHashMap<>();
+
+    private record PlayerTicket(ChunkPos center, int radius) {}
+
     private MinecraftServer server;
     // Volatile for thread visibility across initialization and teleport threads
     private volatile boolean initialized = false;
@@ -826,6 +831,10 @@ public class DynamicDimensionManager {
                 centerChunkPos
             );
 
+            // Tickets are keyed by (type, radius, key); unload must remove the radius that was
+            // actually added, which comes from the template and is not the default.
+            playerTicketsPerDimension.put(dimensionKey, new PlayerTicket(centerChunkPos, ticketRadius));
+
             LOGGER.info("[DynamicDim] Force-loaded {} chunks around arena center with PLAYER ticket (radius={})",
                 chunksForced, settings.tickDistance);
         } else {
@@ -1062,17 +1071,19 @@ public class DynamicDimensionManager {
                 LOGGER.debug("[DynamicDim] Unforced {} chunks for {}", unforcedCount, dimensionKey.location());
             }
 
-            // 3. Remove PLAYER ticket from center chunk
-            try {
-                ChunkPos centerChunkPos = new ChunkPos(0, 0); // Default arena center
-                level.getChunkSource().removeRegionTicket(
-                    nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
-                    centerChunkPos,
-                    DEFAULT_TICK_DISTANCE,
-                    centerChunkPos
-                );
-            } catch (Exception e) {
-                LOGGER.debug("[DynamicDim] Could not remove PLAYER ticket: {}", e.getMessage());
+            // 3. Remove the PLAYER ticket exactly as it was added (radius came from the template)
+            PlayerTicket ticket = playerTicketsPerDimension.remove(dimensionKey);
+            if (ticket != null) {
+                try {
+                    level.getChunkSource().removeRegionTicket(
+                        nn(net.minecraft.server.level.TicketType.PLAYER, "player ticket type"),
+                        ticket.center(),
+                        ticket.radius(),
+                        ticket.center()
+                    );
+                } catch (Exception e) {
+                    LOGGER.debug("[DynamicDim] Could not remove PLAYER ticket: {}", e.getMessage());
+                }
             }
 
             // 4. Save dimension data before unloading

@@ -165,6 +165,20 @@ public final class RiftStampManager {
         }
     }
 
+    /**
+     * Restore every open rift and drop all sessions.
+     *
+     * <p>Sessions hold a strong ServerLevel, so they must not outlive the server they were
+     * created in; without this the terrain snapshot is never placed back and the footprint
+     * stays block-protected forever.
+     */
+    public void shutdown() {
+        for (RiftSession session : active.values()) {
+            restore(session);
+        }
+        active.clear();
+    }
+
     public boolean isProtected(ServerLevel level, BlockPos pos) {
         if (level == null || pos == null) {
             return false;

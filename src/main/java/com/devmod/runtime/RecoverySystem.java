@@ -29,12 +29,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelResource;
 
 import com.devmod.DevMod;
 import com.devmod.endurance.EnduranceLogger;
 import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.shared.SharedColorTokens;
-import com.devmod.util.ConfigPaths;
 
 public class RecoverySystem {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverySystem.class);
@@ -58,9 +58,13 @@ public class RecoverySystem {
      * Initialize the recovery system.
      * Called during server startup.
      */
-    public void initialize() {
-        this.snapshotsDir = ConfigPaths.getConfigDir().resolve("snapshots");
-        this.intentsDir = ConfigPaths.getConfigDir().resolve("recovery_intents");
+    public void initialize(MinecraftServer server) {
+        // Snapshots hold an inventory and a position that are only meaningful inside the
+        // save they were taken from, so they must live in that save, not in the game-wide
+        // config dir. Snapshots written by older builds under config/devmod are ignored.
+        Path storageDir = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve("devmod");
+        this.snapshotsDir = storageDir.resolve("snapshots");
+        this.intentsDir = storageDir.resolve("recovery_intents");
         try {
             Files.createDirectories(snapshotsDir);
             Files.createDirectories(intentsDir);
@@ -628,7 +632,7 @@ public class RecoverySystem {
     private void cleanupOrphanedDimensionFolders(MinecraftServer server) {
         // This will be implemented when DynamicDimensionManager is ready
         // For now, just log what we would do
-        Path worldPath = server.getWorldPath(Objects.requireNonNull(net.minecraft.world.level.storage.LevelResource.ROOT));
+        Path worldPath = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT));
         Path dimensionsDir = worldPath.resolve("dimensions").resolve("devmod");
 
         if (!Files.exists(dimensionsDir)) return;

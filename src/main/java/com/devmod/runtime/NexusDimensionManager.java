@@ -512,8 +512,9 @@ public class NexusDimensionManager {
         // Initialize area registry with main hub
         initializeAreaRegistry(level);
 
-        // Initialize Nexus 2.0 hub manager and slot system
-        NexusHubManager.INSTANCE.initialize(level.getServer());
+        // Initialize Nexus 2.0 hub manager and slot system. Forced: this runs after a
+        // (re)build, so zone definitions must be re-synced even if already initialized.
+        NexusHubManager.INSTANCE.resyncHub(level.getServer());
         NexusHubManager.INSTANCE.applySlotTemplates(level);
     }
 
@@ -875,7 +876,7 @@ public class NexusDimensionManager {
             NexusPortalManager.INSTANCE.cleanup(level);
             com.devmod.hologram.runtime.HologramManager.INSTANCE.cleanupLevel(level);
         }
-        NexusPerformanceManager.INSTANCE.cleanup();
+        NexusPerformanceManager.INSTANCE.cleanup(level);
         buildTask = null;
     }
 

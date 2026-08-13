@@ -15,6 +15,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.devmod.DevMod;
 
@@ -24,6 +26,16 @@ public final class RiftStampEventHandler {
     private static final long WARNING_COOLDOWN_TICKS = 20;
 
     private RiftStampEventHandler() {}
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        RiftStampManager.INSTANCE.tick(event.getServer());
+    }
+
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        RiftStampManager.INSTANCE.shutdown();
+    }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onBlockBreak(BlockEvent.BreakEvent event) {

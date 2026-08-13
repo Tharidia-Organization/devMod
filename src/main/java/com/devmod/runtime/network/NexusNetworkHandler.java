@@ -163,6 +163,12 @@ public final class NexusNetworkHandler extends NetworkHandlerBase implements Pay
                 if (!(ctx.player() instanceof ServerPlayer player)) {
                     return;
                 }
+                // Serves server telemetry file contents; standing in the Nexus is not authorisation.
+                if (!AdminInstanceNetworkHandler.hasAdminPermission(player)) {
+                    LOGGER.debug("[NexusNetwork] Denied log request from {} (insufficient permission)",
+                        player.getName().getString());
+                    return;
+                }
                 if (!player.level().dimension().equals(NexusDimensionManager.NEXUS_DIMENSION)) {
                     return;
                 }

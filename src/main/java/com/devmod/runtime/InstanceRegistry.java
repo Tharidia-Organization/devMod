@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -28,9 +29,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
-
-import com.devmod.util.ConfigPaths;
+import net.minecraft.world.level.storage.LevelResource;
 
 public class InstanceRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceRegistry.class);
@@ -48,6 +49,10 @@ public class InstanceRegistry {
 
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private boolean dirty = false;
+
+    // Bound to the currently loaded save by load(server); null while no server is running.
+    @Nullable
+    private volatile Path storageDir;
 
     private InstanceRegistry() {}
 
@@ -343,8 +348,13 @@ public class InstanceRegistry {
     public void save() {
         if (!dirty) return;
 
+        Path registryFile = getRegistryFile();
+        if (registryFile == null) {
+            LOGGER.warn("[InstanceRegistry] No save bound, skipping registry save");
+            return;
+        }
+
         try {
-            Path registryFile = getRegistryFile();
             Path parent = registryFile.getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
@@ -378,11 +388,18 @@ public class InstanceRegistry {
 
     /**
      * Load registry from disk (for crash recovery).
+     *
+     * <p>Instances, their dimensions and their player mappings only exist inside one save,
+     * so the registry is stored per-world and any state left over from a previously loaded
+     * world is dropped before this world's file is read. Registries written by older builds
+     * under config/devmod are ignored.
      */
+    public void load(MinecraftServer server) {
+        clear();
+        this.storageDir = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT)).resolve("devmod");
 
-    public void load() {
         Path registryFile = getRegistryFile();
-        if (!Files.exists(registryFile)) {
+        if (registryFile == null || !Files.exists(registryFile)) {
             LOGGER.info("[InstanceRegistry] No registry file found, starting fresh");
             return;
         }
@@ -476,14 +493,18 @@ public class InstanceRegistry {
     }
 
     /**
-     * Clear all data (for testing or reset).
+     * Clear all data and unbind the save (server shutdown, testing, reset).
+     *
+     * <p>Leaves the registry not-dirty so a later save cannot overwrite a world's file
+     * with the emptied state.
      */
     public void clear() {
         instances.clear();
         playerToInstance.clear();
         dimensionToInstance.clear();
         pendingDestruction.clear();
-        dirty = true;
+        storageDir = null;
+        dirty = false;
         LOGGER.info("[InstanceRegistry] Registry cleared");
     }
 
@@ -494,8 +515,10 @@ public class InstanceRegistry {
         this.dirty = true;
     }
 
+    @Nullable
     private Path getRegistryFile() {
-        return ConfigPaths.getConfigDir().resolve("instances.json");
+        Path dir = storageDir;
+        return dir == null ? null : dir.resolve("instances.json");
     }
 
     // === Debug ===

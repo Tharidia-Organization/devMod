@@ -628,6 +628,10 @@ final class AreaServerPayloadHandler {
                     areaId, cancelledBuild, removedFromQueue);
             }
 
+            // An in-flight capture would otherwise complete after the cascade delete below and
+            // register an orphan snapshot file for an area that no longer exists.
+            AreaSnapshotManager.INSTANCE.cancelTasksForArea(areaId);
+
             registry.deleteArea(areaId);
 
             player.displayClientMessage(
