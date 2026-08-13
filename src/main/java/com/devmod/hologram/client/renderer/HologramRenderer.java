@@ -113,8 +113,13 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         }
 
         switch (state) {
-            case EMPTY -> startAsyncBuild(level, minX, maxX, minZ, maxZ, blockEntity);
-            case BUILDING -> checkBuildProgress(blockEntity);
+            case EMPTY -> {
+                if (blockEntity.canStartBuild(level.getGameTime())) {
+                    startAsyncBuild(level, minX, maxX, minZ, maxZ, blockEntity);
+                }
+            }
+            // BUILDING transitions from the publish callback, nothing to poll here.
+            case BUILDING -> { }
             case READY -> uploadToVBO(blockEntity);
             case UPLOADED -> renderVBO(poseStack, level, blockEntity);
         }
@@ -137,6 +142,8 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
         int ySliceLevel = blockEntity.getYSliceLevel();
         int ySliceThickness = blockEntity.getYSliceThickness();
 
+        int generation = blockEntity.getBuildGeneration();
+
         CompletableFuture<HologramMesh> buildTask = HologramMeshBuilder.buildAsync(
                 level, minX, maxX, minZ, maxZ,
                 blockEntity.getActiveFilters(),
@@ -148,21 +155,33 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
             // Run on the client thread: mesh/buildState are plain fields read by the
             // renderer, so publishing them from the builder thread is a data race.
             .thenApplyAsync(mesh -> {
-                blockEntity.setMesh(mesh);
-                blockEntity.setBuildState(BuildState.READY);
+                if (blockEntity.getBuildGeneration() == generation) {
+                    blockEntity.setMesh(mesh);
+                    blockEntity.setBuildState(BuildState.READY);
+                }
                 return mesh;
+            }, Minecraft.getInstance())
+            // Without this the projector would sit in BUILDING forever on a failed build.
+            .exceptionallyAsync(error -> {
+                if (blockEntity.getBuildGeneration() == generation) {
+                    org.slf4j.LoggerFactory.getLogger("Hologram").error(
+                        "[Renderer] Hologram mesh build failed at {}", blockEntity.getBlockPos(), error);
+                    scheduleRetry(blockEntity);
+                }
+                return null;
             }, Minecraft.getInstance());
         blockEntity.setBuildTask(buildTask);
     }
 
     /**
-     * Check if async build is complete.
+     * Return to EMPTY with a cooldown, so a build that keeps failing or keeps producing
+     * nothing cannot rescan the whole region every frame.
      */
-    private void checkBuildProgress(@Nonnull HologramProjectorBlockEntity blockEntity) {
-        CompletableFuture<HologramMesh> buildTask = blockEntity.getBuildTask();
-        if (buildTask == null || buildTask.isDone()) {
-            // Build task completed or was cancelled
-            // State will be updated by thenAccept callback
+    private void scheduleRetry(@Nonnull HologramProjectorBlockEntity blockEntity) {
+        blockEntity.setBuildState(BuildState.EMPTY);
+        Level level = blockEntity.getLevel();
+        if (level != null) {
+            blockEntity.delayNextBuild(level.getGameTime());
         }
     }
 
@@ -172,9 +191,12 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
     private void uploadToVBO(@Nonnull HologramProjectorBlockEntity blockEntity) {
         HologramMesh mesh = blockEntity.getMesh();
         if (mesh == null || mesh.isEmpty()) {
-            blockEntity.setBuildState(BuildState.EMPTY);
+            scheduleRetry(blockEntity);
             return;
         }
+
+        // Sprites can only be looked up here, on the render thread.
+        mesh.resolveSprites();
 
         HologramVBO vbo = new HologramVBO();
         vbo.upload(mesh);

@@ -90,6 +90,10 @@ public class HologramProjectorBlockEntity extends BlockEntity {
     private transient HologramMesh mesh = null;
     @Nullable
     private transient HologramVBO vbo = null;
+    private transient int buildGeneration = 0;
+    private transient long nextBuildTime = Long.MIN_VALUE;
+    /** Cooldown after a build that failed or produced nothing, to avoid a per-frame rescan. */
+    private static final long BUILD_RETRY_DELAY_TICKS = 60;
 
     // Animation state (client-side only)
     private transient long animationStartTime = -1;
@@ -155,6 +159,30 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         this.buildTask = task;
     }
 
+    /**
+     * Get the current build generation.
+     *
+     * <p>Cancelling the tail of the build chain does not stop the build itself, so a
+     * dispatcher must capture this value and drop its result if the generation moved on.
+     */
+    public int getBuildGeneration() {
+        return buildGeneration;
+    }
+
+    /**
+     * Delay the next automatic build attempt.
+     */
+    public void delayNextBuild(long currentTime) {
+        this.nextBuildTime = currentTime + BUILD_RETRY_DELAY_TICKS;
+    }
+
+    /**
+     * Check whether a new build may start, honouring the retry cooldown.
+     */
+    public boolean canStartBuild(long currentTime) {
+        return currentTime >= nextBuildTime;
+    }
+
     @Nullable
     public HologramMesh getMesh() {
         return mesh;
@@ -182,6 +210,8 @@ public class HologramProjectorBlockEntity extends BlockEntity {
 
     private void clearAllMeshData() {
         buildState = BuildState.EMPTY;
+        buildGeneration++;
+        nextBuildTime = Long.MIN_VALUE; // An explicit invalidation rebuilds immediately
         mesh = null;
         animationStartTime = -1; // Reset animation
         if (vbo != null) {

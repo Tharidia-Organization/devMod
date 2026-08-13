@@ -4,7 +4,6 @@ import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -15,10 +14,11 @@ import com.devmod.hologram.data.HologramFilter;
 
 /**
  * Async builder for hologram meshes.
- * Uses a dedicated background thread and semaphore to limit concurrent builds.
+ * Uses a single dedicated background thread, which is what serializes builds.
  *
- * <p>This prevents blocking the render thread during expensive terrain scanning
- * and greedy meshing operations.
+ * <p>This prevents blocking the render thread during expensive greedy meshing.
+ * The level itself is read up front on the calling thread; see
+ * {@link HologramRegionSnapshot}.
  */
 public final class HologramMeshBuilder {
     private HologramMeshBuilder() {}
@@ -29,9 +29,6 @@ public final class HologramMeshBuilder {
         thread.setDaemon(true);
         return thread;
     });
-
-    /** Semaphore to limit concurrent builds (only one at a time). */
-    private static final Semaphore BUILD_SEMAPHORE = new Semaphore(1);
 
     /**
      * Build a hologram mesh asynchronously.
@@ -94,6 +91,9 @@ public final class HologramMeshBuilder {
     /**
      * Build a hologram mesh asynchronously with filter, texture, and Y-slice support.
      *
+     * <p>Must be called on the client thread: the region is snapshotted synchronously
+     * before the build is dispatched.
+     *
      * @param level The level to scan
      * @param minX Minimum X coordinate
      * @param maxX Maximum X coordinate
@@ -116,17 +116,21 @@ public final class HologramMeshBuilder {
                                                               boolean ySliceEnabled,
                                                               int ySliceLevel,
                                                               int ySliceThickness) {
-        return CompletableFuture.supplyAsync(() -> {
-            boolean acquired = BUILD_SEMAPHORE.tryAcquire();
-            try {
-                return HologramMesh.build(level, minX, maxX, minZ, maxZ, filters, highlightOnly, texturedMode,
-                                         ySliceEnabled, ySliceLevel, ySliceThickness);
-            } finally {
-                if (acquired) {
-                    BUILD_SEMAPHORE.release();
-                }
-            }
-        }, EXECUTOR);
+        // Find actual Y bounds (or use Y-slice bounds if enabled)
+        int minY, maxY;
+        if (ySliceEnabled) {
+            minY = ySliceLevel - ySliceThickness / 2;
+            maxY = ySliceLevel + ySliceThickness / 2;
+        } else {
+            int[] yBounds = HologramRegionSnapshot.findSurfaceBounds(level, minX, maxX, minZ, maxZ);
+            minY = yBounds[0];
+            maxY = yBounds[1];
+        }
+
+        HologramRegionSnapshot region = HologramRegionSnapshot.capture(level, minX, maxX, minZ, maxZ, minY, maxY);
+
+        return CompletableFuture.supplyAsync(
+            () -> HologramMesh.build(region, filters, highlightOnly, texturedMode), EXECUTOR);
     }
 
     /**

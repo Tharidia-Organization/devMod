@@ -20,7 +20,6 @@ import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.devmod.hologram.data.HologramFilter;
@@ -32,13 +31,15 @@ import com.devmod.hologram.data.HologramFilter;
  *
  * <p>The mesh is built by:
  * <ol>
- *   <li>Scanning terrain to collect non-air blocks</li>
- *   <li>Finding Y bounds (min/max height of actual blocks)</li>
+ *   <li>Scanning a {@link HologramRegionSnapshot} to collect non-air blocks</li>
  *   <li>Running greedy meshing for each face direction</li>
  * </ol>
+ *
+ * <p>Building runs on the mesh builder thread, so it must not touch the level or any
+ * render-thread API. Textured quads therefore only record their source block state;
+ * {@link #resolveSprites()} turns those into UVs later, on the render thread.
  */
 public final class HologramMesh {
-    private final Level level;
     private final Map<BlockPos, BlockState> blocks = new HashMap<>();
     private final int width;
     private final int height;
@@ -61,98 +62,26 @@ public final class HologramMesh {
     private Map<BlockState, TextureAtlasSprite> spriteCache;
 
     /*
-     * Build a hologram mesh from the specified terrain region.
+     * Build a hologram mesh from a captured terrain region.
      *
-     * @param level The level to scan
-     * @param minX Minimum X coordinate
-     * @param maxX Maximum X coordinate
-     * @param minZ Minimum Z coordinate
-     * @param maxZ Maximum Z coordinate
-     */
-    @Nonnull
-    public static HologramMesh build(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
-        return build(level, minX, maxX, minZ, maxZ, null, false, false);
-    }
-
-    /*
-     * Build a hologram mesh with filter support.
-     *
-     * @param level The level to scan
-     * @param minX Minimum X coordinate
-     * @param maxX Maximum X coordinate
-     * @param minZ Minimum Z coordinate
-     * @param maxZ Maximum Z coordinate
+     * @param region Snapshot of the region to mesh
      * @param filters Active filters for highlighting (null = no filtering)
      * @param highlightOnly If true, only show blocks matching filters
+     * @param texturedMode If true, record block states for later UV resolution
      */
     @Nonnull
-    public static HologramMesh build(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ,
-                                      @Nullable EnumSet<HologramFilter> filters, boolean highlightOnly) {
-        return build(level, minX, maxX, minZ, maxZ, filters, highlightOnly, false);
-    }
-
-    /*
-     * Build a hologram mesh with filter and texture support.
-     *
-     * @param level The level to scan
-     * @param minX Minimum X coordinate
-     * @param maxX Maximum X coordinate
-     * @param minZ Minimum Z coordinate
-     * @param maxZ Maximum Z coordinate
-     * @param filters Active filters for highlighting (null = no filtering)
-     * @param highlightOnly If true, only show blocks matching filters
-     * @param texturedMode If true, calculate UV coordinates for block textures
-     */
-    @Nonnull
-    public static HologramMesh build(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ,
+    public static HologramMesh build(@Nonnull HologramRegionSnapshot region,
                                       @Nullable EnumSet<HologramFilter> filters, boolean highlightOnly,
                                       boolean texturedMode) {
-        return build(level, minX, maxX, minZ, maxZ, filters, highlightOnly, texturedMode, false, 0, 1);
-    }
-
-    /*
-     * Build a hologram mesh with filter, texture, and Y-slice support.
-     *
-     * @param level The level to scan
-     * @param minX Minimum X coordinate
-     * @param maxX Maximum X coordinate
-     * @param minZ Minimum Z coordinate
-     * @param maxZ Maximum Z coordinate
-     * @param filters Active filters for highlighting (null = no filtering)
-     * @param highlightOnly If true, only show blocks matching filters
-     * @param texturedMode If true, calculate UV coordinates for block textures
-     * @param ySliceEnabled If true, only show blocks within the Y-slice range
-     * @param ySliceLevel The center Y level of the slice
-     * @param ySliceThickness The thickness of the slice (number of layers)
-     */
-    @Nonnull
-    public static HologramMesh build(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ,
-                                      @Nullable EnumSet<HologramFilter> filters, boolean highlightOnly,
-                                      boolean texturedMode, boolean ySliceEnabled, int ySliceLevel,
-                                      int ySliceThickness) {
-        int width = maxX - minX + 1;
-        int depth = maxZ - minZ + 1;
-
-        // Find actual Y bounds (or use Y-slice bounds if enabled)
-        int minY, maxY;
-        if (ySliceEnabled) {
-            minY = ySliceLevel - ySliceThickness / 2;
-            maxY = ySliceLevel + ySliceThickness / 2;
-        } else {
-            int[] yBounds = findYBounds(level, minX, maxX, minZ, maxZ);
-            minY = yBounds[0];
-            maxY = yBounds[1];
-        }
-        int height = maxY - minY + 1;
-
-        HologramMesh mesh = new HologramMesh(level, minX, minZ, width, depth, minY, height);
+        HologramMesh mesh = new HologramMesh(region.getMinX(), region.getMinZ(), region.getWidth(),
+                                             region.getDepth(), region.getMinY(), region.getHeight());
         mesh.activeFilters = filters;
         mesh.filterHighlightOnly = highlightOnly;
         mesh.texturedMode = texturedMode;
         if (texturedMode) {
             mesh.spriteCache = new HashMap<>();
         }
-        mesh.scanTerrain(level, minX, maxX, minZ, maxZ, minY, maxY);
+        mesh.scanTerrain(region);
         mesh.buildMesh();
         return mesh;
     }
@@ -172,8 +101,7 @@ public final class HologramMesh {
         return originY;
     }
 
-    private HologramMesh(@Nonnull Level level, int minX, int minZ, int width, int depth, int minY, int height) {
-        this.level = level;
+    private HologramMesh(int minX, int minZ, int width, int depth, int minY, int height) {
         this.width = width;
         this.depth = depth;
         this.height = height;
@@ -183,45 +111,14 @@ public final class HologramMesh {
     }
 
     /*
-     * Find the Y bounds of actual terrain in the region.
-     */
-    private static int[] findYBounds(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ) {
-        int foundMinY = level.getMaxBuildHeight();
-        int foundMaxY = level.getMinBuildHeight();
-
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                for (int y = level.getMaxBuildHeight() - 1; y >= level.getMinBuildHeight(); y--) {
-                    BlockState state = level.getBlockState(pos.set(x, y, z));
-                    if (!state.isAir()) {
-                        foundMinY = Math.min(foundMinY, y);
-                        foundMaxY = Math.max(foundMaxY, y);
-                        break; // Found top block for this column
-                    }
-                }
-            }
-        }
-
-        // If no blocks found, default to Y=64
-        if (foundMinY > foundMaxY) {
-            foundMinY = 64;
-            foundMaxY = 64;
-        }
-
-        return new int[]{foundMinY, foundMaxY};
-    }
-
-    /*
-     * Scan terrain and store non-air blocks with relative coordinates.
+     * Scan the snapshot and store non-air blocks with relative coordinates.
      * If filterHighlightOnly is true, only stores blocks matching active filters.
      */
-    private void scanTerrain(@Nonnull Level level, int minX, int maxX, int minZ, int maxZ, int minY, int maxY) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                for (int y = minY; y <= maxY; y++) {
-                    BlockState state = level.getBlockState(pos.set(x, y, z));
+    private void scanTerrain(@Nonnull HologramRegionSnapshot region) {
+        for (int x = 0; x < width; x++) {
+            for (int z = 0; z < depth; z++) {
+                for (int y = 0; y < height; y++) {
+                    BlockState state = region.getBlockState(originX + x, originY + y, originZ + z);
                     if (!state.isAir()) {
                         // If highlight-only mode, skip blocks that don't match any filter
                         if (filterHighlightOnly && activeFilters != null && !activeFilters.isEmpty()) {
@@ -230,8 +127,7 @@ public final class HologramMesh {
                                 continue; // Skip non-matching blocks
                             }
                         }
-                        BlockPos relativePos = new BlockPos(x - minX, y - minY, z - minZ);
-                        blocks.put(relativePos, state);
+                        blocks.put(new BlockPos(x, y, z), state);
                     }
                 }
             }
@@ -437,6 +333,52 @@ public final class HologramMesh {
     }
 
     /**
+     * Resolve the sprite of every textured quad into UV coordinates.
+     *
+     * <p>Must be called on the render thread before uploading: the baked model manager is
+     * swapped out during resource reloads, so the mesh builder thread cannot read it.
+     */
+    public void resolveSprites() {
+        if (!texturedMode) {
+            return;
+        }
+        for (Quad quad : quads) {
+            if (quad.state == null) {
+                continue;
+            }
+            TextureAtlasSprite sprite = getBlockSprite(quad.state);
+            if (sprite != null) {
+                quad.applyUvs(computeUvs(quad.direction, sprite, quad.uSize, quad.vSize));
+            }
+        }
+    }
+
+    /*
+     * Calculate UVs that tile across a merged quad; each block gets one full texture repeat.
+     */
+    private static float[][] computeUvs(Direction direction, TextureAtlasSprite sprite, int uSize, int vSize) {
+        float u0 = sprite.getU0();
+        float v0 = sprite.getV0();
+        float uScale = sprite.getU1() - u0;
+        float vScale = sprite.getV1() - v0;
+
+        return switch (direction) {
+            case UP, DOWN -> new float[][]{
+                {u0, v0 + vScale * vSize},
+                {u0 + uScale * uSize, v0 + vScale * vSize},
+                {u0 + uScale * uSize, v0},
+                {u0, v0}
+            };
+            default -> new float[][]{ // NORTH, SOUTH, WEST, EAST
+                {u0, v0},
+                {u0, v0 + vScale * vSize},
+                {u0 + uScale * uSize, v0 + vScale * vSize},
+                {u0 + uScale * uSize, v0}
+            };
+        };
+    }
+
+    /**
      * Get the TextureAtlasSprite for a block state.
      * Results are cached to avoid repeated lookups.
      */
@@ -520,56 +462,13 @@ public final class HologramMesh {
             };
         };
 
-        // Calculate UV coordinates
-        float[][] uvs;
-        if (texturedMode) {
-            TextureAtlasSprite sprite = getBlockSprite(state);
-            if (sprite != null) {
-                // Get sprite bounds in atlas
-                float u0 = sprite.getU0();
-                float v0 = sprite.getV0();
-                float u1 = sprite.getU1();
-                float v1 = sprite.getV1();
-
-                // Calculate UVs that tile across the merged quad
-                // Each block gets one full texture repeat
-                float uScale = u1 - u0;
-                float vScale = v1 - v0;
-
-                uvs = switch (direction) {
-                    case UP, DOWN -> new float[][]{
-                        {u0, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0},
-                        {u0, v0}
-                    };
-                    case NORTH, SOUTH -> new float[][]{
-                        {u0, v0},
-                        {u0, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0}
-                    };
-                    case WEST, EAST -> new float[][]{
-                        {u0, v0},
-                        {u0, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0 + vScale * vSize},
-                        {u0 + uScale * uSize, v0}
-                    };
-                };
-            } else {
-                // Fallback: dummy UVs
-                uvs = new float[][]{{0, 0}, {0, 0}, {0, 0}, {0, 0}};
-            }
-        } else {
-            // Color mode: dummy UVs (shader ignores them)
-            uvs = new float[][]{{0, 0}, {0, 0}, {0, 0}, {0, 0}};
-        }
-
         // Alpha encodes filter state for shader: 1.0 = filtered, 0.5 = not filtered
         float alpha = isFiltered ? 1.0f : 0.5f;
 
-        quads.add(new Quad(vertices[0], vertices[1], vertices[2], vertices[3],
-                          uvs[0], uvs[1], uvs[2], uvs[3], r, g, b, alpha));
+        // UVs stay zero (and are ignored by the color-mode shader) until resolveSprites()
+        // fills them in on the render thread.
+        quads.add(new Quad(vertices[0], vertices[1], vertices[2], vertices[3], r, g, b, alpha,
+                          texturedMode ? state : null, direction, uSize, vSize));
     }
 
     /*
@@ -612,24 +511,40 @@ public final class HologramMesh {
      */
     private static class Quad {
         final float[] v1, v2, v3, v4;
-        final float[] uv1, uv2, uv3, uv4;
+        final float[] uv1 = new float[2];
+        final float[] uv2 = new float[2];
+        final float[] uv3 = new float[2];
+        final float[] uv4 = new float[2];
         final float r, g, b, a;
 
+        /** Source data for deferred UV resolution; state is null outside textured mode. */
+        @Nullable
+        final BlockState state;
+        final Direction direction;
+        final int uSize, vSize;
+
         Quad(float[] v1, float[] v2, float[] v3, float[] v4,
-             float[] uv1, float[] uv2, float[] uv3, float[] uv4,
-             float r, float g, float b, float a) {
+             float r, float g, float b, float a,
+             @Nullable BlockState state, Direction direction, int uSize, int vSize) {
             this.v1 = v1;
             this.v2 = v2;
             this.v3 = v3;
             this.v4 = v4;
-            this.uv1 = uv1;
-            this.uv2 = uv2;
-            this.uv3 = uv3;
-            this.uv4 = uv4;
             this.r = r;
             this.g = g;
             this.b = b;
             this.a = a;
+            this.state = state;
+            this.direction = direction;
+            this.uSize = uSize;
+            this.vSize = vSize;
+        }
+
+        void applyUvs(float[][] uvs) {
+            System.arraycopy(uvs[0], 0, uv1, 0, 2);
+            System.arraycopy(uvs[1], 0, uv2, 0, 2);
+            System.arraycopy(uvs[2], 0, uv3, 0, 2);
+            System.arraycopy(uvs[3], 0, uv4, 0, 2);
         }
 
         void render(BufferBuilder builder, Matrix4f pose, boolean useUV) {
