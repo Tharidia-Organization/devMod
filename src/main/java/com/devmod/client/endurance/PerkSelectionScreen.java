@@ -99,8 +99,9 @@ public class PerkSelectionScreen extends Screen {
     public PerkSelectionScreen(int waveNumber, List<PerkChoicesPayload.PerkChoice> choices, long expiresAt) {
         super(I18n.ui("perk.choose_perk"));
         this.waveNumber = waveNumber;
-        this.choices = choices;
-        this.skipAllowed = choices == null || choices.stream().noneMatch(PerkChoicesPayload.PerkChoice::required);
+        // Every other use of this field dereferences it unguarded
+        this.choices = choices != null ? choices : List.of();
+        this.skipAllowed = this.choices.stream().noneMatch(PerkChoicesPayload.PerkChoice::required);
         this.countdown = new CountdownTimer(expiresAt, COUNTDOWN_WARN_SECONDS, COUNTDOWN_URGENT_SECONDS, COUNTDOWN_AUDIO_SECONDS);
     }
 

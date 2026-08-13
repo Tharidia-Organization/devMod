@@ -130,6 +130,7 @@ public class NotificationCenterScreen extends Screen {
     @Nullable
     private NotificationCategory activeFilter;
     private Tab activeTab = Tab.NOTIFICATIONS;
+    private boolean initialTabApplied = false;
 
     private long openedAt;
     private int scrollOffset;
@@ -188,12 +189,17 @@ public class NotificationCenterScreen extends Screen {
     protected void init() {
         super.init();
         openedAt = System.currentTimeMillis();
-        scrollOffset = 0;
-        maxScroll = 0;
-        detailScrollOffset = 0;
-        detailScrollMax = 0;
-        activeTab = initialTab;
-        selectTab(activeTab, pendingEntityId);
+        // init() re-runs on resize; applying the initial tab again would discard the
+        // user's current tab, scroll position and selection and re-request tab data.
+        if (!initialTabApplied) {
+            initialTabApplied = true;
+            scrollOffset = 0;
+            maxScroll = 0;
+            detailScrollOffset = 0;
+            detailScrollMax = 0;
+            activeTab = initialTab;
+            selectTab(activeTab, pendingEntityId);
+        }
     }
 
     private void selectTab(Tab tab, @Nullable UUID entityId) {

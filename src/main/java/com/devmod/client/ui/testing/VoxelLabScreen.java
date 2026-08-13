@@ -34,6 +34,7 @@ public class VoxelLabScreen extends Screen {
     private final Map<VoxelLabTab, VoxelLabPage> pages = new EnumMap<>(VoxelLabTab.class);
     private final Map<VoxelLabTab, EditorButton> tabButtons = new EnumMap<>(VoxelLabTab.class);
     private VoxelLabTab activeTab = VoxelLabTab.OVERVIEW;
+    private boolean telemetrySent = false;
 
     // Close button
     @Nullable
@@ -54,8 +55,11 @@ public class VoxelLabScreen extends Screen {
 
     @Override
     protected void init() {
-        // Track screen open for telemetry
-        UiTelemetry.screenOpened("testing", "voxel_lab");
+        // Track screen open for telemetry (init() re-runs on resize; only report once)
+        if (!telemetrySent) {
+            UiTelemetry.screenOpened("testing", "voxel_lab");
+            telemetrySent = true;
+        }
 
         UIScaleManager.update();
         updateScaledMetrics();
@@ -66,8 +70,12 @@ public class VoxelLabScreen extends Screen {
         // Create close button
         getCloseButton();
 
-        // Register pages
-        registerPages();
+        // Register pages once: init() re-runs on resize and the active page would never
+        // receive onDeactivate(), leaking whatever it enabled and discarding page state.
+        boolean pagesCreated = pages.isEmpty();
+        if (pagesCreated) {
+            registerPages();
+        }
 
         // Initialize active page
         int contentX = scaledPadding;
@@ -80,9 +88,11 @@ public class VoxelLabScreen extends Screen {
         }
 
         // Activate initial tab
-        VoxelLabPage activePage = pages.get(activeTab);
-        if (activePage != null) {
-            activePage.onActivate();
+        if (pagesCreated) {
+            VoxelLabPage activePage = pages.get(activeTab);
+            if (activePage != null) {
+                activePage.onActivate();
+            }
         }
     }
 

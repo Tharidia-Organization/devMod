@@ -82,6 +82,8 @@ public class TestingHub extends Screen {
     // === CACHED DIMENSIONS ===
     private int hubX, hubY, hubWidth, hubHeight;
 
+    private boolean telemetrySent = false;
+
     public TestingHub() {
         super(I18n.translate("devmod.testing.testing_hub"));
         this.state = TestingHubState.INSTANCE;
@@ -89,8 +91,11 @@ public class TestingHub extends Screen {
 
     @Override
     protected void init() {
-        // Track screen open for telemetry
-        UiTelemetry.screenOpened("testing", "testing_hub");
+        // Track screen open for telemetry (init() re-runs on resize; only report once)
+        if (!telemetrySent) {
+            UiTelemetry.screenOpened("testing", "testing_hub");
+            telemetrySent = true;
+        }
 
         // Calculate responsive dimensions
         hubWidth = calculateHubWidth();

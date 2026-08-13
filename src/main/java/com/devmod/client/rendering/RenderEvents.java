@@ -327,13 +327,23 @@ public class RenderEvents {
             }
         }
 
-        if (com.devmod.client.overlay.EconomyOverlay.isEnabled()) {
-            if (InputConstants.isKeyDown(mc.getWindow().getWindow(), InputConstants.KEY_PAGEUP)) {
+        // Raw polling: gate on no open screen and edge-detect so a held key scrolls one row per press
+        if (com.devmod.client.overlay.EconomyOverlay.isEnabled() && mc.screen == null) {
+            long scrollWindowHandle = mc.getWindow().getWindow();
+            boolean pageUpPressed = InputConstants.isKeyDown(scrollWindowHandle, InputConstants.KEY_PAGEUP);
+            boolean pageDownPressed = InputConstants.isKeyDown(scrollWindowHandle, InputConstants.KEY_PAGEDOWN);
+
+            if (pageUpPressed && !pageUpWasPressed) {
                 com.devmod.client.overlay.EconomyOverlay.scrollUp();
             }
-            if (InputConstants.isKeyDown(mc.getWindow().getWindow(), InputConstants.KEY_PAGEDOWN)) {
+            if (pageDownPressed && !pageDownWasPressed) {
                 com.devmod.client.overlay.EconomyOverlay.scrollDown();
             }
+            pageUpWasPressed = pageUpPressed;
+            pageDownWasPressed = pageDownPressed;
+        } else {
+            pageUpWasPressed = false;
+            pageDownWasPressed = false;
         }
 
         while (KeyInputHandler.TOGGLE_CHUNK_PERF_KEY.consumeClick()) {
@@ -395,7 +405,8 @@ public class RenderEvents {
             invokeAction(ActionIds.UI_MAILBOX_OPEN);
         }
 
-        if (com.devmod.client.overlay.OnboardingOverlay.isActive()) {
+        // Gated on mc.screen == null: otherwise ESC closing any GUI also skips onboarding
+        if (com.devmod.client.overlay.OnboardingOverlay.isActive() && mc.screen == null) {
             long escWindowHandle = mc.getWindow().getWindow();
             boolean escPressed = InputConstants.isKeyDown(escWindowHandle, InputConstants.KEY_ESCAPE);
 
@@ -419,6 +430,10 @@ public class RenderEvents {
     // Debounce state for ESC key in tutorial
     private static boolean escWasPressed = false;
 
+    // Debounce state for economy overlay scrolling
+    private static boolean pageUpWasPressed = false;
+    private static boolean pageDownWasPressed = false;
+
     /**
      * Client tick event to update 3D panels and the monitoring system.
      * NOTE: This is the CORRECT way to handle keybinds according to NeoForge documentation.
@@ -440,8 +455,8 @@ public class RenderEvents {
             boolean hasQuest = com.devmod.client.endurance.ClientQuestCache.hasActiveQuest();
             boolean shouldSuppress = com.devmod.client.endurance.ClientQuestCache.shouldSuppressVanillaDeathScreen();
 
-            // Log state for debugging
-            LOGGER.info("[DeathScreenDebug] DeathScreen detected: pendingEnd={}, playerDead={}, health={}, hasQuest={}, shouldSuppress={}",
+            // Log state for debugging (runs every tick the death screen is open)
+            LOGGER.debug("[DeathScreenDebug] DeathScreen detected: pendingEnd={}, playerDead={}, health={}, hasQuest={}, shouldSuppress={}",
                 pendingEnd, playerDead,
                 mc.player != null ? mc.player.getHealth() : -1,
                 hasQuest, shouldSuppress);
@@ -465,7 +480,8 @@ public class RenderEvents {
                     () -> new com.devmod.client.endurance.QuestDeathScreen());
             } else {
                 // Vanilla death screen is showing and we're not suppressing - log why
-                LOGGER.info("[DeathScreenDebug] Allowing vanilla DeathScreen: playerDead={}, hasQuest={}, shouldSuppress={}",
+                // (runs every tick the death screen is open)
+                LOGGER.debug("[DeathScreenDebug] Allowing vanilla DeathScreen: playerDead={}, hasQuest={}, shouldSuppress={}",
                     playerDead, hasQuest, shouldSuppress);
             }
         }

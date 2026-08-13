@@ -77,8 +77,13 @@ public final class AreaClientHooks {
         Screen currentScreen = mc.screen;
 
         // If current screen is AreaBuilderScreen, update its zone selector
-        if (currentScreen instanceof AreaBuilderScreen areaBuilder) {
-            mc.execute(() -> areaBuilder.updateZoneList(Objects.requireNonNull(payload.zones())));
+        if (currentScreen instanceof AreaBuilderScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof AreaBuilderScreen areaBuilder) {
+                    areaBuilder.updateZoneList(Objects.requireNonNull(payload.zones()));
+                }
+            });
         } else {
             LOGGER.debug("[Area] ZoneList payload dropped - screen is {} (expected AreaBuilderScreen)",
                 currentScreen != null ? currentScreen.getClass().getSimpleName() : "null");
@@ -94,8 +99,13 @@ public final class AreaClientHooks {
         Screen currentScreen = mc.screen;
 
         // If current screen is AreaBuilderScreen, update its template list
-        if (currentScreen instanceof AreaBuilderScreen areaBuilder) {
-            mc.execute(() -> areaBuilder.updateTemplateList(Objects.requireNonNull(payload.templates())));
+        if (currentScreen instanceof AreaBuilderScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof AreaBuilderScreen areaBuilder) {
+                    areaBuilder.updateTemplateList(Objects.requireNonNull(payload.templates()));
+                }
+            });
         } else {
             LOGGER.debug("[Area] TemplateList payload dropped - screen is {} (expected AreaBuilderScreen)",
                 currentScreen != null ? currentScreen.getClass().getSimpleName() : "null");
@@ -111,8 +121,13 @@ public final class AreaClientHooks {
         Screen currentScreen = mc.screen;
 
         // If current screen is AreaBuilderScreen, apply the template
-        if (currentScreen instanceof AreaBuilderScreen areaBuilder) {
-            mc.execute(() -> areaBuilder.applyTemplate(Objects.requireNonNull(payload)));
+        if (currentScreen instanceof AreaBuilderScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof AreaBuilderScreen areaBuilder) {
+                    areaBuilder.applyTemplate(Objects.requireNonNull(payload));
+                }
+            });
         } else {
             LOGGER.debug("[Area] TemplateData payload dropped - screen is {} (expected AreaBuilderScreen)",
                 currentScreen != null ? currentScreen.getClass().getSimpleName() : "null");
@@ -127,8 +142,13 @@ public final class AreaClientHooks {
         Minecraft mc = Minecraft.getInstance();
         Screen currentScreen = mc.screen;
 
-        if (currentScreen instanceof AreaBuilderScreen areaBuilder) {
-            mc.execute(() -> areaBuilder.handleSaveResult(Objects.requireNonNull(payload)));
+        if (currentScreen instanceof AreaBuilderScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof AreaBuilderScreen areaBuilder) {
+                    areaBuilder.handleSaveResult(Objects.requireNonNull(payload));
+                }
+            });
         } else {
             LOGGER.debug("[Area] SaveAreaResult payload dropped - screen is {} (expected AreaBuilderScreen)",
                 currentScreen != null ? currentScreen.getClass().getSimpleName() : "null");
@@ -144,11 +164,16 @@ public final class AreaClientHooks {
         Screen currentScreen = mc.screen;
 
         // If current screen is NexusEditorCentralScreen, show snapshot dialog
-        if (currentScreen instanceof NexusEditorCentralScreen editorCentral) {
-            mc.execute(() -> editorCentral.showSnapshotDialog(
-                Objects.requireNonNull(payload.areaId()),
-                Objects.requireNonNull(payload.snapshots())
-            ));
+        if (currentScreen instanceof NexusEditorCentralScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof NexusEditorCentralScreen editorCentral) {
+                    editorCentral.showSnapshotDialog(
+                        Objects.requireNonNull(payload.areaId()),
+                        Objects.requireNonNull(payload.snapshots())
+                    );
+                }
+            });
         } else {
             LOGGER.debug("[Area] SnapshotList payload dropped - screen is {} (expected NexusEditorCentralScreen)",
                 currentScreen != null ? currentScreen.getClass().getSimpleName() : "null");
@@ -171,8 +196,13 @@ public final class AreaClientHooks {
 
         // Also notify current screen if it's relevant
         Screen currentScreen = mc.screen;
-        if (currentScreen instanceof AreaBuilderScreen areaBuilder) {
-            mc.execute(() -> areaBuilder.handleBuildStatus(Objects.requireNonNull(payload)));
+        if (currentScreen instanceof AreaBuilderScreen) {
+            // Re-check inside the task: the screen can close between here and the main thread.
+            mc.execute(() -> {
+                if (mc.screen instanceof AreaBuilderScreen areaBuilder) {
+                    areaBuilder.handleBuildStatus(Objects.requireNonNull(payload));
+                }
+            });
         }
     }
 }

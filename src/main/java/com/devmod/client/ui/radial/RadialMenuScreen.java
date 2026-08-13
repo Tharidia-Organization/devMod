@@ -1957,9 +1957,11 @@ public final class RadialMenuScreen extends Screen {
                 searchMode = false;
                 searchQuery.setLength(0);
                 searchResults.clear();
+                selectedSearchResult = RadialMenuConstants.NO_SELECTION;
                 return true;
             }
-            if (keyCode == config.input.keySearchConfirm && selectedSearchResult >= 0) {
+            if (keyCode == config.input.keySearchConfirm
+                && selectedSearchResult >= 0 && selectedSearchResult < searchResults.size()) {
                 RadialSearchHandler.SearchResult result = searchResults.get(selectedSearchResult);
                 executeItem(Objects.requireNonNull(result.getItem(), "result.item"), ActionSource.SEARCH, result.getCategory(), searchQuery.toString());
                 searchMode = false;
@@ -1971,7 +1973,9 @@ public final class RadialMenuScreen extends Screen {
                 return true;
             }
             if (keyCode == config.input.keySearchUp) {
-                selectedSearchResult = Math.max(0, selectedSearchResult - 1);
+                selectedSearchResult = searchResults.isEmpty()
+                    ? RadialMenuConstants.NO_SELECTION
+                    : Math.max(0, selectedSearchResult - 1);
                 return true;
             }
             if (keyCode == config.input.keySearchDown) {
@@ -1995,6 +1999,7 @@ public final class RadialMenuScreen extends Screen {
             } else {
                 searchQuery.setLength(0);
                 searchResults.clear();
+                selectedSearchResult = RadialMenuConstants.NO_SELECTION;
             }
             return true;
         }
@@ -2134,7 +2139,7 @@ public final class RadialMenuScreen extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
-        if ((searchMode && Character.isLetterOrDigit(chr)) || chr == config.input.searchQuerySpace) {
+        if (searchMode && (Character.isLetterOrDigit(chr) || chr == config.input.searchQuerySpace)) {
             searchQuery.append(chr);
             updateSearchResults();
             return true;

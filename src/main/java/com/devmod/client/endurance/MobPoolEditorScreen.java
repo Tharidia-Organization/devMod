@@ -177,6 +177,7 @@ public class MobPoolEditorScreen extends Screen {
         int contentHeight = height - HEADER_HEIGHT - FOOTER_HEIGHT - GLOBAL_SECTION_HEIGHT;
 
         // Initialize mob list panel
+        var previousPanel = mobListPanel;
         var listPanel = new MobListPanel(
             PADDING,
             contentY,
@@ -191,6 +192,14 @@ public class MobPoolEditorScreen extends Screen {
         listPanel.setSearchQuery(searchQuery);
         availableNamespaces = listPanel.getAvailableNamespaces();
         mobListPanel = listPanel;
+
+        // A fresh panel defaults every registry mob to enabled; init() re-runs on resize,
+        // so carry the previous enable/disable state over instead of silently re-enabling all.
+        if (previousPanel != null) {
+            for (ResourceLocation mobId : previousPanel.getDisabledMobs()) {
+                listPanel.setMobEnabled(mobId, false);
+            }
+        }
 
         // Initialize mob stats panel
         int statsX = PADDING + LEFT_PANEL_WIDTH + PADDING;

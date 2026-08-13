@@ -162,6 +162,15 @@ public class EnduranceShopScreen extends Screen {
         maxScroll = Math.max(0, contentHeight - viewportHeight);
     }
 
+    /** Challenges view scrolls its own list; geometry must match renderChallengeList(). */
+    private int calculateChallengeMaxScroll() {
+        ShopLayout layout = getLayout();
+        int challengeItemHeight = scaledItemHeight + UIScaleManager.scale(10);
+        int contentHeight = getChallengeSnapshot().size() * (challengeItemHeight + scaledItemMargin);
+        int viewportHeight = layout.listH() - 20;
+        return Math.max(0, contentHeight - viewportHeight);
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -365,8 +374,7 @@ public class EnduranceShopScreen extends Screen {
         graphics.disableScissor();
 
         // Calculate scroll for challenges
-        int contentHeight = challenges.size() * (challengeItemHeight + scaledItemMargin);
-        int challengeMaxScroll = Math.max(0, contentHeight - listHeight);
+        int challengeMaxScroll = calculateChallengeMaxScroll();
         if (challengeMaxScroll > 0) {
             int scrollbarHeight = (int) ((float) listHeight / (listHeight + challengeMaxScroll) * listHeight);
             int scrollbarY = listY + (int) ((float) scrollOffset / challengeMaxScroll * (listHeight - scrollbarHeight));
@@ -723,7 +731,8 @@ public class EnduranceShopScreen extends Screen {
         int listWidth = layout.listW();
         int listHeight = layout.listH();
 
-        if (mouseX >= listX && mouseX <= listX + listWidth && mouseY >= listY && mouseY <= listY + listHeight) {
+        if (viewMode == ViewMode.SHOP
+            && mouseX >= listX && mouseX <= listX + listWidth && mouseY >= listY && mouseY <= listY + listHeight) {
             int relativeY = (int) mouseY - listY + scrollOffset;
             int index = relativeY / (scaledItemHeight + scaledItemMargin);
             if (index >= 0 && index < categoryItems.size()) {
@@ -739,7 +748,8 @@ public class EnduranceShopScreen extends Screen {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         UIScaleManager.update();
         updateScaledMetrics();
-        scrollOffset = Math.max(0, Math.min(maxScroll, scrollOffset - (int) (scrollY * UIScaleManager.scale(20))));
+        int scrollLimit = viewMode == ViewMode.CHALLENGES ? calculateChallengeMaxScroll() : maxScroll;
+        scrollOffset = Math.max(0, Math.min(scrollLimit, scrollOffset - (int) (scrollY * UIScaleManager.scale(20))));
         return true;
     }
 

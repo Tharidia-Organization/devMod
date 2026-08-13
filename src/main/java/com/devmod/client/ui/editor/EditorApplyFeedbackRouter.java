@@ -1,7 +1,6 @@
 package com.devmod.client.ui.editor;
 
 import java.lang.ref.WeakReference;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -33,12 +32,10 @@ public final class EditorApplyFeedbackRouter {
     }
 
     public static void unregister(@Nonnull Listener listener) {
-        for (Iterator<WeakReference<Listener>> it = LISTENERS.iterator(); it.hasNext();) {
-            Listener current = it.next().get();
-            if (current == null || current == listener) {
-                it.remove();
-            }
-        }
+        LISTENERS.removeIf(ref -> {
+            Listener current = ref.get();
+            return current == null || current == listener;
+        });
     }
 
     public static void notify(@Nonnull EditorApplyConfirmPayload payload) {
@@ -52,10 +49,6 @@ public final class EditorApplyFeedbackRouter {
     }
 
     private static void cleanup() {
-        for (Iterator<WeakReference<Listener>> it = LISTENERS.iterator(); it.hasNext();) {
-            if (it.next().get() == null) {
-                it.remove();
-            }
-        }
+        LISTENERS.removeIf(ref -> ref.get() == null);
     }
 }

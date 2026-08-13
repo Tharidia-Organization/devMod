@@ -44,8 +44,13 @@ public final class ClientImpactHandlers {
             return;
         }
 
-        // Reconstruct body part from ordinal
-        HitHelper.BodyPart bodyPart = HitHelper.BodyPart.values()[payload.bodyPartOrdinal()];
+        // Reconstruct body part from ordinal (raw wire value, must be range-checked)
+        HitHelper.BodyPart[] bodyParts = HitHelper.BodyPart.values();
+        int bodyPartOrdinal = payload.bodyPartOrdinal();
+        if (bodyPartOrdinal < 0 || bodyPartOrdinal >= bodyParts.length) {
+            return;
+        }
+        HitHelper.BodyPart bodyPart = bodyParts[bodyPartOrdinal];
 
         // Reconstruct damage breakdown
         DamageBreakdown breakdown = new DamageBreakdown(

@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 
@@ -41,7 +40,6 @@ public class SettingsManager {
         t.setDaemon(true);
         return t;
     });
-    private final AtomicBoolean saveInProgress = new AtomicBoolean(false);
 
     private SettingsManager() {
         this.gson = new GsonBuilder()
@@ -120,11 +118,6 @@ public class SettingsManager {
      * ASYNC: Runs on background thread to prevent main thread blocking/freezing.
      */
     public void save() {
-        // Skip if save is already in progress
-        if (!saveInProgress.compareAndSet(false, true)) {
-            return;
-        }
-
         // First sync from systems to ensure we have latest state
         syncFromSystems();
 
@@ -132,7 +125,9 @@ public class SettingsManager {
         final String jsonSnapshot = gson.toJson(currentSettings);
         final Path configPath = ConfigPaths.getSettingsFile();
 
-        // Submit async save task - does NOT block main thread
+        // Submit async save task - does NOT block main thread.
+        // saveExecutor is single-threaded, so overlapping saves serialize in submission
+        // order and the newest snapshot wins; skipping the submit would drop those edits.
         saveExecutor.execute(() -> {
             try {
                 // Create config directory if needed
@@ -149,8 +144,6 @@ public class SettingsManager {
                 LOGGER.debug("[DevMod] Settings saved successfully (async)");
             } catch (IOException e) {
                 LOGGER.error("[DevMod] Failed to save settings: {}", e.getMessage());
-            } finally {
-                saveInProgress.set(false);
             }
         });
     }

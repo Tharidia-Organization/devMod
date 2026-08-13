@@ -54,6 +54,7 @@ public class QATestingScreen extends Screen {
 
     // Blur control - save original value to restore on close
     private int originalBlurValue = 0;
+    private boolean blurOverridden = false;
 
     // UI Components
     @Nullable
@@ -80,19 +81,37 @@ public class QATestingScreen extends Screen {
             sessionStarted = TestingSession.INSTANCE.getCompletedTests() > 0 ||
                              TestingSession.INSTANCE.isSessionActive();
         }
+    }
 
-        // Disable menu blur when opening this screen
+    /**
+     * Captured in init() rather than the constructor: the previous screen's removed()
+     * runs before init(), so this reads the user's value and not another screen's override.
+     * init() re-runs on resize, hence the guard.
+     */
+    private void overrideBlur() {
+        if (blurOverridden) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.options != null) {
             OptionInstance<Integer> blurOption = mc.options.menuBackgroundBlurriness();
             originalBlurValue = blurOption.get();
             blurOption.set(0); // Disable blur
+            blurOverridden = true;
+        }
+    }
+
+    private void restoreBlur() {
+        if (!blurOverridden) return;
+        blurOverridden = false;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.options != null) {
+            mc.options.menuBackgroundBlurriness().set(originalBlurValue);
         }
     }
 
     @Override
     protected void init() {
         super.init();
+        overrideBlur();
         final @Nonnull Font font = safeFont();
 
         // Tester name input (only shown before session starts)
@@ -1255,11 +1274,15 @@ public class QATestingScreen extends Screen {
     @Override
     public void onClose() {
         // Restore original blur setting when closing the screen
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.options != null) {
-            mc.options.menuBackgroundBlurriness().set(originalBlurValue);
-        }
+        restoreBlur();
         super.onClose();
+    }
+
+    @Override
+    public void removed() {
+        // Also restore when the screen is replaced rather than closed
+        restoreBlur();
+        super.removed();
     }
 
     @Override

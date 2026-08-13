@@ -336,6 +336,15 @@ public class ClientModEvents {
         // Clear Nexus client cache (hub status, build progress)
         com.devmod.nexus.client.NexusClientCache.INSTANCE.clear();
 
+        // Clear area build tracking (an IN_PROGRESS build would show phantom progress on reconnect)
+        com.devmod.client.area.BuildProgressTracker.INSTANCE.clear();
+
+        // Hide the instance loading overlay (its hide payload never arrives after a disconnect)
+        com.devmod.client.overlay.InstanceLoadingOverlay.hide();
+
+        // Drop the tracked target (strong LivingEntity reference keeps the ClientLevel alive)
+        com.devmod.client.panels.context.ContextDetector.INSTANCE.clearTarget();
+
         LOGGER.debug("Caches cleared successfully");
     }
 

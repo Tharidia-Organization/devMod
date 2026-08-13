@@ -209,8 +209,9 @@ public class UnifiedToastOverlay {
             if (mouseX >= renderX && mouseX < renderX + toastWidth &&
                     mouseY >= renderY && mouseY < renderY + sToastHeight) {
                 hoveredToastIndex = i;
-                // Pause dismiss timer while hovering
-                if (entry.state == ToastState.VISIBLE) {
+                // Pause dismiss timer while hovering; keep the original pause start so the
+                // resume branch credits the whole hover, not a single frame
+                if (entry.state == ToastState.VISIBLE && entry.pausedAt == 0) {
                     entry.pausedAt = now;
                 }
             } else if (entry.pausedAt > 0 && entry.state == ToastState.VISIBLE) {

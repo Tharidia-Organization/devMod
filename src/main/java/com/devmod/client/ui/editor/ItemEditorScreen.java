@@ -253,6 +253,7 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
     private ResponsiveLayout.Rect historyRollbackBounds = ResponsiveLayout.Rect.EMPTY;
     @Nullable
     private ItemEditorSnapshot baselineSnapshot = null;
+    private boolean historyInitialized = false;
     // Low-confidence detection system
     private final LowConfidenceDetector lowConfidenceDetector = new LowConfidenceDetector();
     @Nullable
@@ -410,10 +411,16 @@ public class ItemEditorScreen extends Screen implements InputRouter.InputContext
 
         // Invalidate cache on init
         EditorCache.INSTANCE.invalidateAll();
-        historyEntries.clear();
-        historyFilter = HistoryFilter.ALL;
-        historySelectedIndex = -1;
-        baselineSnapshot = captureSnapshot("open", "Editor opened");
+
+        // init() re-runs on resize; resetting history there would wipe the user's undo
+        // history and re-baseline the diff mid-edit.
+        if (!historyInitialized) {
+            historyInitialized = true;
+            historyEntries.clear();
+            historyFilter = HistoryFilter.ALL;
+            historySelectedIndex = -1;
+            baselineSnapshot = captureSnapshot("open", "Editor opened");
+        }
     }
 
     private EditorModule resolveModule(ItemStack stack, EditorStartTab requested) {

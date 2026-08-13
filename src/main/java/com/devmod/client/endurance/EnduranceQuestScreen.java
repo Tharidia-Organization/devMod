@@ -258,22 +258,30 @@ public class EnduranceQuestScreen extends BaseDevModScreen {
         // Initialize arena selection panel in the right panel area
         int rightPanelX = width - RIGHT_PANEL_WIDTH + 10;
         int arenaPanelY = HEADER_HEIGHT + 200; // Below kit selector
-        arenaPanel = new ArenaSelectionPanel(rightPanelX, arenaPanelY, RIGHT_PANEL_WIDTH - 20, 40);
-        arenaPanel.setOnSelectionChanged(selection -> {
-            var panel = Objects.requireNonNull(arenaPanel);
-            boolean auto = panel.isAutoSelected();
-            String label = panel.getSelectedTemplateLabel();
-            Notification notification = Notification.builder(NotificationCategory.QUEST)
-                .titleKey("devmod.endurance.quest.notify.arena.title")
-                .messageKey(auto
-                    ? "devmod.endurance.quest.notify.arena.auto"
-                    : "devmod.endurance.quest.notify.arena.manual")
-                .param("arena", label != null ? label : I18n.translate("devmod.endurance.quest.arena.auto").getString())
-                .priority(NotificationPriority.LOW)
-                .displayDurationMs(1600)
-                .build();
-            ClientNotificationManager.INSTANCE.handleNotification(notification);
-        });
+        // init() re-runs on every resize; the panel owns a suggestions-cache listener and a
+        // native VertexBuffer released only by cleanup(), so reposition rather than reallocate.
+        var existingArenaPanel = arenaPanel;
+        if (existingArenaPanel != null) {
+            existingArenaPanel.setPosition(rightPanelX, arenaPanelY, RIGHT_PANEL_WIDTH - 20, 40);
+        } else {
+            var newArenaPanel = new ArenaSelectionPanel(rightPanelX, arenaPanelY, RIGHT_PANEL_WIDTH - 20, 40);
+            arenaPanel = newArenaPanel;
+            newArenaPanel.setOnSelectionChanged(selection -> {
+                var panel = Objects.requireNonNull(arenaPanel);
+                boolean auto = panel.isAutoSelected();
+                String label = panel.getSelectedTemplateLabel();
+                Notification notification = Notification.builder(NotificationCategory.QUEST)
+                    .titleKey("devmod.endurance.quest.notify.arena.title")
+                    .messageKey(auto
+                        ? "devmod.endurance.quest.notify.arena.auto"
+                        : "devmod.endurance.quest.notify.arena.manual")
+                    .param("arena", label != null ? label : I18n.translate("devmod.endurance.quest.arena.auto").getString())
+                    .priority(NotificationPriority.LOW)
+                    .displayDurationMs(1600)
+                    .build();
+                ClientNotificationManager.INSTANCE.handleNotification(notification);
+            });
+        }
 
         startButton = EditorButton.builder("start-quest", I18n.ui("start_quest").getString())
             .style(EditorButton.Style.SUCCESS)

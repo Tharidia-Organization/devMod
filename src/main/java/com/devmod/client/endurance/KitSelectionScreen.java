@@ -1363,7 +1363,8 @@ public class KitSelectionScreen extends Screen {
             int relY = mouseY - gridY + itemScrollOffset;
             int col = relX / (scaledItemSize + scaledItemMargin);
             int row = relY / (scaledItemSize + scaledItemMargin);
-            int index = row * itemsPerRow + col;
+            // gridW can exceed itemsPerRow cells; the trailing gutter belongs to no item
+            int index = col < itemsPerRow ? row * itemsPerRow + col : -1;
 
             if (index >= 0 && index < filteredItems.size()) {
                 ItemStack stack = Objects.requireNonNull(filteredItems.get(index));
@@ -1559,7 +1560,8 @@ public class KitSelectionScreen extends Screen {
         int relY = mouseY - gridY + itemScrollOffset;
         int col = relX / (scaledItemSize + scaledItemMargin);
         int row = relY / (scaledItemSize + scaledItemMargin);
-        int index = row * itemsPerRow + col;
+        // gridW can exceed itemsPerRow cells; the trailing gutter belongs to no item
+        int index = col < itemsPerRow ? row * itemsPerRow + col : -1;
 
         if (index >= 0 && index < filteredItems.size()) {
             ItemStack stack = filteredItems.get(index).copy();

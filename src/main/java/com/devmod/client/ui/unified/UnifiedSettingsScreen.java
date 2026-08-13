@@ -49,6 +49,7 @@ public class UnifiedSettingsScreen extends Screen {
     // === State ===
     private SettingsCategory currentCategory = SettingsCategory.GENERAL;
     private final Map<SettingsCategory, SettingsPage> pages = new EnumMap<>(SettingsCategory.class);
+    private boolean telemetrySent = false;
     private int mouseX, mouseY;
 
     // Confirmation dialogs (reusable overlay component)
@@ -113,24 +114,30 @@ public class UnifiedSettingsScreen extends Screen {
         super.init();
         initDialogs();
 
-        // Track screen open for telemetry
-        UiTelemetry.screenOpened("settings", "unified_settings");
+        // Track screen open for telemetry (init() re-runs on resize; only report once)
+        if (!telemetrySent) {
+            UiTelemetry.screenOpened("settings", "unified_settings");
+            telemetrySent = true;
+        }
 
-        // Initialize pages
-        pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
-        pages.put(SettingsCategory.RADIAL, new RadialSettingsPage());
-        pages.put(SettingsCategory.EDITOR, new EditorSettingsPage());
-        pages.put(SettingsCategory.DEBUG, new DebugOverlaysPage());
-        pages.put(SettingsCategory.VISUALIZERS, new VisualizersPage());
-        pages.put(SettingsCategory.COMBAT, new CombatSettingsPage());
-        pages.put(SettingsCategory.MOBS, new MobConfigPage());
-        pages.put(SettingsCategory.TELEMETRY, new TelemetryPage());
-        pages.put(SettingsCategory.KEYBINDS, new KeybindsPage());
+        // Initialize pages once: page instances hold the pending edits that
+        // hasUnsavedChanges()/saveChanges() rely on, and init() re-runs on resize.
+        if (pages.isEmpty()) {
+            pages.put(SettingsCategory.GENERAL, new GeneralSettingsPage());
+            pages.put(SettingsCategory.RADIAL, new RadialSettingsPage());
+            pages.put(SettingsCategory.EDITOR, new EditorSettingsPage());
+            pages.put(SettingsCategory.DEBUG, new DebugOverlaysPage());
+            pages.put(SettingsCategory.VISUALIZERS, new VisualizersPage());
+            pages.put(SettingsCategory.COMBAT, new CombatSettingsPage());
+            pages.put(SettingsCategory.MOBS, new MobConfigPage());
+            pages.put(SettingsCategory.TELEMETRY, new TelemetryPage());
+            pages.put(SettingsCategory.KEYBINDS, new KeybindsPage());
 
-        // Initialize the current page
-        SettingsPage currentPage = pages.get(currentCategory);
-        if (currentPage != null) {
-            currentPage.init();
+            // Initialize the current page
+            SettingsPage currentPage = pages.get(currentCategory);
+            if (currentPage != null) {
+                currentPage.init();
+            }
         }
     }
 
