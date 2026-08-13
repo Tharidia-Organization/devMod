@@ -29,7 +29,6 @@ import com.devmod.area.data.AreaDefinition;
 import com.devmod.area.data.AreaDimensions;
 import com.devmod.area.data.AreaRegistry;
 import com.devmod.config.Config;
-import com.devmod.nexus.builder.NexusFoundationBuilder;
 import com.devmod.nexus.data.SlotType;
 import com.devmod.nexus.data.ZoneSlot;
 import com.devmod.nexus.data.ZoneSlotPresets;
@@ -262,34 +261,9 @@ public final class NexusHubManager {
         NexusTransportBridge.INSTANCE.initializeNexusNodes(registry, server);
     }
 
-    /**
-     * Build the hub foundation in the Nexus dimension.
-     * Only builds if not already built.
-     *
-     * @param level the Nexus dimension level
-     * @param origin the hub center position
-     * @param force if true, rebuild even if already built
-     * @return true if foundation was built
-     */
-    public boolean buildFoundation(@Nonnull ServerLevel level, @Nonnull BlockPos origin, boolean force) {
-        Objects.requireNonNull(level);
-        Objects.requireNonNull(origin);
-
-        // Check if already built (use NexusHubSavedData when available)
-        // For now, always build if force or first time
-        if (!force) {
-            // Check a marker block at center
-            if (!level.getBlockState(origin).isAir()) {
-                LOGGER.debug("[Nexus] Foundation already exists, skipping build");
-                return false;
-            }
-        }
-
-        LOGGER.info("[Nexus] Building hub foundation (force: {})", force);
-        NexusFoundationBuilder builder = new NexusFoundationBuilder();
-        builder.build(level, origin);
-        return true;
-    }
+    // Foundation building is owned by NexusDimensionManager.requestRebuild: it is the only
+    // path that honours nexusBuildMode, so the hub's ~1.2M block writes can be staggered
+    // across ticks rather than stalling the tick loop.
 
     // ========================================================================
     // Slot Management

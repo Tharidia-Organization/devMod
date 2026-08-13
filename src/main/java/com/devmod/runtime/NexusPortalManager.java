@@ -29,8 +29,6 @@ import com.devmod.config.Config;
 import com.devmod.nexus.NexusDecorBlocks;
 import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.portal.PortalColor;
-import com.devmod.portal.PortalData;
-import com.devmod.portal.PortalRegistry;
 import com.devmod.zone.data.ZoneDefinition;
 import com.devmod.zone.data.ZoneRegistry;
 
@@ -51,8 +49,16 @@ public final class NexusPortalManager {
     /** Platform size around each telepad (NxN decorative blocks). */
     private static final int PLATFORM_RADIUS = 2;
 
-    // Track created portal UUIDs for cleanup (data-driven: zoneId -> UUID)
-    private final Map<String, UUID> portalIds = new ConcurrentHashMap<>();
+    /**
+     * Ticks between griefing checks. Replacing a telepad recreates its BlockEntity, so this
+     * must stay far away from every-tick.
+     */
+    private static final int VERIFY_INTERVAL_TICKS = 100;
+
+    // Track created telepads for verification and cleanup (zoneId or slotId -> telepad)
+    private final Map<String, TrackedTelepad> telepads = new ConcurrentHashMap<>();
+
+    private int tickCounter = 0;
 
     private NexusPortalManager() {}
 
@@ -80,7 +86,7 @@ public final class NexusPortalManager {
             createZonePortalDataDriven(level, hubOrigin, Objects.requireNonNull(zone));
         }
 
-        LOGGER.info("[NexusPortals] Created {} zone portals", portalIds.size());
+        LOGGER.info("[NexusPortals] Created {} zone portals", telepads.size());
     }
 
     /**
@@ -94,13 +100,16 @@ public final class NexusPortalManager {
             return;
         }
 
-        BlockPos telepadPos = hubOrigin.offset(portalOffset);
+        BlockPos telepadPos = Objects.requireNonNull(hubOrigin.offset(portalOffset));
 
         // Build decorative platform under telepad
-        buildTelepadPlatform(level, Objects.requireNonNull(telepadPos));
+        buildTelepadPlatform(level, telepadPos);
 
         // Place the telepad block
         placeTelepad(level, telepadPos, zone.zoneId());
+
+        telepads.put(Objects.requireNonNull(zone.zoneId()),
+            new TrackedTelepad(Objects.requireNonNull(UUID.randomUUID()), telepadPos));
 
         LOGGER.debug("[NexusPortals] Created {} telepad at {}",
             zone.zoneId(), telepadPos);
@@ -136,10 +145,10 @@ public final class NexusPortalManager {
             return null;
         }
 
-        UUID existingId = portalIds.get(slotId);
-        if (existingId != null) {
+        TrackedTelepad existing = telepads.get(slotId);
+        if (existing != null) {
             LOGGER.debug("[NexusPortals] Slot telepad '{}' already exists", slotId);
-            return existingId;
+            return existing.id();
         }
 
         // Build decorative platform and place telepad
@@ -147,8 +156,8 @@ public final class NexusPortalManager {
         placeTelepad(level, portalPosition, slotId);
 
         // Track with generated UUID
-        UUID telepadId = UUID.randomUUID();
-        portalIds.put(slotId, telepadId);
+        UUID telepadId = Objects.requireNonNull(UUID.randomUUID());
+        telepads.put(slotId, new TrackedTelepad(telepadId, portalPosition));
 
         LOGGER.debug("[NexusPortals] Created slot telepad '{}' at {}",
             slotId, portalPosition);
@@ -158,6 +167,9 @@ public final class NexusPortalManager {
     /**
      * Remove a portal for a Nexus zone slot.
      *
+     * <p>Only the telepad block is removed. Its platform is written at the slot floor level,
+     * so clearing that too would punch a hole through the hub floor.
+     *
      * @param level the Nexus dimension
      * @param slotId the slot ID
      * @return true if removed
@@ -166,14 +178,17 @@ public final class NexusPortalManager {
         Objects.requireNonNull(level);
         Objects.requireNonNull(slotId);
 
-        UUID portalId = portalIds.remove(slotId);
-        if (portalId == null) {
+        TrackedTelepad telepad = telepads.remove(slotId);
+        if (telepad == null) {
             return false;
         }
 
-        PortalRegistry registry = PortalRegistry.get(level);
-        registry.unregister(portalId);
-        LOGGER.debug("[NexusPortals] Removed slot portal '{}'", slotId);
+        BlockPos pos = telepad.position();
+        if (isTelepadAt(level, pos)) {
+            level.setBlock(pos, Objects.requireNonNull(Blocks.AIR.defaultBlockState()), 3);
+        }
+
+        LOGGER.debug("[NexusPortals] Removed slot portal '{}' at {}", slotId, pos);
         return true;
     }
 
@@ -226,36 +241,55 @@ public final class NexusPortalManager {
             return;
         }
 
-        // Verify portals still exist (rebuild if destroyed)
+        if (++tickCounter < VERIFY_INTERVAL_TICKS) {
+            return;
+        }
+        tickCounter = 0;
+
+        if (telepads.isEmpty()) {
+            return;
+        }
+
+        // Verify telepads still exist (rebuild if griefed). The tracked block, not a
+        // PortalData, is what was placed, so existence is a blockstate check at the
+        // recorded position.
         ZoneRegistry zoneRegistry = getZoneRegistry(level.getServer());
 
-        for (Map.Entry<String, UUID> entry : portalIds.entrySet()) {
+        for (Map.Entry<String, TrackedTelepad> entry : telepads.entrySet()) {
             String zoneId = entry.getKey();
-            UUID portalId = entry.getValue();
+            TrackedTelepad telepad = entry.getValue();
 
-            PortalRegistry registry = PortalRegistry.get(level);
-            if (registry.get(Objects.requireNonNull(portalId)).isEmpty()) {
-                // Portal was destroyed, recreate it using data-driven zone
-                LOGGER.debug("[NexusPortals] Recreating destroyed portal for {}", zoneId);
-                zoneRegistry.getZoneById(Objects.requireNonNull(zoneId)).ifPresent(zone ->
-                    createZonePortalDataDriven(level, hubOrigin, Objects.requireNonNull(zone)));
+            if (isTelepadAt(level, telepad.position())) {
+                continue;
             }
+
+            LOGGER.debug("[NexusPortals] Recreating destroyed telepad for {}", zoneId);
+            zoneRegistry.getZoneById(Objects.requireNonNull(zoneId)).ifPresent(zone ->
+                createZonePortalDataDriven(level, hubOrigin, Objects.requireNonNull(zone)));
         }
     }
 
     /**
-     * Clean up all zone portals.
+     * Check whether a telepad block still stands at a tracked position.
+     *
+     * <p>Positions outside a loaded chunk read as absent, so this is only called for the
+     * Nexus hub, whose chunks are force-loaded.
+     */
+    private boolean isTelepadAt(@Nonnull ServerLevel level, @Nonnull BlockPos pos) {
+        return level.getBlockState(pos).is(CloneBlocks.TELEPAD.get());
+    }
+
+    /**
+     * Stop tracking all zone telepads.
+     *
+     * <p>Blocks are deliberately left in the world: this runs on shutdown as well as before
+     * a rebuild, and the hub is expected to persist across restarts.
      */
     public void cleanup(@Nonnull ServerLevel level) {
-        PortalRegistry registry = PortalRegistry.get(level);
+        Objects.requireNonNull(level);
+        telepads.clear();
 
-        // Unregister all tracked portals
-        for (UUID portalId : portalIds.values()) {
-            registry.unregister(Objects.requireNonNull(portalId));
-        }
-        portalIds.clear();
-
-        LOGGER.debug("[NexusPortals] Cleaned up zone portals");
+        LOGGER.debug("[NexusPortals] Cleaned up zone portal tracking");
     }
 
     /**
@@ -312,6 +346,19 @@ public final class NexusPortalManager {
      */
     private boolean isWithinPortalBounds(@Nonnull BlockPos portalBase, @Nonnull BlockPos check) {
         return portalBase.equals(check);
+    }
+
+    /**
+     * A telepad this manager placed, and where it placed it.
+     */
+    private record TrackedTelepad(
+        @Nonnull UUID id,
+        @Nonnull BlockPos position
+    ) {
+        private TrackedTelepad {
+            Objects.requireNonNull(id, "id");
+            Objects.requireNonNull(position, "position");
+        }
     }
 
     /**

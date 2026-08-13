@@ -29,6 +29,7 @@ import com.devmod.nexus.data.ZoneSlot;
 import com.devmod.nexus.data.ZoneSlotRegistry;
 import com.devmod.nexus.runtime.NexusHubManager;
 import com.devmod.runtime.NexusDimensionManager;
+import com.devmod.runtime.NexusHubSavedData;
 
 /**
  * CLI commands for Nexus hub management.
@@ -385,23 +386,28 @@ public final class NexusCommands {
             return 0;
         }
 
-        source.sendSuccess(() -> Objects.requireNonNull(
-            Component.literal("Building Nexus foundation...").withStyle(ChatFormatting.YELLOW)), true);
-
-        BlockPos origin = Objects.requireNonNull(NexusDimensionManager.getHubOrigin());
-        boolean built = NexusHubManager.INSTANCE.buildFoundation(nexusLevel, origin, force);
-
-        if (built) {
-            // Foundation was just rebuilt, so force a zone re-sync rather than a no-op init
-            NexusHubManager.INSTANCE.resyncHub(server);
-
-            source.sendSuccess(() -> Objects.requireNonNull(
-                Component.literal("Foundation build complete!").withStyle(ChatFormatting.GREEN)), true);
-        } else {
+        if (!force && NexusHubSavedData.get(server).isBuilt()) {
             source.sendSuccess(() -> Objects.requireNonNull(
                 Component.literal("Foundation already exists. Use --force to rebuild.")
                     .withStyle(ChatFormatting.YELLOW)), false);
+            return 0;
         }
+
+        // Goes through the dimension manager so the build honours nexusBuildMode; the default
+        // STAGGERED mode spreads the hub's ~1.2M block writes over many ticks instead of
+        // stalling the tick loop. The dimension manager reports progress and runs the
+        // post-build hub re-sync itself once the build finishes.
+        if (!NexusDimensionManager.INSTANCE.requestRebuild(server, force)) {
+            source.sendFailure(Objects.requireNonNull(Component.literal(
+                "Cannot rebuild: Nexus disabled, hub locked (use --force), or a build is already running.")));
+            return 0;
+        }
+
+        // Brigadier returns before a staggered build finishes, so success here means the
+        // rebuild was accepted, not that it completed.
+        source.sendSuccess(() -> Objects.requireNonNull(
+            Component.literal("Nexus rebuild started - watch the on-screen build progress.")
+                .withStyle(ChatFormatting.GREEN)), true);
 
         return 1;
     }

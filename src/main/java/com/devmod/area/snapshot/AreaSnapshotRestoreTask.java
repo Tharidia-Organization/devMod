@@ -3,6 +3,7 @@ package com.devmod.area.snapshot;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -68,8 +69,9 @@ public class AreaSnapshotRestoreTask {
 
     // HIGH-03 fix: Clear phase fields
     private Phase currentPhase = Phase.CLEAR;
-    private final List<BlockPos> clearPositions;
-    private int clearIndex = 0;
+    private final Iterator<BlockPos> clearIterator;
+    private final int totalClearPositions;
+    private int clearedCount = 0;
 
     /**
      * Creates a restore task from loaded snapshot data.
@@ -103,21 +105,18 @@ public class AreaSnapshotRestoreTask {
             snapshot.customShapeNbt()
         );
 
-        // Expand floor to full volume (all Y levels)
-        java.util.List<BlockPos> volumePositions = new java.util.ArrayList<>();
-        int height = snapshot.dimensions().height();
-        for (BlockPos floorPos : floorPositions) {
-            for (int y = 0; y <= height; y++) {
-                volumePositions.add(floorPos.above(y));
-            }
-        }
-
-        // Sort for deterministic ordering
-        this.clearPositions = AreaBlockMapGenerator.sortPositionsDeterministically(
-            new java.util.HashSet<>(volumePositions));
+        // The volume is the floor layer expanded upward through the ceiling at y == height
+        // inclusive, matching AreaSnapshotCaptureTask; a max-size area is ~8.4M positions, so
+        // it is walked lazily one column at a time instead of being materialised.
+        // Floor positions share a Y, so sorting them by (X, Z) and walking each column
+        // bottom-up reproduces the whole-volume (X, Z, Y) ordering.
+        List<BlockPos> clearColumns = AreaBlockMapGenerator.sortPositionsDeterministically(floorPositions);
+        int layers = snapshot.dimensions().height() + 1;
+        this.clearIterator = new ColumnVolumeIterator(clearColumns, layers);
+        this.totalClearPositions = clearColumns.size() * layers;
 
         LOGGER.info("[Snapshot] Starting restore for snapshot {} ({} blocks to restore, {} positions to clear)",
-            snapshot.id(), totalBlocks, clearPositions.size());
+            snapshot.id(), totalBlocks, totalClearPositions);
     }
 
     /**
@@ -147,16 +146,16 @@ public class AreaSnapshotRestoreTask {
         int clearedThisTick = 0;
         BlockState air = Objects.requireNonNull(Blocks.AIR.defaultBlockState());
 
-        while (clearedThisTick < DEFAULT_BLOCKS_PER_TICK && clearIndex < clearPositions.size()) {
-            BlockPos pos = Objects.requireNonNull(clearPositions.get(clearIndex));
+        while (clearedThisTick < DEFAULT_BLOCKS_PER_TICK && clearIterator.hasNext()) {
+            BlockPos pos = Objects.requireNonNull(clearIterator.next());
             level.setBlock(pos, air, RESTORE_FLAGS);
-            clearIndex++;
+            clearedCount++;
             clearedThisTick++;
         }
 
         // Check if clear phase is complete
-        if (clearIndex >= clearPositions.size()) {
-            LOGGER.debug("[Snapshot] Clear phase complete: {} positions cleared", clearIndex);
+        if (!clearIterator.hasNext()) {
+            LOGGER.debug("[Snapshot] Clear phase complete: {} positions cleared", clearedCount);
             currentPhase = Phase.RESTORE;
         }
     }
@@ -214,12 +213,16 @@ public class AreaSnapshotRestoreTask {
 
     /**
      * Gets the current progress as a percentage (0.0 to 1.0).
+     *
+     * <p>Covers both phases: the clear phase usually dominates the runtime, so reporting
+     * only the restore phase would sit at 0% for most of the task.
      */
     public float getProgress() {
         if (completed) {
             return 1.0f;
         }
-        return totalBlocks > 0 ? (float) restoredCount / totalBlocks : 0f;
+        int totalWork = totalClearPositions + totalBlocks;
+        return totalWork > 0 ? (float) (clearedCount + restoredCount) / totalWork : 0f;
     }
 
     /**
@@ -272,6 +275,40 @@ public class AreaSnapshotRestoreTask {
     @Nonnull
     public UUID getAreaId() {
         return Objects.requireNonNull(snapshot.areaId());
+    }
+
+    /**
+     * Walks a set of floor columns bottom-up without materialising the volume.
+     */
+    private static final class ColumnVolumeIterator implements Iterator<BlockPos> {
+        private final List<BlockPos> columns;
+        private final int layers;
+        private int columnIndex = 0;
+        private int layer = 0;
+
+        ColumnVolumeIterator(@Nonnull List<BlockPos> columns, int layers) {
+            this.columns = Objects.requireNonNull(columns);
+            this.layers = layers;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return layers > 0 && columnIndex < columns.size();
+        }
+
+        @Override
+        @Nonnull
+        public BlockPos next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            BlockPos pos = Objects.requireNonNull(columns.get(columnIndex)).above(layer);
+            if (++layer >= layers) {
+                layer = 0;
+                columnIndex++;
+            }
+            return Objects.requireNonNull(pos);
+        }
     }
 
     /**

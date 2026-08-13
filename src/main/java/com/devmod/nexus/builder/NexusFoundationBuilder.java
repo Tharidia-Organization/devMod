@@ -511,9 +511,38 @@ public final class NexusFoundationBuilder {
     // ========================================================================
 
     /**
+     * Apply one raw section write and re-do the bookkeeping {@code Level.setBlock} would
+     * have done for it.
+     *
+     * <p>The raw write is what makes the row fills fast, but on a rebuild over an existing
+     * hub it would otherwise leave block entities whose block is gone, clients showing the
+     * old hub, and stale lighting. Positions whose state is unchanged — the common case when
+     * rebuilding — cost nothing beyond the identity check, since block states are canonical.
+     */
+    private void writeSection(
+            @Nonnull ServerLevel level,
+            @Nonnull LevelChunk chunk,
+            @Nonnull LevelChunkSection section,
+            int localX, int localY, int localZ,
+            int worldX, int worldY, int worldZ,
+            @Nonnull BlockState state
+    ) {
+        BlockState old = section.setBlockState(localX, localY, localZ, state, false);
+        if (old == state) {
+            return;
+        }
+
+        mutablePos.set(worldX, worldY, worldZ);
+        if (old != null && old.hasBlockEntity()) {
+            chunk.removeBlockEntity(Objects.requireNonNull(mutablePos.immutable()));
+        }
+        level.getChunkSource().getLightEngine().checkBlock(mutablePos);
+        level.getChunkSource().blockChanged(mutablePos);
+    }
+
+    /**
      * Fill bedrock for an entire chunk Z-row using direct section access.
      * Bypasses level.setBlock() entirely — ~20-50x faster for uniform fills.
-     * Safe for underground blocks where lighting/heightmap don't matter.
      */
     private void fillBedrockRow(@Nonnull ServerLevel level, @Nonnull BlockPos origin,
                                   int chunkX, int minCZ, int maxCZ, int hubHalf) {
@@ -541,7 +570,8 @@ public final class NexusFoundationBuilder {
             for (int y = 0; y < bedrockLayers; y++) {
                 for (int lx = localMinX; lx <= localMaxX; lx++) {
                     for (int lz = localMinZ; lz <= localMaxZ; lz++) {
-                        section.setBlockState(lx, y, lz, bedrock, false);
+                        writeSection(level, chunk, section, lx, y, lz,
+                            worldStartX + lx, y, worldStartZ + lz, bedrock);
                     }
                 }
             }
@@ -585,8 +615,8 @@ public final class NexusFoundationBuilder {
                     // Grid pattern: accent every 16 blocks
                     boolean isGridLine = ((worldX - origin.getX()) % 16 == 0)
                                         || ((worldZ - origin.getZ()) % 16 == 0);
-                    floorSection.setBlockState(lx, localFloorY, lz,
-                        isGridLine ? floorAccent : floor, false);
+                    writeSection(level, chunk, floorSection, lx, localFloorY, lz,
+                        worldX, floorY, worldZ, isGridLine ? floorAccent : floor);
 
                     // Clear air above floor (3 layers)
                     for (int dy = 1; dy < 4; dy++) {
@@ -596,10 +626,12 @@ public final class NexusFoundationBuilder {
                             int nextIdx = floorSectionIdx + 1;
                             if (nextIdx < chunk.getSectionsCount()) {
                                 LevelChunkSection nextSec = chunk.getSection(nextIdx);
-                                nextSec.setBlockState(lx, clearLocalY & 15, lz, air, false);
+                                writeSection(level, chunk, nextSec, lx, clearLocalY & 15, lz,
+                                    worldX, floorY + dy, worldZ, air);
                             }
                         } else {
-                            floorSection.setBlockState(lx, clearLocalY, lz, air, false);
+                            writeSection(level, chunk, floorSection, lx, clearLocalY, lz,
+                                worldX, floorY + dy, worldZ, air);
                         }
                     }
                 }

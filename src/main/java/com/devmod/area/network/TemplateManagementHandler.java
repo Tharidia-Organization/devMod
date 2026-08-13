@@ -48,6 +48,15 @@ public final class TemplateManagementHandler {
             ServerPlayer player = (ServerPlayer) ctx.player();
             if (player == null) return;
 
+            // The only client that sends this is AreaBuilderScreen, which the server opens
+            // for OP2 alone, so a request from a lower level is a forged packet: drop it
+            // silently rather than leaking template names, descriptions and authors.
+            if (!player.hasPermissions(2)) {
+                DevMod.LOGGER.debug("[Template] Denied template list request from {} (not op)",
+                    player.getName().getString());
+                return;
+            }
+
             AreaTemplateRegistry registry = AreaTemplateRegistry.get(Objects.requireNonNull(player.getServer()));
             List<TemplateListPayload.TemplateSummary> summaries = new ArrayList<>();
 
@@ -72,6 +81,12 @@ public final class TemplateManagementHandler {
         AreaNetworkHandler.enqueueWork(ctx, () -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
             if (player == null) return;
+
+            if (!player.hasPermissions(2)) {
+                DevMod.LOGGER.debug("[Template] Denied template load request from {} (not op)",
+                    player.getName().getString());
+                return;
+            }
 
             AreaTemplateRegistry registry = AreaTemplateRegistry.get(Objects.requireNonNull(player.getServer()));
 

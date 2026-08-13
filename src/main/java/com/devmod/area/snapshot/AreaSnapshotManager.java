@@ -6,7 +6,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,6 +17,8 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.Util;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -45,11 +50,17 @@ public final class AreaSnapshotManager {
     /** Maximum concurrent restore tasks */
     public static final int MAX_CONCURRENT_RESTORES = 2;
 
+    /** Upper bound on the off-thread snapshot read, so a stalled disk cannot pin a snapshot id */
+    private static final long MAX_SNAPSHOT_READ_MS = 30_000L;
+
     /** Active capture tasks by area ID (only one capture per area at a time) */
     private final Map<UUID, ActiveCapture> activeCaptures = new ConcurrentHashMap<>();
 
     /** Active restore tasks by snapshot ID */
     private final Map<UUID, ActiveRestore> activeRestores = new ConcurrentHashMap<>();
+
+    /** Restores whose snapshot file is being read off-thread, by snapshot ID */
+    private final Map<UUID, PendingRestore> pendingRestores = new ConcurrentHashMap<>();
 
     private AreaSnapshotManager() {}
 
@@ -212,10 +223,16 @@ public final class AreaSnapshotManager {
     /**
      * Starts restoring from a snapshot.
      *
+     * <p>The snapshot file is read on the IO pool, so this only reports whether the request
+     * passed validation and was accepted. A read failure surfaces afterwards through the
+     * initiating player's feedback message and the log, the same channel every other restore
+     * failure already uses; callers that need to observe the pending window can poll
+     * {@link #isRestoring(UUID)}, which covers the read as well as the placement task.
+     *
      * @param level      The server level
      * @param snapshotId The snapshot to restore
      * @param player     The player initiating restore (for feedback)
-     * @return true if restore started
+     * @return true if the restore request was accepted
      */
     public boolean startRestore(
         @Nonnull ServerLevel level,
@@ -226,7 +243,7 @@ public final class AreaSnapshotManager {
         Objects.requireNonNull(snapshotId);
 
         // Check if already restoring this snapshot
-        if (activeRestores.containsKey(snapshotId)) {
+        if (isRestoring(snapshotId)) {
             LOGGER.warn("[Snapshot] Restore already in progress for snapshot: {}", snapshotId);
             if (player != null) {
                 player.displayClientMessage(
@@ -237,7 +254,7 @@ public final class AreaSnapshotManager {
         }
 
         // Check concurrent limit
-        if (activeRestores.size() >= MAX_CONCURRENT_RESTORES) {
+        if (activeRestores.size() + pendingRestores.size() >= MAX_CONCURRENT_RESTORES) {
             LOGGER.warn("[Snapshot] Maximum concurrent restores reached");
             if (player != null) {
                 player.displayClientMessage(
@@ -314,26 +331,72 @@ public final class AreaSnapshotManager {
             return false;
         }
 
-        // Load snapshot data
+        // Load snapshot data off-thread: NbtIo.readCompressed on a max-size snapshot blocks
+        // for far too long to run inside a network handler or command on the tick thread.
         Path worldFolder = server.getWorldPath(Objects.requireNonNull(LevelResource.ROOT));
-        Path snapshotFile = worldFolder.resolve(snapshot.getFilePath());
+        Path snapshotFile = Objects.requireNonNull(worldFolder.resolve(snapshot.getFilePath()));
+        HolderLookup.Provider registries = Objects.requireNonNull(server.registryAccess());
 
-        AreaSnapshotData.SnapshotReadResult data;
-        try {
-            data = AreaSnapshotData.read(Objects.requireNonNull(snapshotFile), Objects.requireNonNull(server.registryAccess()));
-        } catch (IOException e) {
-            LOGGER.error("[Snapshot] Failed to read snapshot file: {}", e.getMessage());
-            if (player != null) {
-                player.displayClientMessage(
-                    Objects.requireNonNull(Component.translatable("area.snapshot.restore_failed")), true);
-                AreaBuilderSounds.playError(level, player);
-            }
-            return false;
+        PendingRestore pending = new PendingRestore(
+            level,
+            Objects.requireNonNull(areaId),
+            player != null ? player.getUUID() : null
+        );
+        pendingRestores.put(snapshotId, pending);
+
+        CompletableFuture
+            .supplyAsync(() -> {
+                try {
+                    return AreaSnapshotData.read(snapshotFile, registries);
+                } catch (IOException e) {
+                    throw new CompletionException(e);
+                }
+            }, Util.ioPool())
+            .orTimeout(MAX_SNAPSHOT_READ_MS, TimeUnit.MILLISECONDS)
+            .whenComplete((data, throwable) -> server.execute(
+                () -> onSnapshotRead(server, snapshot, data, throwable)));
+
+        if (player != null) {
+            player.displayClientMessage(
+                Objects.requireNonNull(Component.translatable("area.snapshot.restore_started")), true);
         }
 
-        // Create restore task
+        return true;
+    }
+
+    /**
+     * Turns a completed off-thread snapshot read into a restore task, on the server thread.
+     */
+    private void onSnapshotRead(
+        @Nonnull MinecraftServer server,
+        @Nonnull AreaSnapshot snapshot,
+        @Nullable AreaSnapshotData.SnapshotReadResult data,
+        @Nullable Throwable throwable
+    ) {
+        UUID snapshotId = Objects.requireNonNull(snapshot.id());
+        PendingRestore pending = pendingRestores.remove(snapshotId);
+        if (pending == null) {
+            // Cancelled while the read was in flight (player left, area deleted, level unloaded).
+            return;
+        }
+
+        if (throwable != null || data == null) {
+            LOGGER.error("[Snapshot] Failed to read snapshot file for {}: {}",
+                snapshotId, throwable != null ? throwable.getMessage() : "empty result");
+            @Nullable UUID playerId = pending.playerId;
+            if (playerId != null) {
+                ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+                if (player != null) {
+                    player.displayClientMessage(
+                        Objects.requireNonNull(Component.translatable("area.snapshot.restore_failed")), true);
+                    AreaBuilderSounds.playError(pending.level, player);
+                }
+            }
+            return;
+        }
+
         AreaSnapshotRestoreTask task = new AreaSnapshotRestoreTask(
-            level,
+            pending.level,
             snapshot,
             data,
             this::onRestoreComplete
@@ -341,20 +404,14 @@ public final class AreaSnapshotManager {
 
         activeRestores.put(snapshotId, new ActiveRestore(
             task,
-            level,
-            Objects.requireNonNull(areaId),
-            player != null ? player.getUUID() : null,
+            pending.level,
+            pending.areaId,
+            pending.playerId,
             0
         ));
 
-        if (player != null) {
-            player.displayClientMessage(
-                Objects.requireNonNull(Component.translatable("area.snapshot.restore_started")), true);
-        }
-
         LOGGER.info("[Snapshot] Started restore for snapshot {} ({} blocks)",
             snapshotId, data.getBlockCount());
-        return true;
     }
 
     /**
@@ -497,10 +554,11 @@ public final class AreaSnapshotManager {
     }
 
     /**
-     * Checks if a restore is in progress for a snapshot.
+     * Checks if a restore is in progress for a snapshot, including the file read that
+     * precedes the placement task.
      */
     public boolean isRestoring(@Nonnull UUID snapshotId) {
-        return activeRestores.containsKey(snapshotId);
+        return activeRestores.containsKey(snapshotId) || pendingRestores.containsKey(snapshotId);
     }
 
     /**
@@ -514,6 +572,11 @@ public final class AreaSnapshotManager {
         Objects.requireNonNull(areaId);
         for (ActiveRestore restore : activeRestores.values()) {
             if (areaId.equals(restore.areaId)) {
+                return true;
+            }
+        }
+        for (PendingRestore pending : pendingRestores.values()) {
+            if (areaId.equals(pending.areaId)) {
                 return true;
             }
         }
@@ -574,6 +637,8 @@ public final class AreaSnapshotManager {
             }
             return false;
         });
+
+        pendingRestores.entrySet().removeIf(entry -> playerId.equals(entry.getValue().playerId));
     }
 
     /**
@@ -591,9 +656,10 @@ public final class AreaSnapshotManager {
         }
         int cancelled = activeCaptures.remove(areaId) != null ? 1 : 0;
         // activeRestores is keyed by snapshot id, so match on the tracked areaId instead.
-        int before = activeRestores.size();
+        int before = activeRestores.size() + pendingRestores.size();
         activeRestores.entrySet().removeIf(entry -> areaId.equals(entry.getValue().areaId));
-        cancelled += before - activeRestores.size();
+        pendingRestores.entrySet().removeIf(entry -> areaId.equals(entry.getValue().areaId));
+        cancelled += before - activeRestores.size() - pendingRestores.size();
         if (cancelled > 0) {
             LOGGER.info("[Snapshot] Cancelled {} tasks for deleted area {}", cancelled, areaId);
         }
@@ -612,10 +678,11 @@ public final class AreaSnapshotManager {
     public int cancelTasksForLevel(@Nonnull ServerLevel level) {
         Objects.requireNonNull(level);
         ResourceKey<Level> dimension = level.dimension();
-        int before = activeCaptures.size() + activeRestores.size();
+        int before = activeCaptures.size() + activeRestores.size() + pendingRestores.size();
         activeCaptures.entrySet().removeIf(entry -> dimension.equals(entry.getValue().task.getDimension()));
         activeRestores.entrySet().removeIf(entry -> dimension.equals(entry.getValue().level.dimension()));
-        return before - activeCaptures.size() - activeRestores.size();
+        pendingRestores.entrySet().removeIf(entry -> dimension.equals(entry.getValue().level.dimension()));
+        return before - activeCaptures.size() - activeRestores.size() - pendingRestores.size();
     }
 
     /**
@@ -623,9 +690,10 @@ public final class AreaSnapshotManager {
      */
     public void cleanup() {
         int captureCount = activeCaptures.size();
-        int restoreCount = activeRestores.size();
+        int restoreCount = activeRestores.size() + pendingRestores.size();
         activeCaptures.clear();
         activeRestores.clear();
+        pendingRestores.clear();
         if (captureCount > 0 || restoreCount > 0) {
             LOGGER.info("[Snapshot] Cleaned up {} capture and {} restore tasks",
                 captureCount, restoreCount);
@@ -646,6 +714,19 @@ public final class AreaSnapshotManager {
             this.task = Objects.requireNonNull(task);
             this.playerId = playerId;
             this.lastProgress = lastProgress;
+        }
+    }
+
+    /** A restore that has passed validation and is waiting on its snapshot file read. */
+    private static class PendingRestore {
+        final @Nonnull ServerLevel level;
+        final @Nonnull UUID areaId;
+        final @Nullable UUID playerId;
+
+        PendingRestore(@Nonnull ServerLevel level, @Nonnull UUID areaId, @Nullable UUID playerId) {
+            this.level = Objects.requireNonNull(level);
+            this.areaId = Objects.requireNonNull(areaId);
+            this.playerId = playerId;
         }
     }
 
