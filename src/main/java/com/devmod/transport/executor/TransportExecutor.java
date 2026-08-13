@@ -25,6 +25,7 @@ import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.debug.DiagnosticLogger;
+import com.devmod.portal.PortalDestinationResolver;
 import com.devmod.transport.TransportData;
 import com.devmod.transport.TransportMode;
 import com.devmod.transport.TransportRegistry;
@@ -371,8 +372,12 @@ public final class TransportExecutor {
             return false;
         }
 
-        // Ensure chunk is loaded
-        destLevel.getChunk(destPos);
+        // Loads the destination chunk as a side effect
+        BlockPos safePos = PortalDestinationResolver.resolveSafeDestination(destLevel, destPos).orElse(null);
+        if (safePos == null) {
+            DiagnosticLogger.transport("performTeleportToPosition: destination %s in %s is blocked", destPos, destDim);
+            return false;
+        }
 
         // Play departure effects
         if (source != null) {
@@ -387,9 +392,9 @@ public final class TransportExecutor {
         if (entity instanceof ServerPlayer player) {
             player.teleportTo(
                 destLevel,
-                destPos.getX() + 0.5,
-                destPos.getY() + 0.5,
-                destPos.getZ() + 0.5,
+                safePos.getX() + 0.5,
+                safePos.getY() + 0.5,
+                safePos.getZ() + 0.5,
                 player.getYRot(),
                 player.getXRot()
             );
@@ -399,7 +404,7 @@ public final class TransportExecutor {
             // new instance in the destination level; the original is discarded.
             Entity moved = entity.changeDimension(new DimensionTransition(
                 destLevel,
-                new Vec3(destPos.getX() + 0.5, destPos.getY() + 0.5, destPos.getZ() + 0.5),
+                new Vec3(safePos.getX() + 0.5, safePos.getY() + 0.5, safePos.getZ() + 0.5),
                 Objects.requireNonNull(Vec3.ZERO),
                 entity.getYRot(),
                 entity.getXRot(),
@@ -410,16 +415,16 @@ public final class TransportExecutor {
             }
         } else {
             entity.teleportTo(
-                destPos.getX() + 0.5,
-                destPos.getY() + 0.5,
-                destPos.getZ() + 0.5
+                safePos.getX() + 0.5,
+                safePos.getY() + 0.5,
+                safePos.getZ() + 0.5
             );
         }
 
         // Play arrival effects
-        Vec3 destPosVec = Vec3.atCenterOf(destPos);
+        Vec3 destPosVec = Vec3.atCenterOf(safePos);
         effectManager.spawnArrivalParticles(destLevel, destPosVec);
-        effectManager.playPhaseSound(destLevel, destPos, TransportPhase.TELEPORT_ARRIVE);
+        effectManager.playPhaseSound(destLevel, safePos, TransportPhase.TELEPORT_ARRIVE);
 
         // Set arrival cooldown on the node that was arrived at, which is the node
         // startCharging() checks before letting the entity depart again.

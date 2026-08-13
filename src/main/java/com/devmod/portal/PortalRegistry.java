@@ -82,7 +82,30 @@ public class PortalRegistry extends SavedData {
     }
 
     /**
-     * Removes a portal from the registry.
+     * Removes a portal from the registry, unlinks its partner and clears the portal
+     * blocks from the world.
+     *
+     * <p>Must not be called while a portal block is being removed: clearing the blocks
+     * re-enters {@link CustomPortalBlock#onRemove}. Use {@link #unregister(UUID)} there,
+     * where the world already takes care of the blocks.
+     */
+    public void unregister(@Nonnull UUID portalId, @Nullable MinecraftServer server) {
+        PortalData portal = portals.get(portalId);
+        if (portal == null) {
+            return;
+        }
+
+        // Refresh the ex-partner's LINKED state while both entries still exist.
+        unlink(portalId, server);
+        unregister(portalId);
+
+        if (server != null) {
+            clearPortalBlocks(portal, server);
+        }
+    }
+
+    /**
+     * Removes a portal from the registry, leaving its blocks in the world.
      * Also unlinks any connected portal.
      */
     public void unregister(@Nonnull UUID portalId) {
@@ -324,45 +347,79 @@ public class PortalRegistry extends SavedData {
      * Updates the LINKED block state property for all portal blocks at the given portal's position.
      */
     private void updatePortalBlockState(@Nullable PortalData portal, boolean linked, @Nonnull MinecraftServer server) {
-        if (portal == null || portal.position().isEmpty() || portal.dimension().isEmpty()) {
+        ServerLevel level = levelOf(portal, server);
+        if (level == null || portal == null) {
             return;
         }
 
-        BlockPos center = portal.position().get();
-        ResourceLocation dimLoc = portal.dimension().get();
-
-        ServerLevel level = server.getLevel(Objects.requireNonNull(ResourceKey.create(
-            Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), Objects.requireNonNull(dimLoc))));
-        if (level == null) {
-            return;
+        for (BlockPos pos : collectPortalBlocks(level, Objects.requireNonNull(portal.position().get()))) {
+            BlockState state = level.getBlockState(Objects.requireNonNull(pos));
+            if (state.getValue(Objects.requireNonNull(CustomPortalBlock.LINKED)) != linked) {
+                level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(state.setValue(Objects.requireNonNull(CustomPortalBlock.LINKED), linked)), 3);
+            }
         }
-
-        // Update block state at center and scan for connected portal blocks
-        updatePortalBlocksRecursive(level, center, linked, new HashSet<>());
     }
 
     /**
-     * Recursively updates all connected portal blocks.
+     * Removes all portal blocks belonging to the given portal.
+     *
+     * <p>Portal blocks are unbreakable and drop nothing, so nothing else in the world can
+     * clear them once their registry entry is gone.
      */
-    private void updatePortalBlocksRecursive(ServerLevel level, BlockPos pos, boolean linked, Set<BlockPos> visited) {
-        if (visited.contains(pos) || visited.size() > 100) {
+    private void clearPortalBlocks(@Nullable PortalData portal, @Nonnull MinecraftServer server) {
+        ServerLevel level = levelOf(portal, server);
+        if (level == null || portal == null) {
             return;
         }
-        visited.add(pos);
+
+        for (BlockPos pos : collectPortalBlocks(level, Objects.requireNonNull(portal.position().get()))) {
+            level.removeBlock(Objects.requireNonNull(pos), false);
+        }
+    }
+
+    /**
+     * Resolves the level a portal sits in, or null if it has no recorded position or its
+     * dimension is not loaded.
+     */
+    @Nullable
+    private ServerLevel levelOf(@Nullable PortalData portal, @Nonnull MinecraftServer server) {
+        if (portal == null || portal.position().isEmpty() || portal.dimension().isEmpty()) {
+            return null;
+        }
+
+        ResourceLocation dimLoc = portal.dimension().get();
+        return server.getLevel(Objects.requireNonNull(ResourceKey.create(
+            Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), Objects.requireNonNull(dimLoc))));
+    }
+
+    /**
+     * Collects the portal blocks connected to the given center.
+     */
+    @Nonnull
+    private Set<BlockPos> collectPortalBlocks(@Nonnull ServerLevel level, @Nonnull BlockPos center) {
+        Set<BlockPos> found = new HashSet<>();
+        collectPortalBlocksRecursive(level, center, found);
+        return found;
+    }
+
+    /**
+     * Recursively collects all connected portal blocks, bounded so a malformed portal
+     * cannot walk the whole level.
+     */
+    private void collectPortalBlocksRecursive(ServerLevel level, BlockPos pos, Set<BlockPos> found) {
+        if (found.contains(pos) || found.size() > 100) {
+            return;
+        }
 
         BlockState state = level.getBlockState(Objects.requireNonNull(pos));
         if (!(state.getBlock() instanceof CustomPortalBlock)) {
             return;
         }
-
-        // Update the linked state
-        if (state.getValue(Objects.requireNonNull(CustomPortalBlock.LINKED)) != linked) {
-            level.setBlock(Objects.requireNonNull(pos), Objects.requireNonNull(state.setValue(Objects.requireNonNull(CustomPortalBlock.LINKED), linked)), 3);
-        }
+        found.add(pos);
 
         // Check adjacent blocks for more portal blocks
         for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            updatePortalBlocksRecursive(level, pos.relative(Objects.requireNonNull(dir)), linked, visited);
+            collectPortalBlocksRecursive(level, pos.relative(Objects.requireNonNull(dir)), found);
         }
     }
 

@@ -44,6 +44,7 @@ import com.devmod.network.NetworkHandler;
 import com.devmod.portal.PortalColor;
 import com.devmod.portal.PortalConfig;
 import com.devmod.portal.PortalData;
+import com.devmod.portal.PortalDestinationResolver;
 import com.devmod.portal.PortalRegistry;
 import com.devmod.portal.PortalRuneEffects;
 import com.devmod.portal.RuneType;
@@ -165,9 +166,12 @@ public final class CustomPortalBlock extends Block {
         // Check fixed destination first (Nexus zone portals)
         // Fixed destinations have instant teleportation (no delay)
         if (portal.hasFixedDestination()) {
-            teleportToFixedDestination(entity, serverLevel, portal);
+            boolean teleported = teleportToFixedDestination(entity, serverLevel, portal);
             resetPortalTime(entity);
-            entity.setPortalCooldown(TELEPORT_COOLDOWN);
+            if (teleported) {
+                // The cooldown would otherwise strand an entity that never left.
+                entity.setPortalCooldown(TELEPORT_COOLDOWN);
+            }
             return;
         }
 
@@ -261,11 +265,14 @@ public final class CustomPortalBlock extends Block {
         // Teleport to linked portal
         BlockPos destPos = destPosOpt.get();
         com.devmod.DevMod.LOGGER.info("[Portal] TELEPORTING {} to {}", entity.getName().getString(), destPos);
-        teleportEntity(entity, serverLevel, linked, destPos, sameDimension);
+        boolean teleported = teleportEntity(entity, serverLevel, linked, destPos, sameDimension);
 
         // Reset portal time and set cooldown
         resetPortalTime(entity);
-        entity.setPortalCooldown(TELEPORT_COOLDOWN);
+        if (teleported) {
+            // The cooldown would otherwise strand an entity that never left.
+            entity.setPortalCooldown(TELEPORT_COOLDOWN);
+        }
     }
 
     private static final String TAG_LAST_TICK = "devmod:portal_last_tick";
@@ -461,11 +468,52 @@ public final class CustomPortalBlock extends Block {
      * @param destPortal the destination portal data
      * @param destPos the destination position
      * @param sameDimension true if source and destination are in the same dimension
+     * @return true if the entity was teleported, false if the destination was unusable
      */
-    private void teleportEntity(Entity entity, ServerLevel level, PortalData destPortal, BlockPos destPos, boolean sameDimension) {
-        double destX = destPos.getX() + 0.5;
-        double destY = destPos.getY();
-        double destZ = destPos.getZ() + 0.5;
+    private boolean teleportEntity(Entity entity, ServerLevel level, PortalData destPortal, BlockPos destPos, boolean sameDimension) {
+        // Resolve the destination level first: the safety check has to read the blocks of
+        // the level the entity actually arrives in.
+        ServerLevel destLevel;
+        if (sameDimension) {
+            destLevel = level;
+        } else if (entity instanceof ServerPlayer) {
+            ResourceLocation destDim = destPortal.dimension().orElse(null);
+            com.devmod.DevMod.LOGGER.info("[Portal] Cross-dimension teleport to dim={}", destDim);
+
+            destLevel = destDim != null
+                ? level.getServer().getLevel(Objects.requireNonNull(ResourceKey.create(
+                    Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDim)))
+                : null;
+
+            if (destLevel == null) {
+                // Falling back to the current level would place the entity at the
+                // destination's coordinates in the wrong dimension.
+                com.devmod.DevMod.LOGGER.warn("[Portal] Destination level {} not found, aborting", destDim);
+                return false;
+            }
+        } else {
+            // Non-player cross-dimension teleport is blocked in entityInside()
+            return false;
+        }
+
+        BlockPos safePos = PortalDestinationResolver.resolveSafeDestination(destLevel, destPos).orElse(null);
+        if (safePos == null) {
+            // Retried on every tick while the entity stands in the portal, so throttle both the
+            // log line and the player message to once a second.
+            if (level.getGameTime() % 20 == 0) {
+                com.devmod.DevMod.LOGGER.warn("[Portal] Destination {} in {} is blocked, aborting",
+                    destPos, destLevel.dimension().location());
+                if (entity instanceof ServerPlayer blockedPlayer) {
+                    blockedPlayer.displayClientMessage(
+                        Component.translatable("devmod.portal.destination_blocked"), true);
+                }
+            }
+            return false;
+        }
+
+        double destX = safePos.getX() + 0.5;
+        double destY = safePos.getY();
+        double destZ = safePos.getZ() + 0.5;
 
         com.devmod.DevMod.LOGGER.info("[Portal] teleportEntity: sameDim={} destPos={} destX={} destY={} destZ={}",
             sameDimension, destPos, destX, destY, destZ);
@@ -479,22 +527,6 @@ public final class CustomPortalBlock extends Block {
             entity.teleportTo(destX, destY, destZ);
             com.devmod.DevMod.LOGGER.info("[Portal] Same-dimension teleport complete");
         } else if (entity instanceof ServerPlayer player) {
-            // Cross-dimension teleport - only for players
-            ResourceLocation destDim = destPortal.dimension().orElse(null);
-            com.devmod.DevMod.LOGGER.info("[Portal] Cross-dimension teleport to dim={}", destDim);
-
-            ServerLevel destLevel = destDim != null
-                ? level.getServer().getLevel(Objects.requireNonNull(ResourceKey.create(
-                    Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDim)))
-                : null;
-
-            if (destLevel == null) {
-                // Falling back to the current level would place the entity at the
-                // destination's coordinates in the wrong dimension.
-                com.devmod.DevMod.LOGGER.warn("[Portal] Destination level {} not found, aborting", destDim);
-                return;
-            }
-
             // Set flag to prevent NexusEventHandler from overriding our position
             player.getPersistentData().putBoolean(TAG_CUSTOM_PORTAL_TELEPORT, true);
 
@@ -516,17 +548,18 @@ public final class CustomPortalBlock extends Block {
             // changeDimension returns the player in the new dimension (or same player if same dim)
             Entity teleported = player.changeDimension(transition);
 
-            if (teleported != null) {
-                com.devmod.DevMod.LOGGER.info("[Portal] Cross-dimension teleport done. Player now at: {} in {}",
-                    teleported.blockPosition(), teleported.level().dimension().location());
-            } else {
+            if (teleported == null) {
                 com.devmod.DevMod.LOGGER.error("[Portal] changeDimension returned null!");
+                return false;
             }
+
+            com.devmod.DevMod.LOGGER.info("[Portal] Cross-dimension teleport done. Player now at: {} in {}",
+                teleported.blockPosition(), teleported.level().dimension().location());
         }
-        // Note: Non-player cross-dimension teleport is blocked in entityInside()
 
         // Play arrival sound at destination
-        level.playSound(null, destPos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.playSound(null, safePos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
+        return true;
     }
 
     /**
@@ -543,20 +576,51 @@ public final class CustomPortalBlock extends Block {
      * @param entity the entity to teleport
      * @param level the current server level
      * @param portal the portal data containing the fixed destination
+     * @return true if the entity was teleported, false if the destination was unusable
      */
-    private void teleportToFixedDestination(Entity entity, ServerLevel level, PortalData portal) {
+    private boolean teleportToFixedDestination(Entity entity, ServerLevel level, PortalData portal) {
         BlockPos destPos = portal.fixedDestination().orElseThrow(
             () -> new IllegalStateException("Portal has no fixed destination"));
         ResourceLocation destDimRL = portal.fixedDestinationDimension().orElse(level.dimension().location());
-
-        double destX = destPos.getX() + 0.5;
-        double destY = destPos.getY();
-        double destZ = destPos.getZ() + 0.5;
 
         boolean sameDimension = destDimRL.equals(level.dimension().location());
 
         com.devmod.DevMod.LOGGER.info("[Portal] Fixed destination teleport: entity={} destPos={} destDim={} sameDim={}",
             entity.getName().getString(), destPos, destDimRL, sameDimension);
+
+        // Resolve the destination level first: the safety check has to read the blocks of
+        // the level the entity actually arrives in.
+        ServerLevel destLevel;
+        if (sameDimension) {
+            destLevel = level;
+        } else if (entity instanceof ServerPlayer) {
+            // Cross-dimension teleport - only for players
+            destLevel = level.getServer().getLevel(
+                Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDimRL)));
+
+            if (destLevel == null) {
+                com.devmod.DevMod.LOGGER.warn("[Portal] Fixed destination level {} not found, aborting", destDimRL);
+                return false;
+            }
+        } else {
+            // Non-player entities cannot cross dimensions via fixed portals
+            com.devmod.DevMod.LOGGER.debug("[Portal] Non-player entity {} cannot use cross-dimension fixed portal",
+                entity.getName().getString());
+            return false;
+        }
+
+        BlockPos safePos = PortalDestinationResolver.resolveSafeDestination(destLevel, destPos).orElse(null);
+        if (safePos == null) {
+            // Retried on every tick while the entity stands in the portal, so log once per second
+            if (level.getGameTime() % 20 == 0) {
+                com.devmod.DevMod.LOGGER.warn("[Portal] Fixed destination {} in {} is blocked, aborting", destPos, destDimRL);
+            }
+            return false;
+        }
+
+        double destX = safePos.getX() + 0.5;
+        double destY = safePos.getY();
+        double destZ = safePos.getZ() + 0.5;
 
         // Play departure sound
         level.playSound(null, entity.getX(), entity.getY(), entity.getZ(),
@@ -566,15 +630,6 @@ public final class CustomPortalBlock extends Block {
             // Same dimension teleport - works for all entity types
             entity.teleportTo(destX, destY, destZ);
         } else if (entity instanceof ServerPlayer player) {
-            // Cross-dimension teleport - only for players
-            ServerLevel destLevel = level.getServer().getLevel(
-                Objects.requireNonNull(ResourceKey.create(Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDimRL)));
-
-            if (destLevel == null) {
-                com.devmod.DevMod.LOGGER.warn("[Portal] Fixed destination level {} not found, aborting", destDimRL);
-                return;
-            }
-
             // Set flag to prevent NexusEventHandler from overriding our position
             player.getPersistentData().putBoolean(TAG_CUSTOM_PORTAL_TELEPORT, true);
 
@@ -589,16 +644,15 @@ public final class CustomPortalBlock extends Block {
                 Objects.requireNonNull(DimensionTransition.DO_NOTHING)
             );
 
-            player.changeDimension(transition);
-        } else {
-            // Non-player entities cannot cross dimensions via fixed portals
-            com.devmod.DevMod.LOGGER.debug("[Portal] Non-player entity {} cannot use cross-dimension fixed portal",
-                entity.getName().getString());
-            return;
+            if (player.changeDimension(transition) == null) {
+                com.devmod.DevMod.LOGGER.error("[Portal] changeDimension returned null!");
+                return false;
+            }
         }
 
         // Play arrival sound at destination
-        level.playSound(null, destPos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
+        level.playSound(null, safePos, Objects.requireNonNull(SoundEvents.ENDERMAN_TELEPORT), SoundSource.PLAYERS, 1.0F, 1.0F);
+        return true;
     }
 
     @Override
