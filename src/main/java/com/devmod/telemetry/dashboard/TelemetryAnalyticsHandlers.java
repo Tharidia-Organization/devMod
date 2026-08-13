@@ -27,12 +27,42 @@ public class TelemetryAnalyticsHandlers {
     private static final String PLAYER_FILTER_CLAUSE = "AND (? IS NULL OR target_name = ?)";
     private static final String ATTACKER_FILTER_CLAUSE = "AND (? IS NULL OR attacker_name = ?)";
 
+    /**
+     * Row cap for bucketed charts: 720 buckets is 12 hours at minute resolution or 30 days at
+     * hour resolution, past which a line chart is unreadable and the payload is pure waste.
+     */
+    private static final int MAX_TIMELINE_BUCKETS = 720;
+
     private static String indentClause(String clause, String indent) {
         String trimmed = clause.stripIndent().trim();
         if (trimmed.isEmpty()) {
             return "";
         }
         return indent + trimmed.replace("\n", "\n" + indent);
+    }
+
+    /**
+     * Caps a bucketed query at its newest buckets, re-sorted ascending for charting.
+     * The cap must be applied to a descending order inside the subquery: a LIMIT on the
+     * ascending query would drop the most recent data instead of the oldest.
+     *
+     * @param bucketedSql The grouped query, without its own ORDER BY / LIMIT
+     * @param bucketColumn The bucket column to order on
+     * @param limit Maximum buckets to return
+     */
+    private static String newestBuckets(String bucketedSql, String bucketColumn, int limit) {
+        return """
+            SELECT * FROM (
+            %s
+            ORDER BY %s DESC
+            LIMIT %d
+            ) AS capped
+            ORDER BY %s
+            """.formatted(bucketedSql, bucketColumn, limit, bucketColumn);
+    }
+
+    private static String newestBuckets(String bucketedSql, String bucketColumn) {
+        return newestBuckets(bucketedSql, bucketColumn, MAX_TIMELINE_BUCKETS);
     }
 
     private record ArenaFilterParams(@Nullable String templateId,
@@ -118,7 +148,7 @@ public class TelemetryAnalyticsHandlers {
             params.get("policyVersion")
         );
         String bucket = interval.contains("hour") ? "minute" : "hour";
-        String sql = """
+        String sql = newestBuckets("""
             SELECT
                 DATE_TRUNC('%s', ts) as time_bucket,
                 COUNT(*) as hits,
@@ -127,8 +157,7 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
             %s
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            """.formatted(bucket, interval, arenaFilter);
+            """.formatted(bucket, interval, arenaFilter), "time_bucket");
         return gson.toJson(server.executeQuery(sql));
     }
 
@@ -153,6 +182,7 @@ public class TelemetryAnalyticsHandlers {
               %s
             GROUP BY body_part
             ORDER BY total_damage DESC
+            LIMIT 15
             """.formatted(interval, arenaFilter);
         return gson.toJson(server.executeQuery(sql));
     }
@@ -264,7 +294,7 @@ public class TelemetryAnalyticsHandlers {
             params.get("policyVersion")
         );
         String bucket = interval.contains("hour") ? "minute" : "hour";
-        String sql = """
+        String sql = newestBuckets("""
             SELECT
                 DATE_TRUNC('%s', ts) as time_bucket,
                 COUNT(*) as total,
@@ -274,8 +304,7 @@ public class TelemetryAnalyticsHandlers {
             WHERE ts >= NOW() - INTERVAL '%s'
             %s
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            """.formatted(bucket, interval, arenaFilter);
+            """.formatted(bucket, interval, arenaFilter), "time_bucket");
         return gson.toJson(server.executeQuery(sql));
     }
 
@@ -305,7 +334,7 @@ public class TelemetryAnalyticsHandlers {
         }
 
         // Outcomes by day
-        String outcomesSql = """
+        String outcomesSql = newestBuckets("""
             SELECT
                 DATE_TRUNC('day', start_ts) as day,
                 outcome,
@@ -314,8 +343,7 @@ public class TelemetryAnalyticsHandlers {
             WHERE start_ts >= ?
             """ + ARENA_FILTER_CLAUSE + """
             GROUP BY day, outcome
-            ORDER BY day
-            """;
+            """, "day");
         var outcomesResult = server.executeQuery(outcomesSql, arenaParamsWithSince(since, filter));
         stats.put("outcomes", outcomesResult);
 
@@ -462,6 +490,7 @@ public class TelemetryAnalyticsHandlers {
             WHERE start_ts >= ?
             GROUP BY dungeon_id
             ORDER BY runs DESC
+            LIMIT 15
             """;
         var byDungeonResult = server.executeQuery(byDungeonSql,
             List.of(server.paramTimestamp(since)));
@@ -541,7 +570,7 @@ public class TelemetryAnalyticsHandlers {
         String bucket = interval.contains("hour") ? "minute" : "hour";
         int bucketSeconds = bucket.equals("minute") ? 60 : 3600;
 
-        String sql = String.join("\n",
+        String sql = newestBuckets(String.join("\n",
             "SELECT",
             "    DATE_TRUNC(?, ts) as time_bucket,",
             "    ROUND(SUM(damage) / ?, 2) as dps,",
@@ -554,9 +583,8 @@ public class TelemetryAnalyticsHandlers {
             "  AND NOT is_miss",
             indentClause(ATTACKER_FILTER_CLAUSE, "  "),
             indentClause(ARENA_FILTER_CLAUSE, "  "),
-            "GROUP BY time_bucket",
-            "ORDER BY time_bucket"
-        );
+            "GROUP BY time_bucket"
+        ), "time_bucket");
         List<TelemetryDashboardServer.SqlParam> paramsList = new ArrayList<>();
         paramsList.add(server.paramString(bucket));
         paramsList.add(server.paramInt(bucketSeconds));
@@ -666,7 +694,7 @@ public class TelemetryAnalyticsHandlers {
         stats.put("weapons", weapons);
 
         // DPS over time
-        var dpsTimeline = server.executeQuery("""
+        var dpsTimeline = server.executeQuery(newestBuckets("""
             SELECT
                 DATE_TRUNC('minute', ts) as time_bucket,
                 ROUND(SUM(damage) / 60.0, 2) as dps
@@ -676,9 +704,7 @@ public class TelemetryAnalyticsHandlers {
               AND NOT is_miss
               %s
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            LIMIT 60
-            """.formatted(player, interval, arenaFilter));
+            """.formatted(player, interval, arenaFilter), "time_bucket", 60));
         stats.put("dpsTimeline", dpsTimeline);
 
         return gson.toJson(stats);
@@ -834,7 +860,7 @@ public class TelemetryAnalyticsHandlers {
         Map<String, Object> perf = new HashMap<>();
 
         // TPS timeline
-        var tpsTimeline = server.executeQuery("""
+        var tpsTimeline = server.executeQuery(newestBuckets("""
             SELECT
                 DATE_TRUNC('minute', ts) as time_bucket,
                 ROUND(AVG(tps), 2) as avg_tps,
@@ -843,12 +869,11 @@ public class TelemetryAnalyticsHandlers {
             FROM performance_samples
             WHERE ts >= NOW() - INTERVAL '%s'
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            """.formatted(interval));
+            """.formatted(interval), "time_bucket"));
         perf.put("tpsTimeline", tpsTimeline);
 
         // Memory timeline
-        var memTimeline = server.executeQuery("""
+        var memTimeline = server.executeQuery(newestBuckets("""
             SELECT
                 DATE_TRUNC('minute', ts) as time_bucket,
                 ROUND(AVG(memory_used_mb), 1) as avg_memory_mb,
@@ -856,12 +881,11 @@ public class TelemetryAnalyticsHandlers {
             FROM performance_samples
             WHERE ts >= NOW() - INTERVAL '%s'
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            """.formatted(interval));
+            """.formatted(interval), "time_bucket"));
         perf.put("memoryTimeline", memTimeline);
 
         // Entity counts
-        var entityTimeline = server.executeQuery("""
+        var entityTimeline = server.executeQuery(newestBuckets("""
             SELECT
                 DATE_TRUNC('minute', ts) as time_bucket,
                 ROUND(AVG(entity_count), 0) as avg_entities,
@@ -869,8 +893,7 @@ public class TelemetryAnalyticsHandlers {
             FROM performance_samples
             WHERE ts >= NOW() - INTERVAL '%s'
             GROUP BY time_bucket
-            ORDER BY time_bucket
-            """.formatted(interval));
+            """.formatted(interval), "time_bucket"));
         perf.put("entityTimeline", entityTimeline);
 
         // Summary stats
@@ -996,7 +1019,8 @@ public class TelemetryAnalyticsHandlers {
             indentClause(PLAYER_FILTER_CLAUSE, "  "),
             indentClause(ARENA_FILTER_CLAUSE, "  "),
             "GROUP BY damage_type",
-            "ORDER BY total_damage DESC"
+            "ORDER BY total_damage DESC",
+            "LIMIT 15"
         );
         List<TelemetryDashboardServer.SqlParam> byTypeParams = new ArrayList<>();
         byTypeParams.add(server.paramTimestamp(since));
@@ -1008,7 +1032,7 @@ public class TelemetryAnalyticsHandlers {
 
         // Damage timeline
         String bucket = interval.contains("hour") ? "minute" : "hour";
-        String timelineSql = String.join("\n",
+        String timelineSql = newestBuckets(String.join("\n",
             "SELECT",
             "    DATE_TRUNC(?, ts) as time_bucket,",
             "    ROUND(SUM(damage), 1) as damage_taken,",
@@ -1018,9 +1042,8 @@ public class TelemetryAnalyticsHandlers {
             "  AND target_name IS NOT NULL",
             indentClause(PLAYER_FILTER_CLAUSE, "  "),
             indentClause(ARENA_FILTER_CLAUSE, "  "),
-            "GROUP BY time_bucket",
-            "ORDER BY time_bucket"
-        );
+            "GROUP BY time_bucket"
+        ), "time_bucket");
         List<TelemetryDashboardServer.SqlParam> timelineParams = new ArrayList<>();
         timelineParams.add(server.paramString(bucket));
         timelineParams.add(server.paramTimestamp(since));

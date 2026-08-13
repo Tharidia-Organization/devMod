@@ -9,11 +9,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +53,16 @@ public class AutosmokeRunner {
 
     /** Optional cleanup executor for residual verification (G5) */
     private ArenaCleanupExecutor.LevelAccess levelAccess;
+
+    /** Main-thread executor used for the world-mutating phases of a full cycle (G5) */
+    private Executor serverExecutor;
+
+    /**
+     * Thread the {@link #serverExecutor} runs its tasks on, learned from the first task it
+     * executes. A bare Executor cannot be asked, and submitting from that thread and then
+     * waiting would deadlock: nothing else drains the queue.
+     */
+    private volatile Thread serverExecutorThread;
 
     /** Origin coordinates for test builds */
     private int testOriginX = 0;
@@ -251,9 +265,10 @@ public class AutosmokeRunner {
 
         LOGGER.debug("Executing full cycle for template '{}'", template.id());
 
-        // Phase 1: Build
-        ArenaBuilder.BuildResult buildResult = arenaBuilder.build(
-            template, testOriginX, testOriginY, testOriginZ);
+        // Phase 1: Build (world mutation - must run on the server thread)
+        ArenaBuilder.BuildResult buildResult = onServerThread(
+            () -> arenaBuilder.build(template, testOriginX, testOriginY, testOriginZ),
+            thresholds.testTimeout());
 
         if (!buildResult.success()) {
             // Build failed - count as rollback
@@ -278,10 +293,11 @@ public class AutosmokeRunner {
         int waveEntityCount = simulateWave(template);
         LOGGER.debug("Wave simulated for '{}': {} entities", template.id(), waveEntityCount);
 
-        // Phase 3: Cleanup
+        // Phase 3: Cleanup (entity removal - must run on the server thread)
         ArenaCleanupExecutor.ArenaBounds bounds = calculateBounds(template);
-        ArenaCleanupExecutor cleanupExecutor = new ArenaCleanupExecutor(levelAccess);
-        CleanupResult cleanupResult = cleanupExecutor.execute(bounds);
+        CleanupResult cleanupResult = onServerThread(
+            () -> new ArenaCleanupExecutor(levelAccess).execute(bounds),
+            thresholds.testTimeout());
 
         // Phase 4: Verify residuals
         entitiesResidual = cleanupResult.entitiesResidual();
@@ -313,6 +329,52 @@ public class AutosmokeRunner {
             template.id(), duration, thresholds.modeName(),
             rollbackCount, entitiesResidual, blocksResidual
         );
+    }
+
+    /**
+     * G5: Runs world-mutating work on the configured server executor and returns its result.
+     *
+     * <p>Blocking on a task submitted to the server executor from the server thread itself
+     * would deadlock, so this never does: once the executor's thread is known (from the probe
+     * submitted by {@link #enableFullCycle} or from an earlier task) work started on that
+     * thread is run inline, which is both deadlock-free and already on the right thread.
+     * Until the probe has run, the wait is bounded by the template's test timeout, so an
+     * executor that never runs the task fails the test instead of hanging the caller.
+     *
+     * @param work The world-mutating work
+     * @param timeout Maximum time to wait for the executor to run and finish the work
+     * @return The work's result
+     */
+    private <T> T onServerThread(Supplier<T> work, Duration timeout) {
+        if (Thread.currentThread() == serverExecutorThread) {
+            return work.get();
+        }
+
+        CompletableFuture<T> future = new CompletableFuture<>();
+        serverExecutor.execute(() -> {
+            serverExecutorThread = Thread.currentThread();
+            try {
+                future.complete(work.get());
+            } catch (Throwable t) {
+                future.completeExceptionally(t);
+            }
+        });
+
+        try {
+            return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted waiting for the server thread", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException runtime) {
+                throw runtime;
+            }
+            throw new IllegalStateException("Server-thread work failed", cause);
+        } catch (TimeoutException e) {
+            throw new IllegalStateException(
+                "Server executor did not complete the task within " + timeout.toMillis() + "ms", e);
+        }
     }
 
     /**
@@ -480,14 +542,20 @@ public class AutosmokeRunner {
      *
      * @param builder The arena builder to use
      * @param levelAccess Level access for cleanup operations
+     * @param serverExecutor The server's main-thread executor; build and cleanup are marshalled
+     *                       onto it, since both mutate the world
      * @param originX Test build origin X
      * @param originY Test build origin Y
      * @param originZ Test build origin Z
      */
     public void enableFullCycle(TemplateArenaBuilder builder, ArenaCleanupExecutor.LevelAccess levelAccess,
-                                 int originX, int originY, int originZ) {
+                                 Executor serverExecutor, int originX, int originY, int originZ) {
         this.arenaBuilder = builder;
         this.levelAccess = levelAccess;
+        this.serverExecutor = Objects.requireNonNull(serverExecutor, "serverExecutor");
+        // Identify the executor's thread ahead of the first cycle so onServerThread() can run
+        // inline instead of submitting-and-waiting when it is already on that thread.
+        serverExecutor.execute(() -> this.serverExecutorThread = Thread.currentThread());
         this.testOriginX = originX;
         this.testOriginY = originY;
         this.testOriginZ = originZ;
@@ -507,7 +575,7 @@ public class AutosmokeRunner {
      * Returns true if full cycle testing is enabled.
      */
     public boolean isFullCycleEnabled() {
-        return fullCycleEnabled && arenaBuilder != null && levelAccess != null;
+        return fullCycleEnabled && arenaBuilder != null && levelAccess != null && serverExecutor != null;
     }
 
     /**

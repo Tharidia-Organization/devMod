@@ -3,7 +3,6 @@ package com.devmod.arena.builder;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.locks.LockSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +16,14 @@ public class ChunkLoadingManager {
     // DD9: Ticket type for arena builds - used for chunk force-loading
     public static final String TICKET_TYPE_ARENA_BUILD = "arena_build";
 
-    // DD9: Polling interval (timeout is dynamic via getDefaultTimeoutMs())
-    private static final long POLL_INTERVAL_NS = 10_000_000; // 10ms
-
     // Retry configuration
     private static final int DEFAULT_MAX_RETRIES = 3;
-    private static final long INITIAL_RETRY_DELAY_MS = 100;
-    private static final double RETRY_BACKOFF_MULTIPLIER = 2.0;
 
+    /**
+     * Owned by the single thread that drives a build: every call site builds its own manager
+     * for one builder (ArenaCommandEvents.createBuilder, ArenaSetupManager.createTemplateBuilder),
+     * so this needs no synchronization. Sharing a manager across threads would.
+     */
     private final Set<Long> loadedChunks = new HashSet<>();
     private final ChunkLoader chunkLoader;
     private final ChunkStatusChecker statusChecker;
@@ -74,16 +73,21 @@ public class ChunkLoadingManager {
             }
         }
 
-        // 2. Poll until all chunks are FULL or timeout
+        // 2. Verify every chunk reached FULL. requestLoad is synchronous (see ChunkLoader),
+        // so waiting here cannot help: the caller is usually the server thread, and parking
+        // it would block the very thread that advances chunk loading. Re-request instead.
         for (long packedPos : required) {
             int chunkX = unpackX(packedPos);
             int chunkZ = unpackZ(packedPos);
 
-            while (System.currentTimeMillis() < deadline) {
-                if (statusChecker.isFull(chunkX, chunkZ)) {
-                    break;
+            if (!statusChecker.isFull(chunkX, chunkZ) && System.currentTimeMillis() < deadline) {
+                try {
+                    chunkLoader.requestLoad(chunkX, chunkZ);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to request chunk ({}, {}): {}", chunkX, chunkZ, e.getMessage());
+                    releaseAllTickets();
+                    return ChunkLoadResult.error("Failed to request chunk: " + e.getMessage());
                 }
-                LockSupport.parkNanos(POLL_INTERVAL_NS);
             }
 
             // Final check
@@ -116,7 +120,10 @@ public class ChunkLoadingManager {
     }
 
     /**
-     * Ensures chunks are loaded with retry logic and exponential backoff.
+     * Ensures chunks are loaded, retrying failed attempts.
+     *
+     * <p>Retries run back to back: the loader is synchronous, so a delay between attempts
+     * cannot make loading progress, and on the server thread it would prevent it.
      *
      * @param minX Minimum chunk X
      * @param minZ Minimum chunk Z
@@ -128,20 +135,11 @@ public class ChunkLoadingManager {
      */
     public ChunkLoadResult ensureChunksLoadedWithRetry(int minX, int minZ, int maxX, int maxZ,
                                                        int timeoutMs, int maxRetries) {
-        long retryDelayMs = INITIAL_RETRY_DELAY_MS;
         ChunkLoadResult lastResult = null;
 
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             if (attempt > 0) {
-                LOGGER.info("Retrying chunk load (attempt {}/{}), waiting {}ms...",
-                    attempt + 1, maxRetries + 1, retryDelayMs);
-                try {
-                    Thread.sleep(retryDelayMs);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return ChunkLoadResult.error("Chunk loading interrupted during retry");
-                }
-                retryDelayMs = (long) (retryDelayMs * RETRY_BACKOFF_MULTIPLIER);
+                LOGGER.info("Retrying chunk load (attempt {}/{})...", attempt + 1, maxRetries + 1);
             }
 
             lastResult = ensureChunksLoaded(minX, minZ, maxX, maxZ, timeoutMs);
@@ -215,6 +213,11 @@ public class ChunkLoadingManager {
 
     // === Functional Interfaces ===
 
+    /**
+     * Loads a chunk. Implementations must load synchronously - the manager checks status
+     * immediately after and never waits, since the caller is typically the server thread
+     * and blocking it would stop chunk loading from progressing at all.
+     */
     @FunctionalInterface
     public interface ChunkLoader {
         void requestLoad(int chunkX, int chunkZ);

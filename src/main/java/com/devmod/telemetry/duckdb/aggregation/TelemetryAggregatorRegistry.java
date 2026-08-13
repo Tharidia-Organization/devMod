@@ -68,7 +68,12 @@ public class TelemetryAggregatorRegistry {
     // STATISTICS
     // ============================================
 
-    private final AtomicLong totalEventsAggregated = new AtomicLong(0);
+    /**
+     * Events aggregated by aggregators that have since been removed. Live aggregators keep
+     * their own count - the registry never sees individual events - so the total is this plus
+     * whatever the live ones report.
+     */
+    private final AtomicLong retiredEventsAggregated = new AtomicLong(0);
     private final AtomicLong totalEventsFlushed = new AtomicLong(0);
     private final AtomicLong totalFlushCycles = new AtomicLong(0);
 
@@ -131,6 +136,7 @@ public class TelemetryAggregatorRegistry {
         for (TelemetryAggregator agg : aggregators.values()) {
             allEvents.addAll(agg.forceFlush());
             agg.shutdown();
+            retiredEventsAggregated.addAndGet(agg.getEventsAggregated());
         }
 
         // Write all pending events
@@ -179,6 +185,7 @@ public class TelemetryAggregatorRegistry {
         if (agg != null) {
             List<AggregatedEvent> events = agg.forceFlush();
             agg.shutdown();
+            retiredEventsAggregated.addAndGet(agg.getEventsAggregated());
             writeAggregatedEvents(events);
 
             LOGGER.debug("[AggregatorRegistry] Player {} left, flushed {} events",
@@ -332,10 +339,14 @@ public class TelemetryAggregatorRegistry {
     }
 
     /**
-     * Get total events aggregated.
+     * Get total events aggregated, across live and departed players.
      */
     public long getTotalEventsAggregated() {
-        return totalEventsAggregated.get();
+        long total = retiredEventsAggregated.get();
+        for (TelemetryAggregator agg : aggregators.values()) {
+            total += agg.getEventsAggregated();
+        }
+        return total;
     }
 
     /**
@@ -373,7 +384,7 @@ public class TelemetryAggregatorRegistry {
     public RegistryStats getStats() {
         return new RegistryStats(
             aggregators.size(),
-            totalEventsAggregated.get(),
+            getTotalEventsAggregated(),
             totalEventsFlushed.get(),
             totalFlushCycles.get(),
             getEstimatedMemoryUsage(),

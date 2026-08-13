@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
@@ -61,6 +62,9 @@ public class TelemetryAggregator {
 
     private volatile boolean active = true;
     private Instant lastFlushTime;
+
+    /** Events folded into a window; the denominator of the aggregation ratio. */
+    private final AtomicLong eventsAggregated = new AtomicLong(0);
 
     // ============================================
     // CONTEXT
@@ -128,6 +132,7 @@ public class TelemetryAggregator {
 
         // Aggregate
         combatWindow.recordHit(damage, isKill, isCritical, weapon, targetType);
+        eventsAggregated.incrementAndGet();
 
         return false;  // Aggregated, don't write immediately
     }
@@ -138,6 +143,7 @@ public class TelemetryAggregator {
     public void processMiss() {
         if (!active) return;
         combatWindow.recordMiss();
+        eventsAggregated.incrementAndGet();
     }
 
     /**
@@ -158,6 +164,7 @@ public class TelemetryAggregator {
 
         // Aggregate
         abilityWindow.recordAbility(abilityType, success, staminaCost, damageNegated);
+        eventsAggregated.incrementAndGet();
 
         return false;
     }
@@ -193,6 +200,7 @@ public class TelemetryAggregator {
         if (!active) return true;
 
         heatmapWindow.recordPosition(x, y, z, type);
+        eventsAggregated.incrementAndGet();
 
         return false;
     }
@@ -416,6 +424,14 @@ public class TelemetryAggregator {
 
     public Instant getLastFlushTime() {
         return lastFlushTime;
+    }
+
+    /**
+     * Number of events folded into aggregation windows over this aggregator's lifetime.
+     * Events that bypass aggregation (XP, snapshots, LVC-only events) are not counted.
+     */
+    public long getEventsAggregated() {
+        return eventsAggregated.get();
     }
 
     public UUID getSessionId() {

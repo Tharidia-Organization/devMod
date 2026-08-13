@@ -1,6 +1,7 @@
 package com.devmod.arena.integration;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 import com.devmod.arena.builder.ArenaBuilder;
 
@@ -199,6 +201,7 @@ public class BatchBlockPlacer implements ArenaBuilder.BlockPlacer {
         int chunkZ = SectionPos.blockToSectionCoord(first.z());
 
         LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+        Collection<Map.Entry<Heightmap.Types, Heightmap>> heightmaps = chunk.getHeightmaps();
 
         for (QueuedBlock block : blocks) {
             mutablePos.set(block.x(), block.y(), block.z());
@@ -229,8 +232,13 @@ public class BatchBlockPlacer implements ArenaBuilder.BlockPlacer {
                 chunk.removeBlockEntity(immutablePos);
             }
 
-            // The raw section write bypasses Level.setBlock, so lighting and client
-            // sync have to be requested explicitly.
+            // The raw section write bypasses Level.setBlock, so the bookkeeping it would
+            // have done has to be requested explicitly. onPlace/onRemove and neighbour
+            // updates stay skipped on purpose: they are what schedules fluid and
+            // falling-block ticks, and arena hazards are meant to stay static.
+            for (Map.Entry<Heightmap.Types, Heightmap> heightmap : heightmaps) {
+                heightmap.getValue().update(localX, block.y(), localZ, blockState);
+            }
             level.getChunkSource().getLightEngine().checkBlock(immutablePos);
             level.getChunkSource().blockChanged(immutablePos);
         }
