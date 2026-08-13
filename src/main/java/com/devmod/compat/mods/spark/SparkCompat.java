@@ -75,7 +75,9 @@ public class SparkCompat implements CompatModule {
             sparkInstance = getMethod.invoke(null);
 
             if (sparkInstance == null) {
-                LOGGER.debug("[Compat:spark] Spark API not yet available");
+                // No retry: TPS/MSPT stay unavailable for this session, so warn rather than
+                // hide it at DEBUG.
+                LOGGER.warn("[Compat:spark] Spark API not yet available - TPS/MSPT reporting disabled");
                 return;
             }
 
@@ -117,6 +119,29 @@ public class SparkCompat implements CompatModule {
     public void initClient() {
         if (!available) return;
         LOGGER.debug("[Compat:spark] Client initialization complete");
+    }
+
+    @Override
+    public void shutdown() {
+        // sparkInstance transitively holds the MinecraftServer; keeping it across a
+        // singleplayer world exit would retain the whole previous server.
+        sparkInstance = null;
+        sparkClass = null;
+        statisticWindowClass = null;
+        tpsWindowClass = null;
+        msptWindowClass = null;
+        tpsMethod = null;
+        msptMethod = null;
+        pollMethod = null;
+        TPS_SECONDS_10 = null;
+        TPS_MINUTES_1 = null;
+        TPS_MINUTES_5 = null;
+        TPS_MINUTES_15 = null;
+        MSPT_SECONDS_10 = null;
+        MSPT_MINUTES_1 = null;
+        apiAvailable = false;
+        available = false;
+        initialized = false;
     }
 
     @Override

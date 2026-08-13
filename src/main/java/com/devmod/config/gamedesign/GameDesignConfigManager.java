@@ -3,12 +3,16 @@ package com.devmod.config.gamedesign;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
@@ -19,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 
 import com.devmod.util.ConfigPaths;
 
@@ -42,7 +47,7 @@ public class GameDesignConfigManager {
     private final Map<UUID, InstanceOverride> instanceOverrides = new ConcurrentHashMap<>();
 
     // Change listeners
-    private final List<Consumer<GameDesignConfig>> changeListeners = new ArrayList<>();
+    private final List<Consumer<GameDesignConfig>> changeListeners = new CopyOnWriteArrayList<>();
 
     // Dirty flag for lazy save
     private boolean dirty = false;
@@ -147,6 +152,28 @@ public class GameDesignConfigManager {
             }
         } catch (IOException e) {
             LOGGER.error("[GameDesignConfig] Failed to load config", e);
+        } catch (JsonParseException e) {
+            // GSON.fromJson throws unchecked on malformed JSON; load() runs from server start
+            // handlers, so letting it escape would abort startup.
+            LOGGER.error("[GameDesignConfig] Malformed JSON in {}: {} - keeping defaults",
+                configPath, e.getMessage());
+            quarantine(configPath);
+        }
+    }
+
+    /**
+     * Move an unparseable config out of the way so a fresh one can be written without
+     * destroying the user's file.
+     */
+    private void quarantine(Path configPath) {
+        try {
+            String timestamp = LocalDateTime.now(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            Path target = configPath.resolveSibling(configPath.getFileName() + "." + timestamp + ".corrupt");
+            Files.move(configPath, target);
+            LOGGER.warn("[GameDesignConfig] Moved unparseable config to {}", target);
+        } catch (IOException e) {
+            LOGGER.warn("[GameDesignConfig] Could not set aside unparseable config: {}", e.getMessage());
         }
     }
 
@@ -161,7 +188,17 @@ public class GameDesignConfigManager {
                 Files.createDirectories(parent);
             }
             String json = GSON.toJson(getGlobalConfig());
-            Files.writeString(configPath, json);
+
+            if (Files.exists(configPath)) {
+                Files.copy(configPath, configPath.resolveSibling(configPath.getFileName() + ".bak"),
+                    StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            // Write to a temp file and swap so a crash mid-write cannot truncate the config.
+            Path temp = configPath.resolveSibling(configPath.getFileName() + ".tmp");
+            Files.writeString(temp, json);
+            Files.move(temp, configPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+
             dirty = false;
             LOGGER.debug("[GameDesignConfig] Saved configuration");
         } catch (IOException e) {
@@ -226,7 +263,7 @@ public class GameDesignConfigManager {
 
     private void notifyListeners() {
         GameDesignConfig current = getGlobalConfig();
-        for (Consumer<GameDesignConfig> listener : List.copyOf(changeListeners)) {
+        for (Consumer<GameDesignConfig> listener : changeListeners) {
             try {
                 listener.accept(current);
             } catch (Exception e) {

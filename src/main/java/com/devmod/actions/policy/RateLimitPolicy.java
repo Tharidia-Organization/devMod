@@ -48,6 +48,12 @@ public final class RateLimitPolicy implements ActionPolicy {
             return false;
         }
 
+        /** A full bucket is indistinguishable from a fresh one, so it can be discarded. */
+        synchronized boolean isIdle() {
+            refill();
+            return tokens >= maxTokens;
+        }
+
         private void refill() {
             long now = System.nanoTime();
             long elapsed = now - lastRefillNanos;
@@ -57,6 +63,9 @@ public final class RateLimitPolicy implements ActionPolicy {
             }
         }
     }
+
+    /** Above this many live buckets, idle ones are swept before adding more. */
+    private static final int EVICTION_THRESHOLD = 256;
 
     private final Map<BucketKey, TokenBucket> buckets = new ConcurrentHashMap<>();
 
@@ -74,6 +83,9 @@ public final class RateLimitPolicy implements ActionPolicy {
         }
 
         BucketKey key = new BucketKey(player.getUUID(), spec.id());
+        if (buckets.size() > EVICTION_THRESHOLD && !buckets.containsKey(key)) {
+            evictIdleBuckets();
+        }
         TokenBucket bucket = buckets.computeIfAbsent(key, k -> new TokenBucket(rateLimit));
 
         if (bucket.tryConsume()) {
@@ -94,6 +106,14 @@ public final class RateLimitPolicy implements ActionPolicy {
     @Override
     public int priority() {
         return 300;
+    }
+
+    /**
+     * Drops fully refilled buckets. Removing one is behaviourally a no-op: the next
+     * invocation recreates it in the same (full) state.
+     */
+    private void evictIdleBuckets() {
+        buckets.values().removeIf(TokenBucket::isIdle);
     }
 
     /**

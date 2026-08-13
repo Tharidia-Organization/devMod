@@ -3,10 +3,11 @@ package com.devmod.testing;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -24,9 +25,10 @@ public class ModDiscoveryService {
 
     public static final ModDiscoveryService INSTANCE = new ModDiscoveryService();
 
-    // Discovered mod information
-    private final Map<String, ModInfo> discoveredMods = new LinkedHashMap<>();
-    private boolean hasScanned = false;
+    // Discovered mod information. Reachable from a ForkJoinPool task on client login as well
+    // as from the client thread via ensureScanned(), so both the map and the flag must be safe.
+    private final Map<String, ModInfo> discoveredMods = new ConcurrentHashMap<>();
+    private final AtomicBoolean hasScanned = new AtomicBoolean(false);
 
     // Mod categories for test prioritization
     public enum ModCategory {
@@ -113,8 +115,8 @@ public class ModDiscoveryService {
      * Scan all loaded mods and discover their content.
      * Call this after registries are frozen (during world load or later).
      */
-    public void scanMods() {
-        if (hasScanned) return;
+    public synchronized void scanMods() {
+        if (hasScanned.get()) return;
 
         LOGGER.info("Starting mod discovery scan...");
         long startTime = System.currentTimeMillis();
@@ -154,7 +156,7 @@ public class ModDiscoveryService {
                 info.getDisplayName(), modId, info.items.size(), info.entities.size());
         }
 
-        hasScanned = true;
+        hasScanned.set(true);
         long elapsed = System.currentTimeMillis() - startTime;
         LOGGER.info("Mod discovery complete: {} mods found in {}ms", discoveredMods.size(), elapsed);
     }
@@ -361,7 +363,7 @@ public class ModDiscoveryService {
     }
 
     private void ensureScanned() {
-        if (!hasScanned) {
+        if (!hasScanned.get()) {
             scanMods();
         }
     }
@@ -369,8 +371,8 @@ public class ModDiscoveryService {
     /**
      * Force rescan (useful after world load).
      */
-    public void rescan() {
-        hasScanned = false;
+    public synchronized void rescan() {
+        hasScanned.set(false);
         discoveredMods.clear();
         scanMods();
     }

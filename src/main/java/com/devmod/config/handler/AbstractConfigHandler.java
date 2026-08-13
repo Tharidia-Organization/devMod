@@ -26,6 +26,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
@@ -59,6 +63,10 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
 
     // Global stats storage
     protected final Map<Item, S> globalStats = new ConcurrentHashMap<>();
+
+    // Raw JSON for entries whose item id is not in the registry (e.g. an optional mod is
+    // absent this launch). Kept verbatim and merged back on save so the entries survive.
+    protected final Map<String, JsonElement> unresolvedEntries = new ConcurrentHashMap<>();
 
     // Configuration
     protected Path dataDirectory;
@@ -290,25 +298,56 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
         }
 
         try (Reader reader = Files.newBufferedReader(jsonFile)) {
-            Map<String, S> loaded = gson.fromJson(reader, getMapType());
+            JsonObject loaded = gson.fromJson(reader, JsonObject.class);
             if (loaded == null) {
                 logger.warn("[{}] Empty or invalid config file", getHandlerName());
                 return;
             }
 
             globalStats.clear();
+            unresolvedEntries.clear();
             int count = 0;
-            for (Map.Entry<String, S> entry : loaded.entrySet()) {
+            for (Map.Entry<String, JsonElement> entry : loaded.entrySet()) {
                 ResourceLocation id = ResourceLocation.tryParse(entry.getKey());
                 if (id != null && BuiltInRegistries.ITEM.containsKey(id)) {
                     Item item = BuiltInRegistries.ITEM.get(id);
-                    globalStats.put(item, validateAndClamp(entry.getValue()));
+                    globalStats.put(item, validateAndClamp(gson.fromJson(entry.getValue(), getStatsClass())));
                     count++;
+                } else {
+                    unresolvedEntries.put(entry.getKey(), entry.getValue());
+                    logger.warn("[{}] Item '{}' is not in the registry; keeping its config entry untouched",
+                        getHandlerName(), entry.getKey());
                 }
             }
-            logger.info("[{}] Loaded {} global configs", getHandlerName(), count);
+            logger.info("[{}] Loaded {} global configs ({} preserved for unknown items)",
+                getHandlerName(), count, unresolvedEntries.size());
         } catch (IOException e) {
             logger.error("[{}] Failed to load configs", getHandlerName(), e);
+        } catch (JsonParseException e) {
+            // fromJson throws unchecked on malformed JSON; load() runs from server start
+            // handlers, so letting it escape would abort startup.
+            logger.error("[{}] Could not parse {}: {} - falling back to defaults",
+                getHandlerName(), jsonFile, e.getMessage());
+            globalStats.clear();
+            unresolvedEntries.clear();
+            if (e instanceof JsonSyntaxException) {
+                quarantine(jsonFile);
+            }
+        }
+    }
+
+    /**
+     * Move a config file that could not be parsed out of the way so a fresh one can be
+     * written without destroying the original.
+     */
+    protected void quarantine(Path file) {
+        try {
+            String timestamp = ZonedDateTime.now(ZoneId.systemDefault()).format(BACKUP_DATE_FORMAT);
+            Path target = file.resolveSibling(file.getFileName() + "." + timestamp + ".corrupt");
+            Files.move(file, target);
+            logger.warn("[{}] Moved unparseable config to {}", getHandlerName(), target);
+        } catch (IOException e) {
+            logger.warn("[{}] Could not set aside unparseable config {}", getHandlerName(), file, e);
         }
     }
 
@@ -327,10 +366,17 @@ public abstract class AbstractConfigHandler<S extends IItemStats>
         }
 
         // Build map with string keys
-        Map<String, S> toSave = new java.util.HashMap<>();
+        JsonObject toSave = new JsonObject();
         for (Map.Entry<Item, S> entry : globalStats.entrySet()) {
             ResourceLocation id = BuiltInRegistries.ITEM.getKey(entry.getKey());
-            toSave.put(id.toString(), entry.getValue());
+            toSave.add(id.toString(), gson.toJsonTree(entry.getValue(), getStatsClass()));
+        }
+
+        // Re-emit entries for items that were not in the registry at load time.
+        for (Map.Entry<String, JsonElement> entry : unresolvedEntries.entrySet()) {
+            if (!toSave.has(entry.getKey())) {
+                toSave.add(entry.getKey(), entry.getValue());
+            }
         }
 
         try (Writer writer = Files.newBufferedWriter(jsonFile)) {

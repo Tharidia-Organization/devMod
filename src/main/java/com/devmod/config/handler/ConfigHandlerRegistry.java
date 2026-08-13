@@ -2,9 +2,11 @@ package com.devmod.config.handler;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.annotation.Nullable;
 
@@ -30,6 +32,14 @@ public final class ConfigHandlerRegistry {
 
     private static final Map<Class<? extends IItemStats>, IConfigHandler<?>> HANDLERS = new ConcurrentHashMap<>();
 
+    /**
+     * Handlers in registration order. getForItem() must not iterate HANDLERS: that is a
+     * ConcurrentHashMap keyed on Class, whose iteration order follows identity hash codes and
+     * therefore changes between JVM launches. Registration order is the resolution priority —
+     * catch-all handlers (Fuel, Usable, which accept any non-empty stack) must be registered last.
+     */
+    private static final List<IConfigHandler<?>> ORDERED_HANDLERS = new CopyOnWriteArrayList<>();
+
     private ConfigHandlerRegistry() {} // Utility class
 
     /**
@@ -45,6 +55,7 @@ public final class ConfigHandlerRegistry {
             return;
         }
         HANDLERS.put(statsClass, handler);
+        ORDERED_HANDLERS.add(handler);
         LOGGER.debug("Registered config handler for {}", statsClass.getSimpleName());
     }
 
@@ -65,11 +76,11 @@ public final class ConfigHandlerRegistry {
      * Get a handler that applies to the given item.
      *
      * @param stack the item stack
-     * @return the first applicable handler, or null if none
+     * @return the first applicable handler in registration order, or null if none
      */
     @Nullable
     public static IConfigHandler<?> getForItem(ItemStack stack) {
-        for (IConfigHandler<?> handler : HANDLERS.values()) {
+        for (IConfigHandler<?> handler : ORDERED_HANDLERS) {
             if (handler.appliesTo(stack)) {
                 return handler;
             }
@@ -129,6 +140,7 @@ public final class ConfigHandlerRegistry {
      */
     public static void reset() {
         HANDLERS.clear();
+        ORDERED_HANDLERS.clear();
         LOGGER.debug("Config handler registry reset");
     }
 

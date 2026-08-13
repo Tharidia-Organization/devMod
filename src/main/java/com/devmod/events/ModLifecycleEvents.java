@@ -285,6 +285,15 @@ public class ModLifecycleEvents {
         LOGGER.info("[DevMod] Server stopping, cleaning up...");
         boolean testerModulesEnabled = TesterModality.isEnabled();
 
+        // Compat modules cache other mods' objects — some transitively reach the
+        // MinecraftServer — so they must be torn down or a singleplayer rejoin
+        // operates on the previous world's state.
+        try {
+            com.devmod.compat.CompatRegistry.shutdown();
+        } catch (Exception | LinkageError e) {
+            LOGGER.error("[DevMod] Failed to shut down compat modules", e);
+        }
+
         // Save quest progress for all online players
         try {
             var server = event.getServer();

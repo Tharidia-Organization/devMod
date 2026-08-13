@@ -272,7 +272,16 @@ public final class PathSanitizer {
                 }
                 result = result.resolve(sanitized);
             }
-            return result.normalize();
+            Path normalized = result.normalize();
+
+            // sanitizeFilename's character allowlist admits "." and "..", so the normalized
+            // result can still escape the base directory - re-check it.
+            if (!normalized.toAbsolutePath().normalize()
+                    .startsWith(baseDir.toAbsolutePath().normalize())) {
+                LOGGER.warn("Sub-path escaped base directory: {}", normalized);
+                return null;
+            }
+            return normalized;
         } catch (Exception e) {
             LOGGER.warn("Failed to build safe path: {}", e.getMessage());
             return null;

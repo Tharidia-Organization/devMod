@@ -114,8 +114,13 @@ public final class DatapackIO {
                         String target = Objects.requireNonNull(targetNode.getAsString(), "target");
                         ResourceLocation id = ResourceLocation.tryParse(target);
                         if (id == null) continue;
-                        ArmorStats stats = parseArmor(json.getAsJsonObject("values"));
                         Item armorItem = ItemLookup.getItem(id);
+                        if (armorItem == null) {
+                            LOGGER.warn("[DatapackIO] Unknown item '{}' in armor file {}, skipping",
+                                target, file.getFileName());
+                            continue;
+                        }
+                        ArmorStats stats = parseArmor(json.getAsJsonObject("values"));
                         ArmorConfigHandler.INSTANCE.setGlobalStats(armorItem, stats);
                         imported++;
                     } catch (Exception e) {
@@ -140,8 +145,13 @@ public final class DatapackIO {
                         String target = Objects.requireNonNull(targetNode.getAsString(), "target");
                         ResourceLocation id = ResourceLocation.tryParse(target);
                         if (id == null) continue;
-                        WeaponStats stats = parseWeapon(json.getAsJsonObject("values"));
                         Item weaponItem = ItemLookup.getItem(id);
+                        if (weaponItem == null) {
+                            LOGGER.warn("[DatapackIO] Unknown item '{}' in weapon file {}, skipping",
+                                target, file.getFileName());
+                            continue;
+                        }
+                        WeaponStats stats = parseWeapon(json.getAsJsonObject("values"));
                         WeaponConfigHandler.INSTANCE.setGlobalStats(weaponItem, stats);
                         imported++;
                     } catch (Exception e) {

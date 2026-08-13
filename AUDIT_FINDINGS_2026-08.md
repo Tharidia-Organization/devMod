@@ -8,6 +8,50 @@ verify before acting.
 
 Status legend: **FIXED** · **TODO** · **REJECTED** (checked, not a real bug)
 
+## Second pass (same month)
+
+Nine agents, one per subsystem on disjoint files, each instructed to verify a
+finding against the source before touching it and to refuse anything whose
+intent was ambiguous. Roughly 95 of the ~110 open findings were fixed; the rest
+are recorded as decisions below rather than guessed at. Everything compiles and
+the suite is green.
+
+Fixes worth calling out because they changed behaviour players can feel:
+
+- `BodyPartHierarchy` applied `localOffset` twice, so every body-part OBB sat
+  above the entity and melee hit detection always fell back to the pitch
+  heuristic. Head and leg multipliers now actually fire.
+- With aggregation on (the default) no player hit ever reached `combat_hits`,
+  which is the table six analytics endpoints read. Raw rows are written again.
+- All DuckDB access is now serialized on the manager's existing lock; the batch
+  writer previously drove transactions on the same connection dashboard threads
+  were querying.
+- `ExecutionSystem` decremented its timer twice per tick, so finishers ran at
+  double speed and left ~1s of leftover damage resistance.
+- Transport cores are now creator-or-op only, party-teleport sessions can only
+  be cancelled by their members, and the 3s arrival cooldown fires for the first
+  time in any shipped build.
+- Challenge token/prestige payouts, which had no caller, are wired to quest end.
+- Devil's Bargain FRAILTY uses a transient modifier instead of mutating the
+  persisted max-health base value, and is reverted on quest end.
+
+Deliberate non-fixes, with the reasoning kept so they are not re-litigated:
+
+- `findPortalContaining` resolves by nearest centre rather than true interior
+  membership: it runs per tick per portal block, so membership testing needs a
+  cache first.
+- Actions V2 (`FeedbackStep`/`TelemetryStep` unreachable on abort, empty
+  precondition map, handlers typed as `Consumer` so failures report OK,
+  shadow mode double-executing) is latent — the engine has no production call
+  site. These are prerequisites for enabling it, not live bugs.
+- `AreaSnapshotRestoreTask` materialises the full volume three times on the
+  server thread; fixing it changes `startRestore`'s contract.
+- `NexusFoundationBuilder`: the staggered path already exists and is the
+  default; only `/devmod nexus rebuild` bypasses it, and repointing it changes
+  a synchronous command's contract.
+- `TesterProgress` and `DamageStatistics` persist the same counters to two
+  files; whichever loads last wins. Picking an owner is a data-model decision.
+
 ---
 
 ## Build / static analysis

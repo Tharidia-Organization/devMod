@@ -1,9 +1,9 @@
 package com.devmod.config;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
@@ -48,7 +48,7 @@ public final class ConfigValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigValidator.class);
 
     /** Registered validators by subsystem name */
-    private static final Map<String, Supplier<List<ValidationError>>> validators = new HashMap<>();
+    private static final Map<String, Supplier<List<ValidationError>>> validators = new ConcurrentHashMap<>();
 
     /** Last validation result cache */
     @Nullable

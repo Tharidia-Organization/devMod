@@ -166,7 +166,9 @@ public abstract class BaseCompatModule implements CompatModule {
             initState = InitState.COMMON_COMPLETE;
             logger.info("[Compat:{}] {} v{} initialized successfully",
                 modId, displayName, Compat.getVersion(modId));
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
+            // LinkageError (NoClassDefFoundError) is the normal failure mode when reflecting
+            // on an absent mod's class and is not an Exception.
             available = false;
             initError = e.getMessage();
             initState = InitState.FAILED;
@@ -190,7 +192,7 @@ public abstract class BaseCompatModule implements CompatModule {
             doInitClient();
             initState = InitState.CLIENT_COMPLETE;
             logger.debug("[Compat:{}] Client initialization complete", modId);
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             logger.error("[Compat:{}] Client initialization failed: {}", modId, e.getMessage(), e);
         }
     }
@@ -201,7 +203,7 @@ public abstract class BaseCompatModule implements CompatModule {
 
         try {
             doRegisterActions(registry);
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             logger.error("[Compat:{}] Failed to register actions: {}", modId, e.getMessage(), e);
         }
     }
@@ -210,7 +212,7 @@ public abstract class BaseCompatModule implements CompatModule {
     public void shutdown() {
         try {
             doShutdown();
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             logger.warn("[Compat:{}] Error during shutdown: {}", modId, e.getMessage());
         } finally {
             clearCaches();
@@ -335,7 +337,7 @@ public abstract class BaseCompatModule implements CompatModule {
     protected Method getMethod(@Nullable Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         if (clazz == null) return null;
 
-        String key = clazz.getName() + "#" + methodName;
+        String key = cacheKey(clazz, methodName, "", parameterTypes);
         // Wrap in Optional so null results (method not found) are cached properly —
         // ConcurrentHashMap.computeIfAbsent silently ignores null returns (JDK-8161372).
         return methodCache.computeIfAbsent(key,
@@ -354,9 +356,22 @@ public abstract class BaseCompatModule implements CompatModule {
     protected Method getDeclaredMethod(@Nullable Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         if (clazz == null) return null;
 
-        String key = clazz.getName() + "#" + methodName + "#declared";
+        String key = cacheKey(clazz, methodName, "#declared", parameterTypes);
         return methodCache.computeIfAbsent(key,
             k -> Optional.ofNullable(Compat.getDeclaredMethod(clazz, methodName, parameterTypes))).orElse(null);
+    }
+
+    /**
+     * Parameter types are part of the key: without them the first overload looked up would
+     * satisfy every later lookup of a different overload with the same name.
+     */
+    private static String cacheKey(Class<?> clazz, String methodName, String suffix,
+                                   Class<?>... parameterTypes) {
+        StringBuilder key = new StringBuilder(clazz.getName()).append('#').append(methodName);
+        for (Class<?> parameterType : parameterTypes) {
+            key.append('(').append(parameterType == null ? "null" : parameterType.getName()).append(')');
+        }
+        return key.append(suffix).toString();
     }
 
     /**

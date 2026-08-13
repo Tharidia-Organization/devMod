@@ -3,7 +3,6 @@ package com.devmod.config;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,6 +35,7 @@ import com.devmod.arena.policy.ArenaPolicy.SeasonPassOverrides;
 import com.devmod.arena.policy.ArenaPolicy.StyleRankOverrides;
 import com.devmod.arena.policy.ArenaPolicy.TensionOverrides;
 import com.devmod.arena.policy.ArenaPolicy.WaveOverrides;
+import com.devmod.util.ConfigPaths;
 
 public class GameplayOverridesManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GameplayOverridesManager.class);
@@ -46,12 +46,16 @@ public class GameplayOverridesManager {
 
     public static final GameplayOverridesManager INSTANCE = new GameplayOverridesManager();
 
-    private final Path overridesDir;
     private final Map<String, GameplayOverrides> loadedOverrides = new ConcurrentHashMap<>();
     private long lastReloadTime = 0;
 
-    private GameplayOverridesManager() {
-        this.overridesDir = Paths.get("config", "devmod", "overrides");
+    private GameplayOverridesManager() {}
+
+    /**
+     * Resolved lazily: FMLPaths is not populated when this singleton's class is initialized.
+     */
+    private Path overridesDir() {
+        return ConfigPaths.getConfigDir().resolve("overrides");
     }
 
     /**
@@ -59,10 +63,10 @@ public class GameplayOverridesManager {
      */
     public void initialize() {
         try {
-            Files.createDirectories(overridesDir);
+            Files.createDirectories(overridesDir());
 
             // Create example file if directory is empty
-            try (var files = Files.list(overridesDir)) {
+            try (var files = Files.list(overridesDir())) {
                 if (files.findAny().isEmpty()) {
                     createExampleFiles();
                 }
@@ -83,11 +87,11 @@ public class GameplayOverridesManager {
         lastReloadTime = System.currentTimeMillis();
 
         try {
-            if (!Files.exists(overridesDir)) {
+            if (!Files.exists(overridesDir())) {
                 return;
             }
 
-            try (var files = Files.list(overridesDir)) {
+            try (var files = Files.list(overridesDir())) {
                 files.filter(p -> p.toString().endsWith(".json"))
                     .forEach(this::loadFile);
             }
@@ -157,19 +161,19 @@ public class GameplayOverridesManager {
      * Save an override profile to disk.
      */
     public void save(String profileName, GameplayOverrides overrides) {
-        Path file = overridesDir.resolve(profileName + ".json");
+        Path file = overridesDir().resolve(profileName + ".json");
 
         try {
             // Create backup if exists
             if (Files.exists(file)) {
-                Path backup = overridesDir.resolve(profileName + ".json.bak");
+                Path backup = overridesDir().resolve(profileName + ".json.bak");
                 Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
             }
 
             String json = serializeGameplayOverrides(overrides);
 
             // Atomic write
-            Path temp = overridesDir.resolve(profileName + ".json.tmp");
+            Path temp = overridesDir().resolve(profileName + ".json.tmp");
             Files.writeString(temp, json);
             Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
 
@@ -184,7 +188,7 @@ public class GameplayOverridesManager {
      * Delete an override profile.
      */
     public boolean delete(String profileName) {
-        Path file = overridesDir.resolve(profileName + ".json");
+        Path file = overridesDir().resolve(profileName + ".json");
 
         try {
             if (Files.deleteIfExists(file)) {

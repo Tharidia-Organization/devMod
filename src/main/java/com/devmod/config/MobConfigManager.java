@@ -7,9 +7,11 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,11 +86,13 @@ public class MobConfigManager {
      * Saves configurations to JSON file (thread-safe wrapper)
      */
     public static void save() {
-        CONFIG_LOCK.readLock().lock();
+        // Write lock, not read lock: saveInternal() rewrites the whole file, so two callers
+        // holding a shared read lock would interleave into the same file.
+        CONFIG_LOCK.writeLock().lock();
         try {
             saveInternal();
         } finally {
-            CONFIG_LOCK.readLock().unlock();
+            CONFIG_LOCK.writeLock().unlock();
         }
     }
 
@@ -118,10 +122,13 @@ public class MobConfigManager {
                 }
             }
 
-            try (Writer writer = Files.newBufferedWriter(file)) {
+            // Write to a temp file and swap so a crash mid-write cannot truncate the live file.
+            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
+            try (Writer writer = Files.newBufferedWriter(temp)) {
                 GSON.toJson(serializable, writer);
-                LOGGER.info("Saved {} mob configurations to {}", serializable.size(), file);
             }
+            Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            LOGGER.info("Saved {} mob configurations to {}", serializable.size(), file);
         } catch (IOException e) {
             LOGGER.error("Failed to save mob configurations", e);
         }
@@ -245,20 +252,29 @@ public class MobConfigManager {
      */
     private static void cleanupOldBackups(Path backupDir) {
         try {
-            List<Path> backups;
+            List<Path> candidates;
             try (var backupStream = Files.list(backupDir)) {
-                backups = backupStream
+                candidates = backupStream
                     .filter(p -> p.getFileName().toString().startsWith("mob_configs_")
                               && p.getFileName().toString().endsWith(BACKUP_SUFFIX))
-                    .sorted((a, b) -> {
-                        try {
-                            return Files.getLastModifiedTime(b).compareTo(Files.getLastModifiedTime(a));
-                        } catch (IOException e) {
-                            return 0;
-                        }
-                    })
                     .toList();
             }
+
+            // Snapshot modification times first: comparing them lazily and returning 0 on
+            // IOException yields a non-transitive comparator, which makes sort throw
+            // IllegalArgumentException ("Comparison method violates its general contract").
+            Map<Path, FileTime> modifiedTimes = new HashMap<>();
+            for (Path candidate : candidates) {
+                try {
+                    modifiedTimes.put(candidate, Files.getLastModifiedTime(candidate));
+                } catch (IOException e) {
+                    modifiedTimes.put(candidate, FileTime.fromMillis(0));
+                }
+            }
+
+            List<Path> backups = candidates.stream()
+                .sorted(Comparator.<Path, FileTime>comparing(modifiedTimes::get).reversed())
+                .toList();
 
             // Delete old backups beyond MAX_BACKUPS
             for (int i = MAX_BACKUPS; i < backups.size(); i++) {

@@ -266,6 +266,12 @@ public class ElixirumCompat implements CompatModule {
                 final long delay = SYNC_DELAYS_MS[i];
 
                 java.util.concurrent.ScheduledFuture<?> future = executor.schedule(() -> {
+                    // The task captures the MinecraftServer for up to 5s; exiting the world in
+                    // that window would otherwise enqueue work on a server that never drains it.
+                    if (!server.isRunning()) {
+                        pendingSyncs.remove(playerId);
+                        return;
+                    }
                     server.execute(() -> {
                         // Check if still needed
                         if (!pendingSyncs.containsKey(playerId)) {

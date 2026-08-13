@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
 import net.minecraft.resources.ResourceKey;
@@ -75,6 +79,29 @@ public final class DamageTypeConfig {
         } catch (IOException e) {
             LOGGER.error("[DevMod] Failed to load damage_types.json: {}", e.getMessage());
             initializeDefaults();
+        } catch (JsonParseException e) {
+            // GSON.fromJson throws unchecked on malformed JSON; load() runs from server start
+            // handlers, so letting it escape would abort startup.
+            LOGGER.error("[DevMod] Malformed JSON in {}: {} - using defaults",
+                configFile, e.getMessage());
+            initializeDefaults();
+            quarantine(configFile);
+        }
+    }
+
+    /**
+     * Move an unparseable config out of the way so the defaults can be written without
+     * destroying the user's file.
+     */
+    private void quarantine(Path configFile) {
+        try {
+            String timestamp = LocalDateTime.now(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            Path target = configFile.resolveSibling(configFile.getFileName() + "." + timestamp + ".corrupt");
+            Files.move(configFile, target);
+            LOGGER.warn("[DevMod] Moved unparseable damage_types.json to {}", target);
+        } catch (IOException e) {
+            LOGGER.warn("[DevMod] Could not set aside unparseable damage_types.json: {}", e.getMessage());
         }
     }
 

@@ -256,22 +256,7 @@ public final class TesterProfile {
         totalXP += finalXP;
         LOGGER.info("Awarded {} XP ({} base x{} streak) for: {}", finalXP, baseXP, multiplier, reason);
 
-        // Check for level up
-        int newLevel = calculateLevel();
-        if (newLevel > currentLevel) {
-            int oldLevel = currentLevel;
-            currentLevel = newLevel;
-            String title = getLevelTitle();
-            LOGGER.info("LEVEL UP! {} -> {} ({})", oldLevel, newLevel, title);
-
-            // Notify listeners
-            for (ProfileEventListener listener : listeners) {
-                listener.onLevelUp(newLevel, title);
-            }
-
-            // Check for level-based badges
-            checkLevelBadges();
-        }
+        applyLevelUp();
 
         // Notify XP gained
         for (ProfileEventListener listener : listeners) {
@@ -279,6 +264,28 @@ public final class TesterProfile {
         }
 
         save();
+    }
+
+    /**
+     * Recompute the level from totalXP and fire level-up notifications if it advanced.
+     * Must run after every totalXP change, not just awardXP().
+     */
+    private void applyLevelUp() {
+        int newLevel = calculateLevel();
+        if (newLevel <= currentLevel) {
+            return;
+        }
+
+        int oldLevel = currentLevel;
+        currentLevel = newLevel;
+        String title = getLevelTitle();
+        LOGGER.info("LEVEL UP! {} -> {} ({})", oldLevel, newLevel, title);
+
+        for (ProfileEventListener listener : listeners) {
+            listener.onLevelUp(newLevel, title);
+        }
+
+        checkLevelBadges();
     }
 
     private int calculateLevel() {
@@ -405,6 +412,7 @@ public final class TesterProfile {
 
         // Award XP (without streak bonus for achievements)
         totalXP += achievement.getXpReward();
+        applyLevelUp();
 
         // Notify listeners
         for (ProfileEventListener listener : listeners) {

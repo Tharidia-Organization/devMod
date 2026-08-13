@@ -6,6 +6,7 @@ import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -24,8 +25,10 @@ public class MobPresetManager {
     private static final String PRESETS_FILE = "mob_presets.json";
     private static final int MAX_USER_PRESETS = 10;
 
-    // User-created presets (preserves insertion order)
-    private static final Map<String, MobPreset> userPresets = new LinkedHashMap<>();
+    // User-created presets (preserves insertion order). Synchronized: mutated from command
+    // threads while read/serialized elsewhere; every bulk read below copies under the monitor.
+    private static final Map<String, MobPreset> userPresets =
+        Collections.synchronizedMap(new LinkedHashMap<>());
 
     /**
      * A mob preset stores stat values (not multipliers) for quick application.
@@ -95,14 +98,18 @@ public class MobPresetManager {
      * Get all user presets (returns copy).
      */
     public static Map<String, MobPreset> getAllPresets() {
-        return new LinkedHashMap<>(userPresets);
+        synchronized (userPresets) {
+            return new LinkedHashMap<>(userPresets);
+        }
     }
 
     /**
      * Get preset names in order.
      */
     public static String[] getPresetNames() {
-        return userPresets.keySet().toArray(new String[0]);
+        synchronized (userPresets) {
+            return userPresets.keySet().toArray(new String[0]);
+        }
     }
 
     /**
@@ -136,8 +143,9 @@ public class MobPresetManager {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
+            Map<String, MobPreset> snapshot = getAllPresets();
             try (Writer writer = Files.newBufferedWriter(file)) {
-                GSON.toJson(userPresets, writer);
+                GSON.toJson(snapshot, writer);
             }
             LOGGER.debug("Saved {} user presets", userPresets.size());
         } catch (IOException e) {
@@ -159,8 +167,10 @@ public class MobPresetManager {
             Type type = new TypeToken<Map<String, MobPreset>>() {}.getType();
             Map<String, MobPreset> loaded = GSON.fromJson(reader, type);
             if (loaded != null) {
-                userPresets.clear();
-                userPresets.putAll(loaded);
+                synchronized (userPresets) {
+                    userPresets.clear();
+                    userPresets.putAll(loaded);
+                }
                 LOGGER.info("Loaded {} user mob presets", userPresets.size());
             }
         } catch (Exception e) {

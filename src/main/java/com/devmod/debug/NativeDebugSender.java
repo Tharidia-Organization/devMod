@@ -1,7 +1,9 @@
 package com.devmod.debug;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -15,6 +17,7 @@ import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
@@ -23,6 +26,7 @@ import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
@@ -34,7 +38,9 @@ public class NativeDebugSender {
 
     private static final int SEARCH_RADIUS = 64;
 
-    private int tickCounter = 0;
+    // Per-dimension: a single shared counter aliases with the number of ticking levels, so only
+    // one arbitrary dimension would receive packets per interval.
+    private final Map<ResourceKey<Level>, Integer> tickCounters = new HashMap<>();
     private static final int UPDATE_INTERVAL = 5;
 
     private NativeDebugSender() {}
@@ -45,9 +51,13 @@ public class NativeDebugSender {
      * NOTE: Pathfinding debug uses DebugPackets with a mixin that swaps in a safe payload.
      */
     public void tick(ServerLevel level) {
-        tickCounter++;
-        if (tickCounter < UPDATE_INTERVAL) return;
-        tickCounter = 0;
+        ResourceKey<Level> dimension = level.dimension();
+        int counter = tickCounters.getOrDefault(dimension, 0) + 1;
+        if (counter < UPDATE_INTERVAL) {
+            tickCounters.put(dimension, counter);
+            return;
+        }
+        tickCounters.put(dimension, 0);
 
         for (ServerPlayer player : level.players()) {
             Set<DebugFeature> features = DebugManager.INSTANCE.getEnabledFeatures(player);

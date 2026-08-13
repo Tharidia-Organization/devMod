@@ -101,14 +101,25 @@ public final class CompatRegistry {
                 continue;
             }
 
-            // Initialize the module
+            // Initialize the module.
+            // LinkageError (typically NoClassDefFoundError) is the normal failure mode when a
+            // module touches an absent mod's class, and it is not an Exception - without it a
+            // single broken module aborts every remaining module's initialization.
             try {
                 module.initCommon();
+                if (!module.isActive()) {
+                    // initCommon() swallows its own failures (BaseCompatModule.initCommon),
+                    // so a normal return does not mean the module works.
+                    skipped++;
+                    LOGGER.warn("[Compat:{}] {} did not become active, treating as unavailable",
+                        modId, module.displayName());
+                    continue;
+                }
                 INITIALIZED_COMMON.add(modId);
                 enabled++;
                 LOGGER.info("[Compat:{}] {} enabled (v{})",
                     modId, module.displayName(), Compat.getVersion(modId));
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 LOGGER.error("[Compat:{}] Failed to initialize: {}", modId, e.getMessage(), e);
             }
         }
@@ -144,7 +155,7 @@ public final class CompatRegistry {
                 INITIALIZED_CLIENT.add(modId);
                 enabled++;
                 LOGGER.debug("[Compat:{}] Client initialized", modId);
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 LOGGER.error("[Compat:{}] Failed to initialize client: {}", modId, e.getMessage(), e);
             }
         }
@@ -171,7 +182,7 @@ public final class CompatRegistry {
 
             try {
                 module.registerActions(registry);
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 LOGGER.error("[Compat:{}] Failed to register actions: {}", modId, e.getMessage(), e);
             }
         }
@@ -190,7 +201,7 @@ public final class CompatRegistry {
 
             try {
                 module.shutdown();
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 LOGGER.error("[Compat:{}] Error during shutdown: {}", modId, e.getMessage(), e);
             }
         }

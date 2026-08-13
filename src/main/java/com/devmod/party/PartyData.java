@@ -123,8 +123,10 @@ public class PartyData {
      * @return true if added successfully, false if party is full or not accepting
      */
     public boolean addMember(UUID playerId, String playerName) {
-        if (state != PartyState.FORMING) {
-            LOGGER.debug("[Party] Cannot add member - party not in FORMING state");
+        // READY is still an accepting state: it only means everyone currently in the party
+        // has readied up, and updatePartyState() below drops back to FORMING on join.
+        if (state != PartyState.FORMING && state != PartyState.READY) {
+            LOGGER.debug("[Party] Cannot add member - party not accepting (state={})", state);
             return false;
         }
         if (members.size() >= questType.getMaxPlayers()) {
@@ -149,6 +151,7 @@ public class PartyData {
         pendingInvites.values().removeIf(invite ->
                 invite.getReceiverId().equals(playerId));
 
+        updatePartyState();
         return true;
     }
 
@@ -173,6 +176,7 @@ public class PartyData {
         memberKits.remove(playerId);
 
         LOGGER.info("[Party] Player {} left party {}", playerId, partyId);
+        updatePartyState();
         return true;
     }
 

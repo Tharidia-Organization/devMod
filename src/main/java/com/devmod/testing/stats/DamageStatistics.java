@@ -127,6 +127,8 @@ public class DamageStatistics {
         damageByBodyPart.clear();
         damageByWeapon.clear();
         hitsByBodyPart.clear();
+        // Without this, save() short-circuits and the cleared counters come back on next login.
+        dirty = true;
     }
 
     private static Double safeDoubleSum(Double left, Double right) {

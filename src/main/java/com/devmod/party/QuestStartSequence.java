@@ -97,7 +97,19 @@ public class QuestStartSequence {
             return false;
         }
 
-        activeSequences.remove(partyId);
+        return forceCancel(partyId, reason);
+    }
+
+    /**
+     * Cancels a sequence regardless of phase, always releasing the prepared arena.
+     * Used for system-driven aborts (disconnect below minimum players) where the
+     * phase guard on {@link #cancelSequence} would otherwise leak the instance.
+     */
+    private boolean forceCancel(UUID partyId, String reason) {
+        ActiveSequence sequence = activeSequences.remove(partyId);
+        if (sequence == null) {
+            return false;
+        }
 
         // Cleanup arena if it was created
         cleanupPreparedArena(sequence);
@@ -333,10 +345,15 @@ public class QuestStartSequence {
                         // Wave countdown finished, start quest!
                         sequence.phase = QuestSequencePayload.Phase.STARTING;
                         broadcastSequenceUpdate(sequence);
-                        startQuestForAll(sequence);
 
-                        // Final notification
-                        sequence.phase = QuestSequencePayload.Phase.STARTED;
+                        // Final notification - only announce STARTED if the quest really started,
+                        // otherwise the prepared instance would leak behind a phantom quest.
+                        if (startQuestForAll(sequence)) {
+                            sequence.phase = QuestSequencePayload.Phase.STARTED;
+                        } else {
+                            cleanupPreparedArena(sequence);
+                            sequence.phase = QuestSequencePayload.Phase.CANCELLED;
+                        }
                         broadcastSequenceUpdate(sequence);
                         iterator.remove();
                     }
@@ -496,8 +513,10 @@ public class QuestStartSequence {
     /**
      * Start the quest for all members using the pre-created arena.
      * Uses startPreparedQuest() which doesn't teleport (players already in arena).
+     *
+     * @return true if the quest actually started for at least one member
      */
-    private void startQuestForAll(ActiveSequence sequence) {
+    private boolean startQuestForAll(ActiveSequence sequence) {
         LOGGER.info("[QuestSequence] Starting quest for party {}", sequence.partyId);
 
         // Verify we have a prepared arena
@@ -508,7 +527,7 @@ public class QuestStartSequence {
                     member.sendSystemMessage(I18n.translate("devmod.party.quest_start_failed"));
                 }
             }
-            return;
+            return false;
         }
 
         // Only start for members who confirmed arrival
@@ -526,7 +545,7 @@ public class QuestStartSequence {
 
         if (membersToStart.isEmpty()) {
             LOGGER.error("[QuestSequence] No members to start quest for!");
-            return;
+            return false;
         }
 
         List<UUID> activeMemberIds = membersToStart.stream()
@@ -558,7 +577,7 @@ public class QuestStartSequence {
                     member.sendSystemMessage(I18n.translate("devmod.party.quest_start_failed"));
                 }
             }
-            return;
+            return false;
         }
 
         // Use the new startPreparedQuest which doesn't teleport (already done)
@@ -624,6 +643,8 @@ public class QuestStartSequence {
             }
             LOGGER.info("[QuestSequence] Quest started for {}/{} members", successCount, membersToStart.size());
         }
+
+        return successCount > 0;
     }
 
     /**
@@ -680,7 +701,9 @@ public class QuestStartSequence {
 
                 // Check if still have enough players
                 if (sequence.members.size() < sequence.questType.getMinPlayers()) {
-                    cancelSequence(entry.getKey(), null, "Not enough players");
+                    // forceCancel, not cancelSequence: the sequence may already be past
+                    // COUNTDOWN_START, and the arena must be released in every phase.
+                    forceCancel(entry.getKey(), "Not enough players");
                 } else {
                     // Notify remaining members
                     broadcastSequenceUpdate(sequence);

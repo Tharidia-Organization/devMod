@@ -37,8 +37,8 @@ public class PartyManager {
     /** Player UUID -> List of pending invites received */
     private final Map<UUID, List<PartyInvite>> playerPendingInvites = new ConcurrentHashMap<>();
 
-    /** Listeners for party events */
-    private final List<PartyEventListener> listeners = new ArrayList<>();
+    /** Listeners for party events. Copy-on-write: listeners may (un)register during notification. */
+    private final List<PartyEventListener> listeners = new CopyOnWriteArrayList<>();
 
     /** Earliest invite expiration timestamp to skip unnecessary scans. */
     private final AtomicLong nextInviteExpiryAt = new AtomicLong(Long.MAX_VALUE);
@@ -648,9 +648,10 @@ public class PartyManager {
                         .orElse(null);
 
                 if (newLeader != null) {
-                    party.transferLeadership(playerId, newLeader);
-                    party.removeMember(playerId);
-                    playerToParty.remove(playerId);
+                    // Go through the manager wrappers so listeners fire and remaining
+                    // clients receive the party sync packet.
+                    transferLeadership(playerId, newLeader);
+                    leaveParty(playerId);
                 } else {
                     disbandParty(playerId);
                 }

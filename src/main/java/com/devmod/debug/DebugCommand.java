@@ -338,9 +338,11 @@ public class DebugCommand {
         BiomePolicyResolver.DiagnosticSummary summary = BiomePolicyResolver.runDiagnostics();
 
         // Filter results by mob name or biome name
+        // assignedBiome() may be null (the unfiltered listing above guards it too).
         var filteredResults = summary.results().stream()
             .filter(r -> r.mobId().toString().toLowerCase(Locale.ROOT).contains(filter)
-                      || r.assignedBiome().location().toString().toLowerCase(Locale.ROOT).contains(filter)
+                      || (r.assignedBiome() != null
+                          && r.assignedBiome().location().toString().toLowerCase(Locale.ROOT).contains(filter))
                       || r.matchedKeyword().toLowerCase(Locale.ROOT).contains(filter))
             .toList();
 
@@ -363,7 +365,8 @@ public class DebugCommand {
 
         // Show all filtered results (user explicitly filtered, so show everything)
         for (var result : filteredResults) {
-            String biome = result.assignedBiome().location().getPath();
+            var assignedBiome = result.assignedBiome();
+            String biome = assignedBiome != null ? assignedBiome.location().getPath() : "plains";
             String line = String.format(
                 "  \u00A77%s \u00A78→ \u00A7f%s \u00A78(keyword: %s)",
                 result.mobId(), biome, result.matchedKeyword());
