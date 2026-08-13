@@ -136,8 +136,11 @@ public final class EntityBillboardCache {
             }
 
             // Copy snapshot to atlas
-            copyToAtlas(snapshot, atlasImage, x, y, size);
-            snapshot.close();
+            try {
+                copyToAtlas(snapshot, atlasImage, x, y, size);
+            } finally {
+                snapshot.close();
+            }
 
             return true;
         } catch (Exception e) {
@@ -194,8 +197,11 @@ public final class EntityBillboardCache {
             }
 
             // Copy snapshot to atlas
-            copyToAtlas(snapshot, atlasImage, x, y, size);
-            snapshot.close();
+            try {
+                copyToAtlas(snapshot, atlasImage, x, y, size);
+            } finally {
+                snapshot.close();
+            }
 
             DevMod.LOGGER.debug("[Clone] Successfully rendered player to billboard atlas");
             return true;
@@ -266,8 +272,11 @@ public final class EntityBillboardCache {
             }
 
             // Copy snapshot to atlas
-            copyToAtlas(snapshot, atlasImage, x, y, size);
-            snapshot.close();
+            try {
+                copyToAtlas(snapshot, atlasImage, x, y, size);
+            } finally {
+                snapshot.close();
+            }
 
             DevMod.LOGGER.debug("[Clone] Successfully rendered mannequin with equipment to billboard atlas: {}", key);
             return true;
@@ -358,11 +367,12 @@ public final class EntityBillboardCache {
             RenderSystem.getModelViewStack().popMatrix();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.restoreProjectionMatrix();
-        }
 
-        // Unbind render target
-        target.unbindWrite();
-        mc.getMainRenderTarget().bindWrite(true);
+            // Unbind render target. Must happen even if the entity renderer threw,
+            // otherwise the rest of the frame draws into this off-screen target.
+            target.unbindWrite();
+            mc.getMainRenderTarget().bindWrite(true);
+        }
 
         // Read pixels from render target
         NativeImage image = new NativeImage(NativeImage.Format.RGBA, size, size, false);

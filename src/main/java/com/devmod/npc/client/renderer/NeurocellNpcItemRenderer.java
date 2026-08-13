@@ -23,6 +23,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.devmod.DevMod;
+
 /**
  * Custom item renderer for Neurocell NPC item.
  * Renders a small humanoid model in the inventory/hand.
@@ -39,6 +41,9 @@ public class NeurocellNpcItemRenderer extends BlockEntityWithoutLevelRenderer {
 
     /** Whether the model has been initialized. */
     private boolean initialized = false;
+
+    /** Guards the failure log: ensureInitialized retries every frame. */
+    private boolean initFailureLogged = false;
 
     public NeurocellNpcItemRenderer() {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(),
@@ -60,7 +65,12 @@ public class NeurocellNpcItemRenderer extends BlockEntityWithoutLevelRenderer {
             playerModel = new HumanoidModel<>(Objects.requireNonNull(modelPart));
             initialized = true;
         } catch (Exception e) {
-            // Models not ready yet, will try again next frame
+            // Usually just "models not ready yet" and the next frame succeeds,
+            // so only the first failure is reported.
+            if (!initFailureLogged) {
+                initFailureLogged = true;
+                DevMod.LOGGER.debug("[NPC] Player model not ready for Neurocell NPC item renderer: {}", e.toString());
+            }
         }
     }
 

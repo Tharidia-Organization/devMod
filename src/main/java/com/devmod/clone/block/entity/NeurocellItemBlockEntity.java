@@ -55,6 +55,16 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
     @Nonnull
     private ItemStack displayItem = Objects.requireNonNull(ItemStack.EMPTY);
 
+    /**
+     * Single container shared by every open menu.
+     *
+     * <p>Transient: it mirrors {@link #displayItem}, which is what gets
+     * persisted. Kept as one instance so two players viewing the same display
+     * cannot each take their own copy of the stored item.
+     */
+    @Nullable
+    private transient SimpleContainer cachedInventory;
+
     /** Rotation speed multiplier (1.0 = normal) */
     private float rotationSpeed = 1.0f;
 
@@ -81,6 +91,7 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
 
     public void setDisplayItem(@Nonnull ItemStack stack) {
         this.displayItem = Objects.requireNonNull(stack.copyWithCount(Math.min(stack.getCount(), 1)));
+        syncDisplayItemToContainer();
         onItemChanged();
     }
 
@@ -198,6 +209,7 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
         if (!displayItem.isEmpty()) {
             net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), displayItem);
             displayItem = Objects.requireNonNull(ItemStack.EMPTY);
+            syncDisplayItemToContainer();
         }
     }
 
@@ -228,6 +240,7 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
         } else {
             displayItem = Objects.requireNonNull(ItemStack.EMPTY);
         }
+        syncDisplayItemToContainer();
 
         rotationSpeed = tag.contains(TAG_ROTATION_SPEED) ? tag.getFloat(TAG_ROTATION_SPEED) : 1.0f;
         spinning = !tag.contains(TAG_SPINNING) || tag.getBoolean(TAG_SPINNING);
@@ -288,8 +301,20 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
 
     // === Inventory access for menu ===
 
+    /**
+     * Get the inventory container for menu access.
+     *
+     * <p>Returns a cached instance. Building a fresh container per call handed
+     * each open menu its own copy of the displayed item, so two players viewing
+     * the same display could each take it — one stack in, two stacks out.
+     */
     @Nonnull
     public Container getInventory() {
+        SimpleContainer cached = cachedInventory;
+        if (cached != null) {
+            return cached;
+        }
+
         SimpleContainer container = new SimpleContainer(1) {
             @Override
             public void setChanged() {
@@ -322,11 +347,26 @@ public class NeurocellItemBlockEntity extends BlockEntity implements MenuProvide
             public ItemStack removeItemNoUpdate(int slot) {
                 ItemStack result = Objects.requireNonNull(super.removeItemNoUpdate(slot));
                 displayItem = Objects.requireNonNull(this.getItem(0).copy());
+                // Without this the block entity is left unmarked-dirty after the
+                // item leaves, so an unclean shutdown restores the taken item.
+                NeurocellItemBlockEntity.this.setChanged();
                 return result;
             }
         };
 
         container.setItem(0, Objects.requireNonNull(displayItem.copy()));
+        cachedInventory = container;
         return container;
+    }
+
+    /**
+     * Pushes {@link #displayItem} into the shared container after the field is
+     * changed from outside the menu (NBT load, direct set, drop on break).
+     */
+    private void syncDisplayItemToContainer() {
+        SimpleContainer cached = cachedInventory;
+        if (cached != null && !ItemStack.matches(cached.getItem(0), displayItem)) {
+            cached.setItem(0, Objects.requireNonNull(displayItem.copy()));
+        }
     }
 }

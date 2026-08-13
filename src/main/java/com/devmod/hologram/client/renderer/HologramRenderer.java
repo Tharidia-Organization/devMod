@@ -11,6 +11,7 @@ import org.joml.Quaternionf;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -144,11 +145,13 @@ public class HologramRenderer implements BlockEntityRenderer<HologramProjectorBl
                 ySliceEnabled,
                 ySliceLevel,
                 ySliceThickness)
-            .thenApply(mesh -> {
+            // Run on the client thread: mesh/buildState are plain fields read by the
+            // renderer, so publishing them from the builder thread is a data race.
+            .thenApplyAsync(mesh -> {
                 blockEntity.setMesh(mesh);
                 blockEntity.setBuildState(BuildState.READY);
                 return mesh;
-            });
+            }, Minecraft.getInstance());
         blockEntity.setBuildTask(buildTask);
     }
 

@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import com.devmod.DevMod;
 import com.devmod.clone.CloneBlockEntities;
 import com.devmod.clone.block.ReformerBlock;
 import com.devmod.clone.data.BioscanData;
@@ -171,6 +172,21 @@ public class ReformerBlockEntity extends BlockEntity {
 
             serverLevel.playSound(null, pos, Objects.requireNonNull(SoundEvents.PLAYER_LEVELUP),
                 SoundSource.BLOCKS, 0.8f, 1.2f);
+        } else {
+            // The bioscan was already consumed from the neurocell, so a failed spawn
+            // loses it - at least make the failure audible instead of silent.
+            DevMod.LOGGER.warn("[Clone] Reformer at {} failed to spawn clone of {}", pos, data.entityTypeId());
+
+            serverLevel.sendParticles(
+                Objects.requireNonNull(ParticleTypes.SMOKE),
+                pos.getX() + 0.5,
+                pos.getY() + 1.0,
+                pos.getZ() + 0.5,
+                20, 0.3, 0.3, 0.3, 0.01
+            );
+
+            serverLevel.playSound(null, pos, Objects.requireNonNull(SoundEvents.FIRE_EXTINGUISH),
+                SoundSource.BLOCKS, 0.6f, 0.8f);
         }
 
         resetSpawn();

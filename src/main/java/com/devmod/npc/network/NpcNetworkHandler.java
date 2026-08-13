@@ -35,6 +35,9 @@ import com.devmod.npc.dialog.NpcDialogManager;
 public final class NpcNetworkHandler extends NetworkHandlerBase {
     public static final NpcNetworkHandler INSTANCE = new NpcNetworkHandler();
 
+    /** Squared distance a player may be from an NPC while acting on its dialog. */
+    private static final double MAX_DIALOG_DISTANCE_SQR = 8.0 * 8.0;
+
     private NpcNetworkHandler() {}
 
     /**
@@ -243,6 +246,19 @@ public final class NpcNetworkHandler extends NetworkHandlerBase {
         enqueueWork(ctx, () -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
             if (player == null) return;
+
+            // The session only binds player + node + option, and lives for up to
+            // ten minutes, so it does not by itself keep the player next to the
+            // NPC. Without this the player could walk off (or change dimension)
+            // and keep triggering the node's actions from anywhere.
+            Entity npcEntity = player.serverLevel().getEntity(Objects.requireNonNull(payload.npcId()));
+            if (!(npcEntity instanceof PlayerCloneEntity npc) || !npc.isNpc() || !npc.isAlive()
+                || npc.distanceToSqr(player) > MAX_DIALOG_DISTANCE_SQR) {
+                DevMod.LOGGER.warn("Player {} sent a dialog action for NPC {} that is gone or out of range",
+                    player.getName().getString(), payload.npcId());
+                NpcDialogManager.INSTANCE.closeDialog(player.getUUID());
+                return;
+            }
 
             NpcRegistry registry = NpcRegistry.get(Objects.requireNonNull(player.getServer()));
 

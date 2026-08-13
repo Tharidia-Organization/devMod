@@ -914,6 +914,10 @@ public class ClonePulverizerBlockEntity extends BlockEntity implements GeoBlockE
         // Only sync what the client needs for rendering
         // Note: deployTimer NOT synced - client tracks it independently via clientTick()
         tag.putBoolean(TAG_ACTIVE, active);
+        // loadAdditional reads these unconditionally, so they must be present in
+        // every update tag or each sync resets the client's crush animation to 0.
+        tag.putInt(TAG_PROGRESS, progress);
+        tag.putInt(TAG_MAX_PROGRESS, maxProgress);
         if (!processingItem.isEmpty()) {
             tag.put(TAG_PROCESSING_ITEM, Objects.requireNonNull(processingItem.save(registries)));
         }

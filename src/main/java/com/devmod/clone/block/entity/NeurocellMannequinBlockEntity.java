@@ -123,6 +123,7 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
             return;
         }
         equipment.set(slot, Objects.requireNonNull(stack.copyWithCount(Math.min(stack.getCount(), 1))));
+        syncEquipmentToContainer();
         onEquipmentChanged();
     }
 
@@ -325,6 +326,9 @@ public class NeurocellMannequinBlockEntity extends BlockEntity implements MenuPr
                 equipment.set(i, Objects.requireNonNull(ItemStack.EMPTY));
             }
         }
+        // An open menu still holds the dropped stacks otherwise, and its
+        // setChanged() would copy them straight back into the equipment array.
+        syncEquipmentToContainer();
     }
 
     // === NBT Persistence ===
