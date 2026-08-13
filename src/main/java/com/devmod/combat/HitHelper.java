@@ -71,7 +71,7 @@ public final class HitHelper {
     /**
      * PERFORMANCE: Simple TTL cache for body part calculations
      *
-     * Cache key: (attacker UUID, target UUID, target position hash)
+     * Cache key: (attacker UUID, target UUID, target position, attacker eye position, aim direction)
      * TTL: 100ms (same as HitData expiration)
      * Max size: 1000 entries
      *
@@ -100,12 +100,25 @@ public final class HitHelper {
         }
     }
 
-    private record CacheKey(UUID attackerId, UUID targetId, int positionHash) {
+    private record CacheKey(UUID attackerId, UUID targetId,
+                            long targetPosKey, long attackerEyeKey, long aimKey) {
         static CacheKey of(LivingEntity attacker, LivingEntity target) {
-            // Position hash to invalidate cache when target moves significantly
-            Vec3 pos = target.position();
-            int hash = (int)(pos.x * 10) ^ (int)(pos.y * 10) ^ (int)(pos.z * 10);
-            return new CacheKey(attacker.getUUID(), target.getUUID(), hash);
+            // The raycast depends on the attacker's eye position and view direction as much
+            // as on the target position, so all three have to take part in the key.
+            return new CacheKey(
+                attacker.getUUID(),
+                target.getUUID(),
+                quantize(nn(target.position(), "target position"), 10.0),
+                quantize(nn(attacker.getEyePosition(), "attacker eye position"), 10.0),
+                quantize(nn(attacker.getViewVector(1.0F), "attacker view vector"), 50.0));
+        }
+
+        /** Order-dependent so that (x,y,z) and (z,y,x) do not collide. */
+        private static long quantize(Vec3 v, double scale) {
+            long x = Math.round(v.x * scale);
+            long y = Math.round(v.y * scale);
+            long z = Math.round(v.z * scale);
+            return (x * 31L + y) * 31L + z;
         }
     }
 

@@ -149,14 +149,13 @@ public final class OBBRaycast {
             exitFace = 1;  // Exiting from negative side
         }
 
-        // Ensure t1 is entry, t2 is exit
+        // Ensure t1 is entry, t2 is exit. The faces are already assigned from the
+        // direction sign above (t1 > t2 happens exactly when direction < 0), so they
+        // must not be swapped again here.
         if (t1 > t2) {
             float temp = t1;
             t1 = t2;
             t2 = temp;
-            int tempFace = entryFace;
-            entryFace = exitFace;
-            exitFace = tempFace;
         }
 
         // Update interval
@@ -266,40 +265,22 @@ public final class OBBRaycast {
         float tMin = 0.0f;
         float tMax = maxDistance;
 
-        // X axis
-        if (!slabIntersectFast(localOrigin.x, localDir.x, halfExtents.x, tMin, tMax)) {
-            return false;
-        }
+        // The interval has to be carried across all three axes; testing each slab
+        // against the full ray independently reports hits for rays passing beside a corner.
+        SlabResult xResult = slabIntersect(localOrigin.x, localDir.x, halfExtents.x, tMin, tMax);
+        if (xResult == null) return false;
+        tMin = Math.max(tMin, xResult.tMin);
+        tMax = Math.min(tMax, xResult.tMax);
 
-        // Y axis
-        if (!slabIntersectFast(localOrigin.y, localDir.y, halfExtents.y, tMin, tMax)) {
-            return false;
-        }
+        SlabResult yResult = slabIntersect(localOrigin.y, localDir.y, halfExtents.y, tMin, tMax);
+        if (yResult == null) return false;
+        tMin = Math.max(tMin, yResult.tMin);
+        tMax = Math.min(tMax, yResult.tMax);
 
-        // Z axis
-        return slabIntersectFast(localOrigin.z, localDir.z, halfExtents.z, tMin, tMax);
-    }
-
-    /**
-     * Fast slab intersection test (boolean only).
-     */
-    private static boolean slabIntersectFast(double origin, double direction, double halfExtent,
-                                             float tMin, float tMax) {
-        if (Math.abs(direction) < 1e-8) {
-            return origin >= -halfExtent && origin <= halfExtent;
-        }
-
-        float t1 = (float) ((-halfExtent - origin) / direction);
-        float t2 = (float) ((halfExtent - origin) / direction);
-
-        if (t1 > t2) {
-            float temp = t1;
-            t1 = t2;
-            t2 = temp;
-        }
-
-        tMin = Math.max(tMin, t1);
-        tMax = Math.min(tMax, t2);
+        SlabResult zResult = slabIntersect(localOrigin.z, localDir.z, halfExtents.z, tMin, tMax);
+        if (zResult == null) return false;
+        tMin = Math.max(tMin, zResult.tMin);
+        tMax = Math.min(tMax, zResult.tMax);
 
         return tMin <= tMax && tMax >= 0;
     }

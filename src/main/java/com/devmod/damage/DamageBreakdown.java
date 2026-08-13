@@ -42,6 +42,23 @@ public class DamageBreakdown {
      */
     public DamageBreakdown(ItemStack weapon, @Nullable LivingEntity attacker, LivingEntity target,
                            float baseDmg, float bodyPartMult, float armorPenBonus) {
+        this(weapon, attacker, target, baseDmg, bodyPartMult, armorPenBonus, Float.NaN);
+    }
+
+    /**
+     * Creates a damage breakdown with the damage that was actually applied.
+     * <p>
+     * The display terms below (enchant bonuses in particular) are informational: vanilla has
+     * already folded Sharpness/Smite into the incoming amount, and {@link DamageCalculator}
+     * applies further modifiers this class does not model. Re-deriving the total from the
+     * display terms therefore shows the player a number that was never dealt.
+     *
+     * @param actualFinalDamage damage produced by {@link DamageCalculator}, or {@link Float#NaN}
+     *                          to fall back to deriving it from the display terms
+     */
+    public DamageBreakdown(ItemStack weapon, @Nullable LivingEntity attacker, LivingEntity target,
+                           float baseDmg, float bodyPartMult, float armorPenBonus,
+                           float actualFinalDamage) {
         this.baseWeaponDamage = baseDmg;
         this.bodyPartMultiplier = bodyPartMult;
         this.armorPenetrationBonus = armorPenBonus;
@@ -62,10 +79,11 @@ public class DamageBreakdown {
             this.pehkuiSizeBonus = 0f;
         }
 
-        // Final calculation: (base + enchants + pehkui) * bodyPartMult + armorPen
         float enchantTotal = (float) this.enchantBonuses.stream().mapToDouble(EnchantBonus::bonus).sum();
         float subtotal = baseWeaponDamage + enchantTotal + pehkuiSizeBonus;
-        this.finalDamage = (subtotal * bodyPartMultiplier) + armorPenetrationBonus;
+        this.finalDamage = Float.isNaN(actualFinalDamage)
+            ? (subtotal * bodyPartMultiplier) + armorPenetrationBonus
+            : actualFinalDamage;
 
         // BUG-010 FIX: Cache formula strings at construction (immutable data)
         this.cachedFormulaString = buildFormulaString();

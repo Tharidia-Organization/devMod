@@ -1,9 +1,13 @@
 package com.devmod.collision.transform;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -180,13 +184,27 @@ public final class ServerTransformProvider implements TransformProvider {
     }
 
     private void evictOldestEntries(long currentTick) {
-        int toRemove = cache.size() - MAX_CACHE_SIZE + 16;
-        cache.entrySet().stream()
+        int toRemove = Math.max(1, cache.size() - MAX_CACHE_SIZE + 16);
+
+        List<Integer> victims = cache.entrySet().stream()
             .filter(e -> e.getValue().isStale(currentTick))
-            .limit(Math.max(1, toRemove))
+            .limit(toRemove)
             .map(Map.Entry::getKey)
-            .toList()
-            .forEach(cache::remove);
+            .collect(Collectors.toCollection(ArrayList::new));
+
+        // Stale entries alone may not free anything; fall back to the oldest snapshots
+        // so the cache cannot grow past MAX_CACHE_SIZE unbounded.
+        if (victims.size() < toRemove) {
+            cache.entrySet().stream()
+                .filter(e -> !victims.contains(e.getKey()))
+                .sorted(Comparator.comparingLong(
+                    (Map.Entry<Integer, AnimationSnapshot> e) -> e.getValue().tickCaptured()))
+                .limit((long) toRemove - victims.size())
+                .map(Map.Entry::getKey)
+                .forEach(victims::add);
+        }
+
+        victims.forEach(cache::remove);
     }
 
     private static float lerp(float delta, float start, float end) {

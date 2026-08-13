@@ -14,6 +14,7 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MaceItem;
 import net.minecraft.world.phys.Vec3;
@@ -96,6 +97,18 @@ public class DamageHandler {
                     rangedCritChance = ranged.getCritChance();
                     rangedCritDamage = ranged.getCritDamage();
                 }
+            } else if (event.getSource().getDirectEntity() instanceof Projectile projectile) {
+                // RANGED (non-arrow): fireballs, thrown potions, modded projectiles.
+                // A melee raycast is reach-limited and would never reach a distant target,
+                // so resolve the body part from the projectile impact height like arrows do.
+                weapon = attacker.getMainHandItem();
+                part = HitHelper.getBodyPart(victim, projectile.getY());
+                hitPoint = projectile.position();
+                Vec3 projectileDelta = projectile.getDeltaMovement();
+                slashDirection = (projectileDelta.lengthSqr() > 0.0001)
+                    ? projectileDelta.normalize()
+                    : projectile.getViewVector(1.0f);
+                isRanged = true;
             } else {
                 // MELEE: Use OBB raycast when enabled, fallback to AABB subdivision
                 weapon = attacker.getMainHandItem();

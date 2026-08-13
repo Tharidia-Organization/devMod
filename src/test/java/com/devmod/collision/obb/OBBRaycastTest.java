@@ -264,23 +264,18 @@ public class OBBRaycastTest {
         }
 
         @Test
-        @DisplayName("ray misses 45-degree-Y-rotated OBB when outside rotated extent (known BUG-02: intersects uses independent axes)")
+        @DisplayName("BUG-02 regression: ray misses 45-degree-Y-rotated OBB when outside rotated extent")
         void rayMissesRotated45Y() {
             OrientedBoundingBox obb = rotated45Y();
             // At 45 degrees, the OBB corner extends to ~0.707 in world X.
-            // A ray at Y=0, Z=0.8 should miss the rotated OBB, but the fast
-            // intersects() path does not carry the narrowed tMin/tMax across axes
-            // (known BUG-02: independent-axis false positive). The full raycast()
-            // correctly returns MISS for this case.
+            // A ray at Y=0, Z=0.8 passes beside the rotated box and must miss.
             Vec3 origin = new Vec3(-5, 0, 0.8);
             Vec3 dir = new Vec3(1, 0, 0).normalize();
 
-            // intersects() incorrectly reports a hit due to BUG-02
-            assertTrue(OBBRaycast.intersects(origin, dir, MAX_DIST, obb),
-                "Known BUG-02: intersects() false-positive on rotated OBB (independent-axis check)");
-            // Verify the full raycast correctly returns MISS
+            assertFalse(OBBRaycast.intersects(origin, dir, MAX_DIST, obb),
+                "intersects() must carry the narrowed interval across axes");
             assertFalse(OBBRaycast.raycast(origin, dir, MAX_DIST, obb).hit(),
-                "Full raycast should correctly report MISS for this case");
+                "Full raycast should also report MISS for this case");
         }
 
         @Test

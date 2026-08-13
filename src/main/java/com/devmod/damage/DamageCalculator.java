@@ -230,7 +230,8 @@ public final class DamageCalculator {
             victim,
             baseDamage,
             result.bodyPartMultiplier(),
-            result.armorPenBonus()
+            result.armorPenBonus(),
+            result.finalDamage()
         );
 
         return new CalculationDetails(result, breakdown);

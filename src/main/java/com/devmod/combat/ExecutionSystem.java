@@ -2,7 +2,6 @@ package com.devmod.combat;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,6 +21,7 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -36,6 +36,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
+
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.arena.policy.ArenaPolicy.ExecutionOverrides;
 import com.devmod.combat.bridge.CombatEnduranceBridge;
@@ -222,6 +224,7 @@ public class ExecutionSystem {
         public void decrementTicksRemaining() { ticksRemaining--; }
 
         public float getProgress() {
+            if (durationTicks <= 0) return 1.0f;
             return 1.0f - ((float) ticksRemaining / durationTicks);
         }
     }
@@ -362,21 +365,14 @@ public class ExecutionSystem {
 
     /**
      * Tick execution progress. Called each server tick.
+     * <p>
+     * Countdown and completion are driven per-player by {@link #tickPlayer(ServerPlayer)},
+     * which has the level access needed to resolve the target. Decrementing here as well
+     * would consume two ticks per server tick and finish executions in half their duration
+     * while the resistance effect still runs for the full duration.
      */
     public void tick() {
-        Iterator<Map.Entry<UUID, ExecutionState>> iterator = activeExecutions.entrySet().iterator();
-
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, ExecutionState> entry = iterator.next();
-            ExecutionState state = entry.getValue();
-
-            state.decrementTicksRemaining();
-
-            // Find player and target
-            // This is called from server tick, need to find the entities
-            // We'll handle this in the event handler where we have access to the server
-
-        }
+        // Intentionally empty - see tickPlayer(ServerPlayer).
     }
 
     /**
@@ -591,7 +587,7 @@ public class ExecutionSystem {
      * Clean up state for a player leaving.
      */
     public void onPlayerLeave(UUID playerId) {
-        activeExecutions.remove(playerId);
+        restoreTargetAi(activeExecutions.remove(playerId));
         cooldowns.remove(playerId);
     }
 
@@ -599,8 +595,31 @@ public class ExecutionSystem {
      * Reset all state.
      */
     public void reset() {
+        for (ExecutionState state : activeExecutions.values()) {
+            restoreTargetAi(state);
+        }
         activeExecutions.clear();
         cooldowns.clear();
+    }
+
+    /**
+     * Re-enables AI on an execution target that was locked by {@link #startExecution}.
+     * Without this an execution abandoned outside complete/interrupt (logout, quest end,
+     * world reset) leaves the mob frozen permanently.
+     */
+    private static void restoreTargetAi(@Nullable ExecutionState state) {
+        if (state == null) return;
+
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level == null) continue;
+            if (level.getEntity(state.getTargetId()) instanceof Mob mob) {
+                mob.setNoAi(false);
+                return;
+            }
+        }
     }
 
     private static void playSound(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nullable SoundEvent sound,

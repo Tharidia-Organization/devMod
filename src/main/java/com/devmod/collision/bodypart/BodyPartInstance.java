@@ -161,8 +161,9 @@ public final class BodyPartInstance {
         this.worldTransform = new Matrix4f(modelPartTransform);
         this.lastUpdateTick = currentTick;
 
-        // Transform the base OBB by the world transform
-        OrientedBoundingBox baseOBB = def.createBaseOBB();
+        // The supplied transform already includes this part's localOffset
+        // (see BodyPartHierarchy.computePartTransform), so start from the origin OBB.
+        OrientedBoundingBox baseOBB = def.createOriginOBB();
         this.worldOBB = baseOBB.transform(modelPartTransform);
     }
 

@@ -33,7 +33,6 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 
 import com.devmod.DevMod;
-import com.devmod.collision.integration.OBBHitHelper;
 import com.devmod.combat.HitHelper;
 import com.devmod.util.I18n;
 
@@ -83,15 +82,10 @@ public class ArrowEvents {
                 // Track to detect Enderman evasion
                 trackPotentialEvasion(shooter, victim, hitPos);
 
-                // UNIFIED DETECTION: Use OBB raycast when enabled, fallback to AABB subdivision
-                // This ensures 100% consistency between arrow hits and melee hits
-                HitHelper.BodyPart bodyPartEnum;
-                if (OBBHitHelper.useOBBSystem()) {
-                    bodyPartEnum = HitHelper.BodyPart.fromShared(
-                        OBBHitHelper.rayTraceBodyPart(shooter, victim).part());
-                } else {
-                    bodyPartEnum = HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim).part();
-                }
+                // Resolve the part the same way DamageHandler does for arrows (impact height),
+                // so the message below always matches the damage multiplier actually applied.
+                // A raycast from the shooter's current view is reach-limited and would disagree.
+                HitHelper.BodyPart bodyPartEnum = HitHelper.getBodyPart(victim, arrow.getY());
 
                 String bodyPartKey;
 
@@ -141,6 +135,7 @@ public class ArrowEvents {
      */
     private static void trackPotentialEvasion(ServerPlayer shooter, LivingEntity target, Vec3 hitPos) {
         if (!(target instanceof EnderMan)) return;
+        if (!(target.level() instanceof ServerLevel targetLevel)) return;
 
         long now = System.currentTimeMillis();
         // Save the target's position at the moment of impact!
@@ -152,28 +147,38 @@ public class ArrowEvents {
 
         LOGGER.debug("Arrow hit on Enderman tracked at hitPos={}, targetPos={}", safeHitPos, targetPos);
 
-        // Schedule evasion check after 150ms (uses ScheduledExecutor instead of Thread.sleep)
+        // Schedule evasion check after 150ms (uses ScheduledExecutor instead of Thread.sleep).
+        // The scheduler thread must not touch entity state, so it only hands the check back
+        // to the server thread.
         final int targetId = target.getId();
-        ScheduledFuture<?> scheduled = EVASION_SCHEDULER.schedule(() -> {
-            PendingArrowHit pending = pendingArrowHits.remove(targetId);
-            if (pending == null) return;
-
-            // Check if the Enderman moved significantly (teleport)
-            // NOTE: target may no longer be valid, we use saved data
-            Vec3 currentPos = target.isAlive()
-                ? Objects.requireNonNull(target.position(), "current target position")
-                : pending.targetPos;
-            double distMoved = currentPos.distanceTo(Objects.requireNonNull(pending.targetPos(), "saved target position"));
-            boolean probablyEvaded = distMoved > 5.0; // If it moved more than 5 blocks, it evaded
-
-            LOGGER.debug("Enderman moved {} blocks, evaded={}", String.format("%.1f", distMoved), probablyEvaded);
-
-            // Spawn evasion panel (client-only)
-            if (probablyEvaded && FMLEnvironment.dist.isClient()) {
-                spawnArrowEvasionPanelClientSafe(pending.shooter, target, pending.hitPos, pending.targetPos);
-            }
-        }, 150, TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> scheduled = EVASION_SCHEDULER.schedule(
+            () -> targetLevel.getServer().execute(() -> checkEvasion(targetLevel, targetId)),
+            150, TimeUnit.MILLISECONDS);
         scheduled.getDelay(TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Evasion check body. Must run on the server thread - it reads live entity state.
+     */
+    private static void checkEvasion(ServerLevel level, int targetId) {
+        PendingArrowHit pending = pendingArrowHits.remove(targetId);
+        if (pending == null) return;
+
+        // Check if the Enderman moved significantly (teleport).
+        // The entity may be gone by now, in which case the saved data is used.
+        Entity current = level.getEntity(targetId);
+        Vec3 currentPos = current != null && current.isAlive()
+            ? Objects.requireNonNull(current.position(), "current target position")
+            : pending.targetPos();
+        double distMoved = currentPos.distanceTo(Objects.requireNonNull(pending.targetPos(), "saved target position"));
+        boolean probablyEvaded = distMoved > 5.0; // If it moved more than 5 blocks, it evaded
+
+        LOGGER.debug("Enderman moved {} blocks, evaded={}", String.format("%.1f", distMoved), probablyEvaded);
+
+        // Spawn evasion panel (client-only)
+        if (probablyEvaded && FMLEnvironment.dist.isClient() && current instanceof LivingEntity livingTarget) {
+            spawnArrowEvasionPanelClientSafe(pending.shooter(), livingTarget, pending.hitPos(), pending.targetPos());
+        }
     }
 
     // ========== Client-safe VFX helpers ==========
