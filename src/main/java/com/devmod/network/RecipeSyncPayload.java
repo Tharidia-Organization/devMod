@@ -1,5 +1,7 @@
 package com.devmod.network;
 
+import io.netty.handler.codec.DecoderException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +42,9 @@ public record RecipeSyncPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final Gson GSON = new GsonBuilder().create();
+
+    /** Upper bound on recipes in one packet, enforced while decoding. */
+    private static final int MAX_RECIPES = 4096;
 
     // ═══════════════════════════════════════════════════════════════
     // TYPE & CODEC
@@ -218,8 +223,13 @@ public record RecipeSyncPayload(
         // Flags
         boolean isGlobal = ByteBufCodecs.BOOL.decode(buffer);
 
-        // Recipe count
+        // Recipe count. Decoding happens during packet deserialization, before
+        // any handler-side permission check runs, so an unbounded count here is
+        // an out-of-memory kill from a ~6 byte packet.
         int count = buffer.readVarInt();
+        if (count < 0 || count > MAX_RECIPES) {
+            throw new DecoderException("Recipe count out of range: " + count);
+        }
 
         // Each recipe
         List<RecipeData> recipes = new ArrayList<>(count);

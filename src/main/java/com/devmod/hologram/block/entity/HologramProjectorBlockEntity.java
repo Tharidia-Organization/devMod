@@ -38,6 +38,9 @@ public class HologramProjectorBlockEntity extends BlockEntity {
     // Default settings
     private static final int DEFAULT_SCAN_SIZE = 32;
     private static final int DEFAULT_BLOCK_SIZE = 1;
+    /** Display-scale range offered by the config screen slider. */
+    private static final int MIN_BLOCK_SIZE = 1;
+    private static final int MAX_BLOCK_SIZE = 4;
 
     // Scan size options (expanded for larger areas)
     private static final int[] SCAN_SIZES = {16, 32, 48, 64, 96, 128, 192, 256};
@@ -275,9 +278,26 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         return scanSize;
     }
 
+    /**
+     * Sets the scan size, snapping to the nearest supported value.
+     *
+     * <p>This is reachable from a client packet, so an unchecked value would let
+     * a crafted payload build a scan region spanning millions of blocks and turn
+     * the entity query into a server-wide stall.
+     */
     public void setScanSize(int newSize) {
-        scanSize = newSize;
+        scanSize = nearestScanSize(newSize);
         setupScanRegion();
+    }
+
+    private static int nearestScanSize(int requested) {
+        int best = SCAN_SIZES[0];
+        for (int candidate : SCAN_SIZES) {
+            if (Math.abs(candidate - requested) < Math.abs(best - requested)) {
+                best = candidate;
+            }
+        }
+        return best;
     }
 
     /**
@@ -299,8 +319,13 @@ public class HologramProjectorBlockEntity extends BlockEntity {
         return blockSize;
     }
 
+    /**
+     * Sets the display scale, clamped to the range the config screen offers.
+     *
+     * <p>Reachable from a client packet, so the value cannot be trusted.
+     */
     public void setBlockSize(int newSize) {
-        blockSize = newSize;
+        blockSize = Mth.clamp(newSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
         setChanged();
         if (level != null && !level.isClientSide) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 2);

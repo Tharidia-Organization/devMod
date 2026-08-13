@@ -313,6 +313,24 @@ public final class TransportExecutor {
     }
 
     /**
+     * Teleports an entity from one node to an explicitly chosen destination node.
+     *
+     * <p>Used by manual waypoint selection, where the destination comes from the
+     * player's choice rather than from the source node's own mode. Callers must
+     * already have verified that {@code dest} is reachable from {@code source}.
+     */
+    public boolean teleportToNode(
+        @Nonnull Entity entity,
+        @Nonnull TransportData source,
+        @Nonnull TransportData dest
+    ) {
+        if (!(entity.level() instanceof ServerLevel sourceLevel)) {
+            return false;
+        }
+        return performTeleport(entity, source, dest, sourceLevel);
+    }
+
+    /**
      * Performs the actual teleportation between two nodes.
      */
     private boolean performTeleport(

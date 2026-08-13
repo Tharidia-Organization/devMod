@@ -318,8 +318,21 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
             return;
         }
 
-        // Execute teleport via executor
-        com.devmod.transport.executor.TransportExecutor.INSTANCE.executeTeleport(player, destOpt.get());
+        // The destination must belong to the source node's own network. Without
+        // this, any node id in the global registry is a valid target and the
+        // packet becomes a teleport-anywhere exploit.
+        String sourceNetwork = source.getNetworkName().orElse(null);
+        if (sourceNetwork == null
+            || !sourceNetwork.equals(destOpt.get().getNetworkName().orElse(null))) {
+            LOGGER.warn("Player {} selected destination {} outside the network of source {}",
+                player.getName().getString(), destId, sourceId);
+            return;
+        }
+
+        // Teleport to the node the player actually chose. Passing the destination
+        // to executeTeleport would re-dispatch on the destination's own mode.
+        com.devmod.transport.executor.TransportExecutor.INSTANCE
+            .teleportToNode(player, source, destOpt.get());
 
         LOGGER.debug("Player {} teleported from {} to {}", player.getName().getString(), sourceId, destId);
     }

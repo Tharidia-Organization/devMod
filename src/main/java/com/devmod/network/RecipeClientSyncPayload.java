@@ -1,6 +1,8 @@
 package com.devmod.network;
 
 import java.nio.charset.StandardCharsets;
+import io.netty.handler.codec.DecoderException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,6 +32,9 @@ public record RecipeClientSyncPayload(
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
     private static final Gson GSON = new GsonBuilder().create();
+
+    /** Upper bound on recipes in one packet, enforced while decoding. */
+    private static final int MAX_RECIPES = 4096;
 
     // ═══════════════════════════════════════════════════════════════
     // TYPE & CODEC
@@ -175,8 +180,12 @@ public record RecipeClientSyncPayload(
         // Operation
         SyncOperation operation = SyncOperation.fromOrdinal(buffer.readVarInt());
 
-        // Recipe count
+        // Recipe count. A hostile or buggy server could otherwise make the
+        // client allocate an arbitrarily large list from a tiny packet.
         int count = buffer.readVarInt();
+        if (count < 0 || count > MAX_RECIPES) {
+            throw new DecoderException("Recipe count out of range: " + count);
+        }
 
         // Each recipe
         List<RecipeData> recipes = new ArrayList<>(count);

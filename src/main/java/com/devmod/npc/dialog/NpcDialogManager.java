@@ -360,6 +360,18 @@ public class NpcDialogManager {
             player.getServer()
         );
 
+        // Re-check the option's visibility condition before acting on it.
+        // openDialog only filters options for display, so a client that knows an
+        // option id could otherwise claim a gated reward or trigger a gated
+        // console command by selecting an option it was never shown.
+        DialogCondition optionCondition = option.showCondition();
+        if (optionCondition != null && !optionCondition.test(player, context)) {
+            DevMod.LOGGER.warn("Player {} selected option {} in node {} whose condition does not hold",
+                player.getName().getString(), optionId, nodeId);
+            closeDialog(player.getUUID());
+            return null;
+        }
+
         // Execute action
         DiagnosticLogger.npc("processAction: player=%s, npcId=%s, node=%s, option=%s (%s)",
             player.getName().getString(), npcId, nodeId, optionId, option.label());

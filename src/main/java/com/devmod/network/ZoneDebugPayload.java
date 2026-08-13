@@ -1,5 +1,7 @@
 package com.devmod.network;
 
+import io.netty.handler.codec.DecoderException;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +31,9 @@ public record ZoneDebugPayload(
     List<ZoneData> zones
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
+    /** Upper bound on zones in one packet, enforced while decoding. */
+    private static final int MAX_ZONES = 4096;
+
     public static final ResourceLocation ID = Objects.requireNonNull(
         ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "zone_debug"));
     public static final Type<ZoneDebugPayload> TYPE = new Type<>(Objects.requireNonNull(ID));
@@ -50,6 +55,9 @@ public record ZoneDebugPayload(
                 boolean enabled = buf.readBoolean();
                 int baseY = buf.readInt();
                 int zoneCount = buf.readInt();
+                if (zoneCount < 0 || zoneCount > MAX_ZONES) {
+                    throw new DecoderException("Zone count out of range: " + zoneCount);
+                }
                 List<ZoneData> zones = new ArrayList<>(zoneCount);
                 for (int i = 0; i < zoneCount; i++) {
                     zones.add(ZoneData.read(buf));
