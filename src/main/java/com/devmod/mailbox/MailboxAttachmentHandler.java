@@ -173,7 +173,7 @@ public class MailboxAttachmentHandler {
     public CompletableFuture<MailboxManager.ClaimOutcome> claimAttachments(
             ServerPlayer player,
             MailboxMessage message,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized
     ) {
         if (!message.recipientUuid().equals(player.getUUID()) || message.deleted()) {
@@ -197,7 +197,7 @@ public class MailboxAttachmentHandler {
     private CompletableFuture<MailboxManager.ClaimOutcome> doClaimAttachments(
             ServerPlayer player,
             MailboxMessage message,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized
     ) {
         if (!initialized || repo == null) {

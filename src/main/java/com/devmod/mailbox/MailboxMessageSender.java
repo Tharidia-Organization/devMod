@@ -93,9 +93,9 @@ public class MailboxMessageSender {
             String subject,
             @Nullable String body,
             @Nullable String attachmentData,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.completedFuture(MailboxManager.SendResult.error("Mailbox system not initialized"));
@@ -301,9 +301,9 @@ public class MailboxMessageSender {
             @Nullable String body,
             @Nullable String attachmentData,
             @Nullable Duration expiresIn,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         return sendSystemMessage(recipientUuid, subject, body, attachmentData, expiresIn, true, true, repo, initialized, callback);
     }
@@ -316,9 +316,9 @@ public class MailboxMessageSender {
             @Nullable Duration expiresIn,
             boolean applyFilter,
             boolean validateAttachments,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
@@ -407,9 +407,9 @@ public class MailboxMessageSender {
             String subject,
             @Nullable String body,
             @Nullable String attachmentData,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         return sendAdminMessage(adminName, recipientUuid, subject, body, attachmentData, null, true, true, repo, initialized, callback);
     }
@@ -421,9 +421,9 @@ public class MailboxMessageSender {
             @Nullable String body,
             @Nullable String attachmentData,
             @Nullable Instant expiresAt,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         return sendAdminMessage(adminName, recipientUuid, subject, body, attachmentData, expiresAt, true, true, repo, initialized, callback);
     }
@@ -437,9 +437,9 @@ public class MailboxMessageSender {
             @Nullable Instant expiresAt,
             boolean applyFilter,
             boolean validateAttachments,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
@@ -532,9 +532,9 @@ public class MailboxMessageSender {
             @Nullable Instant expiresAt,
             boolean applyFilter,
             boolean validateAttachments,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (type == MessageType.SYSTEM) {
             Duration expiresIn = null;
@@ -561,9 +561,9 @@ public class MailboxMessageSender {
             @Nullable String attachmentData,
             MessageType type,
             @Nullable Instant expiresAt,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
@@ -692,9 +692,9 @@ public class MailboxMessageSender {
             @Nullable String attachmentData,
             MessageType type,
             @Nullable Instant expiresAt,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         List<CompletableFuture<Integer>> futures = playerUuids.stream()
             .map(uuid -> sendTypedMessage(senderName, uuid, subject, body, attachmentData, type, expiresAt, false, false, repo, initialized, callback)
@@ -731,9 +731,9 @@ public class MailboxMessageSender {
     CompletableFuture<DeliveryOutcome> queueAndDeliverMessage(
             MailboxDeliveryJob job,
             MailboxMessage message,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
@@ -778,9 +778,9 @@ public class MailboxMessageSender {
 
     public CompletableFuture<MailboxMessage> deliverDeliveryJob(
             MailboxDeliveryJob job,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("Mailbox not initialized"));
@@ -815,9 +815,9 @@ public class MailboxMessageSender {
     public CompletableFuture<UUID> sendDeliveryRecall(
             MailboxDeliveryJob job,
             String reason,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         UUID senderUuid = job.senderUuid();
         if (senderUuid == null) {
@@ -850,9 +850,9 @@ public class MailboxMessageSender {
             MailboxDeliveryJob job,
             Instant attemptAt,
             String reason,
-            MailboxRepository repo,
+            @Nullable MailboxRepository repo,
             boolean initialized,
-            MailboxManager.NewMessageCallback callback
+            @Nullable MailboxManager.NewMessageCallback callback
     ) {
         if (!initialized || repo == null) {
             return CompletableFuture.completedFuture(job);

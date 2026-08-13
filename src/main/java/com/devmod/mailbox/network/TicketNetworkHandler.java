@@ -102,7 +102,7 @@ public final class TicketNetworkHandler extends NetworkHandlerBase {
                     .thenApply(comments -> toTicketData(ticket, comments.size()))
                     .exceptionally(ex -> toTicketData(ticket, 0)))
                 .toList();
-            return java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0]))
+            return java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture<?>[0]))
                 .thenAccept(v -> {
                     List<TicketSyncPayload.TicketData> data = futures.stream()
                         .map(java.util.concurrent.CompletableFuture::join)

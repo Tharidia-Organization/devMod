@@ -320,7 +320,7 @@ public class NewsManager {
      */
     public void setCacheTtl(Duration ttl) {
         this.cacheTtl = ttl != null ? ttl : DEFAULT_CACHE_TTL;
-        LOGGER.info("[News] Cache TTL set to {} seconds", this.cacheTtl.getSeconds());
+        LOGGER.info("[News] Cache TTL set to {} seconds", this.cacheTtl.toSeconds());
     }
 
     /**

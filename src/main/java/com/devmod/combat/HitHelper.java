@@ -27,17 +27,18 @@ public final class HitHelper {
      * @deprecated Use {@link com.devmod.shared.BodyPart} directly.
      *             Kept as type alias for backwards compatibility.
      */
+    @Deprecated
     public enum BodyPart {
         HEAD, BODY, ARMS, LEGS;
 
         /** Converts to the canonical shared type. */
         public com.devmod.shared.BodyPart toShared() {
-            return com.devmod.shared.BodyPart.values()[this.ordinal()];
+            return com.devmod.shared.BodyPart.valueOf(this.name());
         }
 
         /** Converts from the canonical shared type. */
         public static BodyPart fromShared(com.devmod.shared.BodyPart shared) {
-            return values()[shared.ordinal()];
+            return valueOf(shared.name());
         }
     }
 
@@ -46,6 +47,7 @@ public final class HitHelper {
      * @deprecated Use {@link com.devmod.shared.HitResult} directly.
      *             Kept as type alias for backwards compatibility.
      */
+    @Deprecated
     public record HitResult(BodyPart part, Vec3 hitPoint) {
         public static HitResult of(BodyPart part, Vec3 hitPoint) {
             return new HitResult(part, hitPoint);
