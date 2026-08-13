@@ -199,9 +199,11 @@ public class ZoneSpawnSlotAllocator {
      * Selects the zone with the fewest spawns for load balancing.
      */
     private ArenaZone selectLeastPopulatedZone() {
+        // orElse would evaluate zones().get(0) on every call, which throws for an
+        // empty layout instead of reporting the real problem.
         return layout.zones().stream()
             .min(Comparator.comparingInt(z -> zoneSpawnCounts.getOrDefault(z.name(), 0)))
-            .orElse(layout.zones().get(0));
+            .orElseThrow(() -> new IllegalStateException("Zone layout contains no zones"));
     }
 
     /**

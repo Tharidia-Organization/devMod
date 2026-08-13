@@ -179,8 +179,13 @@ public class AsyncArenaBuilder {
 
         AsyncBuild build = AsyncBuild.create(arenaId, template, originX, originY, originZ, callback);
 
+        // Register before enqueueing: two concurrent submits for the same arena must
+        // not both enqueue, or the loser's build places every block a second time.
+        if (buildsByArenaId.putIfAbsent(arenaId, build) != null) {
+            LOGGER.warn("Build already in progress for arena {}", arenaId);
+            return false;
+        }
         activeBuildQueue.add(build);
-        buildsByArenaId.put(arenaId, build);
 
         LOGGER.info("Submitted async build for arena {} (template: {})", arenaId, template.id());
         telemetry.emit("arena.async_build.submitted", Map.of(
@@ -399,19 +404,26 @@ public class AsyncArenaBuilder {
             AsyncBuild build = activeBuildQueue.poll();
             if (build == null) break;
 
+            Exception placementError = null;
             try {
                 int blocksPlaced = processBuild(build, blocksRemaining);
                 blocksRemaining -= blocksPlaced;
                 totalBlocksPlaced += blocksPlaced;
-
-                if (!build.isComplete()) {
-                    activeBuildQueue.add(build);
-                } else {
-                    completeBuild(build, null);
-                }
-
             } catch (Exception e) {
-                completeBuild(build, e);
+                placementError = e;
+            }
+
+            // completeBuild() stays outside the placement try: a failure while
+            // finalizing a finished build must not be re-entered as a rollback.
+            if (placementError == null && !build.isComplete()) {
+                activeBuildQueue.add(build);
+            } else {
+                try {
+                    completeBuild(build, placementError);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to finalize build for arena {}: {}",
+                        build.arenaId, e.getMessage(), e);
+                }
             }
 
             buildsProcessed++;
@@ -458,7 +470,11 @@ public class AsyncArenaBuilder {
 
     private void handleBuildFailure(AsyncBuild build, Exception error) {
         totalBuildsFailed++;
-        LOGGER.error("Async build failed for arena {}: {}", build.arenaId, error.getMessage());
+        // Exceptions such as a bare NPE carry a null message; Map.of would reject it.
+        String errorMessage = error.getMessage() != null
+            ? error.getMessage()
+            : error.getClass().getSimpleName();
+        LOGGER.error("Async build failed for arena {}: {}", build.arenaId, errorMessage);
 
         build.transaction.rollback(
             blockPlacer::revertBlock,
@@ -467,20 +483,20 @@ public class AsyncArenaBuilder {
         );
 
         build.callback.accept(AsyncBuildResult.failure(
-            build.arenaId, build.template.id(), error.getMessage(),
+            build.arenaId, build.template.id(), errorMessage,
             build.budget.getCurrentBlocks(), build.budget.getElapsedMs()
         ));
 
         telemetry.emit("arena.async_build.failed", Map.of(
             "arenaId", build.arenaId.toString(),
             "templateId", build.template.id(),
-            "error", error.getMessage(),
+            "error", errorMessage,
             "blocksPlaced", build.budget.getCurrentBlocks(),
             "durationMs", build.budget.getElapsedMs()
         ));
 
         eventDispatcher.emitBuildFailed(
-            build.template.id(), build.arenaId, error.getMessage(), error,
+            build.template.id(), build.arenaId, errorMessage, error,
             build.budget.getElapsedMs(), true);
     }
 
@@ -581,10 +597,27 @@ public class AsyncArenaBuilder {
             this.template = template;
             this.callback = callback;
             this.transaction = new BuildTransaction(template.id());
-            this.budget = BuildBudget.defaults();
+            this.budget = budgetFor(template);
             this.placements = placements;
 
             budget.start();
+        }
+
+        /**
+         * Honours the template's declared limits, matching the sync builder; falls back
+         * to the defaults for any limit the template leaves unset.
+         */
+        private static BuildBudget budgetFor(ArenaTemplate template) {
+            ArenaTemplate.Limits limits = template.limits();
+            if (limits == null) {
+                return BuildBudget.defaults();
+            }
+            BuildBudget defaults = BuildBudget.defaults();
+            return new BuildBudget(
+                limits.maxBlocks() > 0 ? limits.maxBlocks() : defaults.getMaxBlocks(),
+                limits.maxBuildTimeMs() > 0 ? limits.maxBuildTimeMs() : defaults.getMaxTimeMs(),
+                limits.maxEntities() > 0 ? limits.maxEntities() : defaults.getMaxEntities()
+            );
         }
 
         boolean hasMoreWork() {

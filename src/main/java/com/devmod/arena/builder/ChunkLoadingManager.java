@@ -63,8 +63,10 @@ public class ChunkLoadingManager {
 
             try {
                 ticketManager.addTicket(chunkX, chunkZ);
-                chunkLoader.requestLoad(chunkX, chunkZ);
+                // Record before requesting the load: releaseAllTickets() only sees
+                // chunks in this set, so a failure after addTicket must still be released.
                 loadedChunks.add(packedPos);
+                chunkLoader.requestLoad(chunkX, chunkZ);
             } catch (Exception e) {
                 LOGGER.error("Failed to request chunk ({}, {}): {}", chunkX, chunkZ, e.getMessage());
                 releaseAllTickets();

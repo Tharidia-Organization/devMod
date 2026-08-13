@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -38,7 +39,10 @@ public class AutosmokeScheduler {
     private volatile ScheduleConfig config;
     private volatile ScheduledFuture<?> scheduledTask;
     private volatile RunStatus lastRunStatus;
-    private volatile boolean running = false;
+    private final AtomicBoolean running = new AtomicBoolean(false);
+
+    /** False once stop() has been called, so an in-flight run cannot re-arm itself. */
+    private final AtomicBoolean schedulerActive = new AtomicBoolean(false);
 
     private Consumer<AutosmokeRunner.AutosmokeReport> reportCallback;
     private AlertRouter alertRouter;
@@ -73,6 +77,8 @@ public class AutosmokeScheduler {
             return;
         }
 
+        schedulerActive.set(true);
+
         if (config.runOnStartup()) {
             scheduler.execute(this::executeRun);
         }
@@ -84,7 +90,8 @@ public class AutosmokeScheduler {
     /**
      * Stops the scheduler.
      */
-    public void stop() {
+    public synchronized void stop() {
+        schedulerActive.set(false);
         if (scheduledTask != null) {
             scheduledTask.cancel(false);
             scheduledTask = null;
@@ -189,7 +196,7 @@ public class AutosmokeScheduler {
      * Returns true if a run is in progress.
      */
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
 
     /**
@@ -199,7 +206,10 @@ public class AutosmokeScheduler {
         return config.enabled();
     }
 
-    private void scheduleNextRun() {
+    private synchronized void scheduleNextRun() {
+        if (!schedulerActive.get()) {
+            return;
+        }
         Duration delay = calculateDelayToNextRun();
         scheduledTask = scheduler.schedule(this::scheduledRun, delay.toMillis(), TimeUnit.MILLISECONDS);
         LOGGER.debug("Scheduled next autosmoke run in {}", formatDuration(delay));
@@ -217,12 +227,11 @@ public class AutosmokeScheduler {
     }
 
     private AutosmokeRunner.AutosmokeReport executeRun() {
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             LOGGER.warn("Autosmoke run already in progress, skipping");
             return null;
         }
 
-        running = true;
         LocalDateTime startTime = LocalDateTime.now(zoneId);
         LOGGER.info("Starting scheduled autosmoke run at {}", startTime);
 
@@ -281,7 +290,7 @@ public class AutosmokeScheduler {
             return null;
 
         } finally {
-            running = false;
+            running.set(false);
         }
     }
 

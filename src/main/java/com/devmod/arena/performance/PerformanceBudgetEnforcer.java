@@ -87,7 +87,9 @@ public class PerformanceBudgetEnforcer {
         buildAborted.set(false);
         buildPaused.set(false);
         consecutiveViolations.set(0);
-        snapshots.clear();
+        synchronized (snapshots) {
+            snapshots.clear();
+        }
 
         LOGGER.info("Performance tracking started for build");
     }
@@ -109,7 +111,7 @@ public class PerformanceBudgetEnforcer {
             totalPauses.get(),
             totalThrottles.get(),
             buildAborted.get(),
-            new ArrayList<>(snapshots)
+            copySnapshots()
         );
 
         LOGGER.info("Build performance report: {}", report.formatSummary());
@@ -133,16 +135,18 @@ public class PerformanceBudgetEnforcer {
         double currentTps = msptToTps(currentMspt);
 
         // Record snapshot
-        snapshots.add(new PerformanceSnapshot(
-            Instant.now(),
-            currentMspt,
-            buildImpact,
-            current.confidenceScore()
-        ));
+        synchronized (snapshots) {
+            snapshots.add(new PerformanceSnapshot(
+                Instant.now(),
+                currentMspt,
+                buildImpact,
+                current.confidenceScore()
+            ));
 
-        // Trim old snapshots
-        while (snapshots.size() > 1000) {
-            snapshots.remove(0);
+            // Trim old snapshots
+            while (snapshots.size() > 1000) {
+                snapshots.remove(0);
+            }
         }
 
         // Check fail-fast conditions
@@ -332,27 +336,34 @@ public class PerformanceBudgetEnforcer {
     }
 
     public double getAverageMspt() {
-        if (snapshots.isEmpty()) return 0;
-        return snapshots.stream()
+        return copySnapshots().stream()
             .mapToDouble(PerformanceSnapshot::mspt)
             .average()
             .orElse(0);
     }
 
     public double getPeakMspt() {
-        if (snapshots.isEmpty()) return 0;
-        return snapshots.stream()
+        return copySnapshots().stream()
             .mapToDouble(PerformanceSnapshot::mspt)
             .max()
             .orElse(0);
     }
 
     public double getMaxBuildImpact() {
-        if (snapshots.isEmpty()) return 0;
-        return snapshots.stream()
+        return copySnapshots().stream()
             .mapToDouble(PerformanceSnapshot::buildImpact)
             .max()
             .orElse(0);
+    }
+
+    /**
+     * Iterating a synchronizedList requires holding its monitor; snapshots are appended
+     * from the build thread while reports are read from elsewhere.
+     */
+    private List<PerformanceSnapshot> copySnapshots() {
+        synchronized (snapshots) {
+            return new ArrayList<>(snapshots);
+        }
     }
 
     private double msptToTps(double mspt) {

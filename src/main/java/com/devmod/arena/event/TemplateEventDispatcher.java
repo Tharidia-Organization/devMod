@@ -1,7 +1,5 @@
 package com.devmod.arena.event;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -127,42 +125,24 @@ public class TemplateEventDispatcher {
             listeners.get(event.getClass());
 
         if (typeListeners != null) {
-            List<ListenerEntry<? extends TemplateEvent>> staleEntries = null;
             for (ListenerEntry<? extends TemplateEvent> entry : typeListeners) {
                 try {
-                    if (!entry.tryAccept(event)) {
-                        if (staleEntries == null) {
-                            staleEntries = new ArrayList<>();
-                        }
-                        staleEntries.add(entry);
-                    }
+                    entry.accept(event);
                 } catch (Exception e) {
                     LOGGER.error("Listener threw exception for event {}: {}",
                         event.eventType(), e.getMessage(), e);
                 }
             }
-            if (staleEntries != null) {
-                typeListeners.removeAll(staleEntries);
-            }
         }
 
         // Notify global listeners
-        List<ListenerEntry<TemplateEvent>> staleGlobals = null;
         for (ListenerEntry<TemplateEvent> entry : globalListeners) {
             try {
-                if (!entry.tryAccept(event)) {
-                    if (staleGlobals == null) {
-                        staleGlobals = new ArrayList<>();
-                    }
-                    staleGlobals.add(entry);
-                }
+                entry.accept(event);
             } catch (Exception e) {
                 LOGGER.error("Global listener threw exception for event {}: {}",
                     event.eventType(), e.getMessage(), e);
             }
-        }
-        if (staleGlobals != null) {
-            globalListeners.removeAll(staleGlobals);
         }
     }
 
@@ -177,20 +157,22 @@ public class TemplateEventDispatcher {
 
     private static final class ListenerEntry<T extends TemplateEvent> {
         private final Class<T> eventType;
-        private final WeakReference<Consumer<T>> ref;
+
+        /**
+         * Held strongly on purpose: callers pass lambdas that nothing else retains
+         * (see {@link #registerForTemplate}), so a weak reference lets the listener
+         * be collected before it ever fires. Removal is via the returned
+         * {@link ListenerRegistration} or {@link #clearAllListeners()}.
+         */
+        private final Consumer<T> listener;
 
         private ListenerEntry(Class<T> eventType, Consumer<T> listener) {
             this.eventType = eventType;
-            this.ref = new WeakReference<>(listener);
+            this.listener = listener;
         }
 
-        private boolean tryAccept(TemplateEvent event) {
-            Consumer<T> listener = ref.get();
-            if (listener == null) {
-                return false;
-            }
+        private void accept(TemplateEvent event) {
             listener.accept(eventType.cast(event));
-            return true;
         }
     }
 

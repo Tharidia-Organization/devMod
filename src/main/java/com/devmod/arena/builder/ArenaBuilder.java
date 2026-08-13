@@ -522,6 +522,9 @@ public class ArenaBuilder {
                 new BuildException("Unexpected error: " + e.getMessage(), e), startTime,
                 originX, originY, originZ, dimension);
         } finally {
+            // Force-load tickets are world-persistent: they must be released on the
+            // success path too, not only from handleBuildFailure.
+            chunkManager.releaseAllTickets();
             finalizePerformanceMonitoring(template, arenaId);
             if (buildPermit != null) {
                 BUILD_RATE_LIMITER.releasePermit(buildPermit.permitId());

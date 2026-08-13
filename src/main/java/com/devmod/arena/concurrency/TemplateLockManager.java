@@ -212,15 +212,23 @@ public class TemplateLockManager {
      */
     public int cleanupExpiredLocks() {
         int cleaned = 0;
-        var iterator = locks.entrySet().iterator();
 
-        while (iterator.hasNext()) {
-            var entry = iterator.next();
-            if (entry.getValue().isExpired()) {
-                iterator.remove();
-                cleaned++;
-                LOGGER.debug("Cleaned up expired lock for {} (owner: {})",
-                    entry.getKey(), entry.getValue().owner());
+        // Removal must hold the same stripe lock acquire/release use, and must re-read
+        // the entry under it: otherwise a lock acquired between the expiry check and the
+        // removal is deleted, letting a second build start on the same template.
+        for (String templateId : locks.keySet()) {
+            ReentrantLock stripe = getStripe(templateId);
+            stripe.lock();
+            try {
+                TemplateLock lock = locks.get(templateId);
+                if (lock != null && lock.isExpired()) {
+                    locks.remove(templateId);
+                    cleaned++;
+                    LOGGER.debug("Cleaned up expired lock for {} (owner: {})",
+                        templateId, lock.owner());
+                }
+            } finally {
+                stripe.unlock();
             }
         }
 

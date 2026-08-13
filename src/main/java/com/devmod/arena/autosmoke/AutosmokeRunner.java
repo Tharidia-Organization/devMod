@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class AutosmokeRunner {
     private final List<Consumer<AutosmokeReport>> reportListeners;
     private final AutosmokeExceptions exceptionWhitelist;
 
-    private volatile boolean running = false;
+    private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile AutosmokeReport lastReport;
 
     private final AutosmokeSizeThresholds sizeThresholds;
@@ -104,12 +105,11 @@ public class AutosmokeRunner {
             return null;
         }
 
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             LOGGER.warn("Autosmoke already running, skipping");
             return lastReport;
         }
 
-        running = true;
         Instant startTime = Instant.now();
 
         try {
@@ -172,7 +172,7 @@ public class AutosmokeRunner {
             return report;
 
         } finally {
-            running = false;
+            running.set(false);
         }
     }
 
@@ -602,12 +602,11 @@ public class AutosmokeRunner {
             return null;
         }
 
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             LOGGER.warn("Autosmoke already running, skipping");
             return lastReport;
         }
 
-        running = true;
         Instant startTime = Instant.now();
 
         try {
@@ -690,7 +689,7 @@ public class AutosmokeRunner {
             return report;
 
         } finally {
-            running = false;
+            running.set(false);
         }
     }
 
@@ -712,7 +711,7 @@ public class AutosmokeRunner {
      * Returns true if a run is in progress.
      */
     public boolean isRunning() {
-        return running;
+        return running.get();
     }
 
     /**

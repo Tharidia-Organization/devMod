@@ -2,6 +2,7 @@ package com.devmod.arena.builder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -396,6 +397,13 @@ final class AsyncBuildPlacementComputer {
         if (hazards == null || hazards.isEmpty()) {
             return;
         }
+        if (template.floor() == null) {
+            // Every hazard below resolves its Y through the floor; without one there is
+            // no reference plane to place against.
+            LOGGER.warn("Template '{}' declares hazards but has no floor, skipping hazard placement",
+                template.id());
+            return;
+        }
         for (ArenaTemplate.Hazard hazard : hazards) {
             switch (hazard.type()) {
                 case "lava_ring" -> placeLavaRing(hazard, template, originX, originZ, placements);
@@ -436,14 +444,20 @@ final class AsyncBuildPlacementComputer {
         return new int[]{originX, resolveY(hazard, template), originZ};
     }
 
+    /** Hazard params are optional; the sibling lookups already guard against null. */
+    private static Map<String, Object> params(ArenaTemplate.Hazard hazard) {
+        Map<String, Object> params = hazard.params();
+        return params != null ? params : Map.of();
+    }
+
     private static void placeLavaRing(ArenaTemplate.Hazard hazard, ArenaTemplate template,
                                        int originX, int originZ,
                                        List<AsyncArenaBuilder.BlockPlacement> placements) {
-        int inner = ((Number) hazard.params().getOrDefault("innerRadius", 1)).intValue();
-        int outer = ((Number) hazard.params().getOrDefault("outerRadius", inner + 1)).intValue();
+        int inner = ((Number) params(hazard).getOrDefault("innerRadius", 1)).intValue();
+        int outer = ((Number) params(hazard).getOrDefault("outerRadius", inner + 1)).intValue();
         int y = resolveY(hazard, template);
         int[] center = resolveCenter(hazard, template, originX, originZ);
-        String material = (String) hazard.params().getOrDefault("material", "minecraft:lava");
+        String material = (String) params(hazard).getOrDefault("material", "minecraft:lava");
 
         for (int dx = -outer; dx <= outer; dx++) {
             for (int dz = -outer; dz <= outer; dz++) {
@@ -458,10 +472,10 @@ final class AsyncBuildPlacementComputer {
     private static void placeLavaPool(ArenaTemplate.Hazard hazard, ArenaTemplate template,
                                        int originX, int originZ,
                                        List<AsyncArenaBuilder.BlockPlacement> placements) {
-        int radius = ((Number) hazard.params().getOrDefault("radius", 3)).intValue();
+        int radius = ((Number) params(hazard).getOrDefault("radius", 3)).intValue();
         int y = resolveY(hazard, template);
         int[] center = resolveCenter(hazard, template, originX, originZ);
-        String material = (String) hazard.params().getOrDefault("material", "minecraft:lava");
+        String material = (String) params(hazard).getOrDefault("material", "minecraft:lava");
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
                 if (dx * dx + dz * dz <= radius * radius) {
@@ -474,8 +488,8 @@ final class AsyncBuildPlacementComputer {
     private static void placeVoidPit(ArenaTemplate.Hazard hazard, ArenaTemplate template,
                                       int originX, int originZ,
                                       List<AsyncArenaBuilder.BlockPlacement> placements) {
-        int radius = ((Number) hazard.params().getOrDefault("radius", 3)).intValue();
-        int depth = ((Number) hazard.params().getOrDefault("depth", 10)).intValue();
+        int radius = ((Number) params(hazard).getOrDefault("radius", 3)).intValue();
+        int depth = ((Number) params(hazard).getOrDefault("depth", 10)).intValue();
         int yTop = resolveY(hazard, template);
         int[] center = resolveCenter(hazard, template, originX, originZ);
         for (int dx = -radius; dx <= radius; dx++) {
@@ -497,7 +511,7 @@ final class AsyncBuildPlacementComputer {
         if (!(positionsObj instanceof List<?> positions)) {
             return;
         }
-        String material = (String) hazard.params().getOrDefault("material", "minecraft:iron_bars");
+        String material = (String) params(hazard).getOrDefault("material", "minecraft:iron_bars");
         for (Object posObj : positions) {
             if (posObj instanceof List<?> p && p.size() == 3) {
                 int x = ((Number) p.get(0)).intValue() + originX;
@@ -522,7 +536,7 @@ final class AsyncBuildPlacementComputer {
         int minZ = ((Number) min.get(2)).intValue() + originZ;
         int maxX = ((Number) max.get(0)).intValue() + originX;
         int maxZ = ((Number) max.get(2)).intValue() + originZ;
-        String block = (String) hazard.params().getOrDefault("block", "minecraft:fire");
+        String block = (String) params(hazard).getOrDefault("block", "minecraft:fire");
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 addBlock(x, minY, z, block, placements);
@@ -533,7 +547,7 @@ final class AsyncBuildPlacementComputer {
     private static void placeMagmaFloor(ArenaTemplate.Hazard hazard, ArenaTemplate template,
                                          int originX, int originZ,
                                          List<AsyncArenaBuilder.BlockPlacement> placements) {
-        double coverage = ((Number) hazard.params().getOrDefault("coverage", 0.1d)).doubleValue();
+        double coverage = ((Number) params(hazard).getOrDefault("coverage", 0.1d)).doubleValue();
         ArenaTemplate.ArenaShape shape = template.arenaShape();
         if (shape == null) {
             shape = ArenaTemplate.ArenaShape.RECTANGULAR;
@@ -558,7 +572,7 @@ final class AsyncBuildPlacementComputer {
         }
 
         int total = (int) Math.round(arenaArea * Math.min(coverage, 0.5));
-        String block = (String) hazard.params().getOrDefault("block", "minecraft:magma_block");
+        String block = (String) params(hazard).getOrDefault("block", "minecraft:magma_block");
         int placed = 0;
 
         int minX = ArenaShapeHelper.minOffsetX(template);
@@ -585,9 +599,9 @@ final class AsyncBuildPlacementComputer {
                                             int originX, int originZ,
                                             List<AsyncArenaBuilder.BlockPlacement> placements) {
         Object areaObj = hazard.params() != null ? hazard.params().get("area") : null;
-        String blockType = (String) hazard.params().getOrDefault("blockType", "minecraft:sand");
-        int count = ((Number) hazard.params().getOrDefault("count", 5)).intValue();
-        int interval = ((Number) hazard.params().getOrDefault("interval", 20)).intValue();
+        String blockType = (String) params(hazard).getOrDefault("blockType", "minecraft:sand");
+        int count = ((Number) params(hazard).getOrDefault("count", 5)).intValue();
+        int interval = ((Number) params(hazard).getOrDefault("interval", 20)).intValue();
 
         int verticalSpacing = Math.max(1, interval / 10);
 

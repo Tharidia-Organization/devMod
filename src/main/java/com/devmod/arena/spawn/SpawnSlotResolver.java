@@ -20,6 +20,9 @@ public class SpawnSlotResolver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpawnSlotResolver.class);
 
+    /** Upper bound on backtracking nodes so an unsatisfiable constraint set cannot stall the caller. */
+    private static final int MAX_BACKTRACK_NODES = 50_000;
+
     private final List<SpawnSlot> availableSlots;
     private final List<ForbiddenZone> forbiddenZones;
     private final SpawnSlotConstraints constraints;
@@ -206,7 +209,13 @@ public class SpawnSlotResolver {
         }
 
         List<SpawnSlot> best = new ArrayList<>();
-        backtrackResolve(count, validSlots, 0, new ArrayList<>(), best);
+        int[] budget = {MAX_BACKTRACK_NODES};
+        backtrackResolve(count, validSlots, 0, new ArrayList<>(), best, budget);
+
+        if (budget[0] <= 0) {
+            LOGGER.warn("Spawn slot search exhausted its {} node budget for {} slots; returning best effort ({})",
+                MAX_BACKTRACK_NODES, count, best.size());
+        }
 
         if (best.size() < count) {
             LOGGER.warn("Could not find enough valid spawn slots. Requested: {}, Found: {}",
@@ -220,17 +229,27 @@ public class SpawnSlotResolver {
      * Backtracking search to find a deterministic set of slots that satisfy constraints.
      * This avoids random selection that could end up in dead ends (e.g., selecting an
      * isolated far-away slot first).
+     *
+     * <p>{@code budget} is a single-element countdown shared by the whole search: an
+     * unsatisfiable constraint set would otherwise explore exponentially many subsets
+     * on the calling thread.
      */
     private boolean backtrackResolve(int targetCount,
                                      List<SpawnSlot> candidates,
                                      int startIndex,
                                      List<SpawnSlot> current,
-                                     List<SpawnSlot> best) {
+                                     List<SpawnSlot> best,
+                                     int[] budget) {
         if (current.size() == targetCount) {
             best.clear();
             best.addAll(current);
             return true;
         }
+
+        if (budget[0] <= 0) {
+            return false;
+        }
+        budget[0]--;
 
         // If remaining slots cannot beat current best, prune
         if (candidates.size() - startIndex + current.size() <= best.size()) {
@@ -239,16 +258,22 @@ public class SpawnSlotResolver {
 
         for (int i = startIndex; i < candidates.size(); i++) {
             SpawnSlot candidate = candidates.get(i);
-            if (!validateSlotAssignment(candidate, current)) {
+            // Forbidden-zone and ground checks were already applied when building
+            // the candidate list; only the pairwise constraints remain.
+            if (!isPairwiseValid(candidate, current)) {
                 continue;
             }
 
             current.add(candidate);
-            boolean done = backtrackResolve(targetCount, candidates, i + 1, current, best);
+            boolean done = backtrackResolve(targetCount, candidates, i + 1, current, best, budget);
             if (done) {
                 return true;
             }
             current.remove(current.size() - 1);
+
+            if (budget[0] <= 0) {
+                break;
+            }
         }
 
         if (current.size() > best.size()) {
@@ -256,6 +281,24 @@ public class SpawnSlotResolver {
             best.addAll(current);
         }
         return false;
+    }
+
+    /**
+     * Checks a candidate against already-selected slots (distance and line of sight).
+     */
+    private boolean isPairwiseValid(SpawnSlot slot, List<SpawnSlot> existingAssignments) {
+        for (SpawnSlot existing : existingAssignments) {
+            double distance = slot.distanceTo(existing);
+
+            if (!constraints.isDistanceValid(distance)) {
+                return false;
+            }
+
+            if (constraints.requireLineOfSight() && !hasLineOfSight(slot, existing)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -273,19 +316,7 @@ public class SpawnSlotResolver {
         }
 
         // Check against existing assignments
-        for (SpawnSlot existing : existingAssignments) {
-            double distance = slot.distanceTo(existing);
-
-            if (!constraints.isDistanceValid(distance)) {
-                return false;
-            }
-
-            if (constraints.requireLineOfSight() && !hasLineOfSight(slot, existing)) {
-                return false;
-            }
-        }
-
-        return true;
+        return isPairwiseValid(slot, existingAssignments);
     }
 
     /**

@@ -181,16 +181,21 @@ public class LogAggregationPipeline implements AutoCloseable {
         }
     }
 
-    private void writeBatch(List<LogEvent> batch) {
+    /**
+     * Synchronized because the scheduled flush and the worker loop both drain the queue,
+     * so destinations would otherwise be written from two threads at once.
+     */
+    private synchronized void writeBatch(List<LogEvent> batch) {
         for (LogDestination destination : destinations) {
             try {
                 destination.write(batch);
-                eventsWritten.addAndGet(batch.size());
             } catch (Exception e) {
                 LOGGER.error("Failed to write to destination {}: {}",
                     destination.name(), e.getMessage());
             }
         }
+        // Counted per event, not per (event, destination) pair.
+        eventsWritten.addAndGet(batch.size());
     }
 
     /**

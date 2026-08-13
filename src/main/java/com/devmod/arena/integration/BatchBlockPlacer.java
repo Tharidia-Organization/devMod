@@ -202,41 +202,41 @@ public class BatchBlockPlacer implements ArenaBuilder.BlockPlacer {
 
         for (QueuedBlock block : blocks) {
             mutablePos.set(block.x(), block.y(), block.z());
+            BlockState blockState = Objects.requireNonNull(block.state());
+            BlockPos immutablePos = Objects.requireNonNull(mutablePos.immutable());
 
-            // Direct section access for better performance
+            // Direct section access for better performance. States carrying a block
+            // entity must go through level.setBlock: a raw section write never creates
+            // the BlockEntity, leaving the chunk inconsistent.
             int sectionIndex = chunk.getSectionIndex(block.y());
-            if (sectionIndex >= 0 && sectionIndex < chunk.getSectionsCount()) {
-                LevelChunkSection section = chunk.getSection(sectionIndex);
-
-                // Calculate local coordinates within section
-                int localX = block.x() & 15;
-                int localY = block.y() & 15;
-                int localZ = block.z() & 15;
-
-                // Set block state directly in section
-                // Ensure state is non-null for @Nonnull parameter
-                BlockState blockState = Objects.requireNonNull(block.state());
-                BlockState oldState = section.setBlockState(localX, localY, localZ, blockState, false);
-
-                // Handle block entity updates if needed (oldState may be null for first-time placement)
-                if (oldState != null && oldState.hasBlockEntity()) {
-                    chunk.removeBlockEntity(Objects.requireNonNull(mutablePos.immutable()));
-                }
-                if (blockState.hasBlockEntity()) {
-                    // Block entities will be created on demand
-                }
-            } else {
-                // Fallback to standard placement for out-of-bounds sections
-                BlockPos immutablePos = Objects.requireNonNull(mutablePos.immutable());
-                level.setBlock(immutablePos, Objects.requireNonNull(block.state()), PLACEMENT_FLAGS);
+            if (sectionIndex < 0 || sectionIndex >= chunk.getSectionsCount()
+                || blockState.hasBlockEntity()) {
+                level.setBlock(immutablePos, blockState, PLACEMENT_FLAGS);
+                continue;
             }
+
+            LevelChunkSection section = chunk.getSection(sectionIndex);
+
+            // Calculate local coordinates within section
+            int localX = block.x() & 15;
+            int localY = block.y() & 15;
+            int localZ = block.z() & 15;
+
+            BlockState oldState = section.setBlockState(localX, localY, localZ, blockState, false);
+
+            // oldState may be null for first-time placement
+            if (oldState != null && oldState.hasBlockEntity()) {
+                chunk.removeBlockEntity(immutablePos);
+            }
+
+            // The raw section write bypasses Level.setBlock, so lighting and client
+            // sync have to be requested explicitly.
+            level.getChunkSource().getLightEngine().checkBlock(immutablePos);
+            level.getChunkSource().blockChanged(immutablePos);
         }
 
         // Mark chunk dirty for saving
         chunk.setUnsaved(true);
-
-        // Request light update for the section
-        level.getChunkSource().getLightEngine().checkBlock(Objects.requireNonNull(mutablePos.immutable()));
     }
 
     @Override
