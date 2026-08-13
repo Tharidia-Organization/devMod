@@ -92,7 +92,6 @@ public class TelemetryLogHandlers {
                 + "}";
 
         // Route through aggregation for player attackers
-        boolean aggregated = false;
         if (AggregationConfig.AGGREGATION_ENABLED && attacker instanceof ServerPlayer playerAttacker) {
             TelemetryAggregator agg = TelemetryAggregatorRegistry.INSTANCE.getAggregator(playerAttacker.getUUID());
             if (agg != null) {
@@ -106,13 +105,16 @@ public class TelemetryLogHandlers {
                 } else {
                     weapon = playerAttacker.getMainHandItem().getItem().toString();
                 }
-                // processHit returns false if aggregated (don't write now)
-                aggregated = !agg.processHit(amount, isKill, isCritical, weapon, targetType);
+                // Feeds the LVC and combat_aggregates. The raw row is still
+                // written below: combat_aggregates has no body_part,
+                // damage_type, distance or room, which every analytics
+                // endpoint reads from combat_hits.
+                agg.processHit(amount, isKill, isCritical, weapon, targetType);
             }
         }
 
-        // DuckDB PRIMARY - skip if aggregated
-        if (!aggregated && DuckDBTelemetryService.INSTANCE.isEnabled()) {
+        // DuckDB PRIMARY
+        if (DuckDBTelemetryService.INSTANCE.isEnabled()) {
             DuckDBTelemetryService.INSTANCE.logHit(room, level.dimension().location().toString(),
                 context != null ? context.templateId() : null,
                 context != null ? context.templateVersion() : null,

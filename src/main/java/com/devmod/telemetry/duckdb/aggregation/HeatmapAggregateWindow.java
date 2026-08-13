@@ -17,6 +17,13 @@ import javax.annotation.Nullable;
  */
 public class HeatmapAggregateWindow {
 
+    /** World blocks covered by one cell edge. */
+    private static final int CELL_SIZE = 16;
+
+    /** Cell coordinate range that fits the packed map key (16 signed bits each). */
+    private static final int MIN_CELL = Short.MIN_VALUE;
+    private static final int MAX_CELL = Short.MAX_VALUE;
+
     private final long windowDurationMs;
     private Instant windowStart;
 
@@ -25,13 +32,14 @@ public class HeatmapAggregateWindow {
     // ============================================
 
     /**
-     * Grid size (positions are bucketed into gridSize x gridSize cells).
-     * Cell (x,z) covers positions from (x*cellSize) to ((x+1)*cellSize-1).
+     * Nominal grid width, reported with the aggregate. Cells themselves are
+     * absolute world cells ({@link #CELL_SIZE} blocks per edge), so a window is
+     * not limited to a gridSize x gridSize area around the world origin.
      */
     private final int gridSize;
 
     /**
-     * Sparse grid: key = cellX * gridSize + cellZ, value = count.
+     * Sparse grid: key = packed absolute cell coordinates, value = count.
      * Only non-zero cells are stored.
      */
     private final Map<Integer, Integer> sparseCounts;
@@ -85,16 +93,20 @@ public class HeatmapAggregateWindow {
      * @param worldZ world Z coordinate
      * @param type heatmap type (movement, death, damage, etc.)
      */
-    public void recordPosition(int worldX, int worldY, int worldZ, String type) {
-        // Normalize to grid cell
+    public synchronized void recordPosition(int worldX, int worldY, int worldZ, String type) {
+        // Absolute cell coordinates: they stay comparable across windows,
+        // sessions and players, unlike a grid anchored on the window.
         int cellX = normalizeToCell(worldX);
         int cellZ = normalizeToCell(worldZ);
 
-        // Clamp to grid bounds
-        cellX = Math.max(0, Math.min(gridSize - 1, cellX));
-        cellZ = Math.max(0, Math.min(gridSize - 1, cellZ));
+        // Cell coordinates outside the packable range cannot be stored;
+        // the sample still counts towards the total.
+        if (cellX < MIN_CELL || cellX > MAX_CELL || cellZ < MIN_CELL || cellZ > MAX_CELL) {
+            totalSamples++;
+            return;
+        }
 
-        int key = cellX * gridSize + cellZ;
+        int key = packCell(cellX, cellZ);
 
         // Check max cells limit
         if (!sparseCounts.containsKey(key) && sparseCounts.size() >= maxCells) {
@@ -113,13 +125,33 @@ public class HeatmapAggregateWindow {
     }
 
     /**
-     * Normalize world coordinate to grid cell index.
-     * Uses chunk-like bucketing (16 blocks per cell by default).
+     * Normalize world coordinate to an absolute cell index
+     * (chunk-like bucketing, 16 blocks per cell).
      */
-    private int normalizeToCell(int worldCoord) {
-        // Center the grid around origin
-        int offset = worldCoord + (gridSize * 8);  // Shift to positive space
-        return offset / 16;  // 16 blocks per cell
+    private static int normalizeToCell(int worldCoord) {
+        return Math.floorDiv(worldCoord, CELL_SIZE);
+    }
+
+    /**
+     * Pack signed cell coordinates into a single map key.
+     * Both coordinates must be within [MIN_CELL, MAX_CELL].
+     */
+    private static int packCell(int cellX, int cellZ) {
+        return (cellX << 16) | (cellZ & 0xFFFF);
+    }
+
+    /**
+     * Unpack the X coordinate of a key produced by {@link #packCell(int, int)}.
+     */
+    static int unpackCellX(int key) {
+        return key >> 16;
+    }
+
+    /**
+     * Unpack the Z coordinate of a key produced by {@link #packCell(int, int)}.
+     */
+    static int unpackCellZ(int key) {
+        return (short) (key & 0xFFFF);
     }
 
     // ============================================
@@ -129,7 +161,7 @@ public class HeatmapAggregateWindow {
     /**
      * Check if window should be flushed.
      */
-    public boolean shouldFlush() {
+    public synchronized boolean shouldFlush() {
         if (isEmpty()) return false;
 
         long elapsed = Instant.now().toEpochMilli() - windowStart.toEpochMilli();
@@ -139,14 +171,14 @@ public class HeatmapAggregateWindow {
     /**
      * Check if window has any data.
      */
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return totalSamples == 0;
     }
 
     /**
      * Flush window and return aggregate data.
      */
-    public HeatmapAggregate flush() {
+    public synchronized HeatmapAggregate flush() {
         Instant windowEnd = Instant.now();
 
         HeatmapAggregate aggregate = new HeatmapAggregate(
@@ -169,7 +201,7 @@ public class HeatmapAggregateWindow {
     /**
      * Reset window.
      */
-    public void reset() {
+    public synchronized void reset() {
         windowStart = Instant.now();
         sparseCounts.clear();
         totalSamples = 0;
@@ -179,15 +211,15 @@ public class HeatmapAggregateWindow {
     // CONTEXT SETTERS
     // ============================================
 
-    public void setSessionId(@Nullable UUID sessionId) {
+    public synchronized void setSessionId(@Nullable UUID sessionId) {
         this.sessionId = sessionId;
     }
 
-    public void setTemplateId(@Nullable String templateId) {
+    public synchronized void setTemplateId(@Nullable String templateId) {
         this.templateId = templateId;
     }
 
-    public void setHeatmapType(String type) {
+    public synchronized void setHeatmapType(String type) {
         this.heatmapType = type;
     }
 
@@ -195,15 +227,15 @@ public class HeatmapAggregateWindow {
     // GETTERS
     // ============================================
 
-    public int getTotalSamples() {
+    public synchronized int getTotalSamples() {
         return totalSamples;
     }
 
-    public int getCellCount() {
+    public synchronized int getCellCount() {
         return sparseCounts.size();
     }
 
-    public Instant getWindowStart() {
+    public synchronized Instant getWindowStart() {
         return windowStart;
     }
 
@@ -236,8 +268,8 @@ public class HeatmapAggregateWindow {
 
             for (Map.Entry<Integer, Integer> e : sparseCounts.entrySet()) {
                 int key = e.getKey();
-                int cellX = key / gridSize;
-                int cellZ = key % gridSize;
+                int cellX = unpackCellX(key);
+                int cellZ = unpackCellZ(key);
 
                 if (!first) sb.append(",");
                 sb.append("\"").append(cellX).append(",").append(cellZ)
@@ -263,11 +295,9 @@ public class HeatmapAggregateWindow {
                 }
             }
 
-            if (maxKey < 0) return new int[]{0, 0, 0};
+            if (maxCount == 0) return new int[]{0, 0, 0};
 
-            int cellX = maxKey / gridSize;
-            int cellZ = maxKey % gridSize;
-            return new int[]{cellX, cellZ, maxCount};
+            return new int[]{unpackCellX(maxKey), unpackCellZ(maxKey), maxCount};
         }
 
         /**

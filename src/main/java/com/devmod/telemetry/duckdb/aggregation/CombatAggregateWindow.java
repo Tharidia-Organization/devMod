@@ -106,7 +106,7 @@ public class CombatAggregateWindow {
      * @param weapon weapon identifier (nullable)
      * @param targetType target entity type (nullable)
      */
-    public void recordHit(double damage, boolean isKill, boolean isCritical,
+    public synchronized void recordHit(double damage, boolean isKill, boolean isCritical,
                           String weapon, String targetType) {
         hitCount++;
         totalDamage += damage;
@@ -135,7 +135,7 @@ public class CombatAggregateWindow {
     /**
      * Record a miss.
      */
-    public void recordMiss() {
+    public synchronized void recordMiss() {
         missCount++;
     }
 
@@ -146,7 +146,7 @@ public class CombatAggregateWindow {
     /**
      * Check if window should be flushed (time elapsed or force threshold).
      */
-    public boolean shouldFlush() {
+    public synchronized boolean shouldFlush() {
         if (isEmpty()) {
             return false;
         }
@@ -161,14 +161,14 @@ public class CombatAggregateWindow {
     /**
      * Check if window has any data.
      */
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return hitCount == 0 && missCount == 0;
     }
 
     /**
      * Get remaining time until window expires (milliseconds).
      */
-    public long getRemainingMs() {
+    public synchronized long getRemainingMs() {
         long elapsed = Instant.now().toEpochMilli() - windowStart.toEpochMilli();
         return Math.max(0, windowDurationMs - elapsed);
     }
@@ -177,7 +177,7 @@ public class CombatAggregateWindow {
      * Flush window and return aggregate data.
      * Resets window for next interval.
      */
-    public CombatAggregate flush() {
+    public synchronized CombatAggregate flush() {
         Instant windowEnd = Instant.now();
 
         CombatAggregate aggregate = new CombatAggregate(
@@ -205,7 +205,7 @@ public class CombatAggregateWindow {
     /**
      * Reset window without returning data.
      */
-    public void reset() {
+    public synchronized void reset() {
         windowStart = Instant.now();
         hitCount = 0;
         totalDamage = 0;
@@ -220,15 +220,15 @@ public class CombatAggregateWindow {
     // CONTEXT SETTERS
     // ============================================
 
-    public void setSessionId(@Nullable UUID sessionId) {
+    public synchronized void setSessionId(@Nullable UUID sessionId) {
         this.sessionId = sessionId;
     }
 
-    public void setQuestId(@Nullable UUID questId) {
+    public synchronized void setQuestId(@Nullable UUID questId) {
         this.questId = questId;
     }
 
-    public void setTemplateInfo(@Nullable String templateId, @Nullable Integer templateVersion) {
+    public synchronized void setTemplateInfo(@Nullable String templateId, @Nullable Integer templateVersion) {
         this.templateId = templateId;
         this.templateVersion = templateVersion;
     }
@@ -237,19 +237,19 @@ public class CombatAggregateWindow {
     // GETTERS (for monitoring)
     // ============================================
 
-    public int getHitCount() {
+    public synchronized int getHitCount() {
         return hitCount;
     }
 
-    public double getTotalDamage() {
+    public synchronized double getTotalDamage() {
         return totalDamage;
     }
 
-    public int getKillCount() {
+    public synchronized int getKillCount() {
         return killCount;
     }
 
-    public Instant getWindowStart() {
+    public synchronized Instant getWindowStart() {
         return windowStart;
     }
 

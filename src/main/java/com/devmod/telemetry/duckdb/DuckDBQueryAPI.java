@@ -72,7 +72,8 @@ public class DuckDBQueryAPI {
         List<WeaponSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new WeaponSummary(
@@ -112,7 +113,8 @@ public class DuckDBQueryAPI {
         List<RoomDamageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  var rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new RoomDamageSummary(
@@ -159,7 +161,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setObject(1, playerId);
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -209,7 +212,8 @@ public class DuckDBQueryAPI {
         List<PerkUsageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  var rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new PerkUsageSummary(
@@ -251,7 +255,8 @@ public class DuckDBQueryAPI {
         AbilityStats stats = new AbilityStats(playerId);
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setObject(1, playerId);
                 try (var rs = stmt.executeQuery()) {
                     while (rs.next()) {
@@ -313,7 +318,8 @@ public class DuckDBQueryAPI {
         List<HeatmapCell> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, heatmapType);
                 stmt.setString(2, room);
                 try (var rs = stmt.executeQuery()) {
@@ -355,7 +361,8 @@ public class DuckDBQueryAPI {
         List<PerformanceSample> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(Instant.now().minus(window)));
                 try (var rs = stmt.executeQuery()) {
                     while (rs.next()) {
@@ -391,7 +398,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(Instant.now().minus(window)));
                 try (var rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -514,7 +522,8 @@ public class DuckDBQueryAPI {
         List<MobKillSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new MobKillSummary(
@@ -546,7 +555,8 @@ public class DuckDBQueryAPI {
         List<MobDropSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new MobDropSummary(
@@ -579,7 +589,8 @@ public class DuckDBQueryAPI {
         List<ItemPickupSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new ItemPickupSummary(
@@ -612,7 +623,8 @@ public class DuckDBQueryAPI {
         List<ItemUsageSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new ItemUsageSummary(
@@ -639,7 +651,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn)) {
                 // economy_mob_kills
                 try (ResultSet rs = stmt.executeQuery(
                     "SELECT COUNT(*) FROM economy_mob_kills WHERE ts >= " + interval)) {
@@ -710,7 +723,8 @@ public class DuckDBQueryAPI {
         List<BlockEventSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new BlockEventSummary(
@@ -744,7 +758,8 @@ public class DuckDBQueryAPI {
         List<XpEventSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new XpEventSummary(
@@ -778,7 +793,8 @@ public class DuckDBQueryAPI {
         List<AdvancementSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new AdvancementSummary(
@@ -811,7 +827,8 @@ public class DuckDBQueryAPI {
         List<DimensionChangeSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new DimensionChangeSummary(
@@ -845,7 +862,8 @@ public class DuckDBQueryAPI {
         List<TradeSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new TradeSummary(
@@ -881,7 +899,8 @@ public class DuckDBQueryAPI {
         List<FishingSummary> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(new FishingSummary(
@@ -907,7 +926,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn)) {
                 try (ResultSet rs = stmt.executeQuery(
                     "SELECT COUNT(*) FROM progression_blocks WHERE ts >= " + interval)) {
                     if (rs.next()) counts.blocks = rs.getInt(1);
@@ -983,7 +1003,8 @@ public class DuckDBQueryAPI {
         List<String> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = createStatement(conn);
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = createStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
                 while (rs.next()) {
                     results.add(rs.getString("template_id"));
@@ -1028,7 +1049,8 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.BuildRecord> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1098,7 +1120,8 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.BuildPerformanceSample> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1156,7 +1179,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1211,7 +1235,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1254,7 +1279,8 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.TemporalGap> gaps = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(since));
                 stmt.setDouble(2, Math.max(0.0, (double) minGap.toSeconds()));
                 stmt.setInt(3, Math.max(1, limit));
@@ -1287,7 +1313,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setTimestamp(1, Timestamp.from(timestamp));
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -1336,7 +1363,8 @@ public class DuckDBQueryAPI {
         List<ArenaRecords.WaveAggregate> results = new ArrayList<>();
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);
@@ -1388,7 +1416,8 @@ public class DuckDBQueryAPI {
 
         try {
             Connection conn = connectionManager.getConnection();
-            try (var stmt = prepareStatement(conn, sql)) {
+            try (var lease = connectionManager.lockStatements();
+                 var stmt = prepareStatement(conn, sql)) {
                 stmt.setString(1, templateId);
                 if (templateVersion != null) {
                     stmt.setInt(2, templateVersion);

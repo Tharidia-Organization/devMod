@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,7 +25,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
@@ -40,6 +43,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import com.devmod.arena.dashboard.ArenaDashboardEndpoint;
+import com.devmod.telemetry.duckdb.DuckDBConfig;
+import com.devmod.telemetry.duckdb.DuckDBConnectionManager;
 import com.devmod.telemetry.duckdb.DuckDBTelemetryService;
 
 public class TelemetryDashboardServer {
@@ -60,6 +65,8 @@ public class TelemetryDashboardServer {
     private final AtomicBoolean running = new AtomicBoolean(false);
     @Nullable
     private HttpServer server;
+    @Nullable
+    private ExecutorService serverExecutor;
     private int port = DEFAULT_PORT;
 
     // Delegate for analytics handlers
@@ -86,7 +93,9 @@ public class TelemetryDashboardServer {
             HttpServer httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), port), 0);
             server = httpServer;
             HttpServer activeServer = Objects.requireNonNull(server, "server");
-            activeServer.setExecutor(Executors.newFixedThreadPool(4));
+            ExecutorService executor = Executors.newFixedThreadPool(4);
+            serverExecutor = executor;
+            activeServer.setExecutor(executor);
 
             // API Routes - Basic
             activeServer.createContext("/api/health", new ApiHandler(this::handleHealth));
@@ -180,6 +189,22 @@ public class TelemetryDashboardServer {
                 httpServer.stop(1);
             }
             server = null;
+
+            // HttpServer.stop() does not touch an executor supplied via
+            // setExecutor(), so its threads outlive every start/stop cycle.
+            ExecutorService executor = serverExecutor;
+            if (executor != null) {
+                executor.shutdown();
+                try {
+                    if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                        executor.shutdownNow();
+                    }
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            serverExecutor = null;
 
             ArenaDashboardEndpoint endpoint = arenaEndpoint;
             if (endpoint != null) {
@@ -1147,6 +1172,12 @@ public class TelemetryDashboardServer {
         return executeQuery(sql);
     }
 
+    private static Statement createTimedStatement(Connection conn) throws java.sql.SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.setQueryTimeout(DuckDBConfig.ANALYTICS_QUERY_TIMEOUT_SECONDS);
+        return stmt;
+    }
+
     public List<Map<String, Object>> executeQuery(String sql, List<SqlParam> params) {
         List<Map<String, Object>> results = new ArrayList<>();
 
@@ -1155,12 +1186,20 @@ public class TelemetryDashboardServer {
         }
 
         try {
+            DuckDBConnectionManager manager = DuckDBTelemetryService.INSTANCE.getConnectionManager();
+            if (manager == null) {
+                return results;
+            }
             Connection conn = DuckDBTelemetryService.INSTANCE.getConnection();
             if (conn == null) {
                 return results;
             }
 
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            // DuckDB cannot run concurrent statements on one connection and this
+            // one is shared with the batch writer and the other HTTP threads.
+            try (DuckDBConnectionManager.StatementLease lease = manager.lockStatements();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setQueryTimeout(DuckDBConfig.ANALYTICS_QUERY_TIMEOUT_SECONDS);
                 int index = 1;
                 for (SqlParam param : params) {
                     if (param.value() == null) {
@@ -1201,12 +1240,17 @@ public class TelemetryDashboardServer {
         }
 
         try {
+            DuckDBConnectionManager manager = DuckDBTelemetryService.INSTANCE.getConnectionManager();
+            if (manager == null) {
+                return results;
+            }
             Connection conn = DuckDBTelemetryService.INSTANCE.getConnection();
             if (conn == null) {
                 return results;
             }
 
-            try (Statement stmt = conn.createStatement();
+            try (DuckDBConnectionManager.StatementLease lease = manager.lockStatements();
+                 Statement stmt = createTimedStatement(conn);
                  ResultSet rs = stmt.executeQuery(sql)) {
 
                 ResultSetMetaData meta = rs.getMetaData();
@@ -1231,7 +1275,9 @@ public class TelemetryDashboardServer {
 
     public Map<String, String> parseQueryParams(HttpExchange exchange) {
         Map<String, String> params = new HashMap<>();
-        String query = exchange.getRequestURI().getQuery();
+        // getRawQuery(): getQuery() decodes '&' and '=' inside values too, which
+        // would split a value that legitimately contains them.
+        String query = exchange.getRequestURI().getRawQuery();
         if (query != null) {
             for (String param : AMPERSAND_SPLITTER.split(query)) {
                 if (param.isEmpty()) {
@@ -1239,11 +1285,21 @@ public class TelemetryDashboardServer {
                 }
                 int equalsIndex = param.indexOf('=');
                 if (equalsIndex >= 0) {
-                    params.put(param.substring(0, equalsIndex), param.substring(equalsIndex + 1));
+                    params.put(urlDecode(param.substring(0, equalsIndex)),
+                        urlDecode(param.substring(equalsIndex + 1)));
                 }
             }
         }
         return params;
+    }
+
+    private static String urlDecode(String value) {
+        try {
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            // Malformed percent-escape: keep the raw text rather than failing the request
+            return value;
+        }
     }
 
     private static String paramOrEmpty(Map<String, String> params, String key) {
@@ -1344,10 +1400,10 @@ public class TelemetryDashboardServer {
 
             InputStream stream = getClass().getResourceAsStream(fullResourcePath);
             if (stream == null) {
-                String notFound = "File not found: " + fullResourcePath;
-                exchange.sendResponseHeaders(404, notFound.length());
+                byte[] notFound = ("File not found: " + fullResourcePath).getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(404, notFound.length);
                 try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(notFound.getBytes(StandardCharsets.UTF_8));
+                    os.write(notFound);
                 }
                 return;
             }

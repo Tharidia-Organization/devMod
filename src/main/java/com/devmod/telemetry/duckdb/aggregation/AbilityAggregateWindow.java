@@ -87,7 +87,7 @@ public class AbilityAggregateWindow {
      * @param staminaCost stamina spent
      * @param damageNegated damage negated (for defensive abilities)
      */
-    public void recordAbility(String abilityType, boolean success,
+    public synchronized void recordAbility(String abilityType, boolean success,
                               double staminaCost, double damageNegated) {
         if (abilityType == null || abilityType.isEmpty()) return;
 
@@ -134,7 +134,7 @@ public class AbilityAggregateWindow {
     /**
      * Check if window should be flushed.
      */
-    public boolean shouldFlush() {
+    public synchronized boolean shouldFlush() {
         if (isEmpty()) return false;
 
         long elapsed = Instant.now().toEpochMilli() - windowStart.toEpochMilli();
@@ -144,7 +144,7 @@ public class AbilityAggregateWindow {
     /**
      * Check if window has any data.
      */
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         for (AbilityStats stats : abilityStats.values()) {
             if (stats.attempts > 0) return false;
         }
@@ -157,7 +157,7 @@ public class AbilityAggregateWindow {
     /**
      * Flush window and return aggregate data.
      */
-    public AbilityAggregate flush() {
+    public synchronized AbilityAggregate flush() {
         Instant windowEnd = Instant.now();
 
         // Copy stats
@@ -185,7 +185,7 @@ public class AbilityAggregateWindow {
     /**
      * Reset window.
      */
-    public void reset() {
+    public synchronized void reset() {
         windowStart = Instant.now();
         for (AbilityStats stats : abilityStats.values()) {
             stats.reset();
@@ -197,7 +197,7 @@ public class AbilityAggregateWindow {
     // CONTEXT SETTERS
     // ============================================
 
-    public void setSessionId(@Nullable UUID sessionId) {
+    public synchronized void setSessionId(@Nullable UUID sessionId) {
         this.sessionId = sessionId;
     }
 
@@ -205,7 +205,7 @@ public class AbilityAggregateWindow {
     // GETTERS
     // ============================================
 
-    public int getTotalAttempts() {
+    public synchronized int getTotalAttempts() {
         int total = 0;
         for (AbilityStats stats : abilityStats.values()) {
             total += stats.attempts;
@@ -216,7 +216,7 @@ public class AbilityAggregateWindow {
         return total;
     }
 
-    public Instant getWindowStart() {
+    public synchronized Instant getWindowStart() {
         return windowStart;
     }
 

@@ -48,6 +48,10 @@ public class DuckDBConnectionManager implements AutoCloseable {
      * This method is thread-safe. The returned connection should NOT be closed
      * by the caller - it is a shared connection managed by this class.
      *
+     * The connection is shared, and DuckDB cannot run concurrent statements on
+     * one connection: hold a {@link #lockStatements()} lease around every
+     * statement executed on it.
+     *
      * IMPORTANT: Do NOT use this in try-with-resources that auto-closes Connection!
      * Correct usage:
      *   Connection conn = connectionManager.getConnection();
@@ -118,6 +122,57 @@ public class DuckDBConnectionManager implements AutoCloseable {
         } finally {
             connectionLock.unlock();
         }
+    }
+
+    /**
+     * Reserve the shared connection for the duration of a statement.
+     *
+     * A DuckDB JDBC Connection does not support concurrent statements: two
+     * threads running statements on the same Connection corrupt each other's
+     * ResultSets. Every caller that executes SQL on the connection returned by
+     * {@link #getConnection()} must hold a lease for as long as it uses the
+     * statement AND its ResultSet:
+     *
+     *   try (var lease = manager.lockStatements();
+     *        var stmt = conn.createStatement();
+     *        var rs = stmt.executeQuery(sql)) { ... }
+     *
+     * The lease is reentrant, so {@link #getConnection()} may be called while
+     * holding it. Internal helpers that execute SQL (checkpoint, testConnection,
+     * integrity/permission checks, shutdown) take the same lock.
+     *
+     * @return lease to release in a finally/try-with-resources block
+     * @throws SQLException if the lease cannot be acquired within
+     *         {@link DuckDBConfig#CONNECTION_TIMEOUT_SECONDS}
+     */
+    public StatementLease lockStatements() throws SQLException {
+        boolean acquired;
+        try {
+            acquired = connectionLock.tryLock(
+                DuckDBConfig.CONNECTION_TIMEOUT_SECONDS,
+                TimeUnit.SECONDS
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new SQLException("Statement lease acquisition interrupted", e);
+        }
+
+        if (!acquired) {
+            acquisitionTimeouts.incrementAndGet();
+            throw new SQLException("Statement lease timeout - database may be overloaded");
+        }
+
+        return connectionLock::unlock;
+    }
+
+    /**
+     * Exclusive use of the shared connection, released on close.
+     * Declared without a checked exception so it can be used as a
+     * try-with-resources resource inside SQLException-only handlers.
+     */
+    public interface StatementLease extends AutoCloseable {
+        @Override
+        void close();
     }
 
     /**

@@ -1005,11 +1005,12 @@ public class DuckDBBatchWriter {
             }
         }
 
-        // Update pressure level based on total queue size (atomic update)
-        int totalPending = getPendingInserts();
-        if (totalPending >= PRESSURE_THRESHOLD_CRITICAL) {
+        // Update pressure level from the fullest queue: the thresholds are
+        // fractions of QUEUE_CAPACITY, which is the capacity of ONE table queue.
+        int deepestQueue = getDeepestQueueSize();
+        if (deepestQueue >= PRESSURE_THRESHOLD_CRITICAL) {
             pressureLevel.set(2);
-        } else if (totalPending >= PRESSURE_THRESHOLD_ELEVATED) {
+        } else if (deepestQueue >= PRESSURE_THRESHOLD_ELEVATED) {
             pressureLevel.set(1);
         } else {
             pressureLevel.set(0);
@@ -1222,12 +1223,19 @@ public class DuckDBBatchWriter {
         if (queue == null || queue.isEmpty()) return 0;
 
         Connection conn = null;
+        DuckDBConnectionManager.StatementLease lease = null;
         boolean autoCommitOriginal = true;
         int flushed = 0;
-        List<Object[]> batch = null;
+        int batches = 0;
+        // Every row drained by this transaction: a rollback discards all of
+        // them, so all of them have to be re-queued, not just the last chunk.
+        List<Object[]> drained = new ArrayList<>();
         long writeStartNanos = System.nanoTime(); // P2: Track write latency
 
         try {
+            // The connection is shared with readers (query API / dashboard) and
+            // DuckDB cannot run concurrent statements on one connection.
+            lease = connectionManager.lockStatements();
             conn = connectionManager.getConnection();
             String sql = insertSqlCache.get(tableName);
             if (sql == null) {
@@ -1240,9 +1248,10 @@ public class DuckDBBatchWriter {
 
             // Allow final flush even after running=false (shutdown)
             while (!queue.isEmpty()) {
-                batch = new ArrayList<>(DuckDBConfig.BATCH_SIZE);
+                List<Object[]> batch = new ArrayList<>(DuckDBConfig.BATCH_SIZE);
                 queue.drainTo(batch, DuckDBConfig.BATCH_SIZE);
                 if (batch.isEmpty()) break;
+                drained.addAll(batch);
 
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setQueryTimeout(DuckDBConfig.QUERY_TIMEOUT_SECONDS);
@@ -1254,12 +1263,13 @@ public class DuckDBBatchWriter {
                 }
 
                 flushed += batch.size();
-                totalInserts.addAndGet(batch.size());
-                totalBatches.incrementAndGet();
+                batches++;
             }
 
             if (flushed > 0) {
                 conn.commit();
+                totalInserts.addAndGet(flushed);
+                totalBatches.addAndGet(batches);
                 consecutiveErrors.set(0);
 
                 // P2: Record successful write latency
@@ -1301,14 +1311,14 @@ public class DuckDBBatchWriter {
                 : CIRCUIT_BREAKER_THRESHOLD_TRANSIENT;
 
             // Re-queue batch only for transient errors (permanent errors = data loss acceptable)
-            if (errorType == DuckDBErrorClassifier.ErrorType.TRANSIENT && batch != null && !batch.isEmpty()) {
-                for (Object[] row : batch) {
+            if (errorType == DuckDBErrorClassifier.ErrorType.TRANSIENT && !drained.isEmpty()) {
+                for (Object[] row : drained) {
                     if (!queue.offer(row)) {
                         droppedInserts.incrementAndGet();
                         droppedByQueueFull.incrementAndGet();
                     }
                 }
-                LOGGER.debug("[DuckDB] Re-queued {} rows after transient error", batch.size());
+                LOGGER.debug("[DuckDB] Re-queued {} rows after transient error", drained.size());
             }
 
             if (errors >= threshold) {
@@ -1322,7 +1332,8 @@ public class DuckDBBatchWriter {
                 LOGGER.warn("[DuckDB] Flush failed for table={} (type={} count={}/{})",
                     tableName, errorType, errors, threshold, e);
             }
-            return flushed;
+            // Nothing was committed: the whole transaction was rolled back.
+            return 0;
 
         } finally {
             if (conn != null) {
@@ -1331,6 +1342,9 @@ public class DuckDBBatchWriter {
                 } catch (SQLException e) {
                     LOGGER.debug("[DuckDB] Failed to restore auto-commit", e);
                 }
+            }
+            if (lease != null) {
+                lease.close();
             }
         }
     }
@@ -1650,6 +1664,20 @@ public class DuckDBBatchWriter {
 
     public int getPendingInserts() {
         return tableQueues.values().stream().mapToInt(BlockingQueue::size).sum();
+    }
+
+    /**
+     * Size of the fullest per-table queue (each queue holds QUEUE_CAPACITY rows).
+     */
+    private int getDeepestQueueSize() {
+        int deepest = 0;
+        for (BlockingQueue<Object[]> queue : tableQueues.values()) {
+            int size = queue.size();
+            if (size > deepest) {
+                deepest = size;
+            }
+        }
+        return deepest;
     }
 
     /**

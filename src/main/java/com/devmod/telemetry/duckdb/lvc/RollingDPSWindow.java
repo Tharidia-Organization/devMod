@@ -66,17 +66,23 @@ public class RollingDPSWindow {
     public void recordDamage(double damage) {
         if (damage <= 0) return;
 
-        long now = getCurrentSecond();
-        long lastSecond = lastUpdateSecond.get();
-
         synchronized (accumulatorLock) {
-            // If we're in a new second, commit previous and advance
-            if (now != lastSecond) {
-                advanceWindow(now, lastSecond);
-            }
+            syncToCurrentSecond();
 
             // Accumulate damage for current second
             currentSecondDamage += damage;
+        }
+    }
+
+    /**
+     * Advance the window to the current second if time has passed.
+     * Caller must hold {@code accumulatorLock}.
+     */
+    private void syncToCurrentSecond() {
+        long now = getCurrentSecond();
+        long lastSecond = lastUpdateSecond.get();
+        if (now != lastSecond) {
+            advanceWindow(now, lastSecond);
         }
     }
 
@@ -113,41 +119,20 @@ public class RollingDPSWindow {
      * @return damage per second averaged over the rolling window
      */
     public double getCurrentDPS() {
-        // First, ensure we're up to date
-        long now = getCurrentSecond();
-        long lastSecond = lastUpdateSecond.get();
-
         double totalDamage;
-        int effectiveWindowSize;
 
         synchronized (accumulatorLock) {
-            // If time has passed, we need to account for it
-            if (now != lastSecond) {
-                long secondsElapsed = Math.min(now - lastSecond, windowSize);
+            // Expire the seconds that elapsed since the last update, otherwise
+            // a player who stopped fighting keeps reporting stale damage.
+            syncToCurrentSecond();
 
-                // Calculate total from buffer (excluding zeroed slots)
-                totalDamage = currentSecondDamage;  // Include uncommitted damage
-                effectiveWindowSize = windowSize;
-
-                int idx = currentIndex.get();
-                for (int i = 0; i < windowSize; i++) {
-                    // Skip slots that would be zeroed by the advance
-                    if (i < windowSize - secondsElapsed) {
-                        totalDamage += damagePerSecond[(idx - i + windowSize) % windowSize];
-                    }
-                }
-            } else {
-                // We're current, sum entire buffer plus accumulator
-                totalDamage = currentSecondDamage;
-                effectiveWindowSize = windowSize;
-
-                for (double d : damagePerSecond) {
-                    totalDamage += d;
-                }
+            totalDamage = currentSecondDamage;
+            for (double d : damagePerSecond) {
+                totalDamage += d;
             }
         }
 
-        return totalDamage / effectiveWindowSize;
+        return totalDamage / windowSize;
     }
 
     /**
@@ -165,13 +150,17 @@ public class RollingDPSWindow {
      * @return maximum damage dealt in any single second
      */
     public double getPeakDPS() {
-        double peak = currentSecondDamage;
-        for (double d : damagePerSecond) {
-            if (d > peak) {
-                peak = d;
+        synchronized (accumulatorLock) {
+            syncToCurrentSecond();
+
+            double peak = currentSecondDamage;
+            for (double d : damagePerSecond) {
+                if (d > peak) {
+                    peak = d;
+                }
             }
+            return peak;
         }
-        return peak;
     }
 
     /**
@@ -199,11 +188,15 @@ public class RollingDPSWindow {
      * Check if there has been any activity in the window.
      */
     public boolean hasActivity() {
-        if (currentSecondDamage > 0) return true;
-        for (double d : damagePerSecond) {
-            if (d > 0) return true;
+        synchronized (accumulatorLock) {
+            syncToCurrentSecond();
+
+            if (currentSecondDamage > 0) return true;
+            for (double d : damagePerSecond) {
+                if (d > 0) return true;
+            }
+            return false;
         }
-        return false;
     }
 
     private static long getCurrentSecond() {
