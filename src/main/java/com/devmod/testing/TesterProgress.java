@@ -304,6 +304,7 @@ public final class TesterProgress {
         overlays.reset();
         session.reset();
         achievements.reset();
+        damage.save();
         save();
     }
 
@@ -335,7 +336,7 @@ public final class TesterProgress {
 
             JsonObject root = new JsonObject();
             root.add("kills", kills.toJson());
-            root.add("damage", damage.toJson());
+            // Damage counters live in damage_statistics.json, written by DamageStatistics itself.
             root.add("environmental", environmental.toJson());
             root.add("explosions", explosions.toJson());
             root.add("potions", potions.toJson());
@@ -362,7 +363,7 @@ public final class TesterProgress {
             JsonObject root = JsonParser.parseString(content).getAsJsonObject();
 
             if (root.has("kills")) kills.fromJson(root.getAsJsonObject("kills"));
-            if (root.has("damage")) damage.fromJson(root.getAsJsonObject("damage"));
+            if (root.has("damage")) adoptLegacyDamage(root.getAsJsonObject("damage"));
             if (root.has("environmental")) environmental.fromJson(root.getAsJsonObject("environmental"));
             if (root.has("explosions")) explosions.fromJson(root.getAsJsonObject("explosions"));
             if (root.has("potions")) potions.fromJson(root.getAsJsonObject("potions"));
@@ -378,5 +379,19 @@ public final class TesterProgress {
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Failed to load tester progress: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Damage counters used to be duplicated in this file. Adopt the old block only while
+     * DamageStatistics has no file of its own - otherwise this copy is stale and would
+     * resurrect counters the user already reset. The block is dropped on the next save().
+     */
+    private void adoptLegacyDamage(JsonObject legacy) {
+        if (Files.exists(ConfigPaths.getDamageStatisticsFile())) {
+            return;
+        }
+        damage.fromJson(legacy);
+        damage.save();
+        LOGGER.info("Migrated damage statistics out of tester_progress.json");
     }
 }

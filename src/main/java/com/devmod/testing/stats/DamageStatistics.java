@@ -116,6 +116,8 @@ public class DamageStatistics {
         if (json.has("byBodyPart")) jsonToDoubleMap(json.getAsJsonObject("byBodyPart"), damageByBodyPart);
         if (json.has("byWeapon")) jsonToDoubleMap(json.getAsJsonObject("byWeapon"), damageByWeapon);
         if (json.has("hitsByBodyPart")) jsonToIntMap(json.getAsJsonObject("hitsByBodyPart"), hitsByBodyPart);
+        // Callers importing from elsewhere need the values written out; load() clears this again.
+        dirty = true;
     }
 
     public void reset() {

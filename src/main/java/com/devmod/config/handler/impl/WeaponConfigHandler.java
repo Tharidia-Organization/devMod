@@ -219,9 +219,10 @@ public class WeaponConfigHandler extends AbstractConfigHandler<WeaponStats> {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public WeaponStats validateAndClamp(WeaponStats stats) {
-        if (stats == null) return createDefault();
+    public WeaponStats validateAndClamp(WeaponStats input) {
+        if (input == null) return createDefault();
 
+        WeaponStats stats = input.copy();
         PacketValidator security = PacketValidator.INSTANCE;
 
         // Hit location multipliers (clamp to component ranges)
@@ -488,7 +489,7 @@ public class WeaponConfigHandler extends AbstractConfigHandler<WeaponStats> {
     public void setSpecificStats(ItemStack stack, WeaponStats stats, @Nullable CompoundTag variantExtras) {
         if (stack == null || stack.isEmpty() || stats == null) return;
 
-        WeaponStats clamped = validateAndClamp(stats.copy());
+        WeaponStats clamped = validateAndClamp(stats);
 
         // Build stats tag
         CompoundTag statsTag = new CompoundTag();

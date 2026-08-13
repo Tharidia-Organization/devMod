@@ -123,9 +123,10 @@ public class FoodConfigHandler extends AbstractConfigHandler<FoodStats> {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public FoodStats validateAndClamp(FoodStats stats) {
-        if (stats == null) return createDefault();
+    public FoodStats validateAndClamp(FoodStats input) {
+        if (input == null) return createDefault();
 
+        FoodStats stats = input.copy();
         // Use component clamp for all values
         stats.setNutrition(NUTRITION.clamp(stats.getNutrition()));
         stats.setSaturation(SATURATION.clamp(stats.getSaturation()));

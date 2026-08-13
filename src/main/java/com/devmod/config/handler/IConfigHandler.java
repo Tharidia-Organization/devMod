@@ -128,9 +128,12 @@ public interface IConfigHandler<S extends IItemStats> {
 
     /**
      * Validate and clamp stats to safe values.
+     * Implementations must leave the argument untouched and return a clamped copy;
+     * callers pass live objects (editor previews, global map entries) and rely on
+     * the result being safe to store without further copying.
      *
      * @param stats the stats to validate
-     * @return the clamped stats
+     * @return a clamped copy of the stats
      */
     S validateAndClamp(S stats);
 

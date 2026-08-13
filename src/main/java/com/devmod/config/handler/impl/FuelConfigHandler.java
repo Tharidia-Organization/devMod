@@ -127,9 +127,10 @@ public class FuelConfigHandler extends AbstractConfigHandler<FuelStats> {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public FuelStats validateAndClamp(FuelStats stats) {
-        if (stats == null) return createDefault();
+    public FuelStats validateAndClamp(FuelStats input) {
+        if (input == null) return createDefault();
 
+        FuelStats stats = input.copy();
         // Use component clamp for all values
         stats.setBurnTime(BURN_TIME.clamp(stats.getBurnTime()));
         stats.setEfficiencyMultiplier(EFFICIENCY_MULTIPLIER.clamp(stats.getEfficiencyMultiplier()));

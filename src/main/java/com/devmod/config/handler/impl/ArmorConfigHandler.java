@@ -197,9 +197,10 @@ public class ArmorConfigHandler extends AbstractConfigHandler<ArmorStats> {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public ArmorStats validateAndClamp(ArmorStats stats) {
-        if (stats == null) return createDefault();
+    public ArmorStats validateAndClamp(ArmorStats input) {
+        if (input == null) return createDefault();
 
+        ArmorStats stats = input.copy();
         PacketValidator security = PacketValidator.INSTANCE;
 
         // Damage reductions

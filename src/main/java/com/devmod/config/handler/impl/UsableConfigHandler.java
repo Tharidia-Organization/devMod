@@ -125,9 +125,10 @@ public class UsableConfigHandler extends AbstractConfigHandler<UsableStats> {
     // ═══════════════════════════════════════════════════════════════
 
     @Override
-    public UsableStats validateAndClamp(UsableStats stats) {
-        if (stats == null) return createDefault();
+    public UsableStats validateAndClamp(UsableStats input) {
+        if (input == null) return createDefault();
 
+        UsableStats stats = input.copy();
         // Use component clamp for all values
         stats.setUseDuration(USE_DURATION.clamp(stats.getUseDuration()));
         stats.setCooldownDuration(COOLDOWN_DURATION.clamp(stats.getCooldownDuration()));

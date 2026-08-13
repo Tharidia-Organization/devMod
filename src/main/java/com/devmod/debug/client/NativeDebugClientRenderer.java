@@ -389,13 +389,21 @@ public class NativeDebugClientRenderer {
 
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
 
-        // Collect POIs into a list first to avoid lambda issues
-        List<net.minecraft.world.entity.ai.village.poi.PoiRecord> poiList = serverLevel.getPoiManager().getInRange(
-            holder -> true,
-            playerPos,
-            48,
-            net.minecraft.world.entity.ai.village.poi.PoiManager.Occupancy.ANY
-        ).toList();
+        // Collect POIs into a list first to avoid lambda issues.
+        // Same render-thread read of server state as renderStructures - the catch masks the
+        // race, it does not remove it.
+        List<net.minecraft.world.entity.ai.village.poi.PoiRecord> poiList;
+        try {
+            poiList = serverLevel.getPoiManager().getInRange(
+                holder -> true,
+                playerPos,
+                48,
+                net.minecraft.world.entity.ai.village.poi.PoiManager.Occupancy.ANY
+            ).toList();
+        } catch (RuntimeException e) {
+            poseStack.popPose();
+            return;
+        }
 
         for (var record : poiList) {
             BlockPos pos = Objects.requireNonNull(record.getPos());
@@ -451,7 +459,14 @@ public class NativeDebugClientRenderer {
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);
+        // Server-thread state read from the render thread; the catch masks the race only.
+        Raid nearestRaid;
+        try {
+            nearestRaid = raids.getNearbyRaid(playerPos, 128);
+        } catch (RuntimeException e) {
+            poseStack.popPose();
+            return;
+        }
 
         if (nearestRaid != null && nearestRaid.isActive()) {
             BlockPos center = nearestRaid.getCenter();
@@ -585,21 +600,27 @@ public class NativeDebugClientRenderer {
 
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
-                ChunkAccess chunk = serverLevel.getChunk(sectionPos.x() + dx, sectionPos.z() + dz, Objects.requireNonNull(ChunkStatus.FULL), false);
-                if (chunk == null) continue;
+                // Structure starts are never synced to the client, so this has to read the
+                // integrated server's chunk map from the render thread. Snapshotting under a
+                // catch only hides the race with the server thread; removing it needs the data
+                // pushed through NativeDebugSender like the other features.
+                try {
+                    ChunkAccess chunk = serverLevel.getChunk(sectionPos.x() + dx, sectionPos.z() + dz, Objects.requireNonNull(ChunkStatus.FULL), false);
+                    if (chunk == null) continue;
 
-                var structureStarts = chunk.getAllStarts();
-                for (var entry : structureStarts.entrySet()) {
-                    var structureStart = entry.getValue();
-                    if (structureStart == null) continue;
+                    for (var structureStart : new ArrayList<>(chunk.getAllStarts().values())) {
+                        if (structureStart == null) continue;
 
-                    BoundingBox bb = structureStart.getBoundingBox();
+                        BoundingBox bb = structureStart.getBoundingBox();
 
-                    // Draw structure bounding box
-                    drawBox(lineConsumer, matrix,
-                            bb.minX(), bb.minY(), bb.minZ(),
-                            bb.maxX() + 1, bb.maxY() + 1, bb.maxZ() + 1,
-                            0.0f, 1.0f, 1.0f, 1.0f); // Cyan for structures
+                        // Draw structure bounding box
+                        drawBox(lineConsumer, matrix,
+                                bb.minX(), bb.minY(), bb.minZ(),
+                                bb.maxX() + 1, bb.maxY() + 1, bb.maxZ() + 1,
+                                0.0f, 1.0f, 1.0f, 1.0f); // Cyan for structures
+                    }
+                } catch (RuntimeException e) {
+                    // Chunk was being mutated server-side; skip it this frame.
                 }
             }
         }
@@ -626,12 +647,6 @@ public class NativeDebugClientRenderer {
         var level = Objects.requireNonNull(mc.level);
         var player = Objects.requireNonNull(mc.player);
 
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
-
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
 
         // Re-scan only when cooldown expires or player moves significantly
@@ -646,7 +661,9 @@ public class NativeDebugClientRenderer {
                 for (int dy = -range / 2; dy <= range / 2; dy++) {
                     for (int dz = -range; dz <= range; dz++) {
                         BlockPos pos = playerPos.offset(dx, dy, dz);
-                        var blockState = serverLevel.getBlockState(pos);
+                        // Client level: sculk sensors are ordinary synced blocks, so the scan
+                        // does not have to touch the server thread's chunk map at all.
+                        var blockState = level.getBlockState(pos);
                         if (blockState.getBlock() instanceof net.minecraft.world.level.block.SculkSensorBlock) {
                             cachedSculkPositions.add(pos.immutable());
                         }
