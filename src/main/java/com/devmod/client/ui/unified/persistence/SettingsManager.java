@@ -296,6 +296,10 @@ public class SettingsManager {
         deleteConfigFile(ConfigPaths.getQuestDataFile());
         deleteConfigFile(ConfigPaths.getTutorialFile());
         deleteConfigFile(ConfigPaths.getQASessionFile());
+        // DamageStatistics owns its own file since the counters stopped being
+        // embedded in tester_progress.json; without this the damage totals
+        // survive a "complete reset".
+        deleteConfigFile(ConfigPaths.getDamageStatisticsFile());
 
         markDirty();
         save();

@@ -1,8 +1,10 @@
 package com.devmod.client.rendering.shield;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -47,32 +49,35 @@ public class EnergyShieldRenderer {
     private static final float DEFAULT_OPACITY = 0.6f;
     private static final float DEFAULT_RADIUS = 1.2f;
 
-    // === Impact State ===
-    private static final List<ShieldImpact> activeImpacts = new ArrayList<>();
+    // === Impact State (keyed by shield owner entity id) ===
+    private static final Map<Integer, List<ShieldImpact>> activeImpacts = new ConcurrentHashMap<>();
     private static final long IMPACT_DURATION_MS = 1500; // Ultra-thin technical ripple
-    private static Vec3 currentImpactPoint = Vec3.ZERO;
-    private static float currentImpactTime = 999.0f;
-    private static float currentImpactIntensity = 0.0f; // Damage-based intensity (0-1)
+    private static final int MAX_IMPACTS_PER_ENTITY = 5;
+    private static final ImpactState NO_IMPACT = new ImpactState(Vec3.ZERO, 999.0f, 0.0f);
+
+    // Radius within which an owner-less impact is attributed to the local player's shield.
 
     /**
-     * Records a shield impact for visual feedback.
+     * Records a shield impact on the given entity's shield for visual feedback.
      */
-    public static void recordImpact(Vec3 impactPoint, float damage) {
-        activeImpacts.add(new ShieldImpact(impactPoint, damage, System.currentTimeMillis()));
-        currentImpactPoint = impactPoint;
-        currentImpactTime = 0.0f;
+    public static void recordImpact(int entityId, Vec3 impactPoint, float damage) {
+        if (impactPoint == null) return;
 
-        while (activeImpacts.size() > 5) {
-            activeImpacts.remove(0);
+        List<ShieldImpact> impacts = activeImpacts.computeIfAbsent(entityId, id -> new CopyOnWriteArrayList<>());
+        impacts.add(new ShieldImpact(impactPoint, damage, System.currentTimeMillis()));
+
+        while (impacts.size() > MAX_IMPACTS_PER_ENTITY) {
+            impacts.remove(0);
         }
-        LOGGER.debug("[Shield] Impact recorded at {}", impactPoint);
+        LOGGER.debug("[Shield] Impact recorded on entity {} at {}", entityId, impactPoint);
     }
 
+
     /**
-     * Triggers the shield shatter effect.
+     * Triggers the shield shatter effect on the given entity's shield.
      */
-    public static void triggerShatter(Vec3 center) {
-        recordImpact(center, 20.0f);
+    public static void triggerShatter(int entityId, Vec3 center) {
+        recordImpact(entityId, center, 20.0f);
     }
 
     /**
@@ -80,7 +85,6 @@ public class EnergyShieldRenderer {
      */
     public static void resetShatter() {
         activeImpacts.clear();
-        currentImpactTime = 999.0f;
     }
 
     /**
@@ -91,30 +95,33 @@ public class EnergyShieldRenderer {
                               float partialTick, Vec3 cameraPos) {
         if (entity == null) return;
 
-        long now = System.currentTimeMillis();
-
-        // Update impact time and intensity from most recent impact
-        if (!activeImpacts.isEmpty()) {
-            ShieldImpact mostRecent = activeImpacts.get(activeImpacts.size() - 1);
-            currentImpactTime = (now - mostRecent.time) / 1000.0f;
-            currentImpactPoint = mostRecent.point;
-            currentImpactIntensity = mostRecent.getIntensity();
-        }
-
-        // Clean old impacts
-        activeImpacts.removeIf(impact -> now - impact.time > IMPACT_DURATION_MS);
-        if (activeImpacts.isEmpty()) {
-            currentImpactTime = 999.0f;
-        }
+        ImpactState impact = currentImpact(entity.getId(), System.currentTimeMillis());
 
         Vec3 entityPos = entity.position().add(0, entity.getBbHeight() * 0.5, 0);
 
         // Check if custom shader is available
         if (ShieldShaderRegistry.isUsingCustomShader()) {
-            renderWithCustomShader(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius);
+            renderWithCustomShader(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius, impact);
         } else {
-            renderFallback(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius);
+            renderFallback(poseStack, bufferSource, entityPos, cameraPos, color, opacity, radius, impact);
         }
+    }
+
+    /**
+     * Expires stale impacts for the entity and returns the state of its most recent one.
+     */
+    private static ImpactState currentImpact(int entityId, long now) {
+        List<ShieldImpact> impacts = activeImpacts.get(entityId);
+        if (impacts == null) return NO_IMPACT;
+
+        impacts.removeIf(impact -> now - impact.time > IMPACT_DURATION_MS);
+        if (impacts.isEmpty()) {
+            activeImpacts.remove(entityId);
+            return NO_IMPACT;
+        }
+
+        ShieldImpact mostRecent = impacts.get(impacts.size() - 1);
+        return new ImpactState(mostRecent.point, (now - mostRecent.time) / 1000.0f, mostRecent.getIntensity());
     }
 
     /**
@@ -122,12 +129,12 @@ public class EnergyShieldRenderer {
      */
     private static void renderWithCustomShader(PoseStack poseStack, MultiBufferSource bufferSource,
                                                 Vec3 entityPos, Vec3 cameraPos,
-                                                int color, float opacity, float radius) {
+                                                int color, float opacity, float radius, ImpactState impact) {
         Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
         Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
         RenderType shieldType = ShieldShaderRegistry.getShieldRenderType();
         if (shieldType == null) {
-            renderFallback(poseStack, bufferSource, safeEntityPos, safeCameraPos, color, opacity, radius);
+            renderFallback(poseStack, bufferSource, safeEntityPos, safeCameraPos, color, opacity, radius, impact);
             return;
         }
 
@@ -146,7 +153,7 @@ public class EnergyShieldRenderer {
         float b = (color & 0xFF) / 255.0f;
 
         // Calculate impact point in local space
-        Vec3 impactOffset = currentImpactPoint.subtract(safeEntityPos);
+        Vec3 impactOffset = impact.point().subtract(safeEntityPos);
         Vec3 impactLocal = impactOffset.scale(1.0 / radius);
         if (impactLocal.lengthSqr() > 0.001) {
             impactLocal = impactLocal.normalize();
@@ -158,7 +165,7 @@ public class EnergyShieldRenderer {
             shader.safeGetUniform("GameTime").set(gameTime);
             shader.safeGetUniform("ShieldColor").set(r, g, b);
             shader.safeGetUniform("ShieldStrength").set(opacity);
-            shader.safeGetUniform("ImpactTime").set(currentImpactTime);
+            shader.safeGetUniform("ImpactTime").set(impact.time());
             shader.safeGetUniform("ImpactPoint").set((float) impactLocal.x, (float) impactLocal.y, (float) impactLocal.z);
         }
 
@@ -172,6 +179,11 @@ public class EnergyShieldRenderer {
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
         // Render the sphere with normals for shader
         renderSphereWithNormals(consumer, poseStack, matrix, r, g, b, opacity, radius);
+
+        // The uniforms above are per-entity: flush this shield before the next one overwrites them
+        if (bufferSource instanceof MultiBufferSource.BufferSource batch) {
+            batch.endBatch(shieldType);
+        }
 
         // Render hexagonal grid lines overlay
         renderHexGrid(bufferSource, matrix, safeEntityPos, safeCameraPos, color, opacity, radius);
@@ -263,7 +275,7 @@ public class EnergyShieldRenderer {
      */
     private static void renderFallback(PoseStack poseStack, MultiBufferSource bufferSource,
                                         Vec3 entityPos, Vec3 cameraPos,
-                                        int color, float opacity, float radius) {
+                                        int color, float opacity, float radius, ImpactState impact) {
         Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
         Vec3 safeCameraPos = Objects.requireNonNull(cameraPos, "cameraPos");
         float r = ((color >> 16) & 0xFF) / 255.0f;
@@ -321,8 +333,8 @@ public class EnergyShieldRenderer {
         BufferUploader.drawWithShader(Objects.requireNonNull(buffer.buildOrThrow()));
 
         // Render impact ripples using lines
-        if (currentImpactTime < 1.0f && !activeImpacts.isEmpty()) {
-            renderImpactRipples(poseStack, bufferSource, matrix, safeEntityPos, r, g, b, opacity, radius);
+        if (impact.time() < 1.0f) {
+            renderImpactRipples(poseStack, bufferSource, matrix, safeEntityPos, r, g, b, opacity, radius, impact);
         }
 
         RenderSystem.depthMask(true);
@@ -337,17 +349,18 @@ public class EnergyShieldRenderer {
      */
     private static void renderImpactRipples(PoseStack poseStack, MultiBufferSource bufferSource,
                                              Matrix4f matrix, Vec3 entityPos,
-                                             float r, float g, float b, float opacity, float radius) {
+                                             float r, float g, float b, float opacity, float radius,
+                                             ImpactState impact) {
         Vec3 safeEntityPos = Objects.requireNonNull(entityPos, "entityPos");
         VertexConsumer consumer = bufferSource.getBuffer(Objects.requireNonNull(RenderType.lines()));
         Matrix4f safeMatrix = Objects.requireNonNull(matrix);
 
-        Vec3 impactDir = currentImpactPoint.subtract(safeEntityPos);
+        Vec3 impactDir = impact.point().subtract(safeEntityPos);
         if (impactDir.lengthSqr() < 0.001) return;
         impactDir = impactDir.normalize();
 
         // Scale wave alpha by impact intensity (stronger hits = brighter ripples)
-        float waveAlpha = opacity * (1.0f - currentImpactTime) * (0.5f + 0.5f * currentImpactIntensity);
+        float waveAlpha = opacity * (1.0f - impact.time()) * (0.5f + 0.5f * impact.intensity());
         float ir = Math.min(1.0f, r + 0.5f);
         float ig = Math.min(1.0f, g + 0.5f);
         float ib = Math.min(1.0f, b + 0.5f);
@@ -359,7 +372,7 @@ public class EnergyShieldRenderer {
 
         // Draw expanding ripple rings
         for (int ripple = 0; ripple < 3; ripple++) {
-            float rippleAge = currentImpactTime - ripple * 0.1f;
+            float rippleAge = impact.time() - ripple * 0.1f;
             if (rippleAge < 0 || rippleAge > 1.0f) continue;
 
             float rippleAngle = rippleAge * (float) Math.PI;
@@ -445,12 +458,23 @@ public class EnergyShieldRenderer {
     }
 
     /**
+     * Clears the active effects of a single shield owner.
+     */
+    public static void clearEffects(int entityId) {
+        activeImpacts.remove(entityId);
+    }
+
+    /**
      * Clears all active effects.
      */
     public static void clearEffects() {
         activeImpacts.clear();
-        currentImpactTime = 999.0f;
     }
+
+    /**
+     * Render-time snapshot of an entity's most recent impact.
+     */
+    private record ImpactState(Vec3 point, float time, float intensity) {}
 
     /**
      * Internal class for tracking shield impacts.

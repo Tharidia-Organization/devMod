@@ -132,7 +132,7 @@ public class RangedWeaponModule {
             stats.chargeTime = 1.0f;
             stats.accuracy = 1.0f;
             stats.range = 1.2f;
-            stats.projectileSpeed = 1.1f;
+            stats.projectileSpeed = 1.0f;
             stats.projectileSpread = 0.0f;
             stats.projectileGravity = 0.05f;
         } else if (item.getItem() instanceof net.minecraft.world.item.TridentItem) {

@@ -267,8 +267,6 @@ public class PathfindingDebugger {
         setShaderUniformVec3(shader, "StartColor", 0.0f, 1.0f, 1.0f);
         setShaderUniformVec3(shader, "EndColor", 1.0f, 0.84f, 0.0f);
 
-        VertexConsumer consumer = buffer.getBuffer(renderType);
-
         for (Map.Entry<UUID, CachedPath> entry : cachedPaths.entrySet()) {
             CachedPath pathData = entry.getValue();
 
@@ -278,7 +276,17 @@ public class PathfindingDebugger {
             setShaderUniform(shader, "Alpha", alpha);
             setShaderUniform(shader, "CanReach", pathData.canReach ? 1 : 0);
 
-            renderSpectacularPathGPU(Objects.requireNonNull(consumer), Objects.requireNonNull(matrix), Objects.requireNonNull(pose), pathData, alpha, time, shader);
+            renderSpectacularPathGPU(buffer, renderType, Objects.requireNonNull(matrix), Objects.requireNonNull(pose), pathData, alpha, time, shader);
+        }
+    }
+
+    /**
+     * Draws the geometry appended since the last flush, so the uniforms it was built with are
+     * the ones actually used: a shared batch would otherwise draw everything with the last values.
+     */
+    private static void flushBatch(MultiBufferSource buffer, RenderType renderType) {
+        if (buffer instanceof MultiBufferSource.BufferSource batch) {
+            batch.endBatch(renderType);
         }
     }
 
@@ -671,7 +679,8 @@ public class PathfindingDebugger {
      * GPU version of spectacular path rendering.
      * Uses shader for marching ants and gradient effects.
      */
-    private void renderSpectacularPathGPU(@Nonnull VertexConsumer consumer, @Nonnull Matrix4f matrix,
+    private void renderSpectacularPathGPU(@Nonnull MultiBufferSource buffer, @Nonnull RenderType renderType,
+                                           @Nonnull Matrix4f matrix,
                                            @Nonnull PoseStack.Pose pose, @Nonnull CachedPath pathData,
                                            float alpha, float time, ShaderInstance shader) {
         // time reserved for future animation effects
@@ -685,16 +694,19 @@ public class PathfindingDebugger {
 
         // Render START beacon with GPU shader
         setShaderUniform(shader, "BeaconType", 1); // START
-        renderBeaconGPU(consumer, matrix, pose, startPos, alpha);
+        renderBeaconGPU(Objects.requireNonNull(buffer.getBuffer(renderType)), matrix, pose, startPos, alpha);
+        flushBatch(buffer, renderType);
 
         // Render DESTINATION beacon with GPU shader
         setShaderUniform(shader, "BeaconType", 2); // DESTINATION
-        renderBeaconGPU(consumer, matrix, pose, targetPos, alpha);
+        renderBeaconGPU(Objects.requireNonNull(buffer.getBuffer(renderType)), matrix, pose, targetPos, alpha);
+        flushBatch(buffer, renderType);
 
         // Render PATH with GPU shader (marching ants handled by shader)
         if (nodes.size() >= 2) {
             setShaderUniform(shader, "BeaconType", 0); // PATH
-            renderAnimatedPathGPU(consumer, matrix, pose, nodes, alpha);
+            renderAnimatedPathGPU(Objects.requireNonNull(buffer.getBuffer(renderType)), matrix, pose, nodes, alpha);
+            flushBatch(buffer, renderType);
         }
 
         // Labels (still CPU - text rendering)

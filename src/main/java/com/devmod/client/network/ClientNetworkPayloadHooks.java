@@ -159,18 +159,19 @@ public final class ClientNetworkPayloadHooks implements NetworkHandler.ClientPay
 
     @Override
     public void handleShieldState(ShieldStatePayload payload) {
-        ClientShieldHandlers.handleShieldState(payload.isShattered(), payload.isActive());
+        ClientShieldHandlers.handleShieldState(payload.entityId(), payload.isShattered(), payload.isActive());
     }
 
     @Override
     public void handleShieldImpact(ShieldImpactPayload payload) {
-        ClientShieldHandlers.handleShieldImpact(
+        ClientShieldHandlers.handleShieldImpact(payload.entityId(),
             payload.impactX(), payload.impactY(), payload.impactZ(), payload.damage());
     }
 
     @Override
     public void handleShieldShatter(ShieldShatterPayload payload) {
-        ClientShieldHandlers.handleShieldShatter(payload.centerX(), payload.centerY(), payload.centerZ());
+        ClientShieldHandlers.handleShieldShatter(payload.entityId(),
+            payload.centerX(), payload.centerY(), payload.centerZ());
     }
 
     @Override

@@ -12,21 +12,20 @@ public final class ClientShieldHandlers {
 
     private ClientShieldHandlers() {}
 
-    public static void handleShieldState(boolean isShattered, boolean isActive) {
-        if (isShattered) {
-            EnergyShieldRenderer.triggerShatter(new Vec3(0, 0, 0));
-        } else if (!isActive) {
-            EnergyShieldRenderer.clearEffects();
+    public static void handleShieldState(int entityId, boolean isShattered, boolean isActive) {
+        // A shattered state carries no impact position; the ripple comes from ShieldShatterPayload.
+        if (!isShattered && !isActive) {
+            EnergyShieldRenderer.clearEffects(entityId);
         }
     }
 
-    public static void handleShieldImpact(double impactX, double impactY, double impactZ, float damage) {
+    public static void handleShieldImpact(int entityId, double impactX, double impactY, double impactZ, float damage) {
         Vec3 impactPoint = new Vec3(impactX, impactY, impactZ);
-        EnergyShieldRenderer.recordImpact(impactPoint, damage);
+        EnergyShieldRenderer.recordImpact(entityId, impactPoint, damage);
     }
 
-    public static void handleShieldShatter(double centerX, double centerY, double centerZ) {
+    public static void handleShieldShatter(int entityId, double centerX, double centerY, double centerZ) {
         Vec3 center = new Vec3(centerX, centerY, centerZ);
-        EnergyShieldRenderer.triggerShatter(center);
+        EnergyShieldRenderer.triggerShatter(entityId, center);
     }
 }

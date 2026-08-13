@@ -148,9 +148,10 @@ public final class ClientCombatVisuals implements CombatVisualsBridge {
     }
 
     @Override
-    public void recordShieldImpact(Vec3 impactPoint, float damage) {
+    public void recordShieldImpact(LivingEntity shieldOwner, Vec3 impactPoint, float damage) {
+        if (shieldOwner == null) return;
         try {
-            EnergyShieldRenderer.recordImpact(impactPoint, damage);
+            EnergyShieldRenderer.recordImpact(shieldOwner.getId(), impactPoint, damage);
         } catch (Exception e) {
             LOGGER.debug("Failed to record shield impact: {}", e.getMessage());
         }

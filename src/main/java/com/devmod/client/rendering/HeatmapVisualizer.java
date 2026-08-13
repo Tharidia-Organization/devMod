@@ -223,6 +223,11 @@ public class HeatmapVisualizer {
             renderSolidBoxGPU(consumer, matrix, pose, box, intensity);
         }
 
+        // The uniforms above are per-heatmap-type: flush before render() moves to the next type
+        if (buffer instanceof MultiBufferSource.BufferSource batch) {
+            batch.endBatch(renderType);
+        }
+
         poseStack.popPose();
     }
 

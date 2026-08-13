@@ -345,6 +345,12 @@ public class ClientModEvents {
         // Drop the tracked target (strong LivingEntity reference keeps the ClientLevel alive)
         com.devmod.client.panels.context.ContextDetector.INSTANCE.clearTarget();
 
+        // Clear debug render flags (they would keep drawing in the next world while /devdebug reports OFF)
+        com.devmod.debug.client.DebugRenderBools.clearAll();
+
+        // Drop per-entity shield impacts (entity ids are not stable across worlds)
+        com.devmod.client.rendering.shield.EnergyShieldRenderer.clearEffects();
+
         LOGGER.debug("Caches cleared successfully");
     }
 

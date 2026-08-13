@@ -214,13 +214,13 @@ public class WeaponModule extends AbstractEditorModule {
     public CustomPacketPayload buildPayload(boolean isGlobal) {
         WeaponModuleCore core = requireCore();
         WeaponModuleVariants variants = requireVariants();
-        WeaponStats stats = core.getStats();
         WeaponStats originalStats = core.getOriginalStats();
+        // Clamp for the wire only - the editor's own stats object keeps what the user typed.
+        WeaponStats stats = com.devmod.config.handler.impl.WeaponConfigHandler.clampStats(core.getStats());
 
         // Build NBT from current stats
         CompoundTag statsTag = new CompoundTag();
         CompoundTag weaponStats = new CompoundTag();
-        com.devmod.config.handler.impl.WeaponConfigHandler.clampStats(stats);
         stats.save(weaponStats);
         CompoundTag delta = core.buildDelta(originalStats, stats);
         if (!delta.isEmpty()) {
