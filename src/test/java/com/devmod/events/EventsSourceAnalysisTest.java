@@ -288,12 +288,13 @@ class EventsSourceAnalysisTest {
         }
 
         @Test
-        @DisplayName("Supports OBB and fallback body part detection")
-        void supportsOBBAndFallback() {
-            assertTrue(arrowSource.contains("OBBHitHelper.useOBBSystem()"),
-                "Should check OBB system availability");
-            assertTrue(arrowSource.contains("HitHelper.rayTraceBodyPartWithHitPoint"),
-                "Should have AABB fallback");
+        @DisplayName("Resolves body part from impact height, as the damage path does")
+        void resolvesBodyPartFromImpactHeight() {
+            assertTrue(arrowSource.contains("HitHelper.getBodyPart(victim, arrow.getY())"),
+                "Should resolve the body part from the arrow's impact height");
+            assertFalse(arrowSource.contains("HitHelper.rayTraceBodyPartWithHitPoint"),
+                "Should not raycast from the shooter's view: it is reach-limited, so at range it "
+                    + "falls back to pitch and disagrees with the multiplier DamageHandler applied");
         }
 
         @Test
