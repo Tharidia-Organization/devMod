@@ -209,6 +209,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-01: Party Mob Selection")
     class PartyMobSelectionTests {
 
@@ -292,6 +293,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-02: Party State Integration")
     class PartyStateIntegrationTests {
 
@@ -375,6 +377,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-03: Quest Type Compatibility")
     class QuestTypeCompatibilityTests {
 
@@ -433,6 +436,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-04: Difficulty Preset Integration")
     class DifficultyPresetIntegrationTests {
 
@@ -494,6 +498,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-05: Full Quest Start Flow")
     class FullFlowSimulationTests {
 
@@ -563,6 +568,7 @@ public class PartyMobSelectionIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L2-06: Edge Cases")
     class EdgeCaseTests {
 

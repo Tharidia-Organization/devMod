@@ -154,6 +154,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-01: Boundary Value Attacks")
     class BoundaryValueTests {
 
@@ -313,6 +314,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-02: Temporal Edge Cases")
     class TemporalEdgeCaseTests {
 
@@ -484,6 +486,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-03: Resource Exhaustion Scenarios")
     class ResourceExhaustionTests {
 
@@ -579,6 +582,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-04: State Corruption Prevention")
     class StateCorruptionTests {
 
@@ -726,6 +730,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-05: Recovery Mechanism Validation")
     class RecoveryMechanismTests {
 
@@ -896,6 +901,7 @@ public class L6CriticalEdgeCaseTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-EC-06: Exploit Prevention")
     class ExploitPreventionTests {
 

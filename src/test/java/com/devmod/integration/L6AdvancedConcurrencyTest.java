@@ -55,6 +55,7 @@ public class L6AdvancedConcurrencyTest {
     }
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-01: Deadlock Detection and Prevention")
     class DeadlockPreventionTests {
 
@@ -227,6 +228,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-02: ABA Problem Prevention")
     class ABAPreventionTests {
 
@@ -323,6 +325,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-03: Lost Update Prevention")
     class LostUpdatePreventionTests {
 
@@ -451,6 +454,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-04: Read-Modify-Write Atomicity")
     class ReadModifyWriteAtomicityTests {
 
@@ -573,6 +577,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-05: Publication Safety")
     class PublicationSafetyTests {
 
@@ -751,6 +756,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-06: Starvation Prevention")
     class StarvationPreventionTests {
 
@@ -911,6 +917,7 @@ public class L6AdvancedConcurrencyTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-AC-07: Complex Concurrent Scenarios")
     class ComplexConcurrentTests {
 

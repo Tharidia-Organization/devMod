@@ -459,6 +459,7 @@ public class L6EndToEndFlowTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-E2E-01: Complete Solo Quest Journey")
     class SoloQuestJourneyTests {
 
@@ -612,6 +613,7 @@ public class L6EndToEndFlowTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-E2E-02: Complete Party Quest Journey")
     class PartyQuestJourneyTests {
 
@@ -720,6 +722,7 @@ public class L6EndToEndFlowTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-E2E-03: Multi-Session Progression")
     class MultiSessionProgressionTests {
 
@@ -808,6 +811,7 @@ public class L6EndToEndFlowTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-E2E-04: Error Recovery Journeys")
     class ErrorRecoveryJourneyTests {
 
@@ -887,6 +891,7 @@ public class L6EndToEndFlowTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-E2E-05: Stress Test Journeys")
     class StressTestJourneyTests {
 

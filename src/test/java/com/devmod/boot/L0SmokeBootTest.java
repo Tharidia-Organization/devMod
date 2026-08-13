@@ -33,6 +33,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-01: InstanceState Enum")
     class InstanceStateTests {
 
@@ -90,6 +91,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-02: PlayerInstanceState Enum")
     class PlayerInstanceStateTests {
 
@@ -125,6 +127,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-03: Design Tokens")
     class DesignTokensTests {
 
@@ -184,6 +187,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-04: Critical Source Files")
     class SourceFileTests {
 
@@ -297,6 +301,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-05: Compiled Classes")
     class CompiledClassTests {
 
@@ -347,6 +352,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-06: Keybind Definitions")
     class KeybindDefinitionTests {
 
@@ -413,6 +419,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-07: Mod Metadata")
     class ModMetadataTests {
 
@@ -467,6 +474,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-08: Directory Structure")
     class DirectoryStructureTests {
 
@@ -523,6 +531,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-09: Build Configuration")
     class BuildConfigTests {
 
@@ -557,6 +566,7 @@ public class L0SmokeBootTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L0-10: Enum Completeness")
     class EnumCompletenessTests {
 

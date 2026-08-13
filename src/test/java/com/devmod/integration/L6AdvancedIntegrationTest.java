@@ -318,6 +318,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-01: Multi-System Cascade Failures")
     class MultiSystemCascadeTests {
 
@@ -465,6 +466,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-02: State Machine Coherence Under Stress")
     class StateMachineCoherenceTests {
 
@@ -595,6 +597,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-03: Economic System Invariants")
     class EconomicSystemTests {
 
@@ -742,6 +745,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-04: Chaos Engineering Scenarios")
     class ChaosEngineeringTests {
 
@@ -925,6 +929,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-05: Complex Race Condition Detection")
     class ComplexRaceConditionTests {
 
@@ -1083,6 +1088,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-06: Memory Corruption Prevention")
     class MemoryCorruptionTests {
 
@@ -1170,6 +1176,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-07: Data Consistency Under Failure")
     class DataConsistencyTests {
 
@@ -1335,6 +1342,7 @@ public class L6AdvancedIntegrationTest {
     // =========================================================================
 
     @Nested
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     @DisplayName("L6-08: Combo System Edge Cases")
     class ComboSystemEdgeCaseTests {
 
