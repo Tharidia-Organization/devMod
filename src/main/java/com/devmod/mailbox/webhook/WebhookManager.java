@@ -366,9 +366,9 @@ public final class WebhookManager {
             Map.of(
                 "message_id", messageId.toString(),
                 "sender_uuid", senderUuid != null ? senderUuid.toString() : "system",
-                "sender_name", senderName,
+                "sender_name", senderName != null ? senderName : "system",
                 "recipient_uuid", recipientUuid.toString(),
-                "subject", subject,
+                "subject", subject != null ? subject : "",
                 "has_attachment", hasAttachment
             )
         ));

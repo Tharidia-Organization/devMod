@@ -36,13 +36,13 @@ class MailboxFlowE2ETest {
         tempDir = Files.createTempDirectory("mailbox-e2e-test");
         Path dbPath = tempDir.resolve("e2e-mailbox.duckdb");
         repository = new DuckDbMailboxRepository(dbPath);
-        repository.initialize().get(5, TimeUnit.SECONDS);
+        repository.initialize().get(30, TimeUnit.SECONDS);
     }
 
     @AfterEach
     void tearDown() throws Exception {
         if (repository != null) {
-            repository.shutdown().get(5, TimeUnit.SECONDS);
+            repository.shutdown().get(30, TimeUnit.SECONDS);
         }
         cleanupTempDir();
     }

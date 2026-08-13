@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -50,7 +51,9 @@ public class DuckDbMailboxRepository implements MailboxRepository {
     public DuckDbMailboxRepository(Path dbPath) {
         this.dbPath = dbPath;
         this.connectionManager = new DuckDBConnectionManager(dbPath);
-        this.executor = Executors.newFixedThreadPool(2, r -> {
+        // Single worker: the shared DuckDB Connection is not safe for concurrent
+        // statements (observed "ResultSet was closed" / INTERRUPT errors with 2 threads).
+        this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "MailboxDB-Worker");
             t.setDaemon(true);
             return t;
@@ -1553,8 +1556,19 @@ public class DuckDbMailboxRepository implements MailboxRepository {
     public CompletableFuture<Void> shutdown() {
         return CompletableFuture.runAsync(() -> {
             LOGGER.info("[Mailbox] Shutting down DuckDB repository...");
-            connectionManager.shutdown();
+            // Drain pending DB work before closing the shared connection,
+            // otherwise in-flight queries fail with "Connection was closed".
             executor.shutdown();
+            try {
+                if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    LOGGER.warn("[Mailbox] DB worker did not drain in 10s, forcing shutdown");
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                executor.shutdownNow();
+            }
+            connectionManager.shutdown();
             LOGGER.info("[Mailbox] DuckDB repository shutdown complete");
         });
     }
