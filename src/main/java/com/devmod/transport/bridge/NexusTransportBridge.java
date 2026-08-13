@@ -180,7 +180,7 @@ public final class NexusTransportBridge {
             );
 
             // Check if already registered
-            if (registry.getByPosition(Objects.requireNonNull(spawnPos)).isEmpty()) {
+            if (registry.getByPosition(Objects.requireNonNull(nexusDim), Objects.requireNonNull(spawnPos)).isEmpty()) {
                 registry.register(Objects.requireNonNull(nodeData));
                 LOGGER.debug("[NexusBridge] Registered Nexus zone node: {}", zone.zoneId());
             }

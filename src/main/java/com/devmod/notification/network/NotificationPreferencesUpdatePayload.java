@@ -79,8 +79,12 @@ public record NotificationPreferencesUpdatePayload(
 
         Map<String, CategoryPrefDto> dtoMap = getCategoryPrefs();
         for (Map.Entry<String, CategoryPrefDto> entry : dtoMap.entrySet()) {
-            NotificationCategory category = NotificationCategory.fromId(entry.getKey());
             CategoryPrefDto dto = entry.getValue();
+            if (dto == null) {
+                // Client JSON may carry a null value, e.g. {"party":null}
+                continue;
+            }
+            NotificationCategory category = NotificationCategory.fromId(entry.getKey());
             prefs.setCategoryOverlayEnabled(category, dto.overlayEnabled);
             prefs.setCategorySoundEnabled(category, dto.soundEnabled);
             prefs.setCategorySoundVolume(category, dto.soundVolume);
@@ -94,8 +98,9 @@ public record NotificationPreferencesUpdatePayload(
             return Map.of();
         }
         try {
-            return GSON.fromJson(categoryPrefsJson,
+            Map<String, CategoryPrefDto> parsed = GSON.fromJson(categoryPrefsJson,
                     new TypeToken<Map<String, CategoryPrefDto>>() {}.getType());
+            return parsed != null ? parsed : Map.of();
         } catch (Exception e) {
             return Map.of();
         }

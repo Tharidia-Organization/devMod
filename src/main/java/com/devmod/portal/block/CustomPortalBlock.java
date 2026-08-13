@@ -85,9 +85,12 @@ public final class CustomPortalBlock extends Block {
     public static final String TAG_CUSTOM_PORTAL_TELEPORT = "devmod:custom_portal_teleport";
 
     /** Cache for rune effects to avoid repeated DFS scans every tick */
-    private static final Map<Long, CachedRuneEffects> RUNE_EFFECT_CACHE = new ConcurrentHashMap<>();
+    private static final Map<RuneCacheKey, CachedRuneEffects> RUNE_EFFECT_CACHE = new ConcurrentHashMap<>();
     /** Cache TTL in ticks (1 second) */
     private static final int RUNE_CACHE_TTL = 20;
+
+    /** Cache key. The cache is static, so the dimension is part of the identity. */
+    private record RuneCacheKey(ResourceLocation dimension, long pos) {}
 
     /** Cached rune effects with timestamp */
     private record CachedRuneEffects(PortalRuneEffects effects, long timestamp) {}
@@ -353,7 +356,8 @@ public final class CustomPortalBlock extends Block {
     @Nonnull
     private PortalRuneEffects scanForRuneEffects(Level level, BlockPos portalPos) {
         long gameTime = level.getGameTime();
-        long posKey = portalPos.asLong();
+        RuneCacheKey posKey = new RuneCacheKey(
+            Objects.requireNonNull(level.dimension().location()), portalPos.asLong());
 
         // Check cache first
         CachedRuneEffects cached = RUNE_EFFECT_CACHE.get(posKey);
@@ -482,11 +486,13 @@ public final class CustomPortalBlock extends Block {
             ServerLevel destLevel = destDim != null
                 ? level.getServer().getLevel(Objects.requireNonNull(ResourceKey.create(
                     Objects.requireNonNull(net.minecraft.core.registries.Registries.DIMENSION), destDim)))
-                : level;
+                : null;
 
             if (destLevel == null) {
-                destLevel = level;
-                com.devmod.DevMod.LOGGER.warn("[Portal] Destination level not found, staying in current level");
+                // Falling back to the current level would place the entity at the
+                // destination's coordinates in the wrong dimension.
+                com.devmod.DevMod.LOGGER.warn("[Portal] Destination level {} not found, aborting", destDim);
+                return;
             }
 
             // Set flag to prevent NexusEventHandler from overriding our position
@@ -658,7 +664,7 @@ public final class CustomPortalBlock extends Block {
         if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
             if (level instanceof ServerLevel serverLevel) {
                 PortalRegistry registry = PortalRegistry.get(serverLevel);
-                registry.getByPosition(pos).ifPresent(portal -> {
+                registry.getByPosition(serverLevel, pos).ifPresent(portal -> {
                     registry.unlink(portal.id(), serverLevel.getServer());
                     registry.unregister(portal.id());
                 });

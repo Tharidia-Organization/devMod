@@ -21,6 +21,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.debug.DiagnosticLogger;
@@ -275,6 +276,7 @@ public final class TransportExecutor {
         return performTeleportToPosition(
             entity,
             source,
+            null, // fixed destinations are raw coordinates, not a registered node
             source.fixedDestDim(),
             source.fixedDestPos(),
             sourceLevel
@@ -299,6 +301,7 @@ public final class TransportExecutor {
         boolean success = performTeleportToPosition(
             entity,
             null, // No source node for return
+            returnNode.id(),
             returnNode.dimension(),
             returnNode.position(),
             sourceLevel
@@ -339,15 +342,19 @@ public final class TransportExecutor {
         @Nonnull TransportData dest,
         @Nonnull ServerLevel sourceLevel
     ) {
-        return performTeleportToPosition(entity, source, dest.dimension(), dest.position(), sourceLevel);
+        return performTeleportToPosition(entity, source, dest.id(), dest.dimension(), dest.position(), sourceLevel);
     }
 
     /**
      * Performs teleportation to a specific position.
+     *
+     * @param destNodeId the destination node, when the destination is a registered node;
+     *                   the arrival cooldown is keyed on it
      */
     private boolean performTeleportToPosition(
         @Nonnull Entity entity,
         @Nullable TransportData source,
+        @Nullable UUID destNodeId,
         @Nullable ResourceLocation destDim,
         @Nullable BlockPos destPos,
         @Nonnull ServerLevel sourceLevel
@@ -386,6 +393,21 @@ public final class TransportExecutor {
                 player.getYRot(),
                 player.getXRot()
             );
+        } else if (destLevel != sourceLevel) {
+            // Entity#teleportTo(x, y, z) only moves within the current level, so a
+            // cross-dimension move has to go through changeDimension. It returns a
+            // new instance in the destination level; the original is discarded.
+            Entity moved = entity.changeDimension(new DimensionTransition(
+                destLevel,
+                new Vec3(destPos.getX() + 0.5, destPos.getY() + 0.5, destPos.getZ() + 0.5),
+                Objects.requireNonNull(Vec3.ZERO),
+                entity.getYRot(),
+                entity.getXRot(),
+                Objects.requireNonNull(DimensionTransition.DO_NOTHING)
+            ));
+            if (moved == null) {
+                return false;
+            }
         } else {
             entity.teleportTo(
                 destPos.getX() + 0.5,
@@ -399,9 +421,10 @@ public final class TransportExecutor {
         effectManager.spawnArrivalParticles(destLevel, destPosVec);
         effectManager.playPhaseSound(destLevel, destPos, TransportPhase.TELEPORT_ARRIVE);
 
-        // Set arrival cooldown
+        // Set arrival cooldown on the node that was arrived at, which is the node
+        // startCharging() checks before letting the entity depart again.
         long currentTick = destLevel.getGameTime();
-        cooldownManager.setCooldown(Objects.requireNonNull(entity.getUUID()), null, CooldownType.ARRIVAL, currentTick);
+        cooldownManager.setCooldown(Objects.requireNonNull(entity.getUUID()), destNodeId, CooldownType.ARRIVAL, currentTick);
 
         return true;
     }

@@ -1,6 +1,8 @@
 package com.devmod.notification;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -9,6 +11,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -64,6 +69,14 @@ public class NotificationService {
     private final NotificationRouter router;
     private volatile boolean initialized = false;
 
+    /** How long notification history is kept before the sweep deletes it. */
+    private static final int RETENTION_DAYS = 30;
+    /** How often the retention sweep runs. */
+    private static final int RETENTION_SWEEP_HOURS = 24;
+
+    @Nullable
+    private volatile ScheduledExecutorService retentionExecutor;
+
     // UX Q6: Rate limiting for party death notifications (prevent spam on TPK)
     private static final long DEATH_NOTIFICATION_COOLDOWN_MS = 2000; // 2 seconds between death notifications per recipient
     private final Map<UUID, Long> lastDeathNotificationTime = new java.util.concurrent.ConcurrentHashMap<>();
@@ -86,7 +99,37 @@ public class NotificationService {
         }
         LOGGER.info("[NotificationService] Initializing unified notification center...");
         initialized = true;
+
+        retentionExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "NotificationRetention");
+            t.setDaemon(true);
+            return t;
+        });
+        retentionExecutor.scheduleAtFixedRate(
+            this::purgeExpiredHistory, 1, RETENTION_SWEEP_HOURS, TimeUnit.HOURS);
+
         LOGGER.info("[NotificationService] Initialized successfully");
+    }
+
+    /**
+     * Deletes history rows older than the retention window.
+     *
+     * <p>Without this the notification history table grows for the lifetime of
+     * the world; {@code deleteOlderThan} had no caller.
+     */
+    private void purgeExpiredHistory() {
+        try {
+            NotificationHistoryRepository.INSTANCE
+                .deleteOlderThan(Instant.now().minus(RETENTION_DAYS, ChronoUnit.DAYS))
+                .thenAccept(deleted -> {
+                    if (deleted > 0) {
+                        LOGGER.info("[NotificationService] Purged {} notification history rows older than {} days",
+                            deleted, RETENTION_DAYS);
+                    }
+                });
+        } catch (Exception e) {
+            LOGGER.error("[NotificationService] History retention sweep failed", e);
+        }
     }
 
     /**
@@ -98,6 +141,11 @@ public class NotificationService {
             return;
         }
         LOGGER.info("[NotificationService] Shutting down...");
+        ScheduledExecutorService retention = retentionExecutor;
+        if (retention != null) {
+            retention.shutdownNow();
+            retentionExecutor = null;
+        }
         lastDeathNotificationTime.clear();
         initialized = false;
     }
@@ -908,29 +956,35 @@ public class NotificationService {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
-        if (player == null) return;
+        // Delivery runs on a pool thread; the player list and connection are server-thread state.
+        server.execute(() -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
+            if (player == null) return;
 
-        try {
-            UnifiedNotificationPayload payload = UnifiedNotificationPayload.from(notification);
-            PacketDistributor.sendToPlayer(Objects.requireNonNull(player), Objects.requireNonNull(payload));
-        } catch (Exception e) {
-            LOGGER.warn("[NotificationService] Failed to send overlay packet to {}: {}",
-                    playerUuid, e.getMessage());
-        }
+            try {
+                UnifiedNotificationPayload payload = UnifiedNotificationPayload.from(notification);
+                PacketDistributor.sendToPlayer(Objects.requireNonNull(player), Objects.requireNonNull(payload));
+            } catch (Exception e) {
+                LOGGER.warn("[NotificationService] Failed to send overlay packet to {}: {}",
+                        playerUuid, e.getMessage());
+            }
+        });
     }
 
     private void sendChatMessage(UUID playerUuid, Notification notification) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
-        if (player == null) return;
-
         Component message = buildChatComponent(notification);
-        if (message != null) {
-            player.sendSystemMessage(message);
-        }
+        if (message == null) return;
+
+        // Delivery runs on a pool thread; the player list and chat are server-thread state.
+        server.execute(() -> {
+            ServerPlayer player = server.getPlayerList().getPlayer(Objects.requireNonNull(playerUuid));
+            if (player != null) {
+                player.sendSystemMessage(message);
+            }
+        });
     }
 
     private void persistToMailbox(UUID playerUuid, Notification notification) {

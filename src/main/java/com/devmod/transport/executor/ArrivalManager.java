@@ -227,6 +227,29 @@ public final class ArrivalManager {
     }
 
     /**
+     * Cancels an arrival session on behalf of a requester.
+     *
+     * <p>Session ids are broadcast to every expected player, so a request that comes
+     * from a client must be authorized against the session's membership.
+     *
+     * @param requesterId the player asking for the cancel, or null for system cancels
+     */
+    public boolean cancelSession(@Nonnull UUID sessionId, @Nullable UUID requesterId, @Nullable String reason) {
+        if (requesterId != null) {
+            ArrivalSession session = activeSessions.get(sessionId);
+            if (session == null) {
+                return false;
+            }
+            if (!session.expectedPlayers.contains(requesterId)) {
+                LOGGER.warn("[ArrivalManager] Player {} tried to cancel session {} they are not part of",
+                    requesterId, sessionId);
+                return false;
+            }
+        }
+        return cancelSession(sessionId, reason);
+    }
+
+    /**
      * Cancels an arrival session.
      */
     public boolean cancelSession(@Nonnull UUID sessionId, @Nullable String reason) {

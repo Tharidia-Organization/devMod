@@ -39,7 +39,17 @@ public class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
 
     private final Map<UUID, PortalData> portals = new ConcurrentHashMap<>();
-    private final Map<BlockPos, UUID> positionIndex = new ConcurrentHashMap<>();
+    private final Map<PositionKey, UUID> positionIndex = new ConcurrentHashMap<>();
+
+    /** Position index key. The registry is global, so the dimension is part of the identity. */
+    private record PositionKey(ResourceLocation dimension, BlockPos pos) {}
+
+    @Nullable
+    private static PositionKey positionKey(@Nonnull PortalData portal) {
+        ResourceLocation dimension = portal.dimension().orElse(null);
+        BlockPos pos = portal.position().orElse(null);
+        return dimension == null || pos == null ? null : new PositionKey(dimension, pos);
+    }
 
     public PortalRegistry() {
         super();
@@ -64,7 +74,10 @@ public class PortalRegistry extends SavedData {
     public void register(@Nonnull PortalData portal) {
         Objects.requireNonNull(portal, "portal");
         portals.put(portal.id(), portal);
-        portal.position().ifPresent(pos -> positionIndex.put(pos, portal.id()));
+        PositionKey key = positionKey(portal);
+        if (key != null) {
+            positionIndex.put(key, portal.id());
+        }
         setDirty();
     }
 
@@ -75,7 +88,10 @@ public class PortalRegistry extends SavedData {
     public void unregister(@Nonnull UUID portalId) {
         PortalData portal = portals.remove(portalId);
         if (portal != null) {
-            portal.position().ifPresent(positionIndex::remove);
+            PositionKey key = positionKey(portal);
+            if (key != null) {
+                positionIndex.remove(key, portalId);
+            }
 
             // Unlink connected portal
             portal.linkedPortalId().ifPresent(linkedId -> {
@@ -99,12 +115,20 @@ public class PortalRegistry extends SavedData {
     }
 
     /**
-     * Gets a portal by its exact center position.
+     * Gets a portal by its exact center position within a dimension.
      */
     @Nonnull
-    public Optional<PortalData> getByPosition(@Nonnull BlockPos pos) {
-        UUID id = positionIndex.get(pos);
+    public Optional<PortalData> getByPosition(@Nonnull ResourceLocation dimension, @Nonnull BlockPos pos) {
+        UUID id = positionIndex.get(new PositionKey(dimension, pos));
         return id != null ? get(id) : Objects.requireNonNull(Optional.empty());
+    }
+
+    /**
+     * Gets a portal by its exact center position in the given level's dimension.
+     */
+    @Nonnull
+    public Optional<PortalData> getByPosition(@Nonnull ServerLevel level, @Nonnull BlockPos pos) {
+        return getByPosition(Objects.requireNonNull(level.dimension().location()), pos);
     }
 
     /**
@@ -120,6 +144,10 @@ public class PortalRegistry extends SavedData {
      * Searches by scanning nearby registered portals and checking if the position
      * could be within their bounds.
      *
+     * <p>Several portals of the same color can sit inside the search cube (a portal
+     * hub); the nearest center wins so the result does not depend on map iteration
+     * order.
+     *
      * @param level the server level to check
      * @param pos any position within a portal's interior
      * @param color the portal color to match
@@ -127,14 +155,17 @@ public class PortalRegistry extends SavedData {
      */
     @Nonnull
     public Optional<PortalData> findPortalContaining(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull PortalColor color) {
+        ResourceLocation dim = level.dimension().location();
+
         // First try exact match (if clicking on center)
-        Optional<PortalData> exact = getByPosition(pos);
+        Optional<PortalData> exact = getByPosition(dim, pos);
         if (exact.isPresent() && exact.get().color() == color) {
             return exact;
         }
 
         // Search all portals of this color in this dimension
-        ResourceLocation dim = level.dimension().location();
+        PortalData nearest = null;
+        double nearestDistSq = Double.MAX_VALUE;
         for (PortalData portal : portals.values()) {
             if (portal.color() != color) {
                 continue;
@@ -154,11 +185,15 @@ public class PortalRegistry extends SavedData {
 
             // Portal interior is at most 11 blocks from center in any direction
             if (dx <= 12 && dy <= 12 && dz <= 12) {
-                return Objects.requireNonNull(Optional.of(portal));
+                double distSq = center.distSqr(pos);
+                if (distSq < nearestDistSq) {
+                    nearestDistSq = distSq;
+                    nearest = portal;
+                }
             }
         }
 
-        return Objects.requireNonNull(Optional.empty());
+        return Objects.requireNonNull(Optional.ofNullable(nearest));
     }
 
     /**
@@ -168,8 +203,14 @@ public class PortalRegistry extends SavedData {
         PortalData existing = portals.get(portal.id());
         if (existing != null) {
             // Update position index if changed
-            existing.position().ifPresent(positionIndex::remove);
-            portal.position().ifPresent(pos -> positionIndex.put(pos, portal.id()));
+            PositionKey oldKey = positionKey(existing);
+            if (oldKey != null) {
+                positionIndex.remove(oldKey, portal.id());
+            }
+            PositionKey newKey = positionKey(portal);
+            if (newKey != null) {
+                positionIndex.put(newKey, portal.id());
+            }
         }
         portals.put(portal.id(), portal);
         setDirty();
@@ -623,7 +664,10 @@ public class PortalRegistry extends SavedData {
             for (int i = 0; i < portalList.size(); i++) {
                 PortalData portal = PortalData.load(Objects.requireNonNull(portalList.getCompound(i)));
                 registry.portals.put(portal.id(), portal);
-                portal.position().ifPresent(pos -> registry.positionIndex.put(pos, portal.id()));
+                PositionKey key = positionKey(portal);
+                if (key != null) {
+                    registry.positionIndex.put(key, portal.id());
+                }
             }
         }
 

@@ -255,6 +255,15 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
             return;
         }
 
+        // Permission check: only creator or op can reconfigure (matches waypoint deletion)
+        java.util.UUID creatorId = coreBe.getCreatorId();
+        boolean isCreator = creatorId != null && creatorId.equals(player.getUUID());
+        if (!isCreator && !player.hasPermissions(2)) {
+            LOGGER.warn("Player {} denied config save for node at {} (not creator or op)",
+                player.getName().getString(), nodePos);
+            return;
+        }
+
         // Apply configuration
         TransportMode mode = payload.getMode();
         coreBe.applyConfiguration(
@@ -380,6 +389,7 @@ public final class TransportNetworkHandler extends NetworkHandlerBase {
         // Cancel via ArrivalManager (partyId is actually the session ID)
         boolean cancelled = com.devmod.transport.executor.ArrivalManager.INSTANCE.cancelSession(
             sessionId,
+            player.getUUID(),
             "Cancelled by " + player.getName().getString()
         );
 

@@ -33,6 +33,12 @@ public final class PortalNetworkHandler extends NetworkHandlerBase implements Pa
 
     public static final PortalNetworkHandler INSTANCE = new PortalNetworkHandler();
 
+    /**
+     * Maximum distance squared between the player and the requested portal block (8 blocks).
+     * Beyond this a client-supplied position would force chunk loading anywhere in the world.
+     */
+    private static final double MAX_PREVIEW_DISTANCE_SQ = 64.0;
+
     private PortalNetworkHandler() {}
 
     @Override
@@ -100,8 +106,16 @@ public final class PortalNetworkHandler extends NetworkHandlerBase implements Pa
      */
     private static void handlePortalPreviewRequest(ServerPlayer player, PortalPreviewRequestPayload request) {
         var level = Objects.requireNonNull(player.serverLevel(), "serverLevel");
+        var pos = request.portalPos();
+
+        // Bound the lookup to the player's reach: the legitimate client only ever sends
+        // the block it is looking at, and an unbounded position would force chunk loads.
+        if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > MAX_PREVIEW_DISTANCE_SQ) {
+            return;
+        }
+
         var registry = PortalRegistry.get(level);
-        var blockState = level.getBlockState(request.portalPos());
+        var blockState = level.getBlockState(pos);
 
         // Verify the block is actually a portal
         if (!(blockState.getBlock() instanceof CustomPortalBlock)) {

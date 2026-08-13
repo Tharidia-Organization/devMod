@@ -62,7 +62,7 @@ public class TransportRegistry extends SavedData {
     private final Map<UUID, TransportData> nodes = new ConcurrentHashMap<>();
 
     // Indices for fast lookup
-    private final Map<BlockPos, UUID> positionIndex = new ConcurrentHashMap<>();
+    private final Map<PositionKey, UUID> positionIndex = new ConcurrentHashMap<>();
     private final Map<String, Set<UUID>> networkIndex = new ConcurrentHashMap<>();
     private final Map<TransportNodeType, Set<UUID>> typeIndex = new ConcurrentHashMap<>();
 
@@ -74,6 +74,16 @@ public class TransportRegistry extends SavedData {
 
     // Round-robin counters for networks
     private final Map<String, Integer> roundRobinCounters = new ConcurrentHashMap<>();
+
+    /** Position index key. The registry is global, so the dimension is part of the identity. */
+    private record PositionKey(ResourceLocation dimension, BlockPos pos) {}
+
+    @Nullable
+    private static PositionKey positionKey(@Nonnull TransportData node) {
+        ResourceLocation dimension = node.getDimension().orElse(null);
+        BlockPos pos = node.getPosition().orElse(null);
+        return dimension == null || pos == null ? null : new PositionKey(dimension, pos);
+    }
 
     public TransportRegistry() {
         super();
@@ -105,7 +115,10 @@ public class TransportRegistry extends SavedData {
         nodes.put(node.id(), node);
 
         // Update position index
-        node.getPosition().ifPresent(pos -> positionIndex.put(pos, node.id()));
+        PositionKey key = positionKey(node);
+        if (key != null) {
+            positionIndex.put(key, node.id());
+        }
 
         // Update network index
         node.getNetworkName().ifPresent(network -> {
@@ -129,7 +142,10 @@ public class TransportRegistry extends SavedData {
         }
 
         // Remove from position index
-        node.getPosition().ifPresent(positionIndex::remove);
+        PositionKey key = positionKey(node);
+        if (key != null) {
+            positionIndex.remove(key, nodeId);
+        }
 
         // Remove from network index
         node.getNetworkName().ifPresent(network -> {
@@ -170,8 +186,14 @@ public class TransportRegistry extends SavedData {
         TransportData existing = nodes.get(node.id());
         if (existing != null) {
             // Update position index if changed
-            existing.getPosition().ifPresent(positionIndex::remove);
-            node.getPosition().ifPresent(pos -> positionIndex.put(pos, node.id()));
+            PositionKey oldKey = positionKey(existing);
+            if (oldKey != null) {
+                positionIndex.remove(oldKey, node.id());
+            }
+            PositionKey newKey = positionKey(node);
+            if (newKey != null) {
+                positionIndex.put(newKey, node.id());
+            }
 
             // Update network index if changed
             if (!Objects.equals(existing.getNetworkName().orElse(null), node.getNetworkName().orElse(null))) {
@@ -200,12 +222,20 @@ public class TransportRegistry extends SavedData {
     }
 
     /**
-     * Gets a node by its exact position.
+     * Gets a node by its exact position within a dimension.
      */
     @Nonnull
-    public Optional<TransportData> getByPosition(@Nonnull BlockPos pos) {
-        UUID id = positionIndex.get(pos);
+    public Optional<TransportData> getByPosition(@Nonnull ResourceLocation dimension, @Nonnull BlockPos pos) {
+        UUID id = positionIndex.get(new PositionKey(dimension, pos));
         return id != null ? get(id) : Optional.empty();
+    }
+
+    /**
+     * Gets a node by its exact position in the given level's dimension.
+     */
+    @Nonnull
+    public Optional<TransportData> getByPosition(@Nonnull ServerLevel level, @Nonnull BlockPos pos) {
+        return getByPosition(Objects.requireNonNull(level.dimension().location()), pos);
     }
 
     /**
@@ -219,17 +249,23 @@ public class TransportRegistry extends SavedData {
     /**
      * Finds a node that contains the given position.
      * Searches nearby registered nodes within portal bounds.
+     *
+     * <p>When several same-color nodes sit inside the search cube the nearest center
+     * wins, so the result does not depend on map iteration order.
      */
     @Nonnull
     public Optional<TransportData> findContaining(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull TransportColor color) {
+        ResourceLocation dim = level.dimension().location();
+
         // First try exact match
-        Optional<TransportData> exact = getByPosition(pos);
+        Optional<TransportData> exact = getByPosition(dim, pos);
         if (exact.isPresent() && exact.get().color() == color) {
             return exact;
         }
 
         // Search all nodes of this color in this dimension
-        ResourceLocation dim = level.dimension().location();
+        TransportData nearest = null;
+        double nearestDistSq = Double.MAX_VALUE;
         for (TransportData node : nodes.values()) {
             if (node.color() != color) {
                 continue;
@@ -248,11 +284,15 @@ public class TransportRegistry extends SavedData {
             int dz = Math.abs(pos.getZ() - center.getZ());
 
             if (dx <= 12 && dy <= 12 && dz <= 12) {
-                return Optional.of(node);
+                double distSq = center.distSqr(pos);
+                if (distSq < nearestDistSq) {
+                    nearestDistSq = distSq;
+                    nearest = node;
+                }
             }
         }
 
-        return Optional.empty();
+        return Optional.ofNullable(nearest);
     }
 
     // ============================================================================
@@ -789,7 +829,10 @@ public class TransportRegistry extends SavedData {
                 registry.nodes.put(node.id(), node);
 
                 // Rebuild indices
-                node.getPosition().ifPresent(pos -> registry.positionIndex.put(pos, node.id()));
+                PositionKey key = positionKey(node);
+                if (key != null) {
+                    registry.positionIndex.put(key, node.id());
+                }
                 node.getNetworkName().ifPresent(network -> {
                     registry.networkIndex.computeIfAbsent(network, k -> ConcurrentHashMap.newKeySet()).add(node.id());
                 });

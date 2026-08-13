@@ -179,14 +179,16 @@ public class NotificationPreferencesRepository {
             String sql = "SELECT * FROM notification_preferences WHERE player_uuid = ?";
             NotificationPreferences prefs = new NotificationPreferences(playerUuid);
 
-            try (Connection conn = cm.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-                stmt.setString(1, playerUuid.toString());
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        prefs = mapFromResultSet(rs, playerUuid);
-                        LOGGER.debug("[NotificationPrefs] Loaded preferences for {}", playerUuid);
+            try {
+                // Connection is shared and owned by the manager - it must not be closed here.
+                Connection conn = cm.getConnection();
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, playerUuid.toString());
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            prefs = mapFromResultSet(rs, playerUuid);
+                            LOGGER.debug("[NotificationPrefs] Loaded preferences for {}", playerUuid);
+                        }
                     }
                 }
             } catch (SQLException e) {
@@ -224,18 +226,20 @@ public class NotificationPreferencesRepository {
                     category_prefs_json = excluded.category_prefs_json
                 """;
 
-            try (Connection conn = cm.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+            try {
+                // Connection is shared and owned by the manager - it must not be closed here.
+                Connection conn = cm.getConnection();
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setString(1, prefs.getPlayerUuid().toString());
+                    stmt.setBoolean(2, prefs.isGlobalMute());
+                    stmt.setInt(3, prefs.getMinOverlayPriority().ordinal());
+                    stmt.setBoolean(4, prefs.prefersChatOverOverlay());
+                    stmt.setFloat(5, prefs.getMasterVolume());
+                    stmt.setString(6, serializeCategoryPrefs(prefs));
 
-                stmt.setString(1, prefs.getPlayerUuid().toString());
-                stmt.setBoolean(2, prefs.isGlobalMute());
-                stmt.setInt(3, prefs.getMinOverlayPriority().ordinal());
-                stmt.setBoolean(4, prefs.prefersChatOverOverlay());
-                stmt.setFloat(5, prefs.getMasterVolume());
-                stmt.setString(6, serializeCategoryPrefs(prefs));
-
-                stmt.executeUpdate();
-                LOGGER.debug("[NotificationPrefs] Saved preferences for {}", prefs.getPlayerUuid());
+                    stmt.executeUpdate();
+                    LOGGER.debug("[NotificationPrefs] Saved preferences for {}", prefs.getPlayerUuid());
+                }
             } catch (SQLException e) {
                 LOGGER.warn("[NotificationPrefs] Failed to save preferences: {}", e.getMessage());
             }
