@@ -35,6 +35,43 @@ Fixes worth calling out because they changed behaviour players can feel:
 - Devil's Bargain FRAILTY uses a transient modifier instead of mutating the
   persisted max-health base value, and is reverted on quest end.
 
+## Third pass — the deferred items
+
+Everything above that was deferred has now been done, each by an agent scoped to
+the files the fix genuinely needs (several required two packages to change
+together). Compiles clean, 9035 unit tests and 51 GameTests green.
+
+- Hit geometry is now yaw-relative and lives in one `BodyPartGeometry` shared by
+  hit detection and the debug overlay, so the two can no longer drift. The
+  unconditional HEAD priority was dropped deliberately: with correctly tiled
+  boxes, nearest-clip already yields HEAD, and the override would have kept
+  awarding headshots to low swings whose ray continues up through the target.
+- `projectileSpeed` is a multiplier everywhere. It was an absolute velocity at
+  three sites, so every bow fired at a third of vanilla speed — and therefore a
+  third of vanilla damage, since vanilla scales arrow damage by velocity. The
+  damage-side multiplier was removed as double counting, and the crossbow preset
+  is neutral again.
+- Portal `unregister` clears its blocks (the bare overload is kept for the
+  re-entrant `onRemove` path), and every teleport destination is validated for
+  world bounds, clearance and chunk load before the entity is moved.
+- Hologram builds no longer strand the projector on failure, read the level
+  off-thread, or publish a superseded mesh over a newer one.
+- Area snapshot restore streams its clear positions and reads its file off the
+  tick thread; `/devmod nexus rebuild` goes through the staggered path instead
+  of placing 1.2M blocks synchronously; Nexus telepads are verified by
+  blockstate every 100 ticks instead of being rewritten every tick.
+- Shield, pathfinding and heatmap rendering flush per entity, so per-entity
+  shader uniforms stop leaking onto the next subject; shield impact state is
+  keyed per owner.
+- Config clamping no longer mutates the caller's object; damage statistics have
+  a single owner file; Actions V2 is correct enough to enable, without being
+  enabled.
+
+Still deliberately incomplete, and marked as such in the code: the debug
+renderer's structure, POI and raid reads are guarded but still race the
+integrated server thread — there is no client-side source for that data, so the
+real fix is to push it over the existing debug payload channel.
+
 Deliberate non-fixes, with the reasoning kept so they are not re-litigated:
 
 - `findPortalContaining` resolves by nearest centre rather than true interior
