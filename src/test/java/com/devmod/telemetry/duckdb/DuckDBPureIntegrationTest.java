@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
@@ -135,6 +136,7 @@ class DuckDBPureIntegrationTest {
 
     @Test
     @Order(2)
+    @Tag("load")
     @DisplayName("Performance: Insert latency under threshold")
     void testInsertLatency() throws SQLException {
         int iterations = 1000;
@@ -176,6 +178,7 @@ class DuckDBPureIntegrationTest {
 
     @Test
     @Order(3)
+    @Tag("load")
     @DisplayName("Performance: Batch insert throughput")
     void testBatchInsertThroughput() throws SQLException {
         int batchSize = 100;
