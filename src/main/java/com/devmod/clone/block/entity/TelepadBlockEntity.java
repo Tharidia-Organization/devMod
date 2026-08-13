@@ -169,6 +169,9 @@ public class TelepadBlockEntity extends BlockEntity {
             recentArrivals.entrySet().removeIf(entry -> currentTime - entry.getValue() > ARRIVAL_COOLDOWN);
         }
 
+        // Capture the active state before this tick mutates chargingPlayers.
+        boolean wasActive = !chargingPlayers.isEmpty();
+
         // Process charging players
         var toRemove = new java.util.ArrayList<UUID>();
         for (Map.Entry<UUID, Integer> entry : chargingPlayers.entrySet()) {
@@ -205,7 +208,6 @@ public class TelepadBlockEntity extends BlockEntity {
             }
         }
 
-        boolean wasActive = !toRemove.isEmpty() || !chargingPlayers.isEmpty();
         toRemove.forEach(chargingPlayers::remove);
         boolean isActive = !chargingPlayers.isEmpty();
 

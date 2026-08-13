@@ -9,6 +9,7 @@ import com.mojang.serialization.MapCodec;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -210,6 +211,29 @@ public final class ClonePulverizerBlock extends HorizontalDirectionalBlock imple
         }
 
         return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    /**
+     * Drops the block entity's contents when the block is removed.
+     *
+     * <p>Without this the input, output and both grinder slots were silently
+     * voided on break — there is no loot table for this block either.
+     */
+    @Override
+    protected void onRemove(
+        @Nonnull BlockState state,
+        @Nonnull Level level,
+        @Nonnull BlockPos pos,
+        @Nonnull BlockState newState,
+        boolean isMoving
+    ) {
+        if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof ClonePulverizerBlockEntity pulverizer) {
+                Containers.dropContents(level, pos, pulverizer.getInventory());
+            }
+        }
+        super.onRemove(state, level, pos, newState, isMoving);
     }
 
     @Override

@@ -72,6 +72,16 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
     // Stored state - mirrors Hologenica's approach
     @Nonnull
     private ItemStack storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
+
+    /**
+     * Single container shared by every open menu.
+     *
+     * <p>Transient: it mirrors {@link #storedBioscanner}, which is what gets
+     * persisted. Kept as one instance so two players viewing the same
+     * neurocell cannot each take their own copy of the stored item.
+     */
+    @Nullable
+    private transient SimpleContainer cachedInventory;
     @Nonnull
     private String entityType = "";
     @Nonnull
@@ -191,6 +201,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         }
 
         storedBioscanner = Objects.requireNonNull(bioscanner.copyWithCount(1));
+        syncBioscannerToContainer();
         onInventoryChanged();
 
         Level lvl = level;
@@ -212,6 +223,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
 
         ItemStack extracted = Objects.requireNonNull(storedBioscanner.copy());
         storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
+        syncBioscannerToContainer();
         clearRagdollState();
 
         Level lvl = level;
@@ -348,6 +360,7 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
 
         // Clear the neurocell
         storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
+        syncBioscannerToContainer();
         clearRagdollState();
 
         return data;
@@ -417,8 +430,10 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
         hasRagdoll = tag.getBoolean(TAG_HAS_RAGDOLL);
         if (tag.contains(TAG_BIOSCANNER)) {
             storedBioscanner = Objects.requireNonNull(ItemStack.parse(registries, Objects.requireNonNull(tag.getCompound(TAG_BIOSCANNER))).orElse(ItemStack.EMPTY));
+            syncBioscannerToContainer();
         } else {
             storedBioscanner = Objects.requireNonNull(ItemStack.EMPTY);
+            syncBioscannerToContainer();
         }
 
         // Load rotation data
@@ -478,9 +493,19 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
 
     /**
      * Get the inventory container for menu access.
+     *
+     * <p>Returns a cached instance. Building a fresh container per call handed
+     * each open menu its own copy of the stored bioscanner, so two players
+     * viewing the same neurocell could each take the item — one stack in,
+     * two stacks out.
      */
     @Nonnull
     public Container getInventory() {
+        SimpleContainer cached = cachedInventory;
+        if (cached != null) {
+            return cached;
+        }
+
         // Create a container view that syncs bidirectionally with storedBioscanner
         SimpleContainer container = new SimpleContainer(1) {
             @Override
@@ -517,11 +542,27 @@ public class NeurocellBlockEntity extends BlockEntity implements MenuProvider, N
             public ItemStack removeItemNoUpdate(int slot) {
                 ItemStack result = Objects.requireNonNull(super.removeItemNoUpdate(slot));
                 storedBioscanner = Objects.requireNonNull(this.getItem(0).copy());
+                // Without this the block entity is left unmarked-dirty after the
+                // item leaves, so an unclean shutdown restores the taken item.
+                NeurocellBlockEntity.this.setChanged();
                 return result;
             }
         };
         container.setItem(0, Objects.requireNonNull(storedBioscanner.copy()));
+        cachedInventory = container;
         return container;
+    }
+
+
+    /**
+     * Pushes {@link #storedBioscanner} into the shared container after the field
+     * is changed from outside the menu (NBT load, imprinter fill, eject).
+     */
+    private void syncBioscannerToContainer() {
+        SimpleContainer cached = cachedInventory;
+        if (cached != null && !ItemStack.matches(cached.getItem(0), storedBioscanner)) {
+            cached.setItem(0, Objects.requireNonNull(storedBioscanner.copy()));
+        }
     }
 
     /**
