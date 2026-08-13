@@ -106,8 +106,8 @@ public interface CombatVisualsBridge {
     default void spawnMeleeEvasionPanel(Player player, LivingEntity target,
             Vec3 position, Vec3 lookDir) {}
 
-    /** Records a shield impact for visual feedback. */
-    default void recordShieldImpact(Vec3 impactPoint, float damage) {}
+    /** Records a shield impact on the shield owner's shield for visual feedback. */
+    default void recordShieldImpact(LivingEntity shieldOwner, Vec3 impactPoint, float damage) {}
 
     // -------- Ranged weapon stats --------
 

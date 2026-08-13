@@ -1,6 +1,5 @@
 package com.devmod.combat;
 
-import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.Random;
 
@@ -10,6 +9,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.combat.bridge.CombatVisualsBridge;
 import com.devmod.debug.DiagnosticLogger;
 
 import net.minecraft.world.entity.Entity;
@@ -17,7 +17,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.Vec3;
 
-import net.neoforged.fml.loading.FMLEnvironment;
 
 public class ShieldDeflector {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShieldDeflector.class);
@@ -99,7 +98,7 @@ public class ShieldDeflector {
 
         // Trigger visual feedback (client-only)
         float damage = estimateProjectileDamage(projectile);
-        recordImpactClientSafe(impactPointNonNull, damage);
+        CombatVisualsBridge.get().recordShieldImpact(shieldOwner, impactPointNonNull, damage);
 
         LOGGER.debug("Deflected {} at angle {}, speed {}->{}",
             projectile.getType().getDescriptionId(),
@@ -314,66 +313,4 @@ public class ShieldDeflector {
         return distSq <= threshold;
     }
 
-    /**
-     * Checks if projectile is moving toward the shield owner.
-     */
-    public static boolean isMovingToward(Projectile projectile, LivingEntity target) {
-        if (projectile == null || target == null) {
-            return false;
-        }
-
-        Vec3 toTarget = Objects.requireNonNull(target.position(), "target position")
-            .add(0, target.getBbHeight() * 0.5, 0)
-            .subtract(Objects.requireNonNull(projectile.position(), "projectile position"));
-        toTarget = Objects.requireNonNull(toTarget.normalize(), "direction to target");
-        Vec3 velocity = Objects.requireNonNull(
-            Objects.requireNonNull(projectile.getDeltaMovement(), "projectile velocity").normalize(),
-            "normalized velocity");
-
-        // Projectile is moving toward target if dot product is positive
-        return toTarget.dot(velocity) > 0;
-    }
-
-    // ========== Client-safe helpers ==========
-
-    private static volatile Method recordImpactMethod;
-    private static volatile boolean recordImpactMethodInitialized = false;
-
-    /**
-     * Records shield impact for visual feedback (client-only, server-safe).
-     * Uses reflection to avoid loading client classes on dedicated server.
-     */
-    private static void recordImpactClientSafe(Vec3 impactPoint, float damage) {
-        if (!FMLEnvironment.dist.isClient()) {
-            return; // No-op on server
-        }
-
-        Method method = getCachedRecordImpactMethod();
-        if (method != null) {
-            try {
-                method.invoke(null, impactPoint, damage);
-            } catch (Exception e) {
-                LOGGER.debug("Could not record shield impact VFX: {}", e.getMessage());
-            }
-        }
-    }
-
-    @javax.annotation.Nullable
-    private static Method getCachedRecordImpactMethod() {
-        if (!recordImpactMethodInitialized) {
-            synchronized (ShieldDeflector.class) {
-                if (!recordImpactMethodInitialized) {
-                    try {
-                        Class<?> rendererClass = Class.forName("com.devmod.client.rendering.shield.EnergyShieldRenderer");
-                        recordImpactMethod = rendererClass.getMethod("recordImpact", Vec3.class, float.class);
-                    } catch (Exception e) {
-                        LOGGER.debug("Could not cache recordImpact method: {}", e.getMessage());
-                    } finally {
-                        recordImpactMethodInitialized = true;
-                    }
-                }
-            }
-        }
-        return recordImpactMethod;
-    }
 }

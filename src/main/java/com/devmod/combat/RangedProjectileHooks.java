@@ -56,12 +56,13 @@ public final class RangedProjectileHooks {
         if (baseDamage > 0) {
             trident.setBaseDamage(baseDamage);
         }
+        // projectileSpeed and loyaltySpeed are multipliers, so 1.0 keeps the vanilla throw speed
         Vec3 delta = Objects.requireNonNull(trident.getDeltaMovement());
         if (delta.lengthSqr() > 0.0001 && (speed > 0 || loyaltySpeed > 0)) {
             float scalar = speed > 0 ? speed : 1.0f;
             if (loyaltySpeed > 0) scalar = Math.max(scalar, loyaltySpeed);
             Vec3 normalized = Objects.requireNonNullElseGet(delta.normalize(), () -> delta);
-            trident.setDeltaMovement(Objects.requireNonNull(normalized.scale(scalar)));
+            trident.setDeltaMovement(Objects.requireNonNull(normalized.scale(delta.length() * scalar)));
         }
         if (gravity <= 0.0001f) {
             trident.setNoGravity(true);
@@ -107,11 +108,11 @@ public final class RangedProjectileHooks {
             arrow.setBaseDamage(baseDamage);
         }
 
-        // Speed override
+        // Speed override: projectileSpeed is a multiplier, so 1.0 keeps the vanilla launch speed
         Vec3 delta = Objects.requireNonNull(arrow.getDeltaMovement());
         if (delta.lengthSqr() > 0.0001 && speed > 0) {
             Vec3 normalized = Objects.requireNonNullElseGet(delta.normalize(), () -> delta);
-            arrow.setDeltaMovement(Objects.requireNonNull(normalized.scale(speed)));
+            arrow.setDeltaMovement(Objects.requireNonNull(normalized.scale(delta.length() * speed)));
         }
 
         // Gravity override

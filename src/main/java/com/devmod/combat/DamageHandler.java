@@ -57,7 +57,6 @@ public class DamageHandler {
             Vec3 slashDirection = null;
             boolean isRanged = false;
             float rangedBaseOverride = -1f;
-            float rangedSpeedOverride = -1f;
             float rangedCritChance = 0f;
             float rangedCritDamage = 1f;
 
@@ -83,15 +82,10 @@ public class DamageHandler {
                     return; // Skip DevMod scaling; fall back to vanilla handling
                 }
 
-                // Apply ranged-specific overrides (base damage, speed, pierce, crit)
+                // Apply ranged-specific overrides (base damage, crit)
                 RangedOverrides ranged = RangedOverridesResolver.resolve(weapon);
                 if (ranged.baseDamage > 0) {
                     rangedBaseOverride = ranged.baseDamage;
-                }
-                if (ranged.projectileSpeed > 0 && delta.lengthSqr() > 0.0001) {
-                    Vec3 normalized = Objects.requireNonNullElseGet(delta.normalize(), () -> delta);
-                    arrow.setDeltaMovement(Objects.requireNonNull(normalized.scale(ranged.projectileSpeed)));
-                    rangedSpeedOverride = ranged.projectileSpeed;
                 }
                 if (ranged.getCritChance() > 0) {
                     rangedCritChance = ranged.getCritChance();
@@ -157,7 +151,7 @@ public class DamageHandler {
             // Apply ranged modifiers (speed scaling, crit)
             if (isRanged) {
                 newDamage = DamageCalculator.applyRangedModifiers(
-                    calcResult, rangedSpeedOverride, rangedCritChance, rangedCritDamage, victim.getRandom());
+                    calcResult, rangedCritChance, rangedCritDamage, victim.getRandom());
             }
 
             // Store body part, armor pen bonus, AND armor reduction in context for telemetry
@@ -376,22 +370,23 @@ public class DamageHandler {
                     CombatVisualsBridge.get().resolveRangedStats(weapon);
             return new RangedOverrides(
                 snapshot.baseDamage(),
-                snapshot.projectileSpeed(),
                 snapshot.critChance(),
                 snapshot.critDamage()
             );
         }
     }
 
+    /**
+     * Projectile speed is applied at spawn time by RangedProjectileHooks, not here:
+     * re-scaling on impact would compound on every hit of a piercing arrow.
+     */
     private static final class RangedOverrides {
         private final float baseDamage;
-        private final float projectileSpeed;
         private final float critChance;
         private final float critDamage;
 
-        private RangedOverrides(float baseDamage, float projectileSpeed, float critChance, float critDamage) {
+        private RangedOverrides(float baseDamage, float critChance, float critDamage) {
             this.baseDamage = baseDamage;
-            this.projectileSpeed = projectileSpeed;
             this.critChance = critChance;
             this.critDamage = critDamage;
         }

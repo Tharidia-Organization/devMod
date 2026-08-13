@@ -95,50 +95,13 @@ class DamageCalculatorTest {
         }
 
         @Test
-        @DisplayName("No speed multiplier or crit should return base damage")
+        @DisplayName("No crit returns base damage untouched")
         void noModifiersReturnBaseDamage() {
+            // Projectile speed is intentionally absent: vanilla already scales arrow
+            // damage by velocity, so applying the multiplier here would square it.
             float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 1.0f, 0f, 1.5f, TEST_RANDOM);
+                    baseResult(10f), 0f, 1.5f, TEST_RANDOM);
 
-            assertEquals(10f, result, 0.001f);
-        }
-
-        @Test
-        @DisplayName("Speed multiplier scales damage")
-        void speedMultiplierScalesDamage() {
-            float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 2.0f, 0f, 1.5f, TEST_RANDOM);
-
-            assertEquals(20f, result, 0.001f);
-        }
-
-        @Test
-        @DisplayName("Speed multiplier of 0.5 halves damage")
-        void halfSpeedMultiplier() {
-            float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 0.5f, 0f, 1.5f, TEST_RANDOM);
-
-            assertEquals(5f, result, 0.001f);
-        }
-
-        @Test
-        @DisplayName("Zero speed multiplier is skipped (no multiplication)")
-        void zeroSpeedMultiplier() {
-            float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 0f, 0f, 1.5f, TEST_RANDOM);
-
-            // speedMultiplier is 0, so the condition `speedMultiplier > 0` is false
-            // damage stays at 10f (no multiplication applied)
-            assertEquals(10f, result, 0.001f);
-        }
-
-        @Test
-        @DisplayName("Negative speed multiplier is skipped (no multiplication)")
-        void negativeSpeedMultiplierSkipped() {
-            float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), -1.0f, 0f, 1.5f, TEST_RANDOM);
-
-            // Negative speedMultiplier fails the > 0 check, so damage is unchanged
             assertEquals(10f, result, 0.001f);
         }
 
@@ -149,7 +112,7 @@ class DamageCalculatorTest {
         void fullCritChanceAlwaysCrits() {
             // Math.random() returns [0.0, 1.0), so it's always < 1.0
             float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 1.0f, 1.0f, 3.0f, TEST_RANDOM);
+                    baseResult(10f), 1.0f, 3.0f, TEST_RANDOM);
 
             // 10 * 3.0 = 30
             assertEquals(30f, result, 0.001f);
@@ -159,26 +122,26 @@ class DamageCalculatorTest {
         @DisplayName("Zero crit chance never crits")
         void zeroCritChanceNeverCrits() {
             float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 1.0f, 0f, 2.0f, TEST_RANDOM);
+                    baseResult(10f), 0f, 2.0f, TEST_RANDOM);
 
             assertEquals(10f, result, 0.001f);
         }
 
         @Test
-        @DisplayName("Crit with speed multiplier applies both when critChance=1.0")
-        void critWithSpeedMultiplierAppliesBoth() {
+        @DisplayName("Crit multiplier applies when critChance=1.0")
+        void critAppliesAtFullChance() {
             float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(20f), 1.5f, 1.0f, 2.5f, TEST_RANDOM);
+                    baseResult(20f), 1.0f, 2.5f, TEST_RANDOM);
 
-            // 20 * 1.5 (speed) = 30, then 30 * 2.5 (crit) = 75
-            assertEquals(75f, result, 0.001f);
+            // 20 * 2.5 (crit) = 50
+            assertEquals(50f, result, 0.001f);
         }
 
         @Test
         @DisplayName("Negative crit chance never crits")
         void negativeCritChanceNeverCrits() {
             float result = DamageCalculator.applyRangedModifiers(
-                    baseResult(10f), 1.0f, -0.5f, 2.0f, TEST_RANDOM);
+                    baseResult(10f), -0.5f, 2.0f, TEST_RANDOM);
 
             // critChance <= 0 fails the > 0 check
             assertEquals(10f, result, 0.001f);
@@ -374,9 +337,9 @@ class DamageCalculatorTest {
                     new DamageCalculator.CalculationResult(0f, 0f, 0f, 0f, 1.0f);
 
             float damage = DamageCalculator.applyRangedModifiers(
-                    result, 2.0f, 1.0f, 3.0f, TEST_RANDOM);
+                    result, 1.0f, 3.0f, TEST_RANDOM);
 
-            // 0 * 2.0 * 3.0 = 0
+            // 0 * 3.0 = 0
             assertEquals(0f, damage, 0.001f);
         }
 
@@ -387,7 +350,7 @@ class DamageCalculatorTest {
                     new DamageCalculator.CalculationResult(100000f, 0f, 0f, 0f, 1.0f);
 
             float damage = DamageCalculator.applyRangedModifiers(
-                    result, 1.0f, 1.0f, 2.0f, TEST_RANDOM);
+                    result, 1.0f, 2.0f, TEST_RANDOM);
 
             assertEquals(200000f, damage, 0.1f);
         }
@@ -400,9 +363,9 @@ class DamageCalculatorTest {
 
             // critChance=1.0 guarantees crit, critDamage=1.0 means no bonus
             float damage = DamageCalculator.applyRangedModifiers(
-                    result, 1.0f, 1.0f, 1.0f, TEST_RANDOM);
+                    result, 1.0f, 1.0f, TEST_RANDOM);
 
-            // 10 * 1.0 (speed) * 1.0 (crit multiplier) = 10
+            // 10 * 1.0 (crit multiplier) = 10
             assertEquals(10f, damage, 0.001f);
         }
 

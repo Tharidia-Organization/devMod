@@ -286,21 +286,20 @@ public final class DamageCalculator {
     }
 
     /**
-     * Applies ranged-specific modifiers (speed scaling, crit).
+     * Applies ranged-specific modifiers (crit).
+     *
+     * Projectile speed is deliberately not applied here: vanilla already scales arrow
+     * damage by the projectile's velocity, so multiplying again would square the effect
+     * of the projectileSpeed multiplier.
      *
      * @param result Base calculation result
-     * @param speedMultiplier Projectile speed multiplier (1.0 = no change)
      * @param critChance Chance to crit (0.0-1.0)
      * @param critDamage Crit damage multiplier
      * @param random RandomSource for crit roll (use level.getRandom() or entity.getRandom())
      * @return Modified damage
      */
-    public static float applyRangedModifiers(CalculationResult result, float speedMultiplier, float critChance, float critDamage, RandomSource random) {
+    public static float applyRangedModifiers(CalculationResult result, float critChance, float critDamage, RandomSource random) {
         float damage = result.finalDamage;
-
-        if (speedMultiplier > 0) {
-            damage *= speedMultiplier;
-        }
 
         if (critChance > 0 && random.nextFloat() < critChance) {
             damage *= critDamage;

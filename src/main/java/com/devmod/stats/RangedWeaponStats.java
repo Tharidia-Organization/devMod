@@ -254,7 +254,9 @@ public class RangedWeaponStats {
             stats.chargeTime = 1.0f;
             stats.accuracy = 1.0f;
             stats.range = 1.2f;
-            stats.projectileSpeed = 1.1f;
+            // projectileSpeed is a multiplier on vanilla launch velocity, and these
+            // defaults apply to every crossbow, configured or not — so it stays neutral.
+            stats.projectileSpeed = 1.0f;
             stats.projectileSpread = 0.0f;
             stats.projectileGravity = 0.05f;
         } else if (item.getItem() instanceof TridentItem) {

@@ -175,8 +175,8 @@ public final class HitHelper {
      * - BODY (center, 40% central height)
      * - LEGS (bottom 35%)
      *
-     * Performs raycast from the attacker's eye to each AABB in priority order.
-     * This method is synchronized with the visual debug overlay for 100% consistency.
+     * Raycasts the attacker's eye against every box and keeps the nearest intersection.
+     * Boxes come from {@link BodyPartGeometry}, shared with the visual debug overlay.
      *
      * MODDED COMPATIBILITY:
      * - Adaptive mode for non-humanoid hitboxes (dragons, bosses, quadrupeds)
@@ -252,245 +252,68 @@ public final class HitHelper {
      * Returns HitResult with both body part and exact hit position.
      */
     private static HitResult calculateBodyPartWithHitPoint(LivingEntity attacker, LivingEntity target) {
-        AABB mainBox = target.getBoundingBox();
-        Vec3 center = mainBox.getCenter();
-        double width = mainBox.getXsize();
-        double height = mainBox.getYsize();
-        double depth = mainBox.getZsize();
+        BodyPartGeometry geometry = BodyPartGeometry.of(target);
 
-        // ADAPTIVE MODE: Detect if target has non-humanoid hitbox
-        // Ratio > 2.0 = horizontal body (dragon, fish, serpent)
-        // Ratio < 0.5 = vertical body (enderman, tall boss)
-        double aspectRatio = Math.max(width, depth) / height;
-        boolean isHorizontalBody = aspectRatio > 2.0;
-        boolean isTallBody = height > 3.0 && aspectRatio < 0.5;
-
-        // For horizontal bodies (dragons), use front/back/middle instead of head/body/legs
-        if (isHorizontalBody) {
-            return rayTraceHorizontalBodyWithHitPoint(attacker, mainBox, center);
-        }
-
-        // For very tall bodies (enderman, large bosses), use tighter head detection
-        if (isTallBody) {
-            return rayTraceTallBodyWithHitPoint(attacker, mainBox, center, height);
-        }
-
-        // Attacker raycast with dynamic reach
+        // Attacker raycast with dynamic reach, transformed into the target's local frame
+        // so the subdivision follows the target's facing instead of the world axes.
         Vec3 eye = nn(attacker.getEyePosition(), "eye position");
         Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
+        Vec3 scaledLook = nn(look.scale(getDynamicReach(attacker)), "scaled look");
+        Vec3 end = nn(eye.add(scaledLook), "ray end");
 
-        // DYNAMIC REACH: Read from attacker's attribute (Better Combat, Epic Knights compatibility)
-        double reach = 3.5; // Default fallback
-        try {
-            // Try to get entity reach attribute (added by NeoForge/combat mods)
-            var reachAttr = attacker.getAttribute(Objects.requireNonNull(
-                net.minecraft.world.entity.ai.attributes.Attributes.ENTITY_INTERACTION_RANGE,
-                "reach attribute key"));
-            if (reachAttr != null) {
-                double value = reachAttr.getValue();
-                // If value is > 0, use it; otherwise keep the default
-                if (value > 0.1) {
-                    reach = value + 0.5; // Add margin for raycast
-                }
+        Vec3 localEye = geometry.toLocal(eye);
+        Vec3 localEnd = geometry.toLocal(end);
+
+        // The ray spans the whole reach and therefore crosses far-side boxes too, so the
+        // part is the one whose surface the ray reaches first - not the first that matches.
+        BodyPart nearestPart = null;
+        Vec3 nearestHit = null;
+        double nearestDistanceSqr = 0;
+        for (BodyPartGeometry.LocalPart candidate : geometry.parts()) {
+            Optional<Vec3> hit = candidate.box().clip(localEye, localEnd);
+            if (hit.isEmpty()) {
+                continue;
             }
-        } catch (Exception e) {
-            // Fallback to default if attribute not available (vanilla mobs)
+            Vec3 hitPoint = nn(hit.get(), "candidate hit");
+            double distanceSqr = hitPoint.distanceToSqr(localEye);
+            // Strict comparison: on a face shared by two boxes the earlier part wins.
+            if (nearestPart == null || distanceSqr < nearestDistanceSqr) {
+                nearestPart = candidate.part();
+                nearestHit = hitPoint;
+                nearestDistanceSqr = distanceSqr;
+            }
         }
 
-        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
-        Vec3 end = nn(eye.add(scaledLook), "ray end");
-
-        // ===== HEAD (TOP 25%) =====
-        // Maximum priority: headshot must take precedence
-        // BUG-006 FIX: Clamp head height between 0.3 blocks (min) and 0.6 blocks (max)
-        // For very tall mobs, 25% would be too large; for small mobs, too small
-        double headHeight = Math.max(0.3, Math.min(0.6, height * 0.25));
-        AABB headBox = new AABB(
-            center.x - width/2, mainBox.maxY - headHeight, center.z - depth/2,
-            center.x + width/2, mainBox.maxY, center.z + depth/2
-        );
-
-        Optional<Vec3> headHit = headBox.clip(eye, end);
-        if (headHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, nn(headHit.get(), "head hit"));
+        if (nearestPart != null) {
+            return HitResult.of(nearestPart, geometry.toWorld(nn(nearestHit, "nearest hit")));
         }
 
-        // ===== TORSO + ARMS (MIDDLE 40%) =====
-        double torsoTop = mainBox.maxY - headHeight;
-        double torsoHeight = height * 0.40;
-        double torsoBottom = torsoTop - torsoHeight;
-
-        // ARMS: Lateral (left and right) of the torso zone
-        // Use the outer 30% of width on both sides
-        double armWidth = width * 0.30;
-
-        // LEFT ARM (from target's perspective)
-        AABB leftArmBox = new AABB(
-            mainBox.minX, torsoBottom, center.z - depth/2,
-            mainBox.minX + armWidth, torsoTop, center.z + depth/2
-        );
-
-        // RIGHT ARM (from target's perspective)
-        AABB rightArmBox = new AABB(
-            mainBox.maxX - armWidth, torsoBottom, center.z - depth/2,
-            mainBox.maxX, torsoTop, center.z + depth/2
-        );
-
-        Optional<Vec3> leftArmHit = leftArmBox.clip(eye, end);
-        if (leftArmHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, nn(leftArmHit.get(), "left arm hit"));
-        }
-
-        Optional<Vec3> rightArmHit = rightArmBox.clip(eye, end);
-        if (rightArmHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, nn(rightArmHit.get(), "right arm hit"));
-        }
-
-        // TORSO: Center of the middle zone (excludes arms)
-        double bodyWidth = width - (2 * armWidth); // Central width
-        AABB bodyBox = new AABB(
-            center.x - bodyWidth/2, torsoBottom, center.z - depth/2,
-            center.x + bodyWidth/2, torsoTop, center.z + depth/2
-        );
-
-        Optional<Vec3> bodyHit = bodyBox.clip(eye, end);
-        if (bodyHit.isPresent()) {
-            return HitResult.of(BodyPart.BODY, nn(bodyHit.get(), "body hit"));
-        }
-
-        // ===== LEGS (BOTTOM 35%) =====
-        double legsTop = torsoBottom;
-        AABB legsBox = new AABB(
-            center.x - width/2, mainBox.minY, center.z - depth/2,
-            center.x + width/2, legsTop, center.z + depth/2
-        );
-
-        Optional<Vec3> legsHit = legsBox.clip(eye, end);
-        if (legsHit.isPresent()) {
-            return HitResult.of(BodyPart.LEGS, nn(legsHit.get(), "legs hit"));
-        }
-
-        // ===== FALLBACK: Pitch-based (for edge cases) =====
-        // If the raycast doesn't intersect any AABB (very rare),
-        // use the old pitch-based system as safety
-        // Calculate an approximate hit point at the target center
-        Vec3 fallbackHitPoint = nn(center, "target center");
-        double pitch = attacker.getXRot();
-        if (pitch < -15) return HitResult.of(BodyPart.HEAD, nn(fallbackHitPoint.add(0, height * 0.35, 0), "fallback head hit"));
-        if (pitch > 25) return HitResult.of(BodyPart.LEGS, nn(fallbackHitPoint.add(0, -height * 0.3, 0), "fallback legs hit"));
-
-        // Default: torso
-        return HitResult.of(BodyPart.BODY, fallbackHitPoint);
+        return fallbackHit(attacker, target, geometry.kind());
     }
 
     /**
-     * Version with hit point for horizontal body.
+     * Used when the raycast misses every body part box (very rare).
      */
-    private static HitResult rayTraceHorizontalBodyWithHitPoint(LivingEntity attacker, AABB mainBox, Vec3 center) {
-        Vec3 eye = nn(attacker.getEyePosition(), "eye position");
-        Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
-        double reach = getDynamicReach(attacker);
-        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
-        Vec3 end = nn(eye.add(scaledLook), "ray end");
+    private static HitResult fallbackHit(LivingEntity attacker, LivingEntity target, BodyPartGeometry.Kind kind) {
+        AABB mainBox = target.getBoundingBox();
+        Vec3 center = nn(mainBox.getCenter(), "target center");
+        double height = mainBox.getYsize();
 
-        double width = mainBox.getXsize();
-        double depth = mainBox.getZsize();
-        boolean primaryAxisIsX = width > depth;
-
-        double bodyLength = primaryAxisIsX ? width : depth;
-        double bodyWidth = primaryAxisIsX ? depth : width;
-
-        double frontSize = bodyLength * 0.30;
-        AABB frontBox;
-        if (primaryAxisIsX) {
-            frontBox = new AABB(
-                mainBox.maxX - frontSize, mainBox.minY, center.z - bodyWidth/2,
-                mainBox.maxX, mainBox.maxY, center.z + bodyWidth/2
-            );
-        } else {
-            frontBox = new AABB(
-                center.x - bodyWidth/2, mainBox.minY, mainBox.maxZ - frontSize,
-                center.x + bodyWidth/2, mainBox.maxY, mainBox.maxZ
-            );
-        }
-
-        Optional<Vec3> frontHit = frontBox.clip(eye, end);
-        if (frontHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, nn(frontHit.get(), "front hit"));
-        }
-
-        AABB backBox;
-        if (primaryAxisIsX) {
-            backBox = new AABB(
-                mainBox.minX, mainBox.minY, center.z - bodyWidth/2,
-                mainBox.minX + frontSize, mainBox.maxY, center.z + bodyWidth/2
-            );
-        } else {
-            backBox = new AABB(
-                center.x - bodyWidth/2, mainBox.minY, mainBox.minZ,
-                center.x + bodyWidth/2, mainBox.maxY, mainBox.minZ + frontSize
-            );
-        }
-
-        Optional<Vec3> backHit = backBox.clip(eye, end);
-        if (backHit.isPresent()) {
-            return HitResult.of(BodyPart.LEGS, nn(backHit.get(), "back hit"));
-        }
-
-        return HitResult.of(BodyPart.BODY, nn(center, "body center"));
-    }
-
-    /**
-     * Version with hit point for tall body.
-     */
-    private static HitResult rayTraceTallBodyWithHitPoint(LivingEntity attacker, AABB mainBox, Vec3 center, double height) {
-        Vec3 eye = nn(attacker.getEyePosition(), "eye position");
-        Vec3 look = nn(attacker.getViewVector(1.0F), "view vector");
-        double reach = getDynamicReach(attacker);
-        Vec3 scaledLook = nn(look.scale(reach), "scaled look");
-        Vec3 end = nn(eye.add(scaledLook), "ray end");
-
-        double width = mainBox.getXsize();
-        double depth = mainBox.getZsize();
-
-        // BUG-006 FIX: Ensure a minimum head zone for tall mobs.
-        // For tall mobs (Enderman ~2.9, Iron Golem ~2.7), 15% can be too small.
-        double headHeight = Math.max(0.5, height * 0.15);
-        AABB headBox = new AABB(
-            center.x - width/2, mainBox.maxY - headHeight, center.z - depth/2,
-            center.x + width/2, mainBox.maxY, center.z + depth/2
-        );
-
-        Optional<Vec3> headHit = headBox.clip(eye, end);
-        if (headHit.isPresent()) {
-            return HitResult.of(BodyPart.HEAD, nn(headHit.get(), "head hit"));
-        }
-
-        double upperBodyTop = mainBox.maxY - headHeight;
-        double upperBodyHeight = height * 0.35;
-        AABB upperBodyBox = new AABB(
-            center.x - width/2, upperBodyTop - upperBodyHeight, center.z - depth/2,
-            center.x + width/2, upperBodyTop, center.z + depth/2
-        );
-
-        Optional<Vec3> bodyHit = upperBodyBox.clip(eye, end);
-        if (bodyHit.isPresent()) {
-            return HitResult.of(BodyPart.BODY, nn(bodyHit.get(), "upper body hit"));
-        }
-
-        double lowerBodyTop = upperBodyTop - upperBodyHeight;
-        double lowerBodyHeight = height * 0.30;
-        AABB lowerBodyBox = new AABB(
-            center.x - width/2, lowerBodyTop - lowerBodyHeight, center.z - depth/2,
-            center.x + width/2, lowerBodyTop, center.z + depth/2
-        );
-
-        Optional<Vec3> armsHit = lowerBodyBox.clip(eye, end);
-        if (armsHit.isPresent()) {
-            return HitResult.of(BodyPart.ARMS, nn(armsHit.get(), "arms hit"));
-        }
-
-        return HitResult.of(BodyPart.LEGS, nn(center.add(0, -height * 0.3, 0), "legs hit"));
+        return switch (kind) {
+            case HORIZONTAL -> HitResult.of(BodyPart.BODY, center);
+            case TALL -> HitResult.of(BodyPart.LEGS, nn(center.add(0, -height * 0.3, 0), "fallback legs hit"));
+            case HUMANOID -> {
+                // Pitch-based approximation, kept from the pre-raycast system
+                double pitch = attacker.getXRot();
+                if (pitch < -15) {
+                    yield HitResult.of(BodyPart.HEAD, nn(center.add(0, height * 0.35, 0), "fallback head hit"));
+                }
+                if (pitch > 25) {
+                    yield HitResult.of(BodyPart.LEGS, nn(center.add(0, -height * 0.3, 0), "fallback legs hit"));
+                }
+                yield HitResult.of(BodyPart.BODY, center);
+            }
+        };
     }
 
     /**
