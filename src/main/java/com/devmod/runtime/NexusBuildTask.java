@@ -18,6 +18,9 @@ public final class NexusBuildTask {
     /** Steps taking longer than this are logged at INFO even between milestones. */
     private static final long SLOW_STEP_THRESHOLD_MS = 50;
 
+    /** Max milliseconds to spend executing steps per server tick (budget-based batching). */
+    private static final long STEP_BUDGET_MS = 40;
+
     private final Iterator<NexusBuildStep> steps;
     private final int totalSteps;
     private final int stepInterval;
@@ -55,25 +58,41 @@ public final class NexusBuildTask {
             return true;
         }
 
-        NexusBuildStep step = steps.next();
-        currentStepName = step.name();
-        long stepStart = System.nanoTime();
-        try {
-            step.run();
-        } catch (Exception e) {
-            LOGGER.warn("[Nexus] Build step '{}' failed: {}", step.name(), e.getMessage());
+        // Time-budgeted execution: run multiple steps per tick until budget exhausted
+        long budgetNanos = STEP_BUDGET_MS * 1_000_000L;
+        long tickStart = System.nanoTime();
+        int stepsThisTick = 0;
+
+        while (steps.hasNext()) {
+            NexusBuildStep step = steps.next();
+            currentStepName = step.name();
+            long stepStart = System.nanoTime();
+            try {
+                step.run();
+            } catch (Exception e) {
+                LOGGER.warn("[Nexus] Build step '{}' failed: {}", step.name(), e.getMessage());
+            }
+            long stepDurationMs = (System.nanoTime() - stepStart) / 1_000_000L;
+            stepIndex++;
+            stepsThisTick++;
+
+            if (stepDurationMs >= SLOW_STEP_THRESHOLD_MS) {
+                LOGGER.info("[Nexus] Slow build step {} '{}' took {} ms",
+                    stepIndex, step.name(), stepDurationMs);
+            }
+
+            // Check time budget — break if we've used our allocation for this tick
+            if ((System.nanoTime() - tickStart) >= budgetNanos) {
+                break;
+            }
         }
-        long stepDurationMs = (System.nanoTime() - stepStart) / 1_000_000L;
-        stepIndex++;
-        LOGGER.debug("[Nexus] Build step {} '{}' completed in {} ms",
-            stepIndex, step.name(), stepDurationMs);
-        if (stepDurationMs >= SLOW_STEP_THRESHOLD_MS) {
-            LOGGER.info("[Nexus] Slow build step {} '{}' took {} ms",
-                stepIndex, step.name(), stepDurationMs);
-        } else if (stepIndex >= nextMilestone) {
+
+        // Log progress at milestones
+        if (stepIndex >= nextMilestone || !steps.hasNext()) {
             int pct = (int) ((stepIndex * 100L) / totalSteps);
-            LOGGER.info("[Nexus] Build progress: {}/{} steps ({}%)",
-                stepIndex, totalSteps, pct);
+            long tickMs = (System.nanoTime() - tickStart) / 1_000_000L;
+            LOGGER.info("[Nexus] Build progress: {}/{} ({}%) — {} steps in {}ms this tick",
+                stepIndex, totalSteps, pct, stepsThisTick, tickMs);
             nextMilestone += Math.max(1, totalSteps / 4);
         }
 

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import com.devmod.collision.bodypart.BodyPartDefinition;
 import com.devmod.collision.bodypart.BodyPartHierarchy;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,10 +86,10 @@ class VanillaBodyPartsTest {
         @Test
         @DisplayName("head is HEAD type, arms are ARMS type")
         void bodyPartTypes() {
-            assertEquals(HitHelper.BodyPart.HEAD, VanillaBodyParts.HUMANOID.getPart("head").bodyPartType());
-            assertEquals(HitHelper.BodyPart.ARMS, VanillaBodyParts.HUMANOID.getPart("left_arm").bodyPartType());
-            assertEquals(HitHelper.BodyPart.BODY, VanillaBodyParts.HUMANOID.getPart("body").bodyPartType());
-            assertEquals(HitHelper.BodyPart.LEGS, VanillaBodyParts.HUMANOID.getPart("left_leg").bodyPartType());
+            assertEquals(BodyPart.HEAD, VanillaBodyParts.HUMANOID.getPart("head").bodyPartType());
+            assertEquals(BodyPart.ARMS, VanillaBodyParts.HUMANOID.getPart("left_arm").bodyPartType());
+            assertEquals(BodyPart.BODY, VanillaBodyParts.HUMANOID.getPart("body").bodyPartType());
+            assertEquals(BodyPart.LEGS, VanillaBodyParts.HUMANOID.getPart("left_leg").bodyPartType());
         }
     }
 
@@ -137,7 +137,7 @@ class VanillaBodyPartsTest {
         @Test
         @DisplayName("front is HEAD type")
         void frontType() {
-            assertEquals(HitHelper.BodyPart.HEAD,
+            assertEquals(BodyPart.HEAD,
                 VanillaBodyParts.HORIZONTAL.getPart("front").bodyPartType());
         }
 
@@ -225,7 +225,7 @@ class VanillaBodyPartsTest {
         };
 
         for (BodyPartHierarchy h : hierarchies) {
-            assertNotNull(h.findByType(HitHelper.BodyPart.HEAD),
+            assertNotNull(h.findByType(BodyPart.HEAD),
                 "Hierarchy should have at least one HEAD part: " + h);
         }
     }
@@ -243,7 +243,7 @@ class VanillaBodyPartsTest {
         };
 
         for (BodyPartHierarchy h : hierarchies) {
-            assertNotNull(h.findByType(HitHelper.BodyPart.BODY),
+            assertNotNull(h.findByType(BodyPart.BODY),
                 "Hierarchy should have at least one BODY part: " + h);
         }
     }

@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.data.BiomeTourConfig;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.BiomeTourSection;

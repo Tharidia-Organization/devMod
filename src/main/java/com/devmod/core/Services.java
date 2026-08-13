@@ -5,14 +5,29 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.devmod.collision.registry.BodyPartRegistry;
+import com.devmod.combat.ExecutionSystem;
+import com.devmod.combat.signature.SoulImprintManager;
+import com.devmod.config.GameplayOverridesManager;
 import com.devmod.config.TesterModality;
+import com.devmod.config.gamedesign.GameDesignConfigManager;
+import com.devmod.debug.DebugManager;
 import com.devmod.endurance.EnduranceQuestManager;
+import com.devmod.endurance.EnduranceQuestRegistry;
+import com.devmod.endurance.LeaderboardSystem;
+import com.devmod.endurance.RewardSystem;
 import com.devmod.endurance.WaveManager;
+import com.devmod.endurance.hazard.ArenaHazardSystem;
+import com.devmod.endurance.services.PlayerStateServicesFacade;
 import com.devmod.mailbox.MailboxManager;
 import com.devmod.notification.NotificationService;
 import com.devmod.party.PartyManager;
+import com.devmod.quest.QuestManager;
+import com.devmod.quest.QuestRegistry;
 import com.devmod.runtime.InstanceManager;
 import com.devmod.telemetry.TelemetryService;
+import com.devmod.transport.executor.TransportExecutor;
+import com.devmod.util.DamageTypeConfig;
 
 /**
  * P2 Architecture: Central service access point.
@@ -65,6 +80,22 @@ public final class Services {
         ServiceRegistry.register(NotificationService.class, () -> NotificationService.INSTANCE);
         ServiceRegistry.register(MailboxManager.class, () -> MailboxManager.INSTANCE);
         ServiceRegistry.register(InstanceManager.class, () -> InstanceManager.INSTANCE);
+        ServiceRegistry.register(RewardSystem.class, () -> RewardSystem.INSTANCE);
+        ServiceRegistry.register(EnduranceQuestRegistry.class, () -> EnduranceQuestRegistry.INSTANCE);
+        ServiceRegistry.register(QuestManager.class, () -> QuestManager.INSTANCE);
+        ServiceRegistry.register(QuestRegistry.class, () -> QuestRegistry.INSTANCE);
+        ServiceRegistry.register(LeaderboardSystem.class, () -> LeaderboardSystem.INSTANCE);
+        ServiceRegistry.register(DebugManager.class, () -> DebugManager.INSTANCE);
+        ServiceRegistry.register(BodyPartRegistry.class, () -> BodyPartRegistry.INSTANCE);
+        ServiceRegistry.register(ExecutionSystem.class, () -> ExecutionSystem.INSTANCE);
+        ServiceRegistry.register(SoulImprintManager.class, () -> SoulImprintManager.INSTANCE);
+        ServiceRegistry.register(GameDesignConfigManager.class, () -> GameDesignConfigManager.INSTANCE);
+        ServiceRegistry.register(GameplayOverridesManager.class, () -> GameplayOverridesManager.INSTANCE);
+        ServiceRegistry.register(DamageTypeConfig.class, () -> DamageTypeConfig.INSTANCE);
+        ServiceRegistry.register(TransportExecutor.class, () -> TransportExecutor.INSTANCE);
+        ServiceRegistry.register(ArenaHazardSystem.class, () -> ArenaHazardSystem.INSTANCE);
+        ServiceRegistry.register(PlayerStateServicesFacade.class, () -> PlayerStateServicesFacade.INSTANCE);
+
         if (TesterModality.isEnabled()) {
             ServiceRegistry.register(EnduranceQuestManager.class, () -> EnduranceQuestManager.INSTANCE);
         }
@@ -150,6 +181,141 @@ public final class Services {
             return null;
         }
         return ServiceRegistry.getOrNull(EnduranceQuestManager.class);
+    }
+
+    /**
+     * Get the reward system service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static RewardSystem rewards() {
+        return getRequired(RewardSystem.class);
+    }
+
+    /**
+     * Get the endurance quest registry service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static EnduranceQuestRegistry questRegistry() {
+        return getRequired(EnduranceQuestRegistry.class);
+    }
+
+    /**
+     * Get the quest manager service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static QuestManager quests() {
+        return getRequired(QuestManager.class);
+    }
+
+    /**
+     * Get the quest definitions registry.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static QuestRegistry questDefs() {
+        return getRequired(QuestRegistry.class);
+    }
+
+    /**
+     * Get the leaderboard system service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static LeaderboardSystem leaderboard() {
+        return getRequired(LeaderboardSystem.class);
+    }
+
+    /**
+     * Get the debug manager service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static DebugManager debug() {
+        return getRequired(DebugManager.class);
+    }
+
+    /**
+     * Get the body part registry service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static BodyPartRegistry bodyParts() {
+        return getRequired(BodyPartRegistry.class);
+    }
+
+    /**
+     * Get the execution system service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static ExecutionSystem execution() {
+        return getRequired(ExecutionSystem.class);
+    }
+
+    /**
+     * Get the soul imprint manager service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static SoulImprintManager soulImprints() {
+        return getRequired(SoulImprintManager.class);
+    }
+
+    /**
+     * Get the game design config manager service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static GameDesignConfigManager gameDesign() {
+        return getRequired(GameDesignConfigManager.class);
+    }
+
+    /**
+     * Get the gameplay overrides manager service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static GameplayOverridesManager gameplayOverrides() {
+        return getRequired(GameplayOverridesManager.class);
+    }
+
+    /**
+     * Get the damage type config service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static DamageTypeConfig damageTypes() {
+        return getRequired(DamageTypeConfig.class);
+    }
+
+    /**
+     * Get the transport executor service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static TransportExecutor transport() {
+        return getRequired(TransportExecutor.class);
+    }
+
+    /**
+     * Get the arena hazard system service.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static ArenaHazardSystem hazards() {
+        return getRequired(ArenaHazardSystem.class);
+    }
+
+    /**
+     * Get the player state services facade.
+     *
+     * @throws IllegalStateException if services have not been initialized
+     */
+    public static PlayerStateServicesFacade playerState() {
+        return getRequired(PlayerStateServicesFacade.class);
     }
 
     // === Helper Methods ===

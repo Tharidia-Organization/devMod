@@ -19,7 +19,7 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 
 import com.devmod.collision.transform.AnimationSnapshot;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 public final class BodyPartHierarchy {
 
@@ -407,7 +407,7 @@ public final class BodyPartHierarchy {
      * Finds a part by body part type (returns first match).
      */
     @Nullable
-    public BodyPartDefinition findByType(@Nonnull HitHelper.BodyPart type) {
+    public BodyPartDefinition findByType(@Nonnull BodyPart type) {
         for (BodyPartDefinition def : partArray) {
             if (def.bodyPartType() == type) {
                 return def;
@@ -420,7 +420,7 @@ public final class BodyPartHierarchy {
      * Finds all parts of a given type.
      */
     @Nonnull
-    public List<BodyPartDefinition> findAllByType(@Nonnull HitHelper.BodyPart type) {
+    public List<BodyPartDefinition> findAllByType(@Nonnull BodyPart type) {
         List<BodyPartDefinition> result = new ArrayList<>();
         for (BodyPartDefinition def : partArray) {
             if (def.bodyPartType() == type) {

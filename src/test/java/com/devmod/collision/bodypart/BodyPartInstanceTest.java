@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +19,7 @@ class BodyPartInstanceTest {
 
     private static BodyPartDefinition sampleDef() {
         return BodyPartDefinition.builder("body")
-            .type(HitHelper.BodyPart.BODY)
+            .type(BodyPart.BODY)
             .offset(0, 0.9, 0)
             .halfExtents(0.2, 0.3, 0.1)
             .bone("body")
@@ -48,7 +48,7 @@ class BodyPartInstanceTest {
             assertNotNull(instance);
             assertTrue(instance.isInUse());
             assertEquals("body", instance.getId());
-            assertEquals(HitHelper.BodyPart.BODY, instance.getBodyPartType());
+            assertEquals(BodyPart.BODY, instance.getBodyPartType());
         }
 
         @Test

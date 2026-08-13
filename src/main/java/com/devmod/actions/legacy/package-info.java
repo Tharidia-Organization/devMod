@@ -46,4 +46,7 @@
  * @see com.devmod.actions.ActionRegistry
  * @see com.devmod.actions.engine.ActionExecutor
  */
+@ParametersAreNonnullByDefault
 package com.devmod.actions.legacy;
+
+import javax.annotation.ParametersAreNonnullByDefault;

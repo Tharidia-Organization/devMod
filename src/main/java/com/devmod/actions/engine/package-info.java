@@ -43,4 +43,7 @@
  * @see com.devmod.actions.catalog.ActionSpec
  * @see com.devmod.actions.policy.PolicyChain
  */
+@ParametersAreNonnullByDefault
 package com.devmod.actions.engine;
+
+import javax.annotation.ParametersAreNonnullByDefault;

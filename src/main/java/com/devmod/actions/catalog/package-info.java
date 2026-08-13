@@ -20,4 +20,7 @@
  * @see com.devmod.actions.domains.DomainRegistrar
  * @see com.devmod.actions.engine.ActionExecutor
  */
+@ParametersAreNonnullByDefault
 package com.devmod.actions.catalog;
+
+import javax.annotation.ParametersAreNonnullByDefault;

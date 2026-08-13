@@ -1,4 +1,4 @@
-package com.devmod.area.aesthetic;
+package com.devmod.client.area;
 
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.client.ui.editor.core.DesignTokens;

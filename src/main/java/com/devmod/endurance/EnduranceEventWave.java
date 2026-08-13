@@ -395,7 +395,12 @@ final class EnduranceEventWave {
             waveKills,
             waveDamage,
             waveDamageTaken,
-            practice ? null : waveReward
+            practice ? null : Map.of(
+                "tokens", String.valueOf(waveReward.tokensEarned()),
+                "base", String.valueOf(waveReward.baseTokens()),
+                "style_mult", String.valueOf(waveReward.styleMultiplier()),
+                "bonus", String.valueOf(waveReward.bonusPoints())
+            )
         );
 
         // === PUBLISH WAVE COMPLETE EVENT ===

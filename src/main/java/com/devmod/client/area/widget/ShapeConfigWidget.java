@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.aesthetic.AreaBuilderIcons;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.data.AreaShape;

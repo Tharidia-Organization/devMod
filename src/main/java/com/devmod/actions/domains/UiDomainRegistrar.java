@@ -11,6 +11,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.DevMod;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
@@ -69,7 +72,11 @@ import com.devmod.util.I18n;
  *
  * <p>Parallel to the existing {@link com.devmod.actions.client.ClientUIActions}
  * registration. Does NOT replace it yet.
+ *
+ * <p>Client-only: guarded by {@code FMLEnvironment.dist.isClient()} in
+ * {@link DomainRegistryBootstrap#createAllRegistrars()}.
  */
+@OnlyIn(Dist.CLIENT)
 public final class UiDomainRegistrar implements DomainRegistrar {
 
     /** Inner record used by onboarding handlers. */

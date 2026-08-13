@@ -85,10 +85,13 @@ public class ArrowEvents {
 
                 // UNIFIED DETECTION: Use OBB raycast when enabled, fallback to AABB subdivision
                 // This ensures 100% consistency between arrow hits and melee hits
-                HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
-                    ? OBBHitHelper.rayTraceBodyPart(shooter, victim)
-                    : HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim);
-                HitHelper.BodyPart bodyPartEnum = hitResult.part();
+                HitHelper.BodyPart bodyPartEnum;
+                if (OBBHitHelper.useOBBSystem()) {
+                    bodyPartEnum = HitHelper.BodyPart.fromShared(
+                        OBBHitHelper.rayTraceBodyPart(shooter, victim).part());
+                } else {
+                    bodyPartEnum = HitHelper.rayTraceBodyPartWithHitPoint(shooter, victim).part();
+                }
 
                 String bodyPartKey;
 

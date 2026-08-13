@@ -85,4 +85,7 @@
  * @see QuestLifecycleListener
  * @see QuestLifecycleEvent
  */
+@ParametersAreNonnullByDefault
 package com.devmod.endurance.lifecycle;
+
+import javax.annotation.ParametersAreNonnullByDefault;

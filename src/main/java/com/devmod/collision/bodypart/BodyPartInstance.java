@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import org.joml.Matrix4f;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 public final class BodyPartInstance {
 
@@ -251,7 +251,7 @@ public final class BodyPartInstance {
      * Gets the body part type enum.
      */
     @Nonnull
-    public HitHelper.BodyPart getBodyPartType() {
+    public BodyPart getBodyPartType() {
         return getDefinition().bodyPartType();
     }
 

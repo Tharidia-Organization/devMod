@@ -25,7 +25,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.aesthetic.AreaBuilderNaming;
 import com.devmod.area.builder.AreaPalettePresets;
 import com.devmod.area.builder.BiomeRegistry;

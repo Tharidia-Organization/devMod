@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import net.minecraft.world.phys.Vec3;
 
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,7 +18,7 @@ class BodyPartHierarchyTest {
 
     private static BodyPartDefinition bodyDef() {
         return BodyPartDefinition.builder("body")
-            .type(HitHelper.BodyPart.BODY)
+            .type(BodyPart.BODY)
             .offset(0, 0.9, 0)
             .halfExtents(0.2, 0.3, 0.1)
             .parent(null)
@@ -27,7 +27,7 @@ class BodyPartHierarchyTest {
 
     private static BodyPartDefinition headDef() {
         return BodyPartDefinition.builder("head")
-            .type(HitHelper.BodyPart.HEAD)
+            .type(BodyPart.HEAD)
             .offset(0, 0.5, 0)
             .halfExtents(0.2, 0.2, 0.2)
             .parent("body")
@@ -36,7 +36,7 @@ class BodyPartHierarchyTest {
 
     private static BodyPartDefinition legDef(String id) {
         return BodyPartDefinition.builder(id)
-            .type(HitHelper.BodyPart.LEGS)
+            .type(BodyPart.LEGS)
             .offset(0, 0.4, 0)
             .halfExtents(0.1, 0.35, 0.1)
             .parent(null)
@@ -114,7 +114,7 @@ class BodyPartHierarchyTest {
             BodyPartDefinition body = hierarchy.getPart("body");
             assertNotNull(body);
             assertEquals("body", body.id());
-            assertEquals(HitHelper.BodyPart.BODY, body.bodyPartType());
+            assertEquals(BodyPart.BODY, body.bodyPartType());
         }
 
         @Test
@@ -229,7 +229,7 @@ class BodyPartHierarchyTest {
         @DisplayName("findByType returns first match")
         void findByType() {
             BodyPartHierarchy hierarchy = sampleHierarchy();
-            BodyPartDefinition head = hierarchy.findByType(HitHelper.BodyPart.HEAD);
+            BodyPartDefinition head = hierarchy.findByType(BodyPart.HEAD);
             assertNotNull(head);
             assertEquals("head", head.id());
         }
@@ -240,14 +240,14 @@ class BodyPartHierarchyTest {
             BodyPartHierarchy hierarchy = BodyPartHierarchy.builder()
                 .addPart(bodyDef())
                 .build();
-            assertNull(hierarchy.findByType(HitHelper.BodyPart.HEAD));
+            assertNull(hierarchy.findByType(BodyPart.HEAD));
         }
 
         @Test
         @DisplayName("findAllByType returns all matches")
         void findAllByType() {
             BodyPartHierarchy hierarchy = sampleHierarchy();
-            List<BodyPartDefinition> legs = hierarchy.findAllByType(HitHelper.BodyPart.LEGS);
+            List<BodyPartDefinition> legs = hierarchy.findAllByType(BodyPart.LEGS);
             assertEquals(2, legs.size());
         }
 
@@ -257,7 +257,7 @@ class BodyPartHierarchyTest {
             BodyPartHierarchy hierarchy = BodyPartHierarchy.builder()
                 .addPart(bodyDef())
                 .build();
-            List<BodyPartDefinition> arms = hierarchy.findAllByType(HitHelper.BodyPart.ARMS);
+            List<BodyPartDefinition> arms = hierarchy.findAllByType(BodyPart.ARMS);
             assertTrue(arms.isEmpty());
         }
     }
@@ -270,7 +270,7 @@ class BodyPartHierarchyTest {
         @DisplayName("flat hierarchy makes all parts root")
         void flatMakesAllRoot() {
             BodyPartDefinition headWithParent = BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .parent("body")
                 .build();
             BodyPartHierarchy flat = BodyPartHierarchy.flat(bodyDef(), headWithParent);

@@ -20,7 +20,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.network.TemplateListPayload.TemplateSummary;
 import com.devmod.client.ui.AxiomRenderer;
 import com.devmod.client.ui.core.UIScaleManager;

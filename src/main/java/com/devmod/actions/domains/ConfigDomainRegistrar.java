@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
 import com.devmod.DevMod;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
@@ -24,7 +27,11 @@ import com.devmod.util.I18n;
  *
  * <p>Parallel to the existing {@link com.devmod.actions.client.ClientConfigActions}
  * registration. Does NOT replace it yet.
+ *
+ * <p>Client-only: guarded by {@code FMLEnvironment.dist.isClient()} in
+ * {@link DomainRegistryBootstrap#createAllRegistrars()}.
  */
+@OnlyIn(Dist.CLIENT)
 public final class ConfigDomainRegistrar implements DomainRegistrar {
 
     @Override

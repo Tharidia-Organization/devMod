@@ -67,7 +67,15 @@ class RewardAchievementManager {
                 );
 
                 // Unified achievement notification
-                NotificationService.INSTANCE.notifyAchievementUnlock(player.getUUID(), achievement);
+                String rewardDesc = "+" + achievement.getRewardAmount() + " " + achievement.getRewardCurrency().name();
+                String lootTierId = achievement.getLootTier().name().toLowerCase(java.util.Locale.ROOT);
+                NotificationService.INSTANCE.notifyAchievementUnlock(
+                    player.getUUID(),
+                    achievement.getDisplayName(),
+                    achievement.getDescription(),
+                    rewardDesc,
+                    lootTierId
+                );
 
                 LOGGER.info("[RewardSystem] Player {} unlocked achievement: {}",
                     player.getName().getString(), achievement.getId());

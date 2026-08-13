@@ -208,33 +208,16 @@ public class NexusDimensionManager {
         }
     }
 
+    /** ResourceKey for the Nexus dimension type (registered via datapack JSON). */
+    private static final ResourceKey<DimensionType> NEXUS_DIM_TYPE_KEY = ResourceKey.create(
+        Registries.DIMENSION_TYPE, ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus"));
+
     private LevelStem createLevelStem(MinecraftServer server) {
-        // Custom DimensionType for the Nexus hub:
-        // - Fixed time at noon (6000L), natural=false so compasses spin and beds don't set spawn
-        // - No monster spawns, piglin-safe, no raids - this is a peaceful hub dimension
-        DimensionType nexusDimType = new DimensionType(
-            OptionalLong.of(6000L),     // fixedTime: perpetual noon
-            true,                        // hasSkyLight
-            false,                       // hasCeiling
-            false,                       // ultraWarm
-            false,                       // natural (compasses spin, beds don't set spawn)
-            1.0,                         // coordinateScale
-            false,                       // bedWorks
-            false,                       // respawnAnchorWorks
-            0,                           // minY
-            256,                         // height
-            256,                         // logicalHeight
-            BlockTags.INFINIBURN_OVERWORLD, // infiniburn
-            ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "nexus"), // effects -> "devmod:nexus"
-            0.15f,                       // ambientLight
-            new DimensionType.MonsterSettings(
-                true,                    // piglinSafe
-                false,                   // hasRaids
-                UniformInt.of(0, 0),     // monsterSpawnLightTest (no spawns)
-                0                        // monsterSpawnBlockLightLimit
-            )
-        );
-        Holder<DimensionType> dimensionType = Holder.direct(nexusDimType);
+        // Dimension type is defined in data/devmod/dimension_type/nexus.json
+        // Using the registry ensures the DimensionType has an ID for network packet encoding
+        Holder<DimensionType> dimensionType = server.registryAccess()
+            .registryOrThrow(Registries.DIMENSION_TYPE)
+            .getHolderOrThrow(NEXUS_DIM_TYPE_KEY);
 
         Holder<net.minecraft.world.level.biome.Biome> biomeHolder = nn(
             server.registryAccess().registryOrThrow(nn(Registries.BIOME, "Registries.BIOME")).getHolderOrThrow(nn(net.minecraft.world.level.biome.Biomes.THE_VOID, "Biomes.THE_VOID")),

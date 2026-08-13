@@ -38,4 +38,7 @@
  * @see com.devmod.actions.engine.ActionExecutor
  * @see com.devmod.actions.catalog.ActionSpec
  */
+@ParametersAreNonnullByDefault
 package com.devmod.actions.bindings;
+
+import javax.annotation.ParametersAreNonnullByDefault;

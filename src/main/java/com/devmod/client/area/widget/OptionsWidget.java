@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.data.AreaOptions;
 import com.devmod.area.data.AreaOptions.WallStyle;
 import com.devmod.client.ui.core.UIScaleManager;

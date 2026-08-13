@@ -19,9 +19,9 @@ import com.devmod.endurance.config.EnduranceConfigManager;
 import com.devmod.notification.NotificationService;
 
 public class SeasonPassSystem {
-    public static final SeasonPassSystem INSTANCE = new SeasonPassSystem();
-
     private static final Logger LOGGER = LoggerFactory.getLogger(SeasonPassSystem.class);
+
+    public static final SeasonPassSystem INSTANCE = new SeasonPassSystem();
 
     // Default values (used when no quest context or as fallback)
     public static final int DEFAULT_MAX_TIER = 100;

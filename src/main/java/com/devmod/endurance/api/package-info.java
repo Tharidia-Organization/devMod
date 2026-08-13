@@ -26,4 +26,7 @@
  *
  * <p>Original locations remain functional for backward compatibility.</p>
  */
+@ParametersAreNonnullByDefault
 package com.devmod.endurance.api;
+
+import javax.annotation.ParametersAreNonnullByDefault;

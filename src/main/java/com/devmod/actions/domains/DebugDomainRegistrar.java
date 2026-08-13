@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.devmod.DevMod;
@@ -60,7 +62,11 @@ import com.devmod.util.I18n;
  *
  * <p>Parallel to the existing {@link com.devmod.actions.client.ClientDebugActions}
  * registration. Does NOT replace it yet.
+ *
+ * <p>Client-only: guarded by {@code FMLEnvironment.dist.isClient()} in
+ * {@link DomainRegistryBootstrap#createAllRegistrars()}.
  */
+@OnlyIn(Dist.CLIENT)
 public final class DebugDomainRegistrar implements DomainRegistrar {
 
     private static final HeatmapType[] HEATMAP_CYCLE = {

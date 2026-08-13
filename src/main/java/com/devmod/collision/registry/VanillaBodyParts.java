@@ -6,7 +6,7 @@ import net.minecraft.world.entity.EntityType;
 
 import com.devmod.collision.bodypart.BodyPartDefinition;
 import com.devmod.collision.bodypart.BodyPartHierarchy;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 public final class VanillaBodyParts {
 
@@ -77,7 +77,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Body (torso) - center of mass, root for upper body
             .addPart(BodyPartDefinition.builder("body")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.9, 0)           // Center at torso height
                 .halfExtents(0.2, 0.3, 0.1)   // Torso box
                 .bone("body")
@@ -87,7 +87,7 @@ public final class VanillaBodyParts {
 
             // Head - attached to body
             .addPart(BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 0.5, 0)            // Above body center
                 .halfExtents(0.2, 0.2, 0.2)   // Head cube
                 .bone("head")
@@ -97,7 +97,7 @@ public final class VanillaBodyParts {
 
             // Left Arm - attached to body
             .addPart(BodyPartDefinition.builder("left_arm")
-                .type(HitHelper.BodyPart.ARMS)
+                .type(BodyPart.ARMS)
                 .offset(-0.35, 0.15, 0)       // Left side of body
                 .halfExtents(0.1, 0.3, 0.1)   // Arm cylinder approximation
                 .bone("leftArm")
@@ -107,7 +107,7 @@ public final class VanillaBodyParts {
 
             // Right Arm - attached to body
             .addPart(BodyPartDefinition.builder("right_arm")
-                .type(HitHelper.BodyPart.ARMS)
+                .type(BodyPart.ARMS)
                 .offset(0.35, 0.15, 0)        // Right side of body
                 .halfExtents(0.1, 0.3, 0.1)
                 .bone("rightArm")
@@ -117,7 +117,7 @@ public final class VanillaBodyParts {
 
             // Left Leg - root part (not attached to body for independent movement)
             .addPart(BodyPartDefinition.builder("left_leg")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.1, 0.4, 0)         // Left side, lower body
                 .halfExtents(0.1, 0.35, 0.1)
                 .bone("leftLeg")
@@ -127,7 +127,7 @@ public final class VanillaBodyParts {
 
             // Right Leg - root part
             .addPart(BodyPartDefinition.builder("right_leg")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.1, 0.4, 0)          // Right side, lower body
                 .halfExtents(0.1, 0.35, 0.1)
                 .bone("rightLeg")
@@ -145,7 +145,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Body - horizontal torso
             .addPart(BodyPartDefinition.builder("body")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.7, 0)
                 .halfExtents(0.25, 0.25, 0.4)  // Wide and long
                 .bone("body")
@@ -155,7 +155,7 @@ public final class VanillaBodyParts {
 
             // Head - front of body
             .addPart(BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 0.3, 0.5)           // In front of body
                 .halfExtents(0.2, 0.2, 0.2)
                 .bone("head")
@@ -165,7 +165,7 @@ public final class VanillaBodyParts {
 
             // Front Left Leg
             .addPart(BodyPartDefinition.builder("leg_front_left")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.2, 0.3, 0.25)
                 .halfExtents(0.1, 0.3, 0.1)
                 .bone("leg0")
@@ -175,7 +175,7 @@ public final class VanillaBodyParts {
 
             // Front Right Leg
             .addPart(BodyPartDefinition.builder("leg_front_right")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.2, 0.3, 0.25)
                 .halfExtents(0.1, 0.3, 0.1)
                 .bone("leg1")
@@ -185,7 +185,7 @@ public final class VanillaBodyParts {
 
             // Back Left Leg
             .addPart(BodyPartDefinition.builder("leg_back_left")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.2, 0.3, -0.25)
                 .halfExtents(0.1, 0.3, 0.1)
                 .bone("leg2")
@@ -195,7 +195,7 @@ public final class VanillaBodyParts {
 
             // Back Right Leg
             .addPart(BodyPartDefinition.builder("leg_back_right")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.2, 0.3, -0.25)
                 .halfExtents(0.1, 0.3, 0.1)
                 .bone("leg3")
@@ -213,7 +213,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Front (head region) - highest priority
             .addPart(BodyPartDefinition.builder("front")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 0.5, 1.0)          // Front of entity
                 .halfExtents(0.4, 0.4, 0.5)
                 .bone("head")
@@ -223,7 +223,7 @@ public final class VanillaBodyParts {
 
             // Middle (body region)
             .addPart(BodyPartDefinition.builder("middle")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.5, 0)            // Center
                 .halfExtents(0.5, 0.4, 0.6)
                 .bone("body")
@@ -233,7 +233,7 @@ public final class VanillaBodyParts {
 
             // Back (tail region)
             .addPart(BodyPartDefinition.builder("back")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0, 0.5, -1.0)         // Back of entity
                 .halfExtents(0.3, 0.3, 0.5)
                 .bone("tail")
@@ -251,7 +251,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Body - elongated torso
             .addPart(BodyPartDefinition.builder("body")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 1.5, 0)            // Higher center
                 .halfExtents(0.15, 0.4, 0.1)  // Thin torso
                 .bone("body")
@@ -261,7 +261,7 @@ public final class VanillaBodyParts {
 
             // Head - small relative to body
             .addPart(BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 0.6, 0)            // Above torso
                 .halfExtents(0.15, 0.15, 0.15)
                 .bone("head")
@@ -271,7 +271,7 @@ public final class VanillaBodyParts {
 
             // Left Arm - very long
             .addPart(BodyPartDefinition.builder("left_arm")
-                .type(HitHelper.BodyPart.ARMS)
+                .type(BodyPart.ARMS)
                 .offset(-0.25, 0, 0)
                 .halfExtents(0.1, 0.5, 0.1)   // Long arms
                 .bone("leftArm")
@@ -281,7 +281,7 @@ public final class VanillaBodyParts {
 
             // Right Arm - very long
             .addPart(BodyPartDefinition.builder("right_arm")
-                .type(HitHelper.BodyPart.ARMS)
+                .type(BodyPart.ARMS)
                 .offset(0.25, 0, 0)
                 .halfExtents(0.1, 0.5, 0.1)
                 .bone("rightArm")
@@ -291,7 +291,7 @@ public final class VanillaBodyParts {
 
             // Left Leg - very long
             .addPart(BodyPartDefinition.builder("left_leg")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.1, 0.55, 0)
                 .halfExtents(0.1, 0.5, 0.1)
                 .bone("leftLeg")
@@ -301,7 +301,7 @@ public final class VanillaBodyParts {
 
             // Right Leg - very long
             .addPart(BodyPartDefinition.builder("right_leg")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.1, 0.55, 0)
                 .halfExtents(0.1, 0.5, 0.1)
                 .bone("rightLeg")
@@ -319,7 +319,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Head
             .addPart(BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 0.4, 0.4)
                 .halfExtents(0.25, 0.2, 0.25)
                 .bone("head")
@@ -329,7 +329,7 @@ public final class VanillaBodyParts {
 
             // Body (thorax)
             .addPart(BodyPartDefinition.builder("body")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.4, 0)
                 .halfExtents(0.35, 0.2, 0.35)
                 .bone("body0")
@@ -339,7 +339,7 @@ public final class VanillaBodyParts {
 
             // Abdomen
             .addPart(BodyPartDefinition.builder("abdomen")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.4, -0.5)
                 .halfExtents(0.4, 0.25, 0.4)
                 .bone("body1")
@@ -349,7 +349,7 @@ public final class VanillaBodyParts {
 
             // Legs are simplified to left/right groups
             .addPart(BodyPartDefinition.builder("legs_left")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.5, 0.25, 0)
                 .halfExtents(0.3, 0.2, 0.4)
                 .bone(null)  // No single bone, composite
@@ -358,7 +358,7 @@ public final class VanillaBodyParts {
                 .build())
 
             .addPart(BodyPartDefinition.builder("legs_right")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.5, 0.25, 0)
                 .halfExtents(0.3, 0.2, 0.4)
                 .bone(null)
@@ -377,7 +377,7 @@ public final class VanillaBodyParts {
         return BodyPartHierarchy.builder()
             // Body: tall slim torso
             .addPart(BodyPartDefinition.builder("body")
-                .type(HitHelper.BodyPart.BODY)
+                .type(BodyPart.BODY)
                 .offset(0, 0.9, 0)               // center of torso
                 .halfExtents(0.22, 0.45, 0.22)   // ~0.44w x 0.9h x 0.44d
                 .bone("body")
@@ -387,7 +387,7 @@ public final class VanillaBodyParts {
 
             // Head: small cube above torso
             .addPart(BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 1.55, 0)
                 .halfExtents(0.2, 0.2, 0.2)
                 .bone("head")
@@ -397,7 +397,7 @@ public final class VanillaBodyParts {
 
             // Legs: four independent pillars at base corners
             .addPart(BodyPartDefinition.builder("leg_front_left")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.16, 0.25, 0.16)
                 .halfExtents(0.08, 0.25, 0.08)
                 .bone("leg0")
@@ -406,7 +406,7 @@ public final class VanillaBodyParts {
                 .build())
 
             .addPart(BodyPartDefinition.builder("leg_front_right")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.16, 0.25, 0.16)
                 .halfExtents(0.08, 0.25, 0.08)
                 .bone("leg1")
@@ -415,7 +415,7 @@ public final class VanillaBodyParts {
                 .build())
 
             .addPart(BodyPartDefinition.builder("leg_back_left")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(-0.16, 0.25, -0.16)
                 .halfExtents(0.08, 0.25, 0.08)
                 .bone("leg2")
@@ -424,7 +424,7 @@ public final class VanillaBodyParts {
                 .build())
 
             .addPart(BodyPartDefinition.builder("leg_back_right")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .offset(0.16, 0.25, -0.16)
                 .halfExtents(0.08, 0.25, 0.08)
                 .bone("leg3")

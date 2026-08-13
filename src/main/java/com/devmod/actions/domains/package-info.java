@@ -38,4 +38,7 @@
  * @see com.devmod.actions.catalog.ActionSpec
  * @see com.devmod.actions.engine.ActionExecutor
  */
+@ParametersAreNonnullByDefault
 package com.devmod.actions.domains;
+
+import javax.annotation.ParametersAreNonnullByDefault;

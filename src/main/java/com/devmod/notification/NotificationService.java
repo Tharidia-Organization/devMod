@@ -23,9 +23,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.devmod.actions.ActionIds;
-import com.devmod.endurance.PrestigeMilestone;
-import com.devmod.endurance.QuestType;
-import com.devmod.endurance.RewardSystem;
 import com.devmod.mailbox.MailboxManager;
 import com.devmod.mailbox.MailboxMessage;
 import com.devmod.mailbox.news.NewsArticle;
@@ -183,26 +180,29 @@ public class NotificationService {
 
     /**
      * Send an achievement unlock notification.
+     *
+     * @param playerUuid   Target player
+     * @param displayName  Achievement display name
+     * @param description  Achievement description (may be null)
+     * @param rewardDesc   Formatted reward description (e.g. "+100 Tokens")
+     * @param lootTierId   Loot tier identifier in lower-case (e.g. "legendary", "epic", "rare")
      */
-    public void notifyAchievementUnlock(UUID playerUuid, RewardSystem.Achievement achievement) {
-        if (achievement == null) {
+    public void notifyAchievementUnlock(UUID playerUuid, String displayName,
+                                         @Nullable String description, String rewardDesc,
+                                         String lootTierId) {
+        if (displayName == null) {
             return;
         }
-
-        String rewardDesc = achievement.getRewardAmount() > 0
-            ? "+" + achievement.getRewardAmount() + " " + achievement.getRewardCurrency().getDisplayName()
-            : "Special reward unlocked";
-        String tierId = achievement.getLootTier().name().toLowerCase(Locale.ROOT);
 
         Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
             .titleKey("devmod.notification.achievement.title")
             .messageKey("devmod.notification.achievement.message")
-            .param("achievement", achievement.getDisplayName())
-            .param("reward", rewardDesc)
-            .param("description", achievement.getDescription() != null ? achievement.getDescription() : "")
-            .priority(getPriorityForLootTier(achievement.getLootTier()))
-            .soundId("badge." + tierId)
-            .iconId("badge." + tierId)
+            .param("achievement", displayName)
+            .param("reward", rewardDesc != null ? rewardDesc : "Special reward unlocked")
+            .param("description", description != null ? description : "")
+            .priority(getPriorityForBadgeRarity(lootTierId != null ? lootTierId : "common"))
+            .soundId("badge." + (lootTierId != null ? lootTierId : "common"))
+            .iconId("badge." + (lootTierId != null ? lootTierId : "common"))
             .persistToMailbox(true)
             .build();
 
@@ -211,26 +211,29 @@ public class NotificationService {
 
     /**
      * Send a prestige milestone notification.
+     *
+     * @param playerUuid   Target player
+     * @param nameKey      Translation key for the milestone name
+     * @param descKey      Translation key for the milestone description
+     * @param name         Resolved milestone name
+     * @param description  Resolved milestone description
+     * @param rewardDesc   Formatted reward description (e.g. "Extra Perk Slot (1)")
+     * @param typeDisplay  Milestone type display name
      */
-    public void notifyPrestigeMilestone(UUID playerUuid, PrestigeMilestone milestone) {
-        if (milestone == null) {
+    public void notifyPrestigeMilestone(UUID playerUuid, String nameKey, String descKey,
+                                         String name, String description,
+                                         String rewardDesc, String typeDisplay) {
+        if (nameKey == null) {
             return;
         }
 
-        String name = I18n.translate(milestone.getNameKey()).getString();
-        String description = I18n.translate(milestone.getDescriptionKey()).getString();
-        String rewardDesc = milestone.getType().getDisplayName();
-        if (milestone.getUnlockValue() != null && !milestone.getUnlockValue().isBlank()) {
-            rewardDesc = rewardDesc + " (" + milestone.getUnlockValue() + ")";
-        }
-
         Notification notification = Notification.builder(NotificationCategory.ACHIEVEMENT)
-            .titleKey(milestone.getNameKey())
-            .messageKey(milestone.getDescriptionKey())
-            .param("achievement", name)
-            .param("description", description)
-            .param("reward", rewardDesc)
-            .param("type", milestone.getType().getDisplayName())
+            .titleKey(nameKey)
+            .messageKey(descKey)
+            .param("achievement", name != null ? name : "Milestone")
+            .param("description", description != null ? description : "")
+            .param("reward", rewardDesc != null ? rewardDesc : "")
+            .param("type", typeDisplay != null ? typeDisplay : "")
             .priority(NotificationPriority.HIGH)
             .soundId("badge.legendary")
             .iconId("badge.legendary")
@@ -308,41 +311,30 @@ public class NotificationService {
 
     /**
      * Send a quest reward summary notification.
+     *
+     * @param playerUuid     Target player
+     * @param rewardParams   Pre-built map with reward fields (tokens, prestige, etc.)
+     * @param questCompleted Whether the quest was completed
+     * @param questName      Optional quest name
      */
-    public void notifyQuestRewards(UUID playerUuid, RewardSystem.QuestRewards rewards,
+    public void notifyQuestRewards(UUID playerUuid, Map<String, String> rewardParams,
                                    boolean questCompleted, @Nullable String questName) {
-        if (rewards == null) {
+        if (rewardParams == null || rewardParams.isEmpty()) {
             return;
         }
 
         Notification.Builder builder = Notification.builder(NotificationCategory.REWARD)
             .titleKey("devmod.notification.quest_rewards.title")
             .messageKey("devmod.notification.quest_rewards.message")
-            .param("tokens", String.valueOf(rewards.tokensEarned))
-            .param("prestige", String.valueOf(rewards.prestigeEarned))
-            .param("bloodGems", String.valueOf(rewards.bloodGemsEarned))
-            .param("loot", String.valueOf(rewards.lootDrops.size()))
-            .param("baseTokens", String.valueOf(rewards.baseTokens))
-            .param("styleMultiplier", String.format(Locale.ROOT, "%.2f", rewards.styleMultiplier))
-            .param("mutatorMultiplier", String.format(Locale.ROOT, "%.2f", rewards.mutatorMultiplier))
-            .param("styleRank", rewards.styleRank != null ? rewards.styleRank.name() : "D")
-            .param("activeMutators", String.valueOf(rewards.activeMutators))
             .priority(questCompleted ? NotificationPriority.HIGH : NotificationPriority.NORMAL)
             .soundId(questCompleted ? "quest.complete" : "token.gain")
             .displayDurationMs(4000)
             .persistToMailbox(false);
 
+        rewardParams.forEach(builder::param);
+
         if (questName != null && !questName.isBlank()) {
             builder.param("quest", questName);
-        }
-        if (rewards.noHitBonus) {
-            builder.param("noHitBonus", "true");
-        }
-        if (rewards.speedBonus) {
-            builder.param("speedBonus", "true");
-        }
-        if (rewards.achievementsUnlocked != null && !rewards.achievementsUnlocked.isEmpty()) {
-            builder.param("achievements", String.valueOf(rewards.achievementsUnlocked.size()));
         }
 
         notifyAsync(playerUuid, builder.build());
@@ -508,14 +500,20 @@ public class NotificationService {
 
     /**
      * Send a party invite notification with action metadata.
+     *
+     * @param playerUuid      Target player
+     * @param inviteId        Invite ID
+     * @param senderName      Sender display name
+     * @param questTypeOrdinal Quest type ordinal (from QuestType.ordinal())
+     * @param expiresAt       Expiration timestamp
      */
     public void notifyPartyInvite(UUID playerUuid, UUID inviteId, String senderName,
-                                  QuestType questType, long expiresAt) {
+                                  int questTypeOrdinal, long expiresAt) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("sender", senderName);
 
         PartyInviteActionData actionData = new PartyInviteActionData(
-            inviteId, senderName, questType.ordinal(), expiresAt);
+            inviteId, senderName, questTypeOrdinal, expiresAt);
 
         Notification notification = Notification.builder(NotificationCategory.PARTY)
                 .titleKey("devmod.notification.party.invite.title")
@@ -730,6 +728,8 @@ public class NotificationService {
 
     /**
      * Send a detailed wave complete notification with optional stats.
+     *
+     * @param rewardParams Optional pre-built map with reward breakdown fields
      */
     public void notifyWaveComplete(UUID playerUuid, int waveNumber, int tokensEarned,
                                     String styleRank, int maxCombo, boolean isFlawless,
@@ -737,7 +737,7 @@ public class NotificationService {
                                     @Nullable Integer kills,
                                     @Nullable Float damageDealt,
                                     @Nullable Float damageTaken,
-                                    @Nullable RewardSystem.WaveReward rewardBreakdown) {
+                                    @Nullable Map<String, String> rewardParams) {
 
         Notification.Builder builder = Notification.builder(NotificationCategory.QUEST)
                 .titleKey("devmod.notification.wave.complete_title")
@@ -764,12 +764,8 @@ public class NotificationService {
         if (damageTaken != null) {
             builder.param("damageTaken", String.format(Locale.ROOT, "%.0f", damageTaken));
         }
-        if (rewardBreakdown != null) {
-            builder.param("baseTokens", String.valueOf(rewardBreakdown.baseTokens()));
-            builder.param("styleMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.styleMultiplier()));
-            builder.param("mutatorMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.mutatorMultiplier()));
-            builder.param("directiveMultiplier", String.format(Locale.ROOT, "%.2f", rewardBreakdown.directiveMultiplier()));
-            builder.param("bonusTokens", String.valueOf(rewardBreakdown.bonusPoints()));
+        if (rewardParams != null) {
+            rewardParams.forEach(builder::param);
         }
 
         // Action to trigger WaveCheckpointScreen opening
@@ -1241,17 +1237,8 @@ public class NotificationService {
         };
     }
 
-    private NotificationPriority getPriorityForLootTier(RewardSystem.LootTier tier) {
-        if (tier == null) {
-            return NotificationPriority.NORMAL;
-        }
-        return switch (tier) {
-            case LEGENDARY, MYTHIC -> NotificationPriority.URGENT;
-            case EPIC -> NotificationPriority.HIGH;
-            case RARE -> NotificationPriority.NORMAL;
-            default -> NotificationPriority.NORMAL;
-        };
-    }
+    // getPriorityForLootTier removed: callers now pass loot tier as a string
+    // and this method's logic is handled by getPriorityForBadgeRarity.
 
     /**
      * Check if the service is initialized.

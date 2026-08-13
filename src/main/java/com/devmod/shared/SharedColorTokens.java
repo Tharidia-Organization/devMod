@@ -52,22 +52,25 @@ public final class SharedColorTokens {
     }
 
     public static class Chat {
-        public static final @Nonnull ChatFormatting BLACK = DesignTokens.Chat.BLACK;
-        public static final @Nonnull ChatFormatting DARK_BLUE = DesignTokens.Chat.DARK_BLUE;
-        public static final @Nonnull ChatFormatting DARK_GREEN = DesignTokens.Chat.DARK_GREEN;
-        public static final @Nonnull ChatFormatting DARK_AQUA = DesignTokens.Chat.DARK_AQUA;
-        public static final @Nonnull ChatFormatting DARK_RED = DesignTokens.Chat.DARK_RED;
-        public static final @Nonnull ChatFormatting DARK_PURPLE = DesignTokens.Chat.DARK_PURPLE;
-        public static final @Nonnull ChatFormatting GOLD = DesignTokens.Chat.GOLD;
-        public static final @Nonnull ChatFormatting GRAY = DesignTokens.Chat.GRAY;
-        public static final @Nonnull ChatFormatting DARK_GRAY = DesignTokens.Chat.DARK_GRAY;
-        public static final @Nonnull ChatFormatting BLUE = DesignTokens.Chat.BLUE;
-        public static final @Nonnull ChatFormatting GREEN = DesignTokens.Chat.GREEN;
-        public static final @Nonnull ChatFormatting AQUA = DesignTokens.Chat.AQUA;
-        public static final @Nonnull ChatFormatting RED = DesignTokens.Chat.RED;
-        public static final @Nonnull ChatFormatting LIGHT_PURPLE = DesignTokens.Chat.LIGHT_PURPLE;
-        public static final @Nonnull ChatFormatting YELLOW = DesignTokens.Chat.YELLOW;
-        public static final @Nonnull ChatFormatting WHITE = DesignTokens.Chat.WHITE;
+        // Use ChatFormatting directly to avoid runtime dependency on client-only DesignTokens.
+        // ChatFormatting enum refs are NOT compile-time constants (JLS §13.1), so going
+        // through DesignTokens would classload a client class on dedicated servers.
+        public static final @Nonnull ChatFormatting BLACK = ChatFormatting.BLACK;
+        public static final @Nonnull ChatFormatting DARK_BLUE = ChatFormatting.DARK_BLUE;
+        public static final @Nonnull ChatFormatting DARK_GREEN = ChatFormatting.DARK_GREEN;
+        public static final @Nonnull ChatFormatting DARK_AQUA = ChatFormatting.DARK_AQUA;
+        public static final @Nonnull ChatFormatting DARK_RED = ChatFormatting.DARK_RED;
+        public static final @Nonnull ChatFormatting DARK_PURPLE = ChatFormatting.DARK_PURPLE;
+        public static final @Nonnull ChatFormatting GOLD = ChatFormatting.GOLD;
+        public static final @Nonnull ChatFormatting GRAY = ChatFormatting.GRAY;
+        public static final @Nonnull ChatFormatting DARK_GRAY = ChatFormatting.DARK_GRAY;
+        public static final @Nonnull ChatFormatting BLUE = ChatFormatting.BLUE;
+        public static final @Nonnull ChatFormatting GREEN = ChatFormatting.GREEN;
+        public static final @Nonnull ChatFormatting AQUA = ChatFormatting.AQUA;
+        public static final @Nonnull ChatFormatting RED = ChatFormatting.RED;
+        public static final @Nonnull ChatFormatting LIGHT_PURPLE = ChatFormatting.LIGHT_PURPLE;
+        public static final @Nonnull ChatFormatting YELLOW = ChatFormatting.YELLOW;
+        public static final @Nonnull ChatFormatting WHITE = ChatFormatting.WHITE;
 
         protected Chat() {}
     }
@@ -261,10 +264,19 @@ public final class SharedColorTokens {
             public static final int LEVEL_6 = DesignTokens.Testing.Level.LEVEL_6;
             public static final int LEVEL_7 = DesignTokens.Testing.Level.LEVEL_7;
 
+            // Local array using already-inlined constants to avoid runtime DesignTokens classload.
+            private static final int[] COLORS = {
+                LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7
+            };
+
             private Level() {}
 
             public static int forLevel(int level) {
-                return DesignTokens.Testing.Level.forLevel(level);
+                int index = Math.max(1, level) - 1;
+                if (index >= COLORS.length) {
+                    index = COLORS.length - 1;
+                }
+                return COLORS[index];
             }
         }
 

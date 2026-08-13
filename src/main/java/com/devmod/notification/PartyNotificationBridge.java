@@ -15,7 +15,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
-import com.devmod.endurance.QuestType;
 import com.devmod.party.PartyData;
 import com.devmod.party.PartyInvite;
 import com.devmod.party.PartyManager;
@@ -51,7 +50,7 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
             invite.getReceiverId(),
             invite.getInviteId(),
             invite.getSenderName(),
-            invite.getQuestType(),
+            invite.getQuestType() != null ? invite.getQuestType().ordinal() : 0,
             invite.getExpiresAt()
         );
     }
@@ -105,14 +104,14 @@ public final class PartyNotificationBridge implements PartyManager.PartyEventLis
 
     @Override
     public void onQuestStarted(PartyData party, UUID instanceId) {
-        QuestType questType = party.getQuestType();
+        var questType = party.getQuestType();
         String questName = questType != null ? questType.getDisplayName() : "Quest";
         notifyMembersExcluding(party, null, "quest_started", Map.of("quest", questName));
     }
 
     @Override
     public void onQuestFinished(PartyData party) {
-        QuestType questType = party.getQuestType();
+        var questType = party.getQuestType();
         String questName = questType != null ? questType.getDisplayName() : "Quest";
         notifyMembersExcluding(party, null, "quest_finished", Map.of("quest", questName));
     }

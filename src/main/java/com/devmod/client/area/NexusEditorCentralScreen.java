@@ -13,7 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.devmod.area.aesthetic.AreaBuilderGuiConstants;
+import com.devmod.client.area.AreaBuilderGuiConstants;
 import com.devmod.area.network.OpenEditorCentralPayload.AreaSummary;
 import com.devmod.client.ui.core.UIScaleManager;
 import com.devmod.area.network.PromoteMainHubPayload;

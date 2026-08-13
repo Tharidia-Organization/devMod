@@ -444,7 +444,22 @@ public class RewardSystem {
         boolean completed = quest != null && quest.getState() == EnduranceQuestState.COMPLETED;
         String questName = quest != null ? quest.getDisplayName() : null;
 
-        NotificationService.INSTANCE.notifyQuestRewards(player.getUUID(), rewards, completed, questName);
+        Map<String, String> rewardParams = new java.util.LinkedHashMap<>();
+        rewardParams.put("tokens", String.valueOf(rewards.tokensEarned));
+        rewardParams.put("prestige", String.valueOf(rewards.prestigeEarned));
+        rewardParams.put("bloodGems", String.valueOf(rewards.bloodGemsEarned));
+        rewardParams.put("loot", String.valueOf(rewards.lootDrops.size()));
+        rewardParams.put("baseTokens", String.valueOf(rewards.baseTokens));
+        rewardParams.put("styleMultiplier", String.format(java.util.Locale.ROOT, "%.2f", rewards.styleMultiplier));
+        rewardParams.put("mutatorMultiplier", String.format(java.util.Locale.ROOT, "%.2f", rewards.mutatorMultiplier));
+        rewardParams.put("styleRank", rewards.styleRank != null ? rewards.styleRank.name() : "D");
+        rewardParams.put("activeMutators", String.valueOf(rewards.activeMutators));
+        if (rewards.noHitBonus) rewardParams.put("noHitBonus", "true");
+        if (rewards.speedBonus) rewardParams.put("speedBonus", "true");
+        if (rewards.achievementsUnlocked != null && !rewards.achievementsUnlocked.isEmpty()) {
+            rewardParams.put("achievements", String.valueOf(rewards.achievementsUnlocked.size()));
+        }
+        NotificationService.INSTANCE.notifyQuestRewards(player.getUUID(), rewardParams, completed, questName);
 
         if (!rewards.lootDrops.isEmpty()) {
             var level = Objects.requireNonNull(player.level());
@@ -459,7 +474,16 @@ public class RewardSystem {
     }
 
     private void notifyMilestoneUnlock(ServerPlayer player, PrestigeMilestone milestone) {
-        NotificationService.INSTANCE.notifyPrestigeMilestone(player.getUUID(), milestone);
+        String rewardDesc = milestone.getType().getDisplayName() + " (" + milestone.getUnlockValue() + ")";
+        NotificationService.INSTANCE.notifyPrestigeMilestone(
+            player.getUUID(),
+            milestone.getNameKey(),
+            milestone.getDescriptionKey(),
+            milestone.getId(),
+            milestone.getType().getDisplayName(),
+            rewardDesc,
+            milestone.getType().getDisplayName()
+        );
 
         LOGGER.info("[RewardSystem] Player {} unlocked prestige milestone: {} ({})",
             player.getName().getString(), milestone.getId(), milestone.getType());

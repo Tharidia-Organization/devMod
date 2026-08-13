@@ -33,6 +33,7 @@ import com.devmod.combat.tracking.EvasionHandler;
 import com.devmod.config.handler.impl.WeaponConfigHandler;
 import com.devmod.damage.DamageBreakdown;
 import com.devmod.damage.DamageCalculator;
+import com.devmod.shared.BodyPart;
 import com.devmod.stats.WeaponStats;
 import com.devmod.util.DamageTypeConfig;
 import com.devmod.util.I18n;
@@ -99,11 +100,15 @@ public class DamageHandler {
                 // MELEE: Use OBB raycast when enabled, fallback to AABB subdivision
                 weapon = attacker.getMainHandItem();
                 LivingEntity target = Objects.requireNonNull(victim);
-                HitHelper.HitResult hitResult = OBBHitHelper.useOBBSystem()
-                    ? OBBHitHelper.rayTraceBodyPart(attacker, target)
-                    : HitHelper.rayTraceBodyPartWithHitPoint(attacker, target);
-                part = hitResult.part();
-                hitPoint = hitResult.hitPoint();
+                if (OBBHitHelper.useOBBSystem()) {
+                    com.devmod.shared.HitResult obbResult = OBBHitHelper.rayTraceBodyPart(attacker, target);
+                    part = HitHelper.BodyPart.fromShared(obbResult.part());
+                    hitPoint = obbResult.hitPoint();
+                } else {
+                    HitHelper.HitResult aabbResult = HitHelper.rayTraceBodyPartWithHitPoint(attacker, target);
+                    part = aabbResult.part();
+                    hitPoint = aabbResult.hitPoint();
+                }
                 slashDirection = attacker.getViewVector(1.0F);
                 isRanged = false;
             }

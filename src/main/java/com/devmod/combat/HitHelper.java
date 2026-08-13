@@ -22,10 +22,29 @@ public final class HitHelper {
         // Utility class - prevent instantiation
     }
 
-    public enum BodyPart { HEAD, BODY, ARMS, LEGS }
+    /**
+     * Body part hit zone.
+     * @deprecated Use {@link com.devmod.shared.BodyPart} directly.
+     *             Kept as type alias for backwards compatibility.
+     */
+    public enum BodyPart {
+        HEAD, BODY, ARMS, LEGS;
+
+        /** Converts to the canonical shared type. */
+        public com.devmod.shared.BodyPart toShared() {
+            return com.devmod.shared.BodyPart.values()[this.ordinal()];
+        }
+
+        /** Converts from the canonical shared type. */
+        public static BodyPart fromShared(com.devmod.shared.BodyPart shared) {
+            return values()[shared.ordinal()];
+        }
+    }
 
     /**
      * Raycast result with body part and impact position.
+     * @deprecated Use {@link com.devmod.shared.HitResult} directly.
+     *             Kept as type alias for backwards compatibility.
      */
     public record HitResult(BodyPart part, Vec3 hitPoint) {
         public static HitResult of(BodyPart part, Vec3 hitPoint) {
@@ -34,6 +53,16 @@ public final class HitHelper {
 
         public static HitResult of(BodyPart part) {
             return new HitResult(part, null);
+        }
+
+        /** Converts to the canonical shared type. */
+        public com.devmod.shared.HitResult toShared() {
+            return new com.devmod.shared.HitResult(part.toShared(), hitPoint);
+        }
+
+        /** Converts from the canonical shared type. */
+        public static HitResult fromShared(com.devmod.shared.HitResult shared) {
+            return new HitResult(BodyPart.fromShared(shared.part()), shared.hitPoint());
         }
     }
 

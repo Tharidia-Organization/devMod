@@ -14,8 +14,9 @@ import com.devmod.collision.obb.OrientedBoundingBox;
 import com.devmod.collision.registry.BodyPartRegistry;
 import com.devmod.collision.transform.AnimationSnapshot;
 import com.devmod.collision.transform.TransformProviderRegistry;
-import com.devmod.combat.HitHelper;
 import com.devmod.config.Config;
+import com.devmod.shared.BodyPart;
+import com.devmod.shared.HitResult;
 
 public final class OBBHitHelper {
 
@@ -41,30 +42,23 @@ public final class OBBHitHelper {
 
     /**
      * Performs OBB-aware body part raycast.
-     * Falls back to AABB method if OBB is disabled or unavailable.
+     * Falls back to pitch-based detection if OBB fails.
+     *
+     * <p>Note: callers should check {@link #useOBBSystem()} first and fall
+     * back to their own AABB implementation when OBB is disabled, to avoid
+     * a circular dependency between collision and combat.
      *
      * @param attacker The attacking entity
      * @param target   The target entity
      * @return HitResult with body part and hit point
      */
     @Nonnull
-    public static HitHelper.HitResult rayTraceBodyPart(@Nonnull LivingEntity attacker,
+    public static HitResult rayTraceBodyPart(@Nonnull LivingEntity attacker,
                                                        @Nonnull LivingEntity target) {
-        // Check if OBB system is enabled
-        if (!useOBBSystem()) {
-            return Objects.requireNonNull(
-                HitHelper.rayTraceBodyPartWithHitPoint(attacker, target),
-                "fallback hit result");
-        }
-
         try {
             return rayTraceBodyPartOBB(attacker, target);
         } catch (Exception e) {
-            // Log error and fallback to AABB
-            // DevMod.LOGGER.warn("OBB raycast failed, falling back to AABB", e);
-            return Objects.requireNonNull(
-                HitHelper.rayTraceBodyPartWithHitPoint(attacker, target),
-                "fallback hit result");
+            return pitchBasedFallback(attacker, target);
         }
     }
 
@@ -78,7 +72,7 @@ public final class OBBHitHelper {
      * @throws IllegalStateException if OBB calculation fails
      */
     @Nonnull
-    public static HitHelper.HitResult rayTraceBodyPartOBB(@Nonnull LivingEntity attacker,
+    public static HitResult rayTraceBodyPartOBB(@Nonnull LivingEntity attacker,
                                                          @Nonnull LivingEntity target) {
         // 1. Get hierarchy for target
         BodyPartRegistry.INSTANCE.initialize(); // Ensure initialized
@@ -108,13 +102,13 @@ public final class OBBHitHelper {
             OBBRaycast.IndexedHitResult hitResult = OBBRaycast.findClosestHitWithResult(
                 rayOrigin, rayDir, reach, obbs);
 
-            // 7. Convert to HitHelper.HitResult
+            // 7. Convert to HitResult
             if (hitResult.hit()) {
                 BodyPartInstance hitPart = parts[hitResult.index()];
                 Vec3 hitPoint = Objects.requireNonNull(
                     Objects.requireNonNull(hitResult.result(), "hit result").hitPoint(),
                     "hitPoint");
-                return new HitHelper.HitResult(hitPart.getBodyPartType(), hitPoint);
+                return new HitResult(hitPart.getBodyPartType(), hitPoint);
             }
 
             // 8. No OBB hit - use pitch-based fallback
@@ -135,7 +129,7 @@ public final class OBBHitHelper {
      * @return HitResult with body part and hit point
      */
     @Nonnull
-    public static HitHelper.HitResult rayTraceBodyPartSimple(@Nonnull LivingEntity attacker,
+    public static HitResult rayTraceBodyPartSimple(@Nonnull LivingEntity attacker,
                                                              @Nonnull LivingEntity target) {
         BodyPartRegistry.INSTANCE.initialize();
         BodyPartHierarchy hierarchy = BodyPartRegistry.INSTANCE.getHierarchy(target);
@@ -164,7 +158,7 @@ public final class OBBHitHelper {
                 Vec3 hitPoint = Objects.requireNonNull(
                     Objects.requireNonNull(hitResult.result(), "hit result").hitPoint(),
                     "hitPoint");
-                return new HitHelper.HitResult(hitPart.getBodyPartType(), hitPoint);
+                return new HitResult(hitPart.getBodyPartType(), hitPoint);
             }
 
             return pitchBasedFallback(attacker, target);
@@ -201,22 +195,22 @@ public final class OBBHitHelper {
      * Pitch-based fallback when raycast doesn't hit any OBB.
      */
     @Nonnull
-    private static HitHelper.HitResult pitchBasedFallback(@Nonnull LivingEntity attacker,
+    private static HitResult pitchBasedFallback(@Nonnull LivingEntity attacker,
                                                          @Nonnull LivingEntity target) {
         Vec3 center = target.getBoundingBox().getCenter();
         double height = target.getBbHeight();
         double pitch = attacker.getXRot();
 
         if (pitch < -15) {
-            return new HitHelper.HitResult(HitHelper.BodyPart.HEAD,
+            return new HitResult(BodyPart.HEAD,
                 center.add(0, height * 0.35, 0));
         }
         if (pitch > 25) {
-            return new HitHelper.HitResult(HitHelper.BodyPart.LEGS,
+            return new HitResult(BodyPart.LEGS,
                 center.add(0, -height * 0.3, 0));
         }
 
-        return new HitHelper.HitResult(HitHelper.BodyPart.BODY, center);
+        return new HitResult(BodyPart.BODY, center);
     }
 
     // ==================== Utility Methods ====================

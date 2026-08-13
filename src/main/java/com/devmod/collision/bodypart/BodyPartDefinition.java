@@ -8,11 +8,11 @@ import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 public record BodyPartDefinition(
     @Nonnull String id,                          // Unique identifier (e.g., "head", "left_arm")
-    @Nonnull HitHelper.BodyPart bodyPartType,    // Maps to existing enum for compatibility
+    @Nonnull BodyPart bodyPartType,    // Maps to existing enum for compatibility
     @Nonnull Vec3 localOffset,                   // Offset from parent bone origin
     @Nonnull Vec3 halfExtents,                   // OBB half-extents (size/2)
     @Nullable String parentBoneId,               // ModelPart name to attach to (null = entity root)
@@ -119,7 +119,7 @@ public record BodyPartDefinition(
      */
     public static class Builder {
         private String id;
-        private HitHelper.BodyPart bodyPartType = HitHelper.BodyPart.BODY;
+        private BodyPart bodyPartType = BodyPart.BODY;
         private Vec3 localOffset = Vec3.ZERO;
         private Vec3 halfExtents = new Vec3(0.25, 0.25, 0.25);
         @Nullable
@@ -134,7 +134,7 @@ public record BodyPartDefinition(
         }
 
         @Nonnull
-        public Builder type(@Nonnull HitHelper.BodyPart type) {
+        public Builder type(@Nonnull BodyPart type) {
             this.bodyPartType = type;
             // Set default color based on type
             this.renderColor = switch (type) {
@@ -211,7 +211,7 @@ public record BodyPartDefinition(
             if (id == null || id.isEmpty()) {
                 throw new IllegalStateException("Body part id is required");
             }
-            HitHelper.BodyPart safeType = Objects.requireNonNull(bodyPartType, "bodyPartType");
+            BodyPart safeType = Objects.requireNonNull(bodyPartType, "bodyPartType");
             Vec3 safeOffset = Objects.requireNonNull(localOffset, "localOffset");
             Vec3 safeHalfExtents = Objects.requireNonNull(halfExtents, "halfExtents");
             return new BodyPartDefinition(
@@ -236,7 +236,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition head(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("head", HitHelper.BodyPart.HEAD, offset, halfExtents,
+        return new BodyPartDefinition("head", BodyPart.HEAD, offset, halfExtents,
             boneId, "body", COLOR_HEAD, 2.0f);
     }
 
@@ -245,7 +245,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition body(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("body", HitHelper.BodyPart.BODY, offset, halfExtents,
+        return new BodyPartDefinition("body", BodyPart.BODY, offset, halfExtents,
             boneId, null, COLOR_BODY, 1.0f);
     }
 
@@ -254,7 +254,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition leftArm(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("left_arm", HitHelper.BodyPart.ARMS, offset, halfExtents,
+        return new BodyPartDefinition("left_arm", BodyPart.ARMS, offset, halfExtents,
             boneId, "body", COLOR_ARMS, 0.75f);
     }
 
@@ -263,7 +263,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition rightArm(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("right_arm", HitHelper.BodyPart.ARMS, offset, halfExtents,
+        return new BodyPartDefinition("right_arm", BodyPart.ARMS, offset, halfExtents,
             boneId, "body", COLOR_ARMS, 0.75f);
     }
 
@@ -272,7 +272,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition leftLeg(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("left_leg", HitHelper.BodyPart.LEGS, offset, halfExtents,
+        return new BodyPartDefinition("left_leg", BodyPart.LEGS, offset, halfExtents,
             boneId, null, COLOR_LEGS, 0.5f);
     }
 
@@ -281,7 +281,7 @@ public record BodyPartDefinition(
      */
     @Nonnull
     public static BodyPartDefinition rightLeg(@Nonnull Vec3 offset, @Nonnull Vec3 halfExtents, @Nullable String boneId) {
-        return new BodyPartDefinition("right_leg", HitHelper.BodyPart.LEGS, offset, halfExtents,
+        return new BodyPartDefinition("right_leg", BodyPart.LEGS, offset, halfExtents,
             boneId, null, COLOR_LEGS, 0.5f);
     }
 }

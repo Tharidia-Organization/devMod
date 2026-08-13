@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import net.minecraft.world.phys.Vec3;
 
 import com.devmod.collision.obb.OrientedBoundingBox;
-import com.devmod.combat.HitHelper;
+import com.devmod.shared.BodyPart;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,7 +18,7 @@ class BodyPartDefinitionTest {
 
     private static BodyPartDefinition sampleDef() {
         return new BodyPartDefinition(
-            "test_part", HitHelper.BodyPart.BODY,
+            "test_part", BodyPart.BODY,
             new Vec3(0, 0.9, 0), new Vec3(0.2, 0.3, 0.1),
             "body", null, 0xFF00FF00, 1.0f
         );
@@ -33,7 +33,7 @@ class BodyPartDefinitionTest {
         void basicFields() {
             BodyPartDefinition def = sampleDef();
             assertEquals("test_part", def.id());
-            assertEquals(HitHelper.BodyPart.BODY, def.bodyPartType());
+            assertEquals(BodyPart.BODY, def.bodyPartType());
             assertEquals(new Vec3(0, 0.9, 0), def.localOffset());
             assertEquals(new Vec3(0.2, 0.3, 0.1), def.halfExtents());
             assertEquals("body", def.parentBoneId());
@@ -46,7 +46,7 @@ class BodyPartDefinitionTest {
         @DisplayName("null parentBoneId and parentPartId are allowed")
         void nullParentFields() {
             BodyPartDefinition def = new BodyPartDefinition(
-                "root", HitHelper.BodyPart.BODY,
+                "root", BodyPart.BODY,
                 Vec3.ZERO, new Vec3(1, 1, 1),
                 null, null, 0, 1.0f
             );
@@ -70,7 +70,7 @@ class BodyPartDefinitionTest {
         @DisplayName("isRoot returns false when parentPartId is set")
         void isRootFalse() {
             BodyPartDefinition def = new BodyPartDefinition(
-                "child", HitHelper.BodyPart.HEAD,
+                "child", BodyPart.HEAD,
                 Vec3.ZERO, new Vec3(0.2, 0.2, 0.2),
                 "head", "body", 0, 2.0f
             );
@@ -87,7 +87,7 @@ class BodyPartDefinitionTest {
         @DisplayName("hasBone returns false when parentBoneId is null")
         void hasBoneFalse() {
             BodyPartDefinition def = new BodyPartDefinition(
-                "root", HitHelper.BodyPart.BODY,
+                "root", BodyPart.BODY,
                 Vec3.ZERO, new Vec3(1, 1, 1),
                 null, null, 0, 1.0f
             );
@@ -186,7 +186,7 @@ class BodyPartDefinitionTest {
         @DisplayName("builder creates definition with all fields")
         void fullBuilder() {
             BodyPartDefinition def = BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .offset(0, 1.5, 0)
                 .halfExtents(0.2, 0.2, 0.2)
                 .bone("head")
@@ -196,7 +196,7 @@ class BodyPartDefinitionTest {
                 .build();
 
             assertEquals("head", def.id());
-            assertEquals(HitHelper.BodyPart.HEAD, def.bodyPartType());
+            assertEquals(BodyPart.HEAD, def.bodyPartType());
             assertEquals(new Vec3(0, 1.5, 0), def.localOffset());
             assertEquals(new Vec3(0.2, 0.2, 0.2), def.halfExtents());
             assertEquals("head", def.parentBoneId());
@@ -211,7 +211,7 @@ class BodyPartDefinitionTest {
             BodyPartDefinition def = BodyPartDefinition.builder("test").build();
 
             assertEquals("test", def.id());
-            assertEquals(HitHelper.BodyPart.BODY, def.bodyPartType());
+            assertEquals(BodyPart.BODY, def.bodyPartType());
             assertEquals(Vec3.ZERO, def.localOffset());
             assertEquals(new Vec3(0.25, 0.25, 0.25), def.halfExtents());
             assertNull(def.parentBoneId());
@@ -230,7 +230,7 @@ class BodyPartDefinitionTest {
         @DisplayName("type sets default color for HEAD")
         void typeDefaultColorHead() {
             BodyPartDefinition def = BodyPartDefinition.builder("head")
-                .type(HitHelper.BodyPart.HEAD)
+                .type(BodyPart.HEAD)
                 .build();
             assertEquals(BodyPartDefinition.COLOR_HEAD, def.renderColor());
         }
@@ -239,7 +239,7 @@ class BodyPartDefinitionTest {
         @DisplayName("type sets default color for LEGS")
         void typeDefaultColorLegs() {
             BodyPartDefinition def = BodyPartDefinition.builder("leg")
-                .type(HitHelper.BodyPart.LEGS)
+                .type(BodyPart.LEGS)
                 .build();
             assertEquals(BodyPartDefinition.COLOR_LEGS, def.renderColor());
         }
@@ -275,7 +275,7 @@ class BodyPartDefinitionTest {
             BodyPartDefinition head = BodyPartDefinition.head(offset, half, "headBone");
 
             assertEquals("head", head.id());
-            assertEquals(HitHelper.BodyPart.HEAD, head.bodyPartType());
+            assertEquals(BodyPart.HEAD, head.bodyPartType());
             assertEquals(offset, head.localOffset());
             assertEquals(half, head.halfExtents());
             assertEquals("headBone", head.parentBoneId());
