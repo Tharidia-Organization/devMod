@@ -195,11 +195,8 @@ final class EnduranceEventWave {
             LOGGER.info("[EnduranceQuest]   Active Mutators: {}", mutatorSession.getActiveMutatorCount());
         }
 
-        // === COMBAT TRACKER - Prepare for next wave ===
-        if (combatSession != null && applyShared) {
-            combatSession.startNewWave(waveNumber + 1);
-            LOGGER.debug("[EnduranceQuest] Combat tracker advanced to wave {}", waveNumber + 1);
-        }
+        // Combat tracker wave advance is driven by CombatTracker.onWaveCompleted,
+        // triggered by the WaveCompleted event published at the end of this method.
 
         // === TENSION SYSTEM - Dynamic boss spawning ===
         boolean nextWaveIsBoss = applyShared

@@ -60,8 +60,6 @@ public class SeasonPassSystem {
     // Config manager reference
     private final EnduranceConfigManager config = EnduranceConfigManager.INSTANCE;
 
-    private static SeasonPassSystem instance;
-
     // Current season data
     private int currentSeasonNumber = 1;
     private String seasonName = "Season of the Gladiator";
@@ -82,10 +80,7 @@ public class SeasonPassSystem {
     }
 
     public static SeasonPassSystem getInstance() {
-        if (instance == null) {
-            instance = new SeasonPassSystem();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     /**

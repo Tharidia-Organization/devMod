@@ -29,6 +29,7 @@ public class MomentumTracker implements QuestLifecycleListener {
     private static final float IDLE_DECAY_PER_SECOND = 3f;     // -3% per second idle
     private static final float OVERDRIVE_THRESHOLD = 100f;
     private static final long OVERDRIVE_DURATION_MS = 15000;   // 15 seconds
+    private static final long OVERDRIVE_MAX_EXTENSION_MS = 3000; // kills can extend by at most +3s
     private static final float STAGNANT_SPAWN_MULTIPLIER = 1.2f; // +20% spawn rate
     private static final float STAGNANT_STYLE_DECAY_MULTIPLIER = 2.0f;
     private static final float OVERDRIVE_DAMAGE_MULTIPLIER = 1.5f;
@@ -82,6 +83,9 @@ public class MomentumTracker implements QuestLifecycleListener {
         private volatile MomentumState currentState = MomentumState.BUILDING;
         private volatile boolean inOverdrive = false;
         private volatile long overdriveStartTime = 0;
+        // Start time of the current overdrive before any kill extensions, so the total
+        // extension can be capped regardless of kill rate.
+        private volatile long overdriveOriginalStartTime = 0;
         private volatile boolean stateChanged = false;
 
         // Statistics - volatile for thread visibility
@@ -110,7 +114,9 @@ public class MomentumTracker implements QuestLifecycleListener {
                     // Extend overdrive slightly with each kill (max +3 sec)
                     long elapsed = now - overdriveStartTime;
                     if (elapsed < OVERDRIVE_DURATION_MS) {
-                        overdriveStartTime = now - Math.max(0, elapsed - 1000);
+                        overdriveStartTime = Math.min(
+                            now - Math.max(0, elapsed - 1000),
+                            overdriveOriginalStartTime + OVERDRIVE_MAX_EXTENSION_MS);
                     }
                     return new MomentumResult(currentState, getDamageMultiplier(), getStyleMultiplier(), false, true);
                 }
@@ -182,6 +188,7 @@ public class MomentumTracker implements QuestLifecycleListener {
         private void triggerOverdrive(long now) {
             inOverdrive = true;
             overdriveStartTime = now;
+            overdriveOriginalStartTime = now;
             currentState = MomentumState.OVERDRIVE;
             overdriveCount++;
             LOGGER.info("[Momentum] Player {} triggered OVERDRIVE! (count: {})", playerId, overdriveCount);

@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +30,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import com.devmod.endurance.lifecycle.QuestContext;
 import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestEnded;
@@ -34,6 +38,10 @@ import com.devmod.endurance.lifecycle.QuestLifecycleEvent.QuestStarted;
 import com.devmod.endurance.lifecycle.QuestLifecycleListener;
 public class DevilsBargainManager implements QuestLifecycleListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevilsBargainManager.class);
+
+    /** Identifies the FRAILTY max-health modifier so it can be removed again. */
+    private static final ResourceLocation FRAILTY_MODIFIER_ID = Objects.requireNonNull(
+        ResourceLocation.fromNamespaceAndPath("devmod", "bargain_frailty"));
 
     public static final DevilsBargainManager INSTANCE = new DevilsBargainManager();
 
@@ -379,11 +387,13 @@ public class DevilsBargainManager implements QuestLifecycleListener {
     private void applyCurseEffects(ServerPlayer player, Curse curse) {
         switch (curse) {
             case FRAILTY -> {
-                // Reduce max health immediately
-                float reduction = player.getMaxHealth() * 0.3f;
+                // Transient modifier rather than setBaseValue: the base value is
+                // saved to player NBT, so a mutation there outlives the quest,
+                // survives restarts, and stacks across runs.
                 var healthAttr = player.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH));
-                if (healthAttr != null) {
-                    healthAttr.setBaseValue(Math.max(4, healthAttr.getBaseValue() - reduction));
+                if (healthAttr != null && healthAttr.getModifier(FRAILTY_MODIFIER_ID) == null) {
+                    healthAttr.addTransientModifier(new AttributeModifier(
+                        FRAILTY_MODIFIER_ID, -0.3, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
                     if (player.getHealth() > player.getMaxHealth()) {
                         player.setHealth(player.getMaxHealth());
                     }
@@ -412,6 +422,51 @@ public class DevilsBargainManager implements QuestLifecycleListener {
         CompoundTag data = player.getPersistentData();
         String curseKey = "bargain_curse_" + curse.name();
         data.putBoolean(curseKey, true);
+    }
+
+    /**
+     * Undo everything {@link #applyCurseEffects} applied for one curse.
+     */
+    private void removeCurseEffects(ServerPlayer player, Curse curse) {
+        switch (curse) {
+            case FRAILTY -> {
+                var healthAttr = player.getAttribute(Objects.requireNonNull(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH));
+                if (healthAttr != null) {
+                    healthAttr.removeModifier(FRAILTY_MODIFIER_ID);
+                }
+            }
+            case SLUGGISH -> {
+                if (MobEffects.MOVEMENT_SLOWDOWN != null) {
+                    player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+                }
+            }
+            case FUMBLING -> {
+                if (MobEffects.DIG_SLOWDOWN != null) {
+                    player.removeEffect(MobEffects.DIG_SLOWDOWN);
+                }
+            }
+            default -> {
+                // Other curses only affect cached multipliers, cleared with the session
+            }
+        }
+
+        player.getPersistentData().remove("bargain_curse_" + curse.name());
+    }
+
+    /**
+     * Ends a curse session and undoes the curses applied to the player.
+     *
+     * <p>The curses use effects with an effectively infinite duration, so without
+     * this the player keeps them after the quest ends and across restarts.
+     */
+    public CurseSession endSession(UUID questId, @Nullable ServerPlayer player) {
+        CurseSession session = endSession(questId);
+        if (session != null && player != null) {
+            for (Curse curse : session.getActiveCurses()) {
+                removeCurseEffects(player, curse);
+            }
+        }
+        return session;
     }
 
     /**
@@ -591,7 +646,7 @@ public class DevilsBargainManager implements QuestLifecycleListener {
         if (!event.cleanupShared()) return;
 
         UUID questId = event.questId();
-        CurseSession session = endSession(questId);
+        CurseSession session = endSession(questId, event.context().player());
         if (session != null && session.getCurseCount() > 0) {
             LOGGER.debug("[DevilsBargainManager] Ended session for quest {} via event bus ({} curses, {}x reward)",
                 questId, session.getCurseCount(), session.getTotalRewardMultiplier());

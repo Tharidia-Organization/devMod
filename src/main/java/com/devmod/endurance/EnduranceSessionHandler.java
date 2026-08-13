@@ -55,12 +55,18 @@ public class EnduranceSessionHandler {
         UUID playerId = player.getUUID();
         EnduranceQuestManager.ActiveQuestSession session = activeSessions.get(playerId);
 
-        if (session != null && session.getPartyId() != null) {
+        if (session != null && session.getPartyId() != null
+            && EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId())
+                .map(PartyQuestSession::isActive).orElse(false)) {
             EnduranceQuestManager.INSTANCE.markPartyMemberInactive(playerId, "abandon");
-            player.setGameMode(GameType.SPECTATOR);
-            player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
-                "[DevMod] You are now spectating the party run. Rejoin after this wave.")
-                .withStyle(SharedColorTokens.Chat.YELLOW)));
+            // A party wipe inside markPartyMemberInactive ends the run and removes the
+            // session; the player is already restored, so do not force spectator mode.
+            if (activeSessions.containsKey(playerId)) {
+                player.setGameMode(GameType.SPECTATOR);
+                player.sendSystemMessage(Objects.requireNonNull(net.minecraft.network.chat.Component.literal(
+                    "[DevMod] You are now spectating the party run. Rejoin after this wave.")
+                    .withStyle(SharedColorTokens.Chat.YELLOW)));
+            }
             return;
         }
 

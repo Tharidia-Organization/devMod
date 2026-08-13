@@ -237,6 +237,15 @@ public class GamificationManager {
         public volatile int weeklyPoints = 0;
         public volatile int dailyPoints = 0;
 
+        /**
+         * Best points earned in a single quest, used for the HIGH SCORE record.
+         *
+         * <p>Distinct from {@link #totalPoints}, which only ever grows, so no
+         * comparison against it can express a personal best. Profiles saved
+         * before this field existed deserialize it as 0.
+         */
+        public volatile int bestRunPoints = 0;
+
         // Stats - volatile for visibility across threads
         public volatile int totalQuestsCompleted = 0;
         public volatile int totalMobsKilled = 0;
@@ -364,9 +373,10 @@ public class GamificationManager {
             // Sort by points descending
             entries.sort((a, b) -> Integer.compare(b.points, a.points));
 
-            // Keep top 100
+            // Keep top 100 (truncate in place - reassigning to a subList would leave the
+            // tail alive in the backing list and grow it without bound)
             if (entries.size() > 100) {
-                entries = entries.subList(0, 100);
+                entries.subList(100, entries.size()).clear();
             }
 
             // Telemetry: record leaderboard change if rank improved
@@ -496,7 +506,7 @@ public class GamificationManager {
 
         // Update stats atomically
         synchronized (profile.statsLock) {
-            previousHighScore = profile.totalPoints;
+            previousHighScore = profile.bestRunPoints;
             previousHighWave = profile.highestWaveReached;
 
             profile.totalQuestsCompleted++;
@@ -543,6 +553,14 @@ public class GamificationManager {
         int basePoints = quest.getPointsEarnedThisSession();
         awardPoints(playerId, playerName, basePoints, "Quest completion");
 
+        boolean isNewHighScore;
+        synchronized (profile.statsLock) {
+            isNewHighScore = basePoints > profile.bestRunPoints;
+            if (isNewHighScore) {
+                profile.bestRunPoints = basePoints;
+            }
+        }
+
         // Check for badges
         checkQuestBadges(profile, quest, combatSession, template);
 
@@ -552,7 +570,6 @@ public class GamificationManager {
         saveData();
 
         // Build result with new badges
-        boolean isNewHighScore = profile.totalPoints > previousHighScore + basePoints / 2; // Significant improvement
         QuestCompletionResult result = new QuestCompletionResult(
             isNewHighScore, isNewWaveRecord, previousHighScore, previousHighWave);
 

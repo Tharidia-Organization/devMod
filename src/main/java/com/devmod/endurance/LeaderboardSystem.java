@@ -382,7 +382,8 @@ public class LeaderboardSystem {
 
             int start = Math.max(0, playerIndex - contextSize);
             int end = Math.min(board.size(), playerIndex + contextSize + 1);
-            return board.subList(start, end);
+            // Copy: a subList view would escape the lock and stay tied to the live board
+            return List.copyOf(board.subList(start, end));
         }
     }
 
@@ -474,9 +475,12 @@ public class LeaderboardSystem {
                     system.boards.get(cat).putAll(boards.get(key));
                 }
                 if (globalBoards.containsKey(key)) {
+                    // Replace, don't append - restore() must be idempotent
+                    system.globalBoards.get(cat).clear();
                     system.globalBoards.get(cat).addAll(globalBoards.get(key));
                 }
                 if (weeklyBoards.containsKey(key)) {
+                    system.weeklyBoards.get(cat).clear();
                     system.weeklyBoards.get(cat).addAll(weeklyBoards.get(key));
                 }
             }

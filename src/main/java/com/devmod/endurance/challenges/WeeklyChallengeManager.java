@@ -456,11 +456,12 @@ public class WeeklyChallengeManager {
             WeeklyChallenge.WeeklyProgress progress = getProgress(playerId, challenge.getId());
             if (progress.isCompleted()) continue;
 
+            int previousHighestCombo = progress.getHighestComboThisWeek();
             progress.updateHighestCombo(currentCombo);
 
             // Count times reaching threshold based on challenge
             int comboThreshold = challenge.getId().contains("75") ? 75 : 50;
-            if (currentCombo >= comboThreshold && progress.getHighestComboThisWeek() < currentCombo) {
+            if (currentCombo >= comboThreshold && previousHighestCombo < currentCombo) {
                 progress.increment(); // Count as reaching threshold
             }
         }
@@ -539,6 +540,23 @@ public class WeeklyChallengeManager {
                         playerId, challenge.getId());
             }
         }
+    }
+
+    /**
+     * Returns the challenges this player has completed but not yet been paid for.
+     *
+     * <p>{@link #checkAndAwardCompletions} only marks completion; the payout is a
+     * separate step so the caller can run it on a player-bearing path.
+     */
+    public List<WeeklyChallenge> getUnrewardedCompletions(UUID playerId) {
+        List<WeeklyChallenge> pending = new ArrayList<>();
+        for (WeeklyChallenge challenge : activeChallenges) {
+            WeeklyChallenge.WeeklyProgress progress = getProgress(playerId, challenge.getId());
+            if (progress.isCompleted() && !progress.isRewarded()) {
+                pending.add(challenge);
+            }
+        }
+        return pending;
     }
 
     /**
@@ -713,6 +731,14 @@ public class WeeklyChallengeManager {
                         if (progData.get("highestWave") != null) {
                             int wave = ((Number) progData.get("highestWave")).intValue();
                             progress.updateHighestWave(wave);
+                        }
+                        if (progData.get("timesReachedRank") != null) {
+                            progress.setTimesReachedTargetRank(
+                                    ((Number) progData.get("timesReachedRank")).intValue());
+                        }
+                        if (progData.get("perfectRuns") != null) {
+                            progress.setPerfectRunsThisWeek(
+                                    ((Number) progData.get("perfectRuns")).intValue());
                         }
 
                         playerProgressMap.put(challengeId, progress);

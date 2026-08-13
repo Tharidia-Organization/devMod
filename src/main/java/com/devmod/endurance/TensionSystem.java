@@ -75,6 +75,9 @@ public class TensionSystem implements QuestLifecycleListener {
          * Get tension as a percentage of threshold (for UI).
          */
         public float getTensionPercent() {
+            // A zero/negative configured threshold means the boss is always due;
+            // dividing would yield NaN and poison every downstream comparison.
+            if (bossThreshold <= 0f) return 1.0f;
             return Math.min(1.0f, currentTension / bossThreshold);
         }
 

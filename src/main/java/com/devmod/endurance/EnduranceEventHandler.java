@@ -233,13 +233,14 @@ public class EnduranceEventHandler {
             QuestStartSequence.INSTANCE.onPlayerDisconnect(playerId);
             NutritionBridgeSystem.INSTANCE.onPlayerDisconnect(playerId);
 
-            Optional<EnduranceQuestManager.ActiveQuestSession> sessionOpt =
-                EnduranceQuestManager.INSTANCE.getActiveSession(player);
+            // Unfiltered lookup: getActiveSession() hides initializing/pending/loading-protection
+            // sessions, which would otherwise be left behind and block all future quest starts.
+            EnduranceQuestManager.ActiveQuestSession session =
+                EnduranceQuestManager.INSTANCE.getActiveSessions().get(playerId);
 
-            if (sessionOpt.isPresent()) {
+            if (session != null) {
                 LOGGER.info("[EnduranceQuest] Player {} logged out during quest, cleaning up...",
                     player.getName().getString());
-                var session = sessionOpt.get();
                 if (session.getPartyId() != null
                     && EnduranceQuestManager.INSTANCE.getPartySession(session.getPartyId())
                         .map(PartyQuestSession::isActive).orElse(false)) {

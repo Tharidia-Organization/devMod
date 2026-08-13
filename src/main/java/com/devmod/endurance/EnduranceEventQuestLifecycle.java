@@ -230,6 +230,19 @@ final class EnduranceEventQuestLifecycle {
             com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
                 playerId, session.getQuest(), bossesKilledThisRun);
 
+            // Pay out completed challenges. Both managers mark progress on their
+            // own, but neither had a caller for the reward step, so tokens and
+            // prestige were never actually granted. Both awardRewards calls are
+            // idempotent via their isRewarded guard.
+            for (var challenge : com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE
+                    .getUnrewardedCompletions(playerId)) {
+                com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.awardRewards(player, challenge);
+            }
+            for (var challenge : com.devmod.endurance.challenges.DailyChallengeManager.INSTANCE
+                    .checkQuestCompletion(player, session.getQuest())) {
+                com.devmod.endurance.challenges.DailyChallengeManager.INSTANCE.awardRewards(player, challenge);
+            }
+
             // Record analytics session for detailed tracking
             if (combatSessionData != null) {
                 EnduranceAnalytics.INSTANCE.recordSession(

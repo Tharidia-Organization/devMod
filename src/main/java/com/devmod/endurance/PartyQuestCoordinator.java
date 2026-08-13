@@ -471,6 +471,17 @@ class PartyQuestCoordinator {
                         LOGGER.warn("[EnduranceQuest] Failed to restore party member {} state",
                             player.getName().getString(), e);
                     }
+                } else {
+                    // Offline member: onQuestEnd (and therefore the QuestEnded event) cannot run
+                    // without a ServerPlayer, so drop their per-player subsystem state here or it
+                    // is carried into their next quest.
+                    try {
+                        PerkSystem.INSTANCE.endSession(memberId);
+                        MomentumTracker.INSTANCE.endSession(memberId);
+                        com.devmod.endurance.combat.ComboSystemFacade.get().endSession(memberId);
+                    } catch (Exception e) {
+                        LOGGER.warn("[EnduranceQuest] Failed to clean up offline party member {}", memberId, e);
+                    }
                 }
             }
 

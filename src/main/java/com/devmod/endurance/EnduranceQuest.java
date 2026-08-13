@@ -208,7 +208,8 @@ public class EnduranceQuest {
         // Continue from current wave
         state = EnduranceQuestState.IN_PROGRESS;
 
-        deathsThisSession++;
+        // The death itself was already counted by fail(false), which precedes every
+        // transition into FAILED that this method can resume from.
 
         EnduranceLogger.phase(Phase.PLAYER_RESPAWN, (ServerPlayer) null, questId,
             "State: FAILED→IN_PROGRESS, wave=%d, deaths=%d, pointPenalty=%d→%d",

@@ -241,12 +241,20 @@ public class WeeklyChallenge {
             timesReachedTargetRank++;
         }
 
+        public void setTimesReachedTargetRank(int times) {
+            this.timesReachedTargetRank = times;
+        }
+
         public int getPerfectRunsThisWeek() {
             return perfectRunsThisWeek;
         }
 
         public void incrementPerfectRuns() {
             perfectRunsThisWeek++;
+        }
+
+        public void setPerfectRunsThisWeek(int runs) {
+            this.perfectRunsThisWeek = runs;
         }
     }
 

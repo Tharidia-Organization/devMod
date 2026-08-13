@@ -20,10 +20,12 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 
@@ -289,8 +291,8 @@ public class PerkSystem implements QuestLifecycleListener {
         private List<Perk> pendingChoices = new ArrayList<>();
         private int lastPerkChoicesWave = 0;
 
-        // Applied attribute modifiers (for cleanup)
-        private final List<AttributeModifier> appliedModifiers = new ArrayList<>();
+        // Applied attribute modifiers (for cleanup), paired with their target attribute
+        private final List<AppliedAttributeModifier> appliedModifiers = new ArrayList<>();
 
         private Set<String> suggestedPerks = Set.of();
         private Set<String> excludedPerks = Set.of();
@@ -415,14 +417,20 @@ public class PerkSystem implements QuestLifecycleListener {
         public UUID getPlayerId() { return playerId; }
         public UUID getQuestId() { return questId; }
 
-        public void addAppliedModifier(AttributeModifier modifier) {
-            appliedModifiers.add(modifier);
+        public void addAppliedModifier(Holder<Attribute> attribute, AttributeModifier modifier) {
+            appliedModifiers.add(new AppliedAttributeModifier(attribute, modifier));
         }
 
-        public List<AttributeModifier> getAppliedModifiers() {
+        public List<AppliedAttributeModifier> getAppliedModifiers() {
             return appliedModifiers;
         }
     }
+
+    /**
+     * An attribute modifier applied by a perk, paired with the attribute it was added to
+     * so it can be removed from that same attribute when the session ends.
+     */
+    public record AppliedAttributeModifier(Holder<Attribute> attribute, AttributeModifier modifier) {}
 
     // ========== Initialization ==========
 
@@ -480,7 +488,8 @@ public class PerkSystem implements QuestLifecycleListener {
                         AttributeModifier.Operation.ADD_VALUE
                     );
                     attr.addTransientModifier(mod);
-                    ctx.getSession().addAppliedModifier(mod);
+                    ctx.getSession().addAppliedModifier(
+                        requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"), mod);
                     ctx.getPlayer().setHealth(ctx.getPlayer().getHealth() + 4.0f);
                 }
             }));
@@ -638,7 +647,8 @@ public class PerkSystem implements QuestLifecycleListener {
                     if (modId != null) {
                         AttributeModifier modifier = new AttributeModifier(modId, 1.0, AttributeModifier.Operation.ADD_VALUE);
                         attr.addTransientModifier(modifier);
-                        ctx.getSession().addAppliedModifier(modifier);
+                        ctx.getSession().addAppliedModifier(
+                            requireNonNull(Attributes.KNOCKBACK_RESISTANCE, "KNOCKBACK_RESISTANCE"), modifier);
                     }
                 }
             },
@@ -742,21 +752,11 @@ public class PerkSystem implements QuestLifecycleListener {
     public PerkSession endSession(ServerPlayer player) {
         PerkSession session = activeSessions.remove(player.getUUID());
         if (session != null) {
-            // Remove applied attribute modifiers from all relevant attributes
-            for (AttributeModifier mod : session.getAppliedModifiers()) {
-                // Try removing from MAX_HEALTH (vitality perk)
-                var healthAttr = player.getAttribute(requireNonNull(Attributes.MAX_HEALTH, "MAX_HEALTH"));
-                if (healthAttr != null) {
-                    healthAttr.removeModifier(requireNonNull(mod, "modifier"));
-                }
-                // Try removing from other attributes that perks might modify
-                var speedAttr = player.getAttribute(requireNonNull(Attributes.MOVEMENT_SPEED, "MOVEMENT_SPEED"));
-                if (speedAttr != null) {
-                    speedAttr.removeModifier(requireNonNull(mod, "modifier"));
-                }
-                var attackSpeedAttr = player.getAttribute(requireNonNull(Attributes.ATTACK_SPEED, "ATTACK_SPEED"));
-                if (attackSpeedAttr != null) {
-                    attackSpeedAttr.removeModifier(requireNonNull(mod, "modifier"));
+            // Remove each applied modifier from the attribute it was actually added to
+            for (AppliedAttributeModifier applied : session.getAppliedModifiers()) {
+                var attr = player.getAttribute(requireNonNull(applied.attribute(), "attribute"));
+                if (attr != null) {
+                    attr.removeModifier(requireNonNull(applied.modifier(), "modifier"));
                 }
             }
 
@@ -946,7 +946,11 @@ public class PerkSystem implements QuestLifecycleListener {
             totalWeight += weight;
         }
 
-        // Select random
+        // Select random - config-supplied weights can all be zero, which has no valid
+        // weighted roll, so fall back to the uniform pick used when no bucket matches
+        if (totalWeight <= 0) {
+            return perks.get(random.nextInt(perks.size()));
+        }
         int roll = random.nextInt(totalWeight);
         int cumulative = 0;
         for (Perk perk : perks) {
