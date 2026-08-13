@@ -1,5 +1,6 @@
 package com.devmod.testing;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
@@ -88,8 +89,8 @@ public class TestCase {
      */
     public TestCase(String id, String category, String name, String description,
                     String instructions, TestPriority priority,
-                    Supplier<Boolean> autoValidator,
-                    Function<TesterProgress, Float> progressChecker) {
+                    @Nullable Supplier<Boolean> autoValidator,
+                    @Nullable Function<TesterProgress, Float> progressChecker) {
         this.id = id;
         this.category = category;
         this.name = name;

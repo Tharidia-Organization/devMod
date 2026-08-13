@@ -1,5 +1,6 @@
 package com.devmod.party;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -78,7 +79,7 @@ public class QuestStartSequence {
     /**
      * Cancel the sequence (called by leader or system).
      */
-    public boolean cancelSequence(UUID partyId, UUID requesterId, String reason) {
+    public boolean cancelSequence(UUID partyId, @Nullable UUID requesterId, String reason) {
         ActiveSequence sequence = activeSequences.get(partyId);
         if (sequence == null) {
             return false;
@@ -697,7 +698,7 @@ public class QuestStartSequence {
      */
     public record ValidationResult(
         boolean success,
-        String errorMessage,
+        @Nullable String errorMessage,
         List<ServerPlayer> onlineMembers
     ) {
         public static ValidationResult success(List<ServerPlayer> members) {

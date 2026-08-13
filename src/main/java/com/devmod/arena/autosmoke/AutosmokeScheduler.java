@@ -1,5 +1,6 @@
 package com.devmod.arena.autosmoke;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -436,7 +437,7 @@ public class AutosmokeScheduler {
         boolean success,
         long passedCount,
         long failedCount,
-        String errorMessage
+        @Nullable String errorMessage
     ) {
         public Duration duration() {
             return Duration.between(startTime, endTime);

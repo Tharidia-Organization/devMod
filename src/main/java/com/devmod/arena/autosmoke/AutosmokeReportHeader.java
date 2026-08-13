@@ -1,5 +1,6 @@
 package com.devmod.arena.autosmoke;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -42,7 +43,7 @@ public class AutosmokeReportHeader {
      * @param configContent Configuration content to hash (can be null)
      * @return The captured report header
      */
-    public static ReportHeader capture(String configContent) {
+    public static ReportHeader capture(@Nullable String configContent) {
         BuildInfo buildInfo = getBuildInfo();
         String configHash = configContent != null ? computeHash(configContent) : "N/A";
 

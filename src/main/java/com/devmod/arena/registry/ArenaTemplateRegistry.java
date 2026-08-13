@@ -179,7 +179,7 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     /**
      * Enable structure NBT validation using the provided manifest and data provider.
      */
-    public void enableStructureValidation(StructureManifest manifest, TemplateValidator.StructureDataProvider provider) {
+    public void enableStructureValidation(@Nullable StructureManifest manifest, TemplateValidator.StructureDataProvider provider) {
         this.validator.withStructureValidation(manifest, provider);
     }
 

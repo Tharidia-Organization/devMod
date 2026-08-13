@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -213,9 +214,9 @@ public class CustomKit {
     public record KitItem(
         String itemId,
         int count,
-        String nbtTag, // Optional NBT as string for complex items
+        @Nullable String nbtTag, // Optional NBT as string for complex items
         java.util.List<EnchantmentData> enchantments,
-        String potionId // For potion items
+        @Nullable String potionId // For potion items
     ) {
         // Constructor for backwards compatibility
         public KitItem(String itemId, int count, String nbtTag) {

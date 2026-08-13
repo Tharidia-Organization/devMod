@@ -1,5 +1,6 @@
 package com.devmod.arena.registry;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -189,8 +190,8 @@ public class StructureNbtLoader {
         return entities.size();
     }
 
-    public record LoadResult(boolean ok, String errorCode, String message, CompoundTag tag, int blockCount, int entityCount) {
-        public static LoadResult success(CompoundTag tag, int blockCount, int entityCount) {
+    public record LoadResult(boolean ok, @Nullable String errorCode, @Nullable String message, @Nullable CompoundTag tag, int blockCount, int entityCount) {
+        public static LoadResult success(@Nullable CompoundTag tag, int blockCount, int entityCount) {
             return new LoadResult(true, null, null, tag, blockCount, entityCount);
         }
 

@@ -1,5 +1,6 @@
 package com.devmod.actions.domains;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -510,7 +511,7 @@ public final class UiDomainRegistrar implements DomainRegistrar {
 
     private static ActionSpec spec(String id, ActionCategory category, ActionType type,
                                     String labelKey, String descKey, String icon,
-                                    String menuPath, boolean isToggle, String preconditionRef) {
+                                    String menuPath, boolean isToggle, @Nullable String preconditionRef) {
         return ActionSpec.builder(id)
             .channel(ActionChannel.CLIENT)
             .category(category)

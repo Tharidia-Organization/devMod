@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -318,7 +319,7 @@ public class LeaderboardSystem {
      * Get a player's rank in a category.
      * @return 1-based rank, or -1 if not on board
      */
-    public int getPlayerRank(LeaderboardCategory category, UUID playerId, String arenaId) {
+    public int getPlayerRank(LeaderboardCategory category, UUID playerId, @Nullable String arenaId) {
         List<LeaderboardEntry> board = arenaId != null
             ? boards.get(category).get(arenaId)
             : globalBoards.get(category);
@@ -338,7 +339,7 @@ public class LeaderboardSystem {
     /**
      * Get a player's best score in a category.
      */
-    public long getPlayerBestScore(LeaderboardCategory category, UUID playerId, String arenaId) {
+    public long getPlayerBestScore(LeaderboardCategory category, UUID playerId, @Nullable String arenaId) {
         List<LeaderboardEntry> board = arenaId != null
             ? boards.get(category).get(arenaId)
             : globalBoards.get(category);

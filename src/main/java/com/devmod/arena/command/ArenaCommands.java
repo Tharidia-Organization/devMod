@@ -116,8 +116,8 @@ public class ArenaCommands {
             Path templatesDirectory,
             TemplateArenaBuilder arenaBuilder,
             @Nullable Supplier<com.devmod.arena.config.ArenaTemplateConfig.ConfigSnapshot> configSnapshotSupplier,
-            ForceTemplateCapability forceTemplateCapability,
-            TemplateRegistryBootstrap bootstrap) {
+            @Nullable ForceTemplateCapability forceTemplateCapability,
+            @Nullable TemplateRegistryBootstrap bootstrap) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.permissions = ArenaCommandPermissions.getInstance();
         this.audit = ArenaCommandAudit.getInstance();
@@ -1266,7 +1266,7 @@ public class ArenaCommands {
         return builder.buildFuture();
     }
 
-    private void logCommand(CommandSourceStack src, String command, String args) {
+    private void logCommand(CommandSourceStack src, String command, @Nullable String args) {
         String fullCommand = "arena " + command + (args != null ? " " + args : "");
         if (src.getEntity() instanceof ServerPlayer player) {
             audit.logSecurityEvent("COMMAND", player.getUUID(), fullCommand);

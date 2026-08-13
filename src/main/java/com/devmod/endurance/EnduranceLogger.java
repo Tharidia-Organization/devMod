@@ -67,7 +67,7 @@ public final class EnduranceLogger {
      * Log a phase transition with full context.
      */
     @FormatMethod
-    public static void phase(Phase phase, ServerPlayer player, @Nullable UUID questId, @FormatString String format, Object... args) {
+    public static void phase(Phase phase, @Nullable ServerPlayer player, @Nullable UUID questId, @FormatString String format, Object... args) {
         long seq = SEQUENCE_COUNTER.incrementAndGet();
         String playerName = player != null ? player.getName().getString() : "?";
         String questStr = questId != null ? questId.toString().substring(0, 8) : "no-quest";
@@ -94,7 +94,7 @@ public final class EnduranceLogger {
      * Log wave-specific events with wave context.
      */
     @FormatMethod
-    public static void wave(Phase phase, ServerPlayer player, UUID questId, int wave, int totalWaves, @FormatString String format, Object... args) {
+    public static void wave(Phase phase, @Nullable ServerPlayer player, UUID questId, int wave, int totalWaves, @FormatString String format, Object... args) {
         long seq = SEQUENCE_COUNTER.incrementAndGet();
         String playerName = player != null ? player.getName().getString() : "?";
         String questStr = questId.toString().substring(0, 8);

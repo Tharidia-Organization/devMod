@@ -1,5 +1,6 @@
 package com.devmod.arena.autosmoke;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -190,7 +191,7 @@ public class AutosmokeExceptions {
      */
     public record ExceptionEntry(
         ExceptionCategory category,
-        String assertionName,
+        @Nullable String assertionName,
         String reason
     ) {
         @Override

@@ -1,5 +1,6 @@
 package com.devmod.endurance.nutrition;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -101,7 +102,7 @@ public class NutritionSession {
      * @param questId the quest UUID
      * @param initialValues initial diet values (6 categories)
      */
-    public NutritionSession(@Nonnull UUID playerId, @Nonnull UUID questId, float[] initialValues) {
+    public NutritionSession(@Nonnull UUID playerId, @Nonnull UUID questId, @Nullable float[] initialValues) {
         this.playerId = playerId;
         this.questId = questId;
         this.startTimeMs = System.currentTimeMillis();

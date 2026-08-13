@@ -1,5 +1,6 @@
 package com.devmod.runtime.environment;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -193,7 +194,7 @@ public class TimeController {
     public record TimeSettings(
         long fixedTime,
         boolean frozen,
-        ZoneEnvironment.TimeConfig config
+        @Nullable ZoneEnvironment.TimeConfig config
     ) {
         /**
          * Gets the time as a string for display.

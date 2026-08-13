@@ -1,5 +1,6 @@
 package com.devmod.arena.alert;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -46,7 +47,7 @@ public class WebhookAlertChannel implements AlertRouter.AlertChannel {
      * @param timeoutMs Connection/read timeout in milliseconds
      * @param authHeader Optional Authorization header value (e.g., "Bearer token")
      */
-    public WebhookAlertChannel(String id, String webhookUrl, boolean critical, int timeoutMs, String authHeader) {
+    public WebhookAlertChannel(String id, String webhookUrl, boolean critical, int timeoutMs, @Nullable String authHeader) {
         this.id = Objects.requireNonNull(id, "id");
         this.webhookUrl = Objects.requireNonNull(webhookUrl, "webhookUrl");
         this.critical = critical;

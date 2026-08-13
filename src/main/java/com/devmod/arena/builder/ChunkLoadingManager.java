@@ -1,5 +1,6 @@
 package com.devmod.arena.builder;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.LockSupport;
@@ -232,7 +233,7 @@ public class ChunkLoadingManager {
     public record ChunkLoadResult(
         boolean success,
         Set<Long> loadedChunks,
-        String errorMessage,
+        @Nullable String errorMessage,
         int failedChunkX,
         int failedChunkZ
     ) {

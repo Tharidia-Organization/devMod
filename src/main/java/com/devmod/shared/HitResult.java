@@ -1,5 +1,6 @@
 package com.devmod.shared;
 
+import javax.annotation.Nullable;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -8,7 +9,7 @@ import net.minecraft.world.phys.Vec3;
  * <p>Extracted from {@code combat.HitHelper} to break circular dependencies
  * between the combat, damage, and collision packages.
  */
-public record HitResult(BodyPart part, Vec3 hitPoint) {
+public record HitResult(BodyPart part, @Nullable Vec3 hitPoint) {
 
     public static HitResult of(BodyPart part, Vec3 hitPoint) {
         return new HitResult(part, hitPoint);

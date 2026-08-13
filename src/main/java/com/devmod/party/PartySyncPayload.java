@@ -23,7 +23,7 @@ public record PartySyncPayload(
     List<PartyMemberInfo> members,
     int questTypeOrdinal,
     int stateOrdinal,
-    UUID instanceId,         // null (zero UUID) if not in quest
+    @Nullable UUID instanceId,         @Nullable // null (zero UUID) if not in quest
     String selectedMobId     // ResourceLocation as string (e.g., "minecraft:zombie"), empty if not set
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
@@ -266,8 +266,8 @@ public record PartySyncPayload(
      * @return The sync payload
      */
     public static PartySyncPayload fromParty(PartyData party, java.util.function.Predicate<UUID> onlineChecker,
-                                             java.util.function.Predicate<UUID> spectatorChecker,
-                                             java.util.function.Predicate<UUID> readyChecker) {
+                                             @Nullable java.util.function.Predicate<UUID> spectatorChecker,
+                                             @Nullable java.util.function.Predicate<UUID> readyChecker) {
         List<PartyMemberInfo> memberInfos = new ArrayList<>();
 
         for (UUID memberId : party.getMembers()) {

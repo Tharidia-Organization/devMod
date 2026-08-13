@@ -1,5 +1,6 @@
 package com.devmod.arena.override;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
@@ -66,7 +67,7 @@ public class ForceTemplateCapability {
      */
     public record CapabilityResult(
         boolean allowed,
-        String templateId,
+        @Nullable String templateId,
         String reason,
         Optional<ForceSession> session
     ) {

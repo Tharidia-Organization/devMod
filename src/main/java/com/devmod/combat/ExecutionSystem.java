@@ -417,7 +417,7 @@ public class ExecutionSystem {
     /**
      * Complete an execution successfully.
      */
-    private void completeExecution(ServerPlayer player, Mob target) {
+    private void completeExecution(ServerPlayer player, @Nullable Mob target) {
         UUID playerId = requirePlayerId(player);
         activeExecutions.remove(playerId);
 

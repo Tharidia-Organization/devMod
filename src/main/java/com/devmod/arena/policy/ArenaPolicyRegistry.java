@@ -843,7 +843,7 @@ public class ArenaPolicyRegistry {
             }
         }
 
-        private static String getString(com.google.gson.JsonObject obj, String key, String def) {
+        private static String getString(com.google.gson.JsonObject obj, String key, @Nullable String def) {
             return obj.has(key) && obj.get(key).isJsonPrimitive() && obj.get(key).getAsJsonPrimitive().isString()
                 ? obj.get(key).getAsString()
                 : def;

@@ -1,5 +1,6 @@
 package com.devmod.arena.spawn;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,7 +62,7 @@ public class SpawnSlotResolver {
             List<SpawnSlot> availableSlots,
             SpawnSlotConstraints constraints,
             List<ForbiddenZone> forbiddenZones,
-            BlockGetter level) {
+            @Nullable BlockGetter level) {
 
         this.availableSlots = new ArrayList<>(availableSlots);
         this.constraints = constraints;

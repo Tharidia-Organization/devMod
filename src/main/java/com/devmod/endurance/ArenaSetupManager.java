@@ -1013,7 +1013,7 @@ class ArenaSetupManager {
         return error.getPlayerMessage();
     }
 
-    private void emitSpawnStrategyTelemetry(String templateId, String strategy, int slots, Double radius) {
+    private void emitSpawnStrategyTelemetry(String templateId, String strategy, int slots, @Nullable Double radius) {
         if (arenaTelemetry == null) {
             return;
         }

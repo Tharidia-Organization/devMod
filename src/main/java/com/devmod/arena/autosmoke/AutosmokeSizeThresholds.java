@@ -1,5 +1,6 @@
 package com.devmod.arena.autosmoke;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -53,7 +54,7 @@ public class AutosmokeSizeThresholds {
         Duration actualRollbackTime,
         int actualBlocks,
         int actualEntities,
-        String failureReason
+        @Nullable String failureReason
     ) {
         public static ThresholdResult pass(String templateId, TemplateSize size, SizeThreshold threshold,
                 Duration buildTime, Duration rollbackTime, int blocks, int entities) {

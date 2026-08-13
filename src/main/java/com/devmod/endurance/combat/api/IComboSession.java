@@ -1,5 +1,6 @@
 package com.devmod.endurance.combat.api;
 
+import javax.annotation.Nullable;
 import java.util.UUID;
 
 import com.devmod.endurance.ComboSystem.ActionType;
@@ -181,7 +182,7 @@ public interface IComboSession {
     record ActionAnnouncement(
         ActionType action,
         int styleEarned,
-        StyleRank newRank,
+        @Nullable StyleRank newRank,
         long timestamp
     ) {
         public boolean isRankUp() {

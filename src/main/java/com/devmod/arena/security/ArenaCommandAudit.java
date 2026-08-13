@@ -1,5 +1,6 @@
 package com.devmod.arena.security;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -45,7 +46,7 @@ public class ArenaCommandAudit {
      * @param success Whether the command succeeded
      */
     public void log(UUID playerId, String playerName, ArenaCommandPermissions.CommandCategory category,
-                    String command, String arenaId, boolean success) {
+                    String command, @Nullable String arenaId, boolean success) {
         if (!enabled) {
             return;
         }
@@ -174,7 +175,7 @@ public class ArenaCommandAudit {
      * @param playerId The involved player
      * @param details Details of the event
      */
-    public void logSecurityEvent(String event, UUID playerId, String details) {
+    public void logSecurityEvent(String event, @Nullable UUID playerId, String details) {
         if (!enabled) {
             return;
         }

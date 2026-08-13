@@ -1,10 +1,11 @@
 package com.devmod.arena.policy;
 
+import javax.annotation.Nullable;
 import com.devmod.arena.registry.ArenaTemplate;
 
 public class VersionCompatibilityChecker {
 
-    public record VersionCheck(boolean compatible, String reason) {
+    public record VersionCheck(boolean compatible, @Nullable String reason) {
         public static VersionCheck ok() {
             return new VersionCheck(true, null);
         }

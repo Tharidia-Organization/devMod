@@ -1,5 +1,6 @@
 package com.devmod.arena.registry;
 
+import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -621,7 +622,7 @@ public final class SchemaValidator {
         }
     }
 
-    private static String getString(JsonObject obj, String key, String def) {
+    private static String getString(JsonObject obj, String key, @Nullable String def) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull()) return def;
         try {
             return obj.get(key).getAsString();

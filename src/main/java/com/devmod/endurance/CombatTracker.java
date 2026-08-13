@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -111,7 +112,7 @@ public class CombatTracker implements QuestLifecycleListener {
             recordDamageDealt(damage, weapon, source, bodyPart, null);
         }
 
-        public void recordDamageDealt(float damage, ItemStack weapon, DamageSource source, String bodyPart, UUID attackerId) {
+        public void recordDamageDealt(float damage, ItemStack weapon, DamageSource source, String bodyPart, @Nullable UUID attackerId) {
             // Cap damage to prevent Float.MAX_VALUE or overflow from corrupting analytics
             float cappedDamage = Math.min(damage, 10000f);
 
@@ -158,7 +159,7 @@ public class CombatTracker implements QuestLifecycleListener {
             recordCriticalHit(damage, weapon, null);
         }
 
-        public void recordCriticalHit(float damage, ItemStack weapon, UUID attackerId) {
+        public void recordCriticalHit(float damage, ItemStack weapon, @Nullable UUID attackerId) {
             criticalHits++;
             if (currentWaveStats != null) {
                 currentWaveStats.criticalHits++;
@@ -181,7 +182,7 @@ public class CombatTracker implements QuestLifecycleListener {
             recordDamageTaken(damage, source, null);
         }
 
-        public void recordDamageTaken(float damage, DamageSource source, UUID victimId) {
+        public void recordDamageTaken(float damage, DamageSource source, @Nullable UUID victimId) {
             // Cap damage to prevent Float.MAX_VALUE from /kill or similar commands
             // polluting the analytics with Infinity values
             float cappedDamage = Math.min(damage, 10000f);
@@ -253,7 +254,7 @@ public class CombatTracker implements QuestLifecycleListener {
             recordDeath(null);
         }
 
-        public void recordDeath(UUID victimId) {
+        public void recordDeath(@Nullable UUID victimId) {
             deaths++;
             if (currentWaveStats != null) {
                 currentWaveStats.deaths++;

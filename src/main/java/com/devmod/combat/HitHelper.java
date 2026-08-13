@@ -48,7 +48,7 @@ public final class HitHelper {
      *             Kept as type alias for backwards compatibility.
      */
     @Deprecated
-    public record HitResult(BodyPart part, Vec3 hitPoint) {
+    public record HitResult(BodyPart part, @Nullable Vec3 hitPoint) {
         public static HitResult of(BodyPart part, Vec3 hitPoint) {
             return new HitResult(part, hitPoint);
         }

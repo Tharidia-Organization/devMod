@@ -1,5 +1,6 @@
 package com.devmod.arena.policy;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -383,7 +384,7 @@ public class PolicyResolver implements AutoCloseable {
     }
 
     private void emitVersionMismatch(String policyId, String templateId, String reason, int templateVersion,
-                                     Integer minTemplateVersion, Integer maxTemplateVersion) {
+                                     @Nullable Integer minTemplateVersion, @Nullable Integer maxTemplateVersion) {
         telemetry.emit("arena.policy.version_mismatch", Map.of(
             "policyId", policyId,
             "templateId", templateId != null ? templateId : "",

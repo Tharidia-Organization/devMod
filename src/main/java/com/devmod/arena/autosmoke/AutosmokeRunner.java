@@ -1,5 +1,6 @@
 package com.devmod.arena.autosmoke;
 
+import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -740,7 +741,7 @@ public class AutosmokeRunner {
         boolean passed,
         Duration duration,
         String thresholdMode,
-        String errorMessage,
+        @Nullable String errorMessage,
         int rollbackCount,
         int entitiesResidual,
         int blocksResidual

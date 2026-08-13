@@ -1,5 +1,6 @@
 package com.devmod.arena.builder;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -45,7 +46,7 @@ public class BuildTransaction {
     public record BlockState(
         long packedPos,
         int stateId,
-        String nbtData // nullable, for block entities
+        @Nullable String nbtData // nullable, for block entities
     ) {
         public BlockState(long packedPos, int stateId) {
             this(packedPos, stateId, null);

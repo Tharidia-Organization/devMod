@@ -1,5 +1,6 @@
 package com.devmod.actions.client;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,7 +27,7 @@ public final class ClientActionContexts {
         return buildContext(origin, payload);
     }
 
-    private static ActionContext buildContext(ActionOrigin origin, Object payload) {
+    private static ActionContext buildContext(ActionOrigin origin, @Nullable Object payload) {
         Minecraft mc = Minecraft.getInstance();
         ActionContext.Builder builder = ActionContext.builder(origin)
             .player(mc.player)

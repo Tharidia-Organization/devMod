@@ -1,4 +1,5 @@
 package com.devmod.endurance;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -527,7 +528,7 @@ public class EnduranceQuestManager {
         EnduranceQuest t = questTemplates.get(mobId); return t == null ? Optional.empty() : Optional.of(new EnduranceQuest(t.getMobConfig(), questId));
     }
 
-    public record PreparedArenaResult(boolean success, String errorMessage, ArenaContext arena, @javax.annotation.Nullable ArenaHandle handle, ResourceLocation mobId, EnduranceQuestRegistry.MobQuestConfig mobConfig, @javax.annotation.Nullable UUID instanceId) {
+    public record PreparedArenaResult(boolean success, @Nullable String errorMessage, @Nullable ArenaContext arena, @javax.annotation.Nullable ArenaHandle handle, @Nullable ResourceLocation mobId, @Nullable EnduranceQuestRegistry.MobQuestConfig mobConfig, @javax.annotation.Nullable UUID instanceId) {
         public static PreparedArenaResult success(ArenaContext arena, @javax.annotation.Nullable ArenaHandle handle, ResourceLocation mobId, EnduranceQuestRegistry.MobQuestConfig mobConfig, @javax.annotation.Nullable UUID instanceId) { return new PreparedArenaResult(true, null, arena, handle, mobId, mobConfig, instanceId); }
         public static PreparedArenaResult failure(String message) { return new PreparedArenaResult(false, message, null, null, null, null, null); }
     }
@@ -830,7 +831,7 @@ public class EnduranceQuestManager {
         public String resolveKitId(@javax.annotation.Nullable UUID playerId) { if (playerId != null && partyKitIds != null) { String kit = partyKitIds.get(playerId); if (kit != null && !kit.isBlank()) return kit; } return kitId != null ? kitId : "STARTER"; }
     }
 
-    public record StartQuestResult(boolean success, String message, ActiveQuestSession session) {}
+    public record StartQuestResult(boolean success, String message, @Nullable ActiveQuestSession session) {}
 
     public static class ActiveQuestSession {
         public enum LifecycleState { INITIALIZING, PREPARING, TELEPORTING, ACTIVE, AWAITING_RESPAWN, CLEANUP, COMPLETED, FAILED }
@@ -887,7 +888,7 @@ public class EnduranceQuestManager {
         private final Map<String, String> configOverrides = new HashMap<>();
         private @javax.annotation.Nullable com.devmod.endurance.config.EnduranceMobPoolConfig mobPoolConfig;
 
-        public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaContext arena, long startTime) { this.playerId = playerId; this.quest = quest; this.arena = arena; this.startTime = startTime; }
+        public ActiveQuestSession(UUID playerId, EnduranceQuest quest, @Nullable ArenaContext arena, long startTime) { this.playerId = playerId; this.quest = quest; this.arena = arena; this.startTime = startTime; }
         public ActiveQuestSession(UUID playerId, EnduranceQuest quest, ArenaContext arena, long startTime, UUID partyId, QuestType questType, int playerCount) { this.playerId = playerId; this.quest = quest; this.arena = arena; this.startTime = startTime; this.partyId = partyId; this.questType = questType; this.playerCount = Math.max(1, playerCount); }
         public UUID getPlayerId() { return playerId; }
         public EnduranceQuest getQuest() { return quest; }

@@ -1,5 +1,6 @@
 package com.devmod.endurance.config;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +71,7 @@ public final class ConfigProposalManager {
      * @param reason Optional reason for the change
      * @return The proposal ID, or null if rejected
      */
-    public UUID submitProposal(ServerPlayer player, List<EnduranceConfigSyncPayload.ConfigEntry> entries, String reason) {
+    public UUID submitProposal(ServerPlayer player, List<EnduranceConfigSyncPayload.ConfigEntry> entries, @Nullable String reason) {
         if (entries == null || entries.isEmpty()) {
             return null;
         }
@@ -184,7 +185,7 @@ public final class ConfigProposalManager {
      * @param reason Optional reason for the change
      * @return The proposal ID, or null if rejected
      */
-    public UUID submitMobConfigProposal(ServerPlayer player, EnduranceMobConfigSyncPayload payload, String reason) {
+    public UUID submitMobConfigProposal(ServerPlayer player, EnduranceMobConfigSyncPayload payload, @Nullable String reason) {
         if (payload == null || payload.mobEntries().isEmpty()) {
             return null;
         }

@@ -801,7 +801,7 @@ public class PartyManager {
         @Nullable UUID partyId,
         @Nullable UUID senderId
     ) {
-        public static ResponseResult success(UUID partyId, UUID senderId) {
+        public static ResponseResult success(@Nullable UUID partyId, UUID senderId) {
             return new ResponseResult(true, null, partyId, senderId);
         }
         public static ResponseResult failure(String error) {

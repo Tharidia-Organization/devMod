@@ -228,12 +228,12 @@ public final class TemplateChecksum {
      */
     public record ValidationResult(
         boolean valid,
-        String computedChecksum,
+        @Nullable String computedChecksum,
         @Nullable String expectedChecksum,
         @Nullable String templateId,
         @Nullable String errorMessage
     ) {
-        public static ValidationResult success(ArenaTemplate template, String expected) {
+        public static ValidationResult success(ArenaTemplate template, @Nullable String expected) {
             String computed = compute(template);
             return new ValidationResult(true, computed, expected, template.id(), null);
         }

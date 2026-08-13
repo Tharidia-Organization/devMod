@@ -1,5 +1,6 @@
 package com.devmod.endurance;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -153,17 +154,17 @@ public class PerkSystem implements QuestLifecycleListener {
         private final Consumer<PerkContext> onDamageTaken;
 
         public Perk(String id, String name, String description, PerkTier tier, PerkCategory category,
-                    boolean stackable, int maxStacks, Consumer<PerkContext> onAcquire) {
+                    boolean stackable, int maxStacks, @Nullable Consumer<PerkContext> onAcquire) {
             this(id, name, description, tier, category, null, stackable, maxStacks,
                 Set.of(), Set.of(), onAcquire, null, null, null, null);
         }
 
         public Perk(String id, String name, String description, PerkTier tier, PerkCategory category,
-                    String iconPath, boolean stackable, int maxStacks,
+                    @Nullable String iconPath, boolean stackable, int maxStacks,
                     Set<String> requiredPerks, Set<String> incompatiblePerks,
-                    Consumer<PerkContext> onAcquire, Consumer<PerkContext> onTick,
-                    Consumer<PerkContext> onHit, Consumer<PerkContext> onKill,
-                    Consumer<PerkContext> onDamageTaken) {
+                    Consumer<PerkContext> onAcquire, @Nullable Consumer<PerkContext> onTick,
+                    @Nullable Consumer<PerkContext> onHit, @Nullable Consumer<PerkContext> onKill,
+                    @Nullable Consumer<PerkContext> onDamageTaken) {
             this.id = id;
             this.name = name;
             this.description = description;

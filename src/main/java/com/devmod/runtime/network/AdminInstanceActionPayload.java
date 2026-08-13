@@ -19,7 +19,7 @@ import com.devmod.network.PayloadValidation;
  */
 public record AdminInstanceActionPayload(
     ActionType action,
-    UUID instanceId,
+    @Nullable UUID instanceId,
     @Nullable UUID playerId
 ) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 

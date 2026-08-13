@@ -1,5 +1,6 @@
 package com.devmod.arena.alert;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -49,7 +50,7 @@ public class DiscordAlertChannel implements AlertRouter.AlertChannel {
      * @param mentionRole Role ID to mention on ERROR severity (optional, e.g., "123456789")
      */
     public DiscordAlertChannel(String id, String webhookUrl, boolean critical, int timeoutMs,
-                                String username, String avatarUrl, String mentionRole) {
+                                String username, @Nullable String avatarUrl, @Nullable String mentionRole) {
         this.id = Objects.requireNonNull(id, "id");
         this.webhookUrl = Objects.requireNonNull(webhookUrl, "webhookUrl");
         this.critical = critical;

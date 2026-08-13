@@ -1,5 +1,6 @@
 package com.devmod.arena.builder;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class AsyncArenaBuilder {
             ArenaBuilder.BlockPlacer blockPlacer,
             Supplier<Double> msptSupplier,
             BackpressureManager backpressure,
-            ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
+            @Nullable ArenaTemplateConfig.ConfigSnapshot configSnapshot) {
         this.telemetry = telemetry;
         this.blockPlacer = blockPlacer;
         this.msptSupplier = msptSupplier;
@@ -278,7 +279,7 @@ public class AsyncArenaBuilder {
         return cancelBuild(arenaId, null, "user-requested");
     }
 
-    public boolean cancelBuild(UUID arenaId, UUID cancelledBy, String reason) {
+    public boolean cancelBuild(UUID arenaId, @Nullable UUID cancelledBy, String reason) {
         AsyncBuild build = buildsByArenaId.remove(arenaId);
         if (build != null) {
             activeBuildQueue.remove(build);
@@ -442,7 +443,7 @@ public class AsyncArenaBuilder {
         return blocksPlaced;
     }
 
-    private void completeBuild(AsyncBuild build, Exception error) {
+    private void completeBuild(AsyncBuild build, @Nullable Exception error) {
         buildsByArenaId.remove(build.arenaId);
         DiagnosticLogger.arena("completeBuild: arenaId=%s, template=%s, success=%s, blocks=%d, durationMs=%d",
             build.arenaId, build.template.id(), error == null,
