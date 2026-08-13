@@ -13,6 +13,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -1039,8 +1040,11 @@ public class DuckDBBatchWriter {
         if (!queue.offer(values)) {
             boolean enqueued = false;
             if (priority == EventPriority.CRITICAL) {
-                // For critical events, attempt an immediate flush to free space and retry once.
-                flushTable(tableName);
+                // Ask the writer thread to drain, then retry. Never flush inline:
+                // queueInsert runs on the server thread from damage/death events,
+                // and flushTable blocks on the DB connection lock (up to
+                // CONNECTION_TIMEOUT_SECONDS), which would stall the tick loop.
+                scheduleFlush(tableName);
                 enqueued = queue.offer(values);
                 if (!enqueued) {
                     try {
@@ -1062,8 +1066,24 @@ public class DuckDBBatchWriter {
         } else {
             // Check if batch size reached for immediate flush
             if (queue.size() >= DuckDBConfig.BATCH_SIZE) {
-                scheduler.execute(() -> flushTable(tableName));
+                scheduleFlush(tableName);
             }
+        }
+    }
+
+    /**
+     * Hand a flush to the writer thread, tolerating a concurrent shutdown.
+     *
+     * <p>{@code running} is cleared before {@code scheduler.shutdown()}, so a
+     * caller that passed the running check can still arrive here after the
+     * executor closed. Rejection is expected there and must not propagate into
+     * the server tick loop.
+     */
+    private void scheduleFlush(String tableName) {
+        try {
+            scheduler.execute(() -> flushTable(tableName));
+        } catch (RejectedExecutionException e) {
+            LOGGER.debug("[DuckDB] Flush of {} rejected, writer is shutting down", tableName);
         }
     }
 

@@ -646,12 +646,53 @@ public class TelemetryDashboardServer {
             return gson.toJson(Map.of("error", "Missing 'sql' parameter"));
         }
 
-        // Security: only allow SELECT queries
-        if (!sql.trim().toUpperCase(Locale.ROOT).startsWith("SELECT")) {
-            return gson.toJson(Map.of("error", "Only SELECT queries are allowed"));
+        String rejection = rejectUnsafeQuery(sql);
+        if (rejection != null) {
+            return gson.toJson(Map.of("error", rejection));
         }
 
         return gson.toJson(executeQuery(sql));
+    }
+
+    /**
+     * DuckDB table functions that reach outside the telemetry database.
+     *
+     * <p>A bare "must start with SELECT" check is not enough: DuckDB exposes
+     * file-reading table functions, so {@code SELECT * FROM read_text('/etc/passwd')}
+     * is a valid SELECT that exfiltrates arbitrary local files.
+     */
+    private static final List<String> FORBIDDEN_SQL_FUNCTIONS = List.of(
+        "read_text", "read_csv", "read_json", "read_parquet", "read_blob",
+        "glob", "attach", "install", "load", "copy"
+    );
+
+    /**
+     * Returns an error message when the query must not run, or null when it is safe.
+     */
+    @Nullable
+    private String rejectUnsafeQuery(String sql) {
+        String normalized = sql.trim().toUpperCase(Locale.ROOT);
+
+        if (!normalized.startsWith("SELECT")) {
+            return "Only SELECT queries are allowed";
+        }
+
+        // Strip the trailing semicolon a client may legitimately send, then
+        // refuse anything that chains a second statement.
+        String withoutTrailing = normalized.endsWith(";")
+            ? normalized.substring(0, normalized.length() - 1)
+            : normalized;
+        if (withoutTrailing.contains(";")) {
+            return "Only a single statement is allowed";
+        }
+
+        for (String forbidden : FORBIDDEN_SQL_FUNCTIONS) {
+            if (withoutTrailing.contains(forbidden.toUpperCase(Locale.ROOT) + "(")) {
+                return "Query uses a forbidden function: " + forbidden;
+            }
+        }
+
+        return null;
     }
 
     // ========== Query Helpers ==========
@@ -1237,8 +1278,12 @@ public class TelemetryDashboardServer {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // CORS headers
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            // CORS: the server listens on loopback, so a wildcard origin let any
+            // page the user happened to visit read the whole telemetry database
+            // with a simple cross-origin fetch. Only the dashboard's own origin
+            // is allowed.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin",
+                "http://127.0.0.1:" + port);
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
             exchange.getResponseHeaders().add("Content-Type", "application/json");

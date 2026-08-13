@@ -149,7 +149,10 @@ public class DuckDBTelemetryService {
         if (!initialized) return;
 
         LOGGER.info("[DuckDB] Shutting down DuckDB telemetry...");
-        enabled = false;
+
+        // Stay enabled until every flush below has been written: the aggregator
+        // registry drops its events when isEnabled() is false, so clearing the
+        // flag first discarded every shutdown flush.
 
         // Shutdown aggregation registry first (flushes all player aggregators)
         if (AggregationConfig.AGGREGATION_ENABLED) {
@@ -161,6 +164,8 @@ public class DuckDBTelemetryService {
             batchWriter.shutdown();
             batchWriter = null;
         }
+
+        enabled = false;
 
         // Shutdown connection manager
         if (connectionManager != null) {

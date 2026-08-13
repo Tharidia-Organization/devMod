@@ -375,9 +375,9 @@ public class TelemetryAggregator {
     /**
      * Clear quest context (called when quest ends).
      */
-    public void clearQuestContext() {
-        // Force flush quest data
-        forceFlush();
+    public List<AggregatedEvent> clearQuestContext() {
+        // Force flush quest data; the caller is responsible for persisting it.
+        List<AggregatedEvent> pending = forceFlush();
 
         this.questId = null;
 
@@ -386,6 +386,8 @@ public class TelemetryAggregator {
         combatWindow.setSessionId(sessionId);
         abilityWindow.setSessionId(sessionId);
         heatmapWindow.setSessionId(sessionId);
+
+        return pending;
     }
 
     // ============================================

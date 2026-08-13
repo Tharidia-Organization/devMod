@@ -218,7 +218,7 @@ public class TelemetryAggregatorRegistry {
 
         TelemetryAggregator agg = getAggregator(playerId);
         if (agg != null) {
-            agg.clearQuestContext();
+            writeAggregatedEvents(agg.clearQuestContext());
         }
     }
 
