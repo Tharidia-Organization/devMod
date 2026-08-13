@@ -160,20 +160,13 @@ public class NexusDimensionManager {
         }
 
         boolean hasPlayers = !level.players().isEmpty();
-        boolean shouldTick = switch (Config.NEXUS_TICK_MODE.get()) {
-            case ALWAYS -> true;
-            case PLAYERS_ONLY -> hasPlayers;
-            case THROTTLED -> hasPlayers || (tickCounter % Config.NEXUS_IDLE_TICK_INTERVAL.get() == 0);
-        };
-        if (!shouldTick) {
-            return;
-        }
 
-        try {
-            level.tick(() -> true);
-        } catch (Exception e) {
-            LOGGER.warn("[Nexus] Failed to tick dimension: {}", e.getMessage());
-        }
+        // The Nexus level is NOT ticked here. It is injected into
+        // MinecraftServer.levels, which is what vanilla tickChildren()
+        // iterates, so it is already ticked once per server tick. Calling
+        // level.tick() again ran every entity and block entity in the hub at
+        // double speed whenever the tick mode said to "tick" it — meaning the
+        // throttle settings had the opposite of their intended effect.
 
         if (hasPlayers && Config.NEXUS_AMBIENT_EFFECTS.get()) {
             int interval = Config.NEXUS_AMBIENT_PARTICLE_INTERVAL.get();

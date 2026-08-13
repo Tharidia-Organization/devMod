@@ -53,8 +53,7 @@ public class InstanceEventHandler {
         // Process pending teleports every tick
         InstanceManager.INSTANCE.tick();
 
-        // Force tick instance dimensions - they may not be ticked by vanilla server loop
-        tickInstanceDimensions(event.getServer());
+        logInstanceDiagnostics();
 
         // Process pending destructions periodically
         tickCounter++;
@@ -65,13 +64,14 @@ public class InstanceEventHandler {
     }
 
     /**
-     * Force tick all active instance dimensions.
-     * This ensures entities in dynamically created dimensions receive full ticks.
+     * Periodically logs instance counts.
      *
-     * NOTE: We call level.tick() because dynamically created dimensions may not
-     * be included in the server's normal tick loop.
+     * <p>Instance dimensions are not ticked here: DynamicDimensionManager
+     * injects them into MinecraftServer.levels, which is what vanilla
+     * tickChildren() iterates, so they already receive exactly one tick per
+     * server tick.
      */
-    private static void tickInstanceDimensions(MinecraftServer server) {
+    private static void logInstanceDiagnostics() {
         // Diagnostic: Log instance counts periodically (every 5 seconds)
         if (tickCounter == 0) {
             int activeCount = InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.ACTIVE).size();
@@ -83,22 +83,12 @@ public class InstanceEventHandler {
             }
         }
 
-        for (InstanceData instance : InstanceRegistry.INSTANCE.getInstancesByState(InstanceState.ACTIVE)) {
-            ResourceKey<Level> dimKey = instance.getDimensionKey();
-            if (dimKey != null) {
-                ServerLevel level = server.getLevel(dimKey);
-                if (level != null && !level.players().isEmpty()) {
-                    // Only tick if there are players in the dimension
-                    // This prevents double-ticking and issues during death/respawn
-                    try {
-                        level.tick(() -> true);
-                    } catch (Exception e) {
-                        LOGGER.warn("[InstanceEvents] Failed to tick instance dimension {}: {}",
-                            dimKey.location(), e.getMessage());
-                    }
-                }
-            }
-        }
+        // Instance dimensions are NOT ticked here. DynamicDimensionManager
+        // injects them into MinecraftServer.levels, which is exactly what
+        // vanilla tickChildren() iterates, so they are already ticked once per
+        // server tick. Ticking them again here ran every entity, block entity
+        // and scheduled tick in an occupied arena at double speed, which made
+        // wave timers, mob AI and cooldowns diverge from the overworld.
     }
 
     private static boolean isInstanceDimension(ResourceKey<Level> dimensionKey) {
