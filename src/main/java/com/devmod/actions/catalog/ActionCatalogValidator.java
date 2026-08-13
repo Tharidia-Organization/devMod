@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionPreconditionRegistry;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
 import com.devmod.actions.domains.HandlerRegistry;
 
@@ -35,6 +36,20 @@ public final class ActionCatalogValidator {
      */
     public static CatalogValidationReport validate(ActionCatalog catalog,
                                                     @Nullable HandlerRegistry handlerRegistry) {
+        return validate(catalog, handlerRegistry, ActionPreconditionRegistry.createDefault());
+    }
+
+    /**
+     * Runs all validation rules against the catalog and returns a report.
+     *
+     * @param catalog         the catalog to validate
+     * @param handlerRegistry optional handler registry for handler-ref validation (may be null)
+     * @param preconditions   optional registry for precondition-ref validation (may be null)
+     * @return validation report with all violations
+     */
+    public static CatalogValidationReport validate(ActionCatalog catalog,
+                                                    @Nullable HandlerRegistry handlerRegistry,
+                                                    @Nullable ActionPreconditionRegistry preconditions) {
         Objects.requireNonNull(catalog, "catalog");
         List<Violation> violations = new ArrayList<>();
 
@@ -48,6 +63,10 @@ public final class ActionCatalogValidator {
 
         if (handlerRegistry != null) {
             checkHandlerRefs(allSpecs, handlerRegistry, violations);
+        }
+
+        if (preconditions != null) {
+            checkPreconditionRefs(allSpecs, preconditions, violations);
         }
 
         return new CatalogValidationReport(violations);
@@ -141,6 +160,26 @@ public final class ActionCatalogValidator {
                 violations.add(new Violation(
                     Severity.ERROR, "handlerRef",
                     "No handler registered for action: " + spec.id(), spec.id()));
+            }
+        }
+    }
+
+    /**
+     * Validates that every declared precondition ref can actually be evaluated.
+     *
+     * <p>ERROR rather than WARNING: the engine fails open on an unresolvable ref, so
+     * a typo here silently removes a gate rather than breaking anything visibly.
+     */
+    private static void checkPreconditionRefs(Collection<ActionSpec> specs,
+                                               ActionPreconditionRegistry preconditions,
+                                               List<Violation> violations) {
+        for (ActionSpec spec : specs) {
+            String ref = spec.policyMeta().preconditionRef();
+            if (!preconditions.canResolve(ref)) {
+                violations.add(new Violation(
+                    Severity.ERROR, "preconditionRef",
+                    "Unresolvable preconditionRef '" + ref + "' for action: " + spec.id(),
+                    spec.id()));
             }
         }
     }

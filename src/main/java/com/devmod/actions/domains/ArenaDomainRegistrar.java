@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
@@ -122,7 +121,7 @@ public final class ArenaDomainRegistrar implements DomainRegistrar {
                 ActionIds.ARENA_CREATE, ActionIds.ARENA_TEMPLATE_INFO,
                 ActionIds.ARENA_VALIDATE, ActionIds.ARENA_FORCE,
                 ActionIds.ARENA_METRICS)) {
-            registry.register(id, context -> ActionRegistry.invoke(id, context));
+            registry.registerResult(id, ActionHandler.delegatingToV1(id));
         }
     }
 

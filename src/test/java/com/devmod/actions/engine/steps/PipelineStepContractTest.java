@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Test;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionPrecondition;
+import com.devmod.actions.ActionPreconditionRegistry;
+import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionResult;
 import com.devmod.actions.catalog.ActionCatalog;
 import com.devmod.actions.catalog.ActionSpec;
@@ -311,20 +314,65 @@ class PipelineStepContractTest {
         }
 
         @Test
-        @DisplayName("unknown preconditionRef passes gracefully")
+        @DisplayName("unresolvable preconditionRef fails open at runtime")
         void unknownRefPasses() {
             PreconditionStep step = new PreconditionStep();
-            ActionSpec spec = ActionSpec.builder("devmod.ui.test")
-                .channel(ActionChannel.CLIENT)
-                .category(ActionCategory.UI)
-                .ui("label", "desc")
-                .policy(false, 0, "some_unknown_ref")
-                .build();
+            ActionSpec spec = specWithPrecondition("some_unknown_ref");
 
             ExecutionContext ctx = ctxWith("devmod.ui.test", radialContext);
             ctx.setResolvedSpec(spec);
             StepResult result = step.process(ctx);
+            // Deliberate fail-open: an unresolvable ref must not take the action down.
+            // ActionCatalogValidator's "preconditionRef" ERROR rule is what stops one
+            // from reaching production - see ActionCatalogTest.
             assertTrue(result.shouldContinue());
+        }
+
+        @Test
+        @DisplayName("resolvable preconditionRef that passes lets the action through")
+        void satisfiedRefContinues() {
+            PreconditionStep step = new PreconditionStep(
+                Map.of("alwaysTrue", ActionPreconditions.always()));
+
+            ExecutionContext ctx = ctxWith("devmod.ui.test", radialContext);
+            ctx.setResolvedSpec(specWithPrecondition("alwaysTrue"));
+            StepResult result = step.process(ctx);
+
+            assertTrue(result.shouldContinue());
+            assertNull(ctx.result());
+        }
+
+        @Test
+        @DisplayName("resolvable preconditionRef that fails BLOCKs the action")
+        void unsatisfiedRefBlocks() {
+            ActionPrecondition never = ActionPreconditions.withMessage(
+                context -> false, "devmod.action.unavailable");
+            PreconditionStep step = new PreconditionStep(Map.of("neverTrue", never));
+
+            ExecutionContext ctx = ctxWith("devmod.ui.test", radialContext);
+            ctx.setResolvedSpec(specWithPrecondition("neverTrue"));
+            StepResult result = step.process(ctx);
+
+            assertTrue(result.isAbort());
+            assertNotNull(ctx.result());
+            assertTrue(ctx.result().isBlocked());
+            assertEquals(ActionResult.ERROR_PRECONDITION_FAILED, ctx.result().errorCode());
+        }
+
+        @Test
+        @DisplayName("permission-level refs resolve without being enumerated")
+        void parameterisedRefsResolve() {
+            ActionPreconditionRegistry registry = ActionPreconditionRegistry.empty();
+
+            assertNotNull(registry.resolve("requiresPermission2"));
+            assertNotNull(registry.resolve("requiresPermissionOrClient_2"));
+            assertTrue(registry.canResolve("requiresPermission4"));
+            // Out of the 0-4 range ActionSpec allows, and a mistyped separator
+            assertFalse(registry.canResolve("requiresPermission9"));
+            assertFalse(registry.canResolve("requiresPermission_2"));
+            // A null or empty ref means "no gate", which is always satisfiable
+            assertTrue(registry.canResolve(null));
+            assertTrue(registry.canResolve(""));
         }
 
         @Test
@@ -334,6 +382,15 @@ class PipelineStepContractTest {
             ExecutionContext ctx = ctxWith("devmod.test.action", radialContext);
             StepResult result = step.process(ctx);
             assertTrue(result.isAbort());
+        }
+
+        private ActionSpec specWithPrecondition(String ref) {
+            return ActionSpec.builder("devmod.ui.test")
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label", "desc")
+                .policy(false, 0, ref)
+                .build();
         }
     }
 

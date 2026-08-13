@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
@@ -134,7 +133,7 @@ public final class TestingDomainRegistrar implements DomainRegistrar {
                 ActionIds.TEST_DEBUGBOX, ActionIds.TEST_DEBUGCLEAR,
                 ActionIds.TEST_PANELCLEAR, ActionIds.TEST_INFO,
                 ActionIds.TEST_QA_OPEN, ActionIds.TEST_BODYPART_INFO)) {
-            registry.register(id, context -> ActionRegistry.invoke(id, context));
+            registry.registerResult(id, ActionHandler.delegatingToV1(id));
         }
     }
 

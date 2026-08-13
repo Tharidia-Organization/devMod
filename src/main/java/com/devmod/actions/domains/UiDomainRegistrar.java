@@ -683,13 +683,27 @@ public final class UiDomainRegistrar implements DomainRegistrar {
                 return;
             }
             if (config.forceTemplate()) {
-                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommandWithInt("arena force", templateId, 5));
+                runWizardCommand(context,
+                    com.devmod.actions.CommandSanitizer.buildTemplateCommandWithInt("arena force", templateId, 5));
             }
             if (config.dryRun()) {
-                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena validate", templateId));
+                runWizardCommand(context,
+                    com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena validate", templateId));
             } else {
-                context.executeCommand(com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena create", templateId));
+                runWizardCommand(context,
+                    com.devmod.actions.CommandSanitizer.buildTemplateCommand("arena create", templateId));
             }
         });
+    }
+
+    /**
+     * Runs a command issued from the wizard's confirm callback. This fires after the
+     * action's handler has already returned, so a refusal cannot travel back through
+     * the pipeline as a FAILED result - it has to be reported to the player here.
+     */
+    private static void runWizardCommand(ActionContext context, String command) {
+        if (!context.executeCommand(command)) {
+            context.sendFailure(Component.literal("Command was not executed: " + command));
+        }
     }
 }

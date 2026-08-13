@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
@@ -157,7 +156,7 @@ public final class AdminDomainRegistrar implements DomainRegistrar {
                 // Debug commands
                 ActionIds.DEBUG_COMMAND_HELP, ActionIds.DEBUG_COMMAND_LIST,
                 ActionIds.DEBUG_COMMAND_OFF, ActionIds.DEBUG_COMMAND_TOGGLE)) {
-            registry.register(id, context -> ActionRegistry.invoke(id, context));
+            registry.registerResult(id, ActionHandler.delegatingToV1(id));
         }
     }
 

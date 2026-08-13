@@ -170,6 +170,24 @@ public final class ShadowModeComparator {
      * @return the comparison result
      */
     public static ComparisonResult compare(String actionId, ActionResult v1Result, ActionResult v2Result) {
+        return compare(actionId, v1Result, v2Result, false);
+    }
+
+    /**
+     * Compares V1 and V2 results for the same action invocation.
+     *
+     * @param actionId the action ID that was invoked
+     * @param v1Result the result from the V1 pipeline
+     * @param v2Result the result from the V2 pipeline
+     * @param v2DryRun true if V2 stopped short of running its handler. Such a run can
+     *                 only speak to the gating decision, so V1's result is reduced to
+     *                 the same question - did the gates allow this? - and duration
+     *                 parity is not checked. Shadow mode therefore validates that the
+     *                 two engines authorize identically, not that they execute alike.
+     * @return the comparison result
+     */
+    public static ComparisonResult compare(String actionId, ActionResult v1Result,
+                                            ActionResult v2Result, boolean v2DryRun) {
         Objects.requireNonNull(actionId, "actionId");
         Objects.requireNonNull(v1Result, "v1Result");
         Objects.requireNonNull(v2Result, "v2Result");
@@ -182,16 +200,18 @@ public final class ShadowModeComparator {
 
         boolean verbose = EngineFeatureFlags.isShadowVerbose();
 
+        ActionResult v1Compared = v2DryRun ? toGateDecision(v1Result) : v1Result;
+
         // Check 1: Status mismatch
-        if (v1Result.status() != v2Result.status()) {
+        if (v1Compared.status() != v2Result.status()) {
             totalMismatches.incrementAndGet();
             stats.incrementMismatches();
 
-            MismatchType type = (v2Result.isFailed() && v1Result.isSuccess())
+            MismatchType type = (v2Result.isFailed() && v1Compared.isSuccess())
                 ? MismatchType.V2_EXCEPTION
                 : MismatchType.STATUS;
 
-            String detail = String.format("V1=%s, V2=%s", v1Result.status(), v2Result.status());
+            String detail = String.format("V1=%s, V2=%s", v1Compared.status(), v2Result.status());
             LOGGER.warn("[ShadowMode] Status mismatch for '{}': {}", actionId, detail);
 
             return ComparisonResult.mismatch(actionId, type, detail,
@@ -199,8 +219,8 @@ public final class ShadowModeComparator {
         }
 
         // Check 2: Error code mismatch (both BLOCKED)
-        if (v1Result.isBlocked() && v2Result.isBlocked()) {
-            if (!Objects.equals(v1Result.errorCode(), v2Result.errorCode())) {
+        if (v1Compared.isBlocked() && v2Result.isBlocked()) {
+            if (!Objects.equals(v1Compared.errorCode(), v2Result.errorCode())) {
                 totalMismatches.incrementAndGet();
                 stats.incrementMismatches();
 
@@ -213,8 +233,10 @@ public final class ShadowModeComparator {
             }
         }
 
-        // Check 3: Duration tolerance (only when V1 had meaningful duration)
-        if (v1Result.durationMs() >= MIN_DURATION_FOR_TOLERANCE_MS) {
+        // Check 3: Duration tolerance (only when V1 had meaningful duration, and only
+        // when V2 actually executed - a dry run skips the handler, so it is always
+        // faster and the comparison would be vacuous)
+        if (!v2DryRun && v1Result.durationMs() >= MIN_DURATION_FOR_TOLERANCE_MS) {
             double ratio = (double) v2Result.durationMs() / v1Result.durationMs();
             if (ratio > durationTolerance) {
                 totalMismatches.incrementAndGet();
@@ -239,6 +261,17 @@ public final class ShadowModeComparator {
         }
 
         return ComparisonResult.match(actionId, v1Result.durationMs(), v2Result.durationMs());
+    }
+
+    /**
+     * Reduces a V1 result to the gating decision a dry-run V2 can be compared against.
+     *
+     * <p>A FAILED V1 result means the gates allowed the action and the handler then
+     * failed - the same decision a dry run reports as OK. Only BLOCKED represents a
+     * refusal, and that is what shadow mode is checking the two engines agree on.
+     */
+    private static ActionResult toGateDecision(ActionResult result) {
+        return result.isFailed() ? ActionResult.ok(result.durationMs()) : result;
     }
 
     // =========================================================================

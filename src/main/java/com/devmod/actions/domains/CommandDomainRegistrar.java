@@ -145,42 +145,42 @@ public final class CommandDomainRegistrar implements DomainRegistrar {
     @Override
     public void registerHandlers(HandlerRegistry registry) {
         // Vanilla commands
-        registry.register(ActionIds.COMMAND_GAMEMODE_CREATIVE, ctx -> ctx.executeCommand("gamemode creative"));
-        registry.register(ActionIds.COMMAND_GAMEMODE_SURVIVAL, ctx -> ctx.executeCommand("gamemode survival"));
-        registry.register(ActionIds.COMMAND_HEAL, ctx -> ctx.executeCommand("heal"));
-        registry.register(ActionIds.COMMAND_TIME_DAY, ctx -> ctx.executeCommand("time set day"));
-        registry.register(ActionIds.COMMAND_TIME_NIGHT, ctx -> ctx.executeCommand("time set night"));
-        registry.register(ActionIds.COMMAND_WEATHER_CLEAR, ctx -> ctx.executeCommand("weather clear"));
+        registry.registerResult(ActionIds.COMMAND_GAMEMODE_CREATIVE, ActionHandler.runningCommand("gamemode creative"));
+        registry.registerResult(ActionIds.COMMAND_GAMEMODE_SURVIVAL, ActionHandler.runningCommand("gamemode survival"));
+        registry.registerResult(ActionIds.COMMAND_HEAL, ActionHandler.runningCommand("heal"));
+        registry.registerResult(ActionIds.COMMAND_TIME_DAY, ActionHandler.runningCommand("time set day"));
+        registry.registerResult(ActionIds.COMMAND_TIME_NIGHT, ActionHandler.runningCommand("time set night"));
+        registry.registerResult(ActionIds.COMMAND_WEATHER_CLEAR, ActionHandler.runningCommand("weather clear"));
 
         // Nexus commands
-        registry.register(ActionIds.COMMAND_NEXUS_RIFTSTAMP, ctx -> ctx.executeCommand("devmod nexus riftstamp"));
-        registry.register(ActionIds.COMMAND_NEXUS_HELP, ctx -> ctx.executeCommand("devmod nexus help"));
-        registry.register(ActionIds.COMMAND_NEXUS_ZONES, ctx -> ctx.executeCommand("devmod nexus zones"));
-        registry.register(ActionIds.COMMAND_NEXUS_ENTER, ctx -> ctx.executeCommand("devmod nexus enter"));
-        registry.register(ActionIds.COMMAND_NEXUS_RETURN, ctx -> ctx.executeCommand("devmod nexus return"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_RIFTSTAMP, ActionHandler.runningCommand("devmod nexus riftstamp"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_HELP, ActionHandler.runningCommand("devmod nexus help"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_ZONES, ActionHandler.runningCommand("devmod nexus zones"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_ENTER, ActionHandler.runningCommand("devmod nexus enter"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_RETURN, ActionHandler.runningCommand("devmod nexus return"));
         // --- Nexus Testing Lab Zone Teleports ---
-        registry.register(ActionIds.COMMAND_NEXUS_TP_HUB, ctx -> ctx.executeCommand("devmod nexus tp spawn"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_COMBAT_LAB, ctx -> ctx.executeCommand("devmod nexus tp combat_lab"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ABILITIES_LAB, ctx -> ctx.executeCommand("devmod nexus tp abilities_lab"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_BOSS_ARENA, ctx -> ctx.executeCommand("devmod nexus tp boss_arena"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_COLLISION_LAB, ctx -> ctx.executeCommand("devmod nexus tp collision_lab"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_PORTAL_LAB, ctx -> ctx.executeCommand("devmod nexus tp portal_lab"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_NPC_LAB, ctx -> ctx.executeCommand("devmod nexus tp npc_lab"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_QUEST_TESTING, ctx -> ctx.executeCommand("devmod nexus tp quest_testing"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ARENA_BUILDER, ctx -> ctx.executeCommand("devmod nexus tp arena_builder"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_VFX_STUDIO, ctx -> ctx.executeCommand("devmod nexus tp vfx_studio"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ITEM_WORKSHOP, ctx -> ctx.executeCommand("devmod nexus tp item_workshop"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_CONFIG_ROOM, ctx -> ctx.executeCommand("devmod nexus tp config_room"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_HUD_TESTING, ctx -> ctx.executeCommand("devmod nexus tp hud_testing"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_SANDBOX, ctx -> ctx.executeCommand("devmod nexus tp sandbox"));
-        registry.register(ActionIds.COMMAND_NEXUS_TP_ADMIN_TOOLS, ctx -> ctx.executeCommand("devmod nexus tp admin_tools"));
-        registry.register(ActionIds.COMMAND_NEXUS_STATUS, ctx -> ctx.executeCommand("devmod nexus status"));
-        registry.register(ActionIds.COMMAND_NEXUS_REBUILD, ctx -> ctx.executeCommand("devmod nexus rebuild"));
-        registry.register(ActionIds.COMMAND_NEXUS_LOCK, ctx -> ctx.executeCommand("devmod nexus lock"));
-        registry.register(ActionIds.COMMAND_NEXUS_UNLOCK, ctx -> ctx.executeCommand("devmod nexus unlock"));
-        registry.register(ActionIds.COMMAND_NEXUS_AVATAR_STATUS, ctx -> ctx.executeCommand("devmod nexus avatar status"));
-        registry.register(ActionIds.COMMAND_NEXUS_AVATAR_SPAWN, ctx -> ctx.executeCommand("devmod nexus avatar spawn"));
-        registry.register(ActionIds.COMMAND_NEXUS_AVATAR_REMOVE, ctx -> ctx.executeCommand("devmod nexus avatar remove"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_HUB, ActionHandler.runningCommand("devmod nexus tp spawn"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_COMBAT_LAB, ActionHandler.runningCommand("devmod nexus tp combat_lab"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_ABILITIES_LAB, ActionHandler.runningCommand("devmod nexus tp abilities_lab"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_BOSS_ARENA, ActionHandler.runningCommand("devmod nexus tp boss_arena"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_COLLISION_LAB, ActionHandler.runningCommand("devmod nexus tp collision_lab"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_PORTAL_LAB, ActionHandler.runningCommand("devmod nexus tp portal_lab"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_NPC_LAB, ActionHandler.runningCommand("devmod nexus tp npc_lab"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_QUEST_TESTING, ActionHandler.runningCommand("devmod nexus tp quest_testing"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_ARENA_BUILDER, ActionHandler.runningCommand("devmod nexus tp arena_builder"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_VFX_STUDIO, ActionHandler.runningCommand("devmod nexus tp vfx_studio"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_ITEM_WORKSHOP, ActionHandler.runningCommand("devmod nexus tp item_workshop"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_CONFIG_ROOM, ActionHandler.runningCommand("devmod nexus tp config_room"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_HUD_TESTING, ActionHandler.runningCommand("devmod nexus tp hud_testing"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_SANDBOX, ActionHandler.runningCommand("devmod nexus tp sandbox"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_TP_ADMIN_TOOLS, ActionHandler.runningCommand("devmod nexus tp admin_tools"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_STATUS, ActionHandler.runningCommand("devmod nexus status"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_REBUILD, ActionHandler.runningCommand("devmod nexus rebuild"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_LOCK, ActionHandler.runningCommand("devmod nexus lock"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_UNLOCK, ActionHandler.runningCommand("devmod nexus unlock"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_AVATAR_STATUS, ActionHandler.runningCommand("devmod nexus avatar status"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_AVATAR_SPAWN, ActionHandler.runningCommand("devmod nexus avatar spawn"));
+        registry.registerResult(ActionIds.COMMAND_NEXUS_AVATAR_REMOVE, ActionHandler.runningCommand("devmod nexus avatar remove"));
     }
 
     // ── Spec helper ──

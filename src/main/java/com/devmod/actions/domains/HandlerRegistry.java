@@ -18,25 +18,47 @@ import com.devmod.actions.ActionContext;
  *
  * <p>Handler functions receive an {@link ActionContext} and perform the
  * action's side effects (open screen, execute command, toggle state, etc.).
+ *
+ * <p>Handlers come in two forms. A {@link Consumer} handler has no failure channel,
+ * so registering one asserts that the action cannot meaningfully fail (opening a
+ * screen, flipping a client-side toggle). A handler that delegates to a call which
+ * can refuse — {@code ActionRegistry.invoke} or {@code ActionContext.executeCommand},
+ * both of which return a boolean — must be registered via {@link #registerResult}
+ * so the engine can report BLOCKED/FAILED instead of silently claiming success.
  */
 public final class HandlerRegistry {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HandlerRegistry.class);
 
-    private final Map<String, Consumer<ActionContext>> handlers = new ConcurrentHashMap<>();
+    private final Map<String, ActionHandler> handlers = new ConcurrentHashMap<>();
 
     /**
-     * Registers a handler for the given action ID.
+     * Registers a side-effect-only handler that is always reported as successful.
      *
      * @param actionId the action ID
      * @param handler  the handler function
      * @throws IllegalStateException if a handler is already registered for this ID
      */
     public void register(String actionId, Consumer<ActionContext> handler) {
+        Objects.requireNonNull(handler, "handler");
+        registerResult(actionId, context -> {
+            handler.accept(context);
+            return ActionHandler.Outcome.ok();
+        });
+    }
+
+    /**
+     * Registers a handler that reports its own success or failure.
+     *
+     * @param actionId the action ID
+     * @param handler  the handler function
+     * @throws IllegalStateException if a handler is already registered for this ID
+     */
+    public void registerResult(String actionId, ActionHandler handler) {
         Objects.requireNonNull(actionId, "actionId");
         Objects.requireNonNull(handler, "handler");
 
-        Consumer<ActionContext> existing = handlers.putIfAbsent(actionId, handler);
+        ActionHandler existing = handlers.putIfAbsent(actionId, handler);
         if (existing != null) {
             throw new IllegalStateException(
                 "Duplicate handler registration for action: " + actionId);
@@ -48,7 +70,7 @@ public final class HandlerRegistry {
      * Returns the handler for the given action ID, or null if not registered.
      */
     @Nullable
-    public Consumer<ActionContext> getHandler(String actionId) {
+    public ActionHandler getHandler(String actionId) {
         return handlers.get(actionId);
     }
 

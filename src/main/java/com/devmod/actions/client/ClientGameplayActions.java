@@ -11,6 +11,7 @@ import com.devmod.abilities.DodgeAbilitySystem;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionContext;
 import com.devmod.actions.ActionIds;
+import com.devmod.actions.ActionPrecondition;
 import com.devmod.actions.ActionPreconditions;
 import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.RadialAction;
@@ -29,6 +30,35 @@ import com.devmod.util.I18n;
 public final class ClientGameplayActions {
 
     private ClientGameplayActions() {}
+
+    // ── Precondition helpers (package-visible; shared with the V2 catalog so both
+    //    engines gate these actions identically) ──
+
+    static ActionPrecondition activeTaskPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> QuestManager.INSTANCE.getCurrentTask() != null,
+                "devmod.action.requires_active_task"
+            ));
+    }
+
+    static ActionPrecondition respawnOrCheckpointPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> ClientQuestCache.isAwaitingRespawn()
+                    || ClientQuestCache.isAtCheckpoint()
+                    || context.getPayload(QuestActionPayload.Action.class) != null,
+                "devmod.action.requires_respawn_or_checkpoint"
+            ));
+    }
+
+    static ActionPrecondition activeQuestPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> ClientQuestCache.hasActiveQuest(),
+                "devmod.action.requires_active_quest"
+            ));
+    }
 
     // ── Registration ──
 
@@ -67,11 +97,7 @@ public final class ClientGameplayActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Quest Flow/Task Complete")
             .icon(Items.WRITABLE_BOOK)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> QuestManager.INSTANCE.getCurrentTask() != null,
-                    "devmod.action.requires_active_task"
-                )))
+            .precondition(activeTaskPrecondition())
             .handler(context -> {
                 QuestTask task = QuestManager.INSTANCE.getCurrentTask();
                 if (task != null) {
@@ -116,13 +142,7 @@ public final class ClientGameplayActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Endurance/Quest Continue")
             .icon(Items.TOTEM_OF_UNDYING)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> ClientQuestCache.isAwaitingRespawn()
-                        || ClientQuestCache.isAtCheckpoint()
-                        || context.getPayload(QuestActionPayload.Action.class) != null,
-                    "devmod.action.requires_respawn_or_checkpoint"
-                )))
+            .precondition(respawnOrCheckpointPrecondition())
             .handler(context -> {
                 QuestActionPayload.Action action = resolveContinueAction(context);
                 PacketDistributor.sendToServer(new QuestActionPayload(action));
@@ -136,11 +156,7 @@ public final class ClientGameplayActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Endurance/Quest Exit")
             .icon(Items.BARRIER)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> ClientQuestCache.hasActiveQuest(),
-                    "devmod.action.requires_active_quest"
-                )))
+            .precondition(activeQuestPrecondition())
             .handler(context -> {
                 if (!context.isConfirmed()) {
                     com.devmod.client.ui.ScreenSafety.openSafe(

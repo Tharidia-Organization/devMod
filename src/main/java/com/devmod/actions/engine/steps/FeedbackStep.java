@@ -13,7 +13,8 @@ import com.devmod.actions.engine.StepResult;
  * by sending them to the player via the ActionContext.
  *
  * <p>This step always returns CONTINUE - it is a post-execution step that
- * should not affect pipeline flow.
+ * should not affect pipeline flow. It is terminal, so a player who is denied
+ * an action is told why rather than seeing nothing happen.
  */
 public final class FeedbackStep implements PipelineStep {
 
@@ -21,6 +22,12 @@ public final class FeedbackStep implements PipelineStep {
     public StepResult process(ExecutionContext ctx) {
         ActionResult result = ctx.result();
         if (result == null) {
+            return StepResult.continueStep();
+        }
+
+        // A dry run must stay invisible: the player is already being served by
+        // whichever engine owns this invocation for real.
+        if (ctx.isDryRun()) {
             return StepResult.continueStep();
         }
 
@@ -49,5 +56,10 @@ public final class FeedbackStep implements PipelineStep {
     @Override
     public String stepName() {
         return "Feedback";
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
     }
 }

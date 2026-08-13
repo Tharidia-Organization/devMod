@@ -19,6 +19,7 @@ import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionCatalog;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
+import com.devmod.actions.domains.ActionHandler;
 import com.devmod.actions.domains.HandlerRegistry;
 import com.devmod.actions.engine.steps.TelemetryStep;
 import com.devmod.actions.policy.CommandSafetyPolicy;
@@ -159,8 +160,9 @@ class ActionExecutorIntegrationTest {
             assertTrue(result.isBlocked());
             assertEquals(ActionResult.ERROR_UNKNOWN_ACTION, result.errorCode());
             assertFalse(handlerCalled.get());
-            // Telemetry does not fire on early abort (pipeline short-circuits before TelemetryStep)
-            assertEquals(0, telemetryLines.size());
+            // Telemetry is terminal, so the abort is still recorded
+            assertEquals(1, telemetryLines.size());
+            assertTrue(telemetryLines.get(0).contains("\"type\":\"action_v2_blocked\""));
         }
     }
 
@@ -324,6 +326,75 @@ class ActionExecutorIntegrationTest {
         }
 
         @Test
+        @DisplayName("handlerStarted distinguishes a refusal from a partial execution")
+        void handlerStartedDistinguishesRefusalFromPartialExecution() {
+            // Blocked before Execute: nothing was applied, so a caller may retry.
+            registerAction("devmod.ui.refused");
+            ActionExecutor.ExecutionOutcome refused = executor.executeDetailed(
+                "devmod.ui.refused", contextForOrigin(ActionOrigin.NETWORK), false);
+
+            assertTrue(refused.result().isBlocked());
+            assertFalse(refused.handlerStarted());
+
+            // Threw inside the handler: an unknown prefix of its side effects landed,
+            // so retrying elsewhere would re-apply them.
+            catalog.register(ActionSpec.builder("devmod.ui.partial")
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label", "desc")
+                .build());
+            handlers.register("devmod.ui.partial", ctx -> {
+                throw new RuntimeException("failed halfway");
+            });
+
+            ActionExecutor.ExecutionOutcome partial = executor.executeDetailed(
+                "devmod.ui.partial", contextForOrigin(ActionOrigin.RADIAL), false);
+
+            assertTrue(partial.result().isFailed());
+            assertTrue(partial.handlerStarted());
+        }
+
+        @Test
+        @DisplayName("Handler reporting failure yields a FAILED result, not OK")
+        void handlerReportedFailurePropagates() {
+            catalog.register(ActionSpec.builder("devmod.ui.reports_failure")
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label", "desc")
+                .build());
+            handlers.registerResult("devmod.ui.reports_failure",
+                ctx -> ActionHandler.Outcome.failed("NOPE", "could not do it"));
+
+            ActionResult result = executor.execute("devmod.ui.reports_failure",
+                contextForOrigin(ActionOrigin.RADIAL));
+
+            assertTrue(result.isFailed());
+            assertEquals("NOPE", result.errorCode());
+            assertEquals("could not do it", result.message());
+            assertTrue(telemetryLines.get(0).contains("\"type\":\"action_v2_failed\""));
+        }
+
+        @Test
+        @DisplayName("Handler reporting a block yields BLOCKED, not FAILED")
+        void handlerReportedBlockPropagates() {
+            catalog.register(ActionSpec.builder("devmod.ui.reports_block")
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label", "desc")
+                .build());
+            handlers.registerResult("devmod.ui.reports_block",
+                ctx -> ActionHandler.Outcome.blocked(
+                    ActionResult.ERROR_COMMAND_REJECTED, "command refused"));
+
+            ActionResult result = executor.execute("devmod.ui.reports_block",
+                contextForOrigin(ActionOrigin.RADIAL));
+
+            assertTrue(result.isBlocked());
+            assertEquals(ActionResult.ERROR_COMMAND_REJECTED, result.errorCode());
+            assertTrue(telemetryLines.get(0).contains("\"type\":\"action_v2_blocked\""));
+        }
+
+        @Test
         @DisplayName("No handler registered returns blocked")
         void noHandlerRegistered() {
             ActionSpec spec = ActionSpec.builder("devmod.test.nohandler")
@@ -450,13 +521,69 @@ class ActionExecutorIntegrationTest {
         }
 
         @Test
-        @DisplayName("Telemetry does not fire on early pipeline abort")
-        void telemetrySkippedOnEarlyAbort() {
+        @DisplayName("Telemetry fires on early pipeline abort")
+        void telemetryRecordedOnEarlyAbort() {
             executor.execute("devmod.nonexistent.action",
                 contextForOrigin(ActionOrigin.RADIAL));
 
-            // Pipeline aborts at ResolveStep, TelemetryStep (step 8) is never reached
-            assertEquals(0, telemetryLines.size());
+            // The pipeline aborts at ResolveStep, but TelemetryStep is terminal:
+            // a blocked action that reported nothing is how a dashboard ends up
+            // claiming 100% success.
+            assertEquals(1, telemetryLines.size());
+            String line = telemetryLines.get(0);
+            assertTrue(line.contains("\"type\":\"action_v2_blocked\""));
+            assertTrue(line.contains("\"result\":\"BLOCKED\""));
+            assertTrue(line.contains("\"errorCode\":\"" + ActionResult.ERROR_UNKNOWN_ACTION + "\""));
+        }
+
+        @Test
+        @DisplayName("Telemetry records a denied action as blocked, not as success")
+        void telemetryRecordsPolicyDenial() {
+            // NETWORK origin is not in the default allowed set for a CLIENT action.
+            registerAction("devmod.ui.denied_test");
+
+            ActionResult result = executor.execute("devmod.ui.denied_test",
+                contextForOrigin(ActionOrigin.NETWORK));
+
+            assertTrue(result.isBlocked());
+            assertFalse(handlerCalled.get());
+            assertEquals(1, telemetryLines.size());
+            assertTrue(telemetryLines.get(0).contains("\"type\":\"action_v2_blocked\""));
+        }
+
+        @Test
+        @DisplayName("Telemetry records a handler exception as failed")
+        void telemetryRecordsHandlerException() {
+            catalog.register(ActionSpec.builder("devmod.ui.throwing_test")
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label", "desc")
+                .build());
+            handlers.register("devmod.ui.throwing_test", ctx -> {
+                throw new RuntimeException("boom");
+            });
+
+            ActionResult result = executor.execute("devmod.ui.throwing_test",
+                contextForOrigin(ActionOrigin.RADIAL));
+
+            assertTrue(result.isFailed());
+            assertEquals(1, telemetryLines.size());
+            assertTrue(telemetryLines.get(0).contains("\"type\":\"action_v2_failed\""));
+        }
+
+        @Test
+        @DisplayName("Telemetry marks a dry run so it is excluded from invocation counts")
+        void telemetryMarksDryRun() {
+            registerAction("devmod.ui.dry_run_test");
+
+            ActionExecutor.ExecutionOutcome outcome = executor.executeDetailed(
+                "devmod.ui.dry_run_test", contextForOrigin(ActionOrigin.RADIAL), true);
+
+            assertTrue(outcome.result().isSuccess());
+            assertFalse(handlerCalled.get(), "dry run must not run the handler");
+            assertFalse(outcome.handlerStarted());
+            assertEquals(1, telemetryLines.size());
+            assertTrue(telemetryLines.get(0).contains("\"dryRun\":true"));
         }
     }
 

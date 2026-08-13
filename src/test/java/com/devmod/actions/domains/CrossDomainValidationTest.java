@@ -14,6 +14,9 @@ import org.junit.jupiter.api.Test;
 
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionOrigin;
+import com.devmod.actions.ActionPreconditionRegistry;
+import com.devmod.actions.catalog.ActionCatalog;
+import com.devmod.actions.catalog.ActionCatalogValidator;
 import com.devmod.actions.catalog.ActionSpec;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -346,6 +349,44 @@ class CrossDomainValidationTest {
     @Nested
     @DisplayName("5. No Handler Conflicts")
     class NoHandlerConflictTests {
+
+        @Test
+        @DisplayName("every declared preconditionRef resolves in the default registry")
+        void everyDeclaredPreconditionRefResolves() {
+            ActionPreconditionRegistry preconditions =
+                ActionPreconditionRegistry.createDefault();
+
+            List<String> unresolvable = allSpecs.stream()
+                .map(spec -> spec.policyMeta().preconditionRef())
+                .filter(ref -> ref != null && !ref.isEmpty())
+                .distinct()
+                .filter(ref -> !preconditions.canResolve(ref))
+                .toList();
+
+            // A ref that does not resolve is silently skipped at runtime, so this is
+            // the check that keeps a declared gate from becoming decorative.
+            assertTrue(unresolvable.isEmpty(),
+                "Declared preconditionRefs with no implementation: " + unresolvable);
+        }
+
+        @Test
+        @DisplayName("the real catalog passes validation, including preconditionRefs")
+        void realCatalogPassesValidation() {
+            ActionCatalog catalog = new ActionCatalog();
+            HandlerRegistry handlers = new HandlerRegistry();
+            for (ActionSpec spec : allSpecs) {
+                catalog.register(spec);
+                handlers.register(spec.id(), ctx -> {});
+            }
+
+            ActionCatalogValidator.CatalogValidationReport report =
+                ActionCatalogValidator.validate(catalog, handlers);
+
+            assertTrue(report.getBySeverity(ActionCatalogValidator.Severity.ERROR).stream()
+                    .noneMatch(v -> v.rule().equals("preconditionRef")),
+                "preconditionRef violations: "
+                    + report.getBySeverity(ActionCatalogValidator.Severity.ERROR));
+        }
 
         @Test
         @DisplayName("DomainRegistry validates no ID conflicts when all domains added")

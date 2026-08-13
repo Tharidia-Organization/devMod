@@ -22,7 +22,8 @@ import com.devmod.telemetry.TelemetryService;
  *
  * <p>Compatible with existing telemetry format from ActionRegistry.
  * This step always returns CONTINUE - telemetry failures should not
- * affect action execution.
+ * affect action execution. It is terminal, so blocked and failed
+ * invocations are counted rather than silently dropped.
  */
 public final class TelemetryStep implements PipelineStep {
 
@@ -61,7 +62,7 @@ public final class TelemetryStep implements PipelineStep {
         ActionContext actionCtx = ctx.actionContext();
 
         try {
-            String line = buildTelemetryLine(ctx.actionId(), spec, actionCtx, result);
+            String line = buildTelemetryLine(ctx.actionId(), spec, actionCtx, result, ctx.isDryRun());
             sink.appendActionLine(line);
         } catch (Exception e) {
             // Telemetry failures must not break action execution
@@ -77,7 +78,8 @@ public final class TelemetryStep implements PipelineStep {
      * Builds a NDJSON telemetry line compatible with the existing ActionRegistry format.
      */
     private static String buildTelemetryLine(String actionId, @Nullable ActionSpec spec,
-                                              ActionContext context, ActionResult result) {
+                                              ActionContext context, ActionResult result,
+                                              boolean dryRun) {
         String playerName = "server";
         var player = context.getPlayer();
         if (player != null) {
@@ -120,6 +122,11 @@ public final class TelemetryStep implements PipelineStep {
             sb.append("\"errorCode\":\"").append(TelemetryJson.escape(result.errorCode())).append("\",");
         }
         sb.append("\"engine\":\"v2\",");
+        if (dryRun) {
+            // Shadow-mode runs never touched game state; dashboards must exclude
+            // them from invocation counts.
+            sb.append("\"dryRun\":true,");
+        }
         sb.append("\"durationMs\":").append(result.durationMs()).append("}");
 
         return sb.toString();
@@ -128,5 +135,10 @@ public final class TelemetryStep implements PipelineStep {
     @Override
     public String stepName() {
         return "Telemetry";
+    }
+
+    @Override
+    public boolean isTerminal() {
+        return true;
     }
 }

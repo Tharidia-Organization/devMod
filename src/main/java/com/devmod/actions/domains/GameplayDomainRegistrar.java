@@ -6,7 +6,6 @@ import java.util.Set;
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
 import com.devmod.actions.ActionOrigin;
-import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
@@ -137,20 +136,13 @@ public final class GameplayDomainRegistrar implements DomainRegistrar {
 
     @Override
     public void registerHandlers(HandlerRegistry registry) {
-        registry.register(ActionIds.ABILITY_DASH,
-            context -> ActionRegistry.invoke(ActionIds.ABILITY_DASH, context));
-        registry.register(ActionIds.ABILITY_DODGE,
-            context -> ActionRegistry.invoke(ActionIds.ABILITY_DODGE, context));
-        registry.register(ActionIds.QUEST_TASK_COMPLETE,
-            context -> ActionRegistry.invoke(ActionIds.QUEST_TASK_COMPLETE, context));
-        registry.register(ActionIds.ENDURANCE_QUEST_START,
-            context -> ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_START, context));
-        registry.register(ActionIds.ENDURANCE_QUEST_CONTINUE,
-            context -> ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_CONTINUE, context));
-        registry.register(ActionIds.ENDURANCE_QUEST_EXIT,
-            context -> ActionRegistry.invoke(ActionIds.ENDURANCE_QUEST_EXIT, context));
-        registry.register(ActionIds.UI_ENDURANCE_SETTINGS_OPEN,
-            context -> ActionRegistry.invoke(ActionIds.UI_ENDURANCE_SETTINGS_OPEN, context));
+        registry.registerResult(ActionIds.ABILITY_DASH, ActionHandler.delegatingToV1(ActionIds.ABILITY_DASH));
+        registry.registerResult(ActionIds.ABILITY_DODGE, ActionHandler.delegatingToV1(ActionIds.ABILITY_DODGE));
+        registry.registerResult(ActionIds.QUEST_TASK_COMPLETE, ActionHandler.delegatingToV1(ActionIds.QUEST_TASK_COMPLETE));
+        registry.registerResult(ActionIds.ENDURANCE_QUEST_START, ActionHandler.delegatingToV1(ActionIds.ENDURANCE_QUEST_START));
+        registry.registerResult(ActionIds.ENDURANCE_QUEST_CONTINUE, ActionHandler.delegatingToV1(ActionIds.ENDURANCE_QUEST_CONTINUE));
+        registry.registerResult(ActionIds.ENDURANCE_QUEST_EXIT, ActionHandler.delegatingToV1(ActionIds.ENDURANCE_QUEST_EXIT));
+        registry.registerResult(ActionIds.UI_ENDURANCE_SETTINGS_OPEN, ActionHandler.delegatingToV1(ActionIds.UI_ENDURANCE_SETTINGS_OPEN));
     }
 
     @Override

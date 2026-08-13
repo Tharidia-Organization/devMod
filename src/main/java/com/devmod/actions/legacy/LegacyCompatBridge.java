@@ -119,11 +119,14 @@ public final class LegacyCompatBridge {
         ActionResult v1Result = ActionRegistry.invokeWithResult(actionId, context);
         v1Invocations.incrementAndGet();
 
-        // V2 runs read-only alongside
+        // V2 runs read-only alongside. Dry run is what makes "read-only" true: the V2
+        // handlers delegate straight back into V1, so executing them here would apply
+        // every side effect a second time.
         try {
-            ActionResult v2Result = v2Executor.execute(actionId, context);
+            ActionResult v2Result =
+                v2Executor.executeDetailed(actionId, context, true).result();
             shadowRuns.incrementAndGet();
-            ShadowModeComparator.compare(actionId, v1Result, v2Result);
+            ShadowModeComparator.compare(actionId, v1Result, v2Result, true);
         } catch (Exception e) {
             shadowRuns.incrementAndGet();
             LOGGER.warn("[Bridge] Shadow V2 threw exception for '{}': {}",
@@ -134,7 +137,7 @@ public final class LegacyCompatBridge {
                 Objects.requireNonNullElse(e.getMessage(), "Shadow V2 exception"),
                 0
             );
-            ShadowModeComparator.compare(actionId, v1Result, failedV2);
+            ShadowModeComparator.compare(actionId, v1Result, failedV2, true);
         }
 
         return v1Result;
@@ -145,12 +148,24 @@ public final class LegacyCompatBridge {
      */
     private ActionResult invokeV2Active(String actionId, ActionContext context) {
         try {
-            ActionResult v2Result = v2Executor.execute(actionId, context);
+            ActionExecutor.ExecutionOutcome outcome =
+                v2Executor.executeDetailed(actionId, context, false);
+            ActionResult v2Result = outcome.result();
             v2Invocations.incrementAndGet();
 
             if (v2Result.isFailed()) {
-                // V2 execution failed - fall back to V1
-                LOGGER.warn("[Bridge] V2 failed for '{}' ({}), falling back to V1",
+                if (outcome.handlerStarted()) {
+                    // The handler ran and threw partway through, so an unknown prefix of
+                    // its side effects has already been applied. Re-running it on V1
+                    // would apply that prefix twice; surface the failure instead.
+                    LOGGER.error("[Bridge] V2 handler for '{}' failed mid-execution ({}); "
+                        + "not falling back to V1 to avoid re-applying partial side effects",
+                        actionId, v2Result.errorCode());
+                    return v2Result;
+                }
+
+                // Nothing was applied - safe to retry on V1.
+                LOGGER.warn("[Bridge] V2 failed for '{}' ({}) before executing, falling back to V1",
                     actionId, v2Result.errorCode());
                 v2Fallbacks.incrementAndGet();
                 v1Invocations.incrementAndGet();

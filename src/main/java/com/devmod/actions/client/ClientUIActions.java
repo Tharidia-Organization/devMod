@@ -85,12 +85,63 @@ public final class ClientUIActions {
             ));
     }
 
+    static ActionPrecondition qaAutoTestPrecondition() {
+        return qaActiveTestPrecondition().and(ActionPreconditions.withMessage(
+            QATestingScreen.Actions::hasAutoTest,
+            "devmod.action.testing.requires_auto_test"
+        ));
+    }
+
+    static ActionPrecondition partyInvitePrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> PartyUiCache.getActiveInvite() != null
+                    || context.getPayload(PartyInviteActionData.class) != null,
+                "devmod.action.party_invite.missing"
+            ));
+    }
+
+    static ActionPrecondition questDeathPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> ClientQuestCache.isAwaitingRespawn(),
+                "devmod.action.requires_respawn"
+            ));
+    }
+
+    static ActionPrecondition perkSelectionPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> context.getPayload(PerkChoicesPayload.class) != null
+                    || EnduranceUiCache.getLastPerkChoices() != null,
+                "devmod.action.perk_selection.missing"
+            ));
+    }
+
+    static ActionPrecondition questCompletionPrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> context.getPayload(QuestCompletionPayload.class) != null
+                    || EnduranceUiCache.getLastQuestCompletion() != null,
+                "devmod.action.quest_completion.missing"
+            ));
+    }
+
+    static ActionPrecondition onboardingActivePrecondition() {
+        return ActionPreconditions.clientOnly().and(
+            ActionPreconditions.withMessage(
+                context -> OnboardingOverlay.isActive()
+                    || context.getPayload(OnboardingActionPayload.class) != null,
+                "devmod.action.onboarding.inactive"
+            ));
+    }
+
     static ActionPrecondition uiScreenPrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.screenClosed());
     }
 
-    private static ActionPrecondition qaSessionActivePrecondition() {
+    static ActionPrecondition qaSessionActivePrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.withMessage(
                 context -> TestingSession.INSTANCE.isSessionActive(),
@@ -98,7 +149,7 @@ public final class ClientUIActions {
             ));
     }
 
-    private static ActionPrecondition developerModePrecondition() {
+    static ActionPrecondition developerModePrecondition() {
         return screenPrecondition()
             .and(ActionPreconditions.withMessage(
                 context -> SettingsManager.INSTANCE.getSettings().debug.developerMode,
@@ -106,7 +157,7 @@ public final class ClientUIActions {
             ));
     }
 
-    private static ActionPrecondition testerPrecondition() {
+    static ActionPrecondition testerPrecondition() {
         return screenPrecondition()
             .and(ActionPreconditions.withMessage(
                 context -> com.devmod.mailbox.client.ClientMailboxAccess.isTester(),
@@ -114,7 +165,7 @@ public final class ClientUIActions {
             ));
     }
 
-    private static ActionPrecondition qaSessionExistsPrecondition() {
+    static ActionPrecondition qaSessionExistsPrecondition() {
         return ActionPreconditions.clientOnly()
             .and(ActionPreconditions.withMessage(
                 context -> TestingSession.INSTANCE.hasExistingSession(),
@@ -122,7 +173,7 @@ public final class ClientUIActions {
             ));
     }
 
-    private static ActionPrecondition qaActiveTestPrecondition() {
+    static ActionPrecondition qaActiveTestPrecondition() {
         return qaSessionActivePrecondition()
             .and(ActionPreconditions.withMessage(
                 QATestingScreen.Actions::hasActiveTest,
@@ -540,10 +591,7 @@ public final class ClientUIActions {
             .category(ActionCategory.TESTING)
             .menuPath("Root/Testing/QA/Actions/Auto")
             .icon(Items.COMPARATOR)
-            .precondition(qaActiveTestPrecondition().and(ActionPreconditions.withMessage(
-                QATestingScreen.Actions::hasAutoTest,
-                "devmod.action.testing.requires_auto_test"
-            )))
+            .precondition(qaAutoTestPrecondition())
             .handler(QATestingScreen.Actions::autoCheckTest)
             .build());
 
@@ -667,12 +715,7 @@ public final class ClientUIActions {
             .category(ActionCategory.PARTY)
             .menuPath("Root/Play/Party/Invites")
             .icon(Items.PAPER)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> PartyUiCache.getActiveInvite() != null
-                        || context.getPayload(PartyInviteActionData.class) != null,
-                    "devmod.action.party_invite.missing"
-                )))
+            .precondition(partyInvitePrecondition())
             .handler(ClientUIActions::openPartyInvite)
             .build());
 
@@ -718,11 +761,7 @@ public final class ClientUIActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Quest Flow/Death")
             .icon(Items.SKELETON_SKULL)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> ClientQuestCache.isAwaitingRespawn(),
-                    "devmod.action.requires_respawn"
-                )))
+            .precondition(questDeathPrecondition())
             .handler(context -> com.devmod.client.ui.ScreenSafety.openSafe(
                 "quest_death",
                 () -> new QuestDeathScreen()))
@@ -734,12 +773,7 @@ public final class ClientUIActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Quest Flow/Perk Selection")
             .icon(Items.ENCHANTED_BOOK)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> context.getPayload(PerkChoicesPayload.class) != null
-                        || EnduranceUiCache.getLastPerkChoices() != null,
-                    "devmod.action.perk_selection.missing"
-                )))
+            .precondition(perkSelectionPrecondition())
             .handler(ClientUIActions::openPerkSelection)
             .build());
 
@@ -765,12 +799,7 @@ public final class ClientUIActions {
             .category(ActionCategory.ENDURANCE)
             .menuPath("Root/Play/Quest Flow/Completion")
             .icon(Items.NETHER_STAR)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> context.getPayload(QuestCompletionPayload.class) != null
-                        || EnduranceUiCache.getLastQuestCompletion() != null,
-                    "devmod.action.quest_completion.missing"
-                )))
+            .precondition(questCompletionPrecondition())
             .handler(ClientUIActions::openQuestCompletion)
             .build());
 
@@ -914,12 +943,7 @@ public final class ClientUIActions {
             .category(ActionCategory.UI)
             .menuPath("Root/Config/Onboarding/Skip")
             .icon(Items.BARRIER)
-            .precondition(ActionPreconditions.clientOnly().and(
-                ActionPreconditions.withMessage(
-                    context -> OnboardingOverlay.isActive()
-                        || context.getPayload(OnboardingActionPayload.class) != null,
-                    "devmod.action.onboarding.inactive"
-                )))
+            .precondition(onboardingActivePrecondition())
             .handler(context -> {
                 OnboardingActionPayload payload = context.getPayload(OnboardingActionPayload.class);
                 if (payload != null) {

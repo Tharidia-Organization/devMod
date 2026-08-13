@@ -6,7 +6,6 @@ import java.util.Set;
 
 import com.devmod.actions.ActionCategory;
 import com.devmod.actions.ActionIds;
-import com.devmod.actions.ActionRegistry;
 import com.devmod.actions.ActionType;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.catalog.ActionSpec.ActionChannel;
@@ -157,7 +156,7 @@ public final class TelemetryDomainRegistrar implements DomainRegistrar {
                 ActionIds.TELEMETRY_DASHBOARD_SERVER_STOP, ActionIds.TELEMETRY_DASHBOARD_SERVER_STATUS,
                 ActionIds.DUNGEON_HELP, ActionIds.DUNGEON_START,
                 ActionIds.DUNGEON_END, ActionIds.DUNGEON_STATUS)) {
-            registry.register(id, context -> ActionRegistry.invoke(id, context));
+            registry.registerResult(id, ActionHandler.delegatingToV1(id));
         }
     }
 

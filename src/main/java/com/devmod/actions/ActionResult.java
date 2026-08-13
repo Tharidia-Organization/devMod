@@ -32,6 +32,8 @@ public record ActionResult(
     public static final String ERROR_DESKTOP_UNSUPPORTED = "DESKTOP_UNSUPPORTED";
     public static final String ERROR_URL_UNKNOWN = "URL_UNKNOWN";
     public static final String ERROR_UNTRUSTED_ACTION = "UNTRUSTED_ACTION";
+    /** A command action did not run: rejected by the sanitizer, or no command source. */
+    public static final String ERROR_COMMAND_REJECTED = "COMMAND_REJECTED";
 
     /**
      * Creates a successful result.

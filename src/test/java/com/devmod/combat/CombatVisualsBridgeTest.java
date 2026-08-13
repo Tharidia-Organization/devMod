@@ -93,7 +93,7 @@ public class CombatVisualsBridgeTest {
             assertDoesNotThrow(() -> bridge.setImpactDamageReductionBreakdown(null, 0, 0, 0, 0, 0));
             assertDoesNotThrow(() -> bridge.recordDpsDamage(UUID.randomUUID(), 10f));
             assertDoesNotThrow(() -> bridge.spawnMeleeEvasionPanel(null, null, null, null));
-            assertDoesNotThrow(() -> bridge.recordShieldImpact(null, 5f));
+            assertDoesNotThrow(() -> bridge.recordShieldImpact(null, null, 5f));
         }
     }
 

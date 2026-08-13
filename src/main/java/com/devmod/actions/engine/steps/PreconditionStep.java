@@ -5,7 +5,11 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.devmod.actions.ActionPrecondition;
+import com.devmod.actions.ActionPreconditionRegistry;
 import com.devmod.actions.ActionResult;
 import com.devmod.actions.catalog.ActionSpec;
 import com.devmod.actions.engine.ExecutionContext;
@@ -21,23 +25,33 @@ import com.devmod.actions.engine.StepResult;
  */
 public final class PreconditionStep implements PipelineStep {
 
-    private final Map<String, ActionPrecondition> preconditions;
+    private static final Logger LOGGER = LoggerFactory.getLogger(PreconditionStep.class);
+
+    private final ActionPreconditionRegistry preconditions;
 
     /**
-     * Creates a PreconditionStep with a registry of named preconditions.
+     * Creates a PreconditionStep backed by the given registry.
+     */
+    public PreconditionStep(ActionPreconditionRegistry preconditions) {
+        this.preconditions = Objects.requireNonNull(preconditions, "preconditions");
+    }
+
+    /**
+     * Creates a PreconditionStep with an explicit map of named preconditions.
      *
      * @param preconditions map from precondition ref names to implementations
      */
     public PreconditionStep(Map<String, ActionPrecondition> preconditions) {
-        this.preconditions = Map.copyOf(Objects.requireNonNull(preconditions, "preconditions"));
+        this(ActionPreconditionRegistry.of(preconditions));
     }
 
     /**
-     * Creates a PreconditionStep with no named preconditions.
-     * Actions with preconditionRef will log a warning and pass.
+     * Creates a PreconditionStep with no named preconditions. Intended for pipelines
+     * assembled by hand in tests; the default pipeline built by
+     * {@code ActionExecutor.createDefault} always supplies a populated registry.
      */
     public PreconditionStep() {
-        this(Map.of());
+        this(ActionPreconditionRegistry.empty());
     }
 
     @Override
@@ -52,9 +66,13 @@ public final class PreconditionStep implements PipelineStep {
             return StepResult.continueStep();
         }
 
-        ActionPrecondition precondition = preconditions.get(ref);
+        ActionPrecondition precondition = preconditions.resolve(ref);
         if (precondition == null) {
-            // Unknown precondition ref - pass with warning (logged by executor)
+            // Fail open: refusing every action whose ref went missing would be a worse
+            // outage than letting it through. ActionCatalogValidator's preconditionRef
+            // rule is what stops an unresolvable ref reaching production.
+            LOGGER.warn("[PreconditionStep] Unresolvable preconditionRef '{}' on action '{}' - allowing",
+                ref, ctx.actionId());
             return StepResult.continueStep();
         }
 

@@ -24,6 +24,7 @@ public final class ExecutionContext {
     private final UUID invocationId;
     private final ActionContext actionContext;
     private final long startTimeMs;
+    private final boolean dryRun;
     private final Map<String, Object> attributes = new HashMap<>();
 
     @Nullable
@@ -32,18 +33,59 @@ public final class ExecutionContext {
     private ActionResult result;
     @Nullable
     private String abortReason;
+    private boolean handlerStarted;
+
+    /**
+     * Creates a new execution context for a normal (side-effecting) invocation.
+     *
+     * @param actionId      the ID of the action being invoked
+     * @param actionContext  the invocation context (player, origin, etc.)
+     */
+    public ExecutionContext(String actionId, ActionContext actionContext) {
+        this(actionId, actionContext, false);
+    }
 
     /**
      * Creates a new execution context for the given action invocation.
      *
      * @param actionId      the ID of the action being invoked
      * @param actionContext  the invocation context (player, origin, etc.)
+     * @param dryRun        true to evaluate the pipeline without running the handler
      */
-    public ExecutionContext(String actionId, ActionContext actionContext) {
+    public ExecutionContext(String actionId, ActionContext actionContext, boolean dryRun) {
         this.actionId = Objects.requireNonNull(actionId, "actionId");
         this.actionContext = Objects.requireNonNull(actionContext, "actionContext");
+        this.dryRun = dryRun;
         this.invocationId = UUID.randomUUID();
         this.startTimeMs = System.currentTimeMillis();
+    }
+
+    /**
+     * Returns true if this invocation must not apply side effects. Steps that would
+     * mutate game state, message the player, or run the handler are skipped; the
+     * pipeline still resolves, authorizes and reports, so the caller learns what
+     * <em>would</em> have happened.
+     */
+    public boolean isDryRun() {
+        return dryRun;
+    }
+
+    /**
+     * Returns true once the handler has been entered. Distinguishes "the pipeline
+     * refused before Execute" from "the handler ran and threw partway through" —
+     * only the former is safe to retry on another engine, since the latter may have
+     * already applied part of its side effects.
+     */
+    public boolean handlerStarted() {
+        return handlerStarted;
+    }
+
+    /**
+     * Marks the handler as entered (called by the Execute step immediately before
+     * control passes to the handler).
+     */
+    public void markHandlerStarted() {
+        this.handlerStarted = true;
     }
 
     /**

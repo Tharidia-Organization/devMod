@@ -21,4 +21,18 @@ public interface PipelineStep {
      * Returns the human-readable name of this step (used in logs and telemetry).
      */
     String stepName();
+
+    /**
+     * Returns true if this step must run on every invocation, including ones where an
+     * earlier step aborted or threw. Terminal steps run after the non-terminal portion
+     * of the pipeline has finished or short-circuited, in the order they were added.
+     *
+     * <p>Steps that report an outcome rather than decide it (user feedback, telemetry)
+     * must be terminal; otherwise a blocked or failed invocation reports nothing.
+     * A terminal step's own {@link StepResult} cannot abort the pipeline and cannot
+     * change the {@link com.devmod.actions.ActionResult} already recorded on the context.
+     */
+    default boolean isTerminal() {
+        return false;
+    }
 }

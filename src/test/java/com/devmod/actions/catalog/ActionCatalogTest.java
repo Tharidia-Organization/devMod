@@ -259,6 +259,63 @@ class ActionCatalogTest {
         }
 
         @Test
+        @DisplayName("unresolvable preconditionRef produces ERROR violation")
+        void unresolvablePreconditionRefError() {
+            catalog.register(specWithPrecondition("devmod.ui.typo", "clientOnlyy"));
+
+            HandlerRegistry handlers = new HandlerRegistry();
+            handlers.register("devmod.ui.typo", ctx -> {});
+
+            CatalogValidationReport report = ActionCatalogValidator.validate(catalog, handlers);
+
+            // ERROR, not WARNING: PreconditionStep fails open on an unresolvable ref,
+            // so a typo here silently deletes a gate instead of breaking visibly.
+            assertFalse(report.isValid());
+            assertTrue(report.getBySeverity(Severity.ERROR).stream()
+                .anyMatch(v -> v.rule().equals("preconditionRef")));
+        }
+
+        @Test
+        @DisplayName("resolvable preconditionRefs produce no violation")
+        void resolvablePreconditionRefsOk() {
+            catalog.register(specWithPrecondition("devmod.ui.gated", "clientOnly"));
+            catalog.register(specWithPrecondition("devmod.ui.perm", "requiresPermissionOrClient_2"));
+
+            HandlerRegistry handlers = new HandlerRegistry();
+            handlers.register("devmod.ui.gated", ctx -> {});
+            handlers.register("devmod.ui.perm", ctx -> {});
+
+            CatalogValidationReport report = ActionCatalogValidator.validate(catalog, handlers);
+
+            assertTrue(report.getBySeverity(Severity.ERROR).stream()
+                .noneMatch(v -> v.rule().equals("preconditionRef")));
+        }
+
+        @Test
+        @DisplayName("null preconditionRegistry skips precondition checks")
+        void nullPreconditionRegistrySkipsChecks() {
+            catalog.register(specWithPrecondition("devmod.ui.typo", "clientOnlyy"));
+
+            HandlerRegistry handlers = new HandlerRegistry();
+            handlers.register("devmod.ui.typo", ctx -> {});
+
+            CatalogValidationReport report =
+                ActionCatalogValidator.validate(catalog, handlers, null);
+
+            assertTrue(report.getBySeverity(Severity.ERROR).stream()
+                .noneMatch(v -> v.rule().equals("preconditionRef")));
+        }
+
+        private ActionSpec specWithPrecondition(String id, String ref) {
+            return ActionSpec.builder(id)
+                .channel(ActionChannel.CLIENT)
+                .category(ActionCategory.UI)
+                .ui("label." + id, "desc." + id)
+                .policy(false, 0, ref)
+                .build();
+        }
+
+        @Test
         @DisplayName("empty labelKey produces WARNING")
         void emptyLabelKeyWarning() {
             ActionSpec spec = ActionSpec.builder("devmod.ui.nolabel")

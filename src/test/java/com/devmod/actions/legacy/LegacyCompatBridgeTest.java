@@ -329,6 +329,26 @@ class LegacyCompatBridgeTest {
         }
 
         @Test
+        @DisplayName("V2 Active mode does not fall back once the handler has run")
+        void v2ActiveSkipsFallbackAfterHandlerStarted() throws IOException {
+            String src = readBridgeSource();
+            // FAILED is only produced after ExecuteStep entered the handler, so an
+            // unguarded fallback re-applies whatever prefix already succeeded.
+            assertTrue(src.contains("outcome.handlerStarted()"),
+                "fallback must be guarded on whether the handler was entered");
+        }
+
+        @Test
+        @DisplayName("Shadow mode runs V2 as a dry run so side effects do not fire twice")
+        void shadowModeUsesDryRun() throws IOException {
+            String src = readBridgeSource();
+            // The V2 handlers delegate straight back into V1, so executing them in the
+            // shadow leg would double every teleport, grant and toggle.
+            assertTrue(src.contains("executeDetailed(actionId, context, true)"),
+                "shadow leg must execute V2 with dryRun=true");
+        }
+
+        @Test
         @DisplayName("V2 Active mode catches V2 exceptions")
         void v2ActiveCatchesExceptions() throws IOException {
             String src = readBridgeSource();
