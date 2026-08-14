@@ -87,19 +87,31 @@ Everything previously deferred is now done, and the branch was merged to `main`.
 - NeoForge 21.1.248 and GeckoLib 4.9.2, the latest for 1.21.1.
 - Random sampling no longer applies to pre-aggregated telemetry tables.
 
+## Fifth pass
+
+- Portal clearing and restyling covers the whole portal; the bound comes from
+  `PortalFrameDetector` and the two duplicate flood fills are now one.
+- Entity goals moved to the mod's payload path, which removed the duplicate
+  writer that made target goals flicker — and with it the last live branch of
+  `DebugRendererMixin`, now deleted along with four no-op injections.
+- `BLOCK_UPDATES` implemented (hooked at `BlockStateBase.handleNeighborChanged`,
+  the one funnel every update path converges on); `BREEZE` and `BEE_HIVES`
+  removed. No debug toggle renders nothing any more.
+- Branch merged to `main` and pushed. The previous `origin/main` — an unrelated
+  105-file tree from another author, mostly gradle cache — is preserved on
+  `archive/pre-2026-main`.
+
 ## Still open
 
-- **`collectPortalBlocksRecursive` bounds its flood fill at 100 blocks** while a
-  legal portal interior can reach 441, so `clearPortalBlocks` and
-  `updatePortalBlockState` silently skip part of a large portal, leaving
-  orphaned blocks and stale `LINKED` states. Pre-existing.
-- **`NativeDebugSender.sendGoalsDebug` duplicates the mixin's per-tick
-  `GoalDebugPayload`.** The client keys that renderer by entity id, so the two
-  writers overwrite each other and target goals flicker.
 - **Nothing here has been play-tested.** The combat changes in particular —
   yaw-relative hit geometry, dropped head priority, bow velocity restored to
   vanilla, execution duration — change what players feel and have no automated
-  coverage beyond unit tests of the maths.
+  coverage beyond unit tests of the maths. This is the one remaining gap, and
+  the only one that automated testing cannot close.
+- **`BLOCK_UPDATES` excludes shape updates** (`neighborShapeChanged`, the
+  fences-reconnecting path). That is deliberate — vanilla never reported it as a
+  neighbour update and including it would double-mark positions — but it means
+  the overlay is not a complete picture of every block-state notification.
 
 ## Rejected after checking
 
