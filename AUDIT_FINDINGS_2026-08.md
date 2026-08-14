@@ -6,7 +6,11 @@ the ones marked **FIXED** were additionally verified by hand against the source
 before the fix landed. Unverified findings are candidates, not confirmed bugs —
 verify before acting.
 
-Status legend: **FIXED** · **TODO** · **REJECTED** (checked, not a real bug)
+**Status:** every finding below has been actioned. The per-subsystem sections
+after the divider are the *original* finding list from the first pass, kept as a
+historical record — their `TODO` markers reflect the state at discovery, not
+today. Current status is the three pass summaries plus "Still open" below. Where
+the two disagree, this section wins.
 
 ## Second pass (same month)
 
@@ -66,11 +70,10 @@ together). Compiles clean, 9035 unit tests and 51 GameTests green.
 - Config clamping no longer mutates the caller's object; damage statistics have
   a single owner file; Actions V2 is correct enough to enable, without being
   enabled.
-
-Still deliberately incomplete, and marked as such in the code: the debug
-renderer's structure, POI and raid reads are guarded but still race the
-integrated server thread — there is no client-side source for that data, so the
-real fix is to push it over the existing debug payload channel.
+- Random sampling no longer applies to pre-aggregated tables. Sampling assumes
+  one row is one observation; those rows each summarise a whole bucket, so
+  dropping 90% of `spatial_heatmaps` discarded 90% of the underlying samples and
+  nothing scaled the survivors back up.
 
 Deliberate non-fixes, with the reasoning kept so they are not re-litigated:
 
@@ -88,6 +91,36 @@ Deliberate non-fixes, with the reasoning kept so they are not re-litigated:
   a synchronous command's contract.
 - `TesterProgress` and `DamageStatistics` persist the same counters to two
   files; whichever loads last wins. Picking an owner is a data-model decision.
+
+## Still open
+
+Only these remain. Everything else in the historical list was fixed, or is in
+the "deliberate non-fixes" list with its reasoning.
+
+- **Debug renderer entity reads.** `NativeDebugClientRenderer` still reads
+  `ServerLevel` from the render thread for the entity-based features (mobs,
+  goals, pathing). Structures, POI and raids were moved onto the server→client
+  push path; the entity paths are a different shape and were left for a
+  follow-up.
+
+## Rejected after checking
+
+Kept so these are not re-investigated:
+
+- `ExecutionSystem.completeExecution(player, null)` — every dereference of the
+  target is already null-guarded.
+- `HitData` static store — cleaned every server tick, not a leak.
+- Payload handlers running on the network thread — NeoForge's `PayloadRegistrar`
+  defaults to `HandlerThread.MAIN` and wraps handlers accordingly.
+- `UnifiedNotificationPayload.from` — cannot return null on any path.
+- Recipe result stacks — every `getResult`/`assemble` path already copies.
+- Portal entity duplication on simultaneous entry — guarded by portal cooldown.
+- Hologram presets missing from `getUpdateTag` — nothing client-side reads them,
+  so the reported symptom does not exist.
+- `TelemetryAggregatorRegistry`'s scheduler "leak" — it is one daemon thread
+  reused across world rejoins; shutting it down would break the next `start()`.
+- `CutoverOrchestrator.enableV2` not clearing the shadow flag — the two-stage
+  sequence is deliberate.
 
 ---
 
