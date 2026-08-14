@@ -120,6 +120,8 @@ public enum ChannelId {
     DEBUG_STRUCTURES(95, Direction.SERVER_TO_CLIENT, "StructuresPayload"),
     DEBUG_POI(96, Direction.SERVER_TO_CLIENT, "POIPayload"),
     DEBUG_RAIDS(97, Direction.SERVER_TO_CLIENT, "RaidsPayload"),
+    DEBUG_BRAINS(98, Direction.SERVER_TO_CLIENT, "BrainsPayload"),
+    DEBUG_BEES(99, Direction.SERVER_TO_CLIENT, "BeesPayload"),
 
     // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)

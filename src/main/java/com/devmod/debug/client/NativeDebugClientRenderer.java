@@ -1,7 +1,6 @@
 package com.devmod.debug.client;
 
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,11 +13,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Bee;
-import net.minecraft.world.level.pathfinder.Node;
-import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -28,7 +25,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
-import com.devmod.client.ui.overlay.OverlayTheme;
+import com.devmod.debug.BeesPayload;
+import com.devmod.debug.BrainsPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
 import com.devmod.debug.StructuresPayload;
@@ -55,14 +53,6 @@ public class NativeDebugClientRenderer {
         Vec3 camPos = event.getCamera().getPosition();
 
         // Render each enabled feature
-        if (DebugRenderBools.isEntityPathing()) {
-            renderEntityPathing(poseStack, bufferSource, camPos, mc);
-        }
-
-        if (DebugRenderBools.isEntityGoals()) {
-            renderEntityGoals(poseStack, bufferSource, camPos, mc);
-        }
-
         if (DebugRenderBools.isEntityBrains()) {
             renderEntityBrains(poseStack, bufferSource, camPos, mc);
         }
@@ -91,9 +81,7 @@ public class NativeDebugClientRenderer {
     }
 
     private static boolean hasAnyEnabled() {
-        return DebugRenderBools.isEntityPathing() ||
-               DebugRenderBools.isEntityGoals() ||
-               DebugRenderBools.isEntityBrains() ||
+        return DebugRenderBools.isEntityBrains() ||
                DebugRenderBools.isPoi() ||
                DebugRenderBools.isRaids() ||
                DebugRenderBools.isBees() ||
@@ -102,195 +90,10 @@ public class NativeDebugClientRenderer {
     }
 
     /**
-     * Render mob navigation paths similar to Minecraft's PathfindingDebugRenderer.
-     */
-    private static void renderEntityPathing(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                            Vec3 camPos, Minecraft mc) {
-        if (mc.level == null || mc.player == null) return;
-
-        var level = Objects.requireNonNull(mc.level);
-        var player = Objects.requireNonNull(mc.player);
-
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
-
-        // Get mobs from server level (singleplayer only)
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
-
-        // Copy to list to avoid ConcurrentModificationException
-        List<Mob> mobs;
-        try {
-            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
-        } catch (ConcurrentModificationException e) {
-            return; // Skip this frame if entities are being modified
-        }
-
-        for (Mob mob : mobs) {
-            Path path = mob.getNavigation().getPath();
-            if (path == null || path.isDone()) continue;
-
-            renderPath(poseStack, bufferSource, camPos, path);
-        }
-    }
-
-    /**
-     * Render a single mob's path.
-     */
-    private static void renderPath(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                    Vec3 camPos, Path path) {
-        RenderType lineType = Objects.requireNonNull(RenderType.lines());
-        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
-
-        poseStack.pushPose();
-        poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
-        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
-
-        // Draw path nodes
-        int nodeCount = path.getNodeCount();
-        int currentNode = path.getNextNodeIndex();
-
-        for (int i = 0; i < nodeCount - 1; i++) {
-            Node node = path.getNode(i);
-            Node nextNode = path.getNode(i + 1);
-
-            float x1 = node.x + 0.5f;
-            float y1 = node.y + 0.1f;
-            float z1 = node.z + 0.5f;
-            float x2 = nextNode.x + 0.5f;
-            float y2 = nextNode.y + 0.1f;
-            float z2 = nextNode.z + 0.5f;
-
-            // Color: green for completed, yellow for current, red for future
-            float r, g, b;
-            if (i < currentNode) {
-                r = 0.0f; g = 1.0f; b = 0.0f; // Green - completed
-            } else if (i == currentNode) {
-                r = 1.0f; g = 1.0f; b = 0.0f; // Yellow - current
-            } else {
-                r = 1.0f; g = 0.3f; b = 0.3f; // Light red - future
-            }
-
-            // Draw line segment
-            drawLine(lineConsumer, matrix, x1, y1, z1, x2, y2, z2, r, g, b, 1.0f);
-        }
-
-        // Draw node markers
-        for (int i = 0; i < nodeCount; i++) {
-            Node node = path.getNode(i);
-            float x = node.x + 0.5f;
-            float y = node.y + 0.1f;
-            float z = node.z + 0.5f;
-            float size = 0.1f;
-
-            // Small box at each node
-            float r = i == currentNode ? 1.0f : 0.5f;
-            float g = i == currentNode ? 1.0f : 0.5f;
-            float b = 0.0f;
-
-            drawBox(lineConsumer, matrix, x - size, y, z - size, x + size, y + size * 2, z + size, r, g, b, 1.0f);
-        }
-
-        // Draw target position
-        BlockPos target = path.getTarget();
-        if (target != null) {
-            BlockPos nonNullTarget = Objects.requireNonNull(target);
-            float tx = nonNullTarget.getX() + 0.5f;
-            float ty = nonNullTarget.getY() + 0.1f;
-            float tz = nonNullTarget.getZ() + 0.5f;
-            drawBox(lineConsumer, matrix, tx - 0.3f, ty, tz - 0.3f, tx + 0.3f, ty + 0.6f, tz + 0.3f,
-                    0.0f, 1.0f, 1.0f, 1.0f); // Cyan for target
-        }
-
-        poseStack.popPose();
-    }
-
-    /**
-     * Render mob AI goals.
-     */
-    private static void renderEntityGoals(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                          Vec3 camPos, Minecraft mc) {
-        if (mc.level == null || mc.player == null) return;
-
-        var level = Objects.requireNonNull(mc.level);
-        var player = Objects.requireNonNull(mc.player);
-
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
-
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
-
-        // Copy to list to avoid ConcurrentModificationException
-        List<Mob> mobs;
-        try {
-            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
-        } catch (ConcurrentModificationException e) {
-            return; // Skip this frame if entities are being modified
-        }
-
-        for (Mob mob : mobs) {
-            renderMobGoals(poseStack, bufferSource, camPos, mob);
-        }
-    }
-
-    /**
-     * Render goals for a single mob as floating text.
-     */
-    private static void renderMobGoals(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
-                                        Vec3 camPos, Mob mob) {
-        Minecraft mc = Minecraft.getInstance();
-
-        // Collect goals
-        List<String> goalLines = new ArrayList<>();
-
-        for (WrappedGoal goal : mob.goalSelector.getAvailableGoals()) {
-            String prefix = goal.isRunning() ? "\u00A7a▶ " : "\u00A77○ ";
-            String name = goal.getGoal().getClass().getSimpleName();
-            goalLines.add(prefix + goal.getPriority() + ": " + name);
-        }
-
-        // Collect target goals
-        for (WrappedGoal goal : mob.targetSelector.getAvailableGoals()) {
-            String prefix = goal.isRunning() ? "\u00A7c▶ " : "\u00A78○ ";
-            String name = "[T] " + goal.getGoal().getClass().getSimpleName();
-            goalLines.add(prefix + goal.getPriority() + ": " + name);
-        }
-
-        if (goalLines.isEmpty()) return;
-
-        // Render as floating text above mob
-        Vec3 mobPos = mob.position();
-        double dx = mobPos.x - camPos.x;
-        double dy = mobPos.y + mob.getBbHeight() + 0.5 - camPos.y;
-        double dz = mobPos.z - camPos.z;
-
-        poseStack.pushPose();
-        poseStack.translate(dx, dy, dz);
-        poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
-        poseStack.scale(-0.025f, -0.025f, 0.025f);
-
-        float yOffset = 0;
-        for (String line : goalLines) {
-            String safeLine = Objects.requireNonNull(line);
-            Matrix4f textMatrix = Objects.requireNonNull(poseStack.last().pose());
-            mc.font.drawInBatch(safeLine, -mc.font.width(safeLine) / 2.0f, yOffset,
-                    OverlayTheme.Text.PRIMARY, false, textMatrix, Objects.requireNonNull(bufferSource),
-                    net.minecraft.client.gui.Font.DisplayMode.NORMAL, OverlayTheme.Utility.SHADOW, 15728880);
-            yOffset += 10;
-        }
-
-        poseStack.popPose();
-    }
-
-    /**
      * Render entity brain activity - shows target connection lines and state indicators.
+     * <p>
+     * The aggressive flag is synced entity data, so it is read straight from the client level.
+     * The target is not synced and arrives through {@link BrainsPayload}.
      */
     private static void renderEntityBrains(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                             Vec3 camPos, Minecraft mc) {
@@ -299,12 +102,6 @@ public class NativeDebugClientRenderer {
         var level = Objects.requireNonNull(mc.level);
         var player = Objects.requireNonNull(mc.player);
 
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
-
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
 
@@ -315,30 +112,10 @@ public class NativeDebugClientRenderer {
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
-        // Copy to list to avoid ConcurrentModificationException
-        List<Mob> mobs;
-        try {
-            mobs = new ArrayList<>(serverLevel.getEntitiesOfClass(Mob.class, searchBox));
-        } catch (ConcurrentModificationException e) {
-            poseStack.popPose();
-            return; // Skip this frame if entities are being modified
-        }
-
-        for (Mob mob : mobs) {
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
             Vec3 mobPos = mob.position();
             float mx = (float) mobPos.x;
-            float my = (float) mobPos.y + mob.getBbHeight() * 0.5f;
             float mz = (float) mobPos.z;
-
-            // Draw line to target if aggressive
-            var target = mob.getTarget();
-            if (target != null) {
-                Vec3 targetPos = target.position();
-                // Red line to target
-                drawLine(lineConsumer, matrix, mx, my, mz,
-                        (float) targetPos.x, (float) targetPos.y + 1.0f, (float) targetPos.z,
-                        1.0f, 0.0f, 0.0f, 1.0f);
-            }
 
             // Draw indicator box above mob - red if aggressive, green if passive
             float boxY = (float) mobPos.y + mob.getBbHeight() + 0.3f;
@@ -352,6 +129,21 @@ public class NativeDebugClientRenderer {
                 drawBox(lineConsumer, matrix, mx - size, boxY, mz - size,
                         mx + size, boxY + size * 2, mz + size, 0.0f, 1.0f, 0.0f, 1.0f);
             }
+        }
+
+        for (BrainsPayload.TargetLink link : NativeDebugClientStore.getBrains()) {
+            Entity source = level.getEntity(link.entityId());
+            Entity target = level.getEntity(link.targetId());
+            if (source == null || target == null) continue;
+
+            Vec3 sourcePos = source.position();
+            Vec3 targetPos = target.position();
+
+            // Red line to target
+            drawLine(lineConsumer, matrix,
+                    (float) sourcePos.x, (float) sourcePos.y + source.getBbHeight() * 0.5f, (float) sourcePos.z,
+                    (float) targetPos.x, (float) targetPos.y + 1.0f, (float) targetPos.z,
+                    1.0f, 0.0f, 0.0f, 1.0f);
         }
 
         poseStack.popPose();
@@ -444,6 +236,9 @@ public class NativeDebugClientRenderer {
 
     /**
      * Render bee information and hive/flower connections as lines.
+     * <p>
+     * Nectar and anger are synced entity data, so they are read straight from the client level.
+     * The remembered hive and flower are not synced and arrive through {@link BeesPayload}.
      */
     private static void renderBees(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
                                     Vec3 camPos, Minecraft mc) {
@@ -451,12 +246,6 @@ public class NativeDebugClientRenderer {
 
         var level = Objects.requireNonNull(mc.level);
         var player = Objects.requireNonNull(mc.player);
-
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
 
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
@@ -468,25 +257,35 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        // Copy to list to avoid ConcurrentModificationException
-        List<Bee> bees;
-        try {
-            bees = new ArrayList<>(serverLevel.getEntitiesOfClass(Bee.class, searchBox));
-        } catch (ConcurrentModificationException e) {
-            poseStack.popPose();
-            return; // Skip this frame if entities are being modified
+        for (Bee bee : level.getEntitiesOfClass(Bee.class, searchBox)) {
+            Vec3 beePos = bee.position();
+            float bx = (float) beePos.x;
+            float bz = (float) beePos.z;
+
+            // Draw indicator above bee: orange if has nectar, red if angry, white otherwise
+            float indicatorY = (float) beePos.y + 1.0f;
+            float size = 0.1f;
+            if (bee.isAngry()) {
+                drawBox(lineConsumer, matrix, bx - size, indicatorY, bz - size,
+                        bx + size, indicatorY + size * 2, bz + size, 1.0f, 0.0f, 0.0f, 1.0f);
+            } else if (bee.hasNectar()) {
+                drawBox(lineConsumer, matrix, bx - size, indicatorY, bz - size,
+                        bx + size, indicatorY + size * 2, bz + size, 1.0f, 0.6f, 0.0f, 1.0f);
+            }
         }
 
-        for (Bee bee : bees) {
+        for (BeesPayload.BeeInfo info : NativeDebugClientStore.getBees()) {
+            Entity bee = level.getEntity(info.entityId());
+            if (bee == null) continue;
+
             Vec3 beePos = bee.position();
             float bx = (float) beePos.x;
             float by = (float) beePos.y + 0.5f;
             float bz = (float) beePos.z;
 
             // Draw bee's home hive connection if it has one (yellow line)
-            BlockPos hivePos = bee.getHivePos();
-            if (hivePos != null) {
-                BlockPos hive = Objects.requireNonNull(hivePos);
+            BlockPos hive = info.hivePos();
+            if (hive != null) {
                 drawLine(lineConsumer, matrix, bx, by, bz,
                         hive.getX() + 0.5f, hive.getY() + 0.5f, hive.getZ() + 0.5f,
                         1.0f, 0.8f, 0.0f, 1.0f);
@@ -499,23 +298,11 @@ public class NativeDebugClientRenderer {
             }
 
             // Draw flower target if bee has one (pink line)
-            BlockPos flowerPos = bee.getSavedFlowerPos();
-            if (flowerPos != null) {
-                BlockPos flower = Objects.requireNonNull(flowerPos);
+            BlockPos flower = info.flowerPos();
+            if (flower != null) {
                 drawLine(lineConsumer, matrix, bx, by, bz,
                         flower.getX() + 0.5f, flower.getY() + 0.5f, flower.getZ() + 0.5f,
                         1.0f, 0.4f, 0.7f, 1.0f);
-            }
-
-            // Draw indicator above bee: orange if has nectar, red if angry, white otherwise
-            float indicatorY = (float) beePos.y + 1.0f;
-            float size = 0.1f;
-            if (bee.isAngry()) {
-                drawBox(lineConsumer, matrix, bx - size, indicatorY, bz - size,
-                        bx + size, indicatorY + size * 2, bz + size, 1.0f, 0.0f, 0.0f, 1.0f);
-            } else if (bee.hasNectar()) {
-                drawBox(lineConsumer, matrix, bx - size, indicatorY, bz - size,
-                        bx + size, indicatorY + size * 2, bz + size, 1.0f, 0.6f, 0.0f, 1.0f);
             }
         }
 

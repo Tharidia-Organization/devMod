@@ -29,7 +29,12 @@ public final class DebugNetworkClientHandler {
 
         // Update the client-side render booleans
         switch (feature) {
-            case ENTITY_PATHING -> DebugRenderBools.setEntityPathing(payload.enabled());
+            // Paths arrive as EntityPathingPayload, which only PathfindingDebugger consumes,
+            // so the native toggle has to drive it as well or the feature draws nothing.
+            case ENTITY_PATHING -> {
+                DebugRenderBools.setEntityPathing(payload.enabled());
+                PathfindingDebugger.INSTANCE.setEnabled(payload.enabled());
+            }
             case ENTITY_GOALS -> DebugRenderBools.setEntityGoals(payload.enabled());
             case ENTITY_BRAINS -> DebugRenderBools.setEntityBrains(payload.enabled());
             case POI -> DebugRenderBools.setPoi(payload.enabled());

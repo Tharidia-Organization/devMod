@@ -122,12 +122,23 @@ public class DebugPacketsMixin {
     /**
      * Suppresses vanilla's POI-removed packet.
      *
-     * <p>Vanilla's {@code DebugRenderer.render} only draws the chunk-border and
-     * game-test renderers, so the client decodes this payload and never shows
-     * it. POI debug reaches the client through {@code POIPayload} instead.
+     * <p>POI debug reaches the client through {@code POIPayload} and is drawn by
+     * {@code NativeDebugClientRenderer}. Vanilla's own renderer is re-enabled by
+     * {@code DebugRendererMixin}, so both the add and the remove packet are
+     * suppressed: feeding it adds without removes would accumulate POIs that are
+     * never cleared.
      */
     @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
+        ci.cancel();
+    }
+
+    /**
+     * Suppresses vanilla's POI-added packet, the counterpart to
+     * {@link #devmod_sendPoiRemovedPacket}.
+     */
+    @Inject(method = "sendPoiAddedPacket", at = @At("HEAD"), cancellable = true)
+    private static void devmod_sendPoiAddedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
         ci.cancel();
     }
 

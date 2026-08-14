@@ -17,6 +17,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.devmod.debug.network.EntityScanDataPayload;
 import com.devmod.network.PayloadValidation;
 
+import static com.devmod.network.ChannelId.DEBUG_BEES;
+import static com.devmod.network.ChannelId.DEBUG_BRAINS;
 import static com.devmod.network.ChannelId.DEBUG_POI;
 import static com.devmod.network.ChannelId.DEBUG_RAIDS;
 import static com.devmod.network.ChannelId.DEBUG_STRUCTURES;
@@ -86,6 +88,22 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.MEDIUM)
             );
 
+            // Brains (server to client) - mob → target links near the player
+            event.registrar(DEBUG_BRAINS.asString()).playToClient(
+                Objects.requireNonNull(BrainsPayload.TYPE),
+                Objects.requireNonNull(BrainsPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleBrains,
+                    PayloadValidation.PayloadLimits.MEDIUM)
+            );
+
+            // Bees (server to client) - remembered hive/flower of bees near the player
+            event.registrar(DEBUG_BEES.asString()).playToClient(
+                Objects.requireNonNull(BeesPayload.TYPE),
+                Objects.requireNonNull(BeesPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleBees,
+                    PayloadValidation.PayloadLimits.MEDIUM)
+            );
+
             // Entity Scan Data (server to client) - send scanned entity data
             event.registrar(ENTITY_SCAN_DATA.asString()).playToClient(
                 Objects.requireNonNull(EntityScanDataPayload.TYPE),
@@ -102,9 +120,10 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.SMALL)
             );
 
-            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {}, {}, {}, {})",
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
                 DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString(),
                 DEBUG_STRUCTURES.asString(), DEBUG_POI.asString(), DEBUG_RAIDS.asString(),
+                DEBUG_BRAINS.asString(), DEBUG_BEES.asString(),
                 ENTITY_SCAN_DATA.asString(), ENTITY_SCANNER_OPEN.asString());
         } catch (NoClassDefFoundError e) {
             LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
@@ -177,6 +196,20 @@ public class DebugNetworkHandler {
             return;
         }
         observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleRaids(payload)), "debug raids");
+    }
+
+    private static void handleBrains(BrainsPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleBrains(payload)), "debug brains");
+    }
+
+    private static void handleBees(BeesPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleBees(payload)), "debug bees");
     }
 
     private static void handleEntityScanData(EntityScanDataPayload payload, IPayloadContext context) {

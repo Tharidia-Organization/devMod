@@ -19,10 +19,12 @@ import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
+import net.minecraft.world.entity.animal.Bee;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.Level;
@@ -89,6 +91,14 @@ public class NativeDebugSender {
 
                 if (features.contains(DebugFeature.RAIDS)) {
                     sendRaidsDebug(player, level);
+                }
+
+                if (features.contains(DebugFeature.ENTITY_BRAINS)) {
+                    sendBrainsDebug(player, level);
+                }
+
+                if (features.contains(DebugFeature.BEES)) {
+                    sendBeesDebug(player, level);
                 }
             } catch (Exception e) {
                 LOGGER.warn("Error sending debug packets to {}: {}",
@@ -253,6 +263,48 @@ public class NativeDebugSender {
         }).toList();
 
         player.connection.send(new ClientboundCustomPayloadPacket(new POIPayload(pois)));
+    }
+
+    /**
+     * Send the target of every nearby mob. {@code Mob.getTarget()} is server-only state, so the
+     * client renderer cannot draw the target lines without it; everything else that renderer
+     * needs (position, aggressive flag) is synced entity data.
+     */
+    private void sendBrainsDebug(ServerPlayer player, ServerLevel level) {
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
+
+        List<BrainsPayload.TargetLink> targets = new ArrayList<>();
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
+            LivingEntity target = mob.getTarget();
+            if (target == null) continue;
+
+            targets.add(new BrainsPayload.TargetLink(mob.getId(), target.getId()));
+            if (targets.size() >= BrainsPayload.maxTargets()) break;
+        }
+
+        player.connection.send(new ClientboundCustomPayloadPacket(new BrainsPayload(targets)));
+    }
+
+    /**
+     * Send the hive and flower each nearby bee remembers. Both are server-only fields; nectar and
+     * anger are synced, so the client renderer reads those itself.
+     */
+    private void sendBeesDebug(ServerPlayer player, ServerLevel level) {
+        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
+        AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
+
+        List<BeesPayload.BeeInfo> bees = new ArrayList<>();
+        for (Bee bee : level.getEntitiesOfClass(Bee.class, searchBox)) {
+            BlockPos hivePos = bee.getHivePos();
+            BlockPos flowerPos = bee.getSavedFlowerPos();
+            if (hivePos == null && flowerPos == null) continue;
+
+            bees.add(new BeesPayload.BeeInfo(bee.getId(), hivePos, flowerPos));
+            if (bees.size() >= BeesPayload.maxBees()) break;
+        }
+
+        player.connection.send(new ClientboundCustomPayloadPacket(new BeesPayload(bees)));
     }
 
     /**

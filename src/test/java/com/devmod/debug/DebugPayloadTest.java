@@ -15,6 +15,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import io.netty.buffer.Unpooled;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 
 import com.devmod.TestBootstrap;
@@ -22,8 +23,8 @@ import com.devmod.TestBootstrap;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for debug payload records: DebugSyncPayload, DebugTogglePayload,
- * EntityGoalsPayload, EntityPathingPayload, StructuresPayload, RaidsPayload, POIPayload.
+ * Tests for debug payload records: DebugSyncPayload, DebugTogglePayload, BrainsPayload,
+ * BeesPayload, EntityPathingPayload, StructuresPayload, RaidsPayload, POIPayload.
  * Tests record construction, getFeature() mapping, estimatedSize, clear() factories,
  * and the decode-side count bounds that keep a hostile server from allocating without limit.
  */
@@ -135,77 +136,140 @@ class DebugPayloadTest {
     }
 
     // ==========================================
-    // EntityGoalsPayload
+    // BrainsPayload
     // ==========================================
 
     @Nested
-    @DisplayName("EntityGoalsPayload")
-    class EntityGoalsPayloadTests {
+    @DisplayName("BrainsPayload")
+    class BrainsPayloadTests {
 
         @Test
-        @DisplayName("Record stores all fields")
-        void recordFields() {
-            EntityGoalsPayload.GoalInfo goal = new EntityGoalsPayload.GoalInfo(1, true, "FloatGoal");
-            EntityGoalsPayload.GoalInfo targetGoal = new EntityGoalsPayload.GoalInfo(2, false, "NearestAttackableTarget");
-            EntityGoalsPayload payload = new EntityGoalsPayload(42, "Zombie", 10.0, 65.0, -20.0,
-                List.of(goal), List.of(targetGoal));
-
-            assertEquals(42, payload.entityId());
-            assertEquals("Zombie", payload.entityName());
-            assertEquals(10.0, payload.posX());
-            assertEquals(65.0, payload.posY());
-            assertEquals(-20.0, payload.posZ());
-            assertEquals(1, payload.goals().size());
-            assertEquals(1, payload.targetGoals().size());
+        @DisplayName("TargetLink record fields")
+        void targetLinkFields() {
+            BrainsPayload.TargetLink link = new BrainsPayload.TargetLink(42, 7);
+            assertEquals(42, link.entityId());
+            assertEquals(7, link.targetId());
         }
 
         @Test
-        @DisplayName("GoalInfo record fields")
-        void goalInfoFields() {
-            EntityGoalsPayload.GoalInfo goal = new EntityGoalsPayload.GoalInfo(3, true, "MeleeAttack");
-            assertEquals(3, goal.priority());
-            assertTrue(goal.isRunning());
-            assertEquals("MeleeAttack", goal.name());
-        }
-
-        @Test
-        @DisplayName("clear() creates empty payload for entity")
-        void clearCreatesEmpty() {
-            EntityGoalsPayload cleared = EntityGoalsPayload.clear(123);
-            assertEquals(123, cleared.entityId());
-            assertEquals("", cleared.entityName());
-            assertTrue(cleared.goals().isEmpty());
-            assertTrue(cleared.targetGoals().isEmpty());
-        }
-
-        @Test
-        @DisplayName("estimatedSize is positive for non-empty payload")
-        void estimatedSizePositive() {
-            EntityGoalsPayload payload = new EntityGoalsPayload(1, "Test", 0, 0, 0,
-                List.of(new EntityGoalsPayload.GoalInfo(1, true, "Goal")),
-                List.of());
-            assertTrue(payload.estimatedSize() > 0);
-        }
-
-        @Test
-        @DisplayName("estimatedSize grows with more goals")
-        void estimatedSizeGrowsWithGoals() {
-            EntityGoalsPayload empty = EntityGoalsPayload.clear(1);
-            EntityGoalsPayload withGoals = new EntityGoalsPayload(1, "Test", 0, 0, 0,
-                List.of(
-                    new EntityGoalsPayload.GoalInfo(1, true, "Goal1"),
-                    new EntityGoalsPayload.GoalInfo(2, false, "Goal2"),
-                    new EntityGoalsPayload.GoalInfo(3, true, "Goal3")
-                ),
-                List.of(new EntityGoalsPayload.GoalInfo(1, false, "Target1")));
-            assertTrue(withGoals.estimatedSize() > empty.estimatedSize());
+        @DisplayName("estimatedSize grows with more links")
+        void estimatedSizeGrows() {
+            BrainsPayload empty = new BrainsPayload(List.of());
+            BrainsPayload withLinks = new BrainsPayload(List.of(
+                new BrainsPayload.TargetLink(1, 2),
+                new BrainsPayload.TargetLink(3, 4)
+            ));
+            assertTrue(withLinks.estimatedSize() > empty.estimatedSize());
         }
 
         @Test
         @DisplayName("TYPE has correct resource location")
         void typeHasCorrectId() {
-            assertNotNull(EntityGoalsPayload.TYPE);
-            assertTrue(EntityGoalsPayload.TYPE.id().toString().contains("debug_goals"));
+            assertNotNull(BrainsPayload.TYPE);
+            assertTrue(BrainsPayload.TYPE.id().toString().contains("debug_brains"));
+        }
+
+        @Test
+        @DisplayName("encode/decode round-trip preserves links")
+        void roundTrip() {
+            BrainsPayload original = new BrainsPayload(List.of(
+                new BrainsPayload.TargetLink(11, 22),
+                new BrainsPayload.TargetLink(33, 44)
+            ));
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BrainsPayload.STREAM_CODEC.encode(buf, original);
+            buf.readerIndex(0);
+            BrainsPayload decoded = BrainsPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(original.targets(), decoded.targets());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("decode caps the link count")
+        void decodeCapsCount() {
+            List<BrainsPayload.TargetLink> links = new ArrayList<>();
+            for (int i = 0; i < 400; i++) {
+                links.add(new BrainsPayload.TargetLink(i, i + 1));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BrainsPayload.STREAM_CODEC.encode(buf, new BrainsPayload(links));
+            buf.readerIndex(0);
+            BrainsPayload decoded = BrainsPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(BrainsPayload.maxTargets(), decoded.targets().size());
+            buf.release();
+        }
+    }
+
+    // ==========================================
+    // BeesPayload
+    // ==========================================
+
+    @Nested
+    @DisplayName("BeesPayload")
+    class BeesPayloadTests {
+
+        @Test
+        @DisplayName("BeeInfo tolerates a bee with neither hive nor flower")
+        void beeInfoFields() {
+            BeesPayload.BeeInfo info = new BeesPayload.BeeInfo(5, null, null);
+            assertEquals(5, info.entityId());
+            assertNull(info.hivePos());
+            assertNull(info.flowerPos());
+        }
+
+        @Test
+        @DisplayName("estimatedSize grows with remembered positions")
+        void estimatedSizeGrows() {
+            BeesPayload without = new BeesPayload(List.of(new BeesPayload.BeeInfo(1, null, null)));
+            BeesPayload with = new BeesPayload(List.of(
+                new BeesPayload.BeeInfo(1, new BlockPos(10, 64, -20), new BlockPos(12, 63, -18))));
+            assertTrue(with.estimatedSize() > without.estimatedSize());
+        }
+
+        @Test
+        @DisplayName("TYPE has correct resource location")
+        void typeHasCorrectId() {
+            assertNotNull(BeesPayload.TYPE);
+            assertTrue(BeesPayload.TYPE.id().toString().contains("debug_bees"));
+        }
+
+        @Test
+        @DisplayName("encode/decode round-trip preserves nullable positions")
+        void roundTrip() {
+            BeesPayload original = new BeesPayload(List.of(
+                new BeesPayload.BeeInfo(1, new BlockPos(10, 64, -20), null),
+                new BeesPayload.BeeInfo(2, null, new BlockPos(-5, 70, 8)),
+                new BeesPayload.BeeInfo(3, new BlockPos(0, 0, 0), new BlockPos(1, 2, 3))
+            ));
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BeesPayload.STREAM_CODEC.encode(buf, original);
+            buf.readerIndex(0);
+            BeesPayload decoded = BeesPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(original.bees(), decoded.bees());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("decode caps the bee count")
+        void decodeCapsCount() {
+            List<BeesPayload.BeeInfo> bees = new ArrayList<>();
+            for (int i = 0; i < 400; i++) {
+                bees.add(new BeesPayload.BeeInfo(i, new BlockPos(i, 64, i), null));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BeesPayload.STREAM_CODEC.encode(buf, new BeesPayload(bees));
+            buf.readerIndex(0);
+            BeesPayload decoded = BeesPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(BeesPayload.maxBees(), decoded.bees().size());
+            buf.release();
         }
     }
 

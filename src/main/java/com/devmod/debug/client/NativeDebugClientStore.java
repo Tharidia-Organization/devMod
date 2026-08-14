@@ -8,12 +8,14 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import com.devmod.DevMod;
+import com.devmod.debug.BeesPayload;
+import com.devmod.debug.BrainsPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
 import com.devmod.debug.StructuresPayload;
 
 /**
- * Client-side snapshots of the structure/POI/raid data pushed by {@code NativeDebugSender}.
+ * Client-side snapshots of the structure/POI/raid/brain/bee data pushed by {@code NativeDebugSender}.
  * <p>
  * The renderer reads only from here, so it never touches the integrated server's state from
  * the render thread. Each snapshot carries the wall-clock time it arrived and is treated as
@@ -39,6 +41,12 @@ public final class NativeDebugClientStore {
     private static volatile List<RaidsPayload.RaidInfo> raids = List.of();
     private static volatile long raidsTime;
 
+    private static volatile List<BrainsPayload.TargetLink> brains = List.of();
+    private static volatile long brainsTime;
+
+    private static volatile List<BeesPayload.BeeInfo> bees = List.of();
+    private static volatile long beesTime;
+
     private NativeDebugClientStore() {}
 
     public static void setStructures(StructuresPayload payload) {
@@ -56,6 +64,16 @@ public final class NativeDebugClientStore {
         raidsTime = System.currentTimeMillis();
     }
 
+    public static void setBrains(BrainsPayload payload) {
+        brains = List.copyOf(payload.targets());
+        brainsTime = System.currentTimeMillis();
+    }
+
+    public static void setBees(BeesPayload payload) {
+        bees = List.copyOf(payload.bees());
+        beesTime = System.currentTimeMillis();
+    }
+
     public static List<StructuresPayload.StructureBox> getStructures() {
         return fresh(structuresTime) ? structures : List.of();
     }
@@ -68,6 +86,14 @@ public final class NativeDebugClientStore {
         return fresh(raidsTime) ? raids : List.of();
     }
 
+    public static List<BrainsPayload.TargetLink> getBrains() {
+        return fresh(brainsTime) ? brains : List.of();
+    }
+
+    public static List<BeesPayload.BeeInfo> getBees() {
+        return fresh(beesTime) ? bees : List.of();
+    }
+
     public static void clear() {
         structures = List.of();
         structuresTime = 0;
@@ -75,6 +101,10 @@ public final class NativeDebugClientStore {
         poisTime = 0;
         raids = List.of();
         raidsTime = 0;
+        brains = List.of();
+        brainsTime = 0;
+        bees = List.of();
+        beesTime = 0;
     }
 
     private static boolean fresh(long stamp) {

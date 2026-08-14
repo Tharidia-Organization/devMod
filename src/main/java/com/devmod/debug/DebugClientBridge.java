@@ -48,6 +48,12 @@ public interface DebugClientBridge {
     /** Handle active raids for debug visualization. */
     default void handleRaids(RaidsPayload payload) {}
 
+    /** Handle mob → target links for debug visualization. */
+    default void handleBrains(BrainsPayload payload) {}
+
+    /** Handle bee hive/flower memories for debug visualization. */
+    default void handleBees(BeesPayload payload) {}
+
     /** Handle incoming scan data for the entity scanner screen. */
     default void handleScanData(EntityScanDataPayload payload) {}
 
