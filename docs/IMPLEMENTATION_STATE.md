@@ -1414,7 +1414,7 @@
 
 #### mixin/client
 
-- CameraShakeMixin, ClientLevelTimeMixin, DebugRendererMixin, EffekseerLevelRendererMixin
+- CameraShakeMixin, ClientLevelTimeMixin, EffekseerLevelRendererMixin
 - FabricScreenApiFixMixin, GameRendererMixin, HexereiDynamicRegistriesMixin, LevelAccessorTimeMixin
 - LivingEntityRendererMixin, ModelPartTransformMixin, MoreCullingCompatMixin, PlayerRendererMixin
 - SoundManagerMixin
