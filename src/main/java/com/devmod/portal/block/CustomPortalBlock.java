@@ -718,6 +718,9 @@ public final class CustomPortalBlock extends Block {
         if (!state.is(Objects.requireNonNull(newState.getBlock()))) {
             if (level instanceof ServerLevel serverLevel) {
                 PortalRegistry registry = PortalRegistry.get(serverLevel);
+                // This position stops belonging to whatever portal owned it, whether or not it
+                // is a registered center; the membership cache must not outlive the block.
+                registry.invalidateInteriorIndex();
                 registry.getByPosition(serverLevel, pos).ifPresent(portal -> {
                     registry.unlink(portal.id(), serverLevel.getServer());
                     registry.unregister(portal.id());

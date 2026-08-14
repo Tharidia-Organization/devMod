@@ -1,6 +1,8 @@
 package com.devmod.portal;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -23,6 +26,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 
@@ -38,8 +42,33 @@ public class PortalRegistry extends SavedData {
     private static final String DATA_NAME = "devmod_portals";
     private static final String TAG_PORTALS = "portals";
 
+    /**
+     * Flood fill bound for interior resolution. The largest legal interior is 21x21 = 441
+     * blocks; anything past this bound is not a portal shape the registry can own.
+     */
+    private static final int MAX_INTERIOR_BLOCKS = 1024;
+
+    /**
+     * Upper bound on cached interior positions. Only reachable if entities visit more portal
+     * blocks than any real hub holds; the cache is then dropped rather than grown.
+     */
+    private static final int MAX_INTERIOR_INDEX_SIZE = 8192;
+
+    /**
+     * Owner marker for a portal block that belongs to no registered portal. The nil UUID is
+     * never produced by {@link UUID#randomUUID()}, so it cannot collide with a portal id.
+     */
+    private static final UUID NO_OWNER = new UUID(0L, 0L);
+
     private final Map<UUID, PortalData> portals = new ConcurrentHashMap<>();
     private final Map<PositionKey, UUID> positionIndex = new ConcurrentHashMap<>();
+
+    /**
+     * Interior membership: every portal block position of a resolved portal maps to the portal
+     * that owns it, or to {@link #NO_OWNER}. Holds ids rather than {@link PortalData} so that
+     * changes to a portal's own state can never be read back stale from here.
+     */
+    private final Map<PositionKey, UUID> interiorIndex = new ConcurrentHashMap<>();
 
     /** Position index key. The registry is global, so the dimension is part of the identity. */
     private record PositionKey(ResourceLocation dimension, BlockPos pos) {}
@@ -78,6 +107,7 @@ public class PortalRegistry extends SavedData {
         if (key != null) {
             positionIndex.put(key, portal.id());
         }
+        invalidateInteriorIndex();
         setDirty();
     }
 
@@ -125,6 +155,7 @@ public class PortalRegistry extends SavedData {
                 }
             });
 
+            invalidateInteriorIndex();
             setDirty();
         }
     }
@@ -163,60 +194,159 @@ public class PortalRegistry extends SavedData {
     }
 
     /**
-     * Finds a portal that contains the given position.
-     * Searches by scanning nearby registered portals and checking if the position
-     * could be within their bounds.
+     * Finds the portal that actually contains the given position.
      *
-     * <p>Several portals of the same color can sit inside the search cube (a portal
-     * hub); the nearest center wins so the result does not depend on map iteration
-     * order.
+     * <p>Membership is the connected run of same-colored portal blocks the position belongs
+     * to: a portal owns the position when its recorded center sits in that run. Portals of
+     * one color standing a few blocks apart (a hub) therefore resolve to the portal the
+     * entity is really standing in, not to whichever center happens to be nearest.
+     *
+     * <p>Called once per tick for every entity inside every portal block, so the answer is
+     * cached per position, negatives included. See {@link #invalidateInteriorIndex()} for
+     * what drops the cache.
      *
      * @param level the server level to check
-     * @param pos any position within a portal's interior
+     * @param pos a portal block position
      * @param color the portal color to match
-     * @return the portal containing this position, or empty if none found
+     * @return the portal containing this position, or empty if none does
      */
     @Nonnull
     public Optional<PortalData> findPortalContaining(@Nonnull ServerLevel level, @Nonnull BlockPos pos, @Nonnull PortalColor color) {
-        ResourceLocation dim = level.dimension().location();
+        return findPortalContaining(level, Objects.requireNonNull(level.dimension().location()), pos, color);
+    }
 
-        // First try exact match (if clicking on center)
-        Optional<PortalData> exact = getByPosition(dim, pos);
-        if (exact.isPresent() && exact.get().color() == color) {
-            return exact;
+    /**
+     * Dimension-explicit variant of {@link #findPortalContaining(ServerLevel, BlockPos, PortalColor)}.
+     * The registry spans dimensions, so a plain {@link BlockGetter} cannot name its own.
+     */
+    @Nonnull
+    public Optional<PortalData> findPortalContaining(
+        @Nonnull BlockGetter level, @Nonnull ResourceLocation dimension,
+        @Nonnull BlockPos pos, @Nonnull PortalColor color
+    ) {
+        PositionKey key = new PositionKey(dimension, Objects.requireNonNull(pos.immutable()));
+
+        UUID owner = interiorIndex.get(key);
+        if (owner == null) {
+            indexInterior(level, dimension, pos);
+            owner = interiorIndex.get(key);
         }
 
-        // Search all portals of this color in this dimension
-        PortalData nearest = null;
-        double nearestDistSq = Double.MAX_VALUE;
-        for (PortalData portal : portals.values()) {
-            if (portal.color() != color) {
-                continue;
+        if (owner == null || owner.equals(NO_OWNER)) {
+            return Objects.requireNonNull(Optional.empty());
+        }
+
+        PortalData portal = portals.get(owner);
+        return Objects.requireNonNull(
+            portal != null && portal.color() == color ? Optional.of(portal) : Optional.empty());
+    }
+
+    /**
+     * Drops the interior membership cache.
+     *
+     * <p>Must be called whenever the positions a portal owns can change: registration,
+     * removal, a position update, and the removal of any portal block from the world
+     * (see {@link CustomPortalBlock#onRemove}, which fires for interior blocks too, not
+     * only for registered centers). Linking is deliberately not a trigger: the cache holds
+     * portal ids, so a link change is already picked up by the next lookup.
+     */
+    public void invalidateInteriorIndex() {
+        interiorIndex.clear();
+    }
+
+    /**
+     * Resolves the portal blocks connected to {@code start} and records the owning portal for
+     * each of them, so that neither the hit nor the miss repeats the flood fill next tick.
+     */
+    private void indexInterior(@Nonnull BlockGetter level, @Nonnull ResourceLocation dimension, @Nonnull BlockPos start) {
+        BlockState state = level.getBlockState(Objects.requireNonNull(start));
+        if (!(state.getBlock() instanceof CustomPortalBlock)) {
+            // Nothing to index. A position with no portal block can gain one without any
+            // registry call (creative placement), so a negative cached here would go stale
+            // with nothing to invalidate it.
+            return;
+        }
+
+        PortalColor blockColor = Objects.requireNonNull(state.getValue(Objects.requireNonNull(CustomPortalBlock.COLOR)));
+        Set<BlockPos> interior = collectInterior(level, start, blockColor);
+
+        List<PortalData> owners = new ArrayList<>();
+        for (BlockPos pos : interior) {
+            UUID id = positionIndex.get(new PositionKey(dimension, pos));
+            PortalData portal = id != null ? portals.get(id) : null;
+            if (portal != null) {
+                owners.add(portal);
             }
-            if (portal.dimension().isEmpty() || !portal.dimension().get().equals(dim)) {
-                continue;
-            }
-            BlockPos center = portal.position().orElse(null);
+        }
+
+        if (interiorIndex.size() + interior.size() > MAX_INTERIOR_INDEX_SIZE) {
+            interiorIndex.clear();
+        }
+        for (BlockPos pos : interior) {
+            interiorIndex.put(new PositionKey(dimension, pos), ownerOf(pos, owners));
+        }
+    }
+
+    /**
+     * Picks the owner of a position inside an already-resolved run of portal blocks. More than
+     * one registered center in a single run is degenerate; the nearest wins, ties broken by id
+     * so the result does not depend on iteration order.
+     */
+    @Nonnull
+    private static UUID ownerOf(@Nonnull BlockPos pos, @Nonnull List<PortalData> owners) {
+        UUID best = NO_OWNER;
+        double bestDistSq = Double.MAX_VALUE;
+
+        for (PortalData owner : owners) {
+            BlockPos center = owner.position().orElse(null);
             if (center == null) {
                 continue;
             }
+            double distSq = center.distSqr(pos);
+            if (distSq < bestDistSq || (distSq == bestDistSq && owner.id().compareTo(best) < 0)) {
+                bestDistSq = distSq;
+                best = owner.id();
+            }
+        }
 
-            // Check if pos is within reasonable distance of center (max portal is 23x23)
-            int dx = Math.abs(pos.getX() - center.getX());
-            int dy = Math.abs(pos.getY() - center.getY());
-            int dz = Math.abs(pos.getZ() - center.getZ());
+        return best;
+    }
 
-            // Portal interior is at most 11 blocks from center in any direction
-            if (dx <= 12 && dy <= 12 && dz <= 12) {
-                double distSq = center.distSqr(pos);
-                if (distSq < nearestDistSq) {
-                    nearestDistSq = distSq;
-                    nearest = portal;
+    /**
+     * Collects the run of portal blocks of the given color connected to {@code start}.
+     * Bounded so a creative-built blob of portal blocks cannot walk the whole level.
+     */
+    @Nonnull
+    private Set<BlockPos> collectInterior(@Nonnull BlockGetter level, @Nonnull BlockPos start, @Nonnull PortalColor color) {
+        Set<BlockPos> interior = new HashSet<>();
+        Deque<BlockPos> pending = new ArrayDeque<>();
+        BlockPos origin = Objects.requireNonNull(start.immutable());
+        interior.add(origin);
+        pending.add(origin);
+
+        while (!pending.isEmpty() && interior.size() < MAX_INTERIOR_BLOCKS) {
+            BlockPos current = Objects.requireNonNull(pending.poll());
+            for (Direction dir : Direction.values()) {
+                BlockPos next = Objects.requireNonNull(current.relative(Objects.requireNonNull(dir)));
+                if (interior.contains(next)) {
+                    continue;
+                }
+
+                BlockState neighbor = level.getBlockState(next);
+                if (!(neighbor.getBlock() instanceof CustomPortalBlock)
+                    || neighbor.getValue(Objects.requireNonNull(CustomPortalBlock.COLOR)) != color) {
+                    continue;
+                }
+
+                interior.add(next);
+                pending.add(next);
+                if (interior.size() >= MAX_INTERIOR_BLOCKS) {
+                    break;
                 }
             }
         }
 
-        return Objects.requireNonNull(Optional.ofNullable(nearest));
+        return interior;
     }
 
     /**
@@ -236,6 +366,7 @@ public class PortalRegistry extends SavedData {
             }
         }
         portals.put(portal.id(), portal);
+        invalidateInteriorIndex();
         setDirty();
     }
 
