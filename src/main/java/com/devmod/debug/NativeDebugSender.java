@@ -13,10 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
-import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
-import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +26,10 @@ import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raids;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
@@ -37,6 +40,10 @@ public class NativeDebugSender {
     public static final NativeDebugSender INSTANCE = new NativeDebugSender();
 
     private static final int SEARCH_RADIUS = 64;
+    private static final int POI_RADIUS = 48;
+    private static final int RAID_RADIUS = 128;
+    /** Chunk radius around the player scanned for structure starts; mirrors the renderer's box. */
+    private static final int STRUCTURE_CHUNK_RADIUS = 2;
 
     // Per-dimension: a single shared counter aliases with the number of ticking levels, so only
     // one arbitrary dimension would receive packets per interval.
@@ -70,6 +77,10 @@ public class NativeDebugSender {
 
                 if (features.contains(DebugFeature.ENTITY_GOALS)) {
                     sendGoalsDebug(player, level);
+                }
+
+                if (features.contains(DebugFeature.STRUCTURE_GENERATIONS)) {
+                    sendStructuresDebug(player, level);
                 }
 
                 if (features.contains(DebugFeature.POI)) {
@@ -188,43 +199,85 @@ public class NativeDebugSender {
     }
 
     /**
-     * Send POI debug using Minecraft's native PoiAddedDebugPayload.
+     * Send structure bounding boxes around the player. Structure starts exist only in the
+     * server chunk map, so the client renderer cannot gather these itself.
+     */
+    private void sendStructuresDebug(ServerPlayer player, ServerLevel level) {
+        SectionPos sectionPos = SectionPos.of(Objects.requireNonNull(player.blockPosition()));
+        List<StructuresPayload.StructureBox> boxes = new ArrayList<>();
+
+        outer:
+        for (int dx = -STRUCTURE_CHUNK_RADIUS; dx <= STRUCTURE_CHUNK_RADIUS; dx++) {
+            for (int dz = -STRUCTURE_CHUNK_RADIUS; dz <= STRUCTURE_CHUNK_RADIUS; dz++) {
+                ChunkAccess chunk = level.getChunk(sectionPos.x() + dx, sectionPos.z() + dz,
+                    Objects.requireNonNull(ChunkStatus.FULL), false);
+                if (chunk == null) continue;
+
+                for (StructureStart start : chunk.getAllStarts().values()) {
+                    if (start == null) continue;
+
+                    BoundingBox bb = start.getBoundingBox();
+                    boxes.add(new StructuresPayload.StructureBox(
+                        bb.minX(), bb.minY(), bb.minZ(),
+                        bb.maxX(), bb.maxY(), bb.maxZ()
+                    ));
+
+                    if (boxes.size() >= StructuresPayload.maxBoxes()) break outer;
+                }
+            }
+        }
+
+        player.connection.send(new ClientboundCustomPayloadPacket(new StructuresPayload(boxes)));
+    }
+
+    /**
+     * Send POI records around the player.
      */
     private void sendPOIDebug(ServerPlayer player, ServerLevel level) {
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         PoiManager poiManager = level.getPoiManager();
 
-        poiManager.getInRange(
+        List<POIPayload.POIInfo> pois = poiManager.getInRange(
             holder -> true,
             playerPos,
-            48,
+            POI_RADIUS,
             PoiManager.Occupancy.ANY
-        ).forEach(record -> {
-            PoiAddedDebugPayload payload = new PoiAddedDebugPayload(
-                Objects.requireNonNull(record.getPos()),
+        ).limit(POIPayload.maxPois()).map(record -> {
+            BlockPos pos = Objects.requireNonNull(record.getPos());
+            return new POIPayload.POIInfo(
+                pos.getX(), pos.getY(), pos.getZ(),
                 Objects.requireNonNull(record.getPoiType().getRegisteredName()),
-                0 // Free tickets - simplified
+                record.getFreeTickets(),
+                0 // Max tickets is not exposed by PoiRecord
             );
+        }).toList();
 
-            player.connection.send(new ClientboundCustomPayloadPacket(payload));
-        });
+        player.connection.send(new ClientboundCustomPayloadPacket(new POIPayload(pois)));
     }
 
     /**
-     * Send raids debug using Minecraft's native RaidsDebugPayload.
+     * Send the nearby raid, if any.
      */
     private void sendRaidsDebug(ServerPlayer player, ServerLevel level) {
         Raids raids = level.getRaids();
 
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        Raid nearestRaid = raids.getNearbyRaid(playerPos, 128);
+        Raid nearestRaid = raids.getNearbyRaid(playerPos, RAID_RADIUS);
 
+        List<RaidsPayload.RaidInfo> raidInfos = new ArrayList<>(1);
         if (nearestRaid != null) {
             BlockPos center = Objects.requireNonNull(nearestRaid.getCenter());
-            List<BlockPos> raidCenters = Objects.requireNonNull(List.of(center));
-
-            RaidsDebugPayload payload = new RaidsDebugPayload(raidCenters);
-            player.connection.send(new ClientboundCustomPayloadPacket(payload));
+            raidInfos.add(new RaidsPayload.RaidInfo(
+                nearestRaid.getId(),
+                center.getX(), center.getY(), center.getZ(),
+                nearestRaid.getRaidOmenLevel(),
+                nearestRaid.getGroupsSpawned(),
+                nearestRaid.getNumGroups(Objects.requireNonNull(level.getDifficulty())),
+                nearestRaid.isActive(),
+                nearestRaid.isVictory()
+            ));
         }
+
+        player.connection.send(new ClientboundCustomPayloadPacket(new RaidsPayload(raidInfos)));
     }
 }

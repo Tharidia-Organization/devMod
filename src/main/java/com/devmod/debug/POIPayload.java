@@ -56,6 +56,11 @@ public record POIPayload(List<POIInfo> pois) implements CustomPacketPayload, Pay
         }
     };
 
+    /** Caps the sender so it cannot encode more POIs than the codec will decode. */
+    public static int maxPois() {
+        return MAX_POIS;
+    }
+
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;

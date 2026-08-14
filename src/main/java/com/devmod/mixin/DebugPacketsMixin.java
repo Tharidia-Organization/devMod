@@ -16,8 +16,6 @@ import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
-import net.minecraft.network.protocol.common.custom.PoiRemovedDebugPayload;
-import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -122,32 +120,25 @@ public class DebugPacketsMixin {
     }
 
     /**
-     * Send POI removed debug packets.
+     * Suppresses vanilla's POI-removed packet.
+     *
+     * <p>Vanilla's {@code DebugRenderer.render} only draws the chunk-border and
+     * game-test renderers, so the client decodes this payload and never shows
+     * it. POI debug reaches the client through {@code POIPayload} instead.
      */
     @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
         ci.cancel();
-        PoiRemovedDebugPayload payload = new PoiRemovedDebugPayload(Objects.requireNonNull(pos, "pos"));
-        sendToPlayers(level, payload, DebugFeature.POI);
     }
 
     /**
-     * Send raids debug packets.
+     * Suppresses vanilla's raids packet, for the same reason as
+     * {@link #devmod_sendPoiRemovedPacket}. Raid debug reaches the client
+     * through {@code RaidsPayload}.
      */
     @Inject(method = "sendRaids", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendRaids(ServerLevel level, Collection<Raid> raids, CallbackInfo ci) {
         ci.cancel();
-        List<BlockPos> raidCenters = new ArrayList<>();
-        for (Raid raid : raids) {
-            if (raid.isActive()) {
-                raidCenters.add(raid.getCenter());
-            }
-        }
-
-        if (!raidCenters.isEmpty()) {
-            RaidsDebugPayload payload = new RaidsDebugPayload(raidCenters);
-            sendToPlayers(level, payload, DebugFeature.RAIDS);
-        }
     }
 
     /**

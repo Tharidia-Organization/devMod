@@ -1,8 +1,11 @@
 package com.devmod.debug;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,15 +13,27 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.netty.buffer.Unpooled;
+
+import net.minecraft.network.FriendlyByteBuf;
+
+import com.devmod.TestBootstrap;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for debug payload records: DebugSyncPayload, DebugTogglePayload,
- * EntityGoalsPayload, EntityPathingPayload, RaidsPayload, POIPayload.
- * Tests record construction, getFeature() mapping, estimatedSize, and clear() factories.
+ * EntityGoalsPayload, EntityPathingPayload, StructuresPayload, RaidsPayload, POIPayload.
+ * Tests record construction, getFeature() mapping, estimatedSize, clear() factories,
+ * and the decode-side count bounds that keep a hostile server from allocating without limit.
  */
 @DisplayName("Debug Payloads")
 class DebugPayloadTest {
+
+    @BeforeAll
+    static void bootstrap() {
+        TestBootstrap.init();
+    }
 
     // ==========================================
     // DebugSyncPayload
@@ -320,6 +335,24 @@ class DebugPayloadTest {
             assertNotNull(RaidsPayload.TYPE);
             assertTrue(RaidsPayload.TYPE.id().toString().contains("debug_raids"));
         }
+
+        @Test
+        @DisplayName("decode caps the raid count")
+        void decodeCapsCount() {
+            List<RaidsPayload.RaidInfo> raids = new ArrayList<>();
+            for (int i = 0; i < 200; i++) {
+                raids.add(new RaidsPayload.RaidInfo(i, i, 64, i, 1, 2, 3, true, false));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            RaidsPayload.STREAM_CODEC.encode(buf, new RaidsPayload(raids));
+            buf.readerIndex(0);
+            RaidsPayload decoded = RaidsPayload.STREAM_CODEC.decode(buf);
+
+            assertTrue(decoded.raids().size() < raids.size(),
+                "decode must not allocate every raid the sender claims");
+            buf.release();
+        }
     }
 
     // ==========================================
@@ -376,6 +409,103 @@ class DebugPayloadTest {
         void typeHasCorrectId() {
             assertNotNull(POIPayload.TYPE);
             assertTrue(POIPayload.TYPE.id().toString().contains("debug_poi"));
+        }
+
+        @Test
+        @DisplayName("decode caps the POI count")
+        void decodeCapsCount() {
+            List<POIPayload.POIInfo> pois = new ArrayList<>();
+            for (int i = 0; i < 800; i++) {
+                pois.add(new POIPayload.POIInfo(i, 64, i, "minecraft:bed", 1, 1));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            POIPayload.STREAM_CODEC.encode(buf, new POIPayload(pois));
+            buf.readerIndex(0);
+            POIPayload decoded = POIPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(POIPayload.maxPois(), decoded.pois().size());
+            buf.release();
+        }
+    }
+
+    // ==========================================
+    // StructuresPayload
+    // ==========================================
+
+    @Nested
+    @DisplayName("StructuresPayload")
+    class StructuresPayloadTests {
+
+        @Test
+        @DisplayName("Empty structures payload")
+        void emptyStructures() {
+            StructuresPayload payload = new StructuresPayload(List.of());
+            assertTrue(payload.boxes().isEmpty());
+        }
+
+        @Test
+        @DisplayName("StructureBox record fields")
+        void structureBoxFields() {
+            StructuresPayload.StructureBox box = new StructuresPayload.StructureBox(-10, -64, 5, 20, 100, 40);
+            assertEquals(-10, box.minX());
+            assertEquals(-64, box.minY());
+            assertEquals(5, box.minZ());
+            assertEquals(20, box.maxX());
+            assertEquals(100, box.maxY());
+            assertEquals(40, box.maxZ());
+        }
+
+        @Test
+        @DisplayName("estimatedSize grows with more boxes")
+        void estimatedSizeGrows() {
+            StructuresPayload empty = new StructuresPayload(List.of());
+            StructuresPayload withBoxes = new StructuresPayload(List.of(
+                new StructuresPayload.StructureBox(0, 0, 0, 16, 16, 16),
+                new StructuresPayload.StructureBox(32, 60, 32, 64, 90, 64)
+            ));
+            assertTrue(withBoxes.estimatedSize() > empty.estimatedSize());
+        }
+
+        @Test
+        @DisplayName("TYPE has correct resource location")
+        void typeHasCorrectId() {
+            assertNotNull(StructuresPayload.TYPE);
+            assertTrue(StructuresPayload.TYPE.id().toString().contains("debug_structures"));
+        }
+
+        @Test
+        @DisplayName("encode/decode round-trip preserves boxes")
+        void roundTrip() {
+            StructuresPayload original = new StructuresPayload(List.of(
+                new StructuresPayload.StructureBox(-100, -60, -100, -20, 30, -20),
+                new StructuresPayload.StructureBox(0, 64, 0, 48, 96, 48)
+            ));
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            StructuresPayload.STREAM_CODEC.encode(buf, original);
+            buf.readerIndex(0);
+            StructuresPayload decoded = StructuresPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(original.boxes(), decoded.boxes());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("decode caps the box count")
+        void decodeCapsCount() {
+            List<StructuresPayload.StructureBox> boxes = new ArrayList<>();
+            for (int i = 0; i < 400; i++) {
+                boxes.add(new StructuresPayload.StructureBox(i, 0, i, i + 8, 16, i + 8));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            StructuresPayload.STREAM_CODEC.encode(buf, new StructuresPayload(boxes));
+            buf.readerIndex(0);
+            StructuresPayload decoded = StructuresPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(StructuresPayload.maxBoxes(), decoded.boxes().size());
+            buf.release();
         }
     }
 }

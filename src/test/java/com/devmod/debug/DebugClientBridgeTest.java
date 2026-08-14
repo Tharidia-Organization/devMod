@@ -37,6 +37,24 @@ class DebugClientBridgeTest {
     }
 
     @Test
+    void noOpHandleStructuresDoesNotThrow() {
+        DebugClientBridge bridge = new DebugClientBridge.NoOp();
+        assertDoesNotThrow(() -> bridge.handleStructures(null));
+    }
+
+    @Test
+    void noOpHandlePOIDoesNotThrow() {
+        DebugClientBridge bridge = new DebugClientBridge.NoOp();
+        assertDoesNotThrow(() -> bridge.handlePOI(null));
+    }
+
+    @Test
+    void noOpHandleRaidsDoesNotThrow() {
+        DebugClientBridge bridge = new DebugClientBridge.NoOp();
+        assertDoesNotThrow(() -> bridge.handleRaids(null));
+    }
+
+    @Test
     void noOpHandleScanDataDoesNotThrow() {
         DebugClientBridge bridge = new DebugClientBridge.NoOp();
         assertDoesNotThrow(() -> bridge.handleScanData(null));
@@ -64,6 +82,9 @@ class DebugClientBridgeTest {
     void interfaceDeclaresAllExpectedMethods() throws NoSuchMethodException {
         assertNotNull(DebugClientBridge.class.getMethod("handleDebugSync", DebugSyncPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleEntityPathing", EntityPathingPayload.class));
+        assertNotNull(DebugClientBridge.class.getMethod("handleStructures", StructuresPayload.class));
+        assertNotNull(DebugClientBridge.class.getMethod("handlePOI", POIPayload.class));
+        assertNotNull(DebugClientBridge.class.getMethod("handleRaids", RaidsPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleScanData",
                 com.devmod.debug.network.EntityScanDataPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleOpenScreen",

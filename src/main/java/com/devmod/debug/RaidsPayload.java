@@ -17,13 +17,17 @@ import com.devmod.network.PayloadValidation;
 
 public record RaidsPayload(List<RaidInfo> raids) implements CustomPacketPayload, PayloadValidation.SizedPayload {
 
+    /** Maximum raids per payload to prevent DoS via unbounded allocation */
+    private static final int MAX_RAIDS = 32;
+
     public static final CustomPacketPayload.Type<RaidsPayload> TYPE =
         new CustomPacketPayload.Type<>(Objects.requireNonNull(ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "debug_raids")));
 
     public static final StreamCodec<FriendlyByteBuf, RaidsPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public RaidsPayload decode(@Nonnull FriendlyByteBuf buf) {
-            int count = buf.readVarInt();
+            int count = Math.min(buf.readVarInt(), MAX_RAIDS);
+            if (count < 0) count = 0;
             List<RaidInfo> raids = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 raids.add(new RaidInfo(

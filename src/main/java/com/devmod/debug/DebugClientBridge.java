@@ -39,6 +39,15 @@ public interface DebugClientBridge {
     /** Handle entity pathing data for debug visualization. */
     default void handleEntityPathing(EntityPathingPayload payload) {}
 
+    /** Handle structure bounding boxes for debug visualization. */
+    default void handleStructures(StructuresPayload payload) {}
+
+    /** Handle POI records for debug visualization. */
+    default void handlePOI(POIPayload payload) {}
+
+    /** Handle active raids for debug visualization. */
+    default void handleRaids(RaidsPayload payload) {}
+
     /** Handle incoming scan data for the entity scanner screen. */
     default void handleScanData(EntityScanDataPayload payload) {}
 

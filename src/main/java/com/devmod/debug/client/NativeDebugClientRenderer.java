@@ -14,16 +14,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Bee;
-import net.minecraft.world.entity.raid.Raid;
-import net.minecraft.world.entity.raid.Raids;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
-import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
@@ -36,6 +29,9 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.devmod.DevMod;
 import com.devmod.client.ui.overlay.OverlayTheme;
+import com.devmod.debug.POIPayload;
+import com.devmod.debug.RaidsPayload;
+import com.devmod.debug.StructuresPayload;
 
 @EventBusSubscriber(modid = DevMod.MODID, value = Dist.CLIENT)
 public class NativeDebugClientRenderer {
@@ -53,9 +49,6 @@ public class NativeDebugClientRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-
-        // Only works in singleplayer (where we have direct access to mob data)
-        if (mc.getSingleplayerServer() == null) return;
 
         PoseStack poseStack = event.getPoseStack();
         MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
@@ -371,14 +364,8 @@ public class NativeDebugClientRenderer {
                                    Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
-        var level = Objects.requireNonNull(mc.level);
-        var player = Objects.requireNonNull(mc.player);
-
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
+        List<POIPayload.POIInfo> poiList = NativeDebugClientStore.getPois();
+        if (poiList.isEmpty()) return;
 
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
@@ -387,35 +374,16 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-
-        // Collect POIs into a list first to avoid lambda issues.
-        // Same render-thread read of server state as renderStructures - the catch masks the
-        // race, it does not remove it.
-        List<net.minecraft.world.entity.ai.village.poi.PoiRecord> poiList;
-        try {
-            poiList = serverLevel.getPoiManager().getInRange(
-                holder -> true,
-                playerPos,
-                48,
-                net.minecraft.world.entity.ai.village.poi.PoiManager.Occupancy.ANY
-            ).toList();
-        } catch (RuntimeException e) {
-            poseStack.popPose();
-            return;
-        }
-
-        for (var record : poiList) {
-            BlockPos pos = Objects.requireNonNull(record.getPos());
-            String typeName = Objects.requireNonNull(record.getPoiType().getRegisteredName());
+        for (POIPayload.POIInfo poi : poiList) {
+            String typeName = poi.type();
 
             // Draw a box at the POI
-            float x1 = pos.getX();
-            float y1 = pos.getY();
-            float z1 = pos.getZ();
-            float x2 = pos.getX() + 1;
-            float y2 = pos.getY() + 1;
-            float z2 = pos.getZ() + 1;
+            float x1 = poi.x();
+            float y1 = poi.y();
+            float z1 = poi.z();
+            float x2 = poi.x() + 1;
+            float y2 = poi.y() + 1;
+            float z2 = poi.z() + 1;
 
             // Color based on type
             float r = 0.2f, g = 0.8f, b = 0.2f; // Default green
@@ -440,16 +408,8 @@ public class NativeDebugClientRenderer {
                                      Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
-        var level = Objects.requireNonNull(mc.level);
-        var player = Objects.requireNonNull(mc.player);
-
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        var serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
-
-        Raids raids = serverLevel.getRaids();
+        List<RaidsPayload.RaidInfo> raids = NativeDebugClientStore.getRaids();
+        if (raids.isEmpty()) return;
 
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
@@ -458,34 +418,24 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        // Server-thread state read from the render thread; the catch masks the race only.
-        Raid nearestRaid;
-        try {
-            nearestRaid = raids.getNearbyRaid(playerPos, 128);
-        } catch (RuntimeException e) {
-            poseStack.popPose();
-            return;
-        }
-
-        if (nearestRaid != null && nearestRaid.isActive()) {
-            BlockPos center = nearestRaid.getCenter();
+        for (RaidsPayload.RaidInfo raid : raids) {
+            if (!raid.isActive()) continue;
 
             // Draw large box around raid center
-            float x1 = center.getX() - 8;
-            float y1 = center.getY() - 4;
-            float z1 = center.getZ() - 8;
-            float x2 = center.getX() + 8;
-            float y2 = center.getY() + 8;
-            float z2 = center.getZ() + 8;
+            float x1 = (float) raid.centerX() - 8;
+            float y1 = (float) raid.centerY() - 4;
+            float z1 = (float) raid.centerZ() - 8;
+            float x2 = (float) raid.centerX() + 8;
+            float y2 = (float) raid.centerY() + 8;
+            float z2 = (float) raid.centerZ() + 8;
 
             // Red box for raid
             drawBox(lineConsumer, matrix, x1, y1, z1, x2, y2, z2, 1.0f, 0.0f, 0.0f, 1.0f);
 
             // Draw a smaller inner box at exact center
-            float cx = center.getX() + 0.5f;
-            float cy = center.getY() + 0.5f;
-            float cz = center.getZ() + 0.5f;
+            float cx = (float) raid.centerX() + 0.5f;
+            float cy = (float) raid.centerY() + 0.5f;
+            float cz = (float) raid.centerZ() + 0.5f;
             drawBox(lineConsumer, matrix, cx - 1, cy - 1, cz - 1, cx + 1, cy + 1, cz + 1, 1.0f, 0.5f, 0.0f, 1.0f);
         }
 
@@ -579,14 +529,8 @@ public class NativeDebugClientRenderer {
                                           Vec3 camPos, Minecraft mc) {
         if (mc.level == null || mc.player == null) return;
 
-        var level = Objects.requireNonNull(mc.level);
-        var player = Objects.requireNonNull(mc.player);
-
-        var server = mc.getSingleplayerServer();
-        if (server == null) return;
-
-        ServerLevel serverLevel = server.getLevel(Objects.requireNonNull(level.dimension()));
-        if (serverLevel == null) return;
+        List<StructuresPayload.StructureBox> boxes = NativeDebugClientStore.getStructures();
+        if (boxes.isEmpty()) return;
 
         RenderType lineType = Objects.requireNonNull(RenderType.lines());
         VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
@@ -595,34 +539,12 @@ public class NativeDebugClientRenderer {
         poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
         Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
 
-        BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
-        SectionPos sectionPos = SectionPos.of(playerPos);
-
-        for (int dx = -2; dx <= 2; dx++) {
-            for (int dz = -2; dz <= 2; dz++) {
-                // Structure starts are never synced to the client, so this has to read the
-                // integrated server's chunk map from the render thread. Snapshotting under a
-                // catch only hides the race with the server thread; removing it needs the data
-                // pushed through NativeDebugSender like the other features.
-                try {
-                    ChunkAccess chunk = serverLevel.getChunk(sectionPos.x() + dx, sectionPos.z() + dz, Objects.requireNonNull(ChunkStatus.FULL), false);
-                    if (chunk == null) continue;
-
-                    for (var structureStart : new ArrayList<>(chunk.getAllStarts().values())) {
-                        if (structureStart == null) continue;
-
-                        BoundingBox bb = structureStart.getBoundingBox();
-
-                        // Draw structure bounding box
-                        drawBox(lineConsumer, matrix,
-                                bb.minX(), bb.minY(), bb.minZ(),
-                                bb.maxX() + 1, bb.maxY() + 1, bb.maxZ() + 1,
-                                0.0f, 1.0f, 1.0f, 1.0f); // Cyan for structures
-                    }
-                } catch (RuntimeException e) {
-                    // Chunk was being mutated server-side; skip it this frame.
-                }
-            }
+        for (StructuresPayload.StructureBox box : boxes) {
+            // Draw structure bounding box
+            drawBox(lineConsumer, matrix,
+                    box.minX(), box.minY(), box.minZ(),
+                    box.maxX() + 1, box.maxY() + 1, box.maxZ() + 1,
+                    0.0f, 1.0f, 1.0f, 1.0f); // Cyan for structures
         }
 
         poseStack.popPose();

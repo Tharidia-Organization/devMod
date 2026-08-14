@@ -117,6 +117,9 @@ public enum ChannelId {
     ENTITY_PATHING(92, Direction.SERVER_TO_CLIENT, "EntityPathingPayload"),
     ENTITY_SCAN_DATA(93, Direction.SERVER_TO_CLIENT, "EntityScanDataPayload"),
     ENTITY_SCANNER_OPEN(94, Direction.SERVER_TO_CLIENT, "EntityScannerOpenPayload"),
+    DEBUG_STRUCTURES(95, Direction.SERVER_TO_CLIENT, "StructuresPayload"),
+    DEBUG_POI(96, Direction.SERVER_TO_CLIENT, "POIPayload"),
+    DEBUG_RAIDS(97, Direction.SERVER_TO_CLIENT, "RaidsPayload"),
 
     // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)

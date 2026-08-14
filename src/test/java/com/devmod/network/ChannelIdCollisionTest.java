@@ -143,9 +143,11 @@ class ChannelIdCollisionTest {
         // Log the count
         System.out.printf("Total registered channels: %d%n", totalChannels);
 
-        // Verify we have a reasonable number of channels
+        // Tripwire against unnoticed sprawl, not a protocol limit: ids are ints and
+        // the ranges are enforced by channelRangesAreRespected. Raise the ceiling when
+        // channels are added deliberately; investigate when it moves on its own.
         assertTrue(totalChannels >= 30, "Expected at least 30 registered channels");
-        assertTrue(totalChannels <= 160, "Unexpectedly high channel count: " + totalChannels);
+        assertTrue(totalChannels <= 200, "Unexpectedly high channel count: " + totalChannels);
 
         // Count by direction
         long clientToServer = java.util.Arrays.stream(ChannelId.values())

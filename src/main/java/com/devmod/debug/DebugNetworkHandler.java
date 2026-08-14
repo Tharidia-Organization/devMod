@@ -17,6 +17,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.devmod.debug.network.EntityScanDataPayload;
 import com.devmod.network.PayloadValidation;
 
+import static com.devmod.network.ChannelId.DEBUG_POI;
+import static com.devmod.network.ChannelId.DEBUG_RAIDS;
+import static com.devmod.network.ChannelId.DEBUG_STRUCTURES;
 import static com.devmod.network.ChannelId.DEBUG_SYNC;
 import static com.devmod.network.ChannelId.DEBUG_TOGGLE;
 import static com.devmod.network.ChannelId.ENTITY_PATHING;
@@ -59,6 +62,30 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.LARGE)
             );
 
+            // Structures (server to client) - structure bounding boxes near the player
+            event.registrar(DEBUG_STRUCTURES.asString()).playToClient(
+                Objects.requireNonNull(StructuresPayload.TYPE),
+                Objects.requireNonNull(StructuresPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleStructures,
+                    PayloadValidation.PayloadLimits.MEDIUM)
+            );
+
+            // POI (server to client) - points of interest near the player
+            event.registrar(DEBUG_POI.asString()).playToClient(
+                Objects.requireNonNull(POIPayload.TYPE),
+                Objects.requireNonNull(POIPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handlePOI,
+                    PayloadValidation.PayloadLimits.LARGE)
+            );
+
+            // Raids (server to client) - active raids near the player
+            event.registrar(DEBUG_RAIDS.asString()).playToClient(
+                Objects.requireNonNull(RaidsPayload.TYPE),
+                Objects.requireNonNull(RaidsPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleRaids,
+                    PayloadValidation.PayloadLimits.MEDIUM)
+            );
+
             // Entity Scan Data (server to client) - send scanned entity data
             event.registrar(ENTITY_SCAN_DATA.asString()).playToClient(
                 Objects.requireNonNull(EntityScanDataPayload.TYPE),
@@ -75,8 +102,9 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.SMALL)
             );
 
-            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {})",
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {}, {}, {}, {})",
                 DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString(),
+                DEBUG_STRUCTURES.asString(), DEBUG_POI.asString(), DEBUG_RAIDS.asString(),
                 ENTITY_SCAN_DATA.asString(), ENTITY_SCANNER_OPEN.asString());
         } catch (NoClassDefFoundError e) {
             LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
@@ -128,6 +156,27 @@ public class DebugNetworkHandler {
             return;
         }
         observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleEntityPathing(payload)), "entity pathing");
+    }
+
+    private static void handleStructures(StructuresPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleStructures(payload)), "debug structures");
+    }
+
+    private static void handlePOI(POIPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handlePOI(payload)), "debug poi");
+    }
+
+    private static void handleRaids(RaidsPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleRaids(payload)), "debug raids");
     }
 
     private static void handleEntityScanData(EntityScanDataPayload payload, IPayloadContext context) {

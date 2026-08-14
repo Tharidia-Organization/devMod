@@ -6,7 +6,11 @@ import net.neoforged.api.distmarker.OnlyIn;
 import com.devmod.debug.DebugClientBridge;
 import com.devmod.debug.DebugSyncPayload;
 import com.devmod.debug.EntityPathingPayload;
+import com.devmod.debug.POIPayload;
+import com.devmod.debug.RaidsPayload;
+import com.devmod.debug.StructuresPayload;
 import com.devmod.debug.client.EntityScannerClientHandler;
+import com.devmod.debug.client.NativeDebugClientStore;
 import com.devmod.debug.network.EntityScanDataPayload;
 
 /**
@@ -24,6 +28,21 @@ public final class ClientDebugBridgeImpl implements DebugClientBridge {
     @Override
     public void handleEntityPathing(EntityPathingPayload payload) {
         DebugNetworkClientHandler.handleEntityPathing(payload);
+    }
+
+    @Override
+    public void handleStructures(StructuresPayload payload) {
+        NativeDebugClientStore.setStructures(payload);
+    }
+
+    @Override
+    public void handlePOI(POIPayload payload) {
+        NativeDebugClientStore.setPois(payload);
+    }
+
+    @Override
+    public void handleRaids(RaidsPayload payload) {
+        NativeDebugClientStore.setRaids(payload);
     }
 
     @Override
