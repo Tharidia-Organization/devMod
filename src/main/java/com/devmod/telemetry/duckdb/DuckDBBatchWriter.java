@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -999,7 +1000,7 @@ public class DuckDBBatchWriter {
         // P2: Sampling - check if this event should be sampled out
         if (DuckDBConfig.isSamplingEnabled()) {
             EventPriority priority = TABLE_PRIORITY.getOrDefault(tableName, EventPriority.NORMAL);
-            if (!shouldSampleEvent(priority)) {
+            if (!shouldSampleEvent(tableName, priority)) {
                 sampledOutCount.incrementAndGet();
                 return;
             }
@@ -1103,9 +1104,29 @@ public class DuckDBBatchWriter {
     }
 
     /**
+     * Tables whose rows are already aggregates and must never be sampled.
+     *
+     * <p>Random sampling assumes each row is one observation, so dropping a
+     * fraction of them leaves an unbiased sample. These rows each summarise a
+     * whole bucket or window, so dropping one loses every observation in it —
+     * and nothing scales the survivors back up, which silently understated
+     * every heatmap figure by 2-10x.
+     */
+    private static final Set<String> UNSAMPLED_AGGREGATE_TABLES = Set.of(
+        "spatial_heatmaps", "heatmap_aggregates", "combat_aggregates", "ability_aggregates"
+    );
+
+    /**
      * P2: Determine if an event should be sampled (included) based on priority.
      * Returns true if the event should be recorded, false if it should be sampled out.
      */
+    private boolean shouldSampleEvent(String tableName, EventPriority priority) {
+        if (UNSAMPLED_AGGREGATE_TABLES.contains(tableName)) {
+            return true;
+        }
+        return shouldSampleEvent(priority);
+    }
+
     private boolean shouldSampleEvent(EventPriority priority) {
         double sampleRate = switch (priority) {
             case CRITICAL -> DuckDBConfig.sampleRateCritical();
