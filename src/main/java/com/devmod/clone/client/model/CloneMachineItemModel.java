@@ -26,6 +26,10 @@ public class CloneMachineItemModel extends GeoModel<CloneMachineBlockItem> {
         return FALLBACK_MODEL;
     }
 
+    // GeoModel declares getModelResource(T)/getTextureResource(T) both abstract and
+    // deprecated in GeckoLib 4.9: the two-arg overloads delegate to these, so they must
+    // still be implemented and the warning cannot be avoided by overriding anything else.
+    @SuppressWarnings("deprecation")
     @Override
     @Nonnull
     public ResourceLocation getModelResource(@Nonnull CloneMachineBlockItem item) {
@@ -33,6 +37,10 @@ public class CloneMachineItemModel extends GeoModel<CloneMachineBlockItem> {
         return ResourceLocation.fromNamespaceAndPath(DevMod.MODID, "geo/block/" + machineName + ".geo.json");
     }
 
+    // GeoModel declares getModelResource(T)/getTextureResource(T) both abstract and
+    // deprecated in GeckoLib 4.9: the two-arg overloads delegate to these, so they must
+    // still be implemented and the warning cannot be avoided by overriding anything else.
+    @SuppressWarnings("deprecation")
     @Override
     @Nonnull
     public ResourceLocation getTextureResource(@Nonnull CloneMachineBlockItem item) {

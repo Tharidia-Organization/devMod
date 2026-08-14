@@ -326,7 +326,7 @@ dependencies {
 
     // GeckoLib - Advanced entity and block model animations
     // Enables Bedrock Edition .geo.json models with unlimited rotations, bone hierarchies, and animations
-    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.3"
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.9.2"
 
     // DevAuth - Microsoft authentication for dev environment
     // Added as JAR in run/mods folder (not gradle dependency to avoid module conflicts)

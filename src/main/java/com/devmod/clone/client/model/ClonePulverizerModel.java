@@ -24,12 +24,20 @@ public class ClonePulverizerModel extends GeoModel<ClonePulverizerBlockEntity> {
     private static final ResourceLocation ANIMATION = ResourceLocation.fromNamespaceAndPath(
             DevMod.MODID, "animations/block/clone_pulverizer.animation.json");
 
+    // GeoModel declares getModelResource(T)/getTextureResource(T) both abstract and
+    // deprecated in GeckoLib 4.9: the two-arg overloads delegate to these, so they must
+    // still be implemented and the warning cannot be avoided by overriding anything else.
+    @SuppressWarnings("deprecation")
     @Override
     @Nonnull
     public ResourceLocation getModelResource(ClonePulverizerBlockEntity entity) {
         return Objects.requireNonNull(MODEL);
     }
 
+    // GeoModel declares getModelResource(T)/getTextureResource(T) both abstract and
+    // deprecated in GeckoLib 4.9: the two-arg overloads delegate to these, so they must
+    // still be implemented and the warning cannot be avoided by overriding anything else.
+    @SuppressWarnings("deprecation")
     @Override
     @Nonnull
     public ResourceLocation getTextureResource(ClonePulverizerBlockEntity entity) {
