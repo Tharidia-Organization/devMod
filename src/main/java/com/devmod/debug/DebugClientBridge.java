@@ -51,8 +51,14 @@ public interface DebugClientBridge {
     /** Handle mob → target links for debug visualization. */
     default void handleBrains(BrainsPayload payload) {}
 
+    /** Handle per-mob AI goal lists for debug visualization. */
+    default void handleGoals(EntityGoalsPayload payload) {}
+
     /** Handle bee hive/flower memories for debug visualization. */
     default void handleBees(BeesPayload payload) {}
+
+    /** Handle a batch of blocks that received a neighbour update, for debug visualization. */
+    default void handleBlockUpdates(BlockUpdatesPayload payload) {}
 
     /** Handle incoming scan data for the entity scanner screen. */
     default void handleScanData(EntityScanDataPayload payload) {}

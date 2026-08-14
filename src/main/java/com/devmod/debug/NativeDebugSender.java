@@ -2,6 +2,7 @@ package com.devmod.debug;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,12 +16,12 @@ import org.slf4j.LoggerFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
-import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -47,10 +48,24 @@ public class NativeDebugSender {
     /** Chunk radius around the player scanned for structure starts; mirrors the renderer's box. */
     private static final int STRUCTURE_CHUNK_RADIUS = 2;
 
+    /** Only neighbour updates this close to a watching player are worth a marker. */
+    private static final int BLOCK_UPDATE_RADIUS = 64;
+
     // Per-dimension: a single shared counter aliases with the number of ticking levels, so only
     // one arbitrary dimension would receive packets per interval.
     private final Map<ResourceKey<Level>, Integer> tickCounters = new HashMap<>();
     private static final int UPDATE_INTERVAL = 5;
+
+    // Per-dimension: neighbour updates seen since the last flush, in the order they happened.
+    // Written by recordBlockUpdate from the neighbour-update dispatch site and drained by tick,
+    // both of which only ever run on the server thread, so this needs no synchronisation.
+    private final Map<ResourceKey<Level>, Set<BlockPos>> pendingBlockUpdates = new HashMap<>();
+
+    // recordBlockUpdate sits on a path that runs thousands of times per tick, so the "is anyone
+    // watching" answer is cached here rather than recomputed per call - scanning the manager's
+    // map would allocate a view and an iterator every neighbour update. Refreshed once per
+    // flush, so enabling the feature can take up to one interval to start collecting.
+    private volatile boolean blockUpdatesWatched;
 
     private NativeDebugSender() {}
 
@@ -67,6 +82,7 @@ public class NativeDebugSender {
             return;
         }
         tickCounters.put(dimension, 0);
+        blockUpdatesWatched = DebugManager.INSTANCE.anyPlayerHasFeature(DebugFeature.BLOCK_UPDATES);
 
         for (ServerPlayer player : level.players()) {
             Set<DebugFeature> features = DebugManager.INSTANCE.getEnabledFeatures(player);
@@ -100,9 +116,42 @@ public class NativeDebugSender {
                 if (features.contains(DebugFeature.BEES)) {
                     sendBeesDebug(player, level);
                 }
+
+                if (features.contains(DebugFeature.BLOCK_UPDATES)) {
+                    sendBlockUpdatesDebug(player, level);
+                }
             } catch (Exception e) {
                 LOGGER.warn("Error sending debug packets to {}: {}",
                     player.getName().getString(), e.getMessage());
+            }
+        }
+
+        // Outside the player loop and outside the try: the window closes even if nobody is left
+        // to receive it, so a disabled feature or a failed send cannot leave positions behind.
+        pendingBlockUpdates.remove(dimension);
+    }
+
+    /**
+     * Record one neighbour update for the next flush.
+     * <p>
+     * Called from {@code BlockStateNeighborUpdateMixin} at the dispatch site, which fires once
+     * per neighbour per update - orders of magnitude too often to turn into a packet each.
+     * Positions are deduplicated into a set, so a block hammered by a redstone clock costs one
+     * entry per window rather than dozens, and the whole batch goes out on the normal interval.
+     */
+    public void recordBlockUpdate(ServerLevel level, BlockPos pos) {
+        if (!blockUpdatesWatched) return;
+
+        Set<BlockPos> pending = pendingBlockUpdates.computeIfAbsent(level.dimension(), k -> new LinkedHashSet<>());
+        // Tested before the player scan: once the window is full the scan cannot change the
+        // outcome, and a saturated window is exactly when this path runs hottest.
+        if (pending.size() >= BlockUpdatesPayload.maxPositions()) return;
+
+        for (ServerPlayer player : level.players()) {
+            if (DebugManager.INSTANCE.isEnabled(player, DebugFeature.BLOCK_UPDATES)
+                && player.blockPosition().distSqr(pos) <= (double) BLOCK_UPDATE_RADIUS * BLOCK_UPDATE_RADIUS) {
+                pending.add(pos.immutable());
+                return;
             }
         }
     }
@@ -169,42 +218,38 @@ public class NativeDebugSender {
     }
 
     /**
-     * Send goals debug using Minecraft's native GoalDebugPayload.
+     * Send the goal and target selectors of every nearby mob. Both selectors are server-only
+     * state, as is each goal's running flag, so the client renderer cannot gather these itself;
+     * the mob's position it reads from {@code mc.level}.
      */
     private void sendGoalsDebug(ServerPlayer player, ServerLevel level) {
         BlockPos playerPos = Objects.requireNonNull(player.blockPosition());
         AABB searchBox = Objects.requireNonNull(new AABB(playerPos).inflate(SEARCH_RADIUS));
 
+        List<EntityGoalsPayload.MobGoals> mobs = new ArrayList<>();
         for (Mob mob : level.getEntitiesOfClass(Mob.class, searchBox)) {
-            List<GoalDebugPayload.DebugGoal> goals = new ArrayList<>();
+            List<EntityGoalsPayload.GoalInfo> goals = new ArrayList<>();
+            collectGoals(mob.goalSelector, false, goals);
+            collectGoals(mob.targetSelector, true, goals);
+            if (goals.isEmpty()) continue;
 
-            // Extract goals from goalSelector
-            for (WrappedGoal wrappedGoal : mob.goalSelector.getAvailableGoals()) {
-                goals.add(new GoalDebugPayload.DebugGoal(
-                    wrappedGoal.getPriority(),
-                    wrappedGoal.isRunning(),
-                    Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName())
-                ));
-            }
+            mobs.add(new EntityGoalsPayload.MobGoals(mob.getId(), goals));
+            if (mobs.size() >= EntityGoalsPayload.maxMobs()) break;
+        }
 
-            // Extract target goals
-            for (WrappedGoal wrappedGoal : mob.targetSelector.getAvailableGoals()) {
-                goals.add(new GoalDebugPayload.DebugGoal(
-                    wrappedGoal.getPriority(),
-                    wrappedGoal.isRunning(),
-                    "[T] " + Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName())
-                ));
-            }
+        player.connection.send(new ClientboundCustomPayloadPacket(new EntityGoalsPayload(mobs)));
+    }
 
-            if (!goals.isEmpty()) {
-                GoalDebugPayload payload = new GoalDebugPayload(
-                    mob.getId(),
-                    Objects.requireNonNull(mob.blockPosition()),
-                    goals
-                );
-
-                player.connection.send(new ClientboundCustomPayloadPacket(payload));
-            }
+    private static void collectGoals(GoalSelector selector, boolean targetSelector,
+                                     List<EntityGoalsPayload.GoalInfo> out) {
+        for (WrappedGoal wrappedGoal : selector.getAvailableGoals()) {
+            if (out.size() >= EntityGoalsPayload.maxGoalsPerMob()) return;
+            out.add(new EntityGoalsPayload.GoalInfo(
+                wrappedGoal.getPriority(),
+                wrappedGoal.isRunning(),
+                targetSelector,
+                Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName())
+            ));
         }
     }
 
@@ -305,6 +350,19 @@ public class NativeDebugSender {
         }
 
         player.connection.send(new ClientboundCustomPayloadPacket(new BeesPayload(bees)));
+    }
+
+    /**
+     * Send the neighbour updates collected since the last flush, if any. Unlike the other
+     * senders this gathers nothing itself: {@link #recordBlockUpdate} has already filled the
+     * window, because the events exist only for the instant vanilla reports them.
+     */
+    private void sendBlockUpdatesDebug(ServerPlayer player, ServerLevel level) {
+        Set<BlockPos> pending = pendingBlockUpdates.get(level.dimension());
+        if (pending == null || pending.isEmpty()) return;
+
+        player.connection.send(new ClientboundCustomPayloadPacket(
+            new BlockUpdatesPayload(level.getGameTime(), List.copyOf(pending))));
     }
 
     /**

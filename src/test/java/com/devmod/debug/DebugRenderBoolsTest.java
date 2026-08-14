@@ -29,14 +29,12 @@ class DebugRenderBoolsTest {
         assertFalse(DebugRenderBools.isRaids());
         assertFalse(DebugRenderBools.isGameEvents());
         assertFalse(DebugRenderBools.isBees());
-        assertFalse(DebugRenderBools.isBeeHives());
         assertFalse(DebugRenderBools.isWater());
         assertFalse(DebugRenderBools.isHeightmap());
         assertFalse(DebugRenderBools.isCollision());
         assertFalse(DebugRenderBools.isLight());
         assertFalse(DebugRenderBools.isSolidFaces());
         assertFalse(DebugRenderBools.isChunk());
-        assertFalse(DebugRenderBools.isBreeze());
         assertFalse(DebugRenderBools.isSpawnChunks());
     }
 
@@ -54,6 +52,15 @@ class DebugRenderBoolsTest {
     void setGetEntityGoals() {
         DebugRenderBools.setEntityGoals(true);
         assertTrue(DebugRenderBools.isEntityGoals());
+    }
+
+    @Test
+    @DisplayName("Set and get blockUpdates")
+    void setGetBlockUpdates() {
+        DebugRenderBools.setBlockUpdates(true);
+        assertTrue(DebugRenderBools.isBlockUpdates());
+        DebugRenderBools.setBlockUpdates(false);
+        assertFalse(DebugRenderBools.isBlockUpdates());
     }
 
     @Test
@@ -103,14 +110,12 @@ class DebugRenderBoolsTest {
         DebugRenderBools.setRaids(true);
         DebugRenderBools.setGameEvents(true);
         DebugRenderBools.setBees(true);
-        DebugRenderBools.setBeeHives(true);
         DebugRenderBools.setWater(true);
         DebugRenderBools.setHeightmap(true);
         DebugRenderBools.setCollision(true);
         DebugRenderBools.setLight(true);
         DebugRenderBools.setSolidFaces(true);
         DebugRenderBools.setChunk(true);
-        DebugRenderBools.setBreeze(true);
         DebugRenderBools.setSpawnChunks(true);
 
         DebugRenderBools.clearAll();
@@ -124,14 +129,12 @@ class DebugRenderBoolsTest {
         assertFalse(DebugRenderBools.isRaids());
         assertFalse(DebugRenderBools.isGameEvents());
         assertFalse(DebugRenderBools.isBees());
-        assertFalse(DebugRenderBools.isBeeHives());
         assertFalse(DebugRenderBools.isWater());
         assertFalse(DebugRenderBools.isHeightmap());
         assertFalse(DebugRenderBools.isCollision());
         assertFalse(DebugRenderBools.isLight());
         assertFalse(DebugRenderBools.isSolidFaces());
         assertFalse(DebugRenderBools.isChunk());
-        assertFalse(DebugRenderBools.isBreeze());
         assertFalse(DebugRenderBools.isSpawnChunks());
     }
 

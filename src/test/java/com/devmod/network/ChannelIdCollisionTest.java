@@ -82,7 +82,8 @@ class ChannelIdCollisionTest {
             // Range 1-99: Core systems, 100-115: Mailbox system, 120-129: Unified notifications,
             // 130-139: Nutrition, 140-149: Nexus, 150-159: Portal, 160-169: Hologram, 170-179: Clone,
             // 180-189: NPC, 190-199: Area Builder, 200-209: Zone, 210-229: Transport, 230-239: Admin Instance,
-            // 240-249: Nexus Hub (Nexus 2.0 slot/hub management), 250-251: Tester Modality
+            // 240-249: Nexus Hub (Nexus 2.0 slot/hub management), 250-251: Tester Modality,
+            // 252-259: Debug overflow (the 90-99 debug block is full in both directions)
             int maxExpected = 259;
             assertTrue(id <= maxExpected,
                 String.format("Channel %s has ID %d which exceeds max expected (%d)", name, id, maxExpected));

@@ -14,14 +14,12 @@ public class DebugRenderBools {
     private static boolean raids = false;
     private static boolean gameEvents = false;
     private static boolean bees = false;
-    private static boolean beeHives = false;
     private static boolean water = false;
     private static boolean heightmap = false;
     private static boolean collision = false;
     private static boolean light = false;
     private static boolean solidFaces = false;
     private static boolean chunk = false;
-    private static boolean breeze = false;
     private static boolean spawnChunks = false;
 
     public static boolean isEntityPathing() {
@@ -96,14 +94,6 @@ public class DebugRenderBools {
         bees = value;
     }
 
-    public static boolean isBeeHives() {
-        return beeHives;
-    }
-
-    public static void setBeeHives(boolean value) {
-        beeHives = value;
-    }
-
     public static boolean isWater() {
         return water;
     }
@@ -152,14 +142,6 @@ public class DebugRenderBools {
         chunk = value;
     }
 
-    public static boolean isBreeze() {
-        return breeze;
-    }
-
-    public static void setBreeze(boolean value) {
-        breeze = value;
-    }
-
     public static boolean isSpawnChunks() {
         return spawnChunks;
     }
@@ -181,14 +163,12 @@ public class DebugRenderBools {
         raids = false;
         gameEvents = false;
         bees = false;
-        beeHives = false;
         water = false;
         heightmap = false;
         collision = false;
         light = false;
         solidFaces = false;
         chunk = false;
-        breeze = false;
         spawnChunks = false;
     }
 }

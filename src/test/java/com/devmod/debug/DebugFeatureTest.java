@@ -64,5 +64,19 @@ class DebugFeatureTest {
         assertNotNull(DebugFeature.RAIDS);
         assertNotNull(DebugFeature.LIGHT);
         assertNotNull(DebugFeature.COLLISION);
+        assertNotNull(DebugFeature.BLOCK_UPDATES);
+    }
+
+    @Test
+    @DisplayName("Features removed for having no data source stay removed")
+    void removedFeaturesAbsent() {
+        // BEE_HIVES duplicated what BEES already draws and BREEZE never had a source; both would
+        // be a toggle that renders nothing. Reintroducing either needs a payload chain first.
+        Set<String> names = new HashSet<>();
+        for (DebugFeature feature : DebugFeature.values()) {
+            names.add(feature.name());
+        }
+        assertFalse(names.contains("BEE_HIVES"), "BEE_HIVES is covered by BEES");
+        assertFalse(names.contains("BREEZE"), "BREEZE has no data source");
     }
 }

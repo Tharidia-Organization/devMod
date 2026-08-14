@@ -20,7 +20,6 @@ public enum DebugFeature {
     // Game mechanics
     RAIDS("Raids", "Highlights raid centers and participants"),
     GAME_EVENTS("Game Events", "Shows game events and listeners (sculk, warden)"),
-    BEE_HIVES("Bee Hives", "Shows bee hive information"),
     BEES("Bees", "Shows individual bee information"),
 
     // Technical
@@ -30,7 +29,6 @@ public enum DebugFeature {
     LIGHT("Light Levels", "Shows sky light value of blocks"),
     SOLID_FACES("Solid Faces", "Shows solid faces of nearby blocks"),
     CHUNK("Chunk Info", "Shows chunk data (entity ticking, etc.)"),
-    BREEZE("Breeze", "Shows breeze debug information"),
     SPAWN_CHUNKS("Spawn Chunks", "Shows spawn chunk boundaries"),
 
     // Diagnostic logging (DevMod systems)

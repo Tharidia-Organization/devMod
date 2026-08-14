@@ -59,7 +59,7 @@ class DebugManagerTest {
         @Test
         @DisplayName("Returns empty list when no one has feature enabled")
         void emptyWhenNoneEnabled() {
-            List<UUID> players = manager.getPlayersWithFeature(DebugFeature.BREEZE);
+            List<UUID> players = manager.getPlayersWithFeature(DebugFeature.HEIGHTMAP);
             assertNotNull(players);
             // Could be non-empty if other tests leaked state, but should be testable
         }

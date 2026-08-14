@@ -1,7 +1,6 @@
 package com.devmod.mixin;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -14,15 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
-import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.ai.goal.GoalSelector;
-import net.minecraft.world.entity.ai.goal.WrappedGoal;
-import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.pathfinder.Node;
 import net.minecraft.world.level.pathfinder.Path;
@@ -31,18 +25,30 @@ import com.devmod.debug.DebugFeature;
 import com.devmod.debug.DebugManager;
 import com.devmod.debug.EntityPathingPayload;
 
+/**
+ * Hooks the vanilla debug-send call sites so the mod can push its own payloads from them.
+ * <p>
+ * Every {@code DebugPackets} send method is an empty stub in the 1.21.1 release jar, so nothing
+ * here is suppressing traffic - the value is the call site itself, which fires the moment a path
+ * is recomputed rather than on the next {@code NativeDebugSender} interval. The {@code ci.cancel()}
+ * stays so behaviour is identical if a body ever reappears.
+ * <p>
+ * Neighbour updates are deliberately not taken from {@code sendNeighborsUpdatePacket}: vanilla
+ * only reaches that from the base {@code BlockBehaviour.neighborChanged}, which most redstone
+ * blocks never call. {@code BlockStateNeighborUpdateMixin} hooks the dispatch site instead, and
+ * is the only recorder feeding {@code DebugFeature.BLOCK_UPDATES}.
+ */
 @Mixin(DebugPackets.class)
 @SuppressWarnings({"UnusedMethod", "UnusedVariable"}) // Mixin methods are invoked via bytecode injection
 public class DebugPacketsMixin {
 
     /**
      * Send pathfinding debug packets to players with the feature enabled.
-     * Uses custom EntityPathingPayload instead of vanilla PathfindingDebugPayload
-     * which has serialization issues causing IndexOutOfBoundsException.
+     * Uses the mod's own EntityPathingPayload, drawn by {@code PathfindingDebugger}; vanilla's
+     * PathfindingDebugPayload has no renderer left on this client.
      */
     @Inject(method = "sendPathFindingPacket", at = @At("HEAD"), cancellable = true)
     private static void devmod_sendPathFindingPacket(Level level, Mob mob, Path path, float maxDistanceToWaypoint, CallbackInfo ci) {
-        // Cancel vanilla method - use our custom payload instead
         ci.cancel();
 
         if (!(level instanceof ServerLevel serverLevel)) return;
@@ -90,81 +96,6 @@ public class DebugPacketsMixin {
         );
 
         sendToPlayers(serverLevel, payload, DebugFeature.ENTITY_PATHING);
-    }
-
-    /**
-     * Send goal selector debug packets.
-     */
-    @Inject(method = "sendGoalSelector", at = @At("HEAD"), cancellable = true)
-    private static void devmod_sendGoalSelector(Level level, Mob mob, GoalSelector goalSelector, CallbackInfo ci) {
-        ci.cancel();
-        if (!(level instanceof ServerLevel serverLevel)) return;
-
-        List<GoalDebugPayload.DebugGoal> goals = new ArrayList<>();
-        for (WrappedGoal wrappedGoal : goalSelector.getAvailableGoals()) {
-            goals.add(new GoalDebugPayload.DebugGoal(
-                wrappedGoal.getPriority(),
-                wrappedGoal.isRunning(),
-                Objects.requireNonNull(wrappedGoal.getGoal().getClass().getSimpleName(), "goalName")
-            ));
-        }
-
-        if (!goals.isEmpty()) {
-            GoalDebugPayload payload = new GoalDebugPayload(
-                mob.getId(),
-                Objects.requireNonNull(mob.blockPosition(), "mobPosition"),
-                goals
-            );
-            sendToPlayers(serverLevel, payload, DebugFeature.ENTITY_GOALS);
-        }
-    }
-
-    /**
-     * Suppresses vanilla's POI-removed packet.
-     *
-     * <p>POI debug reaches the client through {@code POIPayload} and is drawn by
-     * {@code NativeDebugClientRenderer}. Vanilla's own renderer is re-enabled by
-     * {@code DebugRendererMixin}, so both the add and the remove packet are
-     * suppressed: feeding it adds without removes would accumulate POIs that are
-     * never cleared.
-     */
-    @Inject(method = "sendPoiRemovedPacket", at = @At("HEAD"), cancellable = true)
-    private static void devmod_sendPoiRemovedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
-        ci.cancel();
-    }
-
-    /**
-     * Suppresses vanilla's POI-added packet, the counterpart to
-     * {@link #devmod_sendPoiRemovedPacket}.
-     */
-    @Inject(method = "sendPoiAddedPacket", at = @At("HEAD"), cancellable = true)
-    private static void devmod_sendPoiAddedPacket(ServerLevel level, BlockPos pos, CallbackInfo ci) {
-        ci.cancel();
-    }
-
-    /**
-     * Suppresses vanilla's raids packet, for the same reason as
-     * {@link #devmod_sendPoiRemovedPacket}. Raid debug reaches the client
-     * through {@code RaidsPayload}.
-     */
-    @Inject(method = "sendRaids", at = @At("HEAD"), cancellable = true)
-    private static void devmod_sendRaids(ServerLevel level, Collection<Raid> raids, CallbackInfo ci) {
-        ci.cancel();
-    }
-
-    /**
-     * Send neighbor updates debug packets.
-     */
-    @Inject(method = "sendNeighborsUpdatePacket", at = @At("HEAD"), cancellable = true)
-    private static void devmod_sendNeighborsUpdatePacket(Level level, BlockPos pos, CallbackInfo ci) {
-        ci.cancel();
-        if (!(level instanceof ServerLevel serverLevel)) return;
-
-        NeighborUpdatesDebugPayload payload = new NeighborUpdatesDebugPayload(
-            serverLevel.getGameTime(),
-            Objects.requireNonNull(pos, "pos")
-        );
-        sendToPlayers(serverLevel, payload, DebugFeature.BLOCK_UPDATES);
     }
 
     /**

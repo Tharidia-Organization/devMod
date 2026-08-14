@@ -122,6 +122,9 @@ public enum ChannelId {
     DEBUG_RAIDS(97, Direction.SERVER_TO_CLIENT, "RaidsPayload"),
     DEBUG_BRAINS(98, Direction.SERVER_TO_CLIENT, "BrainsPayload"),
     DEBUG_BEES(99, Direction.SERVER_TO_CLIENT, "BeesPayload"),
+    // 91-99 are taken and the block ends at 99; ids are scoped per direction, so 90 is still
+    // free S→C even though DEBUG_TOGGLE holds it C→S.
+    DEBUG_GOALS(90, Direction.SERVER_TO_CLIENT, "EntityGoalsPayload"),
 
     // ============================================================================
     // MAILBOX SYSTEM CHANNELS (100-115)
@@ -272,6 +275,12 @@ public enum ChannelId {
     // ============================================================================
     TESTER_MODALITY_SYNC(250, Direction.SERVER_TO_CLIENT, "TesterModalitySyncPayload"),
     TESTER_MODALITY_ACK(251, Direction.CLIENT_TO_SERVER, "TesterModalityAckPayload"),
+
+    // ============================================================================
+    // DEBUG CHANNELS, OVERFLOW (252-259)
+    // The 90-99 block is full in both directions, so new debug channels live here.
+    // ============================================================================
+    DEBUG_BLOCK_UPDATES(252, Direction.SERVER_TO_CLIENT, "BlockUpdatesPayload"),
     ;
 
     // ============================================================================

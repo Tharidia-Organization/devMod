@@ -129,10 +129,10 @@ class ChannelCollisionGuardTest {
                     "ARENA channel out of range (76-85): " + name + " = " + id);
             }
 
-            // DEBUG: 90-99
+            // DEBUG: 90-99, overflow 252-259 (the original block is full in both directions)
             if (name.startsWith("DEBUG_")) {
-                assertTrue(id >= 90 && id <= 99,
-                    "DEBUG channel out of range (90-99): " + name + " = " + id);
+                assertTrue((id >= 90 && id <= 99) || (id >= 252 && id <= 259),
+                    "DEBUG channel out of range (90-99 or 252-259): " + name + " = " + id);
             }
         }
     }

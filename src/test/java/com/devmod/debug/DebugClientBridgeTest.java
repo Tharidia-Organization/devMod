@@ -61,9 +61,21 @@ class DebugClientBridgeTest {
     }
 
     @Test
+    void noOpHandleGoalsDoesNotThrow() {
+        DebugClientBridge bridge = new DebugClientBridge.NoOp();
+        assertDoesNotThrow(() -> bridge.handleGoals(null));
+    }
+
+    @Test
     void noOpHandleBeesDoesNotThrow() {
         DebugClientBridge bridge = new DebugClientBridge.NoOp();
         assertDoesNotThrow(() -> bridge.handleBees(null));
+    }
+
+    @Test
+    void noOpHandleBlockUpdatesDoesNotThrow() {
+        DebugClientBridge bridge = new DebugClientBridge.NoOp();
+        assertDoesNotThrow(() -> bridge.handleBlockUpdates(null));
     }
 
     @Test
@@ -98,7 +110,9 @@ class DebugClientBridgeTest {
         assertNotNull(DebugClientBridge.class.getMethod("handlePOI", POIPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleRaids", RaidsPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleBrains", BrainsPayload.class));
+        assertNotNull(DebugClientBridge.class.getMethod("handleGoals", EntityGoalsPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleBees", BeesPayload.class));
+        assertNotNull(DebugClientBridge.class.getMethod("handleBlockUpdates", BlockUpdatesPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleScanData",
                 com.devmod.debug.network.EntityScanDataPayload.class));
         assertNotNull(DebugClientBridge.class.getMethod("handleOpenScreen",

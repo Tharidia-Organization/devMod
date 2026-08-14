@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for debug payload records: DebugSyncPayload, DebugTogglePayload, BrainsPayload,
- * BeesPayload, EntityPathingPayload, StructuresPayload, RaidsPayload, POIPayload.
+ * EntityGoalsPayload, BeesPayload, BlockUpdatesPayload, EntityPathingPayload, StructuresPayload,
+ * RaidsPayload, POIPayload.
  * Tests record construction, getFeature() mapping, estimatedSize, clear() factories,
  * and the decode-side count bounds that keep a hostile server from allocating without limit.
  */
@@ -200,6 +201,120 @@ class DebugPayloadTest {
             BrainsPayload decoded = BrainsPayload.STREAM_CODEC.decode(buf);
 
             assertEquals(BrainsPayload.maxTargets(), decoded.targets().size());
+            buf.release();
+        }
+    }
+
+    // ==========================================
+    // EntityGoalsPayload
+    // ==========================================
+
+    @Nested
+    @DisplayName("EntityGoalsPayload")
+    class EntityGoalsPayloadTests {
+
+        private EntityGoalsPayload.MobGoals mobWithGoals(int entityId, int goalCount) {
+            List<EntityGoalsPayload.GoalInfo> goals = new ArrayList<>(goalCount);
+            for (int i = 0; i < goalCount; i++) {
+                goals.add(new EntityGoalsPayload.GoalInfo(i, i % 2 == 0, i % 3 == 0, "Goal" + i));
+            }
+            return new EntityGoalsPayload.MobGoals(entityId, goals);
+        }
+
+        @Test
+        @DisplayName("GoalInfo record fields")
+        void goalInfoFields() {
+            EntityGoalsPayload.GoalInfo goal =
+                new EntityGoalsPayload.GoalInfo(3, true, true, "NearestAttackableTargetGoal");
+            assertEquals(3, goal.priority());
+            assertTrue(goal.running());
+            assertTrue(goal.targetSelector());
+            assertEquals("NearestAttackableTargetGoal", goal.name());
+        }
+
+        @Test
+        @DisplayName("estimatedSize grows with more goals")
+        void estimatedSizeGrows() {
+            EntityGoalsPayload empty = new EntityGoalsPayload(List.of());
+            EntityGoalsPayload withGoals = new EntityGoalsPayload(List.of(mobWithGoals(1, 4)));
+            assertTrue(withGoals.estimatedSize() > empty.estimatedSize());
+        }
+
+        @Test
+        @DisplayName("A full payload stays inside the LARGE handler limit")
+        void fullPayloadFitsHandlerLimit() {
+            List<EntityGoalsPayload.MobGoals> mobs = new ArrayList<>();
+            for (int i = 0; i < EntityGoalsPayload.maxMobs(); i++) {
+                List<EntityGoalsPayload.GoalInfo> goals = new ArrayList<>();
+                // A realistic mob: both selectors together, vanilla-length goal class names.
+                for (int g = 0; g < 18; g++) {
+                    goals.add(new EntityGoalsPayload.GoalInfo(g, false, g > 12, "NearestAttackableTargetGoal"));
+                }
+                mobs.add(new EntityGoalsPayload.MobGoals(i, goals));
+            }
+
+            assertTrue(new EntityGoalsPayload(mobs).estimatedSize() < 32768,
+                "a full snapshot must not be rejected by PayloadLimits.LARGE");
+        }
+
+        @Test
+        @DisplayName("TYPE has correct resource location")
+        void typeHasCorrectId() {
+            assertNotNull(EntityGoalsPayload.TYPE);
+            assertTrue(EntityGoalsPayload.TYPE.id().toString().contains("debug_goals"));
+        }
+
+        @Test
+        @DisplayName("encode/decode round-trip preserves both selectors")
+        void roundTrip() {
+            EntityGoalsPayload original = new EntityGoalsPayload(List.of(
+                new EntityGoalsPayload.MobGoals(11, List.of(
+                    new EntityGoalsPayload.GoalInfo(0, true, false, "FloatGoal"),
+                    new EntityGoalsPayload.GoalInfo(2, false, true, "HurtByTargetGoal")
+                )),
+                new EntityGoalsPayload.MobGoals(22, List.of(
+                    new EntityGoalsPayload.GoalInfo(1, false, false, "RandomStrollGoal")
+                ))
+            ));
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            EntityGoalsPayload.STREAM_CODEC.encode(buf, original);
+            buf.readerIndex(0);
+            EntityGoalsPayload decoded = EntityGoalsPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(original.mobs(), decoded.mobs());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("decode caps the mob count")
+        void decodeCapsMobCount() {
+            List<EntityGoalsPayload.MobGoals> mobs = new ArrayList<>();
+            for (int i = 0; i < 400; i++) {
+                mobs.add(mobWithGoals(i, 2));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            EntityGoalsPayload.STREAM_CODEC.encode(buf, new EntityGoalsPayload(mobs));
+            buf.readerIndex(0);
+            EntityGoalsPayload decoded = EntityGoalsPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(EntityGoalsPayload.maxMobs(), decoded.mobs().size());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("decode caps the goal count of a single mob")
+        void decodeCapsGoalCount() {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            EntityGoalsPayload.STREAM_CODEC.encode(buf,
+                new EntityGoalsPayload(List.of(mobWithGoals(1, 400))));
+            buf.readerIndex(0);
+            EntityGoalsPayload decoded = EntityGoalsPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(1, decoded.mobs().size());
+            assertEquals(EntityGoalsPayload.maxGoalsPerMob(),
+                Objects.requireNonNull(decoded.mobs().get(0)).goals().size());
             buf.release();
         }
     }
@@ -569,6 +684,79 @@ class DebugPayloadTest {
             StructuresPayload decoded = StructuresPayload.STREAM_CODEC.decode(buf);
 
             assertEquals(StructuresPayload.maxBoxes(), decoded.boxes().size());
+            buf.release();
+        }
+    }
+
+    // ==========================================
+    // BlockUpdatesPayload
+    // ==========================================
+
+    @Nested
+    @DisplayName("BlockUpdatesPayload")
+    class BlockUpdatesPayloadTests {
+
+        @Test
+        @DisplayName("estimatedSize grows with position count")
+        void estimatedSizeGrows() {
+            BlockUpdatesPayload one = new BlockUpdatesPayload(100L, List.of(new BlockPos(0, 64, 0)));
+            BlockUpdatesPayload two = new BlockUpdatesPayload(100L,
+                List.of(new BlockPos(0, 64, 0), new BlockPos(1, 64, 0)));
+            assertTrue(two.estimatedSize() > one.estimatedSize());
+        }
+
+        @Test
+        @DisplayName("TYPE has correct resource location")
+        void typeHasCorrectId() {
+            assertNotNull(BlockUpdatesPayload.TYPE);
+            assertTrue(BlockUpdatesPayload.TYPE.id().toString().contains("debug_block_updates"));
+        }
+
+        @Test
+        @DisplayName("encode/decode round-trip preserves gameTime and positions")
+        void roundTrip() {
+            BlockUpdatesPayload original = new BlockUpdatesPayload(123456L, List.of(
+                new BlockPos(10, 64, -20),
+                new BlockPos(-5, 70, 8),
+                new BlockPos(0, 0, 0)
+            ));
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BlockUpdatesPayload.STREAM_CODEC.encode(buf, original);
+            buf.readerIndex(0);
+            BlockUpdatesPayload decoded = BlockUpdatesPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(original.gameTime(), decoded.gameTime());
+            assertEquals(original.positions(), decoded.positions());
+            buf.release();
+        }
+
+        @Test
+        @DisplayName("A full payload stays inside the MEDIUM size limit it is registered with")
+        void fullPayloadFitsMediumLimit() {
+            List<BlockPos> positions = new ArrayList<>();
+            for (int i = 0; i < BlockUpdatesPayload.maxPositions(); i++) {
+                positions.add(new BlockPos(i, 64, i));
+            }
+            BlockUpdatesPayload full = new BlockUpdatesPayload(Long.MAX_VALUE, positions);
+            assertTrue(full.estimatedSize() <= 8192,
+                "Full payload must not trip the MEDIUM payload limit: " + full.estimatedSize());
+        }
+
+        @Test
+        @DisplayName("decode caps the position count")
+        void decodeCapsCount() {
+            List<BlockPos> positions = new ArrayList<>();
+            for (int i = 0; i < 400; i++) {
+                positions.add(new BlockPos(i, 64, i));
+            }
+
+            FriendlyByteBuf buf = new FriendlyByteBuf(Objects.requireNonNull(Unpooled.buffer()));
+            BlockUpdatesPayload.STREAM_CODEC.encode(buf, new BlockUpdatesPayload(1L, positions));
+            buf.readerIndex(0);
+            BlockUpdatesPayload decoded = BlockUpdatesPayload.STREAM_CODEC.decode(buf);
+
+            assertEquals(BlockUpdatesPayload.maxPositions(), decoded.positions().size());
             buf.release();
         }
     }

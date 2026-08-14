@@ -18,7 +18,9 @@ import com.devmod.debug.network.EntityScanDataPayload;
 import com.devmod.network.PayloadValidation;
 
 import static com.devmod.network.ChannelId.DEBUG_BEES;
+import static com.devmod.network.ChannelId.DEBUG_BLOCK_UPDATES;
 import static com.devmod.network.ChannelId.DEBUG_BRAINS;
+import static com.devmod.network.ChannelId.DEBUG_GOALS;
 import static com.devmod.network.ChannelId.DEBUG_POI;
 import static com.devmod.network.ChannelId.DEBUG_RAIDS;
 import static com.devmod.network.ChannelId.DEBUG_STRUCTURES;
@@ -96,11 +98,27 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.MEDIUM)
             );
 
+            // Goals (server to client) - AI goals of mobs near the player
+            event.registrar(DEBUG_GOALS.asString()).playToClient(
+                Objects.requireNonNull(EntityGoalsPayload.TYPE),
+                Objects.requireNonNull(EntityGoalsPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleGoals,
+                    PayloadValidation.PayloadLimits.LARGE)
+            );
+
             // Bees (server to client) - remembered hive/flower of bees near the player
             event.registrar(DEBUG_BEES.asString()).playToClient(
                 Objects.requireNonNull(BeesPayload.TYPE),
                 Objects.requireNonNull(BeesPayload.STREAM_CODEC),
                 PayloadValidation.validated(DebugNetworkHandler::handleBees,
+                    PayloadValidation.PayloadLimits.MEDIUM)
+            );
+
+            // Block Updates (server to client) - blocks that got a neighbour update this interval
+            event.registrar(DEBUG_BLOCK_UPDATES.asString()).playToClient(
+                Objects.requireNonNull(BlockUpdatesPayload.TYPE),
+                Objects.requireNonNull(BlockUpdatesPayload.STREAM_CODEC),
+                PayloadValidation.validated(DebugNetworkHandler::handleBlockUpdates,
                     PayloadValidation.PayloadLimits.MEDIUM)
             );
 
@@ -120,11 +138,11 @@ public class DebugNetworkHandler {
                     PayloadValidation.PayloadLimits.SMALL)
             );
 
-            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+            LOGGER.info("[DevMod] Debug network packets registered (channels {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
                 DEBUG_TOGGLE.asString(), DEBUG_SYNC.asString(), ENTITY_PATHING.asString(),
                 DEBUG_STRUCTURES.asString(), DEBUG_POI.asString(), DEBUG_RAIDS.asString(),
-                DEBUG_BRAINS.asString(), DEBUG_BEES.asString(),
-                ENTITY_SCAN_DATA.asString(), ENTITY_SCANNER_OPEN.asString());
+                DEBUG_BRAINS.asString(), DEBUG_GOALS.asString(), DEBUG_BEES.asString(),
+                DEBUG_BLOCK_UPDATES.asString(), ENTITY_SCAN_DATA.asString(), ENTITY_SCANNER_OPEN.asString());
         } catch (NoClassDefFoundError e) {
             LOGGER.error("[DevMod] Debug payload classes missing; debug networking disabled", e);
         }
@@ -205,11 +223,25 @@ public class DebugNetworkHandler {
         observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleBrains(payload)), "debug brains");
     }
 
+    private static void handleGoals(EntityGoalsPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleGoals(payload)), "debug goals");
+    }
+
     private static void handleBees(BeesPayload payload, IPayloadContext context) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
         observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleBees(payload)), "debug bees");
+    }
+
+    private static void handleBlockUpdates(BlockUpdatesPayload payload, IPayloadContext context) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+        observeFuture(context.enqueueWork(() -> DebugClientBridge.get().handleBlockUpdates(payload)), "debug block updates");
     }
 
     private static void handleEntityScanData(EntityScanDataPayload payload, IPayloadContext context) {

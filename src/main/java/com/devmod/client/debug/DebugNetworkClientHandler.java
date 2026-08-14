@@ -42,7 +42,6 @@ public final class DebugNetworkClientHandler {
             case STRUCTURE_GENERATIONS -> DebugRenderBools.setStructures(payload.enabled());
             case RAIDS -> DebugRenderBools.setRaids(payload.enabled());
             case GAME_EVENTS -> DebugRenderBools.setGameEvents(payload.enabled());
-            case BEE_HIVES -> DebugRenderBools.setBeeHives(payload.enabled());
             case BEES -> DebugRenderBools.setBees(payload.enabled());
             case WATER -> DebugRenderBools.setWater(payload.enabled());
             case HEIGHTMAP -> DebugRenderBools.setHeightmap(payload.enabled());
@@ -50,7 +49,6 @@ public final class DebugNetworkClientHandler {
             case LIGHT -> DebugRenderBools.setLight(payload.enabled());
             case SOLID_FACES -> DebugRenderBools.setSolidFaces(payload.enabled());
             case CHUNK -> DebugRenderBools.setChunk(payload.enabled());
-            case BREEZE -> DebugRenderBools.setBreeze(payload.enabled());
             case SPAWN_CHUNKS -> DebugRenderBools.setSpawnChunks(payload.enabled());
             default -> {} // DIAG_ features have no client-side renderers
         }

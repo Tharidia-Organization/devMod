@@ -4,9 +4,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import com.devmod.debug.BeesPayload;
+import com.devmod.debug.BlockUpdatesPayload;
 import com.devmod.debug.BrainsPayload;
 import com.devmod.debug.DebugClientBridge;
 import com.devmod.debug.DebugSyncPayload;
+import com.devmod.debug.EntityGoalsPayload;
 import com.devmod.debug.EntityPathingPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
@@ -53,8 +55,18 @@ public final class ClientDebugBridgeImpl implements DebugClientBridge {
     }
 
     @Override
+    public void handleGoals(EntityGoalsPayload payload) {
+        NativeDebugClientStore.setGoals(payload);
+    }
+
+    @Override
     public void handleBees(BeesPayload payload) {
         NativeDebugClientStore.setBees(payload);
+    }
+
+    @Override
+    public void handleBlockUpdates(BlockUpdatesPayload payload) {
+        NativeDebugClientStore.addBlockUpdates(payload);
     }
 
     @Override

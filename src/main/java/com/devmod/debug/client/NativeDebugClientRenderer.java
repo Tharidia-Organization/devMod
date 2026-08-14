@@ -10,6 +10,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
@@ -24,9 +26,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
+import com.devmod.client.ui.editor.core.DesignTokens;
 import com.devmod.DevMod;
 import com.devmod.debug.BeesPayload;
 import com.devmod.debug.BrainsPayload;
+import com.devmod.debug.EntityGoalsPayload;
 import com.devmod.debug.POIPayload;
 import com.devmod.debug.RaidsPayload;
 import com.devmod.debug.StructuresPayload;
@@ -35,6 +39,14 @@ import com.devmod.debug.StructuresPayload;
 public class NativeDebugClientRenderer {
 
     private static final int SEARCH_RADIUS = 48;
+
+    /** World-space size of one text pixel in the goal labels. */
+    private static final float LABEL_SCALE = 0.025f;
+    private static final int GOAL_RUNNING_COLOR = DesignTokens.Semantic.SUCCESS;
+    private static final int GOAL_IDLE_COLOR = DesignTokens.Text.MUTED;
+
+    /** Keeps a block-update marker off the block's own edges so the two do not z-fight. */
+    private static final float BLOCK_UPDATE_INSET = 0.02f;
 
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
@@ -57,6 +69,10 @@ public class NativeDebugClientRenderer {
             renderEntityBrains(poseStack, bufferSource, camPos, mc);
         }
 
+        if (DebugRenderBools.isEntityGoals()) {
+            renderEntityGoals(poseStack, bufferSource, camPos, mc);
+        }
+
         if (DebugRenderBools.isPoi()) {
             renderPOI(poseStack, bufferSource, camPos, mc);
         }
@@ -77,16 +93,22 @@ public class NativeDebugClientRenderer {
             renderGameEvents(poseStack, bufferSource, camPos, mc);
         }
 
+        if (DebugRenderBools.isBlockUpdates()) {
+            renderBlockUpdates(poseStack, bufferSource, camPos, mc);
+        }
+
         bufferSource.endBatch();
     }
 
     private static boolean hasAnyEnabled() {
         return DebugRenderBools.isEntityBrains() ||
+               DebugRenderBools.isEntityGoals() ||
                DebugRenderBools.isPoi() ||
                DebugRenderBools.isRaids() ||
                DebugRenderBools.isBees() ||
                DebugRenderBools.isStructures() ||
-               DebugRenderBools.isGameEvents();
+               DebugRenderBools.isGameEvents() ||
+               DebugRenderBools.isBlockUpdates();
     }
 
     /**
@@ -147,6 +169,53 @@ public class NativeDebugClientRenderer {
         }
 
         poseStack.popPose();
+    }
+
+    /**
+     * Render the AI goals of nearby mobs as a billboarded label stack above each one.
+     * <p>
+     * Both selectors arrive in the same {@link EntityGoalsPayload} entry, so the target goals
+     * can no longer be overwritten by a second writer sending the goal selector alone. Running
+     * goals are drawn bright, idle ones dim; target-selector goals keep the {@code [T]} marker.
+     */
+    private static void renderEntityGoals(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+                                           Vec3 camPos, Minecraft mc) {
+        if (mc.level == null || mc.player == null) return;
+
+        List<EntityGoalsPayload.MobGoals> mobGoals = NativeDebugClientStore.getGoals();
+        if (mobGoals.isEmpty()) return;
+
+        var level = Objects.requireNonNull(mc.level);
+        Font font = Objects.requireNonNull(mc.font);
+
+        for (EntityGoalsPayload.MobGoals entry : mobGoals) {
+            Entity mob = level.getEntity(entry.entityId());
+            if (mob == null) continue;
+
+            Vec3 mobPos = mob.position();
+            poseStack.pushPose();
+            poseStack.translate(mobPos.x - camPos.x,
+                    mobPos.y + mob.getBbHeight() + 0.6 - camPos.y,
+                    mobPos.z - camPos.z);
+            poseStack.mulPose(Objects.requireNonNull(mc.getEntityRenderDispatcher().cameraOrientation()));
+            poseStack.scale(-LABEL_SCALE, -LABEL_SCALE, LABEL_SCALE);
+
+            Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+            List<EntityGoalsPayload.GoalInfo> goals = entry.goals();
+            int textY = -goals.size() * 10;
+
+            for (EntityGoalsPayload.GoalInfo goal : goals) {
+                String line = (goal.targetSelector() ? "[T] " : "") + goal.priority() + " " + goal.name();
+                int color = goal.running() ? GOAL_RUNNING_COLOR : GOAL_IDLE_COLOR;
+
+                font.drawInBatch(line, -font.width(line) / 2.0f, textY, color, false, matrix, bufferSource,
+                        Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+
+                textY += 10;
+            }
+
+            poseStack.popPose();
+        }
     }
 
     /**
@@ -332,6 +401,44 @@ public class NativeDebugClientRenderer {
                     box.minX(), box.minY(), box.minZ(),
                     box.maxX() + 1, box.maxY() + 1, box.maxZ() + 1,
                     0.0f, 1.0f, 1.0f, 1.0f); // Cyan for structures
+        }
+
+        poseStack.popPose();
+    }
+
+    /**
+     * Render the blocks that recently received a neighbour update.
+     * <p>
+     * These arrive as a stream rather than a snapshot, so each marker carries its own arrival
+     * time and fades out over {@code NativeDebugClientStore.blockUpdateLingerMs()}; the resulting
+     * brightness gradient is what makes the propagation order readable.
+     */
+    private static void renderBlockUpdates(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource,
+                                            Vec3 camPos, Minecraft mc) {
+        if (mc.level == null || mc.player == null) return;
+
+        List<NativeDebugClientStore.BlockUpdateMarker> markers = NativeDebugClientStore.getBlockUpdates();
+        if (markers.isEmpty()) return;
+
+        RenderType lineType = Objects.requireNonNull(RenderType.lines());
+        VertexConsumer lineConsumer = bufferSource.getBuffer(lineType);
+
+        poseStack.pushPose();
+        poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
+        Matrix4f matrix = Objects.requireNonNull(poseStack.last().pose());
+
+        long now = System.currentTimeMillis();
+        float linger = NativeDebugClientStore.blockUpdateLingerMs();
+
+        for (NativeDebugClientStore.BlockUpdateMarker marker : markers) {
+            float age = (now - marker.receivedAtMs()) / linger;
+            if (age >= 1.0f) continue;
+
+            BlockPos pos = marker.pos();
+            drawBox(lineConsumer, matrix,
+                    pos.getX() + BLOCK_UPDATE_INSET, pos.getY() + BLOCK_UPDATE_INSET, pos.getZ() + BLOCK_UPDATE_INSET,
+                    pos.getX() + 1 - BLOCK_UPDATE_INSET, pos.getY() + 1 - BLOCK_UPDATE_INSET, pos.getZ() + 1 - BLOCK_UPDATE_INSET,
+                    1.0f, 0.3f, 1.0f, 1.0f - age); // Magenta, unused by the other renderers
         }
 
         poseStack.popPose();
