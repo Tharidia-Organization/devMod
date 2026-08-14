@@ -29,6 +29,17 @@ import com.devmod.DevMod;
 public class PortalFrameDetector {
     public static final int MIN_SIZE = 3;
     public static final int MAX_SIZE = 23;
+
+    /** Widest legal interior: the frame ring costs one block on each side of {@link #MAX_SIZE}. */
+    public static final int MAX_INTERIOR_SIZE = MAX_SIZE - 2;
+
+    /**
+     * Most portal blocks a legal portal can hold, reached by a square interior of
+     * {@link #MAX_INTERIOR_SIZE}. Flood fills over portal blocks bound themselves by this, so
+     * the bound and the shape the detector accepts cannot drift apart.
+     */
+    public static final int MAX_INTERIOR_BLOCKS = MAX_INTERIOR_SIZE * MAX_INTERIOR_SIZE;
+
     private static final int NO_EDGE = -1;
 
     private final BiPredicate<BlockGetter, BlockPos> isFrameBlock;

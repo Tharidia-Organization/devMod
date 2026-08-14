@@ -30,6 +30,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 
+import com.devmod.DevMod;
 import com.devmod.portal.block.CustomPortalBlock;
 
 /**
@@ -43,10 +44,11 @@ public class PortalRegistry extends SavedData {
     private static final String TAG_PORTALS = "portals";
 
     /**
-     * Flood fill bound for interior resolution. The largest legal interior is 21x21 = 441
-     * blocks; anything past this bound is not a portal shape the registry can own.
+     * Flood fill bound for every walk over portal blocks. Taken from the frame detector so a
+     * change to the legal frame size cannot leave the fills behind: anything past this bound is
+     * not a portal shape the registry can own.
      */
-    private static final int MAX_INTERIOR_BLOCKS = 1024;
+    private static final int MAX_INTERIOR_BLOCKS = PortalFrameDetector.MAX_INTERIOR_BLOCKS;
 
     /**
      * Upper bound on cached interior positions. Only reachable if entities visit more portal
@@ -314,7 +316,13 @@ public class PortalRegistry extends SavedData {
 
     /**
      * Collects the run of portal blocks of the given color connected to {@code start}.
-     * Bounded so a creative-built blob of portal blocks cannot walk the whole level.
+     * Bounded so a creative-built blob of portal blocks cannot walk the whole level, and
+     * iterative so a snake-shaped run of the full {@link #MAX_INTERIOR_BLOCKS} cannot overflow
+     * the stack.
+     *
+     * <p>A run that exceeds the bound is truncated rather than half-collected: the caller gets
+     * a complete answer for the first {@link #MAX_INTERIOR_BLOCKS} blocks and a warning naming
+     * the position, which is all a hand-built or datapack-made oversize portal can be given.
      */
     @Nonnull
     private Set<BlockPos> collectInterior(@Nonnull BlockGetter level, @Nonnull BlockPos start, @Nonnull PortalColor color) {
@@ -324,7 +332,7 @@ public class PortalRegistry extends SavedData {
         interior.add(origin);
         pending.add(origin);
 
-        while (!pending.isEmpty() && interior.size() < MAX_INTERIOR_BLOCKS) {
+        while (!pending.isEmpty()) {
             BlockPos current = Objects.requireNonNull(pending.poll());
             for (Direction dir : Direction.values()) {
                 BlockPos next = Objects.requireNonNull(current.relative(Objects.requireNonNull(dir)));
@@ -338,11 +346,15 @@ public class PortalRegistry extends SavedData {
                     continue;
                 }
 
+                // Checked before the add, so a run of exactly the bound is still complete.
+                if (interior.size() >= MAX_INTERIOR_BLOCKS) {
+                    DevMod.LOGGER.warn("[PortalRegistry] Run of {} portal blocks at {} exceeds the {}-block bound; fill truncated",
+                        color, origin, MAX_INTERIOR_BLOCKS);
+                    return interior;
+                }
+
                 interior.add(next);
                 pending.add(next);
-                if (interior.size() >= MAX_INTERIOR_BLOCKS) {
-                    break;
-                }
             }
         }
 
@@ -496,6 +508,9 @@ public class PortalRegistry extends SavedData {
      *
      * <p>Portal blocks are unbreakable and drop nothing, so nothing else in the world can
      * clear them once their registry entry is gone.
+     *
+     * <p>The fill is resolved in full before the first removal: removing while walking would
+     * cut the walk off from the rest of the portal and strand the remainder.
      */
     private void clearPortalBlocks(@Nullable PortalData portal, @Nonnull MinecraftServer server) {
         ServerLevel level = levelOf(portal, server);
@@ -503,7 +518,8 @@ public class PortalRegistry extends SavedData {
             return;
         }
 
-        for (BlockPos pos : collectPortalBlocks(level, Objects.requireNonNull(portal.position().get()))) {
+        Set<BlockPos> blocks = collectPortalBlocks(level, Objects.requireNonNull(portal.position().get()));
+        for (BlockPos pos : blocks) {
             level.removeBlock(Objects.requireNonNull(pos), false);
         }
     }
@@ -525,33 +541,20 @@ public class PortalRegistry extends SavedData {
 
     /**
      * Collects the portal blocks connected to the given center.
+     *
+     * <p>The same fill the membership index uses, so what gets cleared or restyled is exactly
+     * what the registry considers part of the portal. The center's own color scopes the run:
+     * a differently colored portal placed against this one is a separate portal.
      */
     @Nonnull
     private Set<BlockPos> collectPortalBlocks(@Nonnull ServerLevel level, @Nonnull BlockPos center) {
-        Set<BlockPos> found = new HashSet<>();
-        collectPortalBlocksRecursive(level, center, found);
-        return found;
-    }
-
-    /**
-     * Recursively collects all connected portal blocks, bounded so a malformed portal
-     * cannot walk the whole level.
-     */
-    private void collectPortalBlocksRecursive(ServerLevel level, BlockPos pos, Set<BlockPos> found) {
-        if (found.contains(pos) || found.size() > 100) {
-            return;
-        }
-
-        BlockState state = level.getBlockState(Objects.requireNonNull(pos));
+        BlockState state = level.getBlockState(Objects.requireNonNull(center));
         if (!(state.getBlock() instanceof CustomPortalBlock)) {
-            return;
+            return Objects.requireNonNull(Set.of());
         }
-        found.add(pos);
 
-        // Check adjacent blocks for more portal blocks
-        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.values()) {
-            collectPortalBlocksRecursive(level, pos.relative(Objects.requireNonNull(dir)), found);
-        }
+        PortalColor color = Objects.requireNonNull(state.getValue(Objects.requireNonNull(CustomPortalBlock.COLOR)));
+        return collectInterior(level, center, color);
     }
 
     /**

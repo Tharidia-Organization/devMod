@@ -40,4 +40,15 @@ class PortalFrameDetectorTest {
         assertTrue(21 >= PortalFrameDetector.MIN_SIZE);
         assertTrue(21 <= PortalFrameDetector.MAX_SIZE);
     }
+
+    @Test
+    @DisplayName("Interior bounds follow MAX_SIZE")
+    void interiorBoundsFollowMaxSize() {
+        // The frame ring costs one block on each side, so a 23x23 frame holds a 21x21 interior.
+        assertEquals(PortalFrameDetector.MAX_SIZE - 2, PortalFrameDetector.MAX_INTERIOR_SIZE);
+        assertEquals(21, PortalFrameDetector.MAX_INTERIOR_SIZE);
+        assertEquals(PortalFrameDetector.MAX_INTERIOR_SIZE * PortalFrameDetector.MAX_INTERIOR_SIZE,
+            PortalFrameDetector.MAX_INTERIOR_BLOCKS);
+        assertEquals(441, PortalFrameDetector.MAX_INTERIOR_BLOCKS);
+    }
 }
