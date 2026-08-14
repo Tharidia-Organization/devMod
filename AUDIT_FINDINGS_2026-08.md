@@ -75,33 +75,31 @@ together). Compiles clean, 9035 unit tests and 51 GameTests green.
   dropping 90% of `spatial_heatmaps` discarded 90% of the underlying samples and
   nothing scaled the survivors back up.
 
-Deliberate non-fixes, with the reasoning kept so they are not re-litigated:
 
-- `findPortalContaining` resolves by nearest centre rather than true interior
-  membership: it runs per tick per portal block, so membership testing needs a
-  cache first.
-- Actions V2 (`FeedbackStep`/`TelemetryStep` unreachable on abort, empty
-  precondition map, handlers typed as `Consumer` so failures report OK,
-  shadow mode double-executing) is latent — the engine has no production call
-  site. These are prerequisites for enabling it, not live bugs.
-- `AreaSnapshotRestoreTask` materialises the full volume three times on the
-  server thread; fixing it changes `startRestore`'s contract.
-- `NexusFoundationBuilder`: the staggered path already exists and is the
-  default; only `/devmod nexus rebuild` bypasses it, and repointing it changes
-  a synchronous command's contract.
-- `TesterProgress` and `DamageStatistics` persist the same counters to two
-  files; whichever loads last wins. Picking an owner is a data-model decision.
+## Fourth pass
+
+Everything previously deferred is now done, and the branch was merged to `main`.
+
+- `findPortalContaining` tests true interior membership, backed by a cache keyed
+  on portal ids and invalidated through `CustomPortalBlock.onRemove`.
+- No debug feature reads `ServerLevel` from the render thread any more.
+  `getSingleplayerServer()` does not appear in `src/main/java`.
+- NeoForge 21.1.248 and GeckoLib 4.9.2, the latest for 1.21.1.
+- Random sampling no longer applies to pre-aggregated telemetry tables.
 
 ## Still open
 
-Only these remain. Everything else in the historical list was fixed, or is in
-the "deliberate non-fixes" list with its reasoning.
-
-- **Debug renderer entity reads.** `NativeDebugClientRenderer` still reads
-  `ServerLevel` from the render thread for the entity-based features (mobs,
-  goals, pathing). Structures, POI and raids were moved onto the server→client
-  push path; the entity paths are a different shape and were left for a
-  follow-up.
+- **`collectPortalBlocksRecursive` bounds its flood fill at 100 blocks** while a
+  legal portal interior can reach 441, so `clearPortalBlocks` and
+  `updatePortalBlockState` silently skip part of a large portal, leaving
+  orphaned blocks and stale `LINKED` states. Pre-existing.
+- **`NativeDebugSender.sendGoalsDebug` duplicates the mixin's per-tick
+  `GoalDebugPayload`.** The client keys that renderer by entity id, so the two
+  writers overwrite each other and target goals flicker.
+- **Nothing here has been play-tested.** The combat changes in particular —
+  yaw-relative hit geometry, dropped head priority, bow velocity restored to
+  vanilla, execution duration — change what players feel and have no automated
+  coverage beyond unit tests of the maths.
 
 ## Rejected after checking
 
