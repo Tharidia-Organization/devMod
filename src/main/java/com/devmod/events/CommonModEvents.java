@@ -40,10 +40,21 @@ import static com.devmod.DevMod.MODID;
  * Per-player and per-block gameplay events.
  *
  * <p>Server lifecycle (start, stop, attribute modification, level unload) lives
- * in {@link ModLifecycleEvents}. Both classes are {@code @EventBusSubscriber}, so
- * a handler declared in both runs twice.
+ * in {@link ModLifecycleEvents}.
+ *
+ * <p><b>NOT an {@code @EventBusSubscriber} any more.</b> The warning this javadoc used to carry --
+ * "both classes are @EventBusSubscriber, so a handler declared in both runs twice" -- had come
+ * true against {@link GameplayEvents}, which declares the same four handlers:
+ * {@code onPlayerLoggedIn}, {@code onEquipmentChange}, {@code onBreakSpeed} and
+ * {@code onBlockDrop}. Every one of those fired twice per event on a live server, which is
+ * visible in the log as the same "Non-DevMod modifier ..." warning emitted from both classes for
+ * one entity, and means equipment sanitization, login blocks, break speed and block drops were
+ * all processed twice.
+ *
+ * <p>GameplayEvents is the surviving copy: it is a strict superset, adding the TesterModality
+ * sync and the season-pass login XP, and gating the tester-only work behind
+ * {@code TesterModality.isEnabled()}. Nothing here is lost by not registering it.
  */
-@EventBusSubscriber(modid = MODID)
 public class CommonModEvents {
 	private static final Logger LOGGER = LogUtils.getLogger();
 

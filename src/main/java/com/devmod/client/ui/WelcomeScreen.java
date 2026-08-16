@@ -244,7 +244,12 @@ public class WelcomeScreen extends Screen {
         if (elapsed > BUTTONS_REVEAL_DELAY) {
             float hintAlpha = Math.min(1.0f, (elapsed - BUTTONS_REVEAL_DELAY) / 300.0f);
             int hintColor = applyAlpha(DesignTokens.Welcome.HINT, hintAlpha);
-            UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Press ESC to skip", centerX, panelY + scaledPanelHeight - 15, hintColor);
+            // Anchored under the "don't show again" toggle rather than to the panel bottom.
+            // It used to sit at panelY + scaledPanelHeight - 15, an UNSCALED offset against a
+            // different height than the toggle's (actualPanelHeight): below 1x the toggle rose
+            // with the scale while this line stayed put, and the two printed on top of each other.
+            int hintY = dontShowToggleY + lineStep(14, 1);
+            UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Press ESC to skip", centerX, hintY, hintColor);
         }
 
         safeGraphics.pose().popPose();
@@ -342,7 +347,7 @@ public class WelcomeScreen extends Screen {
             float headerAlpha = Math.min(1.0f, featureElapsed / 200.0f);
             int headerColor = applyAlpha(COLOR_TEXT_DIM, headerAlpha);
             UIScaleManager.drawScaledString(g, safeFont, "What you get:", x, y, headerColor, false);
-            y += UIScaleManager.scale(16);
+            y += lineStep(16, 1);
         }
 
         // Feature list with staggered reveal
@@ -351,9 +356,27 @@ public class WelcomeScreen extends Screen {
             if (featureElapsed > featureDelay) {
                 float featureAlpha = Math.min(1.0f, (featureElapsed - featureDelay) / 250.0f);
                 renderFeatureItem(g, FEATURES[i], x, y, scaledPanelWidth - margin * 2, featureAlpha, elapsed);
-                y += UIScaleManager.scale(26);
+                // Each item is two lines: name, then description.
+                y += lineStep(26, 2);
             }
         }
+    }
+
+    /**
+     * A vertical step that always clears the given number of text lines.
+     *
+     * <p>UIScaleManager.scale() shrinks spacing below 1x, but drawScaledString draws the font at
+     * its native height and never scales it. Below 1x -- a small window, or a high Minecraft GUI
+     * Scale -- a step like scale(12) is about 6px while a line of text is 9px, so rows drew on top
+     * of each other. Spacing that has to clear text therefore has a floor of the real line height.
+     *
+     * @param baseValue the spacing at 1x scale
+     * @param lines how many lines of text the step must clear
+     * @return the scaled spacing, never less than the text actually occupies
+     */
+    private int lineStep(int baseValue, int lines) {
+        int textHeight = safeFont().lineHeight * lines + UIScaleManager.scaleMin(3, 2);
+        return Math.max(UIScaleManager.scale(baseValue), textHeight);
     }
 
     private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, int featureWidth, float alpha, long elapsed) {
@@ -363,7 +386,7 @@ public class WelcomeScreen extends Screen {
 
         // Background highlight on hover effect (subtle)
         int bgColor = applyAlpha(DesignTokens.Welcome.SUBTLE, alpha);
-        int rowHeight = UIScaleManager.scale(20);
+        int rowHeight = lineStep(20, 2);
         g.fill(x - UIScaleManager.scale(5), y - UIScaleManager.scale(2), x + featureWidth, y + rowHeight, bgColor);
 
         // Colored bullet
@@ -380,9 +403,10 @@ public class WelcomeScreen extends Screen {
         int nameColor = applyAlpha(feature.color, alpha);
         UIScaleManager.drawScaledString(g, safeFont, feature.name, x + textOffset, y + UIScaleManager.scale(2), nameColor, true);
 
-        // Description
+        // Description, one full line below the name
         int descColor = applyAlpha(COLOR_TEXT_DIM, alpha);
-        UIScaleManager.drawScaledString(g, safeFont, feature.description, x + textOffset, y + UIScaleManager.scale(12), descColor, false);
+        int descOffset = Math.max(UIScaleManager.scale(12), safeFont.lineHeight + 1);
+        UIScaleManager.drawScaledString(g, safeFont, feature.description, x + textOffset, y + descOffset, descColor, false);
     }
 
     private void renderKeybinds(GuiGraphics g, int centerX, int startY, long elapsed) {
@@ -402,7 +426,7 @@ public class WelcomeScreen extends Screen {
         // Keybinds
         int y = startY + UIScaleManager.scale(28);
         int keybindOffset = UIScaleManager.scale(120);
-        int lineHeight = UIScaleManager.scale(18);
+        int lineHeight = lineStep(18, 1);
         for (int i = 0; i < KEYBINDS.length; i++) {
             long kbDelay = i * 120L;
             if (keybindElapsed > kbDelay) {
