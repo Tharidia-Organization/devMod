@@ -301,24 +301,33 @@ Kept so these are not re-investigated:
 - Portal entity duplication on simultaneous entry — guarded by portal cooldown.
 
 
-## Client UI (reviewed last; all TODO)
+## Client UI (all FIXED — re-verified against source 2026-08-16)
 
-- HIGH `EditorApplyFeedbackRouter:39` — `it.remove()` on a `CopyOnWriteArrayList`
-  iterator throws `UnsupportedOperationException` out of screen `onClose()`.
-- HIGH `MobPoolEditorScreen:214` — resizing rebuilds the mob list with everything
-  enabled and never re-applies the pool config, so Apply re-enables every
-  disabled mob server-wide.
-- HIGH `RadialMenuScreen:1963` — search result index not bounds-checked.
-- HIGH `EnduranceQuestScreen:261` — resize leaks a cache listener and a native
-  `VertexBuffer` per rebuild.
-- HIGH `ClientImpactHandlers:48` — body-part ordinal from the wire indexes
-  `values()` without a bounds check.
-- MED — several screens re-run one-time setup in `init()` (which re-runs on every
-  resize): `UnifiedSettingsScreen` discards unsaved edits, `VoxelLabScreen` skips
-  page `onDeactivate()`, `ItemEditorScreen` wipes undo history,
-  `NotificationCenterScreen` resets the tab and re-requests data.
-- MED `SettingsManager:124` — a save while another is in flight is dropped, and
-  the in-flight task clears `dirty` for data it never saw.
-- MED — shield/pathfinding/heatmap renderers set per-entity shader uniforms on a
-  batch flushed once, so with two or more subjects all render with the last
-  one's values.
+The heading here used to read "reviewed last; all TODO". Every item was checked
+against the source on 2026-08-16 and all of them are closed, each with the
+reason recorded at the fix site. Line numbers below are from discovery and have
+drifted.
+
+- **FIXED** HIGH `EditorApplyFeedbackRouter:39` — `it.remove()` on a
+  `CopyOnWriteArrayList` iterator threw `UnsupportedOperationException` out of
+  screen `onClose()`. Both `unregister` and `cleanup` use `removeIf` now; no
+  iterator is mutated.
+- **FIXED** HIGH `MobPoolEditorScreen:214` — resizing rebuilt the mob list with
+  everything enabled and never re-applied the pool config, so Apply re-enabled
+  every disabled mob server-wide. `init()` keeps the previous panel and carries
+  its `getDisabledMobs()` over to the new one.
+- **FIXED** HIGH `RadialMenuScreen:1963` — search result index is bounds-checked
+  (`selectedSearchResult >= 0 && < searchResults.size()`).
+- **FIXED** HIGH `EnduranceQuestScreen:261` — the native `VertexBuffer` is
+  repositioned instead of reallocated and is released only by `cleanup()`, so a
+  resize no longer leaks one per rebuild.
+- **FIXED** HIGH `ClientImpactHandlers:48` — the body-part ordinal off the wire
+  is range-checked against `values().length` before indexing.
+- **FIXED** MED — the four screens that re-ran one-time setup in `init()` (which
+  re-runs on resize) each guard it now: `UnifiedSettingsScreen`,
+  `VoxelLabScreen`, `ItemEditorScreen`, `NotificationCenterScreen`.
+- **FIXED** MED `SettingsManager:124` — a save in flight no longer drops the
+  next one. `saveExecutor` is single-threaded, so overlapping saves serialize in
+  submission order and the newest snapshot wins.
+- **FIXED** MED — shield/pathfinding/heatmap renderers flush per entity, so
+  per-entity shader uniforms no longer leak onto the next subject (third pass).

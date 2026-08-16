@@ -95,29 +95,68 @@ Its other mods worth knowing about, because DevMod has soft compat for several:
 CombatEvolution, EpicFight + EpicFightAwaken, age_of_fight (+ mobs, wool,
 scenario), curios, invincible, ldlib2.
 
-### Game server — NOT DONE, needs you
+### Game server — BLOCKED on a governance decision, not on access
 
-`sftp://lordbanana89@51.68.35.33:2224/`, panel `http://51.68.35.33:8080/instances/3f31be3d`.
+Panel `http://51.68.35.33:8080/instances/3f31be3d` = AMP instance `Modbana01`
+(`InstanceID=3f31be3d-0c5a-4423-b8f7-6f63839927e8`, friendly name "Mod bana").
 
-I did not upload. The credentials are the panel login (plus a 2FA suffix when
-enabled) and I do not handle passwords — that is yours to run:
+**Do not follow the old `sftp` + `put` recipe.** It was written from the panel's
+connection details without looking at the box, and on this instance it does not
+work. Verified on 2026-08-16:
 
-```
-sftp -P 2224 lordbanana89@51.68.35.33
-cd mods
-put "/Volumes/HD 1/Dev Mod/DevMod/devMod/build/libs/DevMod.jar" devmod-0.1.0.jar
-```
+- The server is reachable by SSH key as `debian` (`~/.ssh/my_custom_key`) with
+  passwordless sudo. No panel password is needed for anything below.
+- It runs NeoForge **21.1.248**, so the `[21.1.248,)` floor is satisfied — the
+  version worry in this document was unfounded. GeckoLib on the box is 4.9.2,
+  matching the build.
+- `Minecraft/mods/` is **not writable and not hand-managed**. It is mode 555 with
+  444 jars, is the materialisation of `mods.d/gen-900040`, and its jars are
+  hardlinks into a content-addressed store at `/srv/mcbench/cache/sha256/`.
+  Copying a jar in would be reverted at the next generation and would break the
+  drift check (`mcbench-state --strict`: 31 sha, 32 dup, 33 other) on two counts.
+- Deploys go through a CI pipeline: the `mcbench-ci` key on user `mcdeploy` has
+  the forced command `/usr/local/sbin/mcbench-entry`, verbs
+  `ping | state | orient | rollback gen-NNNNNN | deploy <run-id>` with a flat tar
+  of jars on stdin. `mcbench-deploy` updates a lockfile, rematerialises the whole
+  set from cache, stops and starts the container, runs a smoke gate and rolls
+  back on failure. That key is not on this Mac.
 
-Then restart the server from the panel. Before doing it, confirm the server is
-on NeoForge **21.1.248 or newer** — this build hard-refuses anything older, and
-the failure mode is a mod-loading error at boot, not a warning.
+**The blocker is not access, it is governance.** `/srv/mcbench/manifest/bench-manifest.json`
+declares seven first-party mods — `combat_evolution`, `epicfight_awaken`,
+`age_of_fight`, `age_of_fight_mobs`, `neo_age_of_fight_scenario`,
+`age_of_fight_wool`, `epicfightx` — and `devmod` is not among them. Modbana01 is
+the Age of Fight product line's test bench, not DevMod's. That manifest
+describes itself as a governed substrate changed via reviewed PR in git, and its
+`excluded_mods` entries (EMI, EpicFight Nightfall) show that admissions and
+removals are argued decisions.
+
+Adding DevMod would technically pass — its only mandatory deps are `neoforge`
+and `minecraft`, both loader-provided, so the dependency closure the manifest is
+built on does not grow — but it belongs in a PR against that manifest, not in a
+box-side deploy.
+
+The governance repo is `lordbanana89/age-of-fight-bench` (`manifest/`, `bin/`,
+`.github/workflows/`), and the ecosystem workspace is `~/Desktop/Age of Fight`,
+whose `BANCO-DI-TEST.md` is the full plan. Registering `devmod` needs both
+`manifest/bench-manifest.json` *and* `manifest/platform.lock.properties` —
+`verify-platform.sh` fails closed (exit 3) on a mod that is not in the project
+registry. A drafted PR body is in the session scratchpad.
+
+`scripts/clean_mods.sh` targets an instance `TharidiaDevModTest01` that no
+longer exists. It was **not** a DevMod bench: §6.1 of `BANCO-DI-TEST.md`
+records it as a 19 MB leftover holding only `mods_disabled/` with 13
+third-party RPG mods, none from this ecosystem, left behind when the instance
+was deleted from AMP.
 
 DevMod has both client and server code, so both sides need the same jar and they
 must be the same build.
 
 ## Next steps, in order
 
-1. Upload to the server and restart it (above).
+1. Decide where DevMod is meant to run. Either open the PR that adds `devmod`
+   to `bench-manifest.json` (the entry and its rationale are drafted), or pick a
+   non-governed AMP instance, or restore a dedicated DevMod bench. Only then
+   deploy.
 2. Launch the Prism instance, confirm DevMod loads alongside the other 11 mods,
    and watch the log for compat errors — EpicFight and GeckoLib are the ones
    most likely to surface something.
