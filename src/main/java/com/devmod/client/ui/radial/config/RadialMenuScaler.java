@@ -91,6 +91,9 @@ public final class RadialMenuScaler {
     /** Maximum menu size as proportion of screen. */
     private static final float MAX_SCREEN_RATIO = 0.85f;
 
+    /** A vanilla item icon is 16x16; the macro hub band must be wide enough to hold one. */
+    private static final int VANILLA_ITEM_SIZE = 16;
+
     /** Extra radial padding for item ring + hover expansion (reference units). */
     private static final int ITEM_ENVELOPE_PADDING = RadialMenuConstants.ITEM_RING_OFFSET
         + RadialMenuConstants.ITEM_HOVER_OFFSET
@@ -144,7 +147,7 @@ public final class RadialMenuScaler {
 
         // Derived values
         favoritesRadius = Math.max(centerButtonRadius + 8, innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
-        macroHubRadius = centerButtonRadius + scaleConstant(RadialMenuConstants.MACRO_HUB_OFFSET);
+        macroHubRadius = centerButtonRadius + macroHubBandWidth();
 
         // Item size scales with menu
         itemSize = Math.max(MIN_ITEM_SIZE, scaleConstant(RadialMenuConstants.ITEM_BASE_SIZE));
@@ -207,7 +210,7 @@ public final class RadialMenuScaler {
 
                 favoritesRadius = Math.max(centerButtonRadius + 8,
                     innerRadius - scaleConstant(RadialMenuConstants.FAVORITES_OFFSET));
-                macroHubRadius = centerButtonRadius + scaleConstant(RadialMenuConstants.MACRO_HUB_OFFSET);
+                macroHubRadius = centerButtonRadius + macroHubBandWidth();
 
                 itemSize = Math.max(MIN_ITEM_SIZE, scaleConstant(RadialMenuConstants.ITEM_BASE_SIZE));
 
@@ -223,6 +226,29 @@ public final class RadialMenuScaler {
                 }
             }
         }
+    }
+
+    /**
+     * Width of the macro hub band, wide enough for the icon drawn inside it.
+     *
+     * <p>This used to be a flat {@code scaleConstant(MACRO_HUB_OFFSET)}, i.e. 8 units. But
+     * RadialHubRenderer places each macro icon at the middle of the band and draws it with
+     * {@code graphics.renderItem}, a 16x16 item scaled by MACRO_ICON_ITEM_SCALE -- about 18 units,
+     * more than twice the band meant to hold it. Every icon therefore spilled inward over the
+     * centre button and outward past the hub edge, and with six macros the overspill piled up into
+     * one unreadable clump in the middle.
+     *
+     * <p>The hover and selected scales are larger still, so the band is sized from the largest of
+     * them: a macro must not jump out of its ring just by being pointed at.
+     *
+     * @return the band width in pixels, never narrower than the original constant
+     */
+    private static int macroHubBandWidth() {
+        float largestIconScale = Math.max(RadialMenuConstants.MACRO_ICON_ITEM_SCALE,
+            Math.max(RadialMenuConstants.MACRO_ICON_ITEM_SCALE_HOVER,
+                RadialMenuConstants.MACRO_ICON_ITEM_SCALE_SELECTED));
+        int iconExtent = scaleConstant((int) Math.ceil(VANILLA_ITEM_SIZE * largestIconScale));
+        return Math.max(scaleConstant(RadialMenuConstants.MACRO_HUB_OFFSET), iconExtent);
     }
 
     private static int computeMaxOuterRadius() {
