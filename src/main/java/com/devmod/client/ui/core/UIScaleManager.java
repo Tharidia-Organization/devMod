@@ -118,8 +118,20 @@ public final class UIScaleManager {
         // Get Minecraft's GUI scale factor
         guiScale = (float) mc.getWindow().getGuiScale();
 
-        // Calculate auto-scale based on screen height
-        autoScale = calculateAutoScale(scaledHeight);
+        // Calculate auto-scale from the PHYSICAL height, not the GUI-scaled one.
+        //
+        // scaledHeight is already physicalHeight / guiScale, so feeding it to a reference
+        // expressed in physical pixels made autoScale * guiScale == physicalHeight / 1080: the
+        // mod's spacing kept a constant PHYSICAL size and silently cancelled the player's GUI
+        // Scale. Text does not behave that way -- drawScaledString draws the font in GUI units,
+        // which grow with guiScale -- so the two diverged as GUI Scale rose: at guiScale 2 every
+        // gap was half of what the font needed. That is one root cause behind the welcome screen
+        // printing over itself and the radial menu coming out cramped.
+        //
+        // Measuring physical against physical keeps spacing in step with the font: on a 1080p
+        // window autoScale is 1.0 at any GUI Scale, so scale(12) is 12 GUI units against a 9-unit
+        // line. On larger displays it errs toward more space, never less.
+        autoScale = calculateAutoScale(screenHeight);
 
         // Effective scale combines GUI scale awareness with auto-scale
         effectiveScale = autoScale;
