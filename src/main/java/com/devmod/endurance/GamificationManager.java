@@ -106,7 +106,8 @@ public class GamificationManager {
      * Initialize with data directory.
      */
     public void initialize(Path configDir) {
-        this.dataDirectory = configDir.resolve("devmod").resolve("gamification");
+        // Same double-nesting as EnduranceAnalytics had: getConfigDir() already ends in "devmod".
+        this.dataDirectory = configDir.resolve("gamification");
         try {
             Files.createDirectories(dataDirectory);
             loadData();

@@ -111,8 +111,7 @@ public class WelcomeScreen extends Screen {
         // Kept in fields because render() used to recompute its own height from PANEL_HEIGHT while
         // init() clamped to the window: on a short window the panel was DRAWN taller than the one
         // the toggle and buttons had been positioned against.
-        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int actualPanelWidth = Math.min(scaledPanelWidth, width - UIScaleManager.scale(20));
+        int actualPanelWidth = Math.min(requiredPanelWidth(), width - UIScaleManager.scale(20));
         int actualPanelHeight = Math.min(requiredPanelHeight(), height - UIScaleManager.scale(20));
         this.panelWidth = actualPanelWidth;
         this.panelHeight = actualPanelHeight;
@@ -266,7 +265,9 @@ public class WelcomeScreen extends Screen {
             // It used to sit at panelY + scaledPanelHeight - 15, an UNSCALED offset against a
             // different height than the toggle's (actualPanelHeight): below 1x the toggle rose
             // with the scale while this line stayed put, and the two printed on top of each other.
-            int hintY = dontShowToggleY + lineStep(14, 1);
+            // Below the toggle's full height: EditorToggle draws a 20-unit switch, so a step sized
+            // for one line of text landed inside it.
+            int hintY = dontShowToggleY + toggleHeight() + UIScaleManager.scaleMin(3, 2);
             UIScaleManager.drawScaledCenteredString(safeGraphics, safeFont, "Press ESC to skip", centerX, hintY, hintColor);
         }
 
@@ -412,9 +413,52 @@ public class WelcomeScreen extends Screen {
         return lineStep(28, 1) + KEYBINDS.length * lineStep(18, 1);
     }
 
+    /** Height of the "don't show again" toggle row (EditorToggle draws a 20-unit switch). */
+    private int toggleHeight() {
+        return Math.max(UIScaleManager.scale(20), safeFont().lineHeight + 8);
+    }
+
     /** Buttons, the "don't show again" toggle and the ESC hint below the keybinds. */
     private int footerHeight() {
-        return UIScaleManager.scale(40) + lineStep(28, 1) + lineStep(14, 1) * 2;
+        return UIScaleManager.scale(40) + lineStep(28, 1) + toggleHeight() + lineStep(14, 1);
+    }
+
+    /**
+     * Width of the widest keybind row: the "[KEY]" box, its gap, and the action text.
+     *
+     * @return the width in pixels at the current font
+     */
+    private int widestKeybindRow() {
+        Font f = safeFont();
+        int widest = 0;
+        for (Keybind kb : KEYBINDS) {
+            widest = Math.max(widest,
+                f.width("[" + kb.key() + "]") + UIScaleManager.scale(10) + f.width(kb.action()));
+        }
+        return widest;
+    }
+
+    /**
+     * Panel width the text actually needs.
+     *
+     * <p>Same trap as the vertical axis: UIScaleManager.scale() shrinks the panel below 1x while
+     * drawScaledString renders the font at its native size, so the longest keybind line -- "[F10]
+     * Start Endurance Quest (assign in Controls)" -- ran straight out past the right edge. The
+     * width is therefore measured from the strings themselves rather than assumed from
+     * PANEL_WIDTH.
+     *
+     * @return the required width, never below the designed PANEL_WIDTH
+     */
+    private int requiredPanelWidth() {
+        Font f = safeFont();
+        int textOffset = UIScaleManager.scale(15);
+        int content = widestKeybindRow();
+        for (Feature feature : FEATURES) {
+            content = Math.max(content,
+                textOffset + Math.max(f.width(feature.name()), f.width(feature.description())));
+        }
+        int margin = UIScaleManager.scale(35);
+        return Math.max(UIScaleManager.scale(PANEL_WIDTH), content + margin * 2);
     }
 
     /**
@@ -481,7 +525,9 @@ public class WelcomeScreen extends Screen {
 
         // Keybinds
         int y = startY + UIScaleManager.scale(28);
-        int keybindOffset = UIScaleManager.scale(120);
+        // Centre the block on the widest row rather than a fixed scale(120): with an unscaled font
+        // the fixed offset put long rows past the panel edge.
+        int keybindOffset = widestKeybindRow() / 2;
         int lineHeight = lineStep(18, 1);
         for (int i = 0; i < KEYBINDS.length; i++) {
             long kbDelay = i * 120L;

@@ -74,7 +74,7 @@ public class GeckoLibModuleCompat extends BaseCompatModule {
 
     @Override
     protected void doInitClient() {
-        debug("Client initialization complete");
+        // BaseCompatModule.initClient() logs this itself right after this method returns.
     }
 
     @Override

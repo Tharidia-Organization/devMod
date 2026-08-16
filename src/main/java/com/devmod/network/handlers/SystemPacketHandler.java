@@ -21,7 +21,9 @@ import com.devmod.mailbox.network.payload.TicketActionPayload;
 import com.devmod.mailbox.network.payload.TicketCreatePayload;
 import com.devmod.mailbox.network.payload.TicketSyncPayload;
 import com.devmod.mailbox.network.payload.TicketSyncRequestPayload;
+import com.devmod.config.TesterModality;
 import com.devmod.network.ChannelId;
+import com.devmod.network.TesterModalitySyncPayload;
 import com.devmod.network.GameMechanicsSyncPayload;
 import com.devmod.network.NetworkHandler;
 import com.devmod.network.PayloadValidation.PayloadLimits;
@@ -66,6 +68,24 @@ public final class SystemPacketHandler extends NetworkHandlerBase implements Pay
             nn(LVCSyncPayload.TYPE),
             nn(LVCSyncPayload.STREAM_CODEC),
             validated(SystemPacketHandler::handleLvcSync, PayloadLimits.SMALL)
+        );
+
+        // Tester modality handshake.
+        // This registration never existed: GameplayEvents.onPlayerLoggedIn sent the payload on
+        // every login and NeoForge refused it with "Payload devmod:250 may not be sent to the
+        // client!", swallowed by a catch that degraded it to a WARN. The whole client/server
+        // compatibility check -- TesterModality.onServerSync, isCompatible, mismatchReason --
+        // has therefore never run in any shipped build.
+        event.registrar(ChannelId.TESTER_MODALITY_SYNC.asString()).playToClient(
+            nn(TesterModalitySyncPayload.TYPE),
+            nn(TesterModalitySyncPayload.STREAM_CODEC),
+            validated((payload, context) -> {
+                if (FMLEnvironment.dist == Dist.CLIENT) {
+                    observeFuture(
+                        context.enqueueWork(() -> TesterModality.onServerSync(payload.enabled())),
+                        "tester modality sync");
+                }
+            }, PayloadLimits.SMALL)
         );
 
         registerMailboxPayloads(event);

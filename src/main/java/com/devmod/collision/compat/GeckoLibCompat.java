@@ -62,8 +62,14 @@ public final class GeckoLibCompat {
 
             // Get methods for bone data extraction (requireNonNull for null analyzer - Class.forName never returns null)
             final Class<?> boneClass = Objects.requireNonNull(geoBoneClass);
-            getBoneRotationMethod = boneClass.getMethod("getRotation");
-            getBonePositionMethod = boneClass.getMethod("getPosition");
+            // GeoBone has never had getRotation()/getPosition(): the accessors are
+            // getRotationVector()/getPositionVector(), both returning a Vector3d (verified against
+            // geckolib-neoforge-1.21.1-4.9.2). The old names threw NoSuchMethodException, which
+            // the handler below swallowed into "detection failed", so isGeckoLibPresent() stayed
+            // false with GeckoLib plainly loaded -- and the log said "detection pending" while the
+            // compat module in the same run reported "GeckoLib v4.9.2 initialized successfully".
+            getBoneRotationMethod = boneClass.getMethod("getRotationVector");
+            getBonePositionMethod = boneClass.getMethod("getPositionVector");
 
             LOGGER.info("[DevMod] GeckoLib detected - OBB compatibility enabled for GeoAnimatable entities");
             return true;

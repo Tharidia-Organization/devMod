@@ -55,7 +55,10 @@ public class EnduranceAnalytics {
      * Initialize analytics storage.
      */
     public void initialize(Path configDir) {
-        this.dataDirectory = configDir.resolve("devmod").resolve("endurance_analytics");
+        // ConfigPaths.getConfigDir() already ends in "devmod"; resolving it again produced
+        // config/devmod/devmod/endurance_analytics. Every other consumer of this same configDir
+        // (RewardSystem, EnduranceQuestManager) resolves a single segment.
+        this.dataDirectory = configDir.resolve("endurance_analytics");
         try {
             Files.createDirectories(dataDirectory);
             Files.createDirectories(dataDirectory.resolve("sessions"));
@@ -304,7 +307,9 @@ public class EnduranceAnalytics {
         updateAggregates(record);
 
         logSessionDiagnostics(record);
-        LOGGER.info("[EnduranceAnalytics] Recorded session {} - {} vs {} - {} damage, {} kills (waves {}/{}, crit {:.2f})",
+        // "{:.2f}" is Python, not SLF4J: it printed literally and silently swallowed the crit rate
+        // argument, so the value was never observable in the log.
+        LOGGER.info("[EnduranceAnalytics] Recorded session {} - {} vs {} - {} damage, {} kills (waves {}/{}, crit {})",
             record.sessionId, record.playerName, record.mobDisplayName, record.totalDamageDealt, record.totalKills,
             record.wavesReached, record.totalWaves, record.criticalHitRate);
     }

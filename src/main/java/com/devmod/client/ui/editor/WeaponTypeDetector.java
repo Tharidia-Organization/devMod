@@ -288,9 +288,10 @@ public class WeaponTypeDetector {
         private static Set<ResourceLocation> TRIDENT_WHITELIST = Set.of();
         private static Set<ResourceLocation> BLACKLIST = Set.of();
 
-        static {
-            reload();
-        }
+        // No static { reload(); } here. reloadWeaponLists() is the first touch of this class, so
+        // the static initialiser ran reload() and then the explicit call ran it again -- ten file
+        // reads instead of five, on the render thread, logging the same line twice. The fields
+        // above already start as Set.of(), and every use path goes through reloadWeaponLists().
 
         @Nullable
         static WeaponType getWhitelist(Item item) {

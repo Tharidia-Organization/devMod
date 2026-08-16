@@ -132,8 +132,12 @@ public class VFXShaderRegistry {
         pipeline.register(event, LOGGER);
     }
 
+    /** True when the cached dark RenderType was built before the custom shader existed. */
+    private static boolean weaponTrailDarkUsedFallback;
+
     private static void refreshWeaponTrailDarkRenderType() {
         weaponTrailDarkRenderType = WEAPON_TRAIL_PIPELINE.buildRenderType(WEAPON_TRAIL_DARK_CONFIG, true);
+        weaponTrailDarkUsedFallback = !WEAPON_TRAIL_PIPELINE.isReady();
     }
 
     // ==================== Impact VFX ====================
@@ -193,7 +197,14 @@ public class VFXShaderRegistry {
      */
     @Nullable
     public static RenderType getWeaponTrailDarkRenderType() {
-        if (weaponTrailDarkRenderType == null) {
+        // Rebuild not only when absent but also when the cached one is the fallback and the real
+        // shader has since arrived. onRegisterShaders builds this BEFORE the registerShader
+        // callback fires, so the first build always used the fallback POSITION_COLOR format and
+        // the vanilla shader -- and the old "rebuild only if null" left that in place for the
+        // whole session. The trail then set its uniforms on a shader that never drew, and emitted
+        // normals into a format with no NORMAL element.
+        if (weaponTrailDarkRenderType == null
+                || (weaponTrailDarkUsedFallback && WEAPON_TRAIL_PIPELINE.isReady())) {
             refreshWeaponTrailDarkRenderType();
         }
         return weaponTrailDarkRenderType != null ? weaponTrailDarkRenderType : WEAPON_TRAIL_PIPELINE.renderType();
