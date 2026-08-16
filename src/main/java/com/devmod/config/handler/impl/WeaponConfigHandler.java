@@ -486,6 +486,45 @@ public class WeaponConfigHandler extends AbstractConfigHandler<WeaponStats> {
     /**
      * Set specific stats with optional variant extras (Mace/Trident data).
      */
+    /**
+     * Two-argument form, kept in sync with the three-argument one.
+     *
+     * <p>Without this override the call resolved to {@code AbstractConfigHandler.setSpecificStats},
+     * which writes the typed component and CUSTOM_DATA but never rebuilds
+     * {@code DataComponents.ATTRIBUTE_MODIFIERS}. Only the three-argument form below does that,
+     * via buildAttributeModifiers. Every two-argument weapon call site was therefore computing a
+     * clamp that had no effect on the item's real attributes: GameplayEvents (equip and block
+     * drop), CommonModEvents, MobItemNetworkHandler and two GameTests.
+     *
+     * <p>It is also why "Non-DevMod modifier ... present on ..." warned on every vanilla item: the
+     * modifiers were never replaced, so the vanilla prototype's minecraft:base_attack_damage was
+     * still there to be found.
+     *
+     * <p>Existing Mace/Trident extras are read back off the stack so delegating here does not drop
+     * them, which passing null would.
+     *
+     * @param stack the item to write to
+     * @param stats the stats to clamp and apply
+     */
+    @Override
+    public void setSpecificStats(ItemStack stack, WeaponStats stats) {
+        CompoundTag existingExtras = null;
+        if (stack != null && !stack.isEmpty()) {
+            try {
+                var custom = stack.get(Objects.requireNonNull(DataComponents.CUSTOM_DATA));
+                if (custom != null) {
+                    CompoundTag root = custom.copyTag();
+                    if (root.contains(nbtKey)) {
+                        existingExtras = root.getCompound(nbtKey);
+                    }
+                }
+            } catch (Exception e) {
+                // No readable custom data: fall through with no extras to preserve.
+            }
+        }
+        setSpecificStats(stack, stats, existingExtras);
+    }
+
     public void setSpecificStats(ItemStack stack, WeaponStats stats, @Nullable CompoundTag variantExtras) {
         if (stack == null || stack.isEmpty() || stats == null) return;
 
