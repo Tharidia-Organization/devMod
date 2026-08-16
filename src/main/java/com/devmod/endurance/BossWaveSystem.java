@@ -59,6 +59,48 @@ public class BossWaveSystem {
     // Active boss fights
     private final Map<UUID, BossFight> activeBosses = new ConcurrentHashMap<>();
 
+    /**
+     * What was actually decided for each wave of a quest, keyed questId then wave number.
+     *
+     * <p>{@link #isBossWave(int, UUID)} cannot answer for a wave that has already been fought.
+     * Its TensionSystem branch returns {@code state.isBossWavePending()}, the flag for the wave
+     * coming up, and ignores the waveNumber it was handed -- so it gives the same answer for every
+     * wave. Worse, TensionSystem clears its state on quest end, so the end-of-quest tally in
+     * EnduranceEventQuestLifecycle fell through to the legacy {@code waveNumber % 5} rule, which
+     * is not how the waves were generated. Weekly challenge progress was therefore counted with a
+     * different rule from the one that produced the fight.
+     *
+     * <p>The decision is recorded when the wave starts, while it is still known, and read back
+     * afterwards.
+     */
+    private final Map<UUID, Map<Integer, Boolean>> waveBossDecisions = new ConcurrentHashMap<>();
+
+    /**
+     * Record what a wave turned out to be, at the moment the decision is taken.
+     *
+     * @param questId the quest the wave belongs to
+     * @param waveNumber the wave being started
+     * @param isBoss whether it was started as a boss wave
+     */
+    public void recordWaveDecision(UUID questId, int waveNumber, boolean isBoss) {
+        if (questId == null) {
+            return;
+        }
+        waveBossDecisions.computeIfAbsent(questId, k -> new ConcurrentHashMap<>())
+            .put(waveNumber, isBoss);
+    }
+
+    /**
+     * Drop the recorded decisions for a quest.
+     *
+     * @param questId the quest that has ended
+     */
+    public void clearWaveDecisions(UUID questId) {
+        if (questId != null) {
+            waveBossDecisions.remove(questId);
+        }
+    }
+
     private final Random random = new Random();
 
     /**
@@ -393,6 +435,19 @@ public class BossWaveSystem {
      * @return true if this should be a boss wave
      */
     public boolean isBossWave(int waveNumber, UUID questId) {
+        // A wave that has already been started has a recorded answer; use it. Everything below
+        // can only speak about the wave coming up, so without this a question about wave 3 asked
+        // during wave 7 -- or after the quest ended -- got a wrong answer with no sign of it.
+        if (questId != null) {
+            Map<Integer, Boolean> decided = waveBossDecisions.get(questId);
+            if (decided != null) {
+                Boolean recorded = decided.get(waveNumber);
+                if (recorded != null) {
+                    return recorded;
+                }
+            }
+        }
+
         // Check TensionSystem if questId is provided
         if (questId != null) {
             TensionSystem.TensionState state = TensionSystem.INSTANCE.getState(questId);

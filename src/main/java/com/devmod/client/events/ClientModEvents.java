@@ -134,8 +134,15 @@ public class ClientModEvents {
         // Load quest data
         QuestManager.INSTANCE.load();
 
-        // Load settings (for onboarding check)
-        SettingsManager.INSTANCE.load();
+        // Load settings (for onboarding check).
+        // Only when nothing is pending: load() replaces currentSettings wholesale -- with the
+        // defaults when no file exists -- and re-applies them, without consulting the dirty flag
+        // the class maintains. Autosave runs every 30s and only while a world is loaded, so a
+        // toggle flipped from a keybind and then a world rejoin inside that window had the change
+        // silently rolled back to whatever was on disk.
+        if (!SettingsManager.INSTANCE.isDirty()) {
+            SettingsManager.INSTANCE.load();
+        }
 
         // Load damage statistics from disk
         com.devmod.testing.stats.DamageStatistics.INSTANCE.load();

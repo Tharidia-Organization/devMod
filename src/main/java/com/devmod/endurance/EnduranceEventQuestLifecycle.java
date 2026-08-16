@@ -230,6 +230,10 @@ final class EnduranceEventQuestLifecycle {
             com.devmod.endurance.challenges.WeeklyChallengeManager.INSTANCE.onQuestComplete(
                 playerId, session.getQuest(), bossesKilledThisRun);
 
+            // Only now: the tally above is the last reader. Releasing earlier is what left
+            // isBossWave with nothing to consult and sent it to the legacy % 5 fallback.
+            BossWaveSystem.INSTANCE.clearWaveDecisions(questId);
+
             // Pay out completed challenges. Both managers mark progress on their
             // own, but neither had a caller for the reward step, so tokens and
             // prestige were never actually granted. Both awardRewards calls are

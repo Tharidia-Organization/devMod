@@ -396,6 +396,9 @@ public class WaveManager {
         boolean practice = session.isPracticeMode();
         boolean bossWaveCandidate = BossWaveSystem.INSTANCE.isBossWave(waveNumber, questId);
         boolean shouldBeBossWave = !practice && bossWaveCandidate;
+        // Keep the decision: the tension state it came from is cleared at quest end, and the
+        // end-of-quest tally needs to know what each wave actually was, not re-derive it.
+        BossWaveSystem.INSTANCE.recordWaveDecision(questId, waveNumber, shouldBeBossWave);
         LOGGER.info("[BossDebug] WaveManager.startWave: wave={}, shouldBeBossWave={}", waveNumber, shouldBeBossWave);
         if (shouldBeBossWave) {
             WaveState bossState = startBossWave(session, arena, waveNumber, playerCount, questType, practice);
