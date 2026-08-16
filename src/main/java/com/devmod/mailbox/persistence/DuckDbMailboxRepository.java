@@ -50,7 +50,7 @@ public class DuckDbMailboxRepository implements MailboxRepository {
 
     public DuckDbMailboxRepository(Path dbPath) {
         this.dbPath = dbPath;
-        this.connectionManager = new DuckDBConnectionManager(dbPath);
+        this.connectionManager = DuckDBConnectionManager.forPath(dbPath);
         // Single worker: the shared DuckDB Connection is not safe for concurrent
         // statements (observed "ResultSet was closed" / INTERRUPT errors with 2 threads).
         this.executor = Executors.newSingleThreadExecutor(r -> {
@@ -1276,7 +1276,13 @@ public class DuckDbMailboxRepository implements MailboxRepository {
         return CompletableFuture.runAsync(() -> {
             LOGGER.info("[Mailbox] Initializing DuckDB repository...");
 
-            try (Connection conn = connectionManager.getConnection()) {
+            // NOT try-with-resources: the connection belongs to the manager and is shared, so
+            // closing it here dropped it for everyone. The manager then reopened the database on
+            // the next call -- visible in the log as a second "Connection established to
+            // mailbox.duckdb" -- and any concurrent user of that connection would have seen its
+            // statements and result sets closed underneath it. The class javadoc says as much.
+            try {
+                Connection conn = connectionManager.getConnection();
                 initializeSchema(conn);
                 LOGGER.info("[Mailbox] DuckDB repository initialized successfully");
             } catch (SQLException e) {

@@ -62,7 +62,7 @@ public class NotificationHistoryRepository {
             return CompletableFuture.completedFuture(null);
         }
 
-        this.connectionManager = new DuckDBConnectionManager(dbPath);
+        this.connectionManager = DuckDBConnectionManager.forPath(dbPath);
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "NotificationDB-Worker");
             t.setDaemon(true);

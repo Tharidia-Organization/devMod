@@ -89,7 +89,7 @@ public final class MailboxSearchEngine {
     private volatile boolean initialized = false;
 
     private MailboxSearchEngine() {
-        connectionManager = new DuckDBConnectionManager(resolveDbPath());
+        connectionManager = DuckDBConnectionManager.forPath(resolveDbPath());
         executor = Executors.newFixedThreadPool(2, r -> {
             Thread t = new Thread(r, "Mailbox-Search");
             t.setDaemon(true);

@@ -58,7 +58,7 @@ public final class TicketRepository {
                     .resolve("devmod")
                     .resolve("tickets.duckdb");
 
-                connectionManager = new DuckDBConnectionManager(dbPath);
+                connectionManager = DuckDBConnectionManager.forPath(dbPath);
                 executor = Executors.newFixedThreadPool(2, r -> {
                     Thread t = new Thread(r, "TicketRepo");
                     t.setDaemon(true);

@@ -20,7 +20,17 @@ import org.slf4j.LoggerFactory;
 public class DuckDBConnectionManager implements AutoCloseable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBConnectionManager.class);
 
+    /** One manager per database file, so a single lock serializes every statement on it. */
+    private static final java.util.concurrent.ConcurrentHashMap<Path, DuckDBConnectionManager> SHARED =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
     private final Path dbPath;
+    /** Non-null when this manager came from {@link #forPath(Path)} and is therefore shared. */
+    @Nullable
+    private volatile Path sharedKey;
+    /** How many holders obtained this manager through {@link #forPath(Path)}. */
+    private final java.util.concurrent.atomic.AtomicInteger holders =
+        new java.util.concurrent.atomic.AtomicInteger(0);
     private final ReentrantLock connectionLock = new ReentrantLock(true); // Fair lock
     @Nullable
     private Connection connection;
@@ -41,6 +51,35 @@ public class DuckDBConnectionManager implements AutoCloseable {
     public DuckDBConnectionManager(Path dbPath) {
         this.dbPath = dbPath;
         LOGGER.info("[DuckDB] Connection manager initialized for: {}", dbPath);
+    }
+
+    /**
+     * Obtain the manager for a database file, creating it only if no one holds it yet.
+     *
+     * <p>Two managers for the same file mean two independent {@code connectionLock}s, and this
+     * class's whole contract is that every statement on the shared connection is serialized
+     * through that lock. Nothing serializes across two of them, which is how
+     * {@code SQLTimeoutException INTERRUPT} and {@code ResultSet was closed} were produced in
+     * the mailbox before. Both notification repositories were opening
+     * {@code notifications.duckdb} that way, concurrently, and the mailbox components did the
+     * same with {@code mailbox.duckdb}.
+     *
+     * <p>The returned manager is shared, so {@link #shutdown()} only closes it once the last
+     * holder has released it. Callers that genuinely want a private manager -- tests over a
+     * throwaway database -- can still use the constructor directly.
+     *
+     * @param dbPath path to the DuckDB database file
+     * @return the manager for that file, shared with any other holder
+     */
+    public static DuckDBConnectionManager forPath(Path dbPath) {
+        Path key = dbPath.toAbsolutePath().normalize();
+        DuckDBConnectionManager manager = SHARED.computeIfAbsent(key, k -> {
+            DuckDBConnectionManager created = new DuckDBConnectionManager(k);
+            created.sharedKey = k;
+            return created;
+        });
+        manager.holders.incrementAndGet();
+        return manager;
     }
 
     /**
@@ -438,6 +477,17 @@ public class DuckDBConnectionManager implements AutoCloseable {
      * Performs checkpoint and closes connection.
      */
     public void shutdown() {
+        // A manager handed out by forPath() is shared. Closing it because one holder is done
+        // would pull the connection out from under the others, so only the last release closes.
+        Path key = this.sharedKey;
+        if (key != null) {
+            if (holders.decrementAndGet() > 0) {
+                LOGGER.debug("[DuckDB] Still {} holder(s) of {}, not closing", holders.get(), key);
+                return;
+            }
+            SHARED.remove(key, this);
+        }
+
         LOGGER.info("[DuckDB] Shutting down connection manager...");
         shuttingDown = true;
 

@@ -92,7 +92,7 @@ public class DuckDBTelemetryService {
             LOGGER.info("[DuckDB] Server type: {}", isDedicatedServer ? "Dedicated" : "Singleplayer");
 
             // Initialize connection manager
-            connectionManager = new DuckDBConnectionManager(dbPath);
+            connectionManager = DuckDBConnectionManager.forPath(dbPath);
 
             // Run startup validation (disk space, integrity, permissions)
             if (!connectionManager.runStartupValidation()) {
