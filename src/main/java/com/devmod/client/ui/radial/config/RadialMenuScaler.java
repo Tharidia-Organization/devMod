@@ -114,6 +114,10 @@ public final class RadialMenuScaler {
     private static float scaleFactor = 1.0f;
     private static boolean favoritesEnabled = true;
 
+    /** The resolved ring stack. Single source of geometry for drawing and hit-testing. */
+    private static RadialLayout layout =
+        RadialLayout.stack(REF_CENTER_RADIUS, 8, 0, 4, REF_INNER_RADIUS, REF_OUTER_RADIUS, 0);
+
     private RadialMenuScaler() {}
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -152,17 +156,24 @@ public final class RadialMenuScaler {
         // Item size scales with menu
         itemSize = Math.max(MIN_ITEM_SIZE, scaleConstant(RadialMenuConstants.ITEM_BASE_SIZE));
 
-        // Clamp favorites ring so bubbles fit between hub and inner ring
+        // Resolve every band as one stack, so widening one cannot silently push another into its
+        // neighbour. See RadialLayout for why the per-band offsets that used to live here were the
+        // thing producing the overlaps.
         int favoriteBubble = scaleConstant(RadialMenuConstants.FAVORITE_BASE_SIZE + RadialMenuConstants.FAVORITE_SIZE_BONUS);
-        int favoritePadding = scaleConstant(4);
-        int minFav = macroHubRadius + favoriteBubble + favoritePadding;
-        int maxFav = innerRadius - favoriteBubble - favoritePadding;
-        favoritesEnabled = maxFav >= minFav;
-        if (favoritesEnabled) {
-            favoritesRadius = Math.max(minFav, Math.min(favoritesRadius, maxFav));
-        } else {
-            favoritesRadius = Math.max(0, Math.min(minFav, maxFav));
-        }
+        layout = RadialLayout.stack(
+            centerButtonRadius,
+            macroHubBandWidth(),
+            favoriteBubble,
+            scaleConstant(4),
+            innerRadius,
+            outerRadius,
+            scaleConstant(RadialMenuConstants.ITEM_RING_OFFSET));
+
+        innerRadius = layout.innerRing();
+        outerRadius = layout.outerRing();
+        macroHubRadius = layout.macroHubOuter();
+        favoritesRadius = layout.favoritesRing();
+        favoritesEnabled = layout.favoritesEnabled();
     }
 
     /**
@@ -380,6 +391,13 @@ public final class RadialMenuScaler {
     public static int getCenterButtonRadius() { return centerButtonRadius; }
     public static int getFavoritesRadius() { return favoritesRadius; }
     public static boolean hasFavoritesRing() { return favoritesEnabled; }
+
+    /**
+     * The resolved ring stack.
+     *
+     * @return the layout every renderer and hit test should measure from
+     */
+    public static RadialLayout layout() { return layout; }
     public static int getMacroHubRadius() { return macroHubRadius; }
     public static int getItemSize() { return itemSize; }
     public static float getScaleFactor() { return scaleFactor; }

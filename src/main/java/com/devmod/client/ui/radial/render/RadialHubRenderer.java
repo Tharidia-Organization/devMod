@@ -452,11 +452,12 @@ public final class RadialHubRenderer {
         int badgeWidth = textWidth + paddingX * 2;
         int badgeHeight = textHeight + paddingY * 2;
 
-        // Anchor above the macro hub, not the close button. The badge used to clear only
-        // centerButtonRadius * CLOSE_BUTTON_RATIO, which sat inside the hub band as soon as that
-        // band was widened to fit its icons -- the label then printed over the macro ring.
-        int closeBtnRadius = (int) (state.centerButtonRadius * RadialMenuConstants.CLOSE_BUTTON_RATIO);
-        int anchorRadius = Math.max(closeBtnRadius, state.macroHubRadius);
+        // Ask the layout what to clear instead of naming a band. Anchoring to the close button put
+        // the badge inside the macro hub; anchoring to the hub put it into the category labels.
+        // Both were the same mistake -- picking one neighbour and hoping. badgeAnchor() is the
+        // single number the stack maintains for anything floating around the centre, so this stays
+        // correct when a band changes.
+        int anchorRadius = RadialMenuScaler.layout().badgeAnchor();
         int offsetY = RadialMenuScaler.scaleConstant(RadialMenuConstants.CONTEXT_BADGE_OFFSET_Y);
         int badgeCenterY = state.centerY - anchorRadius - offsetY - (badgeHeight / 2);
 
