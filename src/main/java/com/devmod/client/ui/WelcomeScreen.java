@@ -70,6 +70,11 @@ public class WelcomeScreen extends Screen {
     private int dontShowToggleX;
     private int dontShowToggleY;
     private int dontShowToggleWidth;
+    /** Panel box computed in init(); render() must draw the same one the widgets were placed in. */
+    private int panelWidth;
+    private int panelHeight;
+    private int panelLeft;
+    private int panelTop;
     private long openTime;
     private boolean introSoundPlayed = false;
 
@@ -102,15 +107,23 @@ public class WelcomeScreen extends Screen {
         openTime = System.currentTimeMillis();
         UIScaleManager.update();
 
-        // Responsive panel dimensions with scaling
+        // Responsive panel dimensions with scaling.
+        // Kept in fields because render() used to recompute its own height from PANEL_HEIGHT while
+        // init() clamped to the window: on a short window the panel was DRAWN taller than the one
+        // the toggle and buttons had been positioned against.
         int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
         int actualPanelWidth = Math.min(scaledPanelWidth, width - UIScaleManager.scale(20));
-        int actualPanelHeight = Math.min(scaledPanelHeight, height - UIScaleManager.scale(20));
+        int actualPanelHeight = Math.min(requiredPanelHeight(), height - UIScaleManager.scale(20));
+        this.panelWidth = actualPanelWidth;
+        this.panelHeight = actualPanelHeight;
         int centerX = width / 2;
         int centerY = height / 2;
         int panelX = centerX - actualPanelWidth / 2;
         int panelY = centerY - actualPanelHeight / 2;
+        // init() centres on width/height, render() used UIScaleManager.getCenterX()/getCenterY().
+        // When those disagree the panel was drawn somewhere other than where the widgets were put.
+        this.panelLeft = panelX;
+        this.panelTop = panelY;
 
         // Tutorial button - positioned relative to actual panel width
         int margin = UIScaleManager.scale(35);
@@ -206,10 +219,12 @@ public class WelcomeScreen extends Screen {
         safeGraphics.pose().scale(scaleProgress, scaleProgress, 1.0f);
         safeGraphics.pose().translate(-centerX, -centerY, 0);
 
-        int scaledPanelWidth = UIScaleManager.scale(PANEL_WIDTH);
-        int scaledPanelHeight = UIScaleManager.scale(PANEL_HEIGHT);
-        int panelX = centerX - scaledPanelWidth / 2;
-        int panelY = centerY - scaledPanelHeight / 2;
+        // The exact box init() placed the widgets in.
+        int scaledPanelWidth = panelWidth;
+        int scaledPanelHeight = panelHeight;
+        int panelX = panelLeft;
+        int panelY = panelTop;
+        centerX = panelX + scaledPanelWidth / 2;
 
         // Panel background
         renderPanelWithGradient(safeGraphics, panelX, panelY, scaledPanelWidth, scaledPanelHeight, fadeProgress);
@@ -232,12 +247,15 @@ public class WelcomeScreen extends Screen {
 
         // === Features Section ===
         if (elapsed > FEATURES_REVEAL_DELAY) {
-            renderFeatures(safeGraphics, panelX, panelY + UIScaleManager.scale(75), scaledPanelWidth, elapsed);
+            renderFeatures(safeGraphics, panelX, panelY + featuresTop(), scaledPanelWidth, elapsed);
         }
 
         // === Keybinds Section ===
+        // Starts where the features end. It used to sit at a fixed panelY + scale(220), which the
+        // feature list grew straight through as soon as its rows were tall enough to fit the text.
         if (elapsed > KEYBINDS_REVEAL_DELAY) {
-            renderKeybinds(safeGraphics, centerX, panelY + UIScaleManager.scale(220), elapsed);
+            int keybindsY = panelY + featuresTop() + featuresHeight() + UIScaleManager.scaleMin(10, 6);
+            renderKeybinds(safeGraphics, centerX, keybindsY, elapsed);
         }
 
         // === Buttons hint ===
@@ -377,6 +395,44 @@ public class WelcomeScreen extends Screen {
     private int lineStep(int baseValue, int lines) {
         int textHeight = safeFont().lineHeight * lines + UIScaleManager.scaleMin(3, 2);
         return Math.max(UIScaleManager.scale(baseValue), textHeight);
+    }
+
+    /** Distance from the top of the panel to the top of the feature list. */
+    private int featuresTop() {
+        return UIScaleManager.scale(75);
+    }
+
+    /** Height of the "What you get:" header plus every feature row. */
+    private int featuresHeight() {
+        return lineStep(16, 1) + FEATURES.length * lineStep(26, 2);
+    }
+
+    /** Height of the keybind block: separator, header, then one row per binding. */
+    private int keybindsHeight() {
+        return lineStep(28, 1) + KEYBINDS.length * lineStep(18, 1);
+    }
+
+    /** Buttons, the "don't show again" toggle and the ESC hint below the keybinds. */
+    private int footerHeight() {
+        return UIScaleManager.scale(40) + lineStep(28, 1) + lineStep(14, 1) * 2;
+    }
+
+    /**
+     * Panel height the content actually needs.
+     *
+     * <p>Every section used to sit at a hardcoded offset -- features at scale(75), keybinds at
+     * scale(220), the footer measured back from the panel bottom -- so no section knew where the
+     * one above it ended. The numbers happened to work at one scale; as soon as a block grew, it
+     * printed straight through the next. The sections now flow, and the panel is sized to hold
+     * them.
+     *
+     * @return the required height, never below the designed PANEL_HEIGHT
+     */
+    private int requiredPanelHeight() {
+        return Math.max(
+            UIScaleManager.scale(PANEL_HEIGHT),
+            featuresTop() + featuresHeight() + UIScaleManager.scaleMin(10, 6)
+                + keybindsHeight() + footerHeight());
     }
 
     private void renderFeatureItem(GuiGraphics g, Feature feature, int x, int y, int featureWidth, float alpha, long elapsed) {
