@@ -8,7 +8,7 @@ mkdir -p "$CLEAN_DIR"
 # List of mods to KEEP
 KEEP_MODS=(
   # === CORE: DevMod and hard dependencies ===
-  "DevMod.jar"
+  "devmod-0.1.0.jar"
   "geckolib-neoforge-1.21.1-4.8.2.jar"
   "duckdb-jdbc-1.4.3.0.jar"
 

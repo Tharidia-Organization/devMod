@@ -477,6 +477,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
             loader_version_range   : loader_version_range,
             jei_version            : jei_version,
             mod_id                 : mod_id,
@@ -666,8 +667,11 @@ idea {
 }
 
 tasks.named('jar') {
-    archiveBaseName.set('DevMod')
-    archiveVersion.set('')
+    // "<id>-<version>.jar". The unversioned "DevMod.jar" could not be expressed by
+    // the Modbana01 bench manifest, whose every entry carries a jar_regex with a
+    // capturing group for the version.
+    archiveBaseName.set(mod_id)
+    archiveVersion.set(mod_version)
 }
 
 // Custom task to generate build properties in a configuration-cache-compatible way
