@@ -38,8 +38,11 @@ final class DataInitializer {
             initializeMailboxManager(event);
             initializeNotificationRepositories();
         } else {
+            // No "restart to finish the download" hint any more: the driver is loaded through
+            // its own classloader the moment it lands, so reaching here means provisioning
+            // genuinely failed. The reason is already in the log above, from DuckDBBootstrap.
             LOGGER.warn("[DevMod] DuckDB not available - Mailbox and Notification features disabled");
-            LOGGER.warn("[DevMod] Restart the server after DuckDB download completes");
+            LOGGER.warn("[DevMod] Telemetry falls back to NDJSON; see the [DuckDB] lines above for why");
         }
     }
 

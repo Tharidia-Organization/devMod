@@ -2,18 +2,15 @@ package com.devmod.telemetry.duckdb;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.sql.Driver;
 import java.util.Locale;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 
@@ -21,43 +18,73 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Bootstrap utility for DuckDB JDBC driver.
+ * Bootstrap utility for the DuckDB JDBC driver.
  *
- * Automatically downloads the platform-specific DuckDB JDBC driver
- * if not available in the classpath. The JAR is saved to the mods/
- * directory and will be loaded by NeoForge on the next server restart.
+ * The platform-specific driver is downloaded to {@code config/devmod/libs/} and loaded
+ * through a dedicated {@link URLClassLoader}, exactly as {@code JavalinBootstrap} does for
+ * Javalin and Jetty. Nothing is written to {@code mods/} and no restart is needed.
+ *
+ * <p>This used to download into {@code mods/}, repackaged with {@code FMLModType: GAMELIBRARY}
+ * so NeoForge would pick it up on the next boot. That failed outright on a server whose mods
+ * directory is read-only -- which is the normal state of a managed instance -- and even where
+ * it succeeded it wrote into the directory whose contents are supposed to be fixed at launch,
+ * and cost a restart before Mailbox, Notifications and DuckDB telemetry came up.
+ *
+ * <p>Bundling the driver instead (JarInJar) is deliberately NOT done: this project removed its
+ * JarInJar dependencies because embedded libraries collide with other mods shipping the same
+ * ones -- see the notes in build.gradle about Kotlin For Forge, Plasmo Voice and
+ * "reads more than one module named jjwt.gson". The universal DuckDB artifact is also 81 MB
+ * against 19 MB for one platform.
  */
 public final class DuckDBBootstrap {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DuckDBBootstrap.class);
 
     private static final String DUCKDB_VERSION = "1.4.3.0";
     private static final String MAVEN_BASE_URL =
         "https://repo1.maven.org/maven2/org/duckdb/duckdb_jdbc/" + DUCKDB_VERSION + "/";
     private static final String DUCKDB_DRIVER_CLASS = "org.duckdb.DuckDBDriver";
-    private static final String DOWNLOADED_JAR_NAME = "duckdb-jdbc-" + DUCKDB_VERSION + ".jar";
 
-    // Expected SHA-256 checksums for verification (optional but recommended)
+    /** Same directory JavalinBootstrap uses. Writable on both a client and a managed server. */
+    private static final String LIBS_DIR = "config/devmod/libs";
+
+    /** A truncated or half-written download is worthless; the real artefact is tens of MB. */
+    private static final long MIN_PLAUSIBLE_JAR_BYTES = 1_000_000L;
+
     private static final int DOWNLOAD_TIMEOUT_MS = 60_000;
     private static final int READ_TIMEOUT_MS = 120_000;
 
-    @Nullable
     private static Boolean available = null;
     private static boolean downloadAttempted = false;
+
+    /** Non-null once the driver has been loaded, from wherever it was found. */
+    @Nullable
+    private static Driver driverInstance = null;
+
+    /** Kept so the loader is not collected while connections created from it are still open. */
+    @Nullable
+    private static URLClassLoader driverClassLoader = null;
 
     private DuckDBBootstrap() {}
 
     /**
-     * Check if DuckDB is available in the classpath.
+     * Check whether the DuckDB driver is usable right now.
      *
-     * @return true if DuckDB driver can be loaded
+     * <p>Does not download: call {@link #ensureAvailable(Path)} for that.
+     *
+     * @return true if the driver has been loaded, or is present on the classpath
      */
     public static boolean isAvailable() {
+        if (driverInstance != null) {
+            return true;
+        }
         if (available == null) {
             try {
-                // Ensure temp directory is set before loading DuckDB (JNA requirement)
+                // JNA needs a writable temp directory before the driver's static init runs.
                 ensureTempDirectory();
 
-                Class.forName(DUCKDB_DRIVER_CLASS);
+                Class<?> driverClass = Class.forName(DUCKDB_DRIVER_CLASS);
+                driverInstance = (Driver) driverClass.getDeclaredConstructor().newInstance();
                 available = Boolean.TRUE;
                 LOGGER.info("[DuckDB] Driver found in classpath");
             } catch (ClassNotFoundException e) {
@@ -66,9 +93,33 @@ public final class DuckDBBootstrap {
             } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
                 available = Boolean.FALSE;
                 LOGGER.error("[DuckDB] Native library initialization failed: {}", e.getMessage());
+            } catch (ReflectiveOperationException e) {
+                available = Boolean.FALSE;
+                LOGGER.error("[DuckDB] Driver class found but not instantiable: {}", e.getMessage());
             }
         }
         return Boolean.TRUE.equals(available);
+    }
+
+    /**
+     * The loaded driver, or null when DuckDB is unavailable.
+     *
+     * <p>Callers must use this instead of {@code DriverManager}: a driver loaded from our own
+     * {@link URLClassLoader} is invisible to {@code DriverManager}, which only offers drivers
+     * visible to the caller's classloader. That is the whole reason this accessor exists.
+     *
+     * @return the driver instance, or null if DuckDB could not be made available
+     */
+    @Nullable
+    public static Driver getDriver() {
+        if (driverInstance == null) {
+            // Resolves a driver already on the classpath, which is how it is present under test
+            // and in a dev run (localRuntime). Without this the accessor would answer null until
+            // somebody happened to call isAvailable() first, and a caller holding a perfectly
+            // good classpath driver would be told there is none.
+            isAvailable();
+        }
+        return driverInstance;
     }
 
     /**
@@ -118,58 +169,32 @@ public final class DuckDBBootstrap {
     }
 
     /**
-     * Ensure DuckDB is available, downloading if necessary.
+     * Ensure DuckDB is available, downloading it if necessary.
      *
-     * If DuckDB is not in the classpath, this method will:
-     * 1. Detect the current platform (linux_amd64, windows_amd64, macos_universal)
-     * 2. Download the appropriate JAR from Maven Central
-     * 3. Save it to the mods/ directory
-     * 4. Return false to indicate a restart is required
+     * <p>If the driver is not already on the classpath this method will:
+     * <ol>
+     *   <li>detect the platform (linux_amd64, windows_amd64, macos_universal, ...);</li>
+     *   <li>download the matching JAR from Maven Central into {@code config/devmod/libs/};</li>
+     *   <li>load it through a dedicated URLClassLoader.</li>
+     * </ol>
      *
-     * @param gameDir the Minecraft game directory (parent of mods/)
-     * @return true if DuckDB is ready to use, false if a restart is required
+     * <p>Unlike the previous implementation, a successful download is usable immediately: the
+     * return value is true and no restart is required.
+     *
+     * @param gameDir the Minecraft game directory
+     * @return true if DuckDB is ready to use
      */
     public static boolean ensureAvailable(Path gameDir) {
-        // Already available
         if (isAvailable()) {
             return true;
         }
 
-        // Already tried downloading this session
+        // One attempt per session: a failing download should not be retried on every caller.
         if (downloadAttempted) {
-            LOGGER.debug("[DuckDB] Download already attempted this session");
             return false;
         }
         downloadAttempted = true;
 
-        // Check if JAR already exists in mods/ (downloaded but not yet loaded)
-        Path modsDir = gameDir.resolve("mods");
-        Path targetPath = modsDir.resolve(DOWNLOADED_JAR_NAME);
-
-        if (Files.exists(targetPath)) {
-            // Check if the JAR has the correct manifest
-            if (hasNeoForgeManifest(targetPath)) {
-                LOGGER.info("[DuckDB] JAR already downloaded at {}", targetPath);
-                logRestartRequired();
-                return false;
-            } else {
-                // JAR exists but without NeoForge manifest - reprocess it
-                LOGGER.info("[DuckDB] Existing JAR missing NeoForge manifest, reprocessing...");
-                try {
-                    Path tempFile = modsDir.resolve(DOWNLOADED_JAR_NAME + ".repack");
-                    repackageWithNeoForgeManifest(targetPath, tempFile);
-                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                    LOGGER.info("[DuckDB] JAR repackaged successfully");
-                    logRestartRequired();
-                    return false;
-                } catch (IOException e) {
-                    LOGGER.error("[DuckDB] Failed to repackage JAR: {}", e.getMessage());
-                    // Continue to re-download
-                }
-            }
-        }
-
-        // Detect platform and download
         String platform = detectPlatform();
         if (platform == null) {
             LOGGER.error("[DuckDB] Unsupported platform: {} / {}",
@@ -178,52 +203,80 @@ public final class DuckDBBootstrap {
         }
 
         String jarFileName = "duckdb_jdbc-" + DUCKDB_VERSION + "-" + platform + ".jar";
-        String downloadUrl = MAVEN_BASE_URL + jarFileName;
-
-        LOGGER.info("[DuckDB] Downloading {} from Maven Central...", jarFileName);
+        Path libsDir = gameDir.resolve(LIBS_DIR);
+        Path targetPath = libsDir.resolve(jarFileName);
 
         try {
-            // Ensure mods directory exists
-            Files.createDirectories(modsDir);
+            Files.createDirectories(libsDir);
 
-            // Download to temp file
-            Path downloadedFile = modsDir.resolve(DOWNLOADED_JAR_NAME + ".download");
-            Path repackagedFile = modsDir.resolve(DOWNLOADED_JAR_NAME + ".tmp");
-            downloadFile(downloadUrl, downloadedFile);
+            if (Files.exists(targetPath) && Files.size(targetPath) >= MIN_PLAUSIBLE_JAR_BYTES) {
+                LOGGER.info("[DuckDB] Using cached driver at {}", targetPath);
+            } else {
+                LOGGER.info("[DuckDB] Downloading {} from Maven Central...", jarFileName);
 
-            // Verify download size (basic sanity check)
-            long size = Files.size(downloadedFile);
-            if (size < 1_000_000) { // Less than 1 MB is suspicious
-                Files.deleteIfExists(downloadedFile);
-                LOGGER.error("[DuckDB] Downloaded file too small ({} bytes), aborting", size);
-                return false;
+                // Download beside the target, then move into place, so an interrupted download
+                // never leaves a half-written JAR that the next boot would treat as cached.
+                Path partial = libsDir.resolve(jarFileName + ".part");
+                downloadFile(MAVEN_BASE_URL + jarFileName, partial);
+
+                long size = Files.size(partial);
+                if (size < MIN_PLAUSIBLE_JAR_BYTES) {
+                    Files.deleteIfExists(partial);
+                    LOGGER.error("[DuckDB] Downloaded file too small ({} bytes), aborting", size);
+                    return false;
+                }
+
+                Files.move(partial, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                LOGGER.info("[DuckDB] Downloaded {} ({} MB)", jarFileName, size / (1024 * 1024));
             }
 
-            // Repackage JAR with NeoForge manifest attributes
-            repackageWithNeoForgeManifest(downloadedFile, repackagedFile);
-
-            // Clean up original download
-            Files.deleteIfExists(downloadedFile);
-
-            // Move repackaged JAR to final location
-            Files.move(repackagedFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            long sizeMB = Files.size(targetPath) / (1024 * 1024);
-            LOGGER.info("[DuckDB] Successfully downloaded {} ({} MB)", DOWNLOADED_JAR_NAME, sizeMB);
-
-            logRestartRequired();
-            return false;
+            return loadDriverFrom(targetPath);
 
         } catch (IOException e) {
-            LOGGER.error("[DuckDB] Failed to download: {}", e.getMessage());
+            LOGGER.error("[DuckDB] Failed to provision driver: {}", e.getMessage());
             return false;
         }
     }
 
     /**
-     * Detect the current platform for DuckDB native library selection.
+     * Load the driver from a JAR through a dedicated classloader.
      *
-     * @return platform classifier (e.g., "linux_amd64") or null if unsupported
+     * @param jarPath the driver JAR
+     * @return true if the driver was loaded and instantiated
+     */
+    private static boolean loadDriverFrom(Path jarPath) {
+        ensureTempDirectory();
+        try {
+            URLClassLoader loader = new URLClassLoader(
+                new java.net.URL[] { jarPath.toUri().toURL() },
+                DuckDBBootstrap.class.getClassLoader());
+
+            Class<?> driverClass = Class.forName(DUCKDB_DRIVER_CLASS, true, loader);
+            driverInstance = (Driver) driverClass.getDeclaredConstructor().newInstance();
+            driverClassLoader = loader;
+            available = Boolean.TRUE;
+
+            LOGGER.info("[DuckDB] Driver loaded from {}", jarPath);
+            return true;
+
+        } catch (MalformedURLException e) {
+            LOGGER.error("[DuckDB] Bad driver path {}: {}", jarPath, e.getMessage());
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("[DuckDB] {} not present in {}", DUCKDB_DRIVER_CLASS, jarPath);
+        } catch (ReflectiveOperationException e) {
+            LOGGER.error("[DuckDB] Driver class not instantiable: {}", e.getMessage());
+        } catch (NoClassDefFoundError | UnsatisfiedLinkError | ExceptionInInitializerError e) {
+            LOGGER.error("[DuckDB] Native library initialization failed: {}", e.getMessage());
+        }
+
+        available = Boolean.FALSE;
+        return false;
+    }
+
+    /**
+     * Detect the platform classifier used by DuckDB's Maven artifacts.
+     *
+     * @return the classifier, or null when this platform has no published build
      */
     @Nullable
     private static String detectPlatform() {
@@ -253,7 +306,7 @@ public final class DuckDBBootstrap {
             return null;
         }
 
-        // DuckDB uses different naming: osx_universal, linux_amd64, windows_amd64
+        // DuckDB uses different naming: macos_universal, linux_amd64, windows_amd64
         if (osName.equals("osx")) {
             return "macos_universal";
         }
@@ -261,7 +314,11 @@ public final class DuckDBBootstrap {
     }
 
     /**
-     * Download a file from URL to the specified path.
+     * Download a file over HTTP into the given path.
+     *
+     * @param urlString the source URL
+     * @param targetPath where to write it
+     * @throws IOException if the transfer fails or the server answers with anything but 200
      */
     private static void downloadFile(String urlString, Path targetPath) throws IOException {
         URI uri = URI.create(urlString);
@@ -288,104 +345,5 @@ public final class DuckDBBootstrap {
         } finally {
             connection.disconnect();
         }
-    }
-
-    /**
-     * Check if a JAR file has the NeoForge FMLModType manifest attribute.
-     */
-    private static boolean hasNeoForgeManifest(Path jarPath) {
-        try (JarInputStream jarIn = new JarInputStream(Files.newInputStream(jarPath))) {
-            Manifest manifest = jarIn.getManifest();
-            if (manifest == null) {
-                return false;
-            }
-            String fmlModType = manifest.getMainAttributes().getValue("FMLModType");
-            return fmlModType != null && !fmlModType.isEmpty();
-        } catch (IOException e) {
-            LOGGER.warn("[DuckDB] Could not read JAR manifest: {}", e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Repackage a JAR file to add NeoForge-compatible manifest attributes.
-     * This is required because NeoForge only loads JARs from mods/ if they have
-     * FMLModType in their manifest.
-     *
-     * @param sourceJar the original JAR file
-     * @param targetJar the output JAR file with modified manifest
-     */
-    private static void repackageWithNeoForgeManifest(Path sourceJar, Path targetJar) throws IOException {
-        LOGGER.info("[DuckDB] Adding NeoForge manifest attributes...");
-
-        try (JarInputStream jarIn = new JarInputStream(Files.newInputStream(sourceJar))) {
-            // Get original manifest or create new one
-            Manifest originalManifest = jarIn.getManifest();
-            Manifest newManifest = originalManifest != null ? new Manifest(originalManifest) : new Manifest();
-
-            // Add NeoForge attributes
-            Attributes mainAttrs = newManifest.getMainAttributes();
-            if (!mainAttrs.containsKey(Attributes.Name.MANIFEST_VERSION)) {
-                mainAttrs.put(Attributes.Name.MANIFEST_VERSION, "1.0");
-            }
-            mainAttrs.putValue("FMLModType", "GAMELIBRARY");
-            mainAttrs.putValue("Automatic-Module-Name", "org.duckdb.jdbc");
-
-            // Write new JAR with modified manifest
-            try (OutputStream fileOut = Files.newOutputStream(targetJar);
-                 JarOutputStream jarOut = new JarOutputStream(fileOut, newManifest)) {
-
-                byte[] buffer = new byte[8192];
-                JarEntry entry;
-
-                while ((entry = jarIn.getNextJarEntry()) != null) {
-                    // Skip the original manifest - we already included our modified one
-                    if (entry.getName().equalsIgnoreCase("META-INF/MANIFEST.MF")) {
-                        continue;
-                    }
-
-                    jarOut.putNextEntry(new JarEntry(entry.getName()));
-
-                    int bytesRead;
-                    while ((bytesRead = jarIn.read(buffer)) != -1) {
-                        jarOut.write(buffer, 0, bytesRead);
-                    }
-
-                    jarOut.closeEntry();
-                }
-            }
-        }
-
-        LOGGER.info("[DuckDB] JAR repackaged with FMLModType: GAMELIBRARY");
-    }
-
-    /**
-     * Log a prominent message about restart requirement.
-     */
-    private static void logRestartRequired() {
-        LOGGER.warn("");
-        LOGGER.warn("========================================================");
-        LOGGER.warn("  DUCKDB JDBC DRIVER DOWNLOADED SUCCESSFULLY!");
-        LOGGER.warn("  ");
-        LOGGER.warn("  Please RESTART THE SERVER to complete installation.");
-        LOGGER.warn("  ");
-        LOGGER.warn("  Mailbox and Telemetry features will be available");
-        LOGGER.warn("  after the restart.");
-        LOGGER.warn("========================================================");
-        LOGGER.warn("");
-    }
-
-    /**
-     * Get the expected JAR file path in the mods directory.
-     */
-    public static Path getExpectedJarPath(Path gameDir) {
-        return gameDir.resolve("mods").resolve(DOWNLOADED_JAR_NAME);
-    }
-
-    /**
-     * Check if the JAR has been downloaded but not yet loaded.
-     */
-    public static boolean isDownloadedButNotLoaded(Path gameDir) {
-        return !isAvailable() && Files.exists(getExpectedJarPath(gameDir));
     }
 }

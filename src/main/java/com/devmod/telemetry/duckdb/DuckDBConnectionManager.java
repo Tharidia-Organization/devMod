@@ -5,8 +5,9 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.Driver;
 import java.sql.SQLException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -334,32 +335,43 @@ public class DuckDBConnectionManager implements AutoCloseable {
             // This prevents NPE when DuckDB can't determine temp directory in NeoForge environment
             ensureNativeLibraryPath(parentDir);
 
-            // Load DuckDB driver explicitly
-            // CRITICAL: Wrap in try-catch for native library initialization errors
-            // DuckDB's native loader can throw NoClassDefFoundError/ExceptionInInitializerError
-            // when it fails to determine the temp directory path (null path bug)
+            // The driver is provisioned by DuckDBBootstrap into config/devmod/libs/ and loaded
+            // through its own URLClassLoader. It must therefore be used DIRECTLY:
+            // DriverManager only offers drivers visible to the calling class's classloader, so
+            // it cannot see this one and would fail with "No suitable driver".
+            Driver driver = DuckDBBootstrap.getDriver();
+            if (driver == null) {
+                throw new SQLException("DuckDB JDBC driver not found");
+            }
+
+            String jdbcUrl = "jdbc:duckdb:" + dbPath.toAbsolutePath();
+
+            // The native loader can still blow up here on its first use: DuckDB extracts and
+            // links its native library lazily, and in a modded environment it has been seen to
+            // fail on a null temp directory. These are Errors, not Exceptions, so the generic
+            // handler below would not translate them into something a caller can act on.
+            Connection conn;
             try {
-                Class.forName("org.duckdb.DuckDBDriver");
+                conn = driver.connect(jdbcUrl, new Properties());
             } catch (ExceptionInInitializerError e) {
-                // Native library static initializer failed (common cause: null path in NeoForge)
-                LOGGER.error("[DuckDB] Native library initialization failed. This is often caused by " +
-                    "DuckDB being unable to determine the temp directory path in modded environments.", e);
+                LOGGER.error("[DuckDB] Native library initialization failed. This is often caused by "
+                    + "DuckDB being unable to determine the temp directory path in modded environments.", e);
                 throw new SQLException("DuckDB native library initialization failed: " + e.getMessage(), e);
             } catch (NoClassDefFoundError e) {
-                // Class couldn't be initialized due to previous failure
-                LOGGER.error("[DuckDB] DuckDB native class not found/initialized. " +
-                    "The native library may have failed to load.", e);
+                LOGGER.error("[DuckDB] DuckDB native class not found/initialized. "
+                    + "The native library may have failed to load.", e);
                 throw new SQLException("DuckDB native class initialization failed: " + e.getMessage(), e);
             } catch (UnsatisfiedLinkError e) {
-                // Native library couldn't be loaded (missing .so/.dll/.dylib)
-                LOGGER.error("[DuckDB] Failed to load DuckDB native library. " +
-                    "Ensure DuckDB JDBC is included with native binaries.", e);
+                LOGGER.error("[DuckDB] Failed to load DuckDB native library. "
+                    + "Ensure DuckDB JDBC is included with native binaries.", e);
                 throw new SQLException("DuckDB native library load failed: " + e.getMessage(), e);
             }
 
-            // Create connection
-            String jdbcUrl = "jdbc:duckdb:" + dbPath.toAbsolutePath();
-            Connection conn = DriverManager.getConnection(jdbcUrl);
+            // Driver.connect returns null when the URL is not one it handles. That would mean the
+            // jdbc:duckdb: prefix stopped matching, not a connection failure, so say so plainly.
+            if (conn == null) {
+                throw new SQLException("DuckDB driver did not accept the URL: " + jdbcUrl);
+            }
 
             // Configure connection for optimal performance
             configureConnection();
@@ -367,8 +379,6 @@ public class DuckDBConnectionManager implements AutoCloseable {
             LOGGER.info("[DuckDB] Connection established to: {}", dbPath);
             return conn;
 
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("DuckDB JDBC driver not found", e);
         } catch (SQLException e) {
             // Re-throw SQLException (already wrapped native errors)
             throw e;
