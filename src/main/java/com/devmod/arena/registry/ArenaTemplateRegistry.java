@@ -1,5 +1,6 @@
 package com.devmod.arena.registry;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,6 +48,9 @@ public class ArenaTemplateRegistry implements AutoCloseable {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     @Nullable
     private ArenaTemplateConfig.ConfigSnapshot configSnapshot;
+    /** Snapshot the whitelist was last built from, so an unchanged one is not re-applied. */
+    @Nullable
+    private ArenaTemplateConfig.ConfigSnapshot whitelistSnapshotApplied;
     private boolean loggingEnabled = true;
 
     // Stats tracking
@@ -193,6 +197,16 @@ public class ArenaTemplateRegistry implements AutoCloseable {
             return;
         }
 
+        // The constructor configures the whitelist from the snapshot it is handed, and
+        // TemplateRegistryBootstrap.createDefault then calls applyConfig with that same config to
+        // notify listeners -- which lands here a second time with an identical snapshot. The work
+        // and its log lines were therefore emitted twice on every boot. ConfigSnapshot is a record,
+        // so equality is by value and a genuine config reload still gets through.
+        if (snapshot.equals(this.whitelistSnapshotApplied)) {
+            return;
+        }
+        this.whitelistSnapshotApplied = snapshot;
+
         String whitelistPath = snapshot.whitelistPath();
         String whitelistMode = snapshot.whitelistMode();
 
@@ -218,9 +232,18 @@ public class ArenaTemplateRegistry implements AutoCloseable {
         BlockEntityWhitelist whitelist;
         if (whitelistPath != null && !whitelistPath.isBlank()) {
             try {
+                // parse() returns the defaults (and says so) when the file is absent, rather than
+                // throwing, so a bare "Loaded ... from <path>" here claimed a file had been read
+                // when none existed -- directly contradicting the line above it in the log.
+                boolean present = Files.exists(Path.of(whitelistPath));
                 whitelist = BlockEntityWhitelist.parse(Path.of(whitelistPath));
                 if (loggingEnabled) {
-                    LOGGER.info("Loaded block/entity whitelist from {} (mode={})", whitelistPath, whitelist.getMode());
+                    if (present) {
+                        LOGGER.info("Loaded block/entity whitelist from {} (mode={})", whitelistPath, whitelist.getMode());
+                    } else {
+                        LOGGER.info("No block/entity whitelist at {}, using built-in defaults (mode={})",
+                            whitelistPath, mode);
+                    }
                 }
             } catch (Exception e) {
                 if (loggingEnabled) {

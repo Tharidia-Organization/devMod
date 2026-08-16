@@ -36,6 +36,10 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
     @Nullable
     private TemplateLoader.LoadResult lastLoadResult;
 
+    /** Snapshot structure validation was last configured from, so an unchanged one is not re-applied. */
+    @Nullable
+    private ArenaTemplateConfig.ConfigSnapshot structureSnapshotApplied;
+
     private TemplateRegistryBootstrap(ArenaTelemetry telemetry,
                                       Path templateDirectory,
                                       TemplateValidator.ValidationMode validationMode,
@@ -47,6 +51,10 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
         this.config = config;
         this.configSnapshot = configSnapshot;
         this.registry = new ArenaTemplateRegistry(telemetry, InstanceLimitConfig.load().toLimits(), configSnapshot);
+        // The registry constructor configures structure validation from this very snapshot, so
+        // record it as already applied: otherwise the applyConfig that createDefault issues next
+        // would redo the work it just did.
+        this.structureSnapshotApplied = configSnapshot;
         if (configSnapshot != null && configSnapshot.customHazardBuilders() != null) {
             configSnapshot.customHazardBuilders().forEach(CustomHazardRegistry.getInstance()::register);
         }
@@ -197,18 +205,25 @@ public class TemplateRegistryBootstrap implements AutoCloseable {
             CustomHazardRegistry.getInstance().reset(Set.copyOf(configSnapshot.customHazardBuilders()));
         }
         registry.applyConfigSnapshot(configSnapshot);
-        try {
-            Path manifestPath = configSnapshot.structureManifestPath() != null
-                ? Path.of(configSnapshot.structureManifestPath())
-                : Path.of("config/devmod/structures_manifest.json");
-            StructureValidationInitializer.configure(
-                registry,
-                manifestPath,
-                Thread.currentThread().getContextClassLoader(),
-                configSnapshot
-            );
-        } catch (Exception e) {
-            LOGGER.warn("Failed to refresh structure validation on config reload: {}", e.getMessage());
+        // The registry's constructor already configures structure validation from the snapshot it
+        // is given, and createDefault calls this method straight afterwards with the same config to
+        // notify listeners -- so this ran twice on every boot, re-reading the manifest and logging
+        // the outcome twice. ConfigSnapshot is a record, so a real config change still gets through.
+        if (!configSnapshot.equals(structureSnapshotApplied)) {
+            structureSnapshotApplied = configSnapshot;
+            try {
+                Path manifestPath = configSnapshot.structureManifestPath() != null
+                    ? Path.of(configSnapshot.structureManifestPath())
+                    : Path.of("config/devmod/structures_manifest.json");
+                StructureValidationInitializer.configure(
+                    registry,
+                    manifestPath,
+                    Thread.currentThread().getContextClassLoader(),
+                    configSnapshot
+                );
+            } catch (Exception e) {
+                LOGGER.warn("Failed to refresh structure validation on config reload: {}", e.getMessage());
+            }
         }
         refreshWatcher();
     }
