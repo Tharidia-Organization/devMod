@@ -21,6 +21,16 @@ import net.minecraft.world.entity.ai.goal.target.TargetGoal;
  */
 public final class EnduranceTargetPlayerGoal extends TargetGoal {
 
+    /**
+     * How many recheck windows to skip after the mob refused our target.
+     *
+     * <p>Age of Fight's BoneboundVanguard overrides {@code setTarget} to do nothing while it holds
+     * an interdiction lease on a target of its own choosing. Without this back-off the goal retried
+     * every ten ticks for the whole lease -- start, nothing written, canContinueToUse false, stop --
+     * churning against the very runtime we are trying to cooperate with.
+     */
+    private static final int REFUSED_BACKOFF_CHECKS = 6;
+
     private static final double TARGET_RANGE_SQ = 48.0 * 48.0;
     private static final double CONTINUE_RANGE_SQ = 64.0 * 64.0;
 
@@ -28,8 +38,25 @@ public final class EnduranceTargetPlayerGoal extends TargetGoal {
     private ServerPlayer targetPlayer;
     private int recheckDelay = 0;
 
+    private final boolean deferToOwner;
+
+    /**
+     * Target the nearest player, taking ownership of target selection.
+     *
+     * @param mob the mob to give a target to
+     */
     public EnduranceTargetPlayerGoal(Mob mob) {
+        this(mob, false);
+    }
+
+    /**
+     * @param mob the mob to give a target to
+     * @param deferToOwner true when another mod owns this mob's target selection, so we only
+     *     bootstrap a target it does not have and never replace one it chose
+     */
+    public EnduranceTargetPlayerGoal(Mob mob, boolean deferToOwner) {
         super(mob, false, true); // mustSee=false, mustReach=true
+        this.deferToOwner = deferToOwner;
         this.setFlags(Objects.requireNonNull(EnumSet.of(Goal.Flag.TARGET)));
     }
 
@@ -41,9 +68,16 @@ public final class EnduranceTargetPlayerGoal extends TargetGoal {
         }
         this.recheckDelay = 10; // Check every 0.5 seconds
 
-        // Already has a valid target
         LivingEntity currentTarget = this.mob.getTarget();
+        // Already has a valid target
         if (currentTarget instanceof ServerPlayer && currentTarget.isAlive()) {
+            return false;
+        }
+        // When another mod owns target selection we bootstrap only: any live target it picked --
+        // an ally under a protective order, a designated interdiction target -- is its decision to
+        // make and outranks ours. We exist for the case where it has none at all, which is every
+        // freshly spawned arena mob, because a never-aggressed player counts as neutral to it.
+        if (this.deferToOwner && currentTarget != null && currentTarget.isAlive()) {
             return false;
         }
 
@@ -66,6 +100,11 @@ public final class EnduranceTargetPlayerGoal extends TargetGoal {
     public void start() {
         if (this.targetPlayer != null) {
             this.mob.setTarget(this.targetPlayer);
+            if (this.deferToOwner && this.mob.getTarget() != this.targetPlayer) {
+                // setTarget was swallowed: the mob is holding a lease of its own. Wait longer
+                // rather than retrying into it every window.
+                this.recheckDelay = 10 * REFUSED_BACKOFF_CHECKS;
+            }
         }
         super.start();
     }

@@ -178,7 +178,7 @@ public final class EnduranceCloneWave {
 
         // Tag for endurance boss tracking
         boss.getPersistentData().putBoolean("endurance_clone", true);
-        boss.getPersistentData().putBoolean("endurance_boss", true);
+        boss.getPersistentData().putBoolean(com.devmod.endurance.EnduranceTags.BOSS, true);
         boss.getPersistentData().putInt("endurance_wave", waveNumber);
 
         // Add to world
@@ -246,6 +246,13 @@ public final class EnduranceCloneWave {
         if (mob == null || multiplier <= 0) {
             return;
         }
+        // Two of the three callers pass DevMod's own PlayerCloneEntity, which can never be guarded,
+        // so the check is inert for them. It exists for spawnFromBioscanWave, the one caller that
+        // scales an arbitrary entity type. See MobDrivePolicy for what writing these base values
+        // does to a mob whose own mod reads them back.
+        if (!com.devmod.endurance.spawn.MobDrivePolicy.allowScaling(mob, "clone wave difficulty scaling")) {
+            return;
+        }
 
         // Scale health
         var healthAttr = mob.getAttribute(Attributes.MAX_HEALTH);
@@ -290,6 +297,6 @@ public final class EnduranceCloneWave {
             return false;
         }
         return entity.getPersistentData().getBoolean("endurance_clone")
-            && entity.getPersistentData().getBoolean("endurance_boss");
+            && entity.getPersistentData().getBoolean(com.devmod.endurance.EnduranceTags.BOSS);
     }
 }

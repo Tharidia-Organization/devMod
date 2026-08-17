@@ -29,6 +29,7 @@ import com.devmod.arena.spawn.SpawnOccupancyTracker;
 import com.devmod.compat.mods.dummmmmmy.DummmmmmyCompat;
 import com.devmod.endurance.EnduranceLogger.Phase;
 import com.devmod.endurance.config.EffectiveConfig;
+import com.devmod.endurance.spawn.MobDrivePolicy;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
@@ -162,6 +163,20 @@ final class WaveMobSpawner {
 
                 mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
 
+                // finalizeSpawn FIRST, before any scaling. It used to run after, and for a modded
+                // mob that is destructive: finalizeSpawn is where a mob decides its own statistics.
+                // Age of Fight's Ashen Court entities allocate a hundred-point stat budget there and
+                // write it over MAX_HEALTH, ATTACK_DAMAGE, ATTACK_SPEED, MOVEMENT_SPEED, ARMOR,
+                // ARMOR_TOUGHNESS and KNOCKBACK_RESISTANCE, plus setHealth(getMaxHealth()) -- so
+                // every affix, multiplayer scale and elite buff was silently discarded, and the
+                // "Boss HP final" log below reported values that were about to be replaced.
+                //
+                // Those particular mobs are no longer scaled at all (see MobDrivePolicy: their own
+                // runtime reads those base values back and refuses to move an entity whose budget
+                // no longer adds up). The ordering still matters for every other modded mob that
+                // sets its stats here and that we do scale.
+                finalizeMobSpawn(mob, level, spawnPos);
+
                 applyMobModifiers(mob, waveState);
                 applyMultiplayerHPScaling(mob, waveState);
                 applySpawnAffix(mob, safeAffix);
@@ -182,8 +197,6 @@ final class WaveMobSpawner {
                         mobConfig.getMobId(), mob.getMaxHealth(), mob.getHealth(), appliedAffix.name(),
                         waveState.getWaveNumber(), waveState.getQuest().getQuestId());
                 }
-
-                finalizeMobSpawn(mob, level, spawnPos);
 
                 tagSpawnedMob(mob, waveState, arena, handle, appliedAffix, objectiveTarget);
 
@@ -346,14 +359,17 @@ final class WaveMobSpawner {
             }
 
             mob.setPos(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+            // Same ordering as the initial spawn: finalizeSpawn is where a mob decides its own
+            // statistics, so it must run before ours are layered on top rather than after, or the
+            // scaling below is silently discarded.
+            finalizeMobSpawn(mob, level, spawnPos);
+
             applyMobModifiers(mob, waveState);
             applyMultiplayerHPScaling(mob, waveState);
             applySpawnAffix(mob, affix);
             if (affix.isElite()) {
                 applyEliteBuffs(mob, waveState.getWaveNumber());
             }
-
-            finalizeMobSpawn(mob, level, spawnPos);
 
             CompoundTag tag = mob.getPersistentData();
             tag.putUUID(EnduranceTags.QUEST_ID, Objects.requireNonNull(waveState.getQuest().getQuestId()));
@@ -479,33 +495,53 @@ final class WaveMobSpawner {
     // ========== Mob Configuration ==========
 
     /**
+     * Ask whether DevMod may write attribute base values on this mob, logging the refusal.
+     *
+     * <p>Every stat-writing helper below goes through here rather than each checking the policy
+     * itself, so a new one cannot be added without the guard: the four that exist today all wrote
+     * MAX_HEALTH, and any single one of them was enough to freeze an Ashen Court entity forever.
+     *
+     * @param mob the mob about to be modified
+     * @param what what was going to be applied, for the log line
+     * @return true when scaling is permitted
+     */
+    static boolean allowedToScale(Mob mob, String what) {
+        return MobDrivePolicy.allowScaling(mob, what);
+    }
+
+    /**
      * Apply wave modifiers to a mob.
      */
     void applyMobModifiers(Mob mob, WaveManager.WaveState waveState) {
+        // Resolved once, applied per case. The four attribute modifiers are the unsafe ones; the
+        // fire-aspect tag, the two potion effects and DOUBLE_SPAWN touch nothing another mod reads
+        // back, and dropping those too would leave a wave labelled INVISIBILITY whose mobs were
+        // plainly visible.
+        boolean mayScale = allowedToScale(mob, "wave modifiers");
         for (WaveManager.WaveModifier modifier : waveState.getModifiers()) {
             switch (modifier) {
                 case SPEED_BOOST -> {
                     var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
-                    if (speedAttr != null) {
+                    if (speedAttr != null && mayScale) {
                         speedAttr.setBaseValue(speedAttr.getBaseValue() * 1.25);
                     }
                 }
                 case DAMAGE_BOOST -> {
                     var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
-                    if (attackAttr != null) {
+                    if (attackAttr != null && mayScale) {
                         attackAttr.setBaseValue(attackAttr.getBaseValue() * 1.25);
                     }
                 }
                 case HEALTH_BOOST -> {
                     var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
-                    if (healthAttr != null) {
+                    if (healthAttr != null && mayScale) {
                         healthAttr.setBaseValue(healthAttr.getBaseValue() * 1.5);
                         mob.setHealth(mob.getMaxHealth());
                     }
                 }
                 case ARMOR_BOOST -> {
                     var armorAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ARMOR));
-                    if (armorAttr != null) {
+                    if (armorAttr != null && mayScale) {
                         armorAttr.setBaseValue(armorAttr.getBaseValue() + 8);
                     }
                 }
@@ -532,6 +568,9 @@ final class WaveMobSpawner {
         if (affix == SpawnAffix.BASE) {
             return;
         }
+        if (!allowedToScale(mob, "affix " + affix.name())) {
+            return;
+        }
         var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
         if (healthAttr != null) {
             healthAttr.setBaseValue(healthAttr.getBaseValue() * affix.getHpMultiplier());
@@ -551,6 +590,9 @@ final class WaveMobSpawner {
      * Apply HP and damage scaling based on player count, quest type, AND mob difficulty preset.
      */
     void applyMultiplayerHPScaling(Mob mob, WaveManager.WaveState waveState) {
+        if (!allowedToScale(mob, "multiplayer/difficulty scaling")) {
+            return;
+        }
         EnduranceQuestRegistry.MobQuestConfig mobConfig = waveState.getQuest().getMobConfig();
         EnduranceQuestManager.ActiveQuestSession session = waveState.getSession();
         int playerCount = waveState.getPlayerCount();
@@ -618,28 +660,42 @@ final class WaveMobSpawner {
      * Apply elite buffs to a mob (special stronger variant).
      */
     void applyEliteBuffs(Mob mob, int waveNumber) {
+        // The tag is written either way: elite is also a loot, score and HUD fact, and only part of
+        // it is unsafe on a mob whose own mod reads its statistics back.
         mob.getPersistentData().putBoolean("endurance_elite", true);
+        boolean mayScale = allowedToScale(mob, "elite buffs");
 
-        float scaleFactor = 1.0f + (waveNumber * 0.1f);
+        if (mayScale) {
+            float scaleFactor = 1.0f + (waveNumber * 0.1f);
 
-        var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
-        if (healthAttr != null) {
-            healthAttr.setBaseValue(healthAttr.getBaseValue() * scaleFactor * 1.5);
-            mob.setHealth(mob.getMaxHealth());
+            var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
+            if (healthAttr != null) {
+                healthAttr.setBaseValue(healthAttr.getBaseValue() * scaleFactor * 1.5);
+                mob.setHealth(mob.getMaxHealth());
+            }
+
+            var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
+            if (attackAttr != null) {
+                attackAttr.setBaseValue(attackAttr.getBaseValue() * scaleFactor);
+            }
+
+            // Armour is gated with the attributes and not separately: a worn piece installs
+            // AttributeModifiers on ARMOR and ARMOR_TOUGHNESS, and a guarded mob's own mod refuses
+            // any modifier on those when the entity is read back from disk -- the elite would
+            // vanish after a restart. Its own model already carries its armour anyway.
+            if (random.nextBoolean()) {
+                mob.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Objects.requireNonNull(Items.IRON_HELMET)));
+            }
+            if (random.nextBoolean()) {
+                mob.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Objects.requireNonNull(Items.IRON_CHESTPLATE)));
+            }
         }
 
-        var attackAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
-        if (attackAttr != null) {
-            attackAttr.setBaseValue(attackAttr.getBaseValue() * scaleFactor);
-        }
-
-        if (random.nextBoolean()) {
-            mob.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Objects.requireNonNull(Items.IRON_HELMET)));
-        }
-        if (random.nextBoolean()) {
-            mob.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Objects.requireNonNull(Items.IRON_CHESTPLATE)));
-        }
-
+        // These two run for every elite. The glow is how a player tells an elite apart, and
+        // resistance is applied in the damage calculation rather than through an attribute, so
+        // neither can make a guarded mob unreadable to its own runtime. Dropping them would have
+        // left a guarded elite indistinguishable from a normal mob while still being scored,
+        // looted and announced as one.
         mob.setGlowingTag(true);
         mob.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_RESISTANCE), Integer.MAX_VALUE, 0, false, false));
     }
@@ -713,8 +769,19 @@ final class WaveMobSpawner {
         return "ender_dragon".equals(mobConfig.getMobId().getPath());
     }
 
+    /**
+     * Run the mob's own spawn finalisation.
+     *
+     * <p>Package-visible because BossWaveSystem needs it too: that path called addFreshEntity
+     * directly and never finalised at all, which for a modded mob that allocates its statistics in
+     * finalizeSpawn means it is never authorised to fight.
+     *
+     * @param mob the mob being spawned
+     * @param level the level it is being spawned into
+     * @param spawnPos where it is being spawned
+     */
     @SuppressWarnings("deprecation")
-    private static void finalizeMobSpawn(Mob mob, ServerLevel level, BlockPos spawnPos) {
+    static void finalizeMobSpawn(Mob mob, ServerLevel level, BlockPos spawnPos) {
         mob.finalizeSpawn(level, Objects.requireNonNull(level.getCurrentDifficultyAt(Objects.requireNonNull(spawnPos))),
             MobSpawnType.MOB_SUMMONED, null);
     }
@@ -737,8 +804,39 @@ final class WaveMobSpawner {
     @SuppressWarnings("unchecked")
     static void awakeMobAI(Mob mob, ServerLevel level) {
         try {
-            mob.targetSelector.addGoal(1, new com.devmod.endurance.ai.EnduranceTargetPlayerGoal(mob));
-            mob.goalSelector.addGoal(2, new com.devmod.endurance.ai.EnduranceMeleeAttackGoal(mob, 1.0, true));
+            MobDrivePolicy policy = MobDrivePolicy.resolve(mob);
+            // deferToOwner on a self-driven mob: bootstrap a target only when it has none, and back
+            // off when the mob refuses the write. Its own runtime owns target selection, and Age of
+            // Fight's pilot silently ignores setTarget while it holds an interdiction lease.
+            mob.targetSelector.addGoal(1,
+                new com.devmod.endurance.ai.EnduranceTargetPlayerGoal(mob, policy.selfDriven()));
+            if (policy.selfDriven()) {
+                // The targeting goal only, and on purpose. A self-driven mob's own mod owns its
+                // PathNavigation; adding our melee goal would give that navigation two writers, and
+                // whichever wrote last each tick would win -- which reads as stuttering, not as a
+                // bug, and would be blamed on the other mod. Setting the target is still ours to do
+                // and is what those runtimes wait for: Age of Fight only treats a player as hostile
+                // once a member already targets it or has been hurt by it, so an arena mob spawned
+                // to fight a player it has never met would otherwise never acquire one.
+                mob.getSensing().tick();
+                mob.targetSelector.tick();
+                LOGGER.info("[AIDebug] awakeMobAI: {} is self-driven ({}), installed the targeting "
+                        + "goal only. target={}, targetGoals={}",
+                    mob.getType().toString(),
+                    policy.reason(),
+                    mob.getTarget() != null ? mob.getTarget().getName().getString() : "null",
+                    mob.targetSelector.getAvailableGoals().size());
+                return;
+            }
+            // Priority 1, not 2. Combat Evolution patches these mobs with
+            // net.shelmarow.combat_evolution.stealth.CEInvestigationGoal at priority 2, declaring
+            // the same [MOVE, LOOK] flags as ours. At equal priority with conflicting flags the
+            // goal that claimed the flag first keeps it, and CE's is registered before ours -- so
+            // GoalSelector never even called canUse() on the attack goal. The mob acquired its
+            // target (the TARGET-flagged goal runs fine) and then stood still while a stealth
+            // investigation goal held the movement. Measured in a live run via the goal dump
+            // below. Attacking has to outrank investigating for the duration of a wave.
+            mob.goalSelector.addGoal(1, new com.devmod.endurance.ai.EnduranceMeleeAttackGoal(mob, 1.0, true));
 
             mob.getSensing().tick();
             mob.targetSelector.tick();

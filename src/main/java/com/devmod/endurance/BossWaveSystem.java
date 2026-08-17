@@ -42,6 +42,7 @@ import com.devmod.arena.registry.ArenaTemplateRegistry;
 import com.devmod.arena.registry.TemplateSpawnValidator;
 import com.devmod.endurance.boss.BossDNAMixer;
 import com.devmod.endurance.boss.BossDNAMixer.MixedBossData;
+import com.devmod.endurance.spawn.MobDrivePolicy;
 import com.devmod.mob.MobRequirements;
 import com.devmod.mob.MobRequirementsRegistry;
 import com.devmod.telemetry.endurance.EnduranceTelemetryService;
@@ -590,11 +591,31 @@ public class BossWaveSystem {
         BlockPos resolvedPos = spawnPos != null ? spawnPos : center;
         mob.setPos(resolvedPos.getX() + 0.5, resolvedPos.getY(), resolvedPos.getZ() + 0.5);
 
+        // finalizeSpawn, which this path never called at all. For a plain vanilla mob that only
+        // meant no equipment and no local difficulty pass -- and no FinalizeSpawn event, so other
+        // mods never saw our bosses being born. For Age of Fight's Ashen Court it is fatal:
+        // finalizeSpawn is what allocates the stat budget and initialises the life state, and
+        // without them combatAuthorised() stays false forever, so the mod's own server runtime --
+        // which is what actually moves those entities -- never picks the boss up. It stood still
+        // permanently. Read in BoneboundVanguard.finalizeSpawn and combatAuthorised().
+        //
+        // It runs here, before the scaling below, for the same reason as in WaveMobSpawner: the mob
+        // sets its own statistics in there and would otherwise overwrite ours.
+        if (MobDrivePolicy.resolve(mob).requiresOwnFinalizeSpawn()) {
+            WaveMobSpawner.finalizeMobSpawn(mob, level, resolvedPos);
+        }
+
         // Calculate base stats from mixed data
         float waveScaling = 1.0f + (waveNumber * 0.1f);
         float healthMult = mixedData.healthMultiplier();
         float damageMult = mixedData.damageMultiplier();
         float speedMult = mixedData.speedMultiplier();
+
+        // A boss whose own mod reads its attribute base values back keeps them. The boss stays a
+        // boss -- name, glow, abilities, phases, loot are all ours and all untouched -- it just
+        // fights with the statistics its own mod gave it. See MobDrivePolicy: for an Ashen Court
+        // entity the alternative is not a weaker boss, it is a boss that never moves.
+        boolean mayScale = WaveMobSpawner.allowedToScale(mob, "boss stat scaling");
 
         // Handle MIRROR variant - copy player stats
         if (mixedData.isMirror() && primaryPlayerId != null) {
@@ -609,7 +630,13 @@ public class BossWaveSystem {
 
         // Apply health
         var healthAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
-        if (healthAttr != null) {
+        if (healthAttr == null) {
+            // Split from the mayScale test on purpose: ANDing mayScale into the old condition made
+            // these three branches announce a missing attribute every time a guarded boss spawned,
+            // which is a false diagnosis at WARN over an intentional skip already logged at INFO.
+            LOGGER.warn("[BossWave] Boss mob {} missing MAX_HEALTH attribute - scaling skipped",
+                mob.getType().getDescriptionId());
+        } else if (mayScale) {
             double baseHealth = healthAttr.getBaseValue();
             double bossHealth = baseHealth * healthMult * waveScaling * 5; // 5x base for boss
 
@@ -624,14 +651,14 @@ public class BossWaveSystem {
 
             LOGGER.debug("[BossWave] Mixed Boss HP: {} (variant={}, players={})",
                 scaledHealth, mixedData.variant(), playerCount);
-        } else {
-            LOGGER.warn("[BossWave] Boss mob {} missing MAX_HEALTH attribute - scaling skipped",
-                mob.getType().getDescriptionId());
         }
 
         // Apply damage
         var damageAttr = mob.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
-        if (damageAttr != null) {
+        if (damageAttr == null) {
+            LOGGER.warn("[BossWave] Boss mob {} missing ATTACK_DAMAGE attribute - scaling skipped",
+                mob.getType().getDescriptionId());
+        } else if (mayScale) {
             double baseDamage = damageAttr.getBaseValue() * damageMult * waveScaling;
 
             // Apply multiplayer damage scaling
@@ -641,18 +668,15 @@ public class BossWaveSystem {
             scaledDamage *= mixedData.variant().getDamageMod();
 
             damageAttr.setBaseValue(scaledDamage);
-        } else {
-            LOGGER.warn("[BossWave] Boss mob {} missing ATTACK_DAMAGE attribute - scaling skipped",
-                mob.getType().getDescriptionId());
         }
 
         // Apply speed
         var speedAttr = mob.getAttribute(Objects.requireNonNull(Attributes.MOVEMENT_SPEED));
-        if (speedAttr != null) {
-            speedAttr.setBaseValue(speedAttr.getBaseValue() * speedMult);
-        } else {
+        if (speedAttr == null) {
             LOGGER.warn("[BossWave] Boss mob {} missing MOVEMENT_SPEED attribute - scaling skipped",
                 mob.getType().getDescriptionId());
+        } else if (mayScale) {
+            speedAttr.setBaseValue(speedAttr.getBaseValue() * speedMult);
         }
 
         // Visual indicators with blended color
@@ -665,7 +689,7 @@ public class BossWaveSystem {
 
         // Tag as boss with DNA mixing data
         CompoundTag tag = mob.getPersistentData();
-        tag.putBoolean("endurance_boss", true);
+        tag.putBoolean(EnduranceTags.BOSS, true);
         tag.putBoolean("endurance_mixed_boss", true);
         String primaryName = requireNonNull(mixedData.primaryArchetype().name(), "primaryArchetype.name");
         String secondaryName = requireNonNull(mixedData.secondaryArchetype().name(), "secondaryArchetype.name");
@@ -1012,7 +1036,12 @@ public class BossWaveSystem {
             Objects.requireNonNull(target.position()).subtract(Objects.requireNonNull(boss.position()))
         ).normalize().scale(2.0);
         boss.setDeltaMovement(Objects.requireNonNull(direction));
-        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 40, 3));
+        // The lunge itself is deltaMovement and always happens. The speed potion is a modifier on
+        // MOVEMENT_SPEED, one of the eight attributes a guarded mob's own mod audits when the entity
+        // is read back from disk, so it is skipped there -- see executeEnrage for the full reason.
+        if (WaveMobSpawner.allowedToScale(boss, "charge speed potion")) {
+            boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 40, 3));
+        }
 
         BlockPos pos = Objects.requireNonNull(boss.blockPosition());
         level.playSound(null, pos, Objects.requireNonNull(SoundEvents.RAVAGER_ATTACK), SoundSource.HOSTILE, 1.0f, 1.0f);
@@ -1043,13 +1072,25 @@ public class BossWaveSystem {
     private void executeEnrage(BossFight fight, Mob boss, ServerLevel level) {
         fight.setEnraged(true);
 
+        // Both the base value and the two potion effects are gated on the same answer, and the
+        // effects for a subtler reason than the attribute: DAMAGE_BOOST and MOVEMENT_SPEED install
+        // AttributeModifiers on ATTACK_DAMAGE and MOVEMENT_SPEED, two of the eight attributes Age
+        // of Fight treats as a design budget. A modifier there is tolerated for a short probation
+        // window when the entity is read back from disk -- long enough for a combat pose, not for a
+        // five-minute buff -- and past it the entity is quarantined and discarded. A boss that
+        // silently disappears after a server restart is a worse bug than a boss that enrages
+        // without a potion, so on a guarded boss enrage stays what it already mostly is: the
+        // ENRAGED flag that drives our own ability cadence, plus the glow and the particles.
+        boolean mayBuff = WaveMobSpawner.allowedToScale(boss, "enrage buffs");
         var damageAttr = boss.getAttribute(Objects.requireNonNull(Attributes.ATTACK_DAMAGE));
-        if (damageAttr != null) {
+        if (damageAttr != null && mayBuff) {
             damageAttr.setBaseValue(damageAttr.getBaseValue() * 1.5);
         }
 
-        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_BOOST), 6000, 1));
-        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 6000, 1));
+        if (mayBuff) {
+            boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.DAMAGE_BOOST), 6000, 1));
+            boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 6000, 1));
+        }
 
         // Visual
         for (int i = 0; i < 20; i++) {
@@ -1074,9 +1115,19 @@ public class BossWaveSystem {
             if (minion instanceof Mob minionMob) {
                 minionMob.setPos(x, boss.getY(), z);
 
-                // Minions are weaker
+                // Same omission as the boss path, and it matters more here: boss.getType() means a
+                // minion summoned by an Ashen Court boss IS an Ashen Court entity, and without
+                // finalizeSpawn it never gets its stat budget, so combatAuthorised() stays false
+                // and Age of Fight's own runtime never animates it. Before the 0.3 scaling below,
+                // because finalizeSpawn sets MAX_HEALTH itself and would otherwise erase it.
+                if (MobDrivePolicy.resolve(minionMob).requiresOwnFinalizeSpawn()) {
+                    WaveMobSpawner.finalizeMobSpawn(minionMob, level, minionMob.blockPosition());
+                }
+
+                // Minions are weaker -- unless weakening them is what would silence them.
                 var healthAttr = minionMob.getAttribute(Objects.requireNonNull(Attributes.MAX_HEALTH));
-                if (healthAttr != null) {
+                if (healthAttr != null
+                        && WaveMobSpawner.allowedToScale(minionMob, "minion health reduction")) {
                     healthAttr.setBaseValue(healthAttr.getBaseValue() * 0.3);
                     minionMob.setHealth((float) healthAttr.getBaseValue());
                 }
@@ -1225,7 +1276,11 @@ public class BossWaveSystem {
 
     private void executeSmokeBomb(Mob boss, ServerLevel level) {
         boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.INVISIBILITY), 100, 0));
-        boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 100, 2));
+        // Invisibility touches no attribute and is the point of the ability; the speed potion is a
+        // MOVEMENT_SPEED modifier and is gated for the same reason as in executeEnrage.
+        if (WaveMobSpawner.allowedToScale(boss, "smoke bomb speed potion")) {
+            boss.addEffect(new MobEffectInstance(Objects.requireNonNull(MobEffects.MOVEMENT_SPEED), 100, 2));
+        }
 
         // Smoke particles
         for (int i = 0; i < 50; i++) {
