@@ -91,8 +91,13 @@ final class EnduranceEventQuestLifecycle {
             PlayerAttributeTelemetryService.INSTANCE.recordSnapshot(player, "quest_start");
         }
 
+        // Null-guarded: getSession(...).orElse(null) then an unguarded dereference. The caller,
+        // EnduranceQuestManager, does not wrap this in a try, so an NPE here skipped everything
+        // after it -- no safe window, no wave scheduled, no confirmation to the player, who would
+        // stand in a silent arena holding a kit. A missing mutator session is not worth that.
         LOGGER.info("[EnduranceQuest] Quest started for {} with {} mutators",
-            player.getName().getString(), mutatorSession.getActiveMutatorCount());
+            player.getName().getString(),
+            mutatorSession != null ? mutatorSession.getActiveMutatorCount() : 0);
     }
 
     // ==============================================================

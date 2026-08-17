@@ -494,9 +494,16 @@ public class RecoverySystem {
     private void restoreInventory(ServerPlayer player, PlayerInstanceSnapshot snapshot) {
         CompoundTag inventoryNBT = snapshot.getInventoryNBT();
         if (inventoryNBT == null) {
-            LOGGER.warn("[Recovery] No inventory data in snapshot for {}", player.getName().getString());
+            // Clear anyway, then leave. Returning before the clear was an item duplication vector,
+            // not a safe bail-out: the player walks out of the instance still holding the quest kit
+            // -- netherite, diamond and totems for the TANK, WARRIOR and BERSERKER presets -- and
+            // into the live world, repeatably. Losing a snapshot must not mint items; the honest
+            // outcome of "we do not know what you were carrying" is empty hands plus this warning.
+            LOGGER.warn("[Recovery] No inventory data in snapshot for {}, clearing the quest kit "
+                + "instead of carrying it out of the instance", player.getName().getString());
+            player.getInventory().clearContent();
             EnduranceLogger.phase(Phase.CLEANUP, player, snapshot.getInstanceId(),
-                "Inventory restore skipped: no inventory data in snapshot");
+                "Inventory restore skipped: no inventory data in snapshot, inventory cleared");
             return;
         }
 

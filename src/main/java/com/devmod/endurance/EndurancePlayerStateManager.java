@@ -3,6 +3,8 @@ package com.devmod.endurance;
 import java.util.Objects;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,49 +83,77 @@ public class EndurancePlayerStateManager {
      * Apply a kit to the player based on kit ID.
      */
     public void applyKitToPlayer(ServerPlayer player, String kitId) {
-        // Check for temporary (on-the-fly) kit first
-        if ("TEMPORARY".equals(kitId) &&
-            (KitManager.INSTANCE.hasTemporaryKit(player.getUUID()) || KitManager.INSTANCE.hasTemporaryKit())) {
-            KitManager.INSTANCE.applyTemporaryKit(player);
-            EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
-                "Applied TEMPORARY kit, inventorySize=%d", player.getInventory().items.size());
-            LOGGER.debug("[EnduranceQuest] Applied temporary kit to {}", player.getName().getString());
+        // Every branch now reports whether it actually delivered anything, and a branch that
+        // delivered nothing falls through to STARTER instead of returning. Before, each branch
+        // discarded KitManager's boolean and returned, so any of them coming up empty -- a synced
+        // kit whose items all failed to deserialise, KitPreset.CUSTOM, an inventory that refused
+        // the stacks -- left the player in the arena with nothing while the log said the kit had
+        // been applied. Entering a wave unarmed is worse than entering it with the wrong kit.
+        if ("TEMPORARY".equals(kitId)
+            && (KitManager.INSTANCE.hasTemporaryKit(player.getUUID())
+                || KitManager.INSTANCE.hasTemporaryKit())
+            && KitManager.INSTANCE.applyTemporaryKit(player)) {
+            logKitApplied(player, "TEMPORARY", kitId);
             return;
         }
 
-        // Check for custom kit by ID
+        // Custom kit ids are 8-character UUID prefixes.
         if (kitId != null && kitId.length() == 8) {
-            // Custom kit IDs are 8 character UUIDs
             var syncedKit = KitManager.INSTANCE.getSyncedCustomKit(player.getUUID(), kitId);
-            if (syncedKit.isPresent()) {
-                KitManager.INSTANCE.applyCustomKit(player, syncedKit.get());
-                EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
-                    "Applied SYNCED custom kit: name=%s, id=%s", syncedKit.get().getName(), kitId);
-                LOGGER.debug("[EnduranceQuest] Applied synced custom kit {} to {}",
-                    syncedKit.get().getName(), player.getName().getString());
+            if (syncedKit.isPresent() && KitManager.INSTANCE.applyCustomKit(player, syncedKit.get())) {
+                logKitApplied(player, "SYNCED custom '" + syncedKit.get().getName() + "'", kitId);
                 return;
             }
 
             var customKit = KitManager.INSTANCE.getCustomKit(kitId);
-            if (customKit.isPresent()) {
-                KitManager.INSTANCE.applyCustomKit(player, customKit.get());
-                EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
-                    "Applied CUSTOM kit: name=%s, id=%s", customKit.get().getName(), kitId);
-                LOGGER.debug("[EnduranceQuest] Applied custom kit {} to {}",
-                    customKit.get().getName(), player.getName().getString());
+            if (customKit.isPresent() && KitManager.INSTANCE.applyCustomKit(player, customKit.get())) {
+                logKitApplied(player, "CUSTOM '" + customKit.get().getName() + "'", kitId);
                 return;
             }
         }
 
-        // Fall back to preset kit
         KitPreset kit = KitManager.INSTANCE.getKitById(kitId);
-        if (kit == null) {
+        if (kit == null || kit.isCustom()) {
             kit = KitPreset.STARTER;
         }
-        KitManager.INSTANCE.applyKit(player, kit);
+        if (!KitManager.INSTANCE.applyKit(player, kit) && kit != KitPreset.STARTER) {
+            LOGGER.warn("[EnduranceQuest] Kit {} delivered nothing to {}, falling back to STARTER",
+                kit.name(), player.getName().getString());
+            kit = KitPreset.STARTER;
+            KitManager.INSTANCE.applyKit(player, kit);
+        }
+        logKitApplied(player, "PRESET " + kit.name(), kitId);
+    }
+
+    /**
+     * Record which kit was applied and how much of it the player is actually holding.
+     *
+     * <p>The old line reported {@code player.getInventory().items.size()}, which is a
+     * {@code NonNullList} of fixed size 36 -- it printed 36 for a kit of nine items and 36 for a
+     * kit of none, so it could never falsify "the kit was applied". It also passed a null questId,
+     * so the line always read {@code quest=no-quest} and could not be correlated to a run.
+     *
+     * @param player the player who received the kit
+     * @param description which kit branch was taken
+     * @param kitId the requested kit id, for correlating with the client's request
+     */
+    private void logKitApplied(ServerPlayer player, String description, @Nullable String kitId) {
+        int occupied = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (!stack.isEmpty()) {
+                occupied++;
+            }
+        }
+        int armour = 0;
+        for (ItemStack stack : player.getInventory().armor) {
+            if (!stack.isEmpty()) {
+                armour++;
+            }
+        }
         EnduranceLogger.phase(Phase.KIT_APPLY, player, null,
-            "Applied PRESET kit: %s", kit.name());
-        LOGGER.debug("[EnduranceQuest] Applied kit {} to {}", kit.name(), player.getName().getString());
+            "Applied %s (requested=%s): %d main slots, %d armour slots, offhand=%s",
+            description, kitId, occupied, armour,
+            !player.getOffhandItem().isEmpty());
     }
 
     // ═══════════════════════════════════════════════════════════════

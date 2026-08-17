@@ -3,6 +3,7 @@ package com.devmod.endurance;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,22 +49,119 @@ public final class KitManager {
     }
 
     /**
-     * Apply a kit preset to a player, replacing their inventory.
-     * For CUSTOM kit, keeps the player's current inventory.
+     * Put a kit's items on a player, and report how many actually landed.
      *
-     * @param player The player to equip
-     * @param kit The kit preset to apply
-     * @return true if kit was applied successfully
+     * <p>There were three byte-for-byte copies of this loop -- in {@link #applyKit},
+     * {@link #applyCustomKit} and {@link #applyTemporaryKit} -- and every defect below existed in
+     * all three, which is what three copies buys you.
+     *
+     * <ul>
+     *   <li>The boolean from {@code Inventory.add} was discarded. Vanilla returns false when
+     *       nothing fits and keeps nothing: the stack was <b>destroyed</b>, silently. Leftovers now
+     *       drop at the player's feet, which is what every other insertion in this mod already
+     *       does (see MailboxAttachmentHandler and QuestTracker).</li>
+     *   <li>Two kit entries mapping to the same {@code EquipmentSlot} overwrote each other without
+     *       a word. The displaced stack now goes through the normal path instead of vanishing.</li>
+     *   <li>The caller logged {@code items.size()} -- the size of the <b>source list</b>, before a
+     *       single insertion. It printed 9 even if all nine writes had failed, so the log could not
+     *       distinguish "kit delivered" from "kit lost". It now reports what landed.</li>
+     *   <li>{@code selected = 0} was written server-side with no packet. Vanilla only sends
+     *       ClientboundSetCarriedItemPacket at login and from sendAllPlayerInfo, which the quest's
+     *       dimension change fires <i>before</i> the kit is applied -- so the client kept its old
+     *       slot while the server believed slot 0. The items were there; the wrong one was in the
+     *       player's hand, and attacks resolved with an item the client was not drawing.</li>
+     * </ul>
+     *
+     * @param player the player receiving the kit
+     * @param items the kit's items; not modified
+     * @return how many stacks reached the player, dropped stacks included
+     */
+    private int deliverItems(ServerPlayer player, List<ItemStack> items) {
+        if (items == null || items.isEmpty()) {
+            return 0;
+        }
+        int delivered = 0;
+        List<ItemStack> loose = new ArrayList<>();
+        for (ItemStack stack : items) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+            EquipmentSlot slot = getEquipmentSlot(stack);
+            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
+                ItemStack occupant = player.getItemBySlot(slot);
+                if (!occupant.isEmpty()) {
+                    // Do not overwrite: the displaced piece is a real item the kit asked for.
+                    loose.add(occupant.copy());
+                }
+                player.setItemSlot(slot, Objects.requireNonNull(stack.copy()));
+                delivered++;
+            } else {
+                loose.add(stack);
+            }
+        }
+
+        int hotbarSlot = 0;
+        for (ItemStack stack : loose) {
+            ItemStack copy = Objects.requireNonNull(stack.copy());
+            if (hotbarSlot < 9) {
+                player.getInventory().setItem(hotbarSlot, copy);
+                hotbarSlot++;
+                delivered++;
+                continue;
+            }
+            if (player.getInventory().add(copy)) {
+                delivered++;
+                continue;
+            }
+            // Full. Drop rather than destroy, and say so: a kit that silently loses items is
+            // indistinguishable from a kit that was never granted.
+            LOGGER.warn("[KitManager] Inventory full for {}, dropping {} x{}",
+                player.getName().getString(), copy.getItem(), copy.getCount());
+            player.drop(copy, false);
+            delivered++;
+        }
+
+        selectFirstHotbarSlot(player);
+        return delivered;
+    }
+
+    /**
+     * Point the player at the first hotbar slot, on both sides.
+     *
+     * @param player the player whose held slot is being reset
+     */
+    private void selectFirstHotbarSlot(ServerPlayer player) {
+        player.getInventory().selected = 0;
+        if (player.connection != null) {
+            player.connection.send(
+                new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(0));
+        }
+    }
+
+    /**
+     * Apply a kit preset to a player, replacing their inventory.
+     *
+     * @param player the player to equip
+     * @param kit the kit preset to apply
+     * @return true when at least one stack reached the player; false for CUSTOM, which has no items
+     *     of its own, so the caller can fall back to a real kit
      */
     public boolean applyKit(ServerPlayer player, KitPreset kit) {
         if (player == null || kit == null) {
             return false;
         }
 
-        // Custom kit = keep current inventory
+        // KitPreset.CUSTOM means "keep whatever the player is carrying", and as a QUEST kit that is
+        // a contradiction: the only caller is EndurancePlayerStateManager.applyKitToPlayer, and
+        // preparePlayerForQuest empties the inventory immediately before calling it. So this branch
+        // used to report success while guaranteeing the player entered the arena with nothing, and
+        // the server-side validator accepted the id (KitPreset.valueOf("CUSTOM") resolves).
+        // Returning false makes the caller fall back to a real kit instead of believing this one.
         if (kit.isCustom()) {
-            LOGGER.info("[KitManager] Player {} using custom kit (current inventory)", player.getName().getString());
-            return true;
+            LOGGER.warn("[KitManager] Kit CUSTOM means 'keep current inventory', which is empty at "
+                + "quest start. Delivering nothing for {}; the caller must fall back.",
+                player.getName().getString());
+            return false;
         }
 
         LOGGER.info("[KitManager] Applying kit {} to player {}", kit.name(), player.getName().getString());
@@ -74,34 +172,11 @@ public final class KitManager {
         // Get kit items with enchantments
         List<ItemStack> items = kit.getItems(player.level());
 
-        // Equip armor/offhand first (check for equipable slots)
-        List<ItemStack> nonArmorItems = new ArrayList<>();
-        for (ItemStack stack : items) {
-            EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
-                player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
-            } else {
-                nonArmorItems.add(stack);
-            }
-        }
+        int delivered = deliverItems(player, items);
 
-        // Add remaining items to hotbar and inventory
-        int hotbarSlot = 0;
-        for (ItemStack stack : nonArmorItems) {
-            if (hotbarSlot < 9) {
-                player.getInventory().setItem(hotbarSlot, java.util.Objects.requireNonNull(stack.copy()));
-                hotbarSlot++;
-            } else {
-                // Add to main inventory
-                player.getInventory().add(java.util.Objects.requireNonNull(stack.copy()));
-            }
-        }
-
-        // Select first hotbar slot
-        player.getInventory().selected = 0;
-
-        LOGGER.info("[KitManager] Kit {} applied with {} items", kit.name(), items.size());
-        return true;
+        LOGGER.info("[KitManager] Kit {} applied: {} of {} stacks delivered",
+            kit.name(), delivered, items.size());
+        return delivered > 0;
     }
 
     /**
@@ -184,32 +259,13 @@ public final class KitManager {
         // Get kit items with full data restoration (attributes, durability, NBT, etc.)
         List<ItemStack> items = kit.toItemStacks(player.registryAccess());
 
-        // Equip armor/offhand first
-        List<ItemStack> nonArmorItems = new ArrayList<>();
-        for (ItemStack stack : items) {
-            EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
-                player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
-            } else {
-                nonArmorItems.add(stack);
-            }
-        }
+        int delivered = deliverItems(player, items);
 
-        // Add remaining items to hotbar and inventory
-        int hotbarSlot = 0;
-        for (ItemStack stack : nonArmorItems) {
-            if (hotbarSlot < 9) {
-                player.getInventory().setItem(hotbarSlot, java.util.Objects.requireNonNull(stack.copy()));
-                hotbarSlot++;
-            } else {
-                player.getInventory().add(java.util.Objects.requireNonNull(stack.copy()));
-            }
-        }
-
-        player.getInventory().selected = 0;
-
-        LOGGER.info("[KitManager] Custom kit '{}' applied with {} items", kit.getName(), items.size());
-        return true;
+        LOGGER.info("[KitManager] Custom kit '{}' applied: {} of {} stacks delivered",
+            kit.getName(), delivered, items.size());
+        // False on an empty result, so the caller can fall back instead of reporting success. A
+        // restored synced kit whose entries all failed to deserialise reaches here with zero items.
+        return delivered > 0;
     }
 
     /**
@@ -337,6 +393,18 @@ public final class KitManager {
             }
             if (snapshot.customKits() != null) {
                 for (CustomKit kit : snapshot.customKits()) {
+                    // Guarded like the temporary kit three lines above, which it was not.
+                    // KitSyncPersistence builds a CustomKit even when every entry failed to
+                    // deserialise, so a zero-item kit was cached, then passed the quest-start
+                    // validator (which only checks that the kit is present) and was "applied":
+                    // inventory cleared, nothing added, success logged. The fresh-sync path already
+                    // rejects an empty kit -- only the restored-from-disk path did not.
+                    if (kit == null || kit.getKitItems() == null || kit.getKitItems().isEmpty()) {
+                        LOGGER.warn("[KitManager] Ignoring restored custom kit '{}' for {}: it has "
+                                + "no usable items",
+                            kit != null ? kit.getName() : "null", player.getName().getString());
+                        continue;
+                    }
                     cacheCustomKit(playerId, kit);
                 }
             }
@@ -432,32 +500,11 @@ public final class KitManager {
         // Clear current inventory
         player.getInventory().clearContent();
 
-        // Equip armor first
-        List<ItemStack> nonArmorItems = new ArrayList<>();
-        for (ItemStack stack : items) {
-            EquipmentSlot slot = getEquipmentSlot(stack);
-            if (slot != null && (slot.isArmor() || slot == EquipmentSlot.OFFHAND)) {
-                player.setItemSlot(slot, java.util.Objects.requireNonNull(stack.copy()));
-            } else {
-                nonArmorItems.add(stack);
-            }
-        }
+        int delivered = deliverItems(player, items);
 
-        // Add remaining items
-        int hotbarSlot = 0;
-        for (ItemStack stack : nonArmorItems) {
-            if (hotbarSlot < 9) {
-                player.getInventory().setItem(hotbarSlot, java.util.Objects.requireNonNull(stack.copy()));
-                hotbarSlot++;
-            } else {
-                player.getInventory().add(java.util.Objects.requireNonNull(stack.copy()));
-            }
-        }
-
-        player.getInventory().selected = 0;
-
-        LOGGER.info("[KitManager] Temporary kit applied with {} items", items.size());
-        return true;
+        LOGGER.info("[KitManager] Temporary kit '{}' applied: {} of {} stacks delivered",
+            name, delivered, items.size());
+        return delivered > 0;
     }
 
     private static final class TemporaryKit {
