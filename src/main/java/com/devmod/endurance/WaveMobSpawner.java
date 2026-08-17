@@ -719,8 +719,23 @@ final class WaveMobSpawner {
             MobSpawnType.MOB_SUMMONED, null);
     }
 
+    /**
+     * Give a freshly spawned mob the goals that make it hunt the player.
+     *
+     * <p>Package-visible and static because {@link BossWaveSystem} needs it too. It used to be
+     * private here, so the boss and minion spawns in that class -- which call addFreshEntity
+     * directly -- produced mobs with no targeting goal and no attack goal at all. They stood
+     * still. Regular waves worked because this path called it; nothing else did.
+     *
+     * <p>The goals deliberately extend plain {@code Goal} and {@code TargetGoal} rather than
+     * vanilla's melee goals: Epic Fight's MobPatch.selectGoalToRemove strips vanilla melee goals
+     * from patched mobs to install its own animated attacks, and these have to survive that.
+     *
+     * @param mob the mob just added to the level
+     * @param level the level it was added to
+     */
     @SuppressWarnings("unchecked")
-    private void awakeMobAI(Mob mob, ServerLevel level) {
+    static void awakeMobAI(Mob mob, ServerLevel level) {
         try {
             mob.targetSelector.addGoal(1, new com.devmod.endurance.ai.EnduranceTargetPlayerGoal(mob));
             mob.goalSelector.addGoal(2, new com.devmod.endurance.ai.EnduranceMeleeAttackGoal(mob, 1.0, true));

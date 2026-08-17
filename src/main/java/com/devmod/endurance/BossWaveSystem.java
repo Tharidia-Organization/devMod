@@ -699,6 +699,11 @@ public class BossWaveSystem {
         // Add spawn effects with variant-specific particles
         level.addFreshEntity(mob);
 
+        // Wake the AI, exactly as the regular wave path does. Without this the boss spawned with
+        // no targeting goal and no attack goal, and simply stood there: this class reached
+        // addFreshEntity directly and never had the call the ordinary spawner has always had.
+        WaveMobSpawner.awakeMobAI(mob, level);
+
         // Spawn particles based on variant
         net.minecraft.core.particles.ParticleOptions particle = switch (mixedData.variant()) {
             case CHIMERA -> ParticleTypes.DRAGON_BREATH;
@@ -1102,6 +1107,8 @@ public class BossWaveSystem {
                 }
 
                 level.addFreshEntity(minionMob);
+                // Same as the boss above: minions had no goals either.
+                WaveMobSpawner.awakeMobAI(minionMob, level);
                 fight.activeMinions.add(minionMob.getUUID());
 
                 // Spawn particles
