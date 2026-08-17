@@ -77,6 +77,10 @@ public final class RadialMenuScreen extends Screen {
         ActionIds.UI_VOXELLAB_OPEN,
         ActionIds.UI_SETTINGS_OPEN,
         ActionIds.UI_RADIAL_SETTINGS_OPEN,
+        // The gateway to every other arena action. Listed by id rather than relying on the menuPath
+        // prefixes below, because it declares Root/Arena/Hub and those admit only Root/Arena/Ops and
+        // Root/Arena/Templates -- so a profile check on the path would have dropped it again.
+        ActionIds.UI_ARENA_HUB_OPEN,
         ActionIds.ARENA_CREATE,
         ActionIds.ARENA_STATUS,
         ActionIds.ARENA_TEMPLATE_LIST,
@@ -1909,16 +1913,33 @@ public final class RadialMenuScreen extends Screen {
         if (result.isSuccess()) {
             return true;
         }
+        String actionId = item.getAction().getRegistryId();
+        String actionLabel = actionId != null ? actionId : item.getName();
         if (result.isBlocked()) {
             Component reason = resolveBlockReasonComponentForResult(item, action, result);
+            // Logged, not only flashed. A blocked action used to produce a coloured flash and, when
+            // shouldShowBlockedMessage() said no, nothing else at all -- which is exactly what "the
+            // button does nothing" looks like from the player's side, with no trace in the log to
+            // tell us WHICH precondition refused. One warn line per refusal turns that report into
+            // a diagnosis.
+            LOGGER.warn("[RadialMenuScreen] Action blocked: {} code={} message={} reason={} mode={}",
+                actionLabel,
+                result.errorCode(),
+                result.message(),
+                reason.getString(),
+                ContextDetector.INSTANCE.getCurrentMode().name());
             boolean showMessage = shouldShowBlockedMessage(result);
             showBlockedFeedback(item, reason, showMessage);
             return false;
         }
         if (result.isFailed()) {
+            LOGGER.warn("[RadialMenuScreen] Action failed: {} code={} message={}",
+                actionLabel, result.errorCode(), result.message());
             triggerActionFlash(source, com.devmod.client.ui.radial.animation.RadialAnimator.FlashType.FAILED);
             return false;
         }
+        // No fourth status exists: ActionResult.Status is OK/BLOCKED/FAILED and the three tests
+        // above are one-for-one with them, so there is nothing left to report here.
         return false;
     }
 

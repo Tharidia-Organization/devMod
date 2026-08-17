@@ -106,6 +106,35 @@ public final class RadialMenuActionLayout {
         ActionIds.HUD_ENDURANCE_DETAILS_TOGGLE,
         ActionIds.HUD_PARTY_TOGGLE,
         ActionIds.ARENA_HUD_TOGGLE,
+        // ARENA. These were missing, and the ARENA sector was therefore empty by construction: the
+        // filter below drops every action not named here, so of twenty arena actions exactly one --
+        // the HUD toggle -- reached the tree, and the default FOCUSED profile then dropped that one
+        // too because its menuPath is Root/Arena/HUD/Toggle. The sector drew dimmed and a click
+        // answered "no items in this mode". Since no hub screen opens ArenaHubScreen either, the
+        // arena hub had no reachable entry point at all -- which is the "il tasto arena non
+        // funziona" report.
+        //
+        // The seven below are not a new decision: RadialMenuScreen.FOCUSED_ACTION_IDS already lists
+        // them as focused-visible. Two lists disagreed and this one silently won.
+        ActionIds.UI_ARENA_HUB_OPEN,
+        // Same contradiction, found by the test that locks it: FOCUSED_ACTION_IDS declares these
+        // focused-visible too, and the curation filter dropped them. Six are reachable from
+        // EditorHubScreen or a keybind, so their absence from the radial was a lie rather than a
+        // dead end; UI_RESPONSIVENESS_TEST_OPEN had no other entry point at all.
+        ActionIds.UI_QA_TESTING_OPEN,
+        ActionIds.UI_RESPONSIVENESS_TEST_OPEN,
+        ActionIds.UI_ITEM_EDITOR_OPEN_AUTO,
+        ActionIds.UI_MOB_CONFIG_OPEN,
+        ActionIds.UI_MOB_EQUIPMENT_OPEN,
+        ActionIds.UI_ENDURANCE_EDITOR_OPEN,
+        ActionIds.UI_QUEST_EDITOR_OPEN,
+        ActionIds.ARENA_CREATE,
+        ActionIds.ARENA_STATUS,
+        ActionIds.ARENA_TEMPLATE_LIST,
+        ActionIds.ARENA_TEMPLATE_STATUS,
+        ActionIds.ARENA_VALIDATE,
+        ActionIds.ARENA_METRICS,
+        ActionIds.ARENA_QUICK_TEST_WIZARD_OPEN,
         ActionIds.HUD_QUICK_HELP_TOGGLE,
         // PLAY - Entry points
         ActionIds.UI_ENDURANCE_SCREEN_OPEN,

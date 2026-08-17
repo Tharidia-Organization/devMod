@@ -124,7 +124,21 @@ public class RadialMenuConfig {
         public int keySearchToggleSecondary = GLFW.GLFW_KEY_F;
         public int keyEditModeToggleLeft = GLFW.GLFW_KEY_LEFT_SHIFT;
         public int keyEditModeToggleRight = GLFW.GLFW_KEY_RIGHT_SHIFT;
-        public int keyThemeCycle = GLFW.GLFW_KEY_T;
+        /**
+         * Theme cycle. K, not T.
+         *
+         * <p>T was also {@code itemKeys[4]}, and the defaults therefore conflicted with themselves.
+         * The single keys are added to {@code usedKeys} before {@code itemKeys} is deduplicated, so
+         * on every load -- with a pristine config, no user editing involved -- slot 4 lost T and
+         * took Y, which pushed slot 5 onto U, slot 6 onto I, and so on to slot 9 landing on A. Six
+         * of the ten item hotkeys ended up somewhere the HUD hint (which still prints QWERTYUIOP)
+         * never mentioned, and the log said so on every start.
+         *
+         * <p>T is the one that moves because {@code normalizeLegacyItemKeys} exists specifically to
+         * migrate old configs onto T for slot 4: that slot is the intended owner. K is unclaimed by
+         * every other binding here.
+         */
+        public int keyThemeCycle = GLFW.GLFW_KEY_K;
         public int keyProfileCycle = GLFW.GLFW_KEY_M;
         public int keySafeModeToggle = GLFW.GLFW_KEY_N;
         public int keyCategoryLeft = GLFW.GLFW_KEY_LEFT;
@@ -484,6 +498,8 @@ public class RadialMenuConfig {
             return;
         }
 
+        migrateThemeCycleOffItemKey();
+
         input.keyMenuClose = sanitizeKey(input.keyMenuClose, DEFAULT_INPUT.keyMenuClose, "input.keyMenuClose");
         input.keyReleaseSelect = sanitizeKey(input.keyReleaseSelect, DEFAULT_INPUT.keyReleaseSelect,
             "input.keyReleaseSelect");
@@ -672,6 +688,43 @@ public class RadialMenuConfig {
             }
         }
         return 0;
+    }
+
+    /**
+     * Move an existing config off the {@code T} collision, and undo the shift it caused.
+     *
+     * <p>Changing the default was not enough. The defaults conflicted with themselves --
+     * {@code keyThemeCycle} was {@code T} and so is {@code itemKeys[4]} -- and the single keys enter
+     * {@code usedKeys} before {@code itemKeys} is deduplicated, so slot 4 lost {@code T} and took
+     * {@code Y}, pushing 5 onto {@code U}, 6 onto {@code I}, 7 onto {@code O}, 8 onto {@code P} and
+     * 9 onto {@code A}. {@code copyFrom} then calls {@code save()}, so that shifted array was
+     * written back to radial_menu.json: anyone who had already launched the mod has
+     * {@code keyThemeCycle: 84} and the shifted array on disk, Gson restores both, no duplicate is
+     * even reported any more, and {@code normalizeLegacyItemKeys} does not fire because it requires
+     * slot 4 to be {@code H}. The new default would have reached new installs only.
+     *
+     * <p>Runs before the scalars are sanitised and before the arrays are deduplicated, so the
+     * repaired array is the one the dedupe sees.
+     */
+    private void migrateThemeCycleOffItemKey() {
+        if (input == null || input.keyThemeCycle != GLFW.GLFW_KEY_T) {
+            return;
+        }
+        input.keyThemeCycle = DEFAULT_INPUT.keyThemeCycle;
+        LOGGER.info("[RadialMenuConfig] Moved input.keyThemeCycle off T (it is itemKeys[4]) to {}",
+            DEFAULT_INPUT.keyThemeCycle);
+
+        // Only repair an array that is exactly the shift this collision produced. A player who has
+        // deliberately rebound their item keys must keep their bindings.
+        int[] shifted = {
+            GLFW.GLFW_KEY_Q, GLFW.GLFW_KEY_W, GLFW.GLFW_KEY_E, GLFW.GLFW_KEY_R, GLFW.GLFW_KEY_Y,
+            GLFW.GLFW_KEY_U, GLFW.GLFW_KEY_I, GLFW.GLFW_KEY_O, GLFW.GLFW_KEY_P, GLFW.GLFW_KEY_A
+        };
+        if (input.itemKeys != null && java.util.Arrays.equals(input.itemKeys, shifted)) {
+            input.itemKeys = DEFAULT_INPUT.itemKeys.clone();
+            LOGGER.info("[RadialMenuConfig] Restored input.itemKeys to QWERTYUIOP, which is what the "
+                + "in-game hint has always printed");
+        }
     }
 
     private void normalizeLegacyItemKeys() {
