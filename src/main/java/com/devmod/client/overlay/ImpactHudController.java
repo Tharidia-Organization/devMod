@@ -179,15 +179,29 @@ public final class ImpactHudController {
 
     /**
      * Checks if the target is a boss entity.
-     * Uses NBT tag 'endurance_is_boss' from the Endurance quest system.
+     *
+     * <p><b>Currently always false, and the reason is not the tag name.</b> This reads
+     * {@code getPersistentData()}, NeoForge's save-only compound: it is written to disk and
+     * <b>never synchronised to the client</b>, and nothing in DevMod syncs it either. On this side
+     * the compound is empty for every entity. Renaming the key from the never-written
+     * {@code endurance_is_boss} to {@link com.devmod.endurance.EnduranceTags#BOSS} fixed the two
+     * server-side readers (NemesisEvolutionManager and TideManager); it could not fix this one.
+     *
+     * <p>Making the boss branch work needs a synchronised signal, which means carrying the boss's
+     * entity id on a server-to-client payload -- BossAlertPayload is the natural place and today
+     * carries only a duration and a type string. That is a protocol change, so it is deliberately
+     * not smuggled in here. Until then this returns false and the boss branch of the HUD does not
+     * render; the tag read is kept so the fix is one synced set away rather than a rewrite.
+     *
+     * @param impactData the impact being rendered
+     * @return whether the target is a boss; today, always false on the client
      */
     private boolean isBossTarget(ImpactData impactData) {
         LivingEntity target = impactData.getTarget();
         if (target == null) return false;
 
-        // Check NBT tag
         var data = target.getPersistentData();
-        return data.getBoolean("endurance_is_boss");
+        return data.getBoolean(com.devmod.endurance.EnduranceTags.BOSS);
     }
 
     // === Public API ===

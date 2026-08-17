@@ -73,6 +73,22 @@ public class EnduranceEventTick {
         // Tick live analytics hooks (throttled internally to 1/sec)
         LiveAnalyticsHookManager.INSTANCE.tick();
 
+        // Prune resonance hit records. ResonanceChainSystem was written with two cleanup mechanisms
+        // -- this periodic prune, which drops hits older than HIT_EXPIRY_MS and removes the emptied
+        // entries, and a clear() for quest end -- and NEITHER had a caller. This fixes the leak:
+        // recentHits is keyed by entity id and no other code path ever removes an entry, so the map
+        // grew for the life of the server.
+        //
+        // It does NOT fix cross-quest contamination, and an earlier version of this comment claimed
+        // it did. checkResonance already skips records from another quest, and recordHit prunes
+        // expired ones on every hit against a one-second expiry, so a recycled entity id could not
+        // carry hits between quests. The defect was memory, not correctness. clear() still has no
+        // caller and quest end still does not drop that quest's records eagerly.
+        //
+        // The method throttles itself to once a second internally and tolerates the tickCounter
+        // wrap below.
+        com.devmod.endurance.resonance.ResonanceChainSystem.INSTANCE.tick(tickCounter);
+
         // Tick quest start sequences (countdown, validation, teleport) and quest-related updates
         var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
         if (server != null) {

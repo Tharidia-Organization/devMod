@@ -348,7 +348,7 @@ public class EnduranceEventCombat {
             CombatTracker.INSTANCE.onMobKilled(player, entity, isElite);
 
             // Check if this is a boss kill
-            boolean isBoss = data.getBoolean("endurance_is_boss");
+            boolean isBoss = data.getBoolean(EnduranceTags.BOSS);
 
             // === NEMESIS EVOLUTION - Record boss defeat for player profile ===
             if (nemesisEnabled && isBoss && entity instanceof Mob) {

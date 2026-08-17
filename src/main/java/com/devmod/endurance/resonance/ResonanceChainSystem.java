@@ -419,10 +419,18 @@ public final class ResonanceChainSystem {
      * Periodic cleanup of expired hit records.
      */
     public void tick(long currentTick) {
-        if (currentTick - lastCleanupTick < CLEANUP_INTERVAL_TICKS) {
+        // A tick counter that goes backwards means the caller's counter wrapped, not that no time
+        // has passed. EnduranceEventTick resets its counter to 0 at 1_000_000, and this throttle,
+        // written as a plain forward difference, then saw currentTick - lastCleanupTick around
+        // minus a million -- always below the interval -- so the prune stopped for another million
+        // ticks, about fourteen hours. Exactly the long-uptime servers where the leak matters.
+        if (currentTick < lastCleanupTick) {
+            lastCleanupTick = currentTick;
+        } else if (currentTick - lastCleanupTick < CLEANUP_INTERVAL_TICKS) {
             return;
+        } else {
+            lastCleanupTick = currentTick;
         }
-        lastCleanupTick = currentTick;
 
         long now = System.currentTimeMillis();
 
