@@ -167,18 +167,9 @@ public record EnduranceMobConfig(
      * Get display name from mob ID.
      */
     public String getDisplayName() {
-        String path = mobId.getPath();
-        // Use -1 limit to avoid surprising behavior with trailing empty strings
-        String[] parts = path.split("_", -1);
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                if (sb.length() > 0) sb.append(" ");
-                sb.append(Character.toUpperCase(part.charAt(0)));
-                sb.append(part.substring(1));
-            }
-        }
-        return sb.toString();
+        // Shared with EnduranceQuestRegistry so the two cannot disagree, which they did: both split
+        // on '_' alone and left the '/' in a modded path like ashen_court/bonebound_vanguard.
+        return com.devmod.endurance.MobDisplayNames.of(mobId);
     }
 
     /**

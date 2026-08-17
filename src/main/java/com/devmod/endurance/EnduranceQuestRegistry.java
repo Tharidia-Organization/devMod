@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Splitter;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -33,7 +31,6 @@ import com.devmod.endurance.config.EffectiveConfig;
 
 public class EnduranceQuestRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(EnduranceQuestRegistry.class);
-    private static final Splitter UNDERSCORE_SPLITTER = Splitter.on('_');
 
     public static final EnduranceQuestRegistry INSTANCE = new EnduranceQuestRegistry();
 
@@ -172,11 +169,10 @@ public class EnduranceQuestRegistry {
             this.difficultyPreset = preset;
             this.namespace = mobId.getNamespace();
 
-            // Generate display name from ID
-            String path = Objects.requireNonNull(mobId.getPath(), "mobId.path");
-            this.displayName = UNDERSCORE_SPLITTER.splitToList(path).stream()
-                .map(s -> s.isEmpty() ? s : s.substring(0, 1).toUpperCase(Locale.ROOT) + s.substring(1))
-                .collect(Collectors.joining(" "));
+            // Generate display name from ID. MobDisplayNames also separates on '/', which a modded
+            // registry path legally contains -- Age of Fight's mobs are ashen_court/<name>, and this
+            // used to render them as "Ashen Court/bonebound Vanguard".
+            this.displayName = MobDisplayNames.of(mobId);
 
             // Estimate base stats from mob type
             this.baseHealth = estimateBaseHealth(mobId, tier);
