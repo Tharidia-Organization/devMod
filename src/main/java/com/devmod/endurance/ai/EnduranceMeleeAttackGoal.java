@@ -30,6 +30,20 @@ public final class EnduranceMeleeAttackGoal extends Goal {
     private long lastCanUseCheck;
     private static final long COOLDOWN_BETWEEN_CAN_USE_CHECKS = 20L;
 
+    /**
+     * Permitted checks between diagnostic lines.
+     *
+     * <p>The failure logs below used to be gated on {@code gameTime % 100 == 0}. canUse() only
+     * runs on the subset of ticks that clear the cooldown above, so the log also needed that tick
+     * to be a multiple of 100 -- the two conditions almost never coincide, and the lines were
+     * effectively unreachable. Their absence from a log where mobs were visibly frozen read as
+     * "navigation is fine" when it was really "the instrument never fired". Counting permitted
+     * checks instead makes the rate predictable: one line roughly every five seconds per mob.
+     */
+    private static final int CHECKS_BETWEEN_DIAGNOSTICS = 5;
+
+    private int checksSinceDiagnostic;
+
     public EnduranceMeleeAttackGoal(Mob mob, double speedModifier, boolean followingTargetEvenIfNotSeen) {
         this.mob = mob;
         this.speedModifier = speedModifier;
@@ -44,11 +58,15 @@ public final class EnduranceMeleeAttackGoal extends Goal {
             return false;
         }
         this.lastCanUseCheck = gameTime;
+        this.checksSinceDiagnostic++;
+        boolean logNow = this.checksSinceDiagnostic >= CHECKS_BETWEEN_DIAGNOSTICS;
+        if (logNow) {
+            this.checksSinceDiagnostic = 0;
+        }
 
         LivingEntity target = this.mob.getTarget();
         if (target == null || !target.isAlive()) {
-            // Log every 100 ticks (5 seconds) if no target
-            if (gameTime % 100 == 0) {
+            if (logNow) {
                 org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
                     "[AIDebug] canUse=false: mob={}, target={}, targetAlive={}",
                     this.mob.getUUID().toString().substring(0, 8),
@@ -65,7 +83,7 @@ public final class EnduranceMeleeAttackGoal extends Goal {
                 return true;
             }
             // Log path creation failure
-            if (gameTime % 100 == 0) {
+            if (logNow) {
                 org.slf4j.LoggerFactory.getLogger("EnduranceMeleeAttackGoal").info(
                     "[AIDebug] canUse path=null: mob={}, target={}, mobPos={}, targetPos={}, dist={}",
                     this.mob.getUUID().toString().substring(0, 8),

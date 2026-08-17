@@ -754,6 +754,20 @@ final class WaveMobSpawner {
             int behaviorGoalCount = mob.goalSelector.getAvailableGoals().size();
             net.minecraft.world.entity.LivingEntity target = mob.getTarget();
             boolean noAI = mob.isNoAi();
+            // Dump WHICH goals are present, not just how many. A count cannot answer the question
+            // that matters here: Minecraft's GoalSelector never calls canUse() on a goal whose
+            // Flags are held by a running higher-priority goal, so our attack goal (MOVE + LOOK,
+            // priority 2) can be silently skipped -- no start, no diagnostic, mob standing still.
+            // Epic Fight strips most vanilla goals from patched mobs and drives movement from its
+            // own patch tick, so knowing what it leaves behind, and at what priority, is the whole
+            // diagnosis.
+            LOGGER.info("[AIDebug] goals for {}: behaviour={}",
+                mob.getUUID().toString().substring(0, 8),
+                describeGoals(mob.goalSelector));
+            LOGGER.info("[AIDebug] goals for {}: target={}",
+                mob.getUUID().toString().substring(0, 8),
+                describeGoals(mob.targetSelector));
+
             LOGGER.info("[AIDebug] awakeMobAI: mob={}, mobId={}, target={}, noAI={}, targetGoals={}, behaviorGoals={}, pos={}",
                 mob.getType().toString(),
                 mob.getUUID(),
@@ -767,5 +781,25 @@ final class WaveMobSpawner {
             LOGGER.warn("[EnduranceQuest] Failed to awaken AI for {}: {}",
                 mob.getType().toString(), e.getMessage());
         }
+    }
+
+    /**
+     * Describe a goal selector's contents: priority, class and flags for each entry.
+     *
+     * @param selector the selector to describe
+     * @return a compact one-line description, safe to log
+     */
+    private static String describeGoals(net.minecraft.world.entity.ai.goal.GoalSelector selector) {
+        StringBuilder sb = new StringBuilder();
+        for (net.minecraft.world.entity.ai.goal.WrappedGoal wrapped : selector.getAvailableGoals()) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append('p').append(wrapped.getPriority()).append(':')
+              .append(wrapped.getGoal().getClass().getName())
+              .append(wrapped.isRunning() ? "(running)" : "")
+              .append(wrapped.getGoal().getFlags());
+        }
+        return sb.length() == 0 ? "<none>" : sb.toString();
     }
 }
